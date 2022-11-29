@@ -1,0 +1,109 @@
+# Example for a PowerShell dev environment
+
+# A unit of configuration needs to identify the DSC Resource performing action +
+# A unit of configuration needs to have a unique "instance" identifier (supports dependencies) +
+# A unit of configuration needs properties +
+# An optional dependency needs to be supported +
+# An optional declaration of user privilege needs to be supported (user vs. admin) +
+# In some cases, an "assert only" behavior should be supported in a configuration file (or a unit of configuration)
+# - I don't want to run Windows update, but I need to ensure some minimum version is present
+
+# Winget install: vscode, dotnet sdk, powershell 7, git
+# OS Windows 10 or greater
+# VSCode config: powershell extension, c# extension, powershell 7 as default shell
+# dotnet sdk: 5.0
+# powershell 7: latest stable
+# git: default editor vscode
+
+# for different editors, it may make sense to have separate configs per editor particularly since each
+# editor has different settings and extensions
+
+# consider resources that may require elevation or confirmation and how to support both
+# declaring override in the config and allowing resources to do their own prompting
+
+# for the authoring experience, we would build a vscode extension that has the top level manifest
+# schema, but can dynamically pull in available resources and resource specific schemas and
+# then handle intellisense
+
+# how does the orchestrator know which module(s) to install to get the resources?
+
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://aka.ms/schemas/dsc/manifest.schema.yaml
+properties:
+
+  assertions: # every assertion should pass before any config is applied and calls `test` method, multiple resources can be here and if any fail, the entire config fails
+    - resource: assert-osversion # naming convention for assert resources
+      settings:
+        os: Windows10
+        version: "[10.0.25227-*)"
+  parameters: # these would just be resources that retrieve information via `get` operation
+    - resource: secretManagement
+      id: psgalleryKey
+      settings:
+        vault: AzureKeyVault
+        name: psgallerykey
+  resources:
+    - resource: osversion
+      directives:
+        module: Microsoft.OSVersion # example of specifying a module name
+        repository: PSGallery # example of specifying a repository name
+        confirm: true # example where you might require Windows update, but need confirmation from user initiated by the orchestrator (do we need support for resources to prompt for confirmation?)
+        signerThumbprint: AFBF0B8B6A18F7E23CCA1DDCD0AC1A55B4035173 # thumbprint of the signer cert valid for multiple versions
+      settings:
+        os: Windows10
+        version: "[10.0.25227-*)"
+        windowsUpdate: true
+    - resource: winget
+      directives: # directives are for the resource itself and not passed to the resource during invocation
+        requiredVersion: "[1.0.0-1.1.0)" # version of the resource, not winget itself
+        timeoutSeconds: 300
+      settings: # settings are passed to the resource during invocation
+        id: Microsoft.VisualStudioCode
+        version: "[1.27.2-*)"
+    - resource: winget
+      directives:
+        requiredVersion: "[1.0.0-1.1.0)"
+        runas: Admin # default: User
+      settings:
+        id: Microsoft.DotnetSDK # for this example, we assume this SDK requires admin to install
+        version: "[5.0.0-5.0.999)"
+    - resource: winget
+      id: ps7install # used later to get the installed location as well as referencing the output
+      directives:
+        requiredVersion: "[1.0.0-1.1.0)"
+      settings:
+        id: Microsoft.PowerShell
+        version: "[7.0.0-*)"
+    - resource: winget
+      directives:
+        requiredVersion: "[1.0.0-1.1.0)"
+        onFailure: continue # ok to continue on failure while other resources will stop processing
+      settings:
+        id: Git.Git
+    - resource: vscode
+      settings:
+        extensions:
+          - ms-vscode.powershell
+          - ms-dotnettools.csharp
+        settings:
+          terminal.integrated.shell.windows: "$($ps7install.installedpath)\\pwsh.exe" # use the output from the previous resource with id ps7install
+      dependsOn:
+        - ps7install
+        - winget.Microsoft.VisualStudioCode # automatic id from the resource and key properties of the resource
+    - resource: git
+      directives:
+        sha256hash: 1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef # hash of the resource, this would be specific to a version
+      settings:
+        editor: vscode
+      dependsOn:
+        - winget.Git.Git
+        - winget.Microsoft.VisualStudioCode
+    - resource: PowerShellGet
+      directives:
+        optional: true # inform orchestrator to prompt user for install
+      settings:
+        module: Az
+        version: "[1.0.0-*)"
+        repository: PSGallery
+        apiKey: $psgalleryKey
