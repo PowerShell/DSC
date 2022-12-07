@@ -2,16 +2,24 @@ use std::io;
 use std::process::exit;
 use super::*;
 
+/// Struct containing the parsed command line arguments
+#[derive(Debug)]
 pub struct Args {
+    /// The subcommand to run
     pub subcommand: SubCommand,
+    /// The name of the resource to run the subcommand on
     pub resource: String,
+    /// The filter to use when listing resources
     pub filter: String,
+    /// String representing any input piped in via stdin, this is typically expected to be JSON
     pub stdin: String,
-    pub no_cache: bool, // don't use the cache and force a new discovery, low priority
+    /// Whether to use the cache or not
+    pub no_cache: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SubCommand {
+    None,
     List,
     Get,
     Set,
@@ -20,6 +28,13 @@ pub enum SubCommand {
 }
 
 impl Args {
+    /// Parse the command line arguments and return an Args struct
+    /// 
+    /// # Arguments
+    /// 
+    /// * `args` - Iterator of command line arguments
+    /// * `input` - Input stream to read from
+    /// * `atty` - Whether the input stream is a tty (terminal) or not
     pub fn new(args: &mut dyn Iterator<Item = String>, input: &mut dyn io::Read, atty: bool) -> Self {
         let mut command_args: Vec<String> = args.skip(1).collect(); // skip the first arg which is the program name
         if command_args.is_empty() {
@@ -27,7 +42,7 @@ impl Args {
             show_help_and_exit();
         }
 
-        let subcommand = match command_args[0].as_str() {
+        let subcommand = match command_args[0].to_lowercase().as_str() {
             "list" => SubCommand::List,
             "get" => SubCommand::Get,
             "set" => SubCommand::Set,
@@ -36,7 +51,7 @@ impl Args {
             _ => {
                 eprintln!("Invalid subcommand provided");
                 show_help_and_exit();
-                SubCommand::List
+                SubCommand::None
             }
         };
 
@@ -48,7 +63,7 @@ impl Args {
         let mut stdin = Vec::new();
 
         if !atty {
-            // only read if input is piped in and not a tty (terminal)
+            // only read if input is piped in and not a tty (terminal) otherwise stdin is used for keyboard input
             input.read_to_end(&mut stdin).unwrap();
         }
 
@@ -62,7 +77,7 @@ impl Args {
 
         // go through reset of provided args 
         for arg in command_args {
-            match arg.as_str() {
+            match arg.to_lowercase().as_str() {
                 "-h" | "--help" => show_help_and_exit(),
                 "-n" | "--nocache" => no_cache = true,
                 _ => {
@@ -89,16 +104,6 @@ impl Args {
                     }
                 }
             }
-        }
-
-        match subcommand {
-            SubCommand::Set | SubCommand::Test => {
-                if stdin.is_empty() {
-                    eprintln!("Desired state input via stdin is required for `set` and `test`");
-                    show_help_and_exit();
-                }
-            }
-            _ => {}
         }
 
         Self {

@@ -1,5 +1,6 @@
 use args::*;
 use atty::Stream;
+use std::process::exit;
 use std::{env, io};
 
 pub mod args;
@@ -31,6 +32,10 @@ fn main() {
         }
         SubCommand::FlushCache => {
             println!("FlushCache");
+        }
+        _ => {
+            eprintln!("Invalid subcommand");
+            exit(EXIT_INVALID_ARGS);
         }
     }
 }
