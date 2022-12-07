@@ -22,7 +22,7 @@ pub enum SubCommand {
 impl Args {
     pub fn new(args: &mut dyn Iterator<Item = String>, input: &mut dyn io::Read, atty: bool) -> Self {
         let mut command_args: Vec<String> = args.skip(1).collect(); // skip the first arg which is the program name
-        if command_args.is_empty() || command_args[0].starts_with('-') {
+        if command_args.is_empty() {
             eprintln!("No subcommand provided");
             show_help_and_exit();
         }
