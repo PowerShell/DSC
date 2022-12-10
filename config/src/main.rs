@@ -1,41 +1,43 @@
 use args::*;
 use atty::Stream;
-use std::process::exit;
-use std::{env, io};
+use clap::Parser;
+use std::io::{self, Read};
 
 pub mod args;
 pub mod discovery;
 pub mod dscresources;
 pub mod dscerror;
 
-pub const EXIT_INVALID_ARGS: i32 = 1;
-pub const EXIT_INVALID_INPUT: i32 = 2;
-
 fn main() {
-    let args = Args::new(&mut env::args(), &mut io::stdin(), atty::is(Stream::Stdin));
+    let args = Args::parse();
+
+    let stdin: Option<String> = if atty::is(Stream::Stdin) {
+        None
+    } else {
+        let mut buffer: Vec<u8> = Vec::new();
+        io::stdin().read_to_end(&mut buffer).unwrap();
+        let input = match String::from_utf8(buffer) {
+            Ok(input) => input,
+            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+        };
+        Some(input)
+    };
+
     match args.subcommand {
-        SubCommand::List => {
-            // perform discovery
-            println!("List {}", args.filter);
+        SubCommand::List { resource_name } => {
+            println!("List {}", resource_name.unwrap_or_default());
         }
-        SubCommand::Get => {
-            // perform discovery
-            println!("Get {}: {}", args.resource, args.stdin);
+        SubCommand::Get { resource_name } => {
+            println!("Get {}: {}", resource_name, stdin.unwrap_or_default());
         }
-        SubCommand::Set => {
-            // perform discovery
-            println!("Set {}: {}", args.resource, args.stdin);
+        SubCommand::Set { resource_name } => {
+            println!("Set {}: {}", resource_name, stdin.unwrap_or_default());
         }
-        SubCommand::Test => {
-            // perform discovery
-            println!("Test {}: {}", args.resource, args.stdin);
+        SubCommand::Test { resource_name } => {
+            println!("Test {}: {}", resource_name, stdin.unwrap_or_default());
         }
-        SubCommand::FlushCache => {
-            println!("FlushCache");
-        }
-        _ => {
-            eprintln!("Invalid subcommand");
-            exit(EXIT_INVALID_ARGS);
+        SubCommand::Flush => {
+            println!("Flush");
         }
     }
 }
