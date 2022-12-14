@@ -25,7 +25,10 @@ fn main() {
 
     match args.subcommand {
         SubCommand::List { resource_name } => {
-            println!("List {}", resource_name.unwrap_or_default());
+            let discovery = discovery::Discovery::new();
+            for resource in discovery.find_resource(&resource_name.unwrap_or_default()) {
+                println!("{} = {:?}", resource.name, resource.implemented_as);
+            }
         }
         SubCommand::Get { resource_name } => {
             println!("Get {}: {}", resource_name, stdin.unwrap_or_default());
