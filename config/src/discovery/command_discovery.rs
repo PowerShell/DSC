@@ -1,4 +1,3 @@
-use crate::dscerror::DscError;
 use crate::discovery::discovery_trait::{ResourceDiscovery};
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 
@@ -11,6 +10,12 @@ impl CommandDiscovery {
         CommandDiscovery {
             resources: Vec::new(),
         }
+    }
+}
+
+impl Default for CommandDiscovery {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

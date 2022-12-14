@@ -2,7 +2,7 @@ use dscerror::DscError;
 use serde::Serialize;
 use super::*;
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct DscResource {
     #[serde(rename="ImplementationDetail")]
     pub implementation_detail: String,
@@ -31,7 +31,7 @@ pub struct DscResource {
     command_line: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub enum ImplementedAs {
     PowerShell,
     PowerShellScript,   // .ps1

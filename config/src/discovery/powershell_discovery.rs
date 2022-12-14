@@ -13,6 +13,12 @@ impl PowerShellDiscovery {
     }
 }
 
+impl Default for PowerShellDiscovery {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResourceDiscovery for PowerShellDiscovery {
     fn discover(&self) -> Box<dyn Iterator<Item = DscResource>> {
         // use `Get-DscResource` to convert to config resources
