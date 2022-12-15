@@ -1,30 +1,41 @@
-// find resources via PATH
-// reuse code from https://github.com/PowerShell/MSH/blob/main/config/src/main.rs
-
-use crate::dscerror::DscError;
 use crate::discovery::discovery_trait::{ResourceDiscovery};
-use crate::dscresources::dscresource::DscResource;
+use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 
 pub struct CommandDiscovery {
-    pub command: String,
+    pub resources: Vec<DscResource>,
 }
 
-pub struct CommandIterator {
-    pub command: String,
+impl CommandDiscovery {
+    pub fn new() -> CommandDiscovery {
+        CommandDiscovery {
+            resources: Vec::new(),
+        }
+    }
 }
 
-impl Iterator for CommandIterator {
-    type Item = DscResource;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        None
+impl Default for CommandDiscovery {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 impl ResourceDiscovery for CommandDiscovery {
-    fn discover(&self, _filter: Option<String>) -> Result<Box<dyn Iterator<Item = DscResource>>, DscError> {
-        Ok(Box::new(CommandIterator {
-            command: self.command.clone(),
-        }))
+    fn discover(&self) -> Box<dyn Iterator<Item = DscResource>> {
+        // find resources via PATH including .ps1 resources so PATH doesn't need to be traversed more than once
+        // reuse code from https://github.com/PowerShell/MSH/blob/main/config/src/main.rs
+        // these are just test resources
+        let mut sshd_resource = DscResource::new();
+        sshd_resource.name = "SSHDConfig".to_string();
+        sshd_resource.implemented_as = ImplementedAs::Command;
+        let mut registry_resource = DscResource::new();
+        registry_resource.name = "Registry".to_string();
+        registry_resource.implemented_as = ImplementedAs::Command;
+
+        let resources = vec![
+            sshd_resource,
+            registry_resource,
+        ];
+
+        Box::new(resources.into_iter())
     }
 }
