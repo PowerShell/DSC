@@ -84,8 +84,13 @@ DesiredState: # This is the unique desired state we want to converge to (in this
         type: string
         ValidateSet: [present,absent]
 
+    - id: PS7InstalledPath
+      data_resolver_type:
+        name: cmd
+        parameters: /C Where.exe pwsh
 
-  ResourceGraph: # this is the Directed Acyclic Graph of the resources drawing the path of state a system need to go through to converge towards the desired state
+
+  ResourceGraph: # this is the Directed Acyclic Graph of the resources drawing the path of states (nodes) or changes (edges) a system need to go through to converge towards the desired state
     - resource_instance_id: '[Microsoft.PowerShell.OSResourcesDsc\osversion]MyInstanceOfOsversion' # unique identifier of the instance, composed at "compile" time.
       resource_type:
         name: Microsoft.PowerShell.OSResourcesDsc\osversion
@@ -139,7 +144,7 @@ DesiredState: # This is the unique desired state we want to converge to (in this
           - ms-vscode.powershell
           - ms-dotnettools.csharp
         settings:
-          terminal.integrated.shell.windows: "$($ps7install.installedpath)\\pwsh.exe" # use a fact that you can address (periodic? evaluation, or notify?), not output (transactional)
+          terminal.integrated.shell.windows: $parameters.PS7InstalledPath # use a fact that you can address (periodic? evaluation, or notify?), not output (transactional)
       dependsOn:
         - '[Microsoft.Winget\winget]install_ps7'
         - '[Microsoft.Winget\winget]install_vscode' # automatic id are best done at compilation (resource and key properties of the resource can be used)
