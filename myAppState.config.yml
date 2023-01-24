@@ -66,20 +66,21 @@ DesiredState: # This is the unique desired state we want to converge to (in this
       data_resolver_type:
         name: Microsoft.PowerShell.SecretManagement\Get-Secret
         version: "[10.0.25227-*)"
-      resource_parameters:
+      data_resolver_parameters:
         vault: AzureKeyVault
         name: psgallerykey
 
     - id: AskForGitUserName
       data_resolver_type:
         name: Microsoft.DSC.Configuration\GetUserInput.exe # not necessarily an exe, but refer to the configuration utility capability to request user input
-      resource_parameters:
+      data_resolver_parameters:
         prompt: Please provide the username to use in git
         type: string
     
     - id: AskUserWhetherToInstallAzModule
       data_resolver_type:
         name: Microsoft.DSC.Configuration\GetUserInput.exe
+      data_resolver_parameters:
         prompt: do you want to ensure the PS Module PowerShell get is Present or Absent? 
         type: string
         ValidateSet: [present,absent]
@@ -87,7 +88,8 @@ DesiredState: # This is the unique desired state we want to converge to (in this
     - id: PS7InstalledPath
       data_resolver_type:
         name: cmd
-        parameters: /C Where.exe pwsh
+      data_resolver_parameters:
+        cmd_parameters: /C Where.exe pwsh
 
 
   ResourceGraph: # this is the Directed Acyclic Graph of the resources drawing the path of states (nodes) or changes (edges) a system need to go through to converge towards the desired state
