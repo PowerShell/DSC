@@ -1,5 +1,5 @@
 pub struct Match {
-    pub criteria: MatchType,
+    pub conditional: MatchType,
     pub keywords: KeywordType 
 }
 
@@ -7,13 +7,17 @@ pub struct Match {
 pub enum MatchType {
     User(String),
     Group(String),
-    All,
+    Host(String), 
+    LocalAddress(String),
+    LocalPort(String), 
+    RDomain(String),
+    Address(String),
+    All(String),
 }
 
 // incomplete
 pub enum KeywordType {
     Binary(bool),
 }
-
 
 
