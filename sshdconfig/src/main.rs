@@ -4,9 +4,9 @@ use clap::Parser;
 use std::io::{self, Read};
 
 pub mod args;
+pub mod config;
 pub mod match_data;
-pub mod config_data;
-pub mod const_keywords;
+pub mod sshdconfig_error;
 
 fn main() {
     let args = Cli::parse();

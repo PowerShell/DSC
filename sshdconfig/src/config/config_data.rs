@@ -1,4 +1,3 @@
-use serde_json::Value;
 use std::collections::HashMap;
 use std::io::Error;
 
@@ -6,7 +5,7 @@ use super::*;
 
 pub enum KeywordType {
     NameValue(String),
-    MatchValue(Match)
+    MatchValue(match_data::Match)
 }
 pub struct ConfigContainer {
     pub keyword: String,
@@ -40,15 +39,16 @@ impl ConfigData {
     }
 
     pub fn export_json(&self, filter: Option<ConfigData>) -> String {
-
+        "".to_string()
     }
 
     pub fn export_sshd_config(&self) -> String {
-
+        "".to_string()
     }
 
     pub fn validate_config(&self) -> (bool, Option<ConfigData>) {
         // call sshd -T for validation
+        (false, None)
     }
 
     pub fn apply_config(&self) {
@@ -67,7 +67,7 @@ impl ConfigData {
     }
 
     fn compare(&self, config: ConfigData) -> ConfigData {
-
+        ConfigData::new()
     }
 
 
