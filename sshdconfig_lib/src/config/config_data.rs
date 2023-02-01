@@ -1,20 +1,10 @@
 use std::collections::HashMap;
-use std::io::Error;
 
-use super::*;
+use crate::sshdconfig_error::SshdConfigError;
+use crate::config::subcontainer::{KeywordType, SubContainer};
 
-pub enum KeywordType {
-    NameValue(String),
-    MatchValue(match_data::Match)
-}
-pub struct ConfigContainer {
-    pub keyword: String,
-    pub args: KeywordType,
-    pub is_default: bool,
-    // pub is_for_windows: bool
-}
 pub struct ConfigData {
-    config_lookup: HashMap<String, ConfigContainer>
+    config_lookup: HashMap<String, SubContainer>
 }
 
 impl ConfigData {
@@ -69,8 +59,6 @@ impl ConfigData {
     fn compare(&self, config: ConfigData) -> ConfigData {
         ConfigData::new()
     }
-
-
 }
 
 impl Default for ConfigData {
@@ -78,41 +66,23 @@ impl Default for ConfigData {
         ConfigData::new()
     }
 }
+
 pub trait Invoke {
-    fn get(&self) -> Result<(), Error>; 
-    fn set(&self) -> Result<(), Error>;
-    fn test(&self) -> Result<(), Error>;
+    fn get(&self, keywords: &Option<Vec<String>>) -> Result<(), SshdConfigError>; 
+    fn set(&self) -> Result<(), SshdConfigError>;
+    fn test(&self) -> Result<(), SshdConfigError>;
 }
 
 impl Invoke for ConfigData {
-    fn get(&self) -> Result<(), Error> {
+    fn get(&self, keywords: &Option<Vec<String>>) -> Result<(), SshdConfigError> {
         Ok(())
     }
-    fn set(&self) -> Result<(), Error> {
+    fn set(&self) -> Result<(), SshdConfigError> {
         Ok(())
     }
-    fn test(&self) -> Result<(), Error> {
+    fn test(&self) -> Result<(), SshdConfigError> {
         Ok(())
     }
 }
 
-struct WindowsSSHD {
-
-}
-
-struct LinuxSSHD {
-
-}
-
-trait RestartSSHD {
-
-}
-
-impl RestartSSHD for WindowsSSHD {
-
-}
-
-impl RestartSSHD for LinuxSSHD {
-
-}
 
