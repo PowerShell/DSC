@@ -9,15 +9,15 @@ pub struct NativeResource {
 }
 
 impl Invoke for NativeResource {
-    fn get(&self) -> Result<(), DscError> {
+    fn get(&self, _filter: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
 
-    fn set(&self) -> Result<(), DscError> {
+    fn set(&self, _desired: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
 
-    fn test(&self, _expected: &str) -> Result<(), DscError> {
+    fn test(&self, _expected: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
 }

@@ -2,11 +2,9 @@ use args::*;
 use atty::Stream;
 use clap::Parser;
 use std::io::{self, Read};
+use dsc_lib::*;
 
 pub mod args;
-pub mod discovery;
-pub mod dscresources;
-pub mod dscerror;
 
 fn main() {
     let args = Args::parse();
