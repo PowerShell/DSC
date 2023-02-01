@@ -1,0 +1,25 @@
+[package]
+name = "registry"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+strip = true
+# optimize for size
+opt-level = 2
+# enable link time optimization to remove dead code
+lto = true
+
+[profile.dev]
+lto = true
+
+[dependencies]
+atty = { version = "0.2" }
+clap = { version = "3.2", features = ["derive"] }
+ntreg = { path = "../ntreg" }
+pal = { path = "../pal" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+
+[build-dependencies]
+static_vcruntime = "2.0"
