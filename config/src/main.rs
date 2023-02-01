@@ -2,7 +2,7 @@ use args::*;
 use atty::Stream;
 use clap::Parser;
 use std::io::{self, Read};
-use dsc_lib::*;
+use dsc_lib::DscManager;
 
 pub mod args;
 

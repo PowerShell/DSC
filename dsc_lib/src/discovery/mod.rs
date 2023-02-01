@@ -1,11 +1,11 @@
-pub mod cache;
-pub mod command_discovery;
-pub mod discovery_trait;
-pub mod powershell_discovery;
+mod cache;
+mod command_discovery;
+mod discovery_trait;
+mod powershell_discovery;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscresources::dscresource::DscResource;
-use regex::{RegexBuilder};
+use regex::RegexBuilder;
 
 pub struct Discovery {
     resources: Vec<DscResource>,

@@ -14,6 +14,7 @@ impl Default for DscResourceCache {
     }
 }
 
+#[allow(dead_code)] // remove once cache is used
 impl DscResourceCache {
     pub fn new() -> Self {
         Self {
