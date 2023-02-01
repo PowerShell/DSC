@@ -21,10 +21,11 @@ fn main() {
         Some(input)
     };
 
+    let dsc = DscManager::new();
+
     match args.subcommand {
         SubCommand::List { resource_name } => {
-            let discovery = discovery::Discovery::new();
-            for resource in discovery.find_resource(&resource_name.unwrap_or_default()) {
+            for resource in dsc.find_resource(&resource_name.unwrap_or_default()) {
                 println!("{} = {:?}", resource.name, resource.implemented_as);
             }
         }
