@@ -65,19 +65,20 @@ impl Default for DscResource {
 }
 
 pub trait Invoke {
-    fn get(&self) -> Result<(), DscError>;  // TODO: does it return JSON or a struct?
-    fn set(&self) -> Result<(), DscError>;
-    fn test(&self, expected: &str) -> Result<(), DscError>;
+    // the strings are expected to be json
+    fn get(&self, filter: &str) -> Result<String, DscError>;
+    fn set(&self, desired: &str) -> Result<String, DscError>;
+    fn test(&self, expected: &str) -> Result<String, DscError>; // result json should include a `_inDesiredState` bool property and optional additional json for the diff
 }
 
 impl Invoke for DscResource {
-    fn get(&self) -> Result<(), DscError> {
+    fn get(&self, _filter: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
-    fn set(&self) -> Result<(), DscError> {
+    fn set(&self, _desired: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
-    fn test(&self, _expected: &str) -> Result<(), DscError> {
+    fn test(&self, _expected: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
 }

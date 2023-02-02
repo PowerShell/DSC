@@ -2,11 +2,9 @@ use args::*;
 use atty::Stream;
 use clap::Parser;
 use std::io::{self, Read};
+use dsc_lib::DscManager;
 
 pub mod args;
-pub mod discovery;
-pub mod dscresources;
-pub mod dscerror;
 
 fn main() {
     let args = Args::parse();
@@ -23,10 +21,11 @@ fn main() {
         Some(input)
     };
 
+    let dsc = DscManager::new();
+
     match args.subcommand {
         SubCommand::List { resource_name } => {
-            let discovery = discovery::Discovery::new();
-            for resource in discovery.find_resource(&resource_name.unwrap_or_default()) {
+            for resource in dsc.find_resource(&resource_name.unwrap_or_default()) {
                 println!("{} = {:?}", resource.name, resource.implemented_as);
             }
         }

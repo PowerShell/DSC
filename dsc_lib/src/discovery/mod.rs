@@ -1,11 +1,11 @@
-pub mod cache;
-pub mod command_discovery;
-pub mod discovery_trait;
-pub mod powershell_discovery;
+mod cache;
+mod command_discovery;
+mod discovery_trait;
+mod powershell_discovery;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscresources::dscresource::DscResource;
-use regex::{RegexBuilder};
+use regex::RegexBuilder;
 
 pub struct Discovery {
     resources: Vec<DscResource>,
@@ -32,14 +32,14 @@ impl Discovery {
         }
     }
 
-    pub fn find_resource(&self, resource_name: &str) -> ResourceIterator {
-        let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(resource_name).as_str());
+    pub fn find_resource(&self, name: &str) -> ResourceIterator {
+        let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(name).as_str());
         regex_builder.case_insensitive(true);
         let regex = regex_builder.build().unwrap();
 
         let mut resources: Vec<DscResource> = Vec::new();
         for resource in &self.resources {
-            if resource_name.is_empty() | regex.is_match(resource.name.as_str()) {
+            if name.is_empty() | regex.is_match(resource.name.as_str()) {
                 resources.push(resource.clone());
             }
         }
