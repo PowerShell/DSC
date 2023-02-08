@@ -338,12 +338,12 @@ impl RegistryKey {
                 data = binary_data.as_mut_ptr() as *mut c_void;
                 len = binary_data.len();
             }
-            RegistryValueData::Dword(ref value) => {
+            RegistryValueData::DWord(ref value) => {
                 let mut value = *value;
                 data = &mut value as *mut u32 as *mut c_void;
                 len = size_of::<u32>();
             }
-            RegistryValueData::Qword(ref value) => {
+            RegistryValueData::QWord(ref value) => {
                 let mut value = *value;
                 data = &mut value as *mut u64 as *mut c_void;
                 len = size_of::<u64>();
@@ -355,13 +355,13 @@ impl RegistryKey {
             RegistryValueData::String(_) => 1,
             RegistryValueData::ExpandString(_) => 2,
             RegistryValueData::Binary(_) => 3,
-            RegistryValueData::Dword(_) => 4,
+            RegistryValueData::DWord(_) => 4,
             RegistryValueData::Link(_) => 6,
             RegistryValueData::MultiString(_) => 7,
             RegistryValueData::ResourceList(_) => 8,
             RegistryValueData::FullResourceDescriptor(_) => 9,
             RegistryValueData::ResourceRequirementsList(_) => 10,
-            RegistryValueData::Qword(_) => 11,
+            RegistryValueData::QWord(_) => 11,
         };
 
         let status = unsafe {

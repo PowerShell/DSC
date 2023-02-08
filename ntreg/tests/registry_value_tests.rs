@@ -82,12 +82,12 @@ fn test_set_value_dword() {
     let new_key = key.unwrap().create_or_get_key("TestKey_dword");
     assert!(new_key.is_ok());
     let new_key = new_key.unwrap();
-    let reg_value = RegistryValueData::Dword(1234);
+    let reg_value = RegistryValueData::DWord(1234);
     let result = new_key.set_value("TestDword", &reg_value);
     assert!(result.is_ok());
     let result = result.unwrap();
     assert_eq!(result.name, "TestDword".to_string());
-    assert_eq!(result.data, RegistryValueData::Dword(1234));
+    assert_eq!(result.data, RegistryValueData::DWord(1234));
     assert!(new_key.delete(false).is_ok());
 }
 
@@ -98,12 +98,12 @@ fn test_set_value_qword() {
     let new_key = key.unwrap().create_or_get_key("TestKey_qword");
     assert!(new_key.is_ok());
     let new_key = new_key.unwrap();
-    let reg_value = RegistryValueData::Qword(12_345_678_901);
+    let reg_value = RegistryValueData::QWord(12_345_678_901);
     let result = new_key.set_value("TestQword", &reg_value);
     assert!(result.is_ok());
     let result = result.unwrap();
     assert_eq!(result.name, "TestQword".to_string());
-    assert_eq!(result.data, RegistryValueData::Qword(12_345_678_901));
+    assert_eq!(result.data, RegistryValueData::QWord(12_345_678_901));
     assert!(new_key.delete(false).is_ok());
 }
 

@@ -1,6 +1,7 @@
-use thiserror::Error;
 use ntapi::winapi::shared::ntdef::{NTSTATUS};
 use ntapi::winapi::shared::ntstatus::{STATUS_OBJECT_NAME_NOT_FOUND, STATUS_OBJECT_PATH_NOT_FOUND, STATUS_OBJECT_PATH_SYNTAX_BAD, STATUS_ACCESS_DENIED, STATUS_KEY_DELETED, STATUS_CANNOT_DELETE};
+use std::fmt;
+use thiserror::Error;
 
 /// Struct for returning NTSTATUS errors
 #[derive(Debug, PartialEq, Eq)]
@@ -72,5 +73,11 @@ impl From<NTSTATUS> for NtStatusErrorKind {
             STATUS_CANNOT_DELETE => NtStatusErrorKind::CannotDelete,
             _ => NtStatusErrorKind::Unknown(status as u32),
         }
+    }
+}
+
+impl fmt::Display for NtStatusError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.status, self.message)
     }
 }
