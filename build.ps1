@@ -23,7 +23,11 @@ else {
     $path = ".\target\$configuration"
 }
 
-$projects = "config", "registry"
+$windows_projects = @("registry")
+$projects = @("config") 
+if ($IsWindows) {
+    $projects += $windows_projects
+}
 
 foreach ($project in $projects) {
     ## Build format_json
@@ -37,7 +41,13 @@ foreach ($project in $projects) {
             cargo build @flags
         }
 
-        Copy-Item "$path/$project.exe" $target
+        if ($IsWindows) {
+            Copy-Item "$path/$project.exe" $target
+        }
+        else {
+            Copy-Item "$path/$project" $target
+        }
+
         Copy-Item *.command.json $target
     } finally {
         Pop-Location
