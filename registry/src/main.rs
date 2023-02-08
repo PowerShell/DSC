@@ -2,6 +2,7 @@ use args::Arguments;
 use atty::Stream;
 use clap::Parser;
 use ntreg::{registry_key::RegistryKey, registry_value::RegistryValueData};
+use ntstatuserror::NtStatusErrorKind;
 use std::{io::{self, Read}, process::exit};
 
 use crate::config::RegistryConfig;
@@ -14,6 +15,7 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_PARAMETER: i32 = 1;
 const EXIT_INVALID_INPUT: i32 = 2;
 const EXIT_REGISTRY_ERROR: i32 = 3;
+const EXIT_NOT_IN_DESIRED_STATE: i32 = 4;
 
 fn main() {
     let args = Arguments::parse();
@@ -85,7 +87,7 @@ fn main() {
                     println!("Set config");
                 },
                 args::ConfigSubCommand::Test => {
-                    println!("Test config");
+                    config_test(config);
                 },
             }
         }
@@ -133,6 +135,74 @@ fn config_get(config: RegistryConfig) {
     };
 
     println!("{}", reg_json);
+}
+
+fn config_test(config: RegistryConfig) {
+    let mut reg_result = RegistryConfig {
+        key_path: config.key_path.clone(),
+        value_name: None,
+        value_data: None,
+        ensure: None,
+        clobber: None,
+    };
+
+    if config.value_name.is_none() {
+        let key_exists;
+        match RegistryKey::new(config.key_path.as_str()) {
+            Ok( _ ) => {
+                key_exists = true;
+            },
+            Err(err) => {
+                match err.status {
+                    NtStatusErrorKind::ObjectNameNotFound => {
+                        key_exists = false;
+                    },
+                    _ => {
+                        eprintln!("Error: {}", err);
+                        exit(EXIT_REGISTRY_ERROR);
+                    }
+                }
+            }
+        };
+
+        match config.ensure {
+            Some(ensure) => {
+                reg_result.ensure = Some(ensure.clone());
+                let mut in_desired_state = true;
+                match ensure {
+                    config::EnsureKind::Present => {
+                        if !key_exists {
+                            reg_result.key_path = String::new();
+                            in_desired_state = false;
+                        }
+                    },
+                    config::EnsureKind::Absent => {
+                        if key_exists {
+                            in_desired_state = false;
+                        }
+                    }
+                }
+                
+                let reg_json = match serde_json::to_string(&reg_result) {
+                    Ok(reg_json) => reg_json,
+                    Err(err) => {
+                        eprintln!("Error: {}", err);
+                        exit(EXIT_REGISTRY_ERROR);
+                    }
+                };
+
+                println!("{}", reg_json);
+                match in_desired_state {
+                    true => exit(EXIT_SUCCESS),
+                    false => exit(EXIT_NOT_IN_DESIRED_STATE),
+                }
+            },
+            None => {
+                eprintln!("Error: `_ensure` is required if `value_name` is not specified.");
+                exit(EXIT_INVALID_INPUT);
+            }
+        }
+    }
 }
 
 fn convert_reg_data (reg_data: ntreg::registry_value::RegistryValueData) -> config::RegistryValueData {

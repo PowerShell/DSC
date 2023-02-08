@@ -12,9 +12,9 @@ pub struct Arguments {
 pub enum ConfigSubCommand {
     #[clap(name = "get", about = "Retrieve registry configuration.")]
     Get,
-    #[clap(name = "get", about = "Apply registry configuration.")]
+    #[clap(name = "set", about = "Apply registry configuration.")]
     Set,
-    #[clap(name = "get", about = "Validate registry configuration.")]
+    #[clap(name = "test", about = "Validate registry configuration.")]
     Test,
 }
 

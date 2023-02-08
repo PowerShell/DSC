@@ -9,7 +9,9 @@
 }
 ```
 
-## Example use for config
+## Examples for config
+
+### Get the ProductName of current version of Windows
 
 ```powershell
 @'
@@ -18,4 +20,28 @@
   "valueName": "ProductName"
 }
 '@ | registry config get
+```
+
+### Test that the key exists
+
+```powershell
+@'
+{
+  "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+  "_ensure": "Present"
+}
+'@ | registry config test
+$LASTEXITCODE -eq 0
+```
+
+### Test that the key does not exist
+
+```powershell
+@'
+{
+  "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+  "_ensure": "Absent"
+}
+'@ | registry config test
+$LASTEXITCODE -ne 0
 ```
