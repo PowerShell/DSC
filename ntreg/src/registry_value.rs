@@ -16,13 +16,13 @@ pub enum RegistryValueData {
     String(String),
     ExpandString(String),
     Binary(Vec<u8>),
-    Dword(u32), // excluding REG_DWORD_BIG_ENDIAN as it's intended for UNIX systems and not used on Windows
+    DWord(u32), // excluding REG_DWORD_BIG_ENDIAN as it's intended for UNIX systems and not used on Windows
     Link(String),
     MultiString(Vec<String>),
     ResourceList(Vec<u8>),
     FullResourceDescriptor(Vec<u8>),
     ResourceRequirementsList(Vec<u8>),
-    Qword(u64),
+    QWord(u64),
 }
 
 /// Represents a registry value.
@@ -131,13 +131,13 @@ impl fmt::Display for RegistryValueData {
             RegistryValueData::String(ref data) => format!("String: {}", data),
             RegistryValueData::ExpandString(ref data) => format!("ExpandString: {}", data),
             RegistryValueData::Binary(ref data) => format!("Binary: {}", convert_vec_to_string(&data.to_vec())),
-            RegistryValueData::Dword(ref data) => format!("Dword: {}", data),
+            RegistryValueData::DWord(ref data) => format!("Dword: {}", data),
             RegistryValueData::Link(ref data) => format!("Link: {}", data),
             RegistryValueData::MultiString(ref data) => format!("MultiString: {:?}", data),
             RegistryValueData::ResourceList(ref data) => format!("ResourceList: {:?}", convert_vec_to_string(&data.to_vec())),
             RegistryValueData::FullResourceDescriptor(ref data) => format!("FullResourceDescriptor: {:?}", convert_vec_to_string(&data.to_vec())),
             RegistryValueData::ResourceRequirementsList(ref data) => format!("ResourceRequirementsList: {:?}", convert_vec_to_string(&data.to_vec())),
-            RegistryValueData::Qword(ref data) => format!("Qword: {}", data),
+            RegistryValueData::QWord(ref data) => format!("Qword: {}", data),
         };
 
         write!(f, "{}", data)
@@ -168,7 +168,7 @@ fn get_data_value(value_information: PKEY_VALUE_FULL_INFORMATION) -> RegistryVal
             std::slice::from_raw_parts(data_ptr as *const u16, (data_length / size_of::<u16>()) - 1)
         })),
         3 => RegistryValueData::Binary(data.to_vec()),
-        4 => RegistryValueData::Dword(unsafe {
+        4 => RegistryValueData::DWord(unsafe {
             *(data_ptr as *const u32)
         }),
         6 => RegistryValueData::Link(String::from_utf16_lossy(unsafe {
@@ -202,7 +202,7 @@ fn get_data_value(value_information: PKEY_VALUE_FULL_INFORMATION) -> RegistryVal
         8 => RegistryValueData::ResourceList(data.to_vec()),
         9 => RegistryValueData::FullResourceDescriptor(data.to_vec()),
         10 => RegistryValueData::ResourceRequirementsList(data.to_vec()),
-        11 => RegistryValueData::Qword(unsafe {
+        11 => RegistryValueData::QWord(unsafe {
             *(data_ptr as *const u64)
         }),
         _ => RegistryValueData::None,

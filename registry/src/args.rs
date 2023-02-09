@@ -9,6 +9,16 @@ pub struct Arguments {
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
+pub enum ConfigSubCommand {
+    #[clap(name = "get", about = "Retrieve registry configuration.")]
+    Get,
+    #[clap(name = "set", about = "Apply registry configuration.")]
+    Set,
+    #[clap(name = "test", about = "Validate registry configuration.")]
+    Test,
+}
+
+#[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
     #[clap(name = "query", about = "Query a registry key or value.", arg_required_else_help = true)]
     Query {
@@ -49,5 +59,10 @@ pub enum SubCommand {
         keys_only: Option<bool>,
         #[clap(short, long, help = "Only find values.")]
         values_only: Option<bool>,
+    },
+    #[clap(name = "config", about = "Manage registry configuration.", arg_required_else_help = true)]
+    Config {
+        #[clap(subcommand)]
+        subcommand: ConfigSubCommand,
     },
 }
