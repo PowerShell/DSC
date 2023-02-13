@@ -45,3 +45,18 @@ $LASTEXITCODE -eq 0
 '@ | registry config test
 $LASTEXITCODE -ne 0
 ```
+
+### Test the the value matches
+
+```powershell
+@'
+{
+  "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+  "valueName": "CompositionEditionId",
+  "valueData": {
+    "String": "Enterprise"
+  }
+}
+'@ | registry config test
+$LASTEXITCODE -eq 0
+```

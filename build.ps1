@@ -2,7 +2,8 @@ param(
     [switch]$Release,
     [ValidateSet('none','aarch64-pc-windows-msvc',' x86_64-pc-windows-msvc')]
     $architecture = 'none',
-    [switch]$Clippy
+    [switch]$Clippy,
+    [switch]$Test
 )
 
 ## Create the output folder
@@ -23,12 +24,13 @@ else {
     $path = ".\target\$configuration"
 }
 
-$windows_projects = @("registry")
+$windows_projects = @("ntreg","ntstatuserror","ntuserinfo","registry")
 $projects = @("config") 
 if ($IsWindows) {
     $projects += $windows_projects
 }
 
+$failed = $false
 foreach ($project in $projects) {
     ## Build format_json
     Write-Host -ForegroundColor Cyan "Building $project ..."
@@ -41,17 +43,26 @@ foreach ($project in $projects) {
             cargo build @flags
         }
 
+        if ($LASTEXITCODE -ne 0) {
+            $failed = $true
+        }
+
         if ($IsWindows) {
-            Copy-Item "$path/$project.exe" $target
+            Copy-Item "$path/$project.exe" $target -ErrorAction Ignore
         }
         else {
-            Copy-Item "$path/$project" $target
+            Copy-Item "$path/$project" $target -ErrorAction Ignore
         }
 
         Copy-Item *.command.json $target
     } finally {
         Pop-Location
     }
+}
+
+if ($failed) {
+    Write-Host -ForegroundColor Red "Build failed"
+    exit 1
 }
 
 $relative = Resolve-Path $target -Relative
@@ -64,6 +75,29 @@ foreach ($path in $paths) {
         $found = $true
         break
     }
+}
+
+if ($Test) {
+    $failed = $false
+    foreach ($project in $projects) {
+        ## Build format_json
+        Write-Host -ForegroundColor Cyan "Testing $project ..."
+        try {
+            Push-Location "$PSScriptRoot/$project"
+            cargo test
+    
+            if ($LASTEXITCODE -ne 0) {
+                $failed = $true
+            }
+        } finally {
+            Pop-Location
+        }
+    }
+}
+
+if ($failed) {
+    Write-Host -ForegroundColor Red "Test failed"
+    exit 1
 }
 
 # remove the other target in case switching between them

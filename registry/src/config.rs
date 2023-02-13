@@ -34,3 +34,15 @@ pub struct RegistryConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clobber: Option<bool>,
 }
+
+impl RegistryConfig {
+    pub fn to_json(&self) -> String {
+        match serde_json::to_string(self) {
+            Ok(json) => json,
+            Err(e) => {
+                eprintln!("Failed to serialize to JSON: {}", e);
+                String::new()
+            }
+        }
+    }
+}
