@@ -13,6 +13,7 @@ use std::{io::{self, Read}, process::exit};
 use crate::config::RegistryConfig;
 
 mod args;
+#[cfg(onecore)]
 mod bcrypt;
 mod config;
 

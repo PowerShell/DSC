@@ -1,4 +1,4 @@
-#[cfg(windows)]
+#[cfg(onecore)]
 fn main() {
     // Prevent this build script from rerunning unnecessarily.
     println!("cargo:rerun-if-changed=build.rs");
@@ -7,8 +7,9 @@ fn main() {
     static_vcruntime::metabuild();
 }
 
-#[cfg(not(windows))]
+#[cfg(not(onecore))]
 fn main() {
     // Prevent this build script from rerunning unnecessarily.
     println!("cargo:rerun-if-changed=build.rs");
+    static_vcruntime::metabuild();
 }
