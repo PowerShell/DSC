@@ -23,6 +23,7 @@ Consider all current content Microsoft Confidential.  Eventually, this project w
 
 ## High level architecture
 
+```
 +------------------------------------+
 |                                    |
 |     Config/Orchestration YAML      |
@@ -63,4 +64,4 @@ Consider all current content Microsoft Confidential.  Eventually, this project w
                                 | .ps1 resource |
                                 |               |
                                 +---------------+
-                                
+```                                
