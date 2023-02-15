@@ -20,3 +20,47 @@ Consider all current content Microsoft Confidential.  Eventually, this project w
   - `config list`, `config get`, `config set`, `config test`
 - Move from MOF to JSON
 - End users can author configuration in YAML
+
+## High level architecture
+
++------------------------------------+
+|                                    |
+|     Config/Orchestration YAML      |
+|                                    |
++------------------------------------+
+                   |
++------------------------------------+
+|                                    |
+|     Agent (e.g. Machine Config)    |   # An agent can either host PS and call Invoke-DscResource or Config command/API 
+|                                    |
++------------------------------------+
+                   |
+        +----------+----------------------------+
+        |                                       |
++---------------+                       +--------------+
+|               +-----------------------+              |
+| ConfigExe/API |                       |   PSDSC v3   |  # PSDSC v3 would call Config to call a resource
+|               +-----+------------+    |              |
++---------------+     |            |    +--------------+
+        |             |            |
++--------------+      |            |
+|              |      |     +------+-------+ 
+|   Command    |      |     |              |
+|   Resource   |      |     | PowerShell 7 |
+|              |      |     |              |
++--------------+      |     +-------+------+
+                      |             |
+             +--------+-----+   +---+--------+
+             |              |   |            |
+             |   Windows    +---|  PSDSC v3  |  # Config would use PSDSC v3 hosted in WinPS or PS7 as needed to actually invoke the resource
+             |  PowerShell  |   |            |
+             |              |   +------+-----+
+             +--------------+          |
+                                +------+--------+
+                                |               |
+                                | PS script,    |
+                                | PS class,     |
+                                | .ps1 resource |
+                                |               |
+                                +---------------+
+                                
