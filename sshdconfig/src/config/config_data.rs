@@ -98,7 +98,7 @@ impl ConfigData {
     /// when a keyword & its args are not already defined in ConfigData and need to be added
     /// # Example
     /// cd = ConfigData::new();
-    /// cd.update("Port".to_string(), KeywordType::KeywordValue("1234".to_string()))
+    /// cd.add("Port".to_string(), KeywordType::KeywordValue("1234".to_string()))
     fn add(&mut self, keyword: &String, args: KeywordType) {
 
     }
@@ -107,7 +107,7 @@ impl ConfigData {
     /// when a keyword & its args are already defined in ConfigData but need to be removed
     /// # Example
     /// cd = ConfigData::new();
-    /// cd.update("Port".to_string(), KeywordType::KeywordValue("1234".to_string()))
+    /// cd.remove("Port".to_string(), KeywordType::KeywordValue("1234".to_string()))
     fn remove(&mut self, keyword: &String, args: KeywordType) {
 
     }
