@@ -1,12 +1,14 @@
 use args::*;
 use atty::Stream;
 use clap::Parser;
+use config::*;
 use input_parser::*;
-use sshdconfig_lib::*;
 use std::io::{self, Read};
 
 pub mod args;
+pub mod config;
 pub mod input_parser;
+pub mod sshdconfig_error;
 
 fn main() {
     let args = Cli::parse();
@@ -43,17 +45,41 @@ fn main() {
         }
         Commands::Set { input_config_path, input_config_json, curr_config_path } => {
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin, &curr_config_path);
-            let sshdconfig = SshdManager::new();
-            sshdconfig.import_sshd_config(&input_data.curr_config_text);
-            // need to parse input file/json/stdin into a usable object to call set with
-            sshdconfig.set();
+            let curr_sshdconfig = SshdManager::new();
+            let new_sshdconfig = SshdManager::new();
+            curr_sshdconfig.import_sshd_config(&input_data.curr_config_text);
+            match input_data.input_config {
+                InputFormat::Text(data) => {
+                    new_sshdconfig.import_sshd_config(&data);
+                }
+                InputFormat::Json(data) => {
+                    new_sshdconfig.import_json(&data);
+                }
+                InputFormat::None => {
+                    // invalid state, TODO: catch this error appropriately
+                    println!("new config, via json or text file, must be provided with set");
+                }
+            };
+            curr_sshdconfig.set(&new_sshdconfig);
         }
         Commands::Test { input_config_path, input_config_json, curr_config_path } => {
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin, &curr_config_path);
-            let sshdconfig = SshdManager::new();
-            sshdconfig.import_sshd_config(&input_data.curr_config_text);
-            // need to parse input file/json/stdin into a usable object to call test with
-            sshdconfig.test();
+            let curr_sshdconfig = SshdManager::new();
+            let new_sshdconfig = SshdManager::new();
+            curr_sshdconfig.import_sshd_config(&input_data.curr_config_text);
+            match input_data.input_config {
+                InputFormat::Text(data) => {
+                    new_sshdconfig.import_sshd_config(&data);
+                }
+                InputFormat::Json(data) => {
+                    new_sshdconfig.import_json(&data);
+                }
+                InputFormat::None => {
+                    // invalid state, TODO: catch this error appropriately
+                    println!("new config, via json or text file, must be provided with test");
+                }
+            };
+            curr_sshdconfig.test(&new_sshdconfig);
         }
     }
 }

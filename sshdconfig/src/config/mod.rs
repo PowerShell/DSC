@@ -1,22 +1,21 @@
-use crate::config::config_data::Invoke;
+pub mod config_data;
+pub mod const_keywords;
+pub mod match_data;
+pub mod subcontainer;
+pub mod utils;
 
-pub mod config;
-pub mod os_utils;
-pub mod sshdconfig_error;
+use config_data::*;
+use utils::*;
 
 pub struct SshdManager {
-    config_container: config::config_data::ConfigData,
+    config_container: ConfigData,
 }
 
 impl SshdManager {
     pub fn new() -> Self {
         Self {
-            config_container: config::config_data::ConfigData::new(),
+            config_container: ConfigData::new(),
         }
-    }
-
-    pub fn hello_world(&self) {
-        println!("hello world from sshdManager");
     }
 
     pub fn import_sshd_config(&self, data: &String) {
@@ -31,20 +30,20 @@ impl SshdManager {
         self.config_container.get(&keywords);
     }
 
-    pub fn set(&self) {
-        self.config_container.set();
+    pub fn set(&self, other: &SshdManager) {
+        self.config_container.set(&other.config_container);
     }
 
-    pub fn test(&self) {
-        self.config_container.test();
+    pub fn test(&self, other: &SshdManager) {
+        self.config_container.test(&other.config_container);
     }
 
     pub fn get_keywords_from_text(&self, data: &String) -> Vec<String> {
-        Vec::new()
+        get_keywords_from_text(data)
     }
 
     pub fn get_keywords_from_json(&self, data: &String) -> Vec<String> {
-        Vec::new()
+        get_keywords_from_json(data)
     }
 }
 

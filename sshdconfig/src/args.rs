@@ -19,7 +19,7 @@ pub enum Commands {
         curr_config_path: Option<String>
     },
 
-    #[clap(about = "Set sshd_config", arg_required_else_help = true)]
+    #[clap(about = "Set sshd_config", arg_required_else_help = false)]
     Set {
         #[clap(long = "file", short = 'f')]
         input_config_path: Option<String>,
@@ -29,7 +29,7 @@ pub enum Commands {
         curr_config_path: Option<String>
     },
 
-    #[clap(about = "Test sshd_config", arg_required_else_help = true)]
+    #[clap(about = "Test sshd_config", arg_required_else_help = false)]
     Test {
         #[clap(long = "file", short = 'f')]
         input_config_path: Option<String>,
