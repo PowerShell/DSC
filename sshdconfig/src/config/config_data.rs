@@ -25,18 +25,24 @@ impl ConfigData {
         }
     }
 
-    /// take input data and update config_lookup
+    /// take input input and update config_lookup
     pub fn import_sshd_config(&self, data: &String) {
-        // can call sshd -T with input data
-        // and update config_lookup
-        // any key-value that differs is no longer default
+        // here we first update config_lookup from text
+        // any user input makes that key no longer default
+        // then export config to temp file
+        // and run sshd -T
+        // we also could pass in the filepath and run sshd -T directly
+        // but then would need to go back and mark any defaults
+        // specifically called out in text file
     }
 
     /// take input data and update config_lookup
     pub fn import_json(&self, data: &String) {
-        // can call sshd -T with input data
-        // and update config_lookup
-        // any key-value that differs is no longer default
+        // TODO: think of better way to validate json
+        // here we first update config_lookup from json
+        // any user input makes that key no longer default
+        // then export config to temp file
+        // and run sshd -T
     }
 
     /// apply_config will be called from set
