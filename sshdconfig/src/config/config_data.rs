@@ -197,4 +197,3 @@ impl Invoke for ConfigData {
         Ok(())
     }
 }
-

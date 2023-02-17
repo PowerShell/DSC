@@ -53,4 +53,3 @@ pub enum MatchType {
     Address(String),
     All(String),
 }
-

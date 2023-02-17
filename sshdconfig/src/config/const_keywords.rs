@@ -2,7 +2,7 @@
 This file contains a comprehensive list of acceptable keywords for sshd_config (&str) 
 and whether they are also permitted as keywords within a Match block (bool) 
 */
-const VALID_KEYWORDS: [(&str, bool);127] = [
+const VALID_KEYWORDS: [(&str, bool);129] = [
     ("acceptenv", true),
     ("addressfamily", false),
     ("afstokenpassing", false),
@@ -22,6 +22,7 @@ const VALID_KEYWORDS: [(&str, bool);127] = [
     ("banner", true),
     ("casignaturealgorithms", true),
     ("challengeresponseauthentication", true),
+    ("channeltimeout", true),
     ("checkmail", false),
     ("chrootdirectory", true),
     ("ciphers", false),
@@ -120,6 +121,7 @@ const VALID_KEYWORDS: [(&str, bool);127] = [
     ("syslogfacility", false),
     ("tcpkeepalive", false),
     ("trustedusercakeys", true),
+    ("unusedconnectiontimeout", true),
     ("usedns", false),
     ("uselogin", false),
     ("usepam", false),
