@@ -93,11 +93,13 @@ if ($Test) {
             Pop-Location
         }
     }
-}
 
-if ($failed) {
-    Write-Host -ForegroundColor Red "Test failed"
-    exit 1
+    if ($failed) {
+        Write-Host -ForegroundColor Red "Test failed"
+        exit 1
+    }
+
+    Invoke-Pester -ErrorAction Stop
 }
 
 # remove the other target in case switching between them
