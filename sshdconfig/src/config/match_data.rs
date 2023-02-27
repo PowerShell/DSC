@@ -12,8 +12,8 @@ use std::collections::HashMap;
 /// MatchData will hold a hashmap with the following:
 /// Group & group's matchcontainer, User & user's matchcontainer
 /// group's matchcontainer will hold a hashmap with:
-/// Administrators & administrator's matchsubcontainer
-/// Administrator's matchsubcontainer will hold a hashmap with:
+/// administrators & administrator's matchsubcontainer
+/// administrator's matchsubcontainer will hold a hashmap with:
 /// AuthorizedKeysFile, C:\\programdata\\ssh\\administrators_authorized_keys
 /// Similarly, user's matchcontainer would replicate the
 /// corresponding matchsubcontainer & hashmap for anoncvs

@@ -18,8 +18,8 @@ impl SshdManager {
         }
     }
 
-    pub fn import_sshd_config(&self, data: &String) {
-        self.config_container.import_sshd_config(data);
+    pub fn import_sshd_config(&self, filepath: &String) {
+        self.config_container.import_sshd_config(filepath);
     }
 
     pub fn import_json(&self, data: &String) {
