@@ -11,14 +11,15 @@ pub struct ConfigData {
 }
 
 impl ConfigData {
-    pub fn new() -> Self {
+    pub fn new(filepath: &Option<String>) -> Self {
         let mut config_lookup = HashMap::new();
         // TODO: import const_keywords mod & use VALID_KEYWORDS to initialize config_lookup
-        // initialize config_filepath to default location based on the OS
-        // need an empty temp file to run sshd -T with to get defaults
+        // set config_filepath based on input or default location based on the OS
+        // need to initialize config_lookup with empty config file (temp)
+        // then need to call validate_config again with config_filepath
+        // will be similar to import_sshd_config if it can be called here?
         let temp_filepath = "not implemented yet".to_string();
         let (is_valid, defaults) = validate_config(&temp_filepath);
-        // parsing defaults here might be similar to import_sshd_config?
         Self {
             config_lookup,
             config_filepath: "not implemented yet".to_string(),
@@ -38,6 +39,9 @@ impl ConfigData {
     /// import_json will update config_lookup from a json
     pub fn import_json(&self, data: &String) {
         // TODO: think of better way to validate json
+        // check for purge keyword, default is false
+        // if purge=true, run sshd -T with empty file 
+        // and fully replace config_lookup
         // update config_lookup from json key-value pairs
         // mark any input values as "non-default" in config_lookup
         // export config to temp file to run sshd
@@ -114,7 +118,7 @@ impl ConfigData {
 
 impl Default for ConfigData {
     fn default() -> Self {
-        ConfigData::new()
+        ConfigData::new(&None)
     }
 }
 

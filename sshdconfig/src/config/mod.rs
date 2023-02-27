@@ -12,9 +12,9 @@ pub struct SshdManager {
 }
 
 impl SshdManager {
-    pub fn new() -> Self {
+    pub fn new(filepath: &Option<String>) -> Self {
         Self {
-            config_container: ConfigData::new(),
+            config_container: ConfigData::new(filepath),
         }
     }
 
@@ -49,6 +49,6 @@ impl SshdManager {
 
 impl Default for SshdManager {
     fn default() -> Self {
-        Self::new()
+        Self::new(&None)
     }
 }
