@@ -15,8 +15,7 @@ impl ConfigData {
         let mut config_lookup = HashMap::new();
         // TODO: import const_keywords mod & use VALID_KEYWORDS to initialize config_lookup
         // set config_filepath based on input or default location based on the OS
-        // need to initialize config_lookup with empty config file (temp)
-        // then need to call validate_config again with config_filepath
+        // call validate_config with config_filepath
         // will be similar to import_sshd_config if it can be called here?
         let temp_filepath = "not implemented yet".to_string();
         let (is_valid, defaults) = validate_config(&temp_filepath);
@@ -28,12 +27,12 @@ impl ConfigData {
 
     /// import_sshd_config will update config_lookup
     /// from a text file (sshd_config)
-    pub fn import_sshd_config(&self, data: &String) {
+    pub fn import_sshd_config(&self, filepath: &String) {
         // this could be done a few ways
         // call sshd -T with the provided file
         // update config_lookup with output of sshd -T
         // pass through the text file to mark any "non-default" values
-        // explicitly set in the file (that may look like defaults)
+        // explicitly set in the file that may look like "defaults"
     }
 
     /// import_json will update config_lookup from a json
