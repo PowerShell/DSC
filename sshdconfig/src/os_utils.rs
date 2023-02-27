@@ -27,5 +27,5 @@ impl ConfigDefaultPath for WindowsSSHD {
 }
 
 impl ConfigDefaultPath for LinuxSSHD {
-    
+
 }

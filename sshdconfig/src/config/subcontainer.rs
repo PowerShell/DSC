@@ -14,6 +14,8 @@ pub struct SubContainer {
 }
 
 pub struct RepeatData {
+    // container for both <Name, Value> & <None, Value> keywords
+    // like Subsystem PowerShell pwsh.exe & Port 22
     pub repeat_lookup: HashMap<Option<String>, String>
 }
 
