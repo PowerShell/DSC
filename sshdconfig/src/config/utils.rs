@@ -5,7 +5,7 @@ use crate::config::subcontainer::{SubContainer};
 /// pull the keywords from an sshd_config file
 /// can be used with get, if only a partial
 /// config is being requested by the user
-pub fn get_keywords_from_text(data: &String) -> Vec<String> {
+pub fn get_keywords_from_file(data: &String) -> Vec<String> {
     Vec::new()
 }
 

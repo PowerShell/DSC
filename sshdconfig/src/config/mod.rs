@@ -38,8 +38,8 @@ impl SshdManager {
         self.config_container.test(&other.config_container);
     }
 
-    pub fn get_keywords_from_text(&self, data: &String) -> Vec<String> {
-        get_keywords_from_text(data)
+    pub fn get_keywords_from_file(&self, filepath: &String) -> Vec<String> {
+        get_keywords_from_file(filepath)
     }
 
     pub fn get_keywords_from_json(&self, data: &String) -> Vec<String> {

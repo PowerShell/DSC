@@ -29,15 +29,20 @@ fn main() {
         Commands::Get { input_config_path, input_config_json, curr_config_path } => {
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin, &curr_config_path);
             let sshdconfig = SshdManager::new();
-            sshdconfig.import_sshd_config(&input_data.curr_config_text);
-            let keywords = match input_data.input_config {
-                InputFormat::Text(data) => {
-                    Some(sshdconfig.get_keywords_from_text(&data))
+            match curr_config_path {
+                Some(filepath) => {
+                    sshdconfig.import_sshd_config(&filepath);
                 }
-                InputFormat::Json(data) => {
+                None => {}
+            }
+            let keywords = match input_data {
+                InputData::Text(data) => {
+                    Some(sshdconfig.get_keywords_from_file(&data))
+                }
+                InputData::Json(data) => {
                     Some(sshdconfig.get_keywords_from_json(&data))
                 }
-                InputFormat::None => {
+                InputData::None => {
                     None
                 }
             };
@@ -47,15 +52,20 @@ fn main() {
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin, &curr_config_path);
             let curr_sshdconfig = SshdManager::new();
             let new_sshdconfig = SshdManager::new();
-            curr_sshdconfig.import_sshd_config(&input_data.curr_config_text);
-            match input_data.input_config {
-                InputFormat::Text(data) => {
+            match curr_config_path {
+                Some(filepath) => {
+                    curr_sshdconfig.import_sshd_config(&filepath);
+                }
+                None => {}
+            }
+            match input_data {
+                InputData::Text(data) => {
                     new_sshdconfig.import_sshd_config(&data);
                 }
-                InputFormat::Json(data) => {
+                InputData::Json(data) => {
                     new_sshdconfig.import_json(&data);
                 }
-                InputFormat::None => {
+                InputData::None => {
                     // invalid state, TODO: catch this error appropriately
                     println!("new config, via json or text file, must be provided with set");
                 }
@@ -66,15 +76,20 @@ fn main() {
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin, &curr_config_path);
             let curr_sshdconfig = SshdManager::new();
             let new_sshdconfig = SshdManager::new();
-            curr_sshdconfig.import_sshd_config(&input_data.curr_config_text);
-            match input_data.input_config {
-                InputFormat::Text(data) => {
+            match curr_config_path {
+                Some(filepath) => {
+                    curr_sshdconfig.import_sshd_config(&filepath);
+                }
+                None => {}
+            }
+            match input_data {
+                InputData::Text(data) => {
                     new_sshdconfig.import_sshd_config(&data);
                 }
-                InputFormat::Json(data) => {
+                InputData::Json(data) => {
                     new_sshdconfig.import_json(&data);
                 }
-                InputFormat::None => {
+                InputData::None => {
                     // invalid state, TODO: catch this error appropriately
                     println!("new config, via json or text file, must be provided with test");
                 }
