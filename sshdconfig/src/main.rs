@@ -27,8 +27,10 @@ fn main() {
 
     match args.command {
         Commands::Get { input_config_path, input_config_json, curr_config_path } => {
+            let curr_filepath = get_input_filepath(&curr_config_path);
+            let sshdconfig = SshdManager::new();
+            sshdconfig.import_sshd_config(&curr_filepath);
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin);
-            let sshdconfig = SshdManager::new(&curr_config_path);
             let keywords = match input_data {
                 InputData::Text(data) => {
                     Some(sshdconfig.get_keywords_from_file(&data))
@@ -43,27 +45,33 @@ fn main() {
             sshdconfig.get(&keywords);
         }
         Commands::Set { input_config_path, input_config_json, curr_config_path } => {
+            let curr_filepath = get_input_filepath(&curr_config_path);
+            let curr_sshdconfig = SshdManager::new();
+            curr_sshdconfig.import_sshd_config(&curr_filepath);
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin);
-            let curr_sshdconfig = SshdManager::new(&curr_config_path);
-            let new_sshdconfig = SshdManager::new(&curr_config_path);
+            let new_sshdconfig = SshdManager::new();
+            let should_purge = false;
             match input_data {
                 InputData::Text(data) => {
-                    new_sshdconfig.import_sshd_config(&data);
+                    new_sshdconfig.import_sshd_config(&data); 
                 }
                 InputData::Json(data) => {
                     new_sshdconfig.import_json(&data);
+                    // look for optional _purge key in json
                 }
                 InputData::None => {
                     // invalid state, TODO: catch this error appropriately
                     println!("new config, via json, stdin, or text file, must be provided with set");
                 }
             };
-            curr_sshdconfig.set(&new_sshdconfig);
+            curr_sshdconfig.set(&new_sshdconfig, should_purge);
         }
         Commands::Test { input_config_path, input_config_json, curr_config_path } => {
+            let curr_filepath = get_input_filepath(&curr_config_path);
+            let curr_sshdconfig = SshdManager::new();
+            curr_sshdconfig.import_sshd_config(&curr_filepath);
             let input_data = parse_input_data(&input_config_path, &input_config_json, &stdin);
-            let curr_sshdconfig = SshdManager::new(&curr_config_path);
-            let new_sshdconfig = SshdManager::new(&curr_config_path);
+            let new_sshdconfig = SshdManager::new();
             match input_data {
                 InputData::Text(data) => {
                     new_sshdconfig.import_sshd_config(&data);

@@ -12,9 +12,9 @@ pub struct SshdManager {
 }
 
 impl SshdManager {
-    pub fn new(filepath: &Option<String>) -> Self {
+    pub fn new() -> Self {
         Self {
-            config_container: ConfigData::new(filepath),
+            config_container: ConfigData::new(),
         }
     }
 
@@ -30,8 +30,8 @@ impl SshdManager {
         self.config_container.get(&keywords);
     }
 
-    pub fn set(&self, other: &SshdManager) {
-        self.config_container.set(&other.config_container);
+    pub fn set(&self, other: &SshdManager, purge: bool) {
+        self.config_container.set(&other.config_container, purge);
     }
 
     pub fn test(&self, other: &SshdManager) {
@@ -49,6 +49,6 @@ impl SshdManager {
 
 impl Default for SshdManager {
     fn default() -> Self {
-        Self::new(&None)
+        Self::new()
     }
 }
