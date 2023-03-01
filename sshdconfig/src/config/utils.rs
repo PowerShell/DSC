@@ -1,20 +1,22 @@
 use std::collections::HashMap;
-use crate::config::subcontainer::{SubContainer};
+use std::path::PathBuf;
+
+use crate::{config::subcontainer::{SubContainer}, sshdconfig_error::{SshdConfigError, self}};
 
 /// this is a helper function to
 /// pull the keywords from an sshd_config file
 /// can be used with get, if only a partial
 /// config is being requested by the user
-pub fn get_keywords_from_file(data: &String) -> Vec<String> {
-    Vec::new()
+pub fn get_keywords_from_file(data: &PathBuf) -> Result<Vec<String>, SshdConfigError> {
+    Ok(Vec::new())
 }
 
 /// this is a helper function to
 /// pull the keywords from an sshd_config json
 /// can be used with get, if only a partial
 /// config is being requested by the user
-pub fn get_keywords_from_json(data: &String) -> Vec<String> {
-    Vec::new()
+pub fn get_keywords_from_json(data: &String) -> Result<Vec<String>, SshdConfigError> {
+    Ok(Vec::new())
 }
 
 /// export_json will be called from get & test
@@ -24,8 +26,8 @@ pub fn get_keywords_from_json(data: &String) -> Vec<String> {
 /// # Example
 /// cd = ConfigData::new();
 /// cd.export_json(vec!["Subsystem"-to_string(), "Port".to_string()])
-pub fn export_json(config: &HashMap<String, SubContainer> , filter: &Option<Vec<String>>) -> String {
-    "".to_string()
+pub fn export_json(config: &HashMap<String, SubContainer> , filter: &Option<Vec<String>>) -> Result<String, SshdConfigError> {
+    Ok("".to_string())
 }
 
 /// export_sshd_config will be called from set
@@ -35,8 +37,8 @@ pub fn export_json(config: &HashMap<String, SubContainer> , filter: &Option<Vec<
 /// # Example
 /// cd = ConfigData::new();
 /// cd.export_sshd_config()
-pub fn export_sshd_config(config: &HashMap<String, SubContainer>, filepath: &String) -> String {
-    "".to_string()
+pub fn export_sshd_config(config: &HashMap<String, SubContainer>, filepath: &PathBuf) -> Result<String, SshdConfigError> {
+    Ok("".to_string())
 }
 
 /// validate_config will call sshd -T
@@ -47,6 +49,6 @@ pub fn export_sshd_config(config: &HashMap<String, SubContainer>, filepath: &Str
 /// cd = ConfigData::new();
 /// cd.import_sshd_config("Port abc")
 /// cd.validate_config()
-pub fn validate_config(filepath: &String) -> (bool, String) {
-    (false, "".to_string())
+pub fn validate_config(filepath: &PathBuf) -> Result<(bool, String), SshdConfigError> {
+    Ok((false, "".to_string()))
 }
