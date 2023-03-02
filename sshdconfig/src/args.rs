@@ -38,5 +38,4 @@ pub enum Commands {
         #[clap(long = "path", short = 'p', help = "existing sshd_config filepath to compare with")]
         curr_config_path: Option<String>
     },
-
 }

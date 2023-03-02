@@ -1,53 +1,52 @@
 use std::path::PathBuf;
 
-pub mod config_data;
-pub mod const_keywords;
-pub mod match_data;
-pub mod subcontainer;
-pub mod utils;
+pub mod config;
+pub mod config_helper;
+pub mod match_config;
 
-use config_data::*;
-use utils::*;
+use config::*;
 
 use crate::sshdconfig_error::SshdConfigError;
 
 pub struct SshdManager {
-    config_container: ConfigData,
+    config: SshdConfig,
+    config_filepath: PathBuf
 }
 
 impl SshdManager {
     pub fn new() -> Self {
         Self {
-            config_container: ConfigData::new(),
+            config: Default::default(),
+            config_filepath: PathBuf::from("not implemented yet"),
         }
     }
 
     pub fn import_sshd_config(&self, filepath: &PathBuf) -> Result<(), SshdConfigError> {
-        self.config_container.import_sshd_config(filepath)
+        Ok(())
     }
 
     pub fn import_json(&self, data: &String) -> Result<(), SshdConfigError> {
-        self.config_container.import_json(data)
+        Ok(())
     }
 
     pub fn get(&self, keywords: &Option<Vec<String>>) -> Result<String, SshdConfigError> {
-        self.config_container.get(&keywords)
+        Ok("".to_string())
     }
 
-    pub fn set(&self, other: &SshdManager, purge: bool) -> Result<bool, SshdConfigError> {
-        self.config_container.set(&other.config_container, purge)
+    pub fn set(&self, other: &SshdManager) -> Result<bool, SshdConfigError> {
+        Ok(false)
     }
 
     pub fn test(&self, other: &SshdManager) -> Result<(String, bool), SshdConfigError> {
-        self.config_container.test(&other.config_container)
+        Ok(("".to_string(), false))
     }
 
     pub fn get_keywords_from_file(&self, filepath: &PathBuf) -> Result<Vec<String>, SshdConfigError> {
-        get_keywords_from_file(filepath)
+        Ok(Vec::new())
     }
 
     pub fn get_keywords_from_json(&self, data: &String) -> Result<Vec<String>, SshdConfigError> {
-        get_keywords_from_json(data)
+        Ok(Vec::new())
     }
 }
 

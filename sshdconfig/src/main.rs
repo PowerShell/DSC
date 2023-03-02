@@ -2,20 +2,15 @@ use args::*;
 use atty::Stream;
 use clap::Parser;
 use config::*;
-use input_parser::*;
+use config::config::SshdConfig;
+use input_helper::*;
+use sshdconfig_error::*;
 use std::{io::{self, Read}, process::exit};
 
 pub mod args;
 pub mod config;
-pub mod input_parser;
+pub mod input_helper;
 pub mod sshdconfig_error;
-
-const EXIT_SUCCESS: i32 = 0;
-const EXIT_UNSPECIFIED_ERR: i32 = 1;
-const EXIT_INPUT_INVALID: i32 = 2;
-const EXIT_INPUT_UNAVAILABLE: i32 = 3;
-const EXIT_CONFIG_NOT_FOUND: i32 = 4;
-const EXIT_NOT_IN_DESIRED_STATE: i32 = 5;
 
 fn main() {
     let args = Cli::parse();
@@ -32,38 +27,36 @@ fn main() {
         Some(input)
     };
 
+    let input_data;
+    let curr_sshdconfig;
     match args.command {
         Commands::Get { input_config_path, input_config_json, curr_config_path } => {
-            let input_data;
-            let sshdconfig;
-            match initial_setup(&input_config_path, &input_config_json, &stdin, &curr_config_path) {
-                Ok(result) => {
-                    input_data = result.0;
-                    sshdconfig = result.1;
-                }
-                Err(e) => {
-                    eprintln!("Invalid input error: {}", e);
-                    exit(EXIT_INPUT_INVALID);
-                }
-            }
+            (input_data, curr_sshdconfig) = initial_setup(&input_config_path, 
+                &input_config_json, &stdin, &curr_config_path);
             let keywords = match input_data {
                 InputData::Text(data) => {
-                    match sshdconfig.get_keywords_from_file(&data) {
+                    match curr_sshdconfig.get_keywords_from_file(&data) {
                         Ok(result) => Some(result),
-                        Err(_) => None
+                        Err(e) => {
+                            eprintln!("Invalid input error: {}", e);
+                            exit(EXIT_INPUT_INVALID);
+                        }
                     }
                 }
                 InputData::Json(data) => {
-                    match sshdconfig.get_keywords_from_json(&data) {
+                    match curr_sshdconfig.get_keywords_from_json(&data) {
                         Ok(result) => Some(result),
-                        Err(_) => None
+                        Err(e) => {
+                            eprintln!("Invalid input error: {}", e);
+                            exit(EXIT_INPUT_INVALID);
+                        }
                     }
                 }
                 InputData::None => {
                     None
                 }
             };
-            match sshdconfig.get(&keywords) {
+            match curr_sshdconfig.get(&keywords) {
                 Ok(result) => {
                     println!("{}", result);
                 },
@@ -74,46 +67,10 @@ fn main() {
             }
         }
         Commands::Set { input_config_path, input_config_json, curr_config_path } => {
-            let input_data;
-            let curr_sshdconfig;
-            match initial_setup(&input_config_path, &input_config_json, &stdin, &curr_config_path) {
-                Ok(result) => {
-                    input_data = result.0;
-                    curr_sshdconfig = result.1;
-                }
-                Err(e) => {
-                    eprintln!("Invalid input error: {}", e);
-                    exit(EXIT_INPUT_INVALID);
-                }
-            }
-            let new_sshdconfig = SshdManager::new();
-            let should_purge = false;
-            match input_data {
-                InputData::Text(data) => { 
-                    match new_sshdconfig.import_sshd_config(&data) {
-                        Ok(_) => {},
-                        Err(e) => {
-                            eprintln!("Error importing new sshd config: {}", e);
-                            exit(EXIT_INPUT_INVALID);
-                        }
-                    }
-                }
-                InputData::Json(data) => {
-                    match new_sshdconfig.import_json(&data) {
-                        Ok(_) => {},
-                        Err(e) => {
-                            eprintln!("Error importing new sshd config: {}", e);
-                            exit(EXIT_INPUT_INVALID);
-                        }
-                    }
-                    // look for optional _purge key in json
-                }
-                InputData::None => {
-                    // invalid state, TODO: catch this error appropriately
-                    println!("new config, via json, stdin, or text file, must be provided with set");
-                }
-            };
-            match curr_sshdconfig.set(&new_sshdconfig, should_purge) {
+            (input_data, curr_sshdconfig) = initial_setup(&input_config_path, 
+                &input_config_json, &stdin, &curr_config_path);
+            let new_sshdconfig = initialize_new_config(&input_data);
+            match curr_sshdconfig.set(&new_sshdconfig) {
                 Ok(result) => {
                     if !result {
                         exit(EXIT_NOT_IN_DESIRED_STATE);
@@ -126,43 +83,9 @@ fn main() {
             }
         }
         Commands::Test { input_config_path, input_config_json, curr_config_path } => {
-            let input_data;
-            let curr_sshdconfig;
-            match initial_setup(&input_config_path, &input_config_json, &stdin, &curr_config_path) {
-                Ok(result) => {
-                    input_data = result.0;
-                    curr_sshdconfig = result.1;
-                }
-                Err(e) => {
-                    eprintln!("Invalid input error: {}", e);
-                    exit(EXIT_INPUT_INVALID);
-                }
-            }
-            let new_sshdconfig = SshdManager::new();
-            match input_data {
-                InputData::Text(data) => {
-                    match new_sshdconfig.import_sshd_config(&data) {
-                        Ok(_) => {},
-                        Err(e) => {
-                            eprintln!("Error importing new sshd config: {}", e);
-                            exit(EXIT_INPUT_INVALID);
-                        }
-                    }
-                }
-                InputData::Json(data) => {
-                    match new_sshdconfig.import_json(&data) {
-                        Ok(_) => {},
-                        Err(e) => {
-                            eprintln!("Error importing new sshd config: {}", e);
-                            exit(EXIT_INPUT_INVALID);
-                        }
-                    }
-                }
-                InputData::None => {
-                    // invalid state, TODO: catch this error appropriately
-                    println!("new config, via json, stdin, or text file, must be provided with test");
-                }
-            };
+            (input_data, curr_sshdconfig) = initial_setup(&input_config_path, 
+                &input_config_json, &stdin, &curr_config_path);
+            let new_sshdconfig = initialize_new_config(&input_data);
             match curr_sshdconfig.test(&new_sshdconfig) {
                 Ok(result) => {
                     println!("{}", result.0);
@@ -178,4 +101,36 @@ fn main() {
         }
     }
     exit(EXIT_SUCCESS);
+}
+
+// mainly an example at this point
+#[test]
+fn test_config() {
+    let input_json: &str = r#"
+    {
+        "passwordauthentication": "Yes",
+        "syslogfacility": "INFO",
+        "subsystem": [
+            {
+                "name": "powershell",
+                "value": "pwsh.exe"
+            }
+        ],
+        "port": [
+            { "value": "24" },
+            { "value": "23" }
+        ],
+        "match": {
+            "group": [
+                {
+                    "criteria": "administrators",
+                    "passwordauthentication": "Yes",
+                    "_ensure": "Present"
+                }
+            ]
+        }
+    }
+    "#;
+    let config: SshdConfig = serde_json::from_str(input_json).unwrap();
+    let json = config.to_json();
 }
