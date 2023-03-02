@@ -10,6 +10,12 @@ pub enum RegistryError {
     Input(String),
 }
 
+impl From<NtStatusError> for RegistryError {
+    fn from(err: NtStatusError) -> Self {
+        RegistryError::NtStatus(err)
+    }
+}
+
 impl Display for RegistryError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -85,12 +91,7 @@ pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryErr
                     match config.value_data.as_ref() {
                         Some(value_data) => {
                             reg_result.value_data = Some(value_data.clone());
-                            match reg_key.set_value(value_name, &convert_configreg_data(value_data)) {
-                                Ok(_) => {},
-                                Err(err) => {
-                                    return Err(RegistryError::NtStatus(err));
-                                }
-                            }
+                            reg_key.set_value(value_name, &convert_configreg_data(value_data))?;
                         },
                         None => {
                             // just verify that the value exists
@@ -191,14 +192,7 @@ fn open_or_create_key(key_path: &str) -> Result<RegistryKey, RegistryError> {
                     let (parent_key, subkeys) = get_valid_parent_key_and_subkeys(key_path)?;
                     let mut current_key = parent_key;
                     for subkey in subkeys {
-                        match current_key.create_key(subkey) {
-                            Ok(key) => {
-                                current_key = key;
-                            },
-                            Err(err) => {
-                                return Err(RegistryError::NtStatus(err));
-                            }
-                        }
+                        current_key = current_key.create_key(subkey)?;
                     }
                     reg_key = current_key;
                 },
