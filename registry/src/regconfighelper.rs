@@ -96,21 +96,12 @@ pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryErr
                         None => {
                             // just verify that the value exists
                             match reg_key.get_value(value_name) {
-                                Ok(_reg_value) => {},
+                                Ok(_) => {},
+                                Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, .. }) => {
+                                    reg_key.set_value(value_name, &NtRegistryValueData::None)?;
+                                },
                                 Err(err) => {
-                                    match err.status {
-                                        NtStatusErrorKind::ObjectNameNotFound => {
-                                            match reg_key.set_value(value_name, &NtRegistryValueData::None) {
-                                                Ok(_) => {},
-                                                Err(err) => {
-                                                    return Err(RegistryError::NtStatus(err));
-                                                }
-                                            }
-                                        },
-                                        _ => {
-                                            return Err(RegistryError::NtStatus(err));
-                                        },
-                                    }
+                                    return Err(RegistryError::NtStatus(err));
                                 }
                             }
                         }
@@ -119,14 +110,9 @@ pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryErr
                 Some(EnsureKind::Absent) => {
                     reg_key = open_or_create_key(&config.key_path)?;
                     match reg_key.delete_value(value_name) {
-                        Ok(_) => {},
+                        Ok(_) | Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {},
                         Err(err) => {
-                            match err.status {
-                                NtStatusErrorKind::ObjectNameNotFound => {},
-                                _ => {
-                                    return Err(RegistryError::NtStatus(err));
-                                },
-                            }
+                            return Err(RegistryError::NtStatus(err));
                         }
                     }
                 },
@@ -156,24 +142,14 @@ fn get_parent_key_path(key_path: &str) -> Result<&str, RegistryError> {
 fn remove_key(key_path: &str) -> Result<(), RegistryError> {
     match RegistryKey::new(key_path) {
         Ok(key) => {
-            match key.delete(true) {
-                Ok(_) => {
-                    Ok(())
-                },
-                Err(err) => {
-                    Err(RegistryError::NtStatus(err))
-                }
-            }
+            key.delete(true)?;
+            Ok(())
         },
+        Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            Ok(()) // key doesn't exist, so we're good
+        }
         Err(err) => {
-            match err.status {
-                NtStatusErrorKind::ObjectNameNotFound => {
-                    Ok(()) // key doesn't exist, so we're good
-                },
-                _ => {
-                    Err(RegistryError::NtStatus(err))
-                }
-            }
+            Err(RegistryError::NtStatus(err))
         }
     }
 }
@@ -184,22 +160,18 @@ fn open_or_create_key(key_path: &str) -> Result<RegistryKey, RegistryError> {
         Ok(key) => {
             reg_key = key;
         },
-        Err(err) => {
-            match err.status {
-                NtStatusErrorKind::ObjectNameNotFound =>{
-                    // need to handle case like `HKLM\1\2\3` where neither `1` nor `2` exist
-                    // so we need to find the top most parent that currently exists and then create the necessary subkeys in order
-                    let (parent_key, subkeys) = get_valid_parent_key_and_subkeys(key_path)?;
-                    let mut current_key = parent_key;
-                    for subkey in subkeys {
-                        current_key = current_key.create_key(subkey)?;
-                    }
-                    reg_key = current_key;
-                },
-                _ => {
-                    return Err(RegistryError::NtStatus(err));
-                }
+        Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            // need to handle case like `HKLM\1\2\3` where neither `1` nor `2` exist
+            // so we need to find the top most parent that currently exists and then create the necessary subkeys in order
+            let (parent_key, subkeys) = get_valid_parent_key_and_subkeys(key_path)?;
+            let mut current_key = parent_key;
+            for subkey in subkeys {
+                current_key = current_key.create_key(subkey)?;
             }
+            reg_key = current_key;
+        },
+        Err(err) => {
+            return Err(RegistryError::NtStatus(err));
         }
     }
 
@@ -220,18 +192,14 @@ fn get_valid_parent_key_and_subkeys(key_path: &str) -> Result<(RegistryKey, Vec<
                 parent_key = key;
                 break;
             },
+            Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+                let parent_key_path = get_parent_key_path(current_key_path)?;
+                let subkey_name = &current_key_path[parent_key_path.len() + 1..];
+                subkeys.insert(0, subkey_name);
+                current_key_path = parent_key_path;
+            },
             Err(err) => {
-                match err.status {
-                    NtStatusErrorKind::ObjectNameNotFound => {
-                        let parent_key_path = get_parent_key_path(current_key_path)?;
-                        let subkey_name = &current_key_path[parent_key_path.len() + 1..];
-                        subkeys.insert(0, subkey_name);
-                        current_key_path = parent_key_path;
-                    },
-                    _ => {
-                        return Err(RegistryError::NtStatus(err));
-                    }
-                }
+                return Err(RegistryError::NtStatus(err));
             }
         }
     }
@@ -260,21 +228,16 @@ fn test_value(config: &RegistryConfig) -> Result<(String, bool), RegistryError> 
     let mut reg_result: RegistryConfig = Default::default();
     let mut in_desired_state = true;
 
-    let reg_key: RegistryKey;
-    match RegistryKey::new(config.key_path.as_str()) {
+    let reg_key = match RegistryKey::new(config.key_path.as_str()) {
         Ok(key) => {
-            reg_key = key;
+            key
+        },
+        Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            reg_result.key_path = String::new();
+            return Ok((reg_result.to_json(), false));
         },
         Err(err) => {
-            match err.status {
-                NtStatusErrorKind::ObjectNameNotFound =>{
-                    reg_result.key_path = String::new();
-                    return Ok((reg_result.to_json(), false));
-                },
-                _ => {
-                    return Err(RegistryError::NtStatus(err));
-                }
-            }
+            return Err(RegistryError::NtStatus(err));
         }
     };
 
@@ -289,19 +252,15 @@ fn test_value(config: &RegistryConfig) -> Result<(String, bool), RegistryError> 
             reg_result.value_data = Some(convert_ntreg_data(&value.data)?);
             value
         },
-        Err(err) => {
-            match err.status {
-                NtStatusErrorKind::ObjectNameNotFound => {
-                    RegistryValue {
-                        key_path: config.key_path.clone(),
-                        name : String::new(),
-                        data : NtRegistryValueData::None,
-                    }
-                },
-                _ => {
-                    return Err(RegistryError::NtStatus(err));
-                }
+        Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            RegistryValue {
+                key_path: config.key_path.clone(),
+                name : String::new(),
+                data : NtRegistryValueData::None,
             }
+        },
+        Err(err) => {
+            return Err(RegistryError::NtStatus(err));
         }
     };
 
@@ -350,20 +309,15 @@ fn reg_values_are_eq(config: &RegistryConfig, reg_value: &RegistryValue) -> Resu
 fn test_key(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
     let mut reg_result: RegistryConfig = Default::default();
 
-    let key_exists;
-    match RegistryKey::new(config.key_path.as_str()) {
+    let key_exists = match RegistryKey::new(config.key_path.as_str()) {
         Ok( _ ) => {
-            key_exists = true;
+            true
+        },
+        Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            false
         },
         Err(err) => {
-            match err.status {
-                NtStatusErrorKind::ObjectNameNotFound => {
-                    key_exists = false;
-                },
-                _ => {
-                    return Err(RegistryError::NtStatus(err));
-                }
-            }
+            return Err(RegistryError::NtStatus(err));
         }
     };
 
