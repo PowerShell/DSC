@@ -97,20 +97,11 @@ pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryErr
                             // just verify that the value exists
                             match reg_key.get_value(value_name) {
                                 Ok(_reg_value) => {},
+                                Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, .. }) => {
+                                    reg_key.set_value(value_name, &NtRegistryValueData::None)?;
+                                },
                                 Err(err) => {
-                                    match err.status {
-                                        NtStatusErrorKind::ObjectNameNotFound => {
-                                            match reg_key.set_value(value_name, &NtRegistryValueData::None) {
-                                                Ok(_) => {},
-                                                Err(err) => {
-                                                    return Err(RegistryError::NtStatus(err));
-                                                }
-                                            }
-                                        },
-                                        _ => {
-                                            return Err(RegistryError::NtStatus(err));
-                                        },
-                                    }
+                                    return Err(RegistryError::NtStatus(err));
                                 }
                             }
                         }
