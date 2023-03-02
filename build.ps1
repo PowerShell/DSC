@@ -54,6 +54,14 @@ foreach ($project in $projects) {
             Copy-Item "$path/$project" $target -ErrorAction Ignore
         }
 
+        if (Test-Path "$project.resource.json") {
+            Copy-Item "$project.resource.json" $target -ErrorAction Ignore
+        }
+
+        if (Test-Path "$project.command.json") {
+            Copy-Item "$project.command.json" $target -ErrorAction Ignore
+        }
+
         Copy-Item *.command.json $target
     } finally {
         Pop-Location

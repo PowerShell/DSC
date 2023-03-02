@@ -1,0 +1,33 @@
+{
+    "manifestVersion": "1.0",
+    "dscresource": {
+      "name": "Registry",
+      "version": "0.1.0",
+      "get": {
+          "executable": "registry",
+          "args": [ "config", "get" ],
+          "inputViaStdin": true
+      },
+      "set": {
+          "executable": "registry",
+          "args": [ "config", "set" ],
+          "inputViaStdin": true,
+          "returnState": true
+      },
+      "test": {
+        "executable": "registry",
+        "args": [ "config", "test" ],
+        "inputViaStdin": true,
+        "returnState": true
+      },
+      "exitCodes": {
+        "0": "Success",
+        "1": "Invalid parameter",
+        "2": "Invalid input",
+        "3": "Registry error",
+        "4": "Not in desired state",
+        "5": "JSON serialization failed"
+      },
+      "schema": "https://schemas.microsoft.com/configuration/registry/20230224/schema.json"
+    }
+  }
