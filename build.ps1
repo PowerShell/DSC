@@ -121,7 +121,7 @@ if ($Test) {
         exit 1
     }
 
-    Invoke-Pester -ErrorAction Stop
+    Invoke-Pester -ErrorAction Stop -EnableExit
 }
 
 $env:RUST_BACKTRACE=1
