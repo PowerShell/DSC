@@ -117,11 +117,10 @@ if ($Test) {
     }
 
     if ($failed) {
-        Write-Host -ForegroundColor Red "Test failed"
-        exit 1
+        throw "Test failed"
     }
 
-    Invoke-Pester -ErrorAction Stop -EnableExit
+    Invoke-Pester -ErrorAction Stop
 }
 
 $env:RUST_BACKTRACE=1

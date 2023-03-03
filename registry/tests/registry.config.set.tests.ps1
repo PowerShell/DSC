@@ -1,5 +1,5 @@
 Describe 'registry config set tests' {
-    It 'Can set a deeply nested key and value' {
+    It 'Can set a deeply nested key and value' -Skip:(!$IsWindows) {
         $json = @'
         {
             "keyPath": "HKCU\\1\\2\\3",
@@ -26,7 +26,7 @@ Describe 'registry config set tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
-    It 'Can set a key to be absent' {
+    It 'Can set a key to be absent' -Skip:(!$IsWindows) {
         $json = @'
         {
             "keyPath": "HKCU\\1",
