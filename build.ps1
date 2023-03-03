@@ -54,6 +54,14 @@ foreach ($project in $projects) {
             Copy-Item "$path/$project" $target -ErrorAction Ignore
         }
 
+        if (Test-Path "$project.resource.json") {
+            Copy-Item "$project.resource.json" $target -ErrorAction Ignore
+        }
+
+        if (Test-Path "$project.command.json") {
+            Copy-Item "$project.command.json" $target -ErrorAction Ignore
+        }
+
         Copy-Item *.command.json $target
     } finally {
         Pop-Location
@@ -77,6 +85,20 @@ foreach ($path in $paths) {
     }
 }
 
+# remove the other target in case switching between them
+if ($Release) {
+    $oldTarget = $target.Replace('\release', '\debug')
+}
+else {
+    $oldTarget = $target.Replace('\debug', '\release')
+}
+$env:PATH = $env:PATH.Replace(';' + $oldTarget, '')
+
+if (!$found) {
+    Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
+    $env:PATH += [System.IO.Path]::PathSeparator + $target
+}
+
 if ($Test) {
     $failed = $false
     foreach ($project in $projects) {
@@ -95,25 +117,10 @@ if ($Test) {
     }
 
     if ($failed) {
-        Write-Host -ForegroundColor Red "Test failed"
-        exit 1
+        throw "Test failed"
     }
 
     Invoke-Pester -ErrorAction Stop
-}
-
-# remove the other target in case switching between them
-if ($Release) {
-    $oldTarget = $target.Replace('\release', '\debug')
-}
-else {
-    $oldTarget = $target.Replace('\debug', '\release')
-}
-$env:PATH = $env:PATH.Replace(';' + $oldTarget, '')
-
-if (!$found) {
-    Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
-    $env:PATH += [System.IO.Path]::PathSeparator + $target
 }
 
 $env:RUST_BACKTRACE=1

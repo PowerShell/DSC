@@ -4,6 +4,7 @@ mod discovery_trait;
 mod powershell_discovery;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
+use crate::dscerror::DscError;
 use crate::dscresources::dscresource::DscResource;
 use regex::RegexBuilder;
 
@@ -12,7 +13,7 @@ pub struct Discovery {
 }
 
 impl Discovery {
-    pub fn new() -> Discovery {
+    pub fn new() -> Result<Discovery, DscError> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
             Box::new(powershell_discovery::PowerShellDiscovery::new()),
@@ -20,16 +21,17 @@ impl Discovery {
 
         let mut resources: Vec<DscResource> = Vec::new();
 
-        for discovery_type in discovery_types {
+        for mut discovery_type in discovery_types {
+            discovery_type.initialize()?;
             let discovered_resources = discovery_type.discover();
             for resource in discovered_resources {
                 resources.push(resource);
             }
         }
 
-        Discovery {
+        Ok(Discovery {
             resources,
-        }
+        })
     }
 
     pub fn find_resource(&self, name: &str) -> ResourceIterator {
@@ -77,7 +79,7 @@ mod tests {
 
 impl Default for Discovery {
     fn default() -> Self {
-        Self::new()
+        Self::new().unwrap()
     }
 }
 

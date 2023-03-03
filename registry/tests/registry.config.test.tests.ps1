@@ -1,5 +1,5 @@
 Describe 'registry config test tests' {
-    It 'Can test a registry key <test>' -TestCases @(
+    It 'Can test a registry key <test>' -Skip:(!$IsWindows) -TestCases @(
         @{ test = 'exists and present'; ensure = 'Present'; key = 'CurrentVersion' }
         @{ test = 'does not exist and absent'; ensure = 'Absent'; key = 'DoesNotExist' }
     ){
@@ -17,7 +17,7 @@ Describe 'registry config test tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 1
     }
 
-    It 'Can report failure if a registry key <test>' -TestCases @(
+    It 'Can report failure if a registry key <test>' -Skip:(!$IsWindows) -TestCases @(
         @{ test = 'exists and absent'; ensure = 'Absent'; key = 'CurrentVersion'; expectedKey = 'HKLM\Software\Microsoft\Windows NT\CurrentVersion' }
         @{ test = 'does not exist and present'; ensure = 'Present'; key = 'DoesNotExist'; expectedKey = '' }
     ){
@@ -35,7 +35,7 @@ Describe 'registry config test tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 1
     }
 
-    It 'Can test a registry value exists' {
+    It 'Can test a registry value exists' -Skip:(!$IsWindows) {
         $json = @"
         {
           "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion",

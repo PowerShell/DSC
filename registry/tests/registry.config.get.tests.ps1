@@ -1,5 +1,5 @@
 Describe 'Registry config get tests' {
-    It 'Can get a registry key' {
+    It 'Can get a registry key' -Skip:(!$IsWindows) {
         $json = @'
         {
             "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion"
@@ -12,7 +12,7 @@ Describe 'Registry config get tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 1
     }
 
-    It 'Can get a registry value' {
+    It 'Can get a registry value' -Skip:(!$IsWindows) {
         $json = @'
         {
             "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion",

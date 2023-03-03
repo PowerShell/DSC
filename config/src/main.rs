@@ -2,6 +2,7 @@ use args::*;
 use atty::Stream;
 use clap::Parser;
 use std::io::{self, Read};
+use std::process::exit;
 use dsc_lib::DscManager;
 
 pub mod args;
@@ -21,12 +22,26 @@ fn main() {
         Some(input)
     };
 
-    let dsc = DscManager::new();
+    let dsc = match DscManager::new() {
+        Ok(dsc) => dsc,
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            exit(1);
+        }
+    };
 
     match args.subcommand {
         SubCommand::List { resource_name } => {
             for resource in dsc.find_resource(&resource_name.unwrap_or_default()) {
-                println!("{} = {:?}", resource.name, resource.implemented_as);
+                // convert to json
+                let json = match serde_json::to_string(&resource) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        eprintln!("Error: {}", err);
+                        exit(1);
+                    }
+                };
+                println!("{}", json);
             }
         }
         SubCommand::Get { resource_name } => {
