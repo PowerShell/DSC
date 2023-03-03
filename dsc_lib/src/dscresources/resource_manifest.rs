@@ -1,5 +1,3 @@
-// reuse code from https://github.com/PowerShell/MSH/blob/main/config/src/main.rs
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

@@ -27,12 +27,6 @@ impl Default for CommandDiscovery {
     }
 }
 
-#[cfg(target_family = "unix")]
-const PATH_SEPARATOR: char = ':';
-
-#[cfg(target_family = "windows")]
-const PATH_SEPARATOR: char = ';';
-
 impl ResourceDiscovery for CommandDiscovery {
     fn discover(&self) -> Box<dyn Iterator<Item = DscResource>> {
         match self.initialized {
@@ -46,19 +40,14 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(());
         }
 
-        // find resources via PATH including .ps1 resources so PATH doesn't need to be traversed more than once
-        // reuse code from https://github.com/PowerShell/MSH/blob/main/config/src/main.rs
-        // these are just test resources
-        let path_env = match env::var("PATH") {
-            Ok(path_env) => path_env,
-            Err(_) => {
+        let path_env = match env::var_os("PATH") {
+            Some(path_env) => path_env,
+            None => {
                 return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
             }
         };
 
-        let path_parts: Vec<&str> = path_env.split(PATH_SEPARATOR).collect();
-        for path_part in path_parts {
-            let path = Path::new(path_part);
+        for path in env::split_paths(&path_env) {
             if path.exists() && path.is_dir() {
                 for entry in path.read_dir().unwrap() {
                     let entry = entry.unwrap();
