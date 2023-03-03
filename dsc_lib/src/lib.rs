@@ -2,6 +2,7 @@ pub mod discovery;
 pub mod dscresources;
 pub mod dscerror;
 
+use dscerror::DscError;
 use discovery::ResourceIterator;
 
 pub struct DscManager {
@@ -9,10 +10,10 @@ pub struct DscManager {
 }
 
 impl DscManager {
-    pub fn new() -> Self {
-        Self {
-            discovery: discovery::Discovery::new(),
-        }
+    pub fn new() -> Result<Self, DscError> {
+        Ok(Self {
+            discovery: discovery::Discovery::new()?,
+        })
     }
 
     pub fn find_resource(&self, name: &str) -> ResourceIterator {
@@ -22,6 +23,6 @@ impl DscManager {
 
 impl Default for DscManager {
     fn default() -> Self {
-        Self::new()
+        Self::new().unwrap()
     }
 }

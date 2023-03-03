@@ -35,6 +35,10 @@ impl ResourceDiscovery for PowerShellDiscovery {
             registry_resource,
         ];
 
-        Box::new(resources.into_iter())
+        Box::new(resources.clone().into_iter())
+    }
+
+    fn initialize(&mut self) -> Result<(), crate::dscerror::DscError> {
+        Ok(())
     }
 }

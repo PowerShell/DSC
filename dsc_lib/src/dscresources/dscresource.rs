@@ -1,21 +1,20 @@
 use dscerror::DscError;
+use resource_manifest::ResourceManifest;
 use serde::Serialize;
 use super::*;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct DscResource {
-    #[serde(rename="ImplementationDetail")]
-    pub implementation_detail: String,
     #[serde(rename="ResourceType")]
-    pub resource_type: String,
+    pub resource_type: Option<String>,
     #[serde(rename="Name")]
     pub name: String,
     #[serde(rename="FriendlyName")]
-    pub friendly_name: String,
+    pub friendly_name: Option<String>,
     #[serde(rename="Module")]
-    pub module: String,
+    pub module: Option<String>,
     #[serde(rename="ModuleName")]
-    pub module_name: String,
+    pub module_name: Option<String>,
     #[serde(rename="Version")]
     pub version: String,
     #[serde(rename="Path")]
@@ -25,10 +24,11 @@ pub struct DscResource {
     #[serde(rename="ImplementedAs")]
     pub implemented_as: ImplementedAs,
     #[serde(rename="CompanyName")]
-    pub company_name: String,
+    pub company_name: Option<String>,
     #[serde(rename="Properties")]
     pub properties: Vec<String>,
-    command_line: String,
+    #[serde(rename="Manifest")]
+    pub manifest: Option<ResourceManifest>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -41,19 +41,18 @@ pub enum ImplementedAs {
 impl DscResource {
     pub fn new() -> Self {
         Self {
-            implementation_detail: String::new(),
-            resource_type: String::new(),
+            resource_type: None,
             name: String::new(),
-            friendly_name: String::new(),
-            module: String::new(),
-            module_name: String::new(),
+            friendly_name: None,
+            module: None,
+            module_name: None,
             version: String::new(),
             path: String::new(),
             parent_path: String::new(),
             implemented_as: ImplementedAs::PowerShell,
-            company_name: String::new(),
+            company_name: None,
             properties: Vec::new(),
-            command_line: String::new(),
+            manifest: None,
         }
     }
 }

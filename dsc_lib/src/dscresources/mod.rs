@@ -1,5 +1,5 @@
 pub mod dscresource;
-pub mod native_resource;
+pub mod resource_manifest;
 pub mod powershell_resource;
 pub mod ps1_resource;
 
