@@ -9,7 +9,7 @@ Describe 'Registry config get tests' {
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.keyPath | Should -Be 'HKLM\Software\Microsoft\Windows\CurrentVersion'
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 1
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 2
     }
 
     It 'Can get a registry value' -Skip:(!$IsWindows) {
@@ -25,6 +25,6 @@ Describe 'Registry config get tests' {
         $result.keyPath | Should -Be 'HKLM\Software\Microsoft\Windows\CurrentVersion'
         $result.valueName | Should -Be 'ProgramFilesPath'
         $result.valueData.ExpandString | Should -Be '%ProgramFiles%'
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 3
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 4
     }
 }
