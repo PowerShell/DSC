@@ -85,6 +85,20 @@ foreach ($path in $paths) {
     }
 }
 
+# remove the other target in case switching between them
+if ($Release) {
+    $oldTarget = $target.Replace('\release', '\debug')
+}
+else {
+    $oldTarget = $target.Replace('\debug', '\release')
+}
+$env:PATH = $env:PATH.Replace(';' + $oldTarget, '')
+
+if (!$found) {
+    Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
+    $env:PATH += [System.IO.Path]::PathSeparator + $target
+}
+
 if ($Test) {
     $failed = $false
     foreach ($project in $projects) {
@@ -108,20 +122,6 @@ if ($Test) {
     }
 
     Invoke-Pester -ErrorAction Stop
-}
-
-# remove the other target in case switching between them
-if ($Release) {
-    $oldTarget = $target.Replace('\release', '\debug')
-}
-else {
-    $oldTarget = $target.Replace('\debug', '\release')
-}
-$env:PATH = $env:PATH.Replace(';' + $oldTarget, '')
-
-if (!$found) {
-    Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
-    $env:PATH += [System.IO.Path]::PathSeparator + $target
 }
 
 $env:RUST_BACKTRACE=1
