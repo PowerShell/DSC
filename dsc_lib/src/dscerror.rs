@@ -8,11 +8,14 @@ pub enum DscError {
     #[error("JSON Error: {0}")]
     Json(#[from] serde_json::Error),
 
-    #[error("Error: {0}")]
-    Operation(String),
+    #[error("Manifest: {0}\nJSON Error: {1}")]
+    Manifest(String, serde_json::Error),
 
     #[error("Not implemented")]
     NotImplemented,
+
+    #[error("Error: {0}")]
+    Operation(String),
 
     #[error("Unknown: {code:?} {message:?}")]
     Unknown {

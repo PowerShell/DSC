@@ -82,7 +82,12 @@ impl ResourceDiscovery for CommandDiscovery {
 fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let manifest: ResourceManifest = serde_json::from_reader(reader)?;
+    let manifest: ResourceManifest = match serde_json::from_reader(reader) {
+        Ok(manifest) => manifest,
+        Err(err) => {
+            return Err(DscError::Manifest(path.to_string_lossy().to_string(), err));
+        }
+    };
     let resource = DscResource {
         name: manifest.name.clone(),
         implemented_as: ImplementedAs::Command,
