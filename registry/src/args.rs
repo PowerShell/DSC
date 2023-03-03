@@ -54,15 +54,20 @@ pub enum SubCommand {
         #[clap(short, long, required = true, help = "The string to find.")]
         find: String,
         #[clap(short, long, help = "Recursively find.")]
-        recurse: Option<bool>,
+        recurse: bool,
         #[clap(short, long, help = "Only find keys.")]
-        keys_only: Option<bool>,
+        keys_only: bool,
         #[clap(short, long, help = "Only find values.")]
-        values_only: Option<bool>,
+        values_only: bool,
     },
     #[clap(name = "config", about = "Manage registry configuration.", arg_required_else_help = true)]
     Config {
         #[clap(subcommand)]
         subcommand: ConfigSubCommand,
     },
+    #[clap(name = "schema", about = "Retrieve JSON sceham.")]
+    Schema {
+        #[clap(short, long, help = "Pretty print JSON.")]
+        pretty: bool,
+    }
 }
