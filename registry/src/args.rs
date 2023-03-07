@@ -65,7 +65,7 @@ pub enum SubCommand {
         #[clap(subcommand)]
         subcommand: ConfigSubCommand,
     },
-    #[clap(name = "schema", about = "Retrieve JSON sceham.")]
+    #[clap(name = "schema", about = "Retrieve JSON schema.")]
     Schema {
         #[clap(short, long, help = "Pretty print JSON.")]
         pretty: bool,
