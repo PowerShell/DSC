@@ -3,6 +3,8 @@ use ntreg::{registry_key::RegistryKey, registry_value::RegistryValueData as NtRe
 use ntstatuserror::{NtStatusError, NtStatusErrorKind};
 use std::fmt::{Display, Formatter};
 
+const ID: &str = "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json";
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum RegistryError {
     NtStatus(NtStatusError),
@@ -35,6 +37,7 @@ pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
     };
 
     let mut reg_result = RegistryConfig {
+        id: Some(ID.to_string()),
         key_path: config.key_path.clone(),
         value_name: None,
         value_data: None,

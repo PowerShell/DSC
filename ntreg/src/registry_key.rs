@@ -435,7 +435,7 @@ impl Iterator for RegistrySubkeys {
             )
         };
 
-        if status == ERROR_NO_MORE_ITEMS as i32 {
+        if status == ERROR_NO_MORE_ITEMS {
             return None;
         }
 

@@ -6,6 +6,7 @@ use std::env;
 use args::Arguments;
 use atty::Stream;
 use clap::Parser;
+use schemars::schema_for;
 use std::{io::{self, Read}, process::exit};
 
 use crate::config::RegistryConfig;
@@ -149,7 +150,17 @@ fn main() {
             if !in_desired_state {
                 exit(EXIT_NOT_IN_DESIRED_STATE);
             }
-        }
+        },
+        args::SubCommand::Schema { pretty } => {
+            let schema = schema_for!(RegistryConfig);
+            let json = if pretty {
+                serde_json::to_string_pretty(&schema).unwrap()
+            }
+            else {
+                serde_json::to_string(&schema).unwrap()
+            };
+            println!("{}", json);
+        },
     }
 
     exit(EXIT_SUCCESS);
