@@ -25,7 +25,7 @@ else {
 }
 
 $windows_projects = @("ntreg","ntstatuserror","ntuserinfo","registry")
-$projects = @("config") 
+$projects = @("config","y2j") 
 if ($IsWindows) {
     $projects += $windows_projects
 }

@@ -1,0 +1,9 @@
+[package]
+name = "y2j"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+atty = { version = "0.2" }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_yaml = { version = "0.9" }
