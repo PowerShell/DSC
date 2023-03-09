@@ -11,14 +11,13 @@ fn main() {
     } else {
         let mut buffer: Vec<u8> = Vec::new();
         io::stdin().read_to_end(&mut buffer).unwrap();
-        let input = match String::from_utf8(buffer) {
+        match String::from_utf8(buffer) {
             Ok(input) => input,
             Err(e) => {
                 eprintln!("Invalid UTF-8 sequence: {}", e);
                 exit(EXIT_INVALID_INPUT);
             }
-        };
-        input
+        }
     };
 
     let mut is_json = true;
