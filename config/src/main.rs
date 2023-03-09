@@ -7,6 +7,11 @@ use dsc_lib::DscManager;
 
 pub mod args;
 
+const EXIT_SUCCESS: i32 = 0;
+const EXIT_INVALID_ARGS: i32 = 1;
+const EXIT_DSC_ERROR: i32 = 2;
+const EXIT_JSON_ERROR: i32 = 3;
+
 fn main() {
     let args = Args::parse();
 
@@ -17,7 +22,10 @@ fn main() {
         io::stdin().read_to_end(&mut buffer).unwrap();
         let input = match String::from_utf8(buffer) {
             Ok(input) => input,
-            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+            Err(e) => {
+                eprintln!("Invalid UTF-8 sequence: {}", e);
+                exit(EXIT_INVALID_ARGS);
+            },
         };
         Some(input)
     };
@@ -26,7 +34,7 @@ fn main() {
         Ok(dsc) => dsc,
         Err(err) => {
             eprintln!("Error: {}", err);
-            exit(1);
+            exit(EXIT_DSC_ERROR);
         }
     };
 
@@ -37,24 +45,38 @@ fn main() {
                 let json = match serde_json::to_string(&resource) {
                     Ok(json) => json,
                     Err(err) => {
-                        eprintln!("Error: {}", err);
-                        exit(1);
+                        eprintln!("JSON Error: {}", err);
+                        exit(EXIT_JSON_ERROR);
                     }
                 };
                 println!("{}", json);
             }
         }
-        SubCommand::Get { resource_name } => {
+        SubCommand::Get { resource_name ,input } => {
             println!("Get {}: {}", resource_name, stdin.unwrap_or_default());
         }
-        SubCommand::Set { resource_name } => {
+        SubCommand::Set { resource_name, input } => {
             println!("Set {}: {}", resource_name, stdin.unwrap_or_default());
         }
-        SubCommand::Test { resource_name } => {
+        SubCommand::Test { resource_name, input } => {
             println!("Test {}: {}", resource_name, stdin.unwrap_or_default());
         }
         SubCommand::Flush => {
             println!("Flush");
         }
+    }
+
+    exit(EXIT_SUCCESS);
+}
+
+fn check_stdin_and_input(input: &Option<String>, stdin: &Option<String>) -> Option<String> {
+    match (input, stdin) {
+        (Some(input), Some(stdin)) => {
+            eprintln!("Error: Cannot specify both --input and stdin");
+            exit(EXIT_INVALID_ARGS);
+        }
+        (Some(input), None) => Some(input.clone()),
+        (None, Some(stdin)) => Some(stdin.clone()),
+        (None, None) => None,
     }
 }

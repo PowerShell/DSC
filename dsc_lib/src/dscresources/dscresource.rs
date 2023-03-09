@@ -71,13 +71,13 @@ pub trait Invoke {
 }
 
 impl Invoke for DscResource {
-    fn get(&self, _filter: &str) -> Result<String, DscError> {
+    fn get(&self, filter: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
-    fn set(&self, _desired: &str) -> Result<String, DscError> {
+    fn set(&self, desired: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
-    fn test(&self, _expected: &str) -> Result<String, DscError> {
+    fn test(&self, expected: &str) -> Result<String, DscError> {
         Err(DscError::NotImplemented)
     }
 }
