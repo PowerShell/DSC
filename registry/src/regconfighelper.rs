@@ -377,7 +377,7 @@ fn test_registry_value_present() {
 
     let config: RegistryConfig = serde_json::from_str(input_json).unwrap();
     let json = config_test(&config).unwrap();
-    assert_eq!(json, r#"{"keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","valueName":"ProgramFilesPath","valueData":{"ExpandString":"%ProgramFiles%"}}"#);
+    assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","valueName":"ProgramFilesPath","valueData":{"ExpandString":"%ProgramFiles%"},"_inDesiredState":true}"#);
 }
 
 #[test]
@@ -392,5 +392,5 @@ fn test_registry_value_absent() {
 
     let config: RegistryConfig = serde_json::from_str(input_json).unwrap();
     let json = config_test(&config).unwrap();
-    assert_eq!(json, r#"{"keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion"}"#);
+    assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","_inDesiredState":true}"#);
 }

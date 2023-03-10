@@ -118,7 +118,7 @@ fn get_resource(dsc: &DscManager, resource: &str) -> DscResource {
     match serde_json::from_str(resource) {
         Ok(resource) => resource,
         Err(_err) => {
-            let resources: Vec<DscResource> = dsc.find_resource(&resource).collect();
+            let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
             match resources.len() {
                 0 => {
                     eprintln!("Error: Resource not found");

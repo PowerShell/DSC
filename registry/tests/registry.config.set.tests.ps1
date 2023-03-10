@@ -15,7 +15,7 @@ Describe 'registry config set tests' {
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result.valueName | Should -Be 'Hello'
         $result.valueData.String | Should -Be 'World'
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 3
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 4
 
         $out = $json | registry config get
         $LASTEXITCODE | Should -Be 0
@@ -37,7 +37,7 @@ Describe 'registry config set tests' {
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.keyPath | Should -Be 'HKCU\1'
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 1
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 2
 
         $json | registry config get 2>$null
         $LASTEXITCODE | Should -Be 3
