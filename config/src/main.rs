@@ -65,32 +65,7 @@ fn main() {
             // TODO: support streaming stdin which includes resource and input
 
             let input = check_stdin_and_input(&input, &stdin);
-            match serde_json::from_str::<serde_json::Value>(input.as_str()) {
-                Ok(_) => (),
-                Err(err) => {
-                    eprintln!("Input JSON Error: {}", err);
-                    exit(EXIT_INVALID_ARGS);
-                }
-            };
-
-            // check if resource is JSON or just a name
-            let resource = match serde_json::from_str(resource.as_str()) {
-                Ok(resource) => resource,
-                Err(_err) => {
-                    let resources: Vec<DscResource> = dsc.find_resource(&resource).collect();
-                    match resources.len() {
-                        0 => {
-                            eprintln!("Error: Resource not found");
-                            exit(EXIT_INVALID_ARGS);
-                        }
-                        1 => resources[0].clone(),
-                        _ => {
-                            eprintln!("Error: Multiple resources found");
-                            exit(EXIT_INVALID_ARGS);
-                        }
-                    }
-                }
-            };
+            let resource = get_resource(&dsc, resource.as_str());
             match resource.get(input.as_str()) {
                 Ok(result) => {
                     // convert to json
@@ -113,15 +88,54 @@ fn main() {
             println!("Set {}: {}", resource, stdin.unwrap_or_default());
         }
         SubCommand::Test { resource, input: _ } => {
-            println!("Test {}: {}", resource, stdin.unwrap_or_default());
+            let input = check_stdin_and_input(&None, &stdin);
+            let resource = get_resource(&dsc, resource.as_str());
+            match resource.test(input.as_str()) {
+                Ok(result) => {
+                    // convert to json
+                    let json = match serde_json::to_string(&result) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    println!("{}", json);
+                }
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            }
         }
     }
 
     exit(EXIT_SUCCESS);
 }
 
+fn get_resource(dsc: &DscManager, resource: &str) -> DscResource {
+    // check if resource is JSON or just a name
+    match serde_json::from_str(resource) {
+        Ok(resource) => resource,
+        Err(_err) => {
+            let resources: Vec<DscResource> = dsc.find_resource(&resource).collect();
+            match resources.len() {
+                0 => {
+                    eprintln!("Error: Resource not found");
+                    exit(EXIT_INVALID_ARGS);
+                }
+                1 => resources[0].clone(),
+                _ => {
+                    eprintln!("Error: Multiple resources found");
+                    exit(EXIT_INVALID_ARGS);
+                }
+            }
+        }
+    }
+}
+
 fn check_stdin_and_input(input: &Option<String>, stdin: &Option<String>) -> String {
-    match (input, stdin) {
+    let input = match (input, stdin) {
         (Some(_input), Some(_stdin)) => {
             eprintln!("Error: Cannot specify both --input and stdin");
             exit(EXIT_INVALID_ARGS);
@@ -132,6 +146,14 @@ fn check_stdin_and_input(input: &Option<String>, stdin: &Option<String>) -> Stri
             eprintln!("Error: No input specified");
             exit(EXIT_INVALID_ARGS);
         },
+    };
+
+    match serde_json::from_str::<serde_json::Value>(input.as_str()) {
+        Ok(_) => input,
+        Err(err) => {
+            eprintln!("Input JSON Error: {}", err);
+            exit(EXIT_INVALID_ARGS);
+        }
     }
 }
 

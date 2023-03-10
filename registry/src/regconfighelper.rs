@@ -3,8 +3,6 @@ use ntreg::{registry_key::RegistryKey, registry_value::RegistryValueData as NtRe
 use ntstatuserror::{NtStatusError, NtStatusErrorKind};
 use std::fmt::{Display, Formatter};
 
-const ID: &str = "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json";
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum RegistryError {
     NtStatus(NtStatusError),
@@ -37,12 +35,8 @@ pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
     };
 
     let mut reg_result = RegistryConfig {
-        id: Some(ID.to_string()),
         key_path: config.key_path.clone(),
-        value_name: None,
-        value_data: None,
-        ensure: None,
-        clobber: None,
+        ..Default::default()
     };
 
     if config.value_name.is_some() {
@@ -218,7 +212,7 @@ pub fn validate_config(config: &RegistryConfig) -> Result<(), RegistryError>{
     Ok(())
 }
 
-pub fn config_test(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
+pub fn config_test(config: &RegistryConfig) -> Result<String, RegistryError> {
     if config.value_name.is_none() {
         Ok(test_key(config)?)
     }
@@ -227,7 +221,7 @@ pub fn config_test(config: &RegistryConfig) -> Result<(String, bool), RegistryEr
     }
 }
 
-fn test_value(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
+fn test_value(config: &RegistryConfig) -> Result<String, RegistryError> {
     let mut reg_result: RegistryConfig = Default::default();
     let mut in_desired_state = true;
 
@@ -237,7 +231,8 @@ fn test_value(config: &RegistryConfig) -> Result<(String, bool), RegistryError> 
         },
         Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
             reg_result.key_path = String::new();
-            return Ok((reg_result.to_json(), false));
+            reg_result.in_desired_state = Some(false);
+            return Ok(reg_result.to_json());
         },
         Err(err) => {
             return Err(RegistryError::NtStatus(err));
@@ -283,7 +278,8 @@ fn test_value(config: &RegistryConfig) -> Result<(String, bool), RegistryError> 
         }
     }
 
-    Ok((reg_result.to_json(), in_desired_state))
+    reg_result.in_desired_state = Some(in_desired_state);
+    Ok(reg_result.to_json())
 }
 
 fn reg_values_are_eq(config: &RegistryConfig, reg_value: &RegistryValue) -> Result<bool, RegistryError> {
@@ -309,7 +305,7 @@ fn reg_values_are_eq(config: &RegistryConfig, reg_value: &RegistryValue) -> Resu
     Ok(in_desired_state)
 }
 
-fn test_key(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
+fn test_key(config: &RegistryConfig) -> Result<String, RegistryError> {
     let mut reg_result: RegistryConfig = Default::default();
 
     let key_exists = match RegistryKey::new(config.key_path.as_str()) {
@@ -340,7 +336,8 @@ fn test_key(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
         }
     }
         
-    Ok((reg_result.to_json(), in_desired_state))
+    reg_result.in_desired_state = Some(in_desired_state);
+    Ok(reg_result.to_json())
 }
 
 fn convert_ntreg_data(reg_data: &NtRegistryValueData) -> Result<RegistryValueData, RegistryError> {
@@ -379,8 +376,7 @@ fn test_registry_value_present() {
     "#;
 
     let config: RegistryConfig = serde_json::from_str(input_json).unwrap();
-    let (json, in_desired_state) = config_test(&config).unwrap();
-    assert!(in_desired_state);
+    let json = config_test(&config).unwrap();
     assert_eq!(json, r#"{"keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","valueName":"ProgramFilesPath","valueData":{"ExpandString":"%ProgramFiles%"}}"#);
 }
 
@@ -395,7 +391,6 @@ fn test_registry_value_absent() {
     "#;
 
     let config: RegistryConfig = serde_json::from_str(input_json).unwrap();
-    let (json, in_desired_state) = config_test(&config).unwrap();
-    assert!(in_desired_state);
+    let json = config_test(&config).unwrap();
     assert_eq!(json, r#"{"keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion"}"#);
 }

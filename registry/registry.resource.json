@@ -34,8 +34,7 @@
     "1": "Invalid parameter",
     "2": "Invalid input",
     "3": "Registry error",
-    "4": "Not in desired state",
-    "5": "JSON serialization failed"
+    "4": "JSON serialization failed"
   },
   "schema": {
     "command": {
