@@ -12,7 +12,7 @@ env:
 jobs:
   build-linux:
 
-    runs-on: ubnutu-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
