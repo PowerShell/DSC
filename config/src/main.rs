@@ -6,6 +6,11 @@ use std::io::{self, Read};
 use std::process::exit;
 use dsc_lib::{DscManager, dscresources::dscresource::DscResource};
 
+#[cfg(debug_assertions)]
+use crossterm::event;
+#[cfg(debug_assertions)]
+use std::env;
+
 pub mod args;
 
 const EXIT_SUCCESS: i32 = 0;
@@ -14,6 +19,9 @@ const EXIT_DSC_ERROR: i32 = 2;
 const EXIT_JSON_ERROR: i32 = 3;
 
 fn main() {
+    #[cfg(debug_assertions)]
+    check_debug();
+
     let args = Args::parse();
 
     let stdin: Option<String> = if atty::is(Stream::Stdin) {
@@ -54,10 +62,19 @@ fn main() {
             }
         }
         SubCommand::Get { resource, input } => {
-            // check if resource is a DscResource we use directly
-            // or just a name and we have to search for it
+            // TODO: support streaming stdin which includes resource and input
+
             let input = check_stdin_and_input(&input, &stdin);
-            let resource = match serde_json::from_str(input.as_str()) {
+            match serde_json::from_str::<serde_json::Value>(input.as_str()) {
+                Ok(_) => (),
+                Err(err) => {
+                    eprintln!("Input JSON Error: {}", err);
+                    exit(EXIT_INVALID_ARGS);
+                }
+            };
+
+            // check if resource is JSON or just a name
+            let resource = match serde_json::from_str(resource.as_str()) {
                 Ok(resource) => resource,
                 Err(_err) => {
                     let resources: Vec<DscResource> = dsc.find_resource(&resource).collect();
@@ -115,5 +132,24 @@ fn check_stdin_and_input(input: &Option<String>, stdin: &Option<String>) -> Stri
             eprintln!("Error: No input specified");
             exit(EXIT_INVALID_ARGS);
         },
+    }
+}
+
+#[cfg(debug_assertions)]
+fn check_debug() {
+    if env::var("DEBUG_CONFIG").is_ok() {
+        eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
+        loop {
+            let event = event::read().unwrap();
+            match event {
+                event::Event::Key(_key) => {
+                    break;
+                }
+                _ => {
+                    eprintln!("Unexpected event: {:?}", event);
+                    continue;
+                }
+            }
+        }
     }
 }
