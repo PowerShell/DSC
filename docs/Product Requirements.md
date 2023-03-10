@@ -100,21 +100,21 @@ JSON
       "name": "test-user",
       "type": "PSDscResources/User",
       "properties": {
-        "UserName": "$(variables('userName'))"
+        "UserName": "[variables('userName')]"
       }
     },
     {
       "name": "test-group",
       "type": "PSDscResources/Group",
       "properties": {
-        "GroupName": "$(variables('groupName'))",
+        "GroupName": "[variables('groupName')]",
         "MembersToInclude": [
-          "$($(reference('test-user')).UserName)"
+          "[reference('test-user').UserName]"
         ]
       }
     },
     {
-      "condition": "$(not(equals($(variables('foo')).bar, 'baz')))",
+      "condition": "[not(equals(variables('foo').bar, 'baz'))]",
       "name": "spooler-service",
       "type": "PSDscResources/Service",
       "properties": {
@@ -125,7 +125,7 @@ JSON
       "name": "timezone",
       "type": "xTimeZone/xTimeZone",
       "properties": {
-        "TimeZone": "$(parameters('timeZone'))",
+        "TimeZone": "[parameters('timeZone')]",
         "IsSingleInstance": "yes"
       }
     },
@@ -157,19 +157,19 @@ variables:
     bar: baz
 
 resources:
-  - name: test-user # The results of the Get method are stored in a variable named 'test-user'. Get is called after Set. When name contains a special character, use ${test user}
+  - name: test-user # The results of the Get method are stored in a variable named 'test-user'. Get is called after Set.
     type: PSDscResources/User
     properties:
-      UserName: $(variables('userName')) # This is an example of how to use a simple variable
+      UserName: "[variables('userName')]" # This is an example of how to use a simple variable
     
   - name: test-group
     type: PSDscResources/Group
     properties:
-      GroupName: $(variables('groupName'))
+      GroupName: "[variables('groupName')]"
       MembersToInclude:
-        - $($(reference('test-user')).UserName)
+        - "[reference('test-user').UserName]"
 
-  - condition: $(not(equals($(variables('foo')).bar, 'baz'))) # Conditions must return $true or else this task will be skipped
+  - condition: "[not(equals(variables('foo').bar, 'baz'))]" # Conditions must return $true or else this task will be skipped
     name: spooler-service
     type: PSDscResources/Service
     properties:
@@ -178,7 +178,7 @@ resources:
   - name: timezone
     type: xTimeZone/xTimeZone
     properties:
-      TimeZone: $(parameters('timeZone'))
+      TimeZone: "[parameters('timeZone')]"
       IsSingleInstance: yes
   
   - name: securityoption
