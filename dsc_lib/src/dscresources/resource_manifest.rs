@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
 
+use super::invoke_result::{GetResult, SetResult, TestResult};
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ResourceManifest {
     #[serde(rename = "manifestVersion")]
@@ -50,16 +52,51 @@ pub struct ResourceMethod {
     pub return_state: Option<bool>,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub enum ReturnKind {
+    #[serde(rename = "state")]
+    State,
+    #[serde(rename = "diff")]
+    Diff,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct GetMethod {
+    pub executable: String,
+    pub args: Option<Vec<String>>,
+    pub input: InputKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SetMethod {
+    pub executable: String,
+    pub args: Option<Vec<String>>,
+    pub input: InputKind,
+    #[serde(rename = "preTest", skip_serializing_if = "Option::is_none")]
+    pub pre_test: Option<bool>,
+    #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
+    pub returns: Option<ReturnKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct TestMethod {
+    pub executable: String,
+    pub args: Option<Vec<String>>,
+    pub input: InputKind,
+    #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
+    pub returns: Option<ReturnKind>,
+}
+
 impl Invoke for ResourceManifest {
-    fn get(&self, _filter: &str) -> Result<String, DscError> {
+    fn get(&self, _filter: &str) -> Result<GetResult, DscError> {
         Err(DscError::NotImplemented)
     }
 
-    fn set(&self, _desired: &str) -> Result<String, DscError> {
+    fn set(&self, _desired: &str) -> Result<SetResult, DscError> {
         Err(DscError::NotImplemented)
     }
 
-    fn test(&self, _expected: &str) -> Result<String, DscError> {
+    fn test(&self, _expected: &str) -> Result<TestResult, DscError> {
         Err(DscError::NotImplemented)
     }
 }

@@ -17,7 +17,8 @@
       "set"
     ],
     "input": "stdin",
-    "returnState": true
+    "preTest": true,
+    "return": "state"
   },
   "test": {
     "executable": "registry",
@@ -26,7 +27,7 @@
       "test"
     ],
     "input": "stdin",
-    "returnState": true
+    "return": "state"
   },
   "exitCodes": {
     "0": "Success",

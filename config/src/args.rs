@@ -21,25 +21,23 @@ pub enum SubCommand {
     },
     #[clap(name = "get", about = "Get the resource", arg_required_else_help = false)]
     Get {
-        #[clap(short, long, help = "The name of the resource to invoke `get` on")]
-        resource_name: String,
-        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML")]
+        #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `get` on")]
+        resource: String,
+        #[clap(short, long, help = "The input to pass to the resource as JSON")]
         input: Option<String>,
     },
     #[clap(name = "set", about = "Set the resource", arg_required_else_help = false)]
     Set {
-        #[clap(short, long, help = "The name of the resource to invoke `set` on")]
-        resource_name: String,
-        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML")]
+        #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `set` on")]
+        resource: String,
+        #[clap(short, long, help = "The input to pass to the resource as JSON")]
         input: Option<String>,
     },
     #[clap(name = "test", about = "Test the resource", arg_required_else_help = false)]
     Test {
-        #[clap(short, long, help = "The name of the resource to invoke `test` on")]
-        resource_name: String,
-        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML")]
+        #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `test` on")]
+        resource: String,
+        #[clap(short, long, help = "The input to pass to the resource as JSON")]
         input: Option<String>,
     },
-    #[clap(name = "flush", about = "Flush the resource cache")]
-    Flush,
 }
