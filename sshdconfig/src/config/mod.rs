@@ -19,7 +19,7 @@ pub struct SshdManager {
 impl SshdManager {
     pub fn new() -> Self {
         Self {
-            config: Default::default(),
+            config: serde_json::from_str("").unwrap(),
             config_filepath: PathBuf::from("not implemented yet"),
             is_custom: HashMap::new(),
             linux_only: Vec::new(),

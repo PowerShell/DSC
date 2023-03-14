@@ -6,7 +6,7 @@ pub fn config_get(config: &SshdConfig) -> Result<String, SshdConfigError> {
 }
 
 pub fn config_set(config: &SshdConfig) -> Result<(String, bool), SshdConfigError> {
-    let mut result: SshdConfig = Default::default();
+    let mut result: SshdConfig = serde_json::from_str("").unwrap();
     let in_desired_state = true;
     Ok((result.to_json(), in_desired_state))
 }
@@ -20,19 +20,19 @@ pub fn validate_config(config: &SshdConfig) -> Result<(), SshdConfigError>{
 }
 
 fn test_value(config: &SshdConfig) -> Result<(String, bool), SshdConfigError> {
-    let mut result: SshdConfig = Default::default();
+    let mut result: SshdConfig = serde_json::from_str("").unwrap();
     let mut in_desired_state = true;
     Ok((result.to_json(), in_desired_state))
 }
 
 fn test_key(config: &SshdConfig) -> Result<(String, bool), SshdConfigError> {
-    let mut result: SshdConfig = Default::default();
+    let mut result: SshdConfig = serde_json::from_str("").unwrap();
     let mut in_desired_state = true;
     Ok((result.to_json(), in_desired_state))
 }
 
 pub fn convert_text_to_json(data: &String) -> Result<SshdConfig, SshdConfigError> {
-    Ok(serde_json::from_str("{}}").unwrap())
+    Ok(serde_json::from_str("{}").unwrap())
 }
 
 

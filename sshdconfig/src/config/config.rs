@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::match_config::MatchData;
+use crate::config::match_config::MatchContainer;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EnsureKind {
@@ -8,21 +8,12 @@ pub enum EnsureKind {
     Absent,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum YesNo {
     #[serde(rename = "yes")]
     Yes,
     #[serde(rename = "no")]
     No,
-    #[default]
-    None
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct OutputContainer {
-    default: SshdConfig,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    custom: Option<SshdConfig>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -37,7 +28,7 @@ pub struct RepeatKeyword {
 }
 
 // single value, boolean, repeat, match
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SshdConfig {
     #[serde(rename = "passwordauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -50,7 +41,7 @@ pub struct SshdConfig {
     pub syslogfacility: Option<String>,
     #[serde(rename = "match")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub match_keyword: Option<MatchData>,
+    pub match_keyword: Option<Vec<MatchContainer>>,
     #[serde(rename = "_purge")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub purge: Option<bool>, 
