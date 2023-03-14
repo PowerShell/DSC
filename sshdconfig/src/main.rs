@@ -30,7 +30,7 @@ fn main() {
     let input_data;
     let curr_sshdconfig;
     match args.command {
-        Commands::Get { input_config_path, input_config_json, curr_config_path } => {
+        Commands::Get { input_config_path, input_config_json, curr_config_path, include_defaults } => {
             (input_data, curr_sshdconfig) = initial_setup(&input_config_path, 
                 &input_config_json, &stdin, &curr_config_path);
             let keywords = match input_data {
@@ -56,7 +56,7 @@ fn main() {
                     None
                 }
             };
-            match curr_sshdconfig.get(&keywords) {
+            match curr_sshdconfig.get(&keywords, include_defaults) {
                 Ok(result) => {
                     println!("{}", result);
                 },
@@ -108,7 +108,7 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
-        "passwordauthentication": "Yes",
+        "passwordauthentication": "yes",
         "syslogfacility": "INFO",
         "subsystem": [
             {
@@ -124,8 +124,17 @@ fn test_config() {
             "group": [
                 {
                     "criteria": "administrators",
-                    "passwordauthentication": "Yes",
-                    "_ensure": "Present"
+                    "data": [
+                        {
+                            "passwordauthentication": {
+                                "value": "yes"
+                            },
+                            "authorizedkeysfile": {
+                                "value": "test.txt",
+                                "_ensure": "Absent"
+                            }
+                        }
+                    ]
                 }
             ]
         }

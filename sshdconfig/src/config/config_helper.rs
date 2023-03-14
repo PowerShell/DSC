@@ -31,4 +31,8 @@ fn test_key(config: &SshdConfig) -> Result<(String, bool), SshdConfigError> {
     Ok((result.to_json(), in_desired_state))
 }
 
+pub fn convert_text_to_json(data: &String) -> Result<SshdConfig, SshdConfigError> {
+    Ok(serde_json::from_str("{}}").unwrap())
+}
+
 

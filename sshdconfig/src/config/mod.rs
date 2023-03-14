@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashMap,path::PathBuf};
 
 pub mod config;
 pub mod config_helper;
@@ -10,7 +10,10 @@ use crate::sshdconfig_error::SshdConfigError;
 
 pub struct SshdManager {
     config: SshdConfig,
-    config_filepath: PathBuf
+    config_filepath: PathBuf,
+    is_custom: HashMap<String, bool>, // track whether keyword is default or custom
+    linux_only: Vec<String>, // list keywords only applicable to Linux (fairly static)
+    format_output: Vec<String>, // something to hold special keywords that can have multiple inputs, but need to be output a single line like permit listen
 }
 
 impl SshdManager {
@@ -18,6 +21,9 @@ impl SshdManager {
         Self {
             config: Default::default(),
             config_filepath: PathBuf::from("not implemented yet"),
+            is_custom: HashMap::new(),
+            linux_only: Vec::new(),
+            format_output: Vec::new(),
         }
     }
 
@@ -29,15 +35,15 @@ impl SshdManager {
         Ok(())
     }
 
-    pub fn get(&self, keywords: &Option<Vec<String>>) -> Result<String, SshdConfigError> {
+    pub fn get(&self, keywords: &Option<Vec<String>>, defaults: bool) -> Result<String, SshdConfigError> {
         Ok("".to_string())
     }
 
-    pub fn set(&self, other: &SshdManager) -> Result<bool, SshdConfigError> {
+    pub fn set(&self, other: &SshdConfig) -> Result<bool, SshdConfigError> {
         Ok(false)
     }
 
-    pub fn test(&self, other: &SshdManager) -> Result<(String, bool), SshdConfigError> {
+    pub fn test(&self, other: &SshdConfig) -> Result<(String, bool), SshdConfigError> {
         Ok(("".to_string(), false))
     }
 

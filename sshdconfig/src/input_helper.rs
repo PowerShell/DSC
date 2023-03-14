@@ -1,5 +1,5 @@
 use std::{path::PathBuf, process::exit};
-use crate::{sshdconfig_error::*, config::SshdManager};
+use crate::{sshdconfig_error::*, config::{config::SshdConfig, SshdManager}};
 
 pub enum InputData {
     Text(PathBuf),
@@ -41,32 +41,30 @@ pub fn initial_setup(input_config_text: &Option<String>, input_config_json: &Opt
     (input_data, sshdconfig)
 }
 
-pub fn initialize_new_config(input_data: &InputData) -> SshdManager
+// initialize_new_config provides a sshdconfig json from 
+// the provided input to be passed to the set, and test commands
+pub fn initialize_new_config(input_data: &InputData) -> SshdConfig
 {
-    let sshdconfig = SshdManager::new();
+    let input_json;
     match input_data {
         InputData::Text(data) => { 
-            match sshdconfig.import_sshd_config(&data) {
-                Ok(_) => {},
-                Err(e) => {
-                    eprintln!("Error importing new sshd config: {}", e);
-                    exit(EXIT_INPUT_INVALID);
-                }
-            }
+            // read data from file
+            // call convert_text_to_json
+            input_json = "{}".to_string();
         }
         InputData::Json(data) => {
-            match sshdconfig.import_json(&data) {
-                Ok(_) => {},
-                Err(e) => {
-                    eprintln!("Error importing new sshd config: {}", e);
-                    exit(EXIT_INPUT_INVALID);
-                }
-            }
+            input_json = data.to_string();
         }
         InputData::None => {
-            // invalid state, TODO: catch this error appropriately
-            println!("new config, via json, stdin, or text file, must be provided with set");
+            eprintln!("new config, via json, stdin, or text file, must be provided with set/test");
+            exit(EXIT_INPUT_UNAVAILABLE);
         }
     };
-    sshdconfig
+    match serde_json::from_str(&input_json) {
+        Ok(result) => result,
+        Err(e) => {
+            eprintln!("Error importing new sshd config from json: {}", e);
+            exit(EXIT_INPUT_INVALID);
+        }
+    }
 }

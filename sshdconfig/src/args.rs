@@ -16,7 +16,9 @@ pub enum Commands {
         #[clap(long = "json", short = 'j', help = "json for sshd_config options")]
         input_config_json: Option<String>,
         #[clap(long = "path", short = 'p', help = "sshd_config filepath to retrieve options from")]
-        curr_config_path: Option<String>
+        curr_config_path: Option<String>,
+        #[clap(long = "defaults", short = 'd', help = "switch to include defaults in output json")]
+        include_defaults: bool,
     },
 
     #[clap(name = "set", about = "set sshd_config settings", arg_required_else_help = true)]

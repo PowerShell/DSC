@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::config::config::*;
 
@@ -30,11 +29,14 @@ use crate::config::config::*;
 /// and separated by whitespace
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct MatchContainer {
-    pub criteria: String,
     // TODO: is there a good way to use sshdconfig struct with only words that apply to match?
+    pub criteria: String,
     #[serde(rename = "passwordauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub password_authentication: Option<YesNo>,
+    pub password_authentication: Option<RepeatKeyword>,
+    #[serde(rename = "authorizedkeysfile")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub authorized_keys_file: Option<RepeatKeyword>,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ensure: Option<EnsureKind>,
