@@ -49,7 +49,10 @@ impl Discovery {
 
         let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(name).as_str());
         regex_builder.case_insensitive(true);
-        let regex = regex_builder.build().unwrap();
+        let regex = match regex_builder.build() {
+            Ok(regex) => regex,
+            Err(_) => return ResourceIterator::new(vec![]),
+        };
 
         let mut resources: Vec<DscResource> = Vec::new();
         for resource in &self.resources {
