@@ -36,10 +36,7 @@ Describe 'registry config set tests' {
         $out = $json | registry config set
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
-        $result.keyPath | Should -Be 'HKCU\1'
+        $result.keyPath | Should -BeNullOrEmpty
         ($result.psobject.properties | Measure-Object).Count | Should -Be 2
-
-        $json | registry config get 2>$null
-        $LASTEXITCODE | Should -Be 3
     }
 }

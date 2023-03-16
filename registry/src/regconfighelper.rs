@@ -27,17 +27,26 @@ impl Display for RegistryError {
 }
 
 pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
+    let mut reg_result = RegistryConfig::default();
+
     let reg_key = match RegistryKey::new(config.key_path.as_str()) {
         Ok(reg_key) => reg_key,
+        Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            match serde_json::to_string(&reg_result) {
+                Ok(reg_json) => {
+                    return Ok(reg_json);
+                },
+                Err(err) => {
+                    return Err(RegistryError::Json(err.to_string()));
+                }
+            }
+        }
         Err(err) => {
             return Err(RegistryError::NtStatus(err));
         }
     };
 
-    let mut reg_result = RegistryConfig {
-        key_path: config.key_path.clone(),
-        ..Default::default()
-    };
+    reg_result.key_path = config.key_path.clone();
 
     if config.value_name.is_some() {
         let reg_value = match reg_key.get_value(config.value_name.as_ref().unwrap().as_str()) {
@@ -62,10 +71,7 @@ pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
 }
 
 pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
-    let mut reg_result: RegistryConfig = RegistryConfig {
-        key_path: config.key_path.clone(),
-        ..Default::default()
-    };
+    let mut reg_result: RegistryConfig = RegistryConfig::default();
     let in_desired_state = true;
 
     let reg_key: RegistryKey;
@@ -74,6 +80,7 @@ pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryErr
             match config.ensure.as_ref().unwrap() {
                 EnsureKind::Present => {
                     open_or_create_key(&config.key_path)?;
+                    reg_result.key_path = config.key_path.clone();
                 },
                 EnsureKind::Absent => {
                     remove_key(&config.key_path)?;
@@ -81,6 +88,7 @@ pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryErr
             }
         },
         Some(value_name) => {
+            reg_result.key_path = config.key_path.clone();
             reg_result.value_name = Some(value_name.clone());
             match &config.ensure {
                 Some(EnsureKind::Present) | None => {

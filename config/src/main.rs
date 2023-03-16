@@ -39,7 +39,7 @@ fn main() {
         Some(input)
     };
 
-    let dsc = match DscManager::new() {
+    let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
             eprintln!("Error: {}", err);
@@ -49,6 +49,13 @@ fn main() {
 
     match args.subcommand {
         SubCommand::List { resource_name } => {
+            match dsc.initialize_discovery() {
+                Ok(_) => (),
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            };
             for resource in dsc.find_resource(&resource_name.unwrap_or_default()) {
                 // convert to json
                 let json = match serde_json::to_string(&resource) {
@@ -65,7 +72,7 @@ fn main() {
             // TODO: support streaming stdin which includes resource and input
 
             let input = check_stdin_and_input(&input, &stdin);
-            let resource = get_resource(&dsc, resource.as_str());
+            let resource = get_resource(&mut dsc, resource.as_str());
             match resource.get(input.as_str()) {
                 Ok(result) => {
                     // convert to json
@@ -85,11 +92,29 @@ fn main() {
             }
         }
         SubCommand::Set { resource, input: _ } => {
-            println!("Set {}: {}", resource, stdin.unwrap_or_default());
+            let input = check_stdin_and_input(&None, &stdin);
+            let resource = get_resource(&mut dsc, resource.as_str());
+            match resource.set(input.as_str()) {
+                Ok(result) => {
+                    // convert to json
+                    let json = match serde_json::to_string(&result) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    println!("{}", json);
+                }
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            }
         }
         SubCommand::Test { resource, input: _ } => {
             let input = check_stdin_and_input(&None, &stdin);
-            let resource = get_resource(&dsc, resource.as_str());
+            let resource = get_resource(&mut dsc, resource.as_str());
             match resource.test(input.as_str()) {
                 Ok(result) => {
                     // convert to json
@@ -113,11 +138,18 @@ fn main() {
     exit(EXIT_SUCCESS);
 }
 
-fn get_resource(dsc: &DscManager, resource: &str) -> DscResource {
+fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
     // check if resource is JSON or just a name
     match serde_json::from_str(resource) {
         Ok(resource) => resource,
         Err(_err) => {
+            match dsc.initialize_discovery() {
+                Ok(_) => (),
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            };
             let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
             match resources.len() {
                 0 => {

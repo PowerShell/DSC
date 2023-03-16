@@ -12,9 +12,9 @@ pub struct ResourceManifest {
     pub manifest_version: String,
     pub name: String,
     pub version: String,
-    pub get: ResourceMethod,
-    pub set: ResourceMethod,
-    pub test: ResourceMethod,
+    pub get: GetMethod,
+    pub set: SetMethod,
+    pub test: TestMethod,
     #[serde(rename = "exitCodes")]
     pub exit_codes: Option<HashMap<i32, String>>,
     pub schema: SchemaKind,
@@ -43,21 +43,11 @@ pub struct SchemaCommand {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct ResourceMethod {
-    pub executable: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub args: Option<Vec<String>>,
-    pub input: InputKind,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub return_state: Option<bool>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum ReturnKind {
     #[serde(rename = "state")]
     State,
-    #[serde(rename = "diff")]
-    Diff,
+    #[serde(rename = "stateAndDiff")]
+    StateAndDiff,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]

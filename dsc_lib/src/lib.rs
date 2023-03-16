@@ -17,6 +17,10 @@ impl DscManager {
         })
     }
 
+    pub fn initialize_discovery(&mut self) -> Result<(), DscError> {
+        self.discovery.initialize()
+    }
+
     pub fn find_resource(&self, name: &str) -> ResourceIterator {
         self.discovery.find_resource(name)
     }

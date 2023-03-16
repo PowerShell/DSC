@@ -10,10 +10,18 @@ use regex::RegexBuilder;
 
 pub struct Discovery {
     resources: Vec<DscResource>,
+    initialized: bool,
 }
 
 impl Discovery {
-    pub fn new() -> Result<Discovery, DscError> {
+    pub fn new() -> Result<Self, DscError> {
+        Ok(Self {
+            resources: Vec::new(),
+            initialized: false,
+        })
+    }
+
+    pub fn initialize(&mut self) -> Result<(), DscError> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
             Box::new(powershell_discovery::PowerShellDiscovery::new()),
@@ -29,12 +37,16 @@ impl Discovery {
             }
         }
 
-        Ok(Discovery {
-            resources,
-        })
+        self.resources = resources;
+        self.initialized = true;
+        Ok(())
     }
 
     pub fn find_resource(&self, name: &str) -> ResourceIterator {
+        if !self.initialized {
+            return ResourceIterator::new(vec![]);
+        }
+
         let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(name).as_str());
         regex_builder.case_insensitive(true);
         let regex = regex_builder.build().unwrap();

@@ -90,10 +90,8 @@ impl Invoke for DscResource {
             },
         }
     }
-    fn set(&self, _desired: &str) -> Result<SetResult, DscError> {
-        Err(DscError::NotImplemented)
-    }
-    fn test(&self, _expected: &str) -> Result<TestResult, DscError> {
+
+    fn set(&self, desired: &str) -> Result<SetResult, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
                 Err(DscError::NotImplemented)
@@ -108,7 +106,27 @@ impl Invoke for DscResource {
                     },
                     Some(manifest) => manifest,
                 };
-                command_resource::invoke_test(manifest, _expected)
+                command_resource::invoke_set(manifest, desired)
+            },
+        }
+    }
+
+    fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+        match self.implemented_as {
+            ImplementedAs::PowerShell => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::PowerShellScript => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::Command => {
+                let manifest = match &self.manifest {
+                    None => {
+                        return Err(DscError::MissingManifest(self.name.clone()));
+                    },
+                    Some(manifest) => manifest,
+                };
+                command_resource::invoke_test(manifest, expected)
             },
         }
     }

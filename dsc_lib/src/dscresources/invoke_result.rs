@@ -8,8 +8,8 @@ pub struct GetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct SetResult {
-    pub pre_state: Value,
-    pub post_state: Value,
+    pub before_state: Value,
+    pub after_state: Value,
     pub changed_properties: Option<Vec<String>>,
 }
 
