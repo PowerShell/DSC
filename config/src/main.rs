@@ -142,7 +142,8 @@ fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
     // check if resource is JSON or just a name
     match serde_json::from_str(resource) {
         Ok(resource) => resource,
-        Err(_err) => {
+        Err(err) => {
+            eprintln!("Not resource JSON: {}", err);
             match dsc.initialize_discovery() {
                 Ok(_) => (),
                 Err(err) => {

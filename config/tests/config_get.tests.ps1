@@ -11,7 +11,6 @@ Describe 'config get tests' {
             }
             'json' {
                 $resource = config list registry
-                write-verbose -verbose $resource
                 $LASTEXITCODE | Should -Be 0
                 $resource.Count | Should -Be 1
                 ($resource | ConvertFrom-Json).Name | Should -BeExactly 'Registry'
