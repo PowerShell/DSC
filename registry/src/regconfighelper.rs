@@ -34,6 +34,8 @@ pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
         Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
             match serde_json::to_string(&reg_result) {
                 Ok(reg_json) => {
+                    // TODO: current design is to return an empty JSON if the key is not found instead of an error
+                    // this makes it consistent with result for _ensure = absent so that a result is returned
                     return Ok(reg_json);
                 },
                 Err(err) => {
