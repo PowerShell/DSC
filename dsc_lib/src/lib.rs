@@ -4,6 +4,7 @@ pub mod dscerror;
 
 use dscerror::DscError;
 use discovery::ResourceIterator;
+use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
 
 pub struct DscManager {
     discovery: discovery::Discovery,
@@ -16,8 +17,24 @@ impl DscManager {
         })
     }
 
+    pub fn initialize_discovery(&mut self) -> Result<(), DscError> {
+        self.discovery.initialize()
+    }
+
     pub fn find_resource(&self, name: &str) -> ResourceIterator {
         self.discovery.find_resource(name)
+    }
+
+    pub fn resource_get(&self, resource: &DscResource, input: &str) -> Result<GetResult, DscError> {
+        resource.get(input)
+    }
+
+    pub fn resource_set(&self, resource: &DscResource, input: &str) -> Result<SetResult, DscError> {
+        resource.set(input)
+    }
+
+    pub fn resource_test(&self, resource: &DscResource, input: &str) -> Result<TestResult, DscError> {
+        resource.test(input)
     }
 }
 

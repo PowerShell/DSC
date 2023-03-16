@@ -14,7 +14,7 @@ Describe 'registry config test tests' {
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.keyPath | Should -BeNullOrEmpty
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 1
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
     It 'Can report failure if a registry key <test>' -Skip:(!$IsWindows) -TestCases @(
@@ -29,10 +29,11 @@ Describe 'registry config test tests' {
         }
 "@
         $out = $json | registry config test
-        $LASTEXITCODE | Should -Be 4
+        $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.keyPath | Should -BeExactly $expectedKey
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 1
+        $result._inDesiredState | Should -Be $false
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
     It 'Can test a registry value exists' -Skip:(!$IsWindows) {
@@ -49,6 +50,7 @@ Describe 'registry config test tests' {
         $result.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows\CurrentVersion'
         $result.valueName | Should -BeExactly 'ProgramFilesPath'
         $result.valueData.ExpandString | Should -BeExactly '%ProgramFiles%'
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 3
+        $result._inDesiredState | Should -Be $true
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 5
     }
 }

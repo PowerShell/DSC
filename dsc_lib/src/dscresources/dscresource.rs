@@ -1,9 +1,9 @@
 use dscerror::DscError;
 use resource_manifest::ResourceManifest;
-use serde::Serialize;
-use super::*;
+use serde::{Deserialize, Serialize};
+use super::{*, invoke_result::{GetResult, SetResult, TestResult}};
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DscResource {
     #[serde(rename="ResourceType")]
     pub resource_type: Option<String>,
@@ -31,7 +31,7 @@ pub struct DscResource {
     pub manifest: Option<ResourceManifest>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ImplementedAs {
     PowerShell,
     PowerShellScript,   // .ps1
@@ -65,19 +65,69 @@ impl Default for DscResource {
 
 pub trait Invoke {
     // the strings are expected to be json
-    fn get(&self, filter: &str) -> Result<String, DscError>;
-    fn set(&self, desired: &str) -> Result<String, DscError>;
-    fn test(&self, expected: &str) -> Result<String, DscError>; // result json should include a `_inDesiredState` bool property and optional additional json for the diff
+    fn get(&self, filter: &str) -> Result<GetResult, DscError>;
+    fn set(&self, desired: &str) -> Result<SetResult, DscError>;
+    fn test(&self, expected: &str) -> Result<TestResult, DscError>;
 }
 
 impl Invoke for DscResource {
-    fn get(&self, _filter: &str) -> Result<String, DscError> {
-        Err(DscError::NotImplemented)
+    fn get(&self, filter: &str) -> Result<GetResult, DscError> {
+        match self.implemented_as {
+            ImplementedAs::PowerShell => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::PowerShellScript => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::Command => {
+                let manifest = match &self.manifest {
+                    None => {
+                        return Err(DscError::MissingManifest(self.name.clone()));
+                    },
+                    Some(manifest) => manifest,
+                };
+                command_resource::invoke_get(manifest, filter)
+            },
+        }
     }
-    fn set(&self, _desired: &str) -> Result<String, DscError> {
-        Err(DscError::NotImplemented)
+
+    fn set(&self, desired: &str) -> Result<SetResult, DscError> {
+        match self.implemented_as {
+            ImplementedAs::PowerShell => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::PowerShellScript => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::Command => {
+                let manifest = match &self.manifest {
+                    None => {
+                        return Err(DscError::MissingManifest(self.name.clone()));
+                    },
+                    Some(manifest) => manifest,
+                };
+                command_resource::invoke_set(manifest, desired)
+            },
+        }
     }
-    fn test(&self, _expected: &str) -> Result<String, DscError> {
-        Err(DscError::NotImplemented)
+
+    fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+        match self.implemented_as {
+            ImplementedAs::PowerShell => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::PowerShellScript => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::Command => {
+                let manifest = match &self.manifest {
+                    None => {
+                        return Err(DscError::MissingManifest(self.name.clone()));
+                    },
+                    Some(manifest) => manifest,
+                };
+                command_resource::invoke_test(manifest, expected)
+            },
+        }
     }
 }
