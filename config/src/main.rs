@@ -143,7 +143,11 @@ fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
     match serde_json::from_str(resource) {
         Ok(resource) => resource,
         Err(err) => {
-            eprintln!("Not resource JSON: {}\n{}", err, resource);
+            if resource.contains("{") {
+                eprintln!("Not valid resource JSON: {}\nInput was: {}", err, resource);
+                exit(EXIT_INVALID_ARGS);
+            }
+
             match dsc.initialize_discovery() {
                 Ok(_) => (),
                 Err(err) => {

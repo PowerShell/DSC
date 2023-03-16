@@ -14,6 +14,10 @@ Describe 'config get tests' {
                 $LASTEXITCODE | Should -Be 0
                 $resource.Count | Should -Be 1
                 ($resource | ConvertFrom-Json).Name | Should -BeExactly 'Registry'
+                if ($PSNativeCommandArgumentPassing -ne 'Windows') {
+                    # legacy mode requires double quotes to be escaped
+                    $resource = $resource.Replace('"', '""')
+                }
             }
         }
 
