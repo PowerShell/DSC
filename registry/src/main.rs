@@ -161,7 +161,7 @@ fn main() {
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_REGISTRY").is_ok() {
-        eprintln!("attach debugger");
+        eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
             match event {
