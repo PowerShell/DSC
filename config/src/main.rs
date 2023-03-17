@@ -68,7 +68,8 @@ fn main() {
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                println!("{}", json);
+                write_output(&json, &args.format);
+                println!("");
             }
         }
         SubCommand::Get { resource, input } => {
