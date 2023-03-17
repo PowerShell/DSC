@@ -155,14 +155,13 @@ fn write_output(json: &str, format: &Option<OutputFormat>) {
                             exit(EXIT_JSON_ERROR);
                         }
                     };
-                    let json = match serde_json::to_string_pretty(&value) {
+                    match serde_json::to_string_pretty(&value) {
                         Ok(json) => json,
                         Err(err) => {
                             eprintln!("JSON Error: {}", err);
                             exit(EXIT_JSON_ERROR);
                         }
-                    };
-                    json
+                    }
                 },
                 Some(OutputFormat::Yaml) | None => {
                     is_json = false;
@@ -199,7 +198,7 @@ fn write_output(json: &str, format: &Option<OutputFormat>) {
             }
         },
         false => {
-            println!("{}", json.to_string());
+            println!("{}", json);
         }
     };
 }
@@ -209,7 +208,7 @@ fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
     match serde_json::from_str(resource) {
         Ok(resource) => resource,
         Err(err) => {
-            if resource.contains("{") {
+            if resource.contains('{') {
                 eprintln!("Not valid resource JSON: {}\nInput was: {}", err, resource);
                 exit(EXIT_INVALID_ARGS);
             }
@@ -265,7 +264,7 @@ fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
                     }
                 },
                 Err(err) => {
-                    if input.contains("{") {
+                    if input.contains('{') {
                         eprintln!("Error: Input is not valid JSON: {}", json_err);
                     }
                     else {
