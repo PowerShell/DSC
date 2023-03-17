@@ -1,10 +1,13 @@
 use args::*;
 use atty::Stream;
 use clap::Parser;
-use dsc_lib::dscresources::dscresource::Invoke;
+use dsc_lib::{DscManager, dscresources::dscresource::{DscResource, Invoke}};
 use std::io::{self, Read};
 use std::process::exit;
-use dsc_lib::{DscManager, dscresources::dscresource::DscResource};
+use syntect::easy::HighlightLines;
+use syntect::parsing::SyntaxSet;
+use syntect::highlighting::{ThemeSet, Style};
+use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -65,13 +68,17 @@ fn main() {
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                println!("{}", json);
+                write_output(&json, &args.format);
+                // insert newline separating instances if writing to console
+                if atty::is(Stream::Stdout) {
+                    println!("");
+                }
             }
         }
         SubCommand::Get { resource, input } => {
             // TODO: support streaming stdin which includes resource and input
 
-            let input = check_stdin_and_input(&input, &stdin);
+            let input = get_input(&input, &stdin);
             let resource = get_resource(&mut dsc, resource.as_str());
             match resource.get(input.as_str()) {
                 Ok(result) => {
@@ -83,7 +90,7 @@ fn main() {
                             exit(EXIT_JSON_ERROR);
                         }
                     };
-                    println!("{}", json);
+                    write_output(&json, &args.format);
                 }
                 Err(err) => {
                     eprintln!("Error: {}", err);
@@ -92,7 +99,7 @@ fn main() {
             }
         }
         SubCommand::Set { resource, input: _ } => {
-            let input = check_stdin_and_input(&None, &stdin);
+            let input = get_input(&None, &stdin);
             let resource = get_resource(&mut dsc, resource.as_str());
             match resource.set(input.as_str()) {
                 Ok(result) => {
@@ -104,7 +111,7 @@ fn main() {
                             exit(EXIT_JSON_ERROR);
                         }
                     };
-                    println!("{}", json);
+                    write_output(&json, &args.format);
                 }
                 Err(err) => {
                     eprintln!("Error: {}", err);
@@ -113,7 +120,7 @@ fn main() {
             }
         }
         SubCommand::Test { resource, input: _ } => {
-            let input = check_stdin_and_input(&None, &stdin);
+            let input = get_input(&None, &stdin);
             let resource = get_resource(&mut dsc, resource.as_str());
             match resource.test(input.as_str()) {
                 Ok(result) => {
@@ -125,7 +132,7 @@ fn main() {
                             exit(EXIT_JSON_ERROR);
                         }
                     };
-                    println!("{}", json);
+                    write_output(&json, &args.format);
                 }
                 Err(err) => {
                     eprintln!("Error: {}", err);
@@ -138,12 +145,74 @@ fn main() {
     exit(EXIT_SUCCESS);
 }
 
+fn write_output(json: &str, format: &Option<OutputFormat>) {
+    let mut is_json = true;
+    match atty::is(Stream::Stdout) {
+        true => {
+            let output = match format {
+                Some(OutputFormat::Json) => json.to_string(),
+                Some(OutputFormat::PrettyJson) => {
+                    let value: serde_json::Value = match serde_json::from_str(json) {
+                        Ok(value) => value,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    match serde_json::to_string_pretty(&value) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    }
+                },
+                Some(OutputFormat::Yaml) | None => {
+                    is_json = false;
+                    let value: serde_json::Value = match serde_json::from_str(json) {
+                        Ok(value) => value,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    match serde_yaml::to_string(&value) {
+                        Ok(yaml) => yaml,
+                        Err(err) => {
+                            eprintln!("YAML Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    }
+                }
+            };
+
+            let ps = SyntaxSet::load_defaults_newlines();
+            let ts = ThemeSet::load_defaults();
+            let syntax = match is_json {
+                true => ps.find_syntax_by_extension("json").unwrap(),
+                false => ps.find_syntax_by_extension("yaml").unwrap(),
+            };
+    
+            let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
+    
+            for line in LinesWithEndings::from(&output) {
+                let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap();
+                let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
+                print!("{}", escaped);
+            }
+        },
+        false => {
+            println!("{}", json);
+        }
+    };
+}
+
 fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
     // check if resource is JSON or just a name
     match serde_json::from_str(resource) {
         Ok(resource) => resource,
         Err(err) => {
-            if resource.contains("{") {
+            if resource.contains('{') {
                 eprintln!("Not valid resource JSON: {}\nInput was: {}", err, resource);
                 exit(EXIT_INVALID_ARGS);
             }
@@ -171,7 +240,7 @@ fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
     }
 }
 
-fn check_stdin_and_input(input: &Option<String>, stdin: &Option<String>) -> String {
+fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
     let input = match (input, stdin) {
         (Some(_input), Some(_stdin)) => {
             eprintln!("Error: Cannot specify both --input and stdin");
@@ -185,11 +254,29 @@ fn check_stdin_and_input(input: &Option<String>, stdin: &Option<String>) -> Stri
         },
     };
 
-    match serde_json::from_str::<serde_json::Value>(input.as_str()) {
+    match serde_json::from_str::<serde_json::Value>(&input) {
         Ok(_) => input,
-        Err(err) => {
-            eprintln!("Input JSON Error: {}", err);
-            exit(EXIT_INVALID_ARGS);
+        Err(json_err) => {
+            match serde_yaml::from_str::<serde_yaml::Value>(&input) {
+                Ok(yaml) => {
+                    match serde_json::to_string(&yaml) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("Error: Cannot convert YAML to JSON: {}", err);
+                            exit(EXIT_INVALID_ARGS);
+                        }
+                    }
+                },
+                Err(err) => {
+                    if input.contains('{') {
+                        eprintln!("Error: Input is not valid JSON: {}", json_err);
+                    }
+                    else {
+                        eprintln!("Error: Input is not valid YAML: {}", err);
+                    }
+                    exit(EXIT_INVALID_ARGS);
+                }
+            }
         }
     }
 }
