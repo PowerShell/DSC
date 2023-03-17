@@ -1,6 +1,26 @@
 use clap::{Parser, Subcommand};
+use std::str::FromStr;
 
-/// Struct containing the parsed command line arguments
+#[derive(Debug, PartialEq, Eq)]
+pub enum OutputFormat {
+    Json,
+    PrettyJson,
+    Yaml,
+}
+
+impl FromStr for OutputFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "json" => Ok(OutputFormat::Json),
+            "prettyjson" => Ok(OutputFormat::PrettyJson),
+            "yaml" => Ok(OutputFormat::Yaml),
+            _ => Err(format!("Invalid output format: {}", s)),
+        }
+    }
+}
+
 #[derive(Debug, Parser)]
 #[clap(name = "config", version = "0.1.0", about = "Discover and invoke DSC resources", long_about = None)]
 pub struct Args {
@@ -10,6 +30,8 @@ pub struct Args {
     /// Whether to use the cache or not
     #[clap(short = 'n', long)]
     pub no_cache: bool,
+    #[clap(short = 'f', long)]
+    pub format: Option<OutputFormat>,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
