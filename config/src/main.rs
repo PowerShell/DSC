@@ -69,7 +69,10 @@ fn main() {
                     }
                 };
                 write_output(&json, &args.format);
-                println!("");
+                // insert newline separating instances if writing to console
+                if atty::is(Stream::Stdout) {
+                    println!("");
+                }
             }
         }
         SubCommand::Get { resource, input } => {
