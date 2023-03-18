@@ -64,7 +64,7 @@ fn main() {
             }
         }
         _ => {
-            if input.is_some() && input.as_ref().unwrap().len() > 0 {
+            if input.is_some() && !input.as_ref().unwrap().is_empty() {
                 eprintln!("Error: Input JSON via STDIN is only valid for config subcommand: '{}'", input.unwrap());
                 exit(EXIT_INVALID_INPUT);
             }
