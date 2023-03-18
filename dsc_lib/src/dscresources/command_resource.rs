@@ -153,6 +153,9 @@ fn invoke_command(executable: &str, args: Vec<String>, input: Option<&str>) -> R
     if input.is_some() {
         command.stdin(Stdio::piped());
     }
+    else {
+        command.stdin(Stdio::null());
+    }
     command.stdout(Stdio::piped());
     command.stderr(Stdio::piped());
     command.args(args);
