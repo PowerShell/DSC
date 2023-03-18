@@ -136,6 +136,7 @@ pub fn invoke_schema(resource: &ResourceManifest) -> Result<String, DscError> {
             Ok(schema.to_string())
         },
         SchemaKind::Url(ref url) => {
+            // TODO: cache downloaded schemas so we don't have to download them every time
             let mut response = reqwest::blocking::get(url)?;
             if !response.status().is_success() {
                 return Err(DscError::HttpStatus(response.status()));
