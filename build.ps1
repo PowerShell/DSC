@@ -1,6 +1,6 @@
 param(
     [switch]$Release,
-    [ValidateSet('none','aarch64-pc-windows-msvc',' x86_64-pc-windows-msvc')]
+    [ValidateSet('none','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc')]
     $architecture = 'none',
     [switch]$Clippy,
     [switch]$Test

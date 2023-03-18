@@ -1,7 +1,14 @@
+use reqwest::StatusCode;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DscError {
+    #[error("HTTP status: {0}")]
+    HttpStatus(StatusCode),
+
+    #[error("HTTP: {0}")]
+    Http(#[from] reqwest::Error),
+
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
 
@@ -16,6 +23,9 @@ pub enum DscError {
 
     #[error("Missing manifest: {0}")]
     MissingManifest(String),
+
+    #[error("Schema missing from manifest: {0}")]
+    MissingSchema(String),
 
     #[error("Not implemented")]
     NotImplemented,
