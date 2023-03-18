@@ -158,14 +158,12 @@ fn invoke_command(executable: &str, args: Vec<String>, input: Option<&str>) -> R
     command.args(args);
 
     let mut child = command.spawn()?;
-    {
+    if input.is_some() {
         // pipe to child stdin in a scope so that it is dropped before we wait
         // otherwise the pipe isn't closed and the child process waits forever
-        if input.is_some() {
-            let mut child_stdin = child.stdin.take().unwrap();
-            child_stdin.write_all(input.unwrap().as_bytes())?;
-            child_stdin.flush()?;
-        }
+        let mut child_stdin = child.stdin.take().unwrap();
+        child_stdin.write_all(input.unwrap().as_bytes())?;
+        child_stdin.flush()?;
     }
     let exit_status = child.wait()?;
 
