@@ -65,7 +65,7 @@ fn main() {
         }
         _ => {
             if input.is_some() {
-                eprintln!("Error: Input JSON via STDIN is only valid for config subcommand.");
+                eprintln!("Error: Input JSON via STDIN is only valid for config subcommand: '{}'", input.unwrap());
                 exit(EXIT_INVALID_INPUT);
             }
         }

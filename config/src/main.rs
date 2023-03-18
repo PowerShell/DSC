@@ -72,7 +72,7 @@ fn main() {
                 write_output(&json, &args.format);
                 // insert newline separating instances if writing to console
                 if atty::is(Stream::Stdout) {
-                    println!("");
+                    println!();
                 }
             }
         },

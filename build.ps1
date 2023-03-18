@@ -37,7 +37,7 @@ foreach ($project in $projects) {
     try {
         Push-Location "$PSScriptRoot/$project"
         if ($Clippy) {
-            cargo clippy @flags
+            cargo clippy @flags -- -Dwarnings
         }
         else {
             cargo build @flags
