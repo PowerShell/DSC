@@ -21,8 +21,7 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_PARAMETER: i32 = 1;
 const EXIT_INVALID_INPUT: i32 = 2;
 const EXIT_REGISTRY_ERROR: i32 = 3;
-const EXIT_NOT_IN_DESIRED_STATE: i32 = 4;
-const EXIT_JSON_SERIALIZATION_FAILED: i32 = 5;
+const EXIT_JSON_SERIALIZATION_FAILED: i32 = 4;
 
 fn main() {
     #[cfg(debug_assertions)]
@@ -65,8 +64,8 @@ fn main() {
             }
         }
         _ => {
-            if input.is_some() {
-                eprintln!("Error: Input JSON via STDIN is only valid for config subcommand.");
+            if input.is_some() && !input.as_ref().unwrap().is_empty() {
+                eprintln!("Error: Input JSON via STDIN is only valid for config subcommand: '{}'", input.unwrap());
                 exit(EXIT_INVALID_INPUT);
             }
         }
@@ -90,7 +89,6 @@ fn main() {
         },
         args::SubCommand::Config { subcommand } => {
             let json: String;
-            let in_desired_state: bool;
             match regconfighelper::validate_config(&config) {
                 Ok(_) => {},
                 Err(err) => {
@@ -108,7 +106,6 @@ fn main() {
                     match regconfighelper::config_get(&config) {
                         Ok(config) => {
                             json = config;
-                            in_desired_state = true;
                         },
                         Err(err) => {
                             eprintln!("Error getting config: {}", err);
@@ -120,7 +117,6 @@ fn main() {
                     match regconfighelper::config_set(&config) {
                         Ok(result) => {
                             json = result.0;
-                            in_desired_state = result.1;
                         },
                         Err(err) => {
                             eprintln!("Error setting config: {}", err);
@@ -131,8 +127,7 @@ fn main() {
                 args::ConfigSubCommand::Test => {
                     match regconfighelper::config_test(&config) {
                         Ok(result) => {
-                            json = result.0;
-                            in_desired_state = result.1;
+                            json = result;
                         },
                         Err(err) => {
                             eprintln!("Error testing config: {}", err);
@@ -147,9 +142,6 @@ fn main() {
             }
 
             println!("{}", json);
-            if !in_desired_state {
-                exit(EXIT_NOT_IN_DESIRED_STATE);
-            }
         },
         args::SubCommand::Schema { pretty } => {
             let schema = schema_for!(RegistryConfig);
@@ -169,7 +161,7 @@ fn main() {
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_REGISTRY").is_ok() {
-        eprintln!("attach debugger");
+        eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
             match event {

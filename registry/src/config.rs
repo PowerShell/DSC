@@ -17,7 +17,7 @@ pub enum RegistryValueData {
     QWord(u64),
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "Registry")]
 pub struct RegistryConfig {
     #[serde(rename = "$id", skip_serializing_if = "Option::is_none")]
@@ -36,6 +36,9 @@ pub struct RegistryConfig {
     #[serde(rename = "_clobber")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clobber: Option<bool>,
+    #[serde(rename = "_inDesiredState")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub in_desired_state: Option<bool>,
 }
 
 impl RegistryConfig {
@@ -46,6 +49,22 @@ impl RegistryConfig {
                 eprintln!("Failed to serialize to JSON: {}", e);
                 String::new()
             }
+        }
+    }
+}
+
+const ID: &str = "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json";
+
+impl Default for RegistryConfig {
+    fn default() -> Self {
+        Self {
+            id: Some(ID.to_string()),
+            key_path: String::new(),
+            value_name: None,
+            value_data: None,
+            ensure: None,
+            clobber: None,
+            in_desired_state: None,
         }
     }
 }
