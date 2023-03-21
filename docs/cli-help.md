@@ -208,6 +208,7 @@ Options:
   -v, --version <version>  The version of the module to use
   -?, -h, --help           Show help and usage information
 
+```
 
 C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe repo --help
 ```output
