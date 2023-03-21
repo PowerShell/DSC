@@ -1,3 +1,4 @@
+use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};
 
@@ -7,6 +8,8 @@ use super::{resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invok
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
 pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult, DscError> {
+    verify_json(resource, filter)?;
+
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(filter))?;
     if exit_code != 0 {
         return Err(DscError::Command(exit_code, stderr.to_string()));
@@ -19,6 +22,8 @@ pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult
 }
 
 pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResult, DscError> {
+    verify_json(resource, desired)?;
+
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !resource.set.pre_test.unwrap_or_default() {
         let test_result = invoke_test(resource, desired)?;
@@ -83,6 +88,8 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
 }
 
 pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestResult, DscError> {
+    verify_json(resource, expected)?;
+
     let (exit_code, stdout, stderr) = invoke_command(&resource.test.executable, resource.test.args.clone().unwrap_or_default(), Some(expected))?;
     if exit_code != 0 {
         return Err(DscError::Command(exit_code, stderr.to_string()));
@@ -179,6 +186,28 @@ fn invoke_command(executable: &str, args: Vec<String>, input: Option<&str>) -> R
     let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
     let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
     Ok((exit_code, stdout, stderr))
+}
+
+fn verify_json(resource: &ResourceManifest, json: &str) -> Result<(), DscError> {
+    let schema = invoke_schema(resource)?;
+    let schema: Value = serde_json::from_str(&schema)?;
+    let compiled_schema = match JSONSchema::compile(&schema) {
+        Ok(schema) => schema,
+        Err(e) => {
+            return Err(DscError::Schema(e.to_string()));
+        },
+    };
+    let json: Value = serde_json::from_str(json)?;
+    match compiled_schema.validate(&json) {
+        Ok(_) => return Ok(()),
+        Err(err) => {
+            let mut error = String::new();
+            for e in err {
+                error.push_str(&format!("{} ", e));
+            }
+            return Err(DscError::Schema(error));
+        },
+    };
 }
 
 fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
