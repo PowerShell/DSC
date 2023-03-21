@@ -82,6 +82,8 @@ Commands:
   find     Find modules
   install  install modules
 
+```
+
 C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe module find --help
 ```output
 Description:
@@ -95,7 +97,6 @@ Options:
   -v, --version <version>       The version of the module
   -r, --repo <repo>             The repo that contains the module
   -?, -h, --help                Show help and usage information
-
 
 ```
 
@@ -172,7 +173,6 @@ Options:
   -j, --jsonProperties <jsonProperties>  A JSON string that will be passed as input to the resource
   -?, -h, --help                         Show help and usage information
 
-
 ```
 
 C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe resource test --help
@@ -191,7 +191,6 @@ Options:
   -p, --properties <properties>          Property of the resource. Format as key:value
   -j, --jsonProperties <jsonProperties>  A JSON string that will be passed as input to the resource
   -?, -h, --help                         Show help and usage information
-
 
 ```
 
