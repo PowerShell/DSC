@@ -10,7 +10,7 @@ Describe 'config get tests' {
                 $resource = 'registry'
             }
             'json' {
-                $resource = config list registry
+                $resource = dsc resource list registry
                 $LASTEXITCODE | Should -Be 0
                 $resource.Count | Should -Be 1
                 ($resource | ConvertFrom-Json).Name | Should -BeExactly 'Registry'
@@ -27,7 +27,7 @@ Describe 'config get tests' {
             "valueName": "ProductName"
         }
 '@
-        $output = $json | config get -r $resource
+        $output = $json | dsc resource get -r $resource
         $LASTEXITCODE | Should -Be 0
         $output = $output | ConvertFrom-Json
         $output.actual_state.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'

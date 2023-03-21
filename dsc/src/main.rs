@@ -52,116 +52,136 @@ fn main() {
     };
 
     match args.subcommand {
-        SubCommand::List { resource_name } => {
-            match dsc.initialize_discovery() {
-                Ok(_) => (),
-                Err(err) => {
-                    eprintln!("Error: {}", err);
+        SubCommand::Config { subcommand } => {
+            match subcommand {
+                ConfigSubCommand::Get => {
+                    eprintln!("Getting configuration... NOT IMPLEMENTED YET");
                     exit(EXIT_DSC_ERROR);
-                }
-            };
-            for resource in dsc.find_resource(&resource_name.unwrap_or_default()) {
-                // convert to json
-                let json = match serde_json::to_string(&resource) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        eprintln!("JSON Error: {}", err);
-                        exit(EXIT_JSON_ERROR);
-                    }
-                };
-                write_output(&json, &args.format);
-                // insert newline separating instances if writing to console
-                if atty::is(Stream::Stdout) {
-                    println!();
-                }
+                },
+                ConfigSubCommand::Set => {
+                    eprintln!("Setting configuration... NOT IMPLEMENTED YET");
+                    exit(EXIT_DSC_ERROR);
+                },
+                ConfigSubCommand::Test => {
+                    eprintln!("Testing configuration... NOT IMPLEMENTED YET");
+                    exit(EXIT_DSC_ERROR);
+                },
             }
         },
-        SubCommand::Get { resource, input } => {
-            // TODO: support streaming stdin which includes resource and input
-
-            let input = get_input(&input, &stdin);
-            let resource = get_resource(&mut dsc, resource.as_str());
-            match resource.get(input.as_str()) {
-                Ok(result) => {
-                    // convert to json
-                    let json = match serde_json::to_string(&result) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, &args.format);
-                }
-                Err(err) => {
-                    eprintln!("Error: {}", err);
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
-        },
-        SubCommand::Set { resource, input: _ } => {
-            let input = get_input(&None, &stdin);
-            let resource = get_resource(&mut dsc, resource.as_str());
-            match resource.set(input.as_str()) {
-                Ok(result) => {
-                    // convert to json
-                    let json = match serde_json::to_string(&result) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, &args.format);
-                }
-                Err(err) => {
-                    eprintln!("Error: {}", err);
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
-        },
-        SubCommand::Test { resource, input: _ } => {
-            let input = get_input(&None, &stdin);
-            let resource = get_resource(&mut dsc, resource.as_str());
-            match resource.test(input.as_str()) {
-                Ok(result) => {
-                    // convert to json
-                    let json = match serde_json::to_string(&result) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, &args.format);
-                }
-                Err(err) => {
-                    eprintln!("Error: {}", err);
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
-        },
-        SubCommand::Schema { resource } => {
-            let resource = get_resource(&mut dsc, resource.as_str());
-            match resource.schema() {
-                Ok(json) => {
-                    // verify is json
-                    match serde_json::from_str::<serde_json::Value>(json.as_str()) {
+        SubCommand::Resource { subcommand } => {
+            match subcommand {
+                ResourceSubCommand::List { resource_name } => {
+                    match dsc.initialize_discovery() {
                         Ok(_) => (),
                         Err(err) => {
                             eprintln!("Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
+                            exit(EXIT_DSC_ERROR);
                         }
                     };
-                    write_output(&json, &args.format);
-                }
-                Err(err) => {
-                    eprintln!("Error: {}", err);
-                    exit(EXIT_DSC_ERROR);
-                }
+                    for resource in dsc.find_resource(&resource_name.unwrap_or_default()) {
+                        // convert to json
+                        let json = match serde_json::to_string(&resource) {
+                            Ok(json) => json,
+                            Err(err) => {
+                                eprintln!("JSON Error: {}", err);
+                                exit(EXIT_JSON_ERROR);
+                            }
+                        };
+                        write_output(&json, &args.format);
+                        // insert newline separating instances if writing to console
+                        if atty::is(Stream::Stdout) {
+                            println!();
+                        }
+                    }
+                },
+                ResourceSubCommand::Get { resource, input } => {
+                    // TODO: support streaming stdin which includes resource and input
+
+                    let input = get_input(&input, &stdin);
+                    let resource = get_resource(&mut dsc, resource.as_str());
+                    match resource.get(input.as_str()) {
+                        Ok(result) => {
+                            // convert to json
+                            let json = match serde_json::to_string(&result) {
+                                Ok(json) => json,
+                                Err(err) => {
+                                    eprintln!("JSON Error: {}", err);
+                                    exit(EXIT_JSON_ERROR);
+                                }
+                            };
+                            write_output(&json, &args.format);
+                        }
+                        Err(err) => {
+                            eprintln!("Error: {}", err);
+                            exit(EXIT_DSC_ERROR);
+                        }
+                    }
+                },
+                ResourceSubCommand::Set { resource, input: _ } => {
+                    let input = get_input(&None, &stdin);
+                    let resource = get_resource(&mut dsc, resource.as_str());
+                    match resource.set(input.as_str()) {
+                        Ok(result) => {
+                            // convert to json
+                            let json = match serde_json::to_string(&result) {
+                                Ok(json) => json,
+                                Err(err) => {
+                                    eprintln!("JSON Error: {}", err);
+                                    exit(EXIT_JSON_ERROR);
+                                }
+                            };
+                            write_output(&json, &args.format);
+                        }
+                        Err(err) => {
+                            eprintln!("Error: {}", err);
+                            exit(EXIT_DSC_ERROR);
+                        }
+                    }
+                },
+                ResourceSubCommand::Test { resource, input: _ } => {
+                    let input = get_input(&None, &stdin);
+                    let resource = get_resource(&mut dsc, resource.as_str());
+                    match resource.test(input.as_str()) {
+                        Ok(result) => {
+                            // convert to json
+                            let json = match serde_json::to_string(&result) {
+                                Ok(json) => json,
+                                Err(err) => {
+                                    eprintln!("JSON Error: {}", err);
+                                    exit(EXIT_JSON_ERROR);
+                                }
+                            };
+                            write_output(&json, &args.format);
+                        }
+                        Err(err) => {
+                            eprintln!("Error: {}", err);
+                            exit(EXIT_DSC_ERROR);
+                        }
+                    }
+                },
+                ResourceSubCommand::Schema { resource } => {
+                    let resource = get_resource(&mut dsc, resource.as_str());
+                    match resource.schema() {
+                        Ok(json) => {
+                            // verify is json
+                            match serde_json::from_str::<serde_json::Value>(json.as_str()) {
+                                Ok(_) => (),
+                                Err(err) => {
+                                    eprintln!("Error: {}", err);
+                                    exit(EXIT_JSON_ERROR);
+                                }
+                            };
+                            write_output(&json, &args.format);
+                        }
+                        Err(err) => {
+                            eprintln!("Error: {}", err);
+                            exit(EXIT_DSC_ERROR);
+                        }
+                    }
+                },
             }
         },
-        SubCommand::DscSchema { dsc_type } => {
+        SubCommand::Schema { dsc_type } => {
             match dsc_type {
                 DscType::GetResult => {
                     let schema = schema_for!(GetResult);

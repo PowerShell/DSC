@@ -25,7 +25,7 @@ else {
 }
 
 $windows_projects = @("ntreg","ntstatuserror","ntuserinfo","registry")
-$projects = @("config","y2j") 
+$projects = @("dsc","y2j") 
 if ($IsWindows) {
     $projects += $windows_projects
 }
@@ -35,7 +35,7 @@ foreach ($project in $projects) {
     ## Build format_json
     Write-Host -ForegroundColor Cyan "Building $project ..."
     try {
-        Push-Location "$PSScriptRoot/$project"
+        Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
         if ($Clippy) {
             cargo clippy @flags -- -Dwarnings
         }

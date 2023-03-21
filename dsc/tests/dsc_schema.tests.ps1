@@ -1,6 +1,6 @@
 Describe 'config schema tests' {
     It 'return resource schema' -Skip:(!$IsWindows) {
-        $schema = config schema -r registry
+        $schema = dsc resource schema -r registry
         $LASTEXITCODE | Should -Be 0
         $schema | Should -Not -BeNullOrEmpty
         $schema = $schema | ConvertFrom-Json
@@ -15,7 +15,7 @@ Describe 'config schema tests' {
     ) {
         param($type)
 
-        $schema = config dscschema -t $type
+        $schema = dsc schema -t $type
         $LASTEXITCODE | Should -Be 0
         $schema | Should -Not -BeNullOrEmpty
         $schema = $schema | ConvertFrom-Json
