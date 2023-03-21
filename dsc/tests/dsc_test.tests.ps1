@@ -7,7 +7,7 @@ Describe 'config test tests' {
         }
 '@
         $current = $json | registry config get
-        $out = $current | config test -r registry
+        $out = $current | dsc resource test -r registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.actual_state._inDesiredState | Should -BeTrue
@@ -24,7 +24,7 @@ Describe 'config test tests' {
             }
         }
 '@
-        $out = $json | config test -r registry
+        $out = $json | dsc resource test -r registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.actual_state._inDesiredState | Should -BeFalse
@@ -42,7 +42,7 @@ Describe 'config test tests' {
             }
         }
 '@
-        $out = $json | config test -r registry
+        $out = $json | dsc resource test -r registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.actual_state._inDesiredState | Should -BeFalse
