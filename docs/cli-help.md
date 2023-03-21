@@ -83,6 +83,7 @@ Commands:
   install  install modules
 
 dsc.exe module find --help
+
 ```output
 Description:
   Find modules
@@ -95,7 +96,6 @@ Options:
   -v, --version <version>       The version of the module
   -r, --repo <repo>             The repo that contains the module
   -?, -h, --help                Show help and usage information
-
 
 ```
 
@@ -172,7 +172,6 @@ Options:
   -j, --jsonProperties <jsonProperties>  A JSON string that will be passed as input to the resource
   -?, -h, --help                         Show help and usage information
 
-
 ```
 
 dsc.exe resource test --help
@@ -192,7 +191,6 @@ Options:
   -j, --jsonProperties <jsonProperties>  A JSON string that will be passed as input to the resource
   -?, -h, --help                         Show help and usage information
 
-
 ```
 
 dsc.exe resource find --help
@@ -208,8 +206,10 @@ Options:
   -v, --version <version>  The version of the module to use
   -?, -h, --help           Show help and usage information
 
+```
 
 dsc.exe repo --help
+
 ```output
 Description:
   Manage repositories.
