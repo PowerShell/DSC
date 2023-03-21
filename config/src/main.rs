@@ -1,7 +1,8 @@
 use args::*;
 use atty::Stream;
 use clap::Parser;
-use dsc_lib::{DscManager, dscresources::dscresource::{DscResource, Invoke}};
+use dsc_lib::{DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
+use schemars::schema_for;
 use std::io::{self, Read};
 use std::process::exit;
 use syntect::easy::HighlightLines;
@@ -71,10 +72,10 @@ fn main() {
                 write_output(&json, &args.format);
                 // insert newline separating instances if writing to console
                 if atty::is(Stream::Stdout) {
-                    println!("");
+                    println!();
                 }
             }
-        }
+        },
         SubCommand::Get { resource, input } => {
             // TODO: support streaming stdin which includes resource and input
 
@@ -97,7 +98,7 @@ fn main() {
                     exit(EXIT_DSC_ERROR);
                 }
             }
-        }
+        },
         SubCommand::Set { resource, input: _ } => {
             let input = get_input(&None, &stdin);
             let resource = get_resource(&mut dsc, resource.as_str());
@@ -118,7 +119,7 @@ fn main() {
                     exit(EXIT_DSC_ERROR);
                 }
             }
-        }
+        },
         SubCommand::Test { resource, input: _ } => {
             let input = get_input(&None, &stdin);
             let resource = get_resource(&mut dsc, resource.as_str());
@@ -139,7 +140,79 @@ fn main() {
                     exit(EXIT_DSC_ERROR);
                 }
             }
-        }
+        },
+        SubCommand::Schema { resource } => {
+            let resource = get_resource(&mut dsc, resource.as_str());
+            match resource.schema() {
+                Ok(json) => {
+                    // verify is json
+                    match serde_json::from_str::<serde_json::Value>(json.as_str()) {
+                        Ok(_) => (),
+                        Err(err) => {
+                            eprintln!("Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, &args.format);
+                }
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            }
+        },
+        SubCommand::DscSchema { dsc_type } => {
+            match dsc_type {
+                DscType::GetResult => {
+                    let schema = schema_for!(GetResult);
+                    // convert to json
+                    let json = match serde_json::to_string(&schema) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, &args.format);
+                },
+                DscType::SetResult => {
+                    let schema = schema_for!(SetResult);
+                    // convert to json
+                    let json = match serde_json::to_string(&schema) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, &args.format);
+                },
+                DscType::TestResult => {
+                    let schema = schema_for!(TestResult);
+                    // convert to json
+                    let json = match serde_json::to_string(&schema) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, &args.format);
+                },
+                DscType::ResourceManifest => {
+                    let schema = schema_for!(ResourceManifest);
+                    // convert to json
+                    let json = match serde_json::to_string(&schema) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, &args.format);
+                },
+            }
+        },
     }
 
     exit(EXIT_SUCCESS);

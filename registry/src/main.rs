@@ -64,8 +64,8 @@ fn main() {
             }
         }
         _ => {
-            if input.is_some() {
-                eprintln!("Error: Input JSON via STDIN is only valid for config subcommand.");
+            if input.is_some() && !input.as_ref().unwrap().is_empty() {
+                eprintln!("Error: Input JSON via STDIN is only valid for config subcommand: '{}'", input.unwrap());
                 exit(EXIT_INVALID_INPUT);
             }
         }
@@ -161,7 +161,7 @@ fn main() {
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_REGISTRY").is_ok() {
-        eprintln!("attach debugger");
+        eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
             match event {

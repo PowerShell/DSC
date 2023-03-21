@@ -68,6 +68,7 @@ pub trait Invoke {
     fn get(&self, filter: &str) -> Result<GetResult, DscError>;
     fn set(&self, desired: &str) -> Result<SetResult, DscError>;
     fn test(&self, expected: &str) -> Result<TestResult, DscError>;
+    fn schema(&self) -> Result<String, DscError>;
 }
 
 impl Invoke for DscResource {
@@ -127,6 +128,26 @@ impl Invoke for DscResource {
                     Some(manifest) => manifest,
                 };
                 command_resource::invoke_test(manifest, expected)
+            },
+        }
+    }
+
+    fn schema(&self) -> Result<String, DscError> {
+        match self.implemented_as {
+            ImplementedAs::PowerShell => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::PowerShellScript => {
+                Err(DscError::NotImplemented)
+            },
+            ImplementedAs::Command => {
+                let manifest = match &self.manifest {
+                    None => {
+                        return Err(DscError::MissingManifest(self.name.clone()));
+                    },
+                    Some(manifest) => manifest,
+                };
+                command_resource::invoke_schema(manifest)
             },
         }
     }
