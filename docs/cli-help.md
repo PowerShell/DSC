@@ -1,6 +1,6 @@
 # DSC Cli Help
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe --help
+dsc.exe --help
 
 ```output
 Description:
@@ -20,7 +20,7 @@ Commands:
   resource  Invoke and find resources.
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe config --help
+dsc.exe config --help
 
 ```output
 Description:
@@ -37,7 +37,7 @@ Commands:
   set   Set a machine's desired state configuration.
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe config set --help
+dsc.exe config set --help
 
 ```output
 Description:
@@ -51,7 +51,7 @@ Options:
   -?, -h, --help                Show help and usage information
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe config test --help
+dsc.exe config test --help
 
 ```output
 Description:
@@ -66,7 +66,7 @@ Options:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe module --help
+dsc.exe module --help
 
 ```output
 Description:
@@ -82,7 +82,7 @@ Commands:
   find     Find modules
   install  install modules
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe module find --help
+dsc.exe module find --help
 ```output
 Description:
   Find modules
@@ -99,7 +99,7 @@ Options:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe module install --help
+dsc.exe module install --help
 
 ```output
 Description:
@@ -115,7 +115,7 @@ Options:
   -?, -h, --help                Show help and usage information
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe resource --help
+dsc.exe resource --help
 
 ```output
 Description:
@@ -135,7 +135,7 @@ Commands:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe resource get --help
+dsc.exe resource get --help
 
 ```output
 Description:
@@ -155,7 +155,7 @@ Options:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe resource set --help
+dsc.exe resource set --help
 
 ```output
 Description:
@@ -175,7 +175,7 @@ Options:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe resource test --help
+dsc.exe resource test --help
 
 ```output
 Description:
@@ -195,7 +195,7 @@ Options:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe resource find --help
+dsc.exe resource find --help
 
 ```output
 Description:
@@ -209,7 +209,7 @@ Options:
   -?, -h, --help           Show help and usage information
 
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe repo --help
+dsc.exe repo --help
 ```output
 Description:
   Manage repositories.
@@ -226,7 +226,7 @@ Commands:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe repo set --help
+dsc.exe repo set --help
 
 ```output
 Description:
@@ -243,7 +243,7 @@ Options:
 
 ```
 
-C:\git\Microsoft.Dsc\dsc\bin\Debug\net7.0> .\dsc.exe repo remove --help
+dsc.exe repo remove --help
 
 ```output
 Description:
