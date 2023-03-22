@@ -3,11 +3,14 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DscError {
-    #[error("HTTP status: {0}")]
-    HttpStatus(StatusCode),
+    #[error("Command: [{0}] {1}")]
+    Command(i32, String),
 
     #[error("HTTP: {0}")]
     Http(#[from] reqwest::Error),
+
+    #[error("HTTP status: {0}")]
+    HttpStatus(StatusCode),
 
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
@@ -17,9 +20,6 @@ pub enum DscError {
 
     #[error("Manifest: {0}\nJSON: {1}")]
     Manifest(String, serde_json::Error),
-
-    #[error("Command: [{0}] {1}")]
-    Command(i32, String),
 
     #[error("Missing manifest: {0}")]
     MissingManifest(String),
@@ -32,6 +32,9 @@ pub enum DscError {
 
     #[error("Operation: {0}")]
     Operation(String),
+
+    #[error("Schema: {0}")]
+    Schema(String),
 
     #[error("Unknown: {code:?} {message:?}")]
     Unknown {

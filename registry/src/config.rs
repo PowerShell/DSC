@@ -18,7 +18,7 @@ pub enum RegistryValueData {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-#[serde(rename = "Registry")]
+#[serde(rename = "Registry", deny_unknown_fields)]
 pub struct RegistryConfig {
     #[serde(rename = "$id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,

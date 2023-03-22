@@ -376,13 +376,16 @@ fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
 
 #[cfg(debug_assertions)]
 fn check_debug() {
-    if env::var("DEBUG_CONFIG").is_ok() {
-        eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
+    if env::var("DEBUG_DSC").is_ok() {
+        eprintln!("attach debugger to pid {} and press a key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
             match event {
-                event::Event::Key(_key) => {
-                    break;
+                event::Event::Key(key) => {
+                    // workaround bug in 0.26+ https://github.com/crossterm-rs/crossterm/issues/752#issuecomment-1414909095
+                    if key.kind == event::KeyEventKind::Press {
+                        break;
+                    }
                 }
                 _ => {
                     eprintln!("Unexpected event: {:?}", event);

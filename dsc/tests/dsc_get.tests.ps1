@@ -35,4 +35,15 @@ Describe 'config get tests' {
         $output.actual_state.valueName | Should -BeExactly 'ProductName'
         $output.actual_state.valueData.String | Should -Match 'Windows .*'
     }
+
+    It 'invalid input is validated against schema' -Skip:(!$IsWindows) {
+        $json = @'
+        {
+            "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+            "Name": "ProductName"
+        }
+'@
+        $json | dsc resource get -r registry
+        $LASTEXITCODE | Should -Be 2
+    }
 }
