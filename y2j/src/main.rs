@@ -57,7 +57,7 @@ fn main() {
 
         for line in LinesWithEndings::from(output.as_str()) {
             let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap();
-            let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
+            let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
             print!("{}", escaped);
         }
     } else {

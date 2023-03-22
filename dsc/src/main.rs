@@ -290,7 +290,7 @@ fn write_output(json: &str, format: &Option<OutputFormat>) {
     
             for line in LinesWithEndings::from(&output) {
                 let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap();
-                let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
+                let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
                 print!("{}", escaped);
             }
         },
