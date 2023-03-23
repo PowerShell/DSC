@@ -7,10 +7,10 @@ Describe 'osinfo resource tests' {
             $out.actual_state.type | Should -BeExactly 'Windows'
         }
         elseif ($IsLinux) {
-            $out.actual_state.type | Should -BeExactly 'Linux'
+            $out.actual_state.type | Should -BeExactly 'Ubuntu'
         }
         elseif ($IsMacOS) {
-            $out.actual_state.type | Should -BeExactly 'MacOS'
+            $out.actual_state.type | Should -BeExactly 'Macos'
         }
 
         $out.actual_state.version | Should -Not -BeNullOrEmpty
