@@ -23,26 +23,17 @@ const ID: &str = "https://developer.microsoft.com/json-schemas/dsc/os_info/20230
 impl OsInfo {
     pub fn new() -> Self {
         let os_info = os_info::get();
-        let edition = match os_info.edition() {
-            None => None,
-            Some(edition) => Some(edition.to_string()),
-        };
-        let codename = match os_info.codename() {
-            None => None,
-            Some(codename) => Some(codename.to_string()),
-        };
-        let architecture = match os_info.architecture() {
-            None => None,
-            Some(architecture) => Some(architecture.to_string()),
-        };
+        let edition = os_info.edition().map(|edition| edition.to_string());
+        let codename = os_info.codename().map(|codename| codename.to_string());
+        let architecture = os_info.architecture().map(|architecture| architecture.to_string());
         Self {
             id: ID.to_string(),
             os_type: os_info.os_type(),
             version: os_info.version().to_string(),
-            edition: edition,
-            codename: codename,
+            edition,
+            codename,
             bitness: os_info.bitness(),
-            architecture: architecture,
+            architecture,
         }
     }
 }
