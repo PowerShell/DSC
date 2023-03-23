@@ -8,7 +8,9 @@ use super::{resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invok
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
 pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult, DscError> {
-    verify_json(resource, filter)?;
+    if filter.len() > 0 {
+        verify_json(resource, filter)?;
+    }
 
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(filter))?;
     if exit_code != 0 {
@@ -22,10 +24,15 @@ pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult
 }
 
 pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResult, DscError> {
+    if resource.set.is_none() {
+        return Err(DscError::NotImplemented);
+    }
+
     verify_json(resource, desired)?;
 
+    let set = resource.set.as_ref().unwrap();
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
-    if !resource.set.pre_test.unwrap_or_default() {
+    if !set.pre_test.unwrap_or_default() {
         let test_result = invoke_test(resource, desired)?;
         if test_result.diff_properties.is_none() {
             return Ok(SetResult {
@@ -45,12 +52,12 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
         pre_state = serde_json::from_str(&stdout)?;
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.set.executable, resource.set.args.clone().unwrap_or_default(), Some(desired))?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone().unwrap_or_default(), Some(desired))?;
     if exit_code != 0 {
         return Err(DscError::Command(exit_code, stderr.to_string()));
     }
 
-    match resource.set.returns {
+    match set.returns {
         Some(ReturnKind::State) => {
             let actual_value: Value = serde_json::from_str(&stdout)?;
             // for changed_properties, we compare post state to pre state
@@ -88,15 +95,20 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
 }
 
 pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestResult, DscError> {
+    if resource.test.is_none() {
+        return Err(DscError::NotImplemented);
+    }
+
     verify_json(resource, expected)?;
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.test.executable, resource.test.args.clone().unwrap_or_default(), Some(expected))?;
+    let test = resource.test.as_ref().unwrap();
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone().unwrap_or_default(), Some(expected))?;
     if exit_code != 0 {
         return Err(DscError::Command(exit_code, stderr.to_string()));
     }
 
     let expected_value: Value = serde_json::from_str(expected)?;
-    match resource.test.returns {
+    match test.returns {
         Some(ReturnKind::State) => {
             let actual_value: Value = serde_json::from_str(&stdout)?;
             let diff_properties = get_diff(&expected_value, &actual_value);
@@ -131,7 +143,11 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
 }
 
 pub fn invoke_schema(resource: &ResourceManifest) -> Result<String, DscError> {
-    match resource.schema {
+    if resource.schema.is_none() {
+        return Err(DscError::NotImplemented);
+    }
+
+    match resource.schema.as_ref().unwrap() {
         SchemaKind::Command(ref command) => {
             let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone().unwrap_or_default(), None)?;
             if exit_code != 0 {

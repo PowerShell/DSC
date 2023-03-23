@@ -342,8 +342,7 @@ fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
         (Some(input), None) => input.clone(),
         (None, Some(stdin)) => stdin.clone(),
         (None, None) => {
-            eprintln!("Error: No input specified");
-            exit(EXIT_INVALID_ARGS);
+            return String::new();
         },
     };
 
