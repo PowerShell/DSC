@@ -1,0 +1,8 @@
+{
+    "manifestVersion": "1.0",
+    "name": "OSInfo",
+    "version": "0.1.0",
+    "get": {
+        "executable": "osinfo"
+    }
+}

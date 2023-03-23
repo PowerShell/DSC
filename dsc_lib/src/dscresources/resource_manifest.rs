@@ -10,11 +10,14 @@ pub struct ResourceManifest {
     pub name: String,
     pub version: String,
     pub get: GetMethod,
-    pub set: SetMethod,
-    pub test: TestMethod,
-    #[serde(rename = "exitCodes")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub set: Option<SetMethod>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub test: Option<TestMethod>,
+    #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
     pub exit_codes: Option<HashMap<i32, String>>,
-    pub schema: SchemaKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schema: Option<SchemaKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -53,7 +56,8 @@ pub enum ReturnKind {
 pub struct GetMethod {
     pub executable: String,
     pub args: Option<Vec<String>>,
-    pub input: InputKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<InputKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

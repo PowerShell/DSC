@@ -342,10 +342,13 @@ fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
         (Some(input), None) => input.clone(),
         (None, Some(stdin)) => stdin.clone(),
         (None, None) => {
-            eprintln!("Error: No input specified");
-            exit(EXIT_INVALID_ARGS);
+            return String::new();
         },
     };
+
+    if input.is_empty() {
+        return String::new();
+    }
 
     match serde_json::from_str::<serde_json::Value>(&input) {
         Ok(_) => input,
