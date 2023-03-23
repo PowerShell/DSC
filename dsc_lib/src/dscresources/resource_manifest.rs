@@ -22,10 +22,10 @@ pub struct ResourceManifest {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum InputKind {
-    #[serde(rename = "stdin")]
-    Stdin,
     #[serde(rename = "args")]
     Args,
+    #[serde(rename = "stdin")]
+    Stdin,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
