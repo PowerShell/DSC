@@ -3,12 +3,12 @@ use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};
 
 use crate::dscerror::DscError;
-use super::{resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult}};
+use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult}};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
 pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult, DscError> {
-    if filter.len() > 0 {
+    if filter.len() > 0 && resource.get.input.is_some() {
         verify_json(resource, filter)?;
     }
 
@@ -25,7 +25,7 @@ pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult
 
 pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResult, DscError> {
     if resource.set.is_none() {
-        return Err(DscError::NotImplemented);
+        return Err(DscError::NotImplemented("set".to_string()));
     }
 
     verify_json(resource, desired)?;
@@ -96,7 +96,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
 
 pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestResult, DscError> {
     if resource.test.is_none() {
-        return Err(DscError::NotImplemented);
+        return Err(DscError::NotImplemented("test".to_string()));
     }
 
     verify_json(resource, expected)?;
@@ -144,7 +144,7 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
 
 pub fn invoke_schema(resource: &ResourceManifest) -> Result<String, DscError> {
     if resource.schema.is_none() {
-        return Err(DscError::NotImplemented);
+        return Err(DscError::NotImplemented("schema retrieval".to_string()));
     }
 
     match resource.schema.as_ref().unwrap() {
@@ -224,43 +224,4 @@ fn verify_json(resource: &ResourceManifest, json: &str) -> Result<(), DscError> 
             return Err(DscError::Schema(error));
         },
     };
-}
-
-fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
-    let mut diff_properties: Vec<String> = Vec::new();
-    if expected.is_null() {
-        return diff_properties;
-    }
-
-    for (key, value) in expected.as_object().unwrap() {
-        // skip meta properties
-        if key.starts_with("_") || key.starts_with("$") {
-            continue;
-        }
-
-        if value.is_object() {
-            let sub_diff = get_diff(value, &actual[key]);
-            if sub_diff.len() > 0 {
-                diff_properties.push(key.to_string());
-            }
-        }
-        else {
-            match actual.as_object() {
-                Some(actual_object) => {
-                    if !actual_object.contains_key(key) {
-                        diff_properties.push(key.to_string());
-                    }
-                    else {
-                        if value != &actual[key] {
-                            diff_properties.push(key.to_string());
-                        }
-                    }
-                },
-                None => {
-                    diff_properties.push(key.to_string());
-                },
-            }
-        }            
-    }
-    diff_properties
 }

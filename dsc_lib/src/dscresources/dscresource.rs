@@ -2,6 +2,7 @@ use dscerror::DscError;
 use resource_manifest::ResourceManifest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use super::{*, invoke_result::{GetResult, SetResult, TestResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
@@ -76,10 +77,10 @@ impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("get PowerShell resources".to_string()))
             },
             ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("get PowerShellScript resources".to_string()))
             },
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
@@ -96,10 +97,10 @@ impl Invoke for DscResource {
     fn set(&self, desired: &str) -> Result<SetResult, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("set PowerShell resources".to_string()))
             },
             ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("set PowerShellScript resources".to_string()))
             },
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
@@ -116,10 +117,10 @@ impl Invoke for DscResource {
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("test PowerShell resources".to_string()))
             },
             ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("test PowerShellScript resources".to_string()))
             },
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
@@ -128,7 +129,22 @@ impl Invoke for DscResource {
                     },
                     Some(manifest) => manifest,
                 };
-                command_resource::invoke_test(manifest, expected)
+
+                // if test is not directly implemented, then we need to handle it here
+                if manifest.test.is_none() {
+                    let get_result = self.get(expected)?;
+                    let expected_state = serde_json::from_str(expected)?;
+                    let diff_properties = get_diff(&expected_state, &get_result.actual_state);
+                    let test_result = TestResult {
+                        expected_state: serde_json::from_str(expected)?,
+                        actual_state: get_result.actual_state,
+                        diff_properties: Some(diff_properties),
+                    };
+                    return Ok(test_result);
+                }
+                else {
+                    command_resource::invoke_test(manifest, expected)
+                }
             },
         }
     }
@@ -136,10 +152,10 @@ impl Invoke for DscResource {
     fn schema(&self) -> Result<String, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("schema PowerShell resources".to_string()))
             },
             ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented)
+                Err(DscError::NotImplemented("schema PowerShellScript resources".to_string()))
             },
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
@@ -152,4 +168,43 @@ impl Invoke for DscResource {
             },
         }
     }
+}
+
+pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
+    let mut diff_properties: Vec<String> = Vec::new();
+    if expected.is_null() {
+        return diff_properties;
+    }
+
+    for (key, value) in expected.as_object().unwrap() {
+        // skip meta properties
+        if key.starts_with("_") || key.starts_with("$") {
+            continue;
+        }
+
+        if value.is_object() {
+            let sub_diff = get_diff(value, &actual[key]);
+            if sub_diff.len() > 0 {
+                diff_properties.push(key.to_string());
+            }
+        }
+        else {
+            match actual.as_object() {
+                Some(actual_object) => {
+                    if !actual_object.contains_key(key) {
+                        diff_properties.push(key.to_string());
+                    }
+                    else {
+                        if value != &actual[key] {
+                            diff_properties.push(key.to_string());
+                        }
+                    }
+                },
+                None => {
+                    diff_properties.push(key.to_string());
+                },
+            }
+        }            
+    }
+    diff_properties
 }

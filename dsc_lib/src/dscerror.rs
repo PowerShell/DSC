@@ -27,8 +27,8 @@ pub enum DscError {
     #[error("Schema missing from manifest: {0}")]
     MissingSchema(String),
 
-    #[error("Not implemented")]
-    NotImplemented,
+    #[error("Not implemented: {0}")]
+    NotImplemented(String),
 
     #[error("Operation: {0}")]
     Operation(String),
