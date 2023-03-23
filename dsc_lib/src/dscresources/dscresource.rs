@@ -1,9 +1,10 @@
 use dscerror::DscError;
 use resource_manifest::ResourceManifest;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use super::{*, invoke_result::{GetResult, SetResult, TestResult}};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct DscResource {
     #[serde(rename="ResourceType")]
     pub resource_type: Option<String>,
@@ -31,7 +32,7 @@ pub struct DscResource {
     pub manifest: Option<ResourceManifest>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub enum ImplementedAs {
     PowerShell,
     PowerShellScript,   // .ps1

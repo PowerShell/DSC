@@ -219,6 +219,18 @@ fn main() {
                     };
                     write_output(&json, &args.format);
                 },
+                DscType::DscResource => {
+                    let schema = schema_for!(DscResource);
+                    // convert to json
+                    let json = match serde_json::to_string(&schema) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, &args.format);
+                },
                 DscType::ResourceManifest => {
                     let schema = schema_for!(ResourceManifest);
                     // convert to json

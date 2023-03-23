@@ -89,5 +89,6 @@ pub enum DscType {
     GetResult,
     SetResult,
     TestResult,
+    DscResource,
     ResourceManifest,
 }
