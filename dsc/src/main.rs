@@ -346,6 +346,10 @@ fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
         },
     };
 
+    if input.is_empty() {
+        return String::new();
+    }
+
     match serde_json::from_str::<serde_json::Value>(&input) {
         Ok(_) => input,
         Err(json_err) => {
