@@ -3,13 +3,13 @@ Describe 'osinfo resource tests' {
         $out = dsc resource get -r osinfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
-            $out.actual_state.type | Should -BeExactly 'Windows'
+            $out.actual_state.family | Should -BeExactly 'Windows'
         }
         elseif ($IsLinux) {
-            $out.actual_state.type | Should -BeExactly 'Ubuntu'
+            $out.actual_state.family | Should -BeExactly 'Linux'
         }
         elseif ($IsMacOS) {
-            $out.actual_state.type | Should -BeExactly 'Macos'
+            $out.actual_state.family | Should -BeExactly 'MacOS'
         }
 
         $out.actual_state.version | Should -Not -BeNullOrEmpty
