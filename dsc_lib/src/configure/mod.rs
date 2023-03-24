@@ -4,7 +4,7 @@ use crate::dscerror::DscError;
 use crate::dscresources::dscresource::{Invoke};
 use crate::discovery::{Discovery};
 use self::config_doc::Configuration;
-use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
+use self::config_result::{ConfigurationGetResult};
 
 pub mod config_doc;
 pub mod config_result;

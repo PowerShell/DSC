@@ -1,6 +1,7 @@
 Describe 'dsc config get tests' {
     It 'can successfully get config with multiple registry resource instances' -Skip:(!$IsWindows) {
-        $config = Get-Content .\osinfo_registry.dsc.json -Raw
+        $jsonPath = Join-Path $PSScriptRoot 'osinfo_registry.dsc.json'
+        $config = Get-Content $jsonPath -Raw
         $out = $config | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results.Count | Should -Be 3
