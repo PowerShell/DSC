@@ -33,6 +33,9 @@ pub enum DscError {
     #[error("Operation: {0}")]
     Operation(String),
 
+    #[error("Resource not found: {0}")]
+    ResourceNotFound(String),
+
     #[error("Schema: {0}")]
     Schema(String),
 

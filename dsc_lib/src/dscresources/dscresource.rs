@@ -6,6 +6,7 @@ use serde_json::Value;
 use super::{*, invoke_result::{GetResult, SetResult, TestResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct DscResource {
     #[serde(rename="ResourceType")]
     pub resource_type: Option<String>,

@@ -1,7 +1,7 @@
 use args::*;
 use atty::Stream;
 use clap::Parser;
-use dsc_lib::{DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
+use dsc_lib::{configure::config_doc::Configuration, DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
 use schemars::schema_for;
 use std::io::{self, Read};
 use std::process::exit;
@@ -233,6 +233,18 @@ fn main() {
                 },
                 DscType::ResourceManifest => {
                     let schema = schema_for!(ResourceManifest);
+                    // convert to json
+                    let json = match serde_json::to_string(&schema) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {}", err);
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, &args.format);
+                },
+                DscType::Configuration => {
+                    let schema = schema_for!(Configuration);
                     // convert to json
                     let json = match serde_json::to_string(&schema) {
                         Ok(json) => json,
