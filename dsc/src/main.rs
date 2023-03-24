@@ -1,7 +1,7 @@
 use args::*;
 use atty::Stream;
 use clap::Parser;
-use dsc_lib::{configure::config_doc::Configuration, DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
+use dsc_lib::{configure::{Configurator, ErrorAction}, configure::config_doc::Configuration, DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
 use schemars::schema_for;
 use std::io::{self, Read};
 use std::process::exit;
@@ -53,10 +53,35 @@ fn main() {
 
     match args.subcommand {
         SubCommand::Config { subcommand } => {
+            if stdin.is_none() {
+                eprintln!("Configuration JSON must be piped to stdin");
+                exit(EXIT_INVALID_ARGS);
+            }
+            let configurator = match Configurator::new(&stdin.unwrap()) {
+                Ok(configurator) => configurator,
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            };
             match subcommand {
                 ConfigSubCommand::Get => {
-                    eprintln!("Getting configuration... NOT IMPLEMENTED YET");
-                    exit(EXIT_DSC_ERROR);
+                    match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
+                        Ok(result) => {
+                            let json = match serde_json::to_string(&result) {
+                                Ok(json) => json,
+                                Err(err) => {
+                                    eprintln!("JSON Error: {}", err);
+                                    exit(EXIT_JSON_ERROR);
+                                }
+                            };
+                            write_output(&json, &args.format);
+                        },
+                        Err(err) => {
+                            eprintln!("Error: {}", err);
+                            exit(EXIT_DSC_ERROR);
+                        }
+                    }
                 },
                 ConfigSubCommand::Set => {
                     eprintln!("Setting configuration... NOT IMPLEMENTED YET");

@@ -4,15 +4,24 @@ use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct ResourceGetResult {
+    pub name: String,
+    #[serde(rename="type")]
+    pub resource_type: String,
+    pub result: GetResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
-    pub resources: Vec<GetResult>,
+    pub results: Vec<ResourceGetResult>,
     pub errors: Vec<String>,
 }
 
 impl ConfigurationGetResult {
     pub fn new() -> Self {
         Self {
-            resources: Vec::new(),
+            results: Vec::new(),
             errors: Vec::new(),
         }
     }
@@ -20,15 +29,24 @@ impl ConfigurationGetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct ResourceSetResult {
+    pub name: String,
+    #[serde(rename="type")]
+    pub resource_type: String,
+    pub result: SetResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ConfigurationSetResult {
-    pub resources: Vec<SetResult>,
+    pub results: Vec<ResourceSetResult>,
     pub errors: Vec<String>,
 }
 
 impl ConfigurationSetResult {
     pub fn new() -> Self {
         Self {
-            resources: Vec::new(),
+            results: Vec::new(),
             errors: Vec::new(),
         }
     }
@@ -36,15 +54,24 @@ impl ConfigurationSetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct ResourceTestResult {
+    pub name: String,
+    #[serde(rename="type")]
+    pub resource_type: String,
+    pub result: TestResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ConfigurationTestResult {
-    pub resources: Vec<TestResult>,
+    pub results: Vec<ResourceTestResult>,
     pub errors: Vec<String>,
 }
 
 impl ConfigurationTestResult {
     pub fn new() -> Self {
         Self {
-            resources: Vec::new(),
+            results: Vec::new(),
             errors: Vec::new(),
         }
     }

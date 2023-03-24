@@ -12,6 +12,9 @@ pub enum DscError {
     #[error("HTTP status: {0}")]
     HttpStatus(StatusCode),
 
+    #[error("Invalid configuration:\n{0}")]
+    InvalidConfiguration(String),
+
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
 
@@ -38,6 +41,9 @@ pub enum DscError {
 
     #[error("Schema: {0}")]
     Schema(String),
+
+    #[error("No Schema: {0}")]
+    SchemaNotAvailable(String),
 
     #[error("Unknown: {code:?} {message:?}")]
     Unknown {

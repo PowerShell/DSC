@@ -60,10 +60,13 @@ pub enum DataType {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct Resource {
-    #[serde(rename = "type")] // this is the fully qualified name
+    /// The fully qualified name of the resource type
+    #[serde(rename = "type")]
     pub resource_type: String,
-    // `apiVersion` is required by ARM but doesn't make sense here
-    pub name: String, // friendly name
+    // TODO: `apiVersion` is required by ARM but doesn't make sense here
+
+    /// A friendly name for the resource instance
+    pub name: String, // friendly unique instance name
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
     pub depends_on: Option<Vec<String>>,
     // `identity` can be used for run-as

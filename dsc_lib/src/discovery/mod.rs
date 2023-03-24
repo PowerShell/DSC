@@ -42,6 +42,7 @@ impl Discovery {
         Ok(())
     }
 
+    // TODO: may need more search criteria like version, hash, etc...
     pub fn find_resource(&self, name: &str) -> ResourceIterator {
         if !self.initialized {
             return ResourceIterator::new(vec![]);
