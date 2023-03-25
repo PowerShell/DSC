@@ -47,12 +47,12 @@ impl Configurator {
             };
             let filter = serde_json::to_string(&resource.properties)?;
             let get_result = dsc_resource.get(&filter)?;
-            let resource_get_result = config_result::ResourceGetResult {
+            let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: get_result,
             };
-            result.results.push(resource_get_result);
+            result.results.push(resource_result);
         }
 
         Ok(result)
