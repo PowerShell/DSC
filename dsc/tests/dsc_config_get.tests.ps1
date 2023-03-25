@@ -12,9 +12,9 @@ Describe 'dsc config get tests' {
         $out.results[1].Name | Should -Be 'windows product name'
         $out.results[1].type | Should -Be 'registry'
         $out.results[1].result.actual_state.valueData.String | Should -BeLike 'Windows*'
-        $out.results[2].Name | Should -Be 'powershell version'
+        $out.results[2].Name | Should -Be 'system root'
         $out.results[2].type | Should -Be 'registry'
-        $out.results[2].result.actual_state.valueData.String | Should -BeLike '7.*'
+        $out.results[2].result.actual_state.valueData.String | Should -BeExactly $env:SystemRoot
     }
 
     It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {

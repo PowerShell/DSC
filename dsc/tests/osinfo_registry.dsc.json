@@ -15,11 +15,11 @@
             }
         },
         {
-            "name": "powershell version",
+            "name": "system root",
             "type": "registry",
             "properties": {
-                "keyPath": "HKLM\\SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions\\86abcfbd-1ccc-4a88-b8b2-0facfde29094",
-                "valueName": "SemanticVersion" 
+                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                "valueName": "SystemRoot"                
             }
         }
     ]
