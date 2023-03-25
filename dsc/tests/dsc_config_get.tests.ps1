@@ -4,6 +4,7 @@ Describe 'dsc config get tests' {
         $config = Get-Content $jsonPath -Raw
         $out = $config | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
+        $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 3
         $out.results[0].Name | Should -Be 'os'
         $out.results[0].type | Should -Be 'osinfo'
@@ -14,5 +15,18 @@ Describe 'dsc config get tests' {
         $out.results[2].Name | Should -Be 'powershell version'
         $out.results[2].type | Should -Be 'registry'
         $out.results[2].result.actual_state.valueData.String | Should -BeLike '7.*'
+    }
+
+    It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {
+        $jsonPath = Join-Path $PSScriptRoot 'invalid_schema.dsc.json'
+        $config = Get-Content $jsonPath -Raw
+        $out = $config | dsc config get | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2
+        $out.hadErrors | Should -BeTrue
+        $out.results.Count | Should -Be 0
+        $out.messages.Count | Should -Be 3
+        $out.messages[0].level | Should -BeExactly 'Warning'
+        $out.messages[1].level | Should -BeExactly 'Error'
+        $out.messages[2].level | Should -BeExactly 'Error'
     }
 }

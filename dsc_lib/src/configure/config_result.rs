@@ -3,6 +3,23 @@ use serde::{Deserialize, Serialize};
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum MessageLevel {
+    Error,
+    Warning,
+    Information,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ResourceMessage {
+    pub name: String,
+    #[serde(rename="type")]
+    pub resource_type: String,
+    pub message: String,
+    pub level: MessageLevel,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceGetResult {
     pub name: String,
@@ -15,14 +32,17 @@ pub struct ResourceGetResult {
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
     pub results: Vec<ResourceGetResult>,
-    pub errors: Vec<String>,
+    pub messages: Vec<ResourceMessage>,
+    #[serde(rename = "hadErrors")]
+    pub had_errors: bool,
 }
 
 impl ConfigurationGetResult {
     pub fn new() -> Self {
         Self {
             results: Vec::new(),
-            errors: Vec::new(),
+            messages: Vec::new(),
+            had_errors: false,
         }
     }
 }
@@ -40,14 +60,17 @@ pub struct ResourceSetResult {
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationSetResult {
     pub results: Vec<ResourceSetResult>,
-    pub errors: Vec<String>,
+    pub messages: Vec<ResourceMessage>,
+    #[serde(rename = "hadErrors")]
+    pub had_errors: bool,
 }
 
 impl ConfigurationSetResult {
     pub fn new() -> Self {
         Self {
             results: Vec::new(),
-            errors: Vec::new(),
+            messages: Vec::new(),
+            had_errors: false,
         }
     }
 }
@@ -65,14 +88,17 @@ pub struct ResourceTestResult {
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationTestResult {
     pub results: Vec<ResourceTestResult>,
-    pub errors: Vec<String>,
+    pub messages: Vec<ResourceMessage>,
+    #[serde(rename = "hadErrors")]
+    pub had_errors: bool,
 }
 
 impl ConfigurationTestResult {
     pub fn new() -> Self {
         Self {
             results: Vec::new(),
-            errors: Vec::new(),
+            messages: Vec::new(),
+            had_errors: false,
         }
     }
 }

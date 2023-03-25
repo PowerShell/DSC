@@ -76,6 +76,9 @@ fn main() {
                                 }
                             };
                             write_output(&json, &args.format);
+                            if result.had_errors {
+                                exit(EXIT_DSC_ERROR);
+                            }
                         },
                         Err(err) => {
                             eprintln!("Error: {}", err);
