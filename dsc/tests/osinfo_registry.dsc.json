@@ -1,0 +1,26 @@
+{
+    "$schema": "https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json",
+    "resources": [
+        {
+            "name": "os",
+            "type": "osinfo",
+            "properties": {}
+        },
+        {
+            "name": "windows product name",
+            "type": "registry",
+            "properties": {
+                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                "valueName": "ProductName"                
+            }
+        },
+        {
+            "name": "system root",
+            "type": "registry",
+            "properties": {
+                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                "valueName": "SystemRoot"                
+            }
+        }
+    ]
+}

@@ -142,9 +142,9 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
     }
 }
 
-pub fn invoke_schema(resource: &ResourceManifest) -> Result<String, DscError> {
+pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
     if resource.schema.is_none() {
-        return Err(DscError::NotImplemented("schema retrieval".to_string()));
+        return Err(DscError::SchemaNotAvailable(resource.name.clone()));
     }
 
     match resource.schema.as_ref().unwrap() {
@@ -205,7 +205,7 @@ fn invoke_command(executable: &str, args: Vec<String>, input: Option<&str>) -> R
 }
 
 fn verify_json(resource: &ResourceManifest, json: &str) -> Result<(), DscError> {
-    let schema = invoke_schema(resource)?;
+    let schema = get_schema(resource)?;
     let schema: Value = serde_json::from_str(&schema)?;
     let compiled_schema = match JSONSchema::compile(&schema) {
         Ok(schema) => schema,

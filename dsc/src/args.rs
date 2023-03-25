@@ -91,4 +91,8 @@ pub enum DscType {
     TestResult,
     DscResource,
     ResourceManifest,
+    Configuration,
+    ConfigurationGetResult,
+    ConfigurationSetResult,
+    ConfigurationTestResult,
 }

@@ -6,6 +6,7 @@ use serde_json::Value;
 use super::{*, invoke_result::{GetResult, SetResult, TestResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct DscResource {
     #[serde(rename="ResourceType")]
     pub resource_type: Option<String>,
@@ -35,8 +36,11 @@ pub struct DscResource {
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub enum ImplementedAs {
+    /// A PowerShell script function or class
     PowerShell,
-    PowerShellScript,   // .ps1
+    /// A PowerShell .ps1 script file
+    PowerShellScript,
+    /// A command line executable
     Command,
 }
 
@@ -164,7 +168,7 @@ impl Invoke for DscResource {
                     },
                     Some(manifest) => manifest,
                 };
-                command_resource::invoke_schema(manifest)
+                command_resource::get_schema(manifest)
             },
         }
     }

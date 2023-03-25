@@ -1,3 +1,4 @@
+pub mod configure;
 pub mod discovery;
 pub mod dscresources;
 pub mod dscerror;
