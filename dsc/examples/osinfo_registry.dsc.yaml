@@ -1,7 +1,5 @@
+# Simple example using two different resources and one of them twice.
 $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
-metadata:
-  description: Simple example using two different resources and one of them twice.
-  _timeoutSeconds: 600
 resources:
 - name: os
   type: Microsoft/OSInfo

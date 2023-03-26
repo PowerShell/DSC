@@ -1,7 +1,7 @@
+# Example on how concurrency would be defined in the configuration.
 $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
 metadata:
-  description: Example on how concurrency would be defined in the configuration.
-  _timeoutSeconds: 600
+  _timeoutSeconds: 600 # example of setting timeout for orchestration, should be namespaced?
 resources:
 - name: os
   type: Microsoft/OSInfo

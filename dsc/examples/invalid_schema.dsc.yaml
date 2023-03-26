@@ -1,6 +1,5 @@
+# Sample configuration with invalid properties that don't match the resource schema.
 $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
-metadata:
-  description: Sample configuration with invalid properties that don't match the resource schema.
 resources:
 - name: os
   type: Microsoft/OSInfo
