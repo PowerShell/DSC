@@ -156,7 +156,8 @@ pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
             Ok(stdout)
         },
         SchemaKind::Embedded(ref schema) => {
-            Ok(schema.to_string())
+            let json = serde_json::to_string(schema)?;
+            Ok(json)
         },
         SchemaKind::Url(ref url) => {
             // TODO: cache downloaded schemas so we don't have to download them every time

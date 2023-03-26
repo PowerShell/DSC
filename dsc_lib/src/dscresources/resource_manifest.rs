@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -48,7 +49,7 @@ pub enum SchemaKind {
     Command(SchemaCommand),
     /// The schema is embedded in the manifest.
     #[serde(rename = "embedded")]
-    Embedded(String),
+    Embedded(Value),
     /// The schema is retrieved from a URL.
     #[serde(rename = "url")]
     Url(String),

@@ -238,6 +238,17 @@ fn main() {
                 DscType::ConfigurationTestResult => {
                     schema_for!(ConfigurationTestResult)
                 },
+                DscType::ConfigurationAndResources => {
+                    let input = get_input(&None, &stdin);
+                    if input.is_empty() {
+                        eprintln!("Error: Configuration input is required for this schema");
+                        exit(EXIT_DSC_ERROR);
+                    }
+
+                    let json = get_config_and_resource_schema(input);
+                    write_output(&json, &args.format);
+                    exit(EXIT_SUCCESS);
+                },
             };
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -251,6 +262,12 @@ fn main() {
     }
 
     exit(EXIT_SUCCESS);
+}
+
+fn get_config_and_resource_schema(_input: String) -> String {
+    // TODO: fill in code
+    // in the case a resource doesn't have schema, use a generic schema that allows any property
+    String::from("TODO")
 }
 
 fn write_output(json: &str, format: &Option<OutputFormat>) {

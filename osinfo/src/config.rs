@@ -1,4 +1,3 @@
-use os_info::{Type, Bitness};
 use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -7,8 +6,6 @@ pub struct OsInfo {
     #[serde(rename = "$id")]
     pub id: String,
     family: Family,
-    #[serde(rename = "type")]
-    os_type: Type,
     version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     edition: Option<String>,
@@ -17,6 +14,16 @@ pub struct OsInfo {
     bitness: Bitness,
     #[serde(skip_serializing_if = "Option::is_none")]
     architecture: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub enum Bitness {
+    #[serde(rename = "32")]
+    Bit32,
+    #[serde(rename = "64")]
+    Bit64,
+    #[serde(rename = "unknown")]
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -35,18 +42,22 @@ impl OsInfo {
         let codename = os_info.codename().map(|codename| codename.to_string());
         let architecture = os_info.architecture().map(|architecture| architecture.to_string());
         let family = match os_info.os_type() {
-            Type::Macos => Family::MacOS,
-            Type::Windows => Family::Windows,
+            os_info::Type::Macos => Family::MacOS,
+            os_info::Type::Windows => Family::Windows,
             _ => Family::Linux,
+        };
+        let bits: Bitness = match os_info.bitness() {
+            os_info::Bitness::X32 => Bitness::Bit32,
+            os_info::Bitness::X64 => Bitness::Bit64,
+            _ => Bitness::Unknown,
         };
         Self {
             id: ID.to_string(),
             family,
-            os_type: os_info.os_type(),
             version: os_info.version().to_string(),
             edition,
             codename,
-            bitness: os_info.bitness(),
+            bitness: bits,
             architecture,
         }
     }

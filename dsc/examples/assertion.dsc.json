@@ -8,14 +8,14 @@
                 "resources" : [
                     {
                         "name": "os",
-                        "type": "Microsft/OSInfo",
+                        "type": "Microsoft/OSInfo",
                         "properties": {
                             "family": "Windows"
                         }
                     },                    
                     {
                         "name": "system root",
-                        "type": "Microsft.Windows/Registry",
+                        "type": "Microsoft.Windows/Registry",
                         "properties": {
                             "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
                             "valueName": "SystemRoot",              
@@ -29,7 +29,7 @@
         },
         {
             "name": "current user registry",
-            "type": "Microsft.Windows/Registry",
+            "type": "Microsoft.Windows/Registry",
             "properties": {
                 "keyPath": "HKCU\\example",
                 "_ensure": "present"

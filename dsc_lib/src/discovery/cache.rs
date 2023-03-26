@@ -23,7 +23,7 @@ impl DscResourceCache {
     }
 
     pub fn add(&mut self, resource: DscResource) {
-        self.cache.insert(resource.name.clone(), resource);
+        self.cache.insert(resource.type_name.clone(), resource);
     }
 
     pub fn get(&self, name: &str) -> Option<&DscResource> {

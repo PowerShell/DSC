@@ -6,12 +6,12 @@
     "resources": [
         {
             "name": "os",
-            "type": "Microsft/OSInfo",
+            "type": "Microsoft/OSInfo",
             "properties": {}
         },
         {
             "name": "windows product name",
-            "type": "Microsft.Windows/Registry",
+            "type": "Microsoft.Windows/Registry",
             "properties": {
                 "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
                 "valueName": "ProductName"                
@@ -19,7 +19,7 @@
         },
         {
             "name": "system root",
-            "type": "Microsft.Windows/Registry",
+            "type": "Microsoft.Windows/Registry",
             "properties": {
                 "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
                 "valueName": "SystemRoot"                
