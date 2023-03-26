@@ -1,0 +1,19 @@
+$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+metadata:
+  description: Example on how concurrency would be defined in the configuration.
+  _timeoutSeconds: 600
+resources:
+- name: os
+  type: Microsoft/OSInfo
+  properties: {}
+- name: windows product name
+  type: Microsoft.Windows/Registry
+  properties:
+    keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
+    valueName: ProductName
+- name: system root
+  type: Microsoft.Windows/Registry
+  properties:
+    keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
+    valueName: SystemRoot
+    

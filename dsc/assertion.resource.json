@@ -1,6 +1,6 @@
 {
     "manifestVersion": "1.0",
-    "name": "Assertion",
+    "type": "DSC/Assertion",
     "version": "0.1.0",
     "description": "`test` will be invoked for all resources in the supplied configuration.",
     "get": {

@@ -1,6 +1,10 @@
 Describe 'dsc config get tests' {
-    It 'can successfully get config with multiple registry resource instances' -Skip:(!$IsWindows) {
-        $jsonPath = Join-Path $PSScriptRoot '../examples/osinfo_registry.dsc.json'
+    It 'can successfully get config with multiple registry resource instances: <config>' -Skip:(!$IsWindows) -TestCases @(
+        @{ config = 'osinfo_registry.dsc.json' }
+        @{ config = 'osinfo_registry.dsc.yaml' }
+    ) {
+        param($config)
+        $jsonPath = Join-Path $PSScriptRoot '../examples' $config
         $config = Get-Content $jsonPath -Raw
         $out = $config | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
@@ -18,7 +22,7 @@ Describe 'dsc config get tests' {
     }
 
     It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {
-        $jsonPath = Join-Path $PSScriptRoot '../examples/invalid_schema.dsc.json'
+        $jsonPath = Join-Path $PSScriptRoot '../examples/invalid_schema.dsc.yaml'
         $config = Get-Content $jsonPath -Raw
         $out = $config | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2
