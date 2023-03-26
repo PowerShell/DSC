@@ -1,0 +1,42 @@
+{
+    "$schema": "https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json",
+    "resources": [
+        {
+            "name": "my assertions",
+            "type": "assertion",
+            "properties": {
+                "resources" : [
+                    {
+                        "name": "os",
+                        "type": "Microsft/OSInfo",
+                        "properties": {
+                            "family": "Windows"
+                        }
+                    },                    
+                    {
+                        "name": "system root",
+                        "type": "Microsft.Windows/Registry",
+                        "properties": {
+                            "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                            "valueName": "SystemRoot",              
+                            "valueData": {
+                                "String": "C:\\Windows"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "current user registry",
+            "type": "Microsft.Windows/Registry",
+            "properties": {
+                "keyPath": "HKCU\\example",
+                "_ensure": "present"
+            },
+            "dependsOn": [
+                "[assertion]my assertions"
+            ]
+        }
+    ]
+}

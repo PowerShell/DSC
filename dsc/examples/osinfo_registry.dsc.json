@@ -1,14 +1,17 @@
 {
     "$schema": "https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json",
+    "metadata": {
+        "_timeoutSeconds": 600
+    },
     "resources": [
         {
             "name": "os",
-            "type": "osinfo",
+            "type": "Microsft/OSInfo",
             "properties": {}
         },
         {
             "name": "windows product name",
-            "type": "registry",
+            "type": "Microsft.Windows/Registry",
             "properties": {
                 "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
                 "valueName": "ProductName"                
@@ -16,7 +19,7 @@
         },
         {
             "name": "system root",
-            "type": "registry",
+            "type": "Microsft.Windows/Registry",
             "properties": {
                 "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
                 "valueName": "SystemRoot"                

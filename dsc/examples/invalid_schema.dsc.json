@@ -3,12 +3,12 @@
     "resources": [
         {
             "name": "os",
-            "type": "osinfo",
+            "type": "Microsft/OSInfo",
             "properties": {}
         },
         {
             "name": "windows product name",
-            "type": "registry",
+            "type": "Microsft.Windows/Registry",
             "properties": {
                 "kyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
                 "valueName": "ProductName"                
@@ -16,7 +16,7 @@
         },
         {
             "name": "powershell version",
-            "type": "registry",
+            "type": "Microsft.Windows/Registry",
             "properties": {
                 "keyPath": "HKLM\\SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions\\86abcfbd-1ccc-4a88-b8b2-0facfde29094",
                 "valueNamed": "SemanticVersion" 

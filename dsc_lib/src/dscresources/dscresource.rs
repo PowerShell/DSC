@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use super::{*, invoke_result::{GetResult, SetResult, TestResult}};
 
+// TODO: this should be redesigned to match our new ARM based syntax
+// example is `name` should now be `type`
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DscResource {

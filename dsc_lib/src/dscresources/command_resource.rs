@@ -144,7 +144,7 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
 
 pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
     if resource.schema.is_none() {
-        return Err(DscError::SchemaNotAvailable(resource.name.clone()));
+        return Err(DscError::SchemaNotAvailable(resource.resource_type.clone()));
     }
 
     match resource.schema.as_ref().unwrap() {

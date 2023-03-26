@@ -8,10 +8,13 @@ pub struct ResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "manifestVersion")]
     pub manifest_version: String,
-    /// The name of the resource.
-    pub name: String,
+    /// The namespaced name of the resource.
+    #[serde(rename = "type")]
+    pub resource_type: String,
     /// The version of the resource.
     pub version: String,
+    /// The description of the resource.
+    pub description: Option<String>,
     /// Details how to call the Get method of the resource.
     pub get: GetMethod,
     /// Details how to call the Set method of the resource.

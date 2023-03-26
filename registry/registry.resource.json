@@ -1,6 +1,6 @@
 {
   "manifestVersion": "1.0",
-  "name": "Registry",
+  "type": "Microsft.Windows/Registry",
   "version": "0.1.0",
   "get": {
     "executable": "registry",

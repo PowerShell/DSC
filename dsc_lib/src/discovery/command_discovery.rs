@@ -78,7 +78,7 @@ fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
         }
     };
     let resource = DscResource {
-        name: manifest.name.clone(),
+        name: manifest.resource_type.clone(),
         implemented_as: ImplementedAs::Command,
         path: path.to_str().unwrap().to_string(),
         parent_path: path.parent().unwrap().to_str().unwrap().to_string(),
