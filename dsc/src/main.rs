@@ -60,10 +60,10 @@ fn main() {
                 exit(EXIT_INVALID_ARGS);
             }
 
-            let json: serde_json::Value = match serde_json::from_str(&stdin.as_ref().unwrap()) {
+            let json: serde_json::Value = match serde_json::from_str(stdin.as_ref().unwrap()) {
                 Ok(json) => json,
                 Err(_) => {
-                    match serde_yaml::from_str::<Value>(&stdin.as_ref().unwrap()) {
+                    match serde_yaml::from_str::<Value>(stdin.as_ref().unwrap()) {
                         Ok(yaml) => {
                             match serde_json::to_value(yaml) {
                                 Ok(json) => json,
@@ -298,7 +298,6 @@ fn main() {
 
 fn get_config_and_resource_schema(_input: String) -> String {
     // TODO: fill in code
-    // in the case a resource doesn't have schema, use a generic schema that allows any property
     String::from("TODO")
 }
 

@@ -16,4 +16,3 @@ resources:
   properties:
     keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
     valueName: SystemRoot
-    
