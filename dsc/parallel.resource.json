@@ -1,6 +1,6 @@
 {
     "manifestVersion": "1.0",
-    "type": "DSC/Parallel",
+    "type": "DSC/ParallelGroup",
     "version": "0.1.0",
     "description": "All resources in the supplied configuration run concurrently.",
     "get": {
