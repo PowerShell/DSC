@@ -80,7 +80,7 @@ fn main() {
                     }
                 }
             };
-        
+
             let json_string = match serde_json::to_string(&json) {
                 Ok(json_string) => json_string,
                 Err(err) => {
@@ -348,9 +348,9 @@ fn write_output(json: &str, format: &Option<OutputFormat>) {
                 true => ps.find_syntax_by_extension("json").unwrap(),
                 false => ps.find_syntax_by_extension("yaml").unwrap(),
             };
-    
+
             let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
-    
+
             for line in LinesWithEndings::from(&output) {
                 let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap();
                 let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
@@ -383,7 +383,7 @@ fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
             let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
             match resources.len() {
                 0 => {
-                    eprintln!("Error: Resource not found");
+                    eprintln!("Error: Resource not found: '{}'", resource);
                     exit(EXIT_INVALID_ARGS);
                 }
                 1 => resources[0].clone(),
