@@ -24,7 +24,7 @@ Describe 'osinfo resource tests' {
     It 'should perform synthetic test' {
         $out = '{"family": "does_not_exist"}' | dsc resource test -r *osinfo | ConvertFrom-Json
         $actual = dsc resource get -r *osinfo | ConvertFrom-Json
-        $out.actual_state.type | Should -BeExactly $actual.actual_state.type
+        $out.actual_state.family | Should -BeExactly $actual.actual_state.family
         $out.actual_state.version | Should -BeExactly $actual.actual_state.version
         $out.actual_state.bitness | Should -BeExactly $actual.actual_state.bitness
         $out.actual_state.edition | Should -BeExactly $actual.actual_state.edition
