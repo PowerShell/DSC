@@ -22,4 +22,4 @@ resources:
     keyPath: HKCU\example
     _ensure: present
   dependsOn:
-  - '[DSC/Assertion]my assertions' # should we include the type or just the name?
+  - '[DSC/Assertion]my assertions' # should we include the type or just the name? Is there a scenario to depend on a deeply nested resource?
