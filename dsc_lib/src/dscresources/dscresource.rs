@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use super::{*, invoke_result::{GetResult, SetResult, TestResult}};
 
+// TODO: this should be redesigned to match our new ARM based syntax
+// example is `name` should now be `type`
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DscResource {
-    #[serde(rename="ResourceType")]
-    pub resource_type: Option<String>,
-    #[serde(rename="Name")]
-    pub name: String,
+    #[serde(rename="Type")]
+    pub type_name: String,
     #[serde(rename="FriendlyName")]
     pub friendly_name: Option<String>,
     #[serde(rename="Module")]
@@ -47,8 +47,7 @@ pub enum ImplementedAs {
 impl DscResource {
     pub fn new() -> Self {
         Self {
-            resource_type: None,
-            name: String::new(),
+            type_name: String::new(),
             friendly_name: None,
             module: None,
             module_name: None,
@@ -89,7 +88,7 @@ impl Invoke for DscResource {
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
                     None => {
-                        return Err(DscError::MissingManifest(self.name.clone()));
+                        return Err(DscError::MissingManifest(self.type_name.clone()));
                     },
                     Some(manifest) => manifest,
                 };
@@ -109,7 +108,7 @@ impl Invoke for DscResource {
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
                     None => {
-                        return Err(DscError::MissingManifest(self.name.clone()));
+                        return Err(DscError::MissingManifest(self.type_name.clone()));
                     },
                     Some(manifest) => manifest,
                 };
@@ -129,7 +128,7 @@ impl Invoke for DscResource {
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
                     None => {
-                        return Err(DscError::MissingManifest(self.name.clone()));
+                        return Err(DscError::MissingManifest(self.type_name.clone()));
                     },
                     Some(manifest) => manifest,
                 };
@@ -164,7 +163,7 @@ impl Invoke for DscResource {
             ImplementedAs::Command => {
                 let manifest = match &self.manifest {
                     None => {
-                        return Err(DscError::MissingManifest(self.name.clone()));
+                        return Err(DscError::MissingManifest(self.type_name.clone()));
                     },
                     Some(manifest) => manifest,
                 };

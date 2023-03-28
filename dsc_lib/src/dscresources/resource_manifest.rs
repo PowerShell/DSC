@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -8,10 +9,13 @@ pub struct ResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "manifestVersion")]
     pub manifest_version: String,
-    /// The name of the resource.
-    pub name: String,
+    /// The namespaced name of the resource.
+    #[serde(rename = "type")]
+    pub resource_type: String,
     /// The version of the resource.
     pub version: String,
+    /// The description of the resource.
+    pub description: Option<String>,
     /// Details how to call the Get method of the resource.
     pub get: GetMethod,
     /// Details how to call the Set method of the resource.
@@ -45,7 +49,7 @@ pub enum SchemaKind {
     Command(SchemaCommand),
     /// The schema is embedded in the manifest.
     #[serde(rename = "embedded")]
-    Embedded(String),
+    Embedded(Value),
     /// The schema is retrieved from a URL.
     #[serde(rename = "url")]
     Url(String),

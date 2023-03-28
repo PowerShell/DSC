@@ -3,6 +3,7 @@ use atty::Stream;
 use clap::Parser;
 use dsc_lib::{configure::{Configurator, ErrorAction, config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult}}, configure::config_doc::Configuration, DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
 use schemars::schema_for;
+use serde_yaml::Value;
 use std::io::{self, Read};
 use std::process::exit;
 use syntect::easy::HighlightLines;
@@ -21,6 +22,7 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_ARGS: i32 = 1;
 const EXIT_DSC_ERROR: i32 = 2;
 const EXIT_JSON_ERROR: i32 = 3;
+const EXIT_INVALID_INPUT: i32 = 4;
 
 fn main() {
     #[cfg(debug_assertions)]
@@ -54,10 +56,40 @@ fn main() {
     match args.subcommand {
         SubCommand::Config { subcommand } => {
             if stdin.is_none() {
-                eprintln!("Configuration JSON must be piped to stdin");
+                eprintln!("Configuration must be piped to STDIN");
                 exit(EXIT_INVALID_ARGS);
             }
-            let configurator = match Configurator::new(&stdin.unwrap()) {
+
+            let json: serde_json::Value = match serde_json::from_str(stdin.as_ref().unwrap()) {
+                Ok(json) => json,
+                Err(_) => {
+                    match serde_yaml::from_str::<Value>(stdin.as_ref().unwrap()) {
+                        Ok(yaml) => {
+                            match serde_json::to_value(yaml) {
+                                Ok(json) => json,
+                                Err(err) => {
+                                    eprintln!("Error: Failed to convert YAML to JSON: {}", err);
+                                    exit(EXIT_DSC_ERROR);
+                                }
+                            }
+                        },
+                        Err(err) => {
+                            eprintln!("Error: Input is not valid JSON or YAML: {}", err);
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                }
+            };
+
+            let json_string = match serde_json::to_string(&json) {
+                Ok(json_string) => json_string,
+                Err(err) => {
+                    eprintln!("Error: Failed to convert JSON to string: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            };
+
+            let configurator = match Configurator::new(&json_string) {
                 Ok(configurator) => configurator,
                 Err(err) => {
                     eprintln!("Error: {}", err);
@@ -238,6 +270,17 @@ fn main() {
                 DscType::ConfigurationTestResult => {
                     schema_for!(ConfigurationTestResult)
                 },
+                DscType::ConfigurationAndResources => {
+                    let input = get_input(&None, &stdin);
+                    if input.is_empty() {
+                        eprintln!("Error: Configuration input is required for this schema");
+                        exit(EXIT_DSC_ERROR);
+                    }
+
+                    let json = get_config_and_resource_schema(input);
+                    write_output(&json, &args.format);
+                    exit(EXIT_SUCCESS);
+                },
             };
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -251,6 +294,11 @@ fn main() {
     }
 
     exit(EXIT_SUCCESS);
+}
+
+fn get_config_and_resource_schema(_input: String) -> String {
+    // TODO: fill in code
+    String::from("TODO")
 }
 
 fn write_output(json: &str, format: &Option<OutputFormat>) {
@@ -300,9 +348,9 @@ fn write_output(json: &str, format: &Option<OutputFormat>) {
                 true => ps.find_syntax_by_extension("json").unwrap(),
                 false => ps.find_syntax_by_extension("yaml").unwrap(),
             };
-    
+
             let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
-    
+
             for line in LinesWithEndings::from(&output) {
                 let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap();
                 let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
@@ -335,7 +383,7 @@ fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
             let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
             match resources.len() {
                 0 => {
-                    eprintln!("Error: Resource not found");
+                    eprintln!("Error: Resource not found: '{}'", resource);
                     exit(EXIT_INVALID_ARGS);
                 }
                 1 => resources[0].clone(),

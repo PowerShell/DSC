@@ -144,7 +144,7 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
 
 pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
     if resource.schema.is_none() {
-        return Err(DscError::SchemaNotAvailable(resource.name.clone()));
+        return Err(DscError::SchemaNotAvailable(resource.resource_type.clone()));
     }
 
     match resource.schema.as_ref().unwrap() {
@@ -156,7 +156,8 @@ pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
             Ok(stdout)
         },
         SchemaKind::Embedded(ref schema) => {
-            Ok(schema.to_string())
+            let json = serde_json::to_string(schema)?;
+            Ok(json)
         },
         SchemaKind::Url(ref url) => {
             // TODO: cache downloaded schemas so we don't have to download them every time
