@@ -1,7 +1,6 @@
 use args::*;
 use atty::Stream;
 use clap::Parser;
-use config::*;
 use config::config::SshdConfig;
 use input_helper::*;
 use sshdconfig_error::*;
@@ -29,31 +28,36 @@ fn main() {
 
     let input_data;
     let curr_sshdconfig;
+    match &args.command {
+        Commands::Get {config_path, 
+            config_json, curr_config_path, ..} |
+        Commands::Set {config_path, 
+            config_json, curr_config_path} |
+        Commands::Test {config_path, 
+            config_json, curr_config_path} => {
+            match parse_input(&config_path, &config_json, 
+                &stdin, &curr_config_path) {
+                Ok(result) => {
+                    input_data = result.0;
+                    curr_sshdconfig = result.1;
+                }
+                Err(e) => {
+                    eprintln!("Error getting input: {}", e);
+                    exit(EXIT_INPUT_INVALID);
+                }
+            }
+        }
+    }
+
     match args.command {
-        Commands::Get { input_config_path, input_config_json, curr_config_path, include_defaults } => {
-            (input_data, curr_sshdconfig) = initial_setup(&input_config_path, 
-                &input_config_json, &stdin, &curr_config_path);
-            let keywords = match input_data {
-                InputData::Text(data) => {
-                    match curr_sshdconfig.get_keywords_from_file(&data) {
-                        Ok(result) => Some(result),
-                        Err(e) => {
-                            eprintln!("Invalid input error: {}", e);
-                            exit(EXIT_INPUT_INVALID);
-                        }
-                    }
+        Commands::Get {include_defaults, ..} => {
+            let keywords = match parse_keywords(&input_data, &curr_sshdconfig) {
+                Ok(keywords) => {
+                    keywords
                 }
-                InputData::Json(data) => {
-                    match curr_sshdconfig.get_keywords_from_json(&data) {
-                        Ok(result) => Some(result),
-                        Err(e) => {
-                            eprintln!("Invalid input error: {}", e);
-                            exit(EXIT_INPUT_INVALID);
-                        }
-                    }
-                }
-                InputData::None => {
-                    None
+                Err(e) => {
+                    eprintln!("Error getting input keywords: {}", e);
+                    exit(EXIT_INPUT_INVALID)
                 }
             };
             match curr_sshdconfig.get(&keywords, include_defaults) {
@@ -66,37 +70,45 @@ fn main() {
                 }
             }
         }
-        Commands::Set { input_config_path, input_config_json, curr_config_path } => {
-            (input_data, curr_sshdconfig) = initial_setup(&input_config_path, 
-                &input_config_json, &stdin, &curr_config_path);
-            let new_sshdconfig = initialize_new_config(&input_data);
-            match curr_sshdconfig.set(&new_sshdconfig) {
-                Ok(result) => {
-                    if !result {
-                        exit(EXIT_NOT_IN_DESIRED_STATE);
-                    }
-                },
-                Err(e) => {
-                    eprintln!("Error setting sshd config: {}", e);
-                    exit(EXIT_UNSPECIFIED_ERR);
+        Commands::Set {..} | Commands::Test {..} => {
+            let new_sshdconfig = match initialize_new_config(&input_data) {
+                Ok(new_sshdconfig) => {
+                    new_sshdconfig
                 }
-            }
-        }
-        Commands::Test { input_config_path, input_config_json, curr_config_path } => {
-            (input_data, curr_sshdconfig) = initial_setup(&input_config_path, 
-                &input_config_json, &stdin, &curr_config_path);
-            let new_sshdconfig = initialize_new_config(&input_data);
-            match curr_sshdconfig.test(&new_sshdconfig) {
-                Ok(result) => {
-                    println!("{}", result.0);
-                    if !result.1 {
-                        exit(EXIT_NOT_IN_DESIRED_STATE);
-                    }
-                },
                 Err(e) => {
-                    eprintln!("Error testing sshd config: {}", e);
-                    exit(EXIT_UNSPECIFIED_ERR);
+                    eprintln!("Error initializing sshdconfig: {}", e);
+                    exit(EXIT_INPUT_INVALID)
                 }
+            };
+            match &args.command {
+                Commands::Set {..} => {
+                    match curr_sshdconfig.set(&new_sshdconfig) {
+                        Ok(result) => {
+                            if !result {
+                                exit(EXIT_NOT_IN_DESIRED_STATE);
+                            }
+                        },
+                        Err(e) => {
+                            eprintln!("Error setting sshd config: {}", e);
+                            exit(EXIT_UNSPECIFIED_ERR);
+                        }
+                    }
+                }
+                Commands::Test {..} => {
+                    match curr_sshdconfig.test(&new_sshdconfig) {
+                        Ok(result) => {
+                            println!("{}", result.0);
+                            if !result.1 {
+                                exit(EXIT_NOT_IN_DESIRED_STATE);
+                            }
+                        },
+                        Err(e) => {
+                            eprintln!("Error testing sshd config: {}", e);
+                            exit(EXIT_UNSPECIFIED_ERR);
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }
@@ -120,26 +132,34 @@ fn test_config() {
             { "value": "24" },
             { "value": "23" }
         ],
-        "match": {
-            "group": [
-                {
-                    "criteria": "administrators",
-                    "data": [
-                        {
-                            "passwordauthentication": {
-                                "value": "yes"
-                            },
-                            "authorizedkeysfile": {
-                                "value": "test.txt",
-                                "_ensure": "Absent"
-                            }
-                        }
-                    ]
+        "match": [
+            {
+                "conditional": "group",
+                "criteria": "administrator",
+                "data": {
+                    "passwordauthentication": {
+                        "value": "yes"
+                    },
+                    "authorizedkeysfile": {
+                        "value": "test.txt",
+                        "_ensure": "Absent"
+                    }
                 }
-            ]
-        }
+            },
+            {
+                "conditional": "user",
+                "criteria": "anoncvs",
+                "data": {
+                    "passwordauthentication": {
+                        "value": "no"
+                    }
+                }
+            }
+        ]
     }
     "#;
     let config: SshdConfig = serde_json::from_str(input_json).unwrap();
+    //println!("{:?}", &config);
     let json = config.to_json();
+    println!("{}", &json);
 }

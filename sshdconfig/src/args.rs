@@ -12,9 +12,9 @@ pub enum Commands {
     #[clap(name = "get", about = "get sshd_config settings", arg_required_else_help = false)]
     Get {
         #[clap(long = "file", short = 'f', help = "filepath for sshd_config options")]
-        input_config_path: Option<String>,
+        config_path: Option<String>,
         #[clap(long = "json", short = 'j', help = "json for sshd_config options")]
-        input_config_json: Option<String>,
+        config_json: Option<String>,
         #[clap(long = "path", short = 'p', help = "sshd_config filepath to retrieve options from")]
         curr_config_path: Option<String>,
         #[clap(long = "defaults", short = 'd', help = "switch to include defaults in output json")]
@@ -24,9 +24,9 @@ pub enum Commands {
     #[clap(name = "set", about = "set sshd_config settings", arg_required_else_help = true)]
     Set {
         #[clap(long = "file", short = 'f', help = "new sshd_config filepath")]
-        input_config_path: Option<String>,
+        config_path: Option<String>,
         #[clap(long = "json", short = 'j', help = "new sshd_config json")]
-        input_config_json: Option<String>,
+        config_json: Option<String>,
         #[clap(long = "path", short = 'p', help = "existing sshd_config filepath to apply changes to")]
         curr_config_path: Option<String>
     },
@@ -34,9 +34,9 @@ pub enum Commands {
     #[clap(name = "test", about = "compare existing sshd_config settings with input settings", arg_required_else_help = true)]
     Test {
         #[clap(long = "file", short = 'f', help = "new sshd_config filepath")]
-        input_config_path: Option<String>,
+        config_path: Option<String>,
         #[clap(long = "json", short = 'j', help = "new sshd_config json")]
-        input_config_json: Option<String>,
+        config_json: Option<String>,
         #[clap(long = "path", short = 'p', help = "existing sshd_config filepath to compare with")]
         curr_config_path: Option<String>
     },

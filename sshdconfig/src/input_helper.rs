@@ -1,4 +1,5 @@
-use std::{path::PathBuf, process::exit};
+use std::path::PathBuf;
+
 use crate::{sshdconfig_error::*, config::{config::SshdConfig, SshdManager}};
 
 pub enum InputData {
@@ -7,43 +8,38 @@ pub enum InputData {
     None,
 }
 
-// parse_input_data will unwrap inputs from command line
+// parse_input_helper will unwrap inputs from command line
 // and ensure that, at most, one input is provided
-// return InputData
-pub fn parse_input_data(input_config_text: &Option<String>, input_config_json: &Option<String>, 
-    input_config_stdin: &Option<String>) -> InputData {
-    InputData::None
+pub fn parse_input_helper(input_config_text: &Option<String>, input_config_json: &Option<String>, 
+    input_config_stdin: &Option<String>) -> Result<InputData, SshdConfigError> {
+    Ok(InputData::None)
 }
 
-// parse optional input for path to current config file
+// get_input_filepath will parse optional input 
+// for path to current config file
 // if none is provided, find the location of the default
 // config file (OS dependent)
 // if no valid filepath is found, throw an error
-pub fn get_input_filepath(filepath: &Option<String>) -> PathBuf {
-    PathBuf::from("not implemented yet")
+pub fn get_input_filepath(filepath: &Option<String>) -> Result<PathBuf, SshdConfigError> {
+    Ok(PathBuf::from("not implemented yet"))
 }
 
-// initial_setup calls out to parse_input_data and 
+// parse_input calls out to parse_input_helper and 
 // get_input_filepath since this is shared between
 // the get, set, and test commands
-pub fn initial_setup(input_config_text: &Option<String>, input_config_json: &Option<String>, 
-    input_config_stdin: &Option<String>, curr_filepath: &Option<String>) -> (InputData, SshdManager) {
-    let input_data = parse_input_data(input_config_text, input_config_json, input_config_stdin);
-    let curr_filepath = get_input_filepath(curr_filepath);
+pub fn parse_input(input_config_text: &Option<String>, 
+    input_config_json: &Option<String>, input_config_stdin: &Option<String>, 
+    curr_filepath: &Option<String>) -> Result<(InputData, SshdManager), SshdConfigError> {
+    let input_data = parse_input_helper(input_config_text, input_config_json, input_config_stdin)?;
+    let curr_filepath = get_input_filepath(curr_filepath)?;
     let sshdconfig = SshdManager::new();
-    match sshdconfig.import_sshd_config(&curr_filepath) {
-        Ok(_) => {},
-        Err(e) => { 
-            eprintln!("Invalid input error: {}", e);
-            exit(EXIT_INPUT_INVALID);
-        }
-    }
-    (input_data, sshdconfig)
+    sshdconfig.import_sshd_config(&curr_filepath)?;
+    Ok((input_data, sshdconfig))
 }
 
 // initialize_new_config provides a sshdconfig json from 
-// the provided input to be passed to the set, and test commands
-pub fn initialize_new_config(input_data: &InputData) -> SshdConfig
+// the provided input to be passed to the set and test commands
+pub fn initialize_new_config(input_data: &InputData) -> Result<SshdConfig, SshdConfigError>
 {
     let input_json;
     match input_data {
@@ -57,14 +53,25 @@ pub fn initialize_new_config(input_data: &InputData) -> SshdConfig
         }
         InputData::None => {
             eprintln!("new config, via json, stdin, or text file, must be provided with set/test");
-            exit(EXIT_INPUT_UNAVAILABLE);
+            return Err(SshdConfigError::NotImplemented);
         }
     };
     match serde_json::from_str(&input_json) {
-        Ok(result) => result,
+        Ok(result) => Ok(result),
         Err(e) => {
             eprintln!("Error importing new sshd config from json: {}", e);
-            exit(EXIT_INPUT_INVALID);
+            return Err(SshdConfigError::NotImplemented);
         }
+    }
+}
+
+// parse_keywords returns a optional list of keywords 
+// to be used with get command to limit output
+// to a specific set of keywords
+pub fn parse_keywords(data: &InputData, sshd_config: &SshdManager) -> Result<Option<Vec<String>>,SshdConfigError> {
+    match data {
+        InputData::Text(data) => sshd_config.get_keywords_from_file(&data),
+        InputData::Json(data) => sshd_config.get_keywords_from_json(&data),
+        InputData::None => Ok(None)
     }
 }
