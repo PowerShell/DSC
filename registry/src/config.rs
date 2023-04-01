@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum EnsureKind {
+    /// The registry key and value should be present.
     Present,
+    /// The registry key and value should be absent.
     Absent,
 }
 
@@ -18,24 +20,31 @@ pub enum RegistryValueData {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-#[serde(rename = "Registry")]
+#[serde(rename = "Registry", deny_unknown_fields)]
 pub struct RegistryConfig {
+    /// The ID of the resource.  Value is ignored for input.
     #[serde(rename = "$id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    /// The path to the registry key.
     #[serde(rename = "keyPath")]
     pub key_path: String,
+    /// The name of the registry value.
     #[serde(rename = "valueName")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value_name: Option<String>,
+    /// The data of the registry value.
     #[serde(rename = "valueData")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value_data: Option<RegistryValueData>,
+    /// Flag indicating whether the registry value should be present or absent.
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ensure: Option<EnsureKind>,
+    /// Flag indicating whether the registry value should be overwritten if it already exists.
     #[serde(rename = "_clobber")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clobber: Option<bool>,
+    /// Flag indicating whether the resource is in the desired state.  Value is ignored for input.
     #[serde(rename = "_inDesiredState")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub in_desired_state: Option<bool>,

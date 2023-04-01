@@ -1,0 +1,29 @@
+{
+    "$schema": "https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json",
+    "metadata": {
+        "description": "Simple example using two different resources and one of them twice."
+    },
+    "resources": [
+        {
+            "name": "os",
+            "type": "Microsoft/OSInfo",
+            "properties": {}
+        },
+        {
+            "name": "windows product name",
+            "type": "Microsoft.Windows/Registry",
+            "properties": {
+                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                "valueName": "ProductName"                
+            }
+        },
+        {
+            "name": "system root",
+            "type": "Microsoft.Windows/Registry",
+            "properties": {
+                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
+                "valueName": "SystemRoot"                
+            }
+        }
+    ]
+}
