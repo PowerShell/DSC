@@ -25,7 +25,7 @@ else {
 }
 
 $windows_projects = @("ntreg","ntstatuserror","ntuserinfo","registry")
-$projects = @("dsc","osinfo","y2j") 
+$projects = @("dsc","osinfo","y2j")
 if ($IsWindows) {
     $projects += $windows_projects
 }
@@ -54,15 +54,9 @@ foreach ($project in $projects) {
             Copy-Item "$path/$project" $target -ErrorAction Ignore
         }
 
-        if (Test-Path "$project.resource.json") {
-            Copy-Item "$project.resource.json" $target -ErrorAction Ignore
-        }
+        Copy-Item "*.resource.json" $target -Force -ErrorAction Ignore
+        Copy-Item "*.command.json" $target -Force -ErrorAction Ignore
 
-        if (Test-Path "$project.command.json") {
-            Copy-Item "$project.command.json" $target -ErrorAction Ignore
-        }
-
-        Copy-Item *.command.json $target
     } finally {
         Pop-Location
     }
@@ -107,7 +101,7 @@ if ($Test) {
         try {
             Push-Location "$PSScriptRoot/$project"
             cargo test
-    
+
             if ($LASTEXITCODE -ne 0) {
                 $failed = $true
             }
