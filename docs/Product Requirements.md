@@ -70,25 +70,30 @@ Additionally, recent research completed by the Machine Configuration team shows 
 
 ## User Interface and Design
 
-The user interface will consist of command line tools and schema for configurations and resource manifests.
+The user interface will consist of command line tools and schema for configurations and resource manifests. 
 
 ### **dsc.exe**
+The `dsc.exe` tool will be the primary interface for working with DSC. It will have options for finding and invoking resources and for invoking configurations.
 
 ```text
-DSC is a desired state configuration tool.
+Apply configuration or invoke specific DSC resources
 
-Usage: dsc subcommand <options>
+Usage: dsc.exe [OPTIONS] <COMMAND>
 
-Subcommands:
-config <set|test>               - Invoke DSC configurations
-module <find|install>           - Find and install DSC modules
-repo <set|remove>               - Add, update or remove module repositories
-resource <get|set|test|find?    - Work with DSC resources
+Commands:
+  config    Apply a configuration document
+  resource  Invoke a specific DSC resource
+  schema    Get the JSON schema for a DSC type
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -n, --no-cache         Whether to use the cache or not
+  -f, --format <FORMAT>  [possible values: json, pretty-json, yaml]
+  -h, --help             Print help
+  -V, --version          Print version
 
 Examples:
 dsc.exe resource set --name user --module PSDscResources --version 1.1.0 --property <name=value> --property <name=value>
-dsc.exe repo set --name Contoso --url https://gallery.contoso.com/api/v2
-dsc.exe repo remove --name Contoso
 dsc config test --file test.json --parameter-file test.parameters.json --output test.output.json --parameter <name=value>
 ```
 
