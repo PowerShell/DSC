@@ -2,7 +2,7 @@
 
 ## Overview
 
-Today, DSC resources and configurations can only be written in PowerShell. In order to meet our customers where they are and allow them to gain more value from DSC (and by extension, Azure Machine Configuration) more quickly, we want to allow resources to be written in any language, even shell scripts. Configurations should be able to be authored easily in familiar and pervasive JSON/YAML syntax.
+Today, DSC resources and configurations can only be written in PowerShell. In order to meet our customers where they are and allow them to gain more value from DSC (and by extension, Azure Machine Configuration) more quickly, we want to allow resources to be written in any language, even shell scripts. Configurations should be able to be authored easily in familiar and pervasive JSON/YAML syntax. Also, applying configurations should not require PowerShell unless the resources being invoked are PowerShell resources.
 
 Support for Linux is a must. MOF and WMI/OMI dependencies are relics of the past Windows centric world of DSC, only cause complications and do not bring any benefits. We want to remove reliance on these technologies to make DSC more portable, more powerful, and more useful.
 
@@ -23,6 +23,7 @@ Support for Linux is a must. MOF and WMI/OMI dependencies are relics of the past
 - Make it easy to use DSC Configurations in Azure.
   - New, non-PowerShell resources must be able to be retrieved from PowerShell Gallery and private repositories (including folder/share repos).
   - Linux and Windows support is a must.
+- Enable partner teams to utilize DSC for cloud, on-prem, and hybrid configuration related scenarios as the "standard" Microsoft configuration management tool.
 
 ### Non-Goals
 
