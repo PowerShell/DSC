@@ -14,7 +14,7 @@ Support for Linux is a must. MOF and WMI/OMI dependencies are relics of the past
   - Create native APIs and commands to invoke the Get/Set/Test methods of the DSC resources.
   - Define a Json manifest to describe how to invoke the new DSCv3 resources.
   - Define the contract between DSC and the resources for passing input and output.
-  - Continue to provide support for existing PowerShell script and class-based resources.
+  - Continue to support existing PowerShell script and class-based resources.
 - Make authoring DSC Configurations quicker and easier.
   - Define a new schema for creating DSC Configurations in JSON/YAML.
   - Eliminate the need for a configuration to be compiled.
