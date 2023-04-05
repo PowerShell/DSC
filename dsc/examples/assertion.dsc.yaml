@@ -1,0 +1,25 @@
+# Example configuration that uses assertions to validate the environment before running the configuration.
+$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+resources:
+- name: my assertions
+  type: DSC/AssertionGroup
+  properties:
+    resources:
+    - name: os
+      type: Microsoft/OSInfo
+      properties:
+        family: Windows
+    - name: system root
+      type: Microsoft.Windows/Registry
+      properties:
+        keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
+        valueName: SystemRoot
+        valueData:
+          String: C:\Windows
+- name: current user registry
+  type: Microsoft.Windows/Registry
+  properties:
+    keyPath: HKCU\example
+    _ensure: present
+  dependsOn:
+  - '[DSC/Assertion]my assertions' # should we include the type or just the name? Is there a scenario to depend on a deeply nested resource?

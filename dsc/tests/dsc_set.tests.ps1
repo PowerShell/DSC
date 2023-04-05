@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Describe 'config set tests' {
     BeforeEach {
         $json = @'
@@ -29,7 +32,7 @@ Describe 'config set tests' {
             }
         }
 '@
-        $out = $json | dsc resource set -r registry
+        $out = $json | dsc resource set -r *registry
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.after_state.keyPath | Should -Be 'HKCU\1\2\3'
@@ -38,7 +41,7 @@ Describe 'config set tests' {
         $result.changed_properties | Should -Be @('keyPath', 'valueName', 'valueData')
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
 
-        $out = $json | dsc resource get -r registry
+        $out = $json | dsc resource get -r *registry
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.actual_state.keyPath | Should -Be 'HKCU\1\2\3'
@@ -52,7 +55,7 @@ Describe 'config set tests' {
             "_ensure": "Absent"
         }
 '@
-        $out = $json | dsc resource set -r registry
+        $out = $json | dsc resource set -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.after_state.keyPath | Should -BeNullOrEmpty

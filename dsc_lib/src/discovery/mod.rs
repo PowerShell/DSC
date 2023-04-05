@@ -1,4 +1,6 @@
-mod cache;
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 mod command_discovery;
 mod discovery_trait;
 mod powershell_discovery;
@@ -42,12 +44,13 @@ impl Discovery {
         Ok(())
     }
 
-    pub fn find_resource(&self, name: &str) -> ResourceIterator {
+    // TODO: may need more search criteria like version, hash, etc...
+    pub fn find_resource(&self, type_name: &str) -> ResourceIterator {
         if !self.initialized {
             return ResourceIterator::new(vec![]);
         }
 
-        let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(name).as_str());
+        let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(type_name).as_str());
         regex_builder.case_insensitive(true);
         let regex = match regex_builder.build() {
             Ok(regex) => regex,
@@ -56,7 +59,7 @@ impl Discovery {
 
         let mut resources: Vec<DscResource> = Vec::new();
         for resource in &self.resources {
-            if name.is_empty() | regex.is_match(resource.name.as_str()) {
+            if type_name.is_empty() | regex.is_match(resource.type_name.as_str()) {
                 resources.push(resource.clone());
             }
         }
@@ -66,7 +69,7 @@ impl Discovery {
 }
 
 fn convert_wildcard_to_regex(wildcard: &str) -> String {
-    let mut regex = wildcard.to_string().replace('*', ".*").replace('?', ".");
+    let mut regex = wildcard.to_string().replace('.', "\\.").replace('*', ".*?").replace('?', ".");
     regex.insert(0, '^');
     regex.push('$');
     regex

@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Describe 'config argument tests' {
     It 'input is <type>' -Skip:(!$IsWindows) -TestCases @(
         @{ type = 'yaml'; text = @'
@@ -12,7 +15,7 @@ Describe 'config argument tests' {
 '@ }
     ) {
         param($text)
-        $output = $text | dsc resource get -r registry
+        $output = $text | dsc resource get -r *registry
         $output = $output | ConvertFrom-Json
         $output.actual_state.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
         $output.actual_state.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use crate::discovery::discovery_trait::{ResourceDiscovery};
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use std::process::Command;
@@ -27,6 +30,7 @@ impl Default for PowerShellDiscovery {
 
 impl ResourceDiscovery for PowerShellDiscovery {
     fn discover(&self) -> Box<dyn Iterator<Item = DscResource>> {
+
         match self.initialized {
             true => Box::new(self.resources.clone().into_iter()),
             false => Box::new(vec![].into_iter()),

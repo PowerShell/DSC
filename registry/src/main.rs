@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #[cfg(debug_assertions)]
 use crossterm::event;
 #[cfg(debug_assertions)]
@@ -42,7 +45,7 @@ fn main() {
         };
         Some(input)
     };
-    
+
     let mut config: RegistryConfig = Default::default();
     // check if input is valid for subcommand
     match args.subcommand {

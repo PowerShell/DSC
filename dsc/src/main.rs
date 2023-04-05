@@ -1,8 +1,12 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use args::*;
 use atty::Stream;
 use clap::Parser;
-use dsc_lib::{DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
+use dsc_lib::{configure::{Configurator, ErrorAction, config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult}}, configure::config_doc::Configuration, DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
 use schemars::schema_for;
+use serde_yaml::Value;
 use std::io::{self, Read};
 use std::process::exit;
 use syntect::easy::HighlightLines;
@@ -21,6 +25,7 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_ARGS: i32 = 1;
 const EXIT_DSC_ERROR: i32 = 2;
 const EXIT_JSON_ERROR: i32 = 3;
+const EXIT_INVALID_INPUT: i32 = 4;
 
 fn main() {
     #[cfg(debug_assertions)]
@@ -53,10 +58,68 @@ fn main() {
 
     match args.subcommand {
         SubCommand::Config { subcommand } => {
+            if stdin.is_none() {
+                eprintln!("Configuration must be piped to STDIN");
+                exit(EXIT_INVALID_ARGS);
+            }
+
+            let json: serde_json::Value = match serde_json::from_str(stdin.as_ref().unwrap()) {
+                Ok(json) => json,
+                Err(_) => {
+                    match serde_yaml::from_str::<Value>(stdin.as_ref().unwrap()) {
+                        Ok(yaml) => {
+                            match serde_json::to_value(yaml) {
+                                Ok(json) => json,
+                                Err(err) => {
+                                    eprintln!("Error: Failed to convert YAML to JSON: {}", err);
+                                    exit(EXIT_DSC_ERROR);
+                                }
+                            }
+                        },
+                        Err(err) => {
+                            eprintln!("Error: Input is not valid JSON or YAML: {}", err);
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                }
+            };
+
+            let json_string = match serde_json::to_string(&json) {
+                Ok(json_string) => json_string,
+                Err(err) => {
+                    eprintln!("Error: Failed to convert JSON to string: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            };
+
+            let configurator = match Configurator::new(&json_string) {
+                Ok(configurator) => configurator,
+                Err(err) => {
+                    eprintln!("Error: {}", err);
+                    exit(EXIT_DSC_ERROR);
+                }
+            };
             match subcommand {
                 ConfigSubCommand::Get => {
-                    eprintln!("Getting configuration... NOT IMPLEMENTED YET");
-                    exit(EXIT_DSC_ERROR);
+                    match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
+                        Ok(result) => {
+                            let json = match serde_json::to_string(&result) {
+                                Ok(json) => json,
+                                Err(err) => {
+                                    eprintln!("JSON Error: {}", err);
+                                    exit(EXIT_JSON_ERROR);
+                                }
+                            };
+                            write_output(&json, &args.format);
+                            if result.had_errors {
+                                exit(EXIT_DSC_ERROR);
+                            }
+                        },
+                        Err(err) => {
+                            eprintln!("Error: {}", err);
+                            exit(EXIT_DSC_ERROR);
+                        }
+                    }
                 },
                 ConfigSubCommand::Set => {
                     eprintln!("Setting configuration... NOT IMPLEMENTED YET");
@@ -182,60 +245,63 @@ fn main() {
             }
         },
         SubCommand::Schema { dsc_type } => {
-            match dsc_type {
+            let schema = match dsc_type {
                 DscType::GetResult => {
-                    let schema = schema_for!(GetResult);
-                    // convert to json
-                    let json = match serde_json::to_string(&schema) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, &args.format);
+                    schema_for!(GetResult)
                 },
                 DscType::SetResult => {
-                    let schema = schema_for!(SetResult);
-                    // convert to json
-                    let json = match serde_json::to_string(&schema) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, &args.format);
+                    schema_for!(SetResult)
                 },
                 DscType::TestResult => {
-                    let schema = schema_for!(TestResult);
-                    // convert to json
-                    let json = match serde_json::to_string(&schema) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, &args.format);
+                    schema_for!(TestResult)
+                },
+                DscType::DscResource => {
+                    schema_for!(DscResource)
                 },
                 DscType::ResourceManifest => {
-                    let schema = schema_for!(ResourceManifest);
-                    // convert to json
-                    let json = match serde_json::to_string(&schema) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {}", err);
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, &args.format);
+                    schema_for!(ResourceManifest)
                 },
-            }
+                DscType::Configuration => {
+                    schema_for!(Configuration)
+                },
+                DscType::ConfigurationGetResult => {
+                    schema_for!(ConfigurationGetResult)
+                },
+                DscType::ConfigurationSetResult => {
+                    schema_for!(ConfigurationSetResult)
+                },
+                DscType::ConfigurationTestResult => {
+                    schema_for!(ConfigurationTestResult)
+                },
+                DscType::ConfigurationAndResources => {
+                    let input = get_input(&None, &stdin);
+                    if input.is_empty() {
+                        eprintln!("Error: Configuration input is required for this schema");
+                        exit(EXIT_DSC_ERROR);
+                    }
+
+                    let json = get_config_and_resource_schema(input);
+                    write_output(&json, &args.format);
+                    exit(EXIT_SUCCESS);
+                },
+            };
+            let json = match serde_json::to_string(&schema) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {}", err);
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, &args.format);
         },
     }
 
     exit(EXIT_SUCCESS);
+}
+
+fn get_config_and_resource_schema(_input: String) -> String {
+    // TODO: fill in code
+    String::from("TODO")
 }
 
 fn write_output(json: &str, format: &Option<OutputFormat>) {
@@ -285,12 +351,12 @@ fn write_output(json: &str, format: &Option<OutputFormat>) {
                 true => ps.find_syntax_by_extension("json").unwrap(),
                 false => ps.find_syntax_by_extension("yaml").unwrap(),
             };
-    
+
             let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
-    
+
             for line in LinesWithEndings::from(&output) {
                 let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap();
-                let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
+                let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
                 print!("{}", escaped);
             }
         },
@@ -320,7 +386,7 @@ fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
             let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
             match resources.len() {
                 0 => {
-                    eprintln!("Error: Resource not found");
+                    eprintln!("Error: Resource not found: '{}'", resource);
                     exit(EXIT_INVALID_ARGS);
                 }
                 1 => resources[0].clone(),
@@ -342,10 +408,13 @@ fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
         (Some(input), None) => input.clone(),
         (None, Some(stdin)) => stdin.clone(),
         (None, None) => {
-            eprintln!("Error: No input specified");
-            exit(EXIT_INVALID_ARGS);
+            return String::new();
         },
     };
+
+    if input.is_empty() {
+        return String::new();
+    }
 
     match serde_json::from_str::<serde_json::Value>(&input) {
         Ok(_) => input,

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
@@ -13,9 +16,7 @@ pub struct Args {
     /// The subcommand to run
     #[clap(subcommand)]
     pub subcommand: SubCommand,
-    /// Whether to use the cache or not
-    #[clap(short = 'n', long)]
-    pub no_cache: bool,
+    /// The output format to use
     #[clap(short = 'f', long)]
     pub format: Option<OutputFormat>,
 }
@@ -89,5 +90,11 @@ pub enum DscType {
     GetResult,
     SetResult,
     TestResult,
+    DscResource,
     ResourceManifest,
+    Configuration,
+    ConfigurationAndResources,
+    ConfigurationGetResult,
+    ConfigurationSetResult,
+    ConfigurationTestResult,
 }

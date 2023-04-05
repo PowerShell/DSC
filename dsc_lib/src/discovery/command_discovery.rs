@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use crate::discovery::discovery_trait::{ResourceDiscovery};
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::ResourceManifest;
@@ -78,7 +81,7 @@ fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
         }
     };
     let resource = DscResource {
-        name: manifest.name.clone(),
+        type_name: manifest.resource_type.clone(),
         implemented_as: ImplementedAs::Command,
         path: path.to_str().unwrap().to_string(),
         parent_path: path.parent().unwrap().to_str().unwrap().to_string(),

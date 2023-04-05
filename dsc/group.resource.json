@@ -1,0 +1,46 @@
+{
+  "manifestVersion": "1.0",
+  "type": "DSC/Group",
+  "version": "0.1.0",
+  "description": "All resources in the supplied configuration is treated as a group.",
+  "get": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "get"
+    ],
+    "input": "stdin"
+  },
+  "set": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "set"
+    ],
+    "input": "stdin",
+    "preTest": true,
+    "return": "state"
+  },
+  "test": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "test"
+    ],
+    "input": "stdin",
+    "return": "state"
+  },
+  "exitCodes": {
+    "0": "Success"
+  },
+  "schema": {
+    "command": {
+      "executable": "dsc",
+      "args": [
+        "schema",
+        "-t",
+        "configuration-and-resources"
+      ]
+    }
+  }
+}
