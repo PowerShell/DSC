@@ -1,6 +1,6 @@
 # DSCv3
 
-[NOTICE] This repo is currently NOT accept contributions and is public and Open Source to show progress.  Once we are at a feature complete state, we can start taking contributions.
+[NOTICE] This repo is currently NOT accepting contributions and is public and Open Source to show progress.  Once we are at a feature complete state, we can start taking contributions.
 
 ## High level design goals
 
