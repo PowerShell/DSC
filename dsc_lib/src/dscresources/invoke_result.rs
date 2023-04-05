@@ -4,6 +4,12 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct JsonResult {
+    pub json: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct GetResult {
     pub actual_state: Value,
 }
