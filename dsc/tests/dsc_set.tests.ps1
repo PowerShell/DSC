@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Describe 'config set tests' {
     BeforeEach {
         $json = @'

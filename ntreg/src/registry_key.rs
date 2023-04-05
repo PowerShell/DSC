@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use core::mem::size_of;
 use ntapi::ntregapi::{self, KEY_FULL_INFORMATION, KEY_BASIC_INFORMATION, PKEY_BASIC_INFORMATION, PKEY_FULL_INFORMATION};
 use ntapi::winapi::ctypes::c_void;
@@ -30,15 +33,15 @@ pub struct RegistryKey {
 
 impl RegistryKey {
     /// Returns a RegistryKey object for a valid existing path.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `path` - A string containing the path to the registry key.
     ///   The path can be a NT path `\Registry\Machine\...` or a Win32 path `HKLM\...`.
     ///   The path will be opened for read access.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// let key = RegistryKey::new(r"HKLM\Software\Microsoft\Windows NT\CurrentVersion");
@@ -67,9 +70,9 @@ impl RegistryKey {
     }
 
     /// Returns an iterator over the sub keys of the current key.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// let key = RegistryKey::new(r"HKCU\Software").unwrap();
@@ -85,9 +88,9 @@ impl RegistryKey {
     }
 
     /// Returns an iterator over the values of the current key.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// let key = RegistryKey::new(r"HKCU\Environment").unwrap();
@@ -144,18 +147,18 @@ impl RegistryKey {
                 max_value_name_len: 0,
                 max_data_len: 0,
             }
-        )        
+        )
     }
 
     /// Creates a new sub key.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `name` - A string containing the name of the new sub key.
     ///   This will fail if the sub key already exists.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// let key = RegistryKey::new("HKCU").unwrap();
@@ -170,11 +173,11 @@ impl RegistryKey {
     /// Creates or opens an existing sub key.
     ///
     /// # Arguments
-    /// 
+    ///
     /// * `name` - A string containing the name of the new sub key.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// let key = RegistryKey::new("HKCU").unwrap();
@@ -186,14 +189,14 @@ impl RegistryKey {
     }
 
     /// Deletes a sub key.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `recurse` - A boolean indicating if the sub key should be deleted recursively.
     ///   If this is false and the sub key has sub keys, the deletion will fail.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// let key = RegistryKey::new("HKCU").unwrap();
@@ -232,11 +235,11 @@ impl RegistryKey {
     /// Deletes a value for the current key.
     ///
     /// # Arguments
-    /// 
+    ///
     /// * `name` - A string containing the name of the value.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// # use ntreg::registry_value::*;
@@ -263,13 +266,13 @@ impl RegistryKey {
     }
 
     /// Gets a value for the current key.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `name` - A string containing the name of the value.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// let key = RegistryKey::new(r"HKCU\Environment").unwrap();
@@ -287,15 +290,15 @@ impl RegistryKey {
     }
 
     /// Creates or sets a value for the current key.
-    /// 
+    ///
     /// # Arguments
     /// * `name` - A string containing the name of the value.
-    /// 
+    ///
     /// # Remarks
     /// Returns a RegistryValue representing the new value.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::*;
     /// # use ntreg::registry_value::*;
@@ -496,7 +499,7 @@ fn open_key(path: &str, desired_access: ACCESS_MASK) -> Result<(HANDLE, KEY_FULL
 }
 
 fn convert_registry_path(path: &str) -> Result<String, NtStatusError> {
-    if path == r"\Registry\Machine" || path.starts_with(r"\Registry\Machine\") || 
+    if path == r"\Registry\Machine" || path.starts_with(r"\Registry\Machine\") ||
         path == r"\Registry\User" || path.starts_with(r"\Registry\User\") {
         return Ok(path.to_string());
     }

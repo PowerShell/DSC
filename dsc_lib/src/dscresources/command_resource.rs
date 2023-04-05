@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};

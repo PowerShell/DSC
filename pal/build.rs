@@ -1,4 +1,5 @@
-// Copyright (C) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
 
 use std::env;
 use std::process::Command;
@@ -35,9 +36,6 @@ fn make_import_lib(name: &str) {
     println!("cargo:rerun-if-changed={}.def", name);
 
     if let Some(dlltool) = get_tool_var("DLLTOOL") {
-        // This branch is for cross compilation from WSL2.
-        // When building from WSL2, the tool 'llvm-dlltool-11' will be used for producing the '.lib' file.
-        // For details, see https://microsoft.visualstudio.com/HyperVCloud/_git/hvlite?path=/ci/setup_windows_cross.sh&version=GBmain&line=47&lineEnd=69&lineStartColumn=1&lineEndColumn=2&lineStyle=plain&_a=contents
         let mut dlltool = Command::new(dlltool);
 
         let arch = match env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {

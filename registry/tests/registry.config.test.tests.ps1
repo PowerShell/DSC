@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Describe 'registry config test tests' {
     It 'Can test a registry key <test>' -Skip:(!$IsWindows) -TestCases @(
         @{ test = 'exists and present'; ensure = 'Present'; key = 'CurrentVersion' }

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 extern crate ntstatuserror;
 use ntapi::winapi::shared::ntstatus::{STATUS_OBJECT_NAME_NOT_FOUND};
 use ntstatuserror::NtStatusError;

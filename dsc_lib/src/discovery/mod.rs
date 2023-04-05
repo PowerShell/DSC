@@ -1,4 +1,6 @@
-mod cache;
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 mod command_discovery;
 mod discovery_trait;
 mod powershell_discovery;

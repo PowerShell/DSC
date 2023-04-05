@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Describe 'registry config set tests' {
     It 'Can set a deeply nested key and value' -Skip:(!$IsWindows) {
         $json = @'

@@ -1,49 +1,49 @@
 {
-    "manifestVersion": "1.0",
-    "type": "DSC/ParallelGroup",
-    "version": "0.1.0",
-    "description": "All resources in the supplied configuration run concurrently.",
-    "get": {
+  "manifestVersion": "1.0",
+  "type": "DSC/ParallelGroup",
+  "version": "0.1.0",
+  "description": "All resources in the supplied configuration run concurrently.",
+  "get": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "--parallel",
+      "get"
+    ],
+    "input": "stdin"
+  },
+  "set": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "--parallel",
+      "set"
+    ],
+    "input": "stdin",
+    "preTest": true,
+    "return": "state"
+  },
+  "test": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "--parallel",
+      "test"
+    ],
+    "input": "stdin",
+    "return": "state"
+  },
+  "exitCodes": {
+    "0": "Success"
+  },
+  "schema": {
+    "command": {
       "executable": "dsc",
       "args": [
-        "config",
-        "--parallel",
-        "get"
-      ],
-      "input": "stdin"
-    },
-    "set": {
-      "executable": "dsc",
-      "args": [
-        "config",
-        "--parallel",
-        "set"
-      ],
-      "input": "stdin",
-      "preTest": true,
-      "return": "state"
-    },
-    "test": {
-      "executable": "dsc",
-      "args": [
-        "config",
-        "--parallel",
-        "test"
-      ],
-      "input": "stdin",
-      "return": "state"
-    },
-    "exitCodes": {
-      "0": "Success"
-    },
-    "schema": {
-      "command": {
-        "executable": "dsc",
-        "args": [
-          "schema",
-          "-t",
-          "configuration-and-resources"
-        ]
-      }
+        "schema",
+        "-t",
+        "configuration-and-resources"
+      ]
     }
   }
+}

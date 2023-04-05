@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 pub mod configure;
 pub mod discovery;
 pub mod dscresources;

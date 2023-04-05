@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Describe 'config argument tests' {
     It 'input is <type>' -Skip:(!$IsWindows) -TestCases @(
         @{ type = 'yaml'; text = @'

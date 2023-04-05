@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};

@@ -1,18 +1,23 @@
-# `config` command for using DSC resources
+# `dsc` command for using DSC resources
 
 ## DESCRIPTION
 
-The `config` command is used to discover and invoke DSC resources.
+The `dsc` command is used to discover, invoke DSC resources, and apply configuration.
 
 ## Usage
 
-Usage: config [subcommand] [options]
-Subcommands:
-  list   [filter]    - list all resources, optional filter
-  get    <resource>  - invoke `get` on a resource
-  set    <resource>  - invoke `set` on a resource
-  test   <resource>  - invoke `test` on a resource
-  flushcache         - flush the resource cache
+Apply configuration or invoke specific DSC resources
+
+Usage: dsc [OPTIONS] <COMMAND>
+
+Commands:
+  config    Apply a configuration document
+  resource  Invoke a specific DSC resource
+  schema    Get the JSON schema for a DSC type
+  help      Print this message or the help of the given subcommand(s)
+
 Options:
-  -h, --help
-  -n, --nocache      - don't use the cache and force a new discovery
+  -n, --no-cache         Whether to use the cache or not
+  -f, --format <FORMAT>  [possible values: json, pretty-json, yaml]
+  -h, --help             Print help
+  -V, --version          Print version
