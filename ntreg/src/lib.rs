@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 //! Abstraction over the Windows Registry API.
 //! Limited dependency using only NT APIs.
 
@@ -17,7 +20,7 @@ pub struct UnicodeString {
 
 impl UnicodeString {
     /// Create a new UnicodeString.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `string` - The string to create the UnicodeString from.
@@ -54,9 +57,9 @@ pub struct ObjectAttributes {
 
 impl ObjectAttributes {
     /// Create a new ObjectAttributes.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `root_directory` - The root directory to use.
     /// * `object_name` - The object name to use.
     pub fn new(root_directory: HANDLE, object_name: &String) -> ObjectAttributes {

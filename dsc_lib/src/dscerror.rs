@@ -1,10 +1,13 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use reqwest::StatusCode;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DscError {
-    #[error("Command: [{0}] {1}")]
-    Command(i32, String),
+    #[error("Command: Resource '{0}' [Exit code {1}] {2}")]
+    Command(String, i32, String),
 
     #[error("HTTP: {0}")]
     Http(#[from] reqwest::Error),

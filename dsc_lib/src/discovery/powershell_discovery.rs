@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use crate::discovery::discovery_trait::{ResourceDiscovery};
 use crate::dscresources::dscresource::{DscResource};
 

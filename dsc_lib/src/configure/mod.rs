@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use jsonschema::JSONSchema;
 
 use crate::dscerror::DscError;

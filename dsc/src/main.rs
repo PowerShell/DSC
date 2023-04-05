@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use args::*;
 use atty::Stream;
 use clap::Parser;

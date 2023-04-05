@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use ntapi::ntpsapi::NtCurrentProcess;
 use ntapi::ntrtl::{RtlConvertSidToUnicodeString};
 use ntapi::ntseapi::{self};
@@ -19,9 +22,9 @@ pub struct NtCurrentUserInfo {
 
 impl NtCurrentUserInfo {
     /// Create a new NtCurrentUserInfo.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use ntuserinfo::NtCurrentUserInfo;
     /// let user_info = NtCurrentUserInfo::new();

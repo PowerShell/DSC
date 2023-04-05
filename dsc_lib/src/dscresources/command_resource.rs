@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};
@@ -14,7 +17,7 @@ pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult
 
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(filter))?;
     if exit_code != 0 {
-        return Err(DscError::Command(exit_code, stderr.to_string()));
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
     }
 
     let result: Value = serde_json::from_str(&stdout)?;
@@ -46,7 +49,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
     let pre_state: Value;
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(desired))?;
     if exit_code != 0 {
-        return Err(DscError::Command(exit_code, stderr.to_string()));
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
     }
     else {
         pre_state = serde_json::from_str(&stdout)?;
@@ -54,7 +57,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
 
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone().unwrap_or_default(), Some(desired))?;
     if exit_code != 0 {
-        return Err(DscError::Command(exit_code, stderr.to_string()));
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
     }
 
     match set.returns {
@@ -104,7 +107,7 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
     let test = resource.test.as_ref().unwrap();
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone().unwrap_or_default(), Some(expected))?;
     if exit_code != 0 {
-        return Err(DscError::Command(exit_code, stderr.to_string()));
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
     }
 
     let expected_value: Value = serde_json::from_str(expected)?;
@@ -151,7 +154,7 @@ pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
         SchemaKind::Command(ref command) => {
             let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone().unwrap_or_default(), None)?;
             if exit_code != 0 {
-                return Err(DscError::Command(exit_code, stderr.to_string()));
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
             }
             Ok(stdout)
         },

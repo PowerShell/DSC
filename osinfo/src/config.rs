@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use serde::Serialize;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

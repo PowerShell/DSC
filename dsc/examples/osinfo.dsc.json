@@ -1,0 +1,12 @@
+{
+    "$schema": "https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json",
+    "resources": [
+      {
+        "name": "os",
+        "type": "Microsoft/OSInfo",
+        "properties": {
+            "family": "Windows"
+        }
+      }
+    ]
+  }

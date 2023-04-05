@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 #[cfg(onecore)]
 fn main() {
     // Prevent this build script from rerunning unnecessarily.
