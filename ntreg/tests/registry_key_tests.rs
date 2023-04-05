@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 extern crate ntreg;
 use ntreg::{registry_key::RegistryKey};
 

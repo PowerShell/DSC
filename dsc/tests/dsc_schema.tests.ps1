@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Describe 'config schema tests' {
     It 'return resource schema' -Skip:(!$IsWindows) {
         $schema = dsc resource schema -r *registry

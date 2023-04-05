@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use crate::config::{EnsureKind, RegistryConfig, RegistryValueData};
 use ntreg::{registry_key::RegistryKey, registry_value::RegistryValueData as NtRegistryValueData, registry_value::RegistryValue};
 use ntstatuserror::{NtStatusError, NtStatusErrorKind};
@@ -345,7 +348,7 @@ fn test_key(config: &RegistryConfig) -> Result<String, RegistryError> {
             }
         }
     }
-        
+
     reg_result.in_desired_state = Some(in_desired_state);
     Ok(reg_result.to_json())
 }

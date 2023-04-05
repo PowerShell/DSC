@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use core::mem::size_of;
 use ntapi::winapi::ctypes::c_void;
 use ntapi::ntregapi::{self, KEY_VALUE_FULL_INFORMATION, PKEY_VALUE_FULL_INFORMATION};
@@ -35,9 +38,9 @@ pub struct RegistryValue {
 
 impl RegistryValue {
     /// Refresh the contents of a registry value.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use ntreg::registry_key::RegistryKey;
     /// let key = RegistryKey::new(r"HKCU\Environment").unwrap();
@@ -58,7 +61,7 @@ impl RegistryValue {
                 len,
                 &mut len)
         };
-        
+
         if !NT_SUCCESS(status) {
             return Err(NtStatusError::new(status, "Failed to query registry value"));
         }

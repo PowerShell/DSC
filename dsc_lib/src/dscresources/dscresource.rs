@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use dscerror::DscError;
 use resource_manifest::ResourceManifest;
 use schemars::JsonSchema;
@@ -207,7 +210,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                     diff_properties.push(key.to_string());
                 },
             }
-        }            
+        }
     }
     diff_properties
 }

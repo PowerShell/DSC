@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use atty::Stream;
 use std::{io::{self, Read}, process::exit};
 use syntect::easy::HighlightLines;

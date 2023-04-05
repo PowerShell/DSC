@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 param(
     [switch]$Release,
     [ValidateSet('none','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc')]

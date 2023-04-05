@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use reqwest::StatusCode;
 use thiserror::Error;
 

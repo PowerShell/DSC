@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use ntapi::winapi::shared::ntdef::{NTSTATUS};
 use ntapi::winapi::shared::ntstatus::{STATUS_OBJECT_NAME_NOT_FOUND, STATUS_OBJECT_PATH_NOT_FOUND, STATUS_OBJECT_PATH_SYNTAX_BAD, STATUS_ACCESS_DENIED, STATUS_KEY_DELETED, STATUS_CANNOT_DELETE};
 use std::fmt;
@@ -12,14 +15,14 @@ pub struct NtStatusError {
 
 impl NtStatusError {
     /// Create a new NtStatusError
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `status` - The NTSTATUS error code
     /// * `message` - The message to return such as the current action
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use ntstatuserror::NtStatusError;
     /// # use ntapi::winapi::shared::ntstatus::{STATUS_OBJECT_NAME_NOT_FOUND};
