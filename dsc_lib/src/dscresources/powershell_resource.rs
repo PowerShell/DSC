@@ -1,5 +1,9 @@
+// example:  dsc.exe resource get --resource PSRepository --input "{`"Name`": PSGallery}"
+
 use serde_json::Value;
 use super::{invoke_result::{JsonResult,GetResult,SetResult,TestResult}};
+use super::{command_resource::get_diff};
+use super::{resource_manifest::ReturnKind};
 use std::process::Command;
 use base64::{Engine as _, engine::{general_purpose}};
 use std::collections::HashMap;
@@ -45,14 +49,9 @@ pub fn json_to_pshashtable(json: &str) -> Result<String, DscError> {
 }
 
 pub fn invoke_dsc_resource(resource_name: &str, filter: &str, method: &str) -> Result<JsonResult, DscError> {
-    // dsc.exe resource get --resource PSRepository --input "{`"Name`": PSGaller, `"Test2`":5}"
-    // Invoke-DscResource -Method Get -Name PSRepository -Property @{Name="PSGallery";PackageManagementProvider="NuGet"}
-    println!("Debug: 1.1.1");
-    println!("Debug: {filter}");
+    
     let properties_ht = json_to_pshashtable(filter)?;
-    println!("Debug: 1.1.2");
     let script_text = format!("Invoke-DscResource -Method {method} -Name {resource_name} -Property {properties_ht}|ConvertTo-Json -Depth 3");
-    println!("Debug: {script_text}");
 
     // PowerShell's -EncodedCommand uses UTF16 wrapped into BASE64
     let v: Vec<u16> = script_text.encode_utf16().collect();
@@ -80,9 +79,9 @@ pub fn invoke_dsc_resource(resource_name: &str, filter: &str, method: &str) -> R
         .expect("failed to execute process");
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    println!("    {}", output.status);
-    println!("    stderr: {}", String::from_utf8_lossy(&output.stderr));
-    println!("    stdout: {}", stdout);
+    //println!("    {}", output.status);
+    //println!("    stderr: {}", String::from_utf8_lossy(&output.stderr));
+    //println!("    stdout: {}", stdout);
 
     let result: Value = serde_json::from_str(&stdout)?;
     Ok(JsonResult {
@@ -91,39 +90,47 @@ pub fn invoke_dsc_resource(resource_name: &str, filter: &str, method: &str) -> R
 }
 
 pub fn invoke_get(resource_name: &str, filter: &str) -> Result<GetResult, DscError> {
-    println!("Debug: 1.1");
-    println!("Debug - resource_name: {resource_name}");
-    println!("Debug - desired: {filter}");
     let json_result: JsonResult = invoke_dsc_resource(resource_name, filter, "Get")?;
-    println!("Debug: 1.2");
     Ok(GetResult {
         actual_state: json_result.json
     })
 }
 
 pub fn invoke_set(resource_name: &str, desired: &str) -> Result<SetResult, DscError> {
-    println!("Debug: 1");
-    println!("Debug - resource_name: {resource_name}");
-    println!("Debug - desired: {desired}");
     let pre_state = invoke_get(resource_name, desired)?;
-    println!("Debug: 2");
-    let json_result: JsonResult = invoke_dsc_resource(resource_name, desired, "Set")?;
-    println!("Debug: 3");
-    return Ok(SetResult {
+    let _json_result: JsonResult = invoke_dsc_resource(resource_name, desired, "Set")?;
+    let after_state = invoke_get(resource_name, desired)?;
+
+    // perform diff if requested
+    let return_kind = ReturnKind::StateAndDiff; // TODO - this should come in from user
+    let mut diff_properties: Option<Vec<String>> = None;
+    if return_kind == ReturnKind::StateAndDiff {
+        diff_properties = Some(get_diff(&pre_state.actual_state, &after_state.actual_state));
+    }
+
+    Ok(SetResult {
         before_state: pre_state.actual_state,
-        after_state: json_result.json,
-        changed_properties: None, // TODO - fill the diff based on ReturnKind
-    });
+        after_state: after_state.actual_state,
+        changed_properties: diff_properties,
+    })
 }
 
 pub fn invoke_test(resource_name: &str, expected: &str) -> Result<TestResult, DscError> {
 
     let expected_value: Value = serde_json::from_str(expected)?;
-    let json_result: JsonResult = invoke_dsc_resource(resource_name, expected, "Test")?;
+    let _json_result: JsonResult = invoke_dsc_resource(resource_name, expected, "Test")?;
+    let after_state = invoke_get(resource_name, expected)?;
+    
+    // perform diff if requested
+    let return_kind = ReturnKind::StateAndDiff; // TODO - this should come in from user
+    let mut diff_properties: Option<Vec<String>> = None;
+    if return_kind == ReturnKind::StateAndDiff {
+        diff_properties = Some(get_diff(&expected_value, &after_state.actual_state));
+    }
 
     return Ok(TestResult {
         expected_state: expected_value,
-        actual_state: json_result.json,
-        diff_properties: None, // TODO - fill the diff based on ReturnKind
+        actual_state: after_state.actual_state,
+        diff_properties: diff_properties,
     });
 }

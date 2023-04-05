@@ -210,7 +210,7 @@ fn verify_json(resource: &ResourceManifest, json: &str) -> Result<(), DscError> 
     };
 }
 
-fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
+pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
     let mut diff_properties: Vec<String> = Vec::new();
     if expected.is_null() {
         return diff_properties;
