@@ -180,8 +180,8 @@ fn main() {
                         }
                     }
                 },
-                ResourceSubCommand::Set { resource, input: _ } => {
-                    let input = get_input(&None, &stdin);
+                ResourceSubCommand::Set { resource, input } => {
+                    let input = get_input(&input, &stdin);
                     let resource = get_resource(&mut dsc, resource.as_str());
                     match resource.set(input.as_str()) {
                         Ok(result) => {
@@ -201,8 +201,8 @@ fn main() {
                         }
                     }
                 },
-                ResourceSubCommand::Test { resource, input: _ } => {
-                    let input = get_input(&None, &stdin);
+                ResourceSubCommand::Test { resource, input } => {
+                    let input = get_input(&input, &stdin);
                     let resource = get_resource(&mut dsc, resource.as_str());
                     match resource.test(input.as_str()) {
                         Ok(result) => {
