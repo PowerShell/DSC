@@ -40,7 +40,7 @@ foreach ($project in $projects) {
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
         if ($Clippy) {
-            cargo clippy @flags -- -Dwarnings
+            cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
         }
         else {
             cargo build @flags

@@ -85,7 +85,7 @@ pub enum ResourceSubCommand {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum DscType {
     GetResult,
     SetResult,
@@ -93,7 +93,6 @@ pub enum DscType {
     DscResource,
     ResourceManifest,
     Configuration,
-    ConfigurationAndResources,
     ConfigurationGetResult,
     ConfigurationSetResult,
     ConfigurationTestResult,

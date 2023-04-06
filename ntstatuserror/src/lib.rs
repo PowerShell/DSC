@@ -14,8 +14,8 @@ pub struct NtStatusError {
 }
 
 impl NtStatusError {
-    /// Create a new NtStatusError
-    ///
+    /// Create a new `NtStatusError` from an NTSTATUS error code and a message.
+    /// 
     /// # Arguments
     ///
     /// * `status` - The NTSTATUS error code
@@ -30,6 +30,7 @@ impl NtStatusError {
     /// assert_eq!(error.status, ntstatuserror::NtStatusErrorKind::ObjectNameNotFound);
     /// assert_eq!(error.message, "Could not find object".to_string());
     /// ```
+    #[must_use]
     pub fn new(status: NTSTATUS, message: &str) -> Self {
         NtStatusError {
             status: NtStatusErrorKind::from(status),
@@ -62,7 +63,7 @@ pub enum NtStatusErrorKind {
     CannotDelete,
     /// Unknown error.
     #[error("Unknown error: {0:#x}")]
-    Unknown(u32),
+    Unknown(i32),
 }
 
 impl From<NTSTATUS> for NtStatusErrorKind {
@@ -74,7 +75,7 @@ impl From<NTSTATUS> for NtStatusErrorKind {
             STATUS_ACCESS_DENIED => NtStatusErrorKind::AccessDenied,
             STATUS_KEY_DELETED => NtStatusErrorKind::KeyDeleted,
             STATUS_CANNOT_DELETE => NtStatusErrorKind::CannotDelete,
-            _ => NtStatusErrorKind::Unknown(status as u32),
+            _ => NtStatusErrorKind::Unknown(status),
         }
     }
 }

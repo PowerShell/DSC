@@ -32,9 +32,10 @@ impl Default for CommandDiscovery {
 
 impl ResourceDiscovery for CommandDiscovery {
     fn discover(&self) -> Box<dyn Iterator<Item = DscResource>> {
-        match self.initialized {
-            true => Box::new(self.resources.clone().into_iter()),
-            false => Box::new(vec![].into_iter()),
+        if self.initialized {
+            Box::new(self.resources.clone().into_iter())
+        } else {
+            Box::new(vec![].into_iter())
         }
     }
 
@@ -43,11 +44,8 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(());
         }
 
-        let path_env = match env::var_os("PATH") {
-            Some(path_env) => path_env,
-            None => {
-                return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
-            }
+        let Some(path_env) = env::var_os("PATH") else {
+            return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
         };
 
         for path in env::split_paths(&path_env) {
@@ -85,7 +83,7 @@ fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
         implemented_as: ImplementedAs::Command,
         path: path.to_str().unwrap().to_string(),
         parent_path: path.parent().unwrap().to_str().unwrap().to_string(),
-        manifest: Some(manifest.clone()),
+        manifest: Some(manifest),
         ..Default::default()
     };
 

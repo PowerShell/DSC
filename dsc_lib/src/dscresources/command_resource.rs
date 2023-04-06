@@ -10,14 +10,24 @@ use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKi
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
+/// Invoke the get operation on a resource
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource manifest
+/// * `filter` - The filter to apply to the resource in JSON
+/// 
+/// # Errors
+/// 
+/// Error returned if the resource does not successfully get the current state
 pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult, DscError> {
-    if filter.len() > 0 && resource.get.input.is_some() {
+    if !filter.is_empty() && resource.get.input.is_some() {
         verify_json(resource, filter)?;
     }
 
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(filter))?;
     if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
     let result: Value = serde_json::from_str(&stdout)?;
@@ -26,14 +36,22 @@ pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult
     })
 }
 
+/// Invoke the set operation on a resource
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource manifest
+/// * `desired` - The desired state of the resource in JSON
+/// 
+/// # Errors
+/// 
+/// Error returned if the resource does not successfully set the desired state
 pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResult, DscError> {
-    if resource.set.is_none() {
+    let Some(set) = &resource.set else {
         return Err(DscError::NotImplemented("set".to_string()));
-    }
+    };
 
     verify_json(resource, desired)?;
-
-    let set = resource.set.as_ref().unwrap();
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !set.pre_test.unwrap_or_default() {
         let test_result = invoke_test(resource, desired)?;
@@ -46,18 +64,17 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
         }
     }
 
-    let pre_state: Value;
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(desired))?;
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
+    let pre_state: Value = if exit_code == 0 {
+        serde_json::from_str(&stdout)?
     }
     else {
-        pre_state = serde_json::from_str(&stdout)?;
-    }
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    };
 
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone().unwrap_or_default(), Some(desired))?;
     if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
     match set.returns {
@@ -65,49 +82,63 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
             let actual_value: Value = serde_json::from_str(&stdout)?;
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &actual_value, &pre_state);
-            return Ok(SetResult {
+            Ok(SetResult {
                 before_state: pre_state,
                 after_state: actual_value,
                 changed_properties: Some(diff_properties),
-            });
+            })
         },
         Some(ReturnKind::StateAndDiff) => {
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
             let mut lines = stdout.lines();
-            let actual_value: Value = serde_json::from_str(lines.next().unwrap())?;
+            let Some(actual_line) = lines.next() else {
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "Command did not return expected actual output".to_string()));
+            };
+            let actual_value: Value = serde_json::from_str(actual_line)?;
             // TODO: need schema for diff_properties to validate against
-            let diff_properties: Vec<String> = serde_json::from_str(lines.next().unwrap())?;
-            return Ok(SetResult {
+            let Some(diff_line) = lines.next() else {
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "Command did not return expected diff output".to_string()));
+            };
+            let diff_properties: Vec<String> = serde_json::from_str(diff_line)?;
+            Ok(SetResult {
                 before_state: pre_state,
                 after_state: actual_value,
                 changed_properties: Some(diff_properties),
-            });
+            })
         },
         None => {
             // perform a get and compare the result to the expected state
             let get_result = invoke_get(resource, desired)?;
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &get_result.actual_state, &pre_state);
-            return Ok(SetResult {
+            Ok(SetResult {
                 before_state: pre_state,
                 after_state: get_result.actual_state,
                 changed_properties: Some(diff_properties),
-            });
+            })
         },
     }
 }
 
+/// Invoke the test operation against a command resource.
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource manifest for the command resource.
+/// * `expected` - The expected state of the resource in JSON.
+/// 
+/// # Errors
+/// 
+/// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestResult, DscError> {
-    if resource.test.is_none() {
+    let Some(test) = resource.test.as_ref() else {
         return Err(DscError::NotImplemented("test".to_string()));
-    }
+    };
 
     verify_json(resource, expected)?;
-
-    let test = resource.test.as_ref().unwrap();
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone().unwrap_or_default(), Some(expected))?;
     if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
     let expected_value: Value = serde_json::from_str(expected)?;
@@ -115,46 +146,61 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
         Some(ReturnKind::State) => {
             let actual_value: Value = serde_json::from_str(&stdout)?;
             let diff_properties = get_diff(&expected_value, &actual_value);
-            return Ok(TestResult {
+            Ok(TestResult {
                 expected_state: expected_value,
                 actual_state: actual_value,
                 diff_properties: Some(diff_properties),
-            });
+            })
         },
         Some(ReturnKind::StateAndDiff) => {
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
             let mut lines = stdout.lines();
-            let actual_value: Value = serde_json::from_str(lines.next().unwrap())?;
-            let diff_properties: Vec<String> = serde_json::from_str(lines.next().unwrap())?;
-            return Ok(TestResult {
+            let Some(actual_value) = lines.next() else {
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "No actual state returned".to_string()));
+            };
+            let actual_value: Value = serde_json::from_str(actual_value)?;
+            let Some(diff_properties) = lines.next() else {
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "No diff properties returned".to_string()));
+            };
+            let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
+            Ok(TestResult {
                 expected_state: expected_value,
                 actual_state: actual_value,
                 diff_properties: Some(diff_properties),
-            });
+            })
         },
         None => {
             // perform a get and compare the result to the expected state
             let get_result = invoke_get(resource, expected)?;
             let diff_properties = get_diff(&expected_value, &get_result.actual_state);
-            return Ok(TestResult {
+            Ok(TestResult {
                 expected_state: expected_value,
                 actual_state: get_result.actual_state,
                 diff_properties: Some(diff_properties),
-            });
+            })
         },
     }
 }
 
+/// Get the JSON schema for a resource
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource manifest
+/// 
+/// # Errors
+/// 
+/// Error if schema is not available or if there is an error getting the schema
 pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
-    if resource.schema.is_none() {
+    let Some(schema_kind) = resource.schema.as_ref() else {
         return Err(DscError::SchemaNotAvailable(resource.resource_type.clone()));
-    }
+    };
 
-    match resource.schema.as_ref().unwrap() {
+    match schema_kind {
         SchemaKind::Command(ref command) => {
             let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone().unwrap_or_default(), None)?;
             if exit_code != 0 {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr.to_string()));
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
             }
             Ok(stdout)
         },
@@ -202,7 +248,7 @@ fn invoke_command(executable: &str, args: Vec<String>, input: Option<&str>) -> R
     let mut stderr_buf = Vec::new();
     child_stderr.read_to_end(&mut stderr_buf)?;
 
-    let exit_code = exit_status.code().unwrap_or(EXIT_PROCESS_TERMINATED) as i32;
+    let exit_code = exit_status.code().unwrap_or(EXIT_PROCESS_TERMINATED);
     let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
     let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
     Ok((exit_code, stdout, stderr))
@@ -218,14 +264,16 @@ fn verify_json(resource: &ResourceManifest, json: &str) -> Result<(), DscError> 
         },
     };
     let json: Value = serde_json::from_str(json)?;
-    match compiled_schema.validate(&json) {
-        Ok(_) => return Ok(()),
+    let result = match compiled_schema.validate(&json) {
+        Ok(_) => Ok(()),
         Err(err) => {
             let mut error = String::new();
             for e in err {
-                error.push_str(&format!("{} ", e));
+                error.push_str(&format!("{e} "));
             }
-            return Err(DscError::Schema(error));
+            
+            Err(DscError::Schema(error))
         },
     };
+    result
 }

@@ -34,5 +34,14 @@ resources:
       properties:
         keyPath: HKCU\example2
         _ensure: present
+    - name: mygroup
+      type: DSC/Group
+      properties:
+        resources:
+        - name: myreg
+          type: Microsoft.Windows.Registry
+          properties:
+            keyPath: HKCU\example2
+            _ensure: absent
   dependsOn:
   - '[DSC/ParallelGroup]myParallelGroup'
