@@ -35,8 +35,8 @@ pub fn json_to_pshashtable(json: &str) -> Result<String, DscError> {
         }
         else {
             //TODO add processing for other types
-            println!("ERROR: NotImplemented - Processing of Value type of Key {}", key);
-            return Err(DscError::NotImplemented);
+            let msg = format!("Processing of Value type of Key {}", key);
+            return Err(DscError::NotImplemented(msg));
         }
 
         result.push_str(",");

@@ -83,8 +83,8 @@ impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
-                let resource_name = &self.name;
-                powershell_resource::invoke_get(resource_name, filter)
+                let resource_name = &self.friendly_name.as_ref();
+                powershell_resource::invoke_get(resource_name.unwrap(), filter)
             },
             ImplementedAs::PowerShellScript => {
                 Err(DscError::NotImplemented("get PowerShellScript resources".to_string()))
@@ -104,8 +104,8 @@ impl Invoke for DscResource {
     fn set(&self, desired: &str) -> Result<SetResult, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
-                let resource_name = &self.name;
-                powershell_resource::invoke_set(resource_name, desired)
+                let resource_name = &self.friendly_name.as_ref();
+                powershell_resource::invoke_set(resource_name.unwrap(), desired)
             },
             ImplementedAs::PowerShellScript => {
                 Err(DscError::NotImplemented("set PowerShellScript resources".to_string()))
@@ -125,8 +125,8 @@ impl Invoke for DscResource {
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
         match self.implemented_as {
             ImplementedAs::PowerShell => {
-                let resource_name = &self.name;
-                powershell_resource::invoke_test(resource_name, expected)
+                let resource_name = &self.friendly_name.as_ref();
+                powershell_resource::invoke_test(resource_name.unwrap(), expected)
             },
             ImplementedAs::PowerShellScript => {
                 Err(DscError::NotImplemented("test PowerShellScript resources".to_string()))

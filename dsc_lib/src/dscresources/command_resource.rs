@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};
 
 use crate::dscerror::DscError;
-use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult}};
+use super::{resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult}};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 

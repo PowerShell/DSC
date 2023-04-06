@@ -104,9 +104,8 @@ impl ResourceDiscovery for PowerShellDiscovery {
 
                 // construct result - resource info object
                 let resource = DscResource {
-                    resource_type: Some(item["ResourceType"].as_str().unwrap_or_default().to_owned()),
-                    name: v.unwrap().to_owned(),
-                    friendly_name: Some(item["FriendlyName"].as_str().unwrap_or_default().to_owned()),
+                    type_name: item["ResourceType"].as_str().unwrap_or_default().to_owned(),
+                    friendly_name: Some(item["Name"].as_str().unwrap_or_default().to_owned()),
                     module_name: Some(item["ModuleName"].as_str().unwrap_or_default().to_owned()),
                     version: version_string,
                     path: item["Path"].as_str().unwrap_or_default().to_owned(),
