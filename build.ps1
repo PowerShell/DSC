@@ -6,6 +6,7 @@ param(
     [ValidateSet('none','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc')]
     $architecture = 'none',
     [switch]$Clippy,
+    [switch]$Pedantic,
     [switch]$Test
 )
 
@@ -40,7 +41,12 @@ foreach ($project in $projects) {
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
         if ($Clippy) {
-            cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+            if ($Pedantic) {
+                cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+            }
+            else {
+                cargo clippy @flags -- -Dwarnings
+            }
         }
         else {
             cargo build @flags

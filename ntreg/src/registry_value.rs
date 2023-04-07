@@ -205,7 +205,7 @@ fn get_data_value(value_information: PKEY_VALUE_FULL_INFORMATION) -> RegistryVal
         9 => RegistryValueData::FullResourceDescriptor(data.to_vec()),
         10 => RegistryValueData::ResourceRequirementsList(data.to_vec()),
         11 => RegistryValueData::QWord(unsafe {
-            data_ptr.read_unaligned().into()
+            *(data_ptr as *const u64)
         }),
         _ => RegistryValueData::None,
     }

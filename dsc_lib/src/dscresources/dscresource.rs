@@ -75,42 +75,42 @@ impl Default for DscResource {
 /// The interface for a DSC resource.
 pub trait Invoke {
     /// Invoke the get operation on the resource.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `filter` - The filter as JSON to apply to the resource.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying resource fails.
     fn get(&self, filter: &str) -> Result<GetResult, DscError>;
 
     /// Invoke the set operation on the resource.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `desired` - The desired state as JSON to apply to the resource.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying resource fails.
     fn set(&self, desired: &str) -> Result<SetResult, DscError>;
 
     /// Invoke the test operation on the resource.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `expected` - The expected state as JSON to apply to the resource.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying resource fails.
     fn test(&self, expected: &str) -> Result<TestResult, DscError>;
 
     /// Get the schema for the resource.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying resource fails.
     fn schema(&self) -> Result<String, DscError>;
 }
@@ -213,10 +213,10 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
             if key.starts_with('_') || key.starts_with('$') {
                 continue;
             }
-    
+
             if value.is_object() {
                 let sub_diff = get_diff(value, &actual[key]);
-                if sub_diff.is_empty() {
+                if !sub_diff.is_empty() {
                     diff_properties.push(key.to_string());
                 }
             }
@@ -236,7 +236,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                         diff_properties.push(key.to_string());
                     },
                 }
-            }            
+            }
         }
     }
 

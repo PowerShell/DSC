@@ -17,21 +17,41 @@ pub struct Configurator {
     discovery: Discovery,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum ErrorAction {
     Continue,
     Stop,
 }
 
 impl Configurator {
-    pub fn new(config: &String) -> Result<Configurator, DscError> {
+    /// Create a new `Configurator` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The configuration to use in JSON.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the configuration is invalid or the underlying discovery fails.
+    pub fn new(config: &str) -> Result<Configurator, DscError> {
         let mut discovery = Discovery::new()?;
         discovery.initialize()?;
         Ok(Configurator {
-            config: config.clone(),
+            config: config.to_owned(),
             discovery,
         })
     }
 
+    /// Invoke the get operation on a resource.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_action` - The error action to use.
+    /// * `progress_callback` - A callback to call when progress is made.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationGetResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
@@ -42,11 +62,8 @@ impl Configurator {
         }
 
         for resource in &config.resources {
-            let dsc_resource = match self.discovery.find_resource(&resource.resource_type).next() {
-                Some(dsc_resource) => dsc_resource,
-                None => {
-                    return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
-                }
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             let filter = serde_json::to_string(&resource.properties)?;
             let get_result = dsc_resource.get(&filter)?;
@@ -66,11 +83,8 @@ impl Configurator {
         let mut messages: Vec<ResourceMessage> = Vec::new();
         let mut has_errors = false;
         for resource in &config.resources {
-            let dsc_resource = match self.discovery.find_resource(&resource.resource_type).next() {
-                Some(dsc_resource) => dsc_resource,
-                None => {
-                    return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
-                }
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             let input = serde_json::to_string(&resource.properties)?;
             let schema = match dsc_resource.schema() {
@@ -95,7 +109,7 @@ impl Configurator {
                     messages.push(ResourceMessage {
                         name: resource.name.clone(),
                         resource_type: resource.resource_type.clone(),
-                        message: format!("Failed to compile schema: {}", e),
+                        message: format!("Failed to compile schema: {e}"),
                         level: MessageLevel::Error,
                     });
                     has_errors = true;
@@ -103,22 +117,19 @@ impl Configurator {
                 },
             };
             let input = serde_json::from_str(&input)?;
-            match compiled_schema.validate(&input) {
-                Err(err) => {
-                    let mut error = format!("Resource '{}' failed validation: ", resource.name);
-                    for e in err {
-                        error.push_str(&format!("\n{} ", e));
-                    }
-                    messages.push(ResourceMessage {
-                        name: resource.name.clone(),
-                        resource_type: resource.resource_type.clone(),
-                        message: error,
-                        level: MessageLevel::Error,
-                    });
-                    has_errors = true;
-                    continue;
-                },
-                Ok(_) => {},
+            if let Err(err) = compiled_schema.validate(&input) {
+                let mut error = format!("Resource '{}' failed validation: ", resource.name);
+                for e in err {
+                    error.push_str(&format!("\n{e} "));
+                }
+                messages.push(ResourceMessage {
+                    name: resource.name.clone(),
+                    resource_type: resource.resource_type.clone(),
+                    message: error,
+                    level: MessageLevel::Error,
+                });
+                has_errors = true;
+                continue;
             };
         }
 

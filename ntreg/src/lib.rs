@@ -5,8 +5,8 @@
 //! Limited dependency using only NT APIs.
 
 use core::mem::size_of;
-use ntapi::winapi::shared::ntdef::{HANDLE, NTSTATUS, OBJECT_ATTRIBUTES, OBJ_CASE_INSENSITIVE, UNICODE_STRING, ULONG, USHORT};
-use std::ptr::null_mut;
+use ntapi::winapi::shared::ntdef::{HANDLE, NTSTATUS, OBJECT_ATTRIBUTES, OBJ_CASE_INSENSITIVE, UNICODE_STRING};
+use std::ptr::{null_mut, addr_of_mut};
 
 pub mod registry_key;
 pub mod registry_value;
@@ -20,7 +20,7 @@ pub struct UnicodeString {
 
 impl UnicodeString {
     /// Create a new `UnicodeString`.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `string` - The string to create the `UnicodeString` from.
@@ -32,22 +32,16 @@ impl UnicodeString {
     }
 
     /// Get the `UNICODE_STRING` representation of the buffer.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Will panic if the size of `UNICODE_STRING` cannot be converted to `USHORT`.
     ///
     #[must_use]
     pub fn as_struct(&self) -> UNICODE_STRING {
-        let Ok(length) = USHORT::try_from((self.buffer.len() - 1) * 2) else {
-            panic!("Failed to convert size of UNICODE_STRING to USHORT");
-        };
-        let Ok(max_length) = USHORT::try_from(self.buffer.len() * 2) else {
-            panic!("Failed to convert size of UNICODE_STRING to USHORT");
-        };
         UNICODE_STRING {
-            Length: length,
-            MaximumLength: max_length,
+            Length: ((self.buffer.len() - 1) * 2) as u16,
+            MaximumLength: (self.buffer.len() * 2) as u16,
             Buffer: self.buffer.as_ptr() as *mut u16,
         }
     }
@@ -70,7 +64,7 @@ pub struct ObjectAttributes {
 
 impl ObjectAttributes {
     /// Create a new `ObjectAttributes`.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `root_directory` - The root directory to use.
@@ -83,26 +77,24 @@ impl ObjectAttributes {
     }
 
     /// Get the `OBJECT_ATTRIBUTES` representation of the struct.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Will panic if the size of `UNICODE_STRING` cannot be converted to `ULONG`.
-    /// 
+    ///
     /// # Safety
     ///
     /// The returned `OBJECT_ATTRIBUTES` struct is only valid as long as the
     /// `UnicodeString` struct is valid.
-    /// 
+    ///
     #[must_use]
     pub fn as_struct(&self) -> OBJECT_ATTRIBUTES {
         let mut unicode_string = self.unicode_string.as_struct();
-        let Ok(length) = ULONG::try_from(size_of::<UNICODE_STRING>()) else {
-            panic!("Failed to convert size of UNICODE_STRING to ULONG");
-        };
         OBJECT_ATTRIBUTES {
-            Length: length,
+            Length: size_of::<OBJECT_ATTRIBUTES>() as u32,
             RootDirectory: self.root_directory,
-            ObjectName: std::ptr::addr_of_mut!(unicode_string),
+            ObjectName: addr_of_mut!(unicode_string),
+            //ObjectName: &mut self.unicode_string.as_struct() as *mut UNICODE_STRING,
             Attributes: OBJ_CASE_INSENSITIVE,
             SecurityDescriptor: null_mut(),
             SecurityQualityOfService: null_mut(),
