@@ -17,9 +17,9 @@ pub struct Discovery {
 
 impl Discovery {
     /// Create a new `Discovery` instance.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying discovery fails.
     pub fn new() -> Result<Self, DscError> {
         Ok(Self {
@@ -29,9 +29,9 @@ impl Discovery {
     }
 
     /// Initialize the discovery process.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying discovery fails.
     pub fn initialize(&mut self) -> Result<(), DscError> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
@@ -56,9 +56,9 @@ impl Discovery {
 
     // TODO: Need to support version?
     /// Find a resource by name.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `type_name` - The name of the resource to find, can have wildcards.
     #[must_use]
     pub fn find_resource(&self, type_name: &str) -> ResourceIterator {
@@ -84,7 +84,7 @@ impl Discovery {
 }
 
 fn convert_wildcard_to_regex(wildcard: &str) -> String {
-    let mut regex = wildcard.to_string().replace('.', "\\.").replace('*', ".*?").replace('?', ".");
+    let mut regex = wildcard.to_string().replace('.', "\\.").replace('?', ".").replace('*', ".*?");
     regex.insert(0, '^');
     regex.push('$');
     regex
@@ -98,7 +98,7 @@ mod tests {
     fn test_convert_wildcard_to_regex() {
         let wildcard = "*";
         let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^.*$");
+        assert_eq!(regex, "^.*?$");
 
         let wildcard = "File";
         let regex = convert_wildcard_to_regex(wildcard);
@@ -106,7 +106,7 @@ mod tests {
 
         let wildcard = "r*";
         let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^r.*$");
+        assert_eq!(regex, "^r.*?$");
     }
 }
 

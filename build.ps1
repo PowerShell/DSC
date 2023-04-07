@@ -6,7 +6,6 @@ param(
     [ValidateSet('none','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc')]
     $architecture = 'none',
     [switch]$Clippy,
-    [switch]$Pedantic,
     [switch]$Test
 )
 
@@ -28,8 +27,10 @@ else {
     $path = ".\target\$configuration"
 }
 
-$windows_projects = @("ntreg","ntstatuserror","ntuserinfo","registry")
-$projects = @("dsc","osinfo","y2j")
+$windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
+$projects = @("dsc_lib", "dsc", "osinfo", "y2j")
+$pedantic_clean_projcets = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo")
+
 if ($IsWindows) {
     $projects += $windows_projects
 }
@@ -41,10 +42,12 @@ foreach ($project in $projects) {
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
         if ($Clippy) {
-            if ($Pedantic) {
+            if ($pedantic_clean_projcets -contains $project) {
+                Write-Verbose -Verbose "Running clippy with pedantic for $project"
                 cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
             }
             else {
+                Write-Verbose -Verbose "Running clippy for $project"
                 cargo clippy @flags -- -Dwarnings
             }
         }
