@@ -28,7 +28,7 @@ impl ResourceDiscovery for PowerShellDiscovery {
         // these are just test resources
         let resources = vec![];
 
-        Box::new(resources.clone().into_iter())
+        Box::new(resources.into_iter())
     }
 
     fn initialize(&mut self) -> Result<(), crate::dscerror::DscError> {

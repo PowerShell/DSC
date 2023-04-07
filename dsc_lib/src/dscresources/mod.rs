@@ -7,4 +7,4 @@ pub mod invoke_result;
 pub mod powershell_resource;
 pub mod resource_manifest;
 
-use super::*;
+use super::dscerror;

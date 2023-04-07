@@ -41,12 +41,19 @@ pub struct ConfigurationGetResult {
 }
 
 impl ConfigurationGetResult {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
         }
+    }
+}
+
+impl Default for ConfigurationGetResult {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -69,12 +76,19 @@ pub struct ConfigurationSetResult {
 }
 
 impl ConfigurationSetResult {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
         }
+    }
+}
+
+impl Default for ConfigurationSetResult {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -97,11 +111,18 @@ pub struct ConfigurationTestResult {
 }
 
 impl ConfigurationTestResult {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
         }
+    }
+}
+
+impl Default for ConfigurationTestResult {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -9,10 +9,12 @@ extern "C" {
 }
 
 /// # Safety
+/// 
+/// This function is unsafe because it dereferences a raw pointer.
+/// 
+/// # Panics
 ///
-/// TODO
+/// Will panic if the api returns 0
 pub unsafe fn getrandom(data: *mut u8, len: usize) {
-    if ProcessPrng(data, len) == 0 {
-        panic!("ProcessPrng failed");
-    }
+    assert!((ProcessPrng(data, len) != 0), "ProcessPrng failed");
 }

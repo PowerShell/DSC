@@ -16,6 +16,11 @@ pub struct Discovery {
 }
 
 impl Discovery {
+    /// Create a new `Discovery` instance.
+    /// 
+    /// # Errors
+    /// 
+    /// This function will return an error if the underlying discovery fails.
     pub fn new() -> Result<Self, DscError> {
         Ok(Self {
             resources: Vec::new(),
@@ -23,6 +28,11 @@ impl Discovery {
         })
     }
 
+    /// Initialize the discovery process.
+    /// 
+    /// # Errors
+    /// 
+    /// This function will return an error if the underlying discovery fails.
     pub fn initialize(&mut self) -> Result<(), DscError> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
@@ -44,7 +54,13 @@ impl Discovery {
         Ok(())
     }
 
-    // TODO: may need more search criteria like version, hash, etc...
+    // TODO: Need to support version?
+    /// Find a resource by name.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `type_name` - The name of the resource to find, can have wildcards.
+    #[must_use]
     pub fn find_resource(&self, type_name: &str) -> ResourceIterator {
         if !self.initialized {
             return ResourceIterator::new(vec![]);
@@ -52,9 +68,8 @@ impl Discovery {
 
         let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(type_name).as_str());
         regex_builder.case_insensitive(true);
-        let regex = match regex_builder.build() {
-            Ok(regex) => regex,
-            Err(_) => return ResourceIterator::new(vec![]),
+        let Ok(regex) = regex_builder.build() else {
+            return ResourceIterator::new(vec![]);
         };
 
         let mut resources: Vec<DscResource> = Vec::new();
@@ -107,6 +122,7 @@ pub struct ResourceIterator {
 }
 
 impl ResourceIterator {
+    #[must_use]
     pub fn new(resources: Vec<DscResource>) -> ResourceIterator {
         ResourceIterator {
             resources,

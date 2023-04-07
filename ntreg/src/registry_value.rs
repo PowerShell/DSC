@@ -131,16 +131,16 @@ impl fmt::Display for RegistryValueData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let data : String = match self {
             RegistryValueData::None => "None".to_string(),
-            RegistryValueData::String(ref data) => format!("String: {}", data),
-            RegistryValueData::ExpandString(ref data) => format!("ExpandString: {}", data),
+            RegistryValueData::String(ref data) => format!("String: {data}"),
+            RegistryValueData::ExpandString(ref data) => format!("ExpandString: {data}"),
             RegistryValueData::Binary(ref data) => format!("Binary: {}", convert_vec_to_string(&data.to_vec())),
-            RegistryValueData::DWord(ref data) => format!("Dword: {}", data),
-            RegistryValueData::Link(ref data) => format!("Link: {}", data),
-            RegistryValueData::MultiString(ref data) => format!("MultiString: {:?}", data),
+            RegistryValueData::DWord(ref data) => format!("Dword: {data}"),
+            RegistryValueData::Link(ref data) => format!("Link: {data}"),
+            RegistryValueData::MultiString(ref data) => format!("MultiString: {data:?}"),
             RegistryValueData::ResourceList(ref data) => format!("ResourceList: {:?}", convert_vec_to_string(&data.to_vec())),
             RegistryValueData::FullResourceDescriptor(ref data) => format!("FullResourceDescriptor: {:?}", convert_vec_to_string(&data.to_vec())),
             RegistryValueData::ResourceRequirementsList(ref data) => format!("ResourceRequirementsList: {:?}", convert_vec_to_string(&data.to_vec())),
-            RegistryValueData::QWord(ref data) => format!("Qword: {}", data),
+            RegistryValueData::QWord(ref data) => format!("Qword: {data}"),
         };
 
         write!(f, "{}", data)
@@ -161,7 +161,6 @@ fn get_data_value(value_information: PKEY_VALUE_FULL_INFORMATION) -> RegistryVal
     };
 
     match unsafe { (*value_information).Type } {
-        0 => RegistryValueData::None,
         1 => RegistryValueData::String(String::from_utf16_lossy(unsafe {
             // remove null terminator
             std::slice::from_raw_parts(data_ptr as *const u16, (data_length / size_of::<u16>()) - 1)
@@ -215,7 +214,7 @@ fn get_data_value(value_information: PKEY_VALUE_FULL_INFORMATION) -> RegistryVal
 fn convert_vec_to_string(data: &Vec<u8>) -> String {
     let mut result = String::new();
     for byte in data {
-        write!(result, "{:02x}", byte).unwrap();
+        write!(result, "{byte:02x}").unwrap();
     }
     result
 }

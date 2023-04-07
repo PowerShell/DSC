@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use serde::Serialize;
+use std::string::ToString;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -41,9 +42,9 @@ const ID: &str = "https://developer.microsoft.com/json-schemas/dsc/os_info/20230
 impl OsInfo {
     pub fn new() -> Self {
         let os_info = os_info::get();
-        let edition = os_info.edition().map(|edition| edition.to_string());
-        let codename = os_info.codename().map(|codename| codename.to_string());
-        let architecture = os_info.architecture().map(|architecture| architecture.to_string());
+        let edition = os_info.edition().map(ToString::to_string);
+        let codename = os_info.codename().map(ToString::to_string);
+        let architecture = os_info.architecture().map(ToString::to_string);
         let family = match os_info.os_type() {
             os_info::Type::Macos => Family::MacOS,
             os_info::Type::Windows => Family::Windows,
