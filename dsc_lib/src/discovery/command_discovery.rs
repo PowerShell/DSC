@@ -85,7 +85,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 return Err(DscError::Operation(format!("Failed to list resources for provider {provider}: {exit_code} {stderr}")));
             }
             for line in stdout.lines() {
-                let Ok(resource) = serde_json::from_str::<DscResource>(&line) else {
+                let Ok(resource) = serde_json::from_str::<DscResource>(line) else {
                     return Err(DscError::Operation(format!("Failed to parse resource from provider {provider}: {line}")));
                 };
                 self.resources.insert(resource.type_name.clone(), resource);

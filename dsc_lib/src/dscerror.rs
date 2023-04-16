@@ -9,6 +9,9 @@ pub enum DscError {
     #[error("Command: Resource '{0}' [Exit code {1}] {2}")]
     Command(String, i32, String),
 
+    #[error("CommandOperation: {0} for executable '{1}'")]
+    CommandOperation(String, String),
+
     #[error("HTTP: {0}")]
     Http(#[from] reqwest::Error),
 

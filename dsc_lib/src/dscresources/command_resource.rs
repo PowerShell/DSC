@@ -222,6 +222,17 @@ pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
     }
 }
 
+/// Invoke a command and return the exit code, stdout, and stderr.
+///
+/// # Arguments
+///
+/// * `executable` - The command to execute
+/// * `args` - Optional arguments to pass to the command
+/// * `input` - Optional input to pass to the command
+///
+/// # Errors
+///
+/// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>) -> Result<(i32, String, String), DscError> {
     let mut command = Command::new(executable);
     if input.is_some() {
@@ -237,14 +248,20 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     if input.is_some() {
         // pipe to child stdin in a scope so that it is dropped before we wait
         // otherwise the pipe isn't closed and the child process waits forever
-        let mut child_stdin = child.stdin.take().unwrap();
-        child_stdin.write_all(input.unwrap().as_bytes())?;
+        let Some(mut child_stdin) = child.stdin.take() else {
+            return Err(DscError::CommandOperation("Failed to open stdin".to_string(), executable.to_string()));
+        };
+        child_stdin.write_all(input.unwrap_or_default().as_bytes())?;
         child_stdin.flush()?;
     }
     let exit_status = child.wait()?;
 
-    let mut child_stdout = child.stdout.take().unwrap();
-    let mut child_stderr = child.stderr.take().unwrap();
+    let Some(mut child_stdout) = child.stdout.take() else {
+        return Err(DscError::CommandOperation("Failed to open stdout".to_string(), executable.to_string()));
+    };
+    let Some(mut child_stderr) = child.stderr.take() else {
+        return Err(DscError::CommandOperation("Failed to open stderr".to_string(), executable.to_string()));
+    };
     let mut stdout_buf = Vec::new();
     child_stdout.read_to_end(&mut stdout_buf)?;
     let mut stderr_buf = Vec::new();
