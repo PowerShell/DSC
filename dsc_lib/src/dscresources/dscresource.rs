@@ -8,43 +8,35 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use super::{command_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult}};
 
-// TODO: this should be redesigned to match our new ARM based syntax
-// example is `name` should now be `type`
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DscResource {
-    #[serde(rename="Type")]
+    /// The namespaced name of the resource.
+    #[serde(rename="type")]
     pub type_name: String,
-    #[serde(rename="FriendlyName")]
-    pub friendly_name: Option<String>,
-    #[serde(rename="Module")]
-    pub module: Option<String>,
-    #[serde(rename="ModuleName")]
-    pub module_name: Option<String>,
-    #[serde(rename="Version")]
+    /// The version of the resource.
     pub version: String,
-    #[serde(rename="Path")]
+    /// The file path to the resource.
     pub path: String,
-    #[serde(rename="ParentPath")]
-    pub parent_path: String,
-    #[serde(rename="ImplementedAs")]
+    /// The implementation of the resource.
+    #[serde(rename="implementedAs")]
     pub implemented_as: ImplementedAs,
-    #[serde(rename="CompanyName")]
-    pub company_name: Option<String>,
-    #[serde(rename="Properties")]
+    /// The author of the resource.
+    pub author: Option<String>,
+    /// The properties of the resource.
     pub properties: Vec<String>,
-    #[serde(rename="Manifest")]
-    pub manifest: Option<ResourceManifest>,
+    /// The required resource provider for the resource.
+    pub requires: Option<String>,
+    /// The manifest of the resource.
+    pub manifest: Option<Value>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub enum ImplementedAs {
-    /// A PowerShell script function or class
-    PowerShell,
-    /// A PowerShell .ps1 script file
-    PowerShellScript,
     /// A command line executable
     Command,
+    /// A custom resource
+    Custom(String),
 }
 
 impl DscResource {
@@ -52,15 +44,12 @@ impl DscResource {
     pub fn new() -> Self {
         Self {
             type_name: String::new(),
-            friendly_name: None,
-            module: None,
-            module_name: None,
             version: String::new(),
             path: String::new(),
-            parent_path: String::new(),
-            implemented_as: ImplementedAs::PowerShell,
-            company_name: None,
+            implemented_as: ImplementedAs::Command,
+            author: None,
             properties: Vec::new(),
+            requires: None,
             manifest: None,
         }
     }
@@ -117,46 +106,39 @@ pub trait Invoke {
 
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
-        match self.implemented_as {
-            ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented("get PowerShell resources".to_string()))
-            },
-            ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented("get PowerShellScript resources".to_string()))
+        match &self.implemented_as {
+            ImplementedAs::Custom(_custom) => {
+                Err(DscError::NotImplemented("get custom resources".to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                command_resource::invoke_get(manifest, filter)
+                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                command_resource::invoke_get(&resource_manifest, filter)
             },
         }
     }
 
     fn set(&self, desired: &str) -> Result<SetResult, DscError> {
-        match self.implemented_as {
-            ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented("set PowerShell resources".to_string()))
-            },
-            ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented("set PowerShellScript resources".to_string()))
+        match &self.implemented_as {
+            ImplementedAs::Custom(_custom) => {
+                Err(DscError::NotImplemented("set custom resources".to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                command_resource::invoke_set(manifest, desired)
+                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                command_resource::invoke_set(&resource_manifest, desired)
             },
         }
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
-        match self.implemented_as {
-            ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented("test PowerShell resources".to_string()))
-            },
-            ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented("test PowerShellScript resources".to_string()))
+        match &self.implemented_as {
+            ImplementedAs::Custom(_custom) => {
+                Err(DscError::NotImplemented("test custom resources".to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -164,7 +146,8 @@ impl Invoke for DscResource {
                 };
 
                 // if test is not directly implemented, then we need to handle it here
-                if manifest.test.is_none() {
+                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
                     let expected_state = serde_json::from_str(expected)?;
                     let diff_properties = get_diff(&expected_state, &get_result.actual_state);
@@ -176,25 +159,23 @@ impl Invoke for DscResource {
                     Ok(test_result)
                 }
                 else {
-                    command_resource::invoke_test(manifest, expected)
+                    command_resource::invoke_test(&resource_manifest, expected)
                 }
             },
         }
     }
 
     fn schema(&self) -> Result<String, DscError> {
-        match self.implemented_as {
-            ImplementedAs::PowerShell => {
-                Err(DscError::NotImplemented("schema PowerShell resources".to_string()))
-            },
-            ImplementedAs::PowerShellScript => {
-                Err(DscError::NotImplemented("schema PowerShellScript resources".to_string()))
+        match &self.implemented_as {
+            ImplementedAs::Custom(_custom) => {
+                Err(DscError::NotImplemented("schema custom resources".to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                command_resource::get_schema(manifest)
+                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                command_resource::get_schema(&resource_manifest)
             },
         }
     }

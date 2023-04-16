@@ -11,21 +11,21 @@ use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKi
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
 /// Invoke the get operation on a resource
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `resource` - The resource manifest
 /// * `filter` - The filter to apply to the resource in JSON
-/// 
+///
 /// # Errors
-/// 
+///
 /// Error returned if the resource does not successfully get the current state
 pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult, DscError> {
     if !filter.is_empty() && resource.get.input.is_some() {
         verify_json(resource, filter)?;
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(filter))?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(filter))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -37,14 +37,14 @@ pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult
 }
 
 /// Invoke the set operation on a resource
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `resource` - The resource manifest
 /// * `desired` - The desired state of the resource in JSON
-/// 
+///
 /// # Errors
-/// 
+///
 /// Error returned if the resource does not successfully set the desired state
 pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResult, DscError> {
     let Some(set) = &resource.set else {
@@ -64,7 +64,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
         }
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone().unwrap_or_default(), Some(desired))?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(desired))?;
     let pre_state: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
@@ -72,7 +72,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
 
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone().unwrap_or_default(), Some(desired))?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), Some(desired))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -121,14 +121,14 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
 }
 
 /// Invoke the test operation against a command resource.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `resource` - The resource manifest for the command resource.
 /// * `expected` - The expected state of the resource in JSON.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestResult, DscError> {
     let Some(test) = resource.test.as_ref() else {
@@ -136,7 +136,7 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
     };
 
     verify_json(resource, expected)?;
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone().unwrap_or_default(), Some(expected))?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone(), Some(expected))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -183,13 +183,13 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
 }
 
 /// Get the JSON schema for a resource
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `resource` - The resource manifest
-/// 
+///
 /// # Errors
-/// 
+///
 /// Error if schema is not available or if there is an error getting the schema
 pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
     let Some(schema_kind) = resource.schema.as_ref() else {
@@ -198,7 +198,7 @@ pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
 
     match schema_kind {
         SchemaKind::Command(ref command) => {
-            let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone().unwrap_or_default(), None)?;
+            let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone(), None)?;
             if exit_code != 0 {
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
             }
@@ -222,14 +222,16 @@ pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
     }
 }
 
-fn invoke_command(executable: &str, args: Vec<String>, input: Option<&str>) -> Result<(i32, String, String), DscError> {
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>) -> Result<(i32, String, String), DscError> {
     let mut command = Command::new(executable);
     if input.is_some() {
         command.stdin(Stdio::piped());
     }
     command.stdout(Stdio::piped());
     command.stderr(Stdio::piped());
-    command.args(args);
+    if let Some(args) = args {
+        command.args(args);
+    }
 
     let mut child = command.spawn()?;
     if input.is_some() {
@@ -271,7 +273,7 @@ fn verify_json(resource: &ResourceManifest, json: &str) -> Result<(), DscError> 
             for e in err {
                 error.push_str(&format!("{e} "));
             }
-            
+
             Err(DscError::Schema(error))
         },
     };

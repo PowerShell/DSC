@@ -3,7 +3,6 @@
 
 mod command_discovery;
 mod discovery_trait;
-mod powershell_discovery;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscerror::DscError;
@@ -34,9 +33,10 @@ impl Discovery {
     ///
     /// This function will return an error if the underlying discovery fails.
     pub fn initialize(&mut self) -> Result<(), DscError> {
+        // TODO: this vec is leftover when we had multiple discovery types, we should
+        //       probably just have a single command discovery type
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
-            Box::new(powershell_discovery::PowerShellDiscovery::new()),
         ];
 
         let mut resources: Vec<DscResource> = Vec::new();
@@ -45,7 +45,7 @@ impl Discovery {
             discovery_type.initialize()?;
             let discovered_resources = discovery_type.discover();
             for resource in discovered_resources {
-                resources.push(resource);
+                resources.push(resource.clone());
             }
         }
 

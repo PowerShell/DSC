@@ -4,21 +4,25 @@
 use crate::discovery::discovery_trait::{ResourceDiscovery};
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::ResourceManifest;
+use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
 pub struct CommandDiscovery {
-    pub resources: Vec<DscResource>,
+    pub resources: HashMap<String, DscResource>,
+    provider_resources: Vec<String>,
     initialized: bool,
 }
 
 impl CommandDiscovery {
     pub fn new() -> CommandDiscovery {
         CommandDiscovery {
-            resources: Vec::new(),
+            resources: HashMap::new(),
+            provider_resources: Vec::new(),
             initialized: false,
         }
     }
@@ -33,7 +37,7 @@ impl Default for CommandDiscovery {
 impl ResourceDiscovery for CommandDiscovery {
     fn discover(&self) -> Box<dyn Iterator<Item = DscResource>> {
         if self.initialized {
-            Box::new(self.resources.clone().into_iter())
+            Box::new(self.resources.values().cloned().collect::<Vec<DscResource>>().into_iter())
         } else {
             Box::new(vec![].into_iter())
         }
@@ -57,10 +61,34 @@ impl ResourceDiscovery for CommandDiscovery {
                         let file_name = path.file_name().unwrap().to_str().unwrap();
                         if file_name.ends_with(".resource.json") {
                             let resource = import_manifest(&path)?;
-                            self.resources.push(resource);
+                            if resource.manifest.is_some() {
+                                let manifest = serde_json::from_value::<ResourceManifest>(resource.manifest.clone().unwrap())?;
+                                if manifest.provider.is_some() {
+                                    self.provider_resources.push(resource.type_name.clone());
+                                }
+                            }
+                            self.resources.insert(resource.type_name.clone(), resource.clone());
                         }
                     }
                 }
+            }
+        }
+
+        // now go through the provider resources and add them to the list of resources
+        for provider in &self.provider_resources {
+            let provider_resource = self.resources.get(provider).unwrap();
+            let manifest = serde_json::from_value::<ResourceManifest>(provider_resource.manifest.clone().unwrap())?;
+            // invoke the list command
+            let list_command = manifest.provider.unwrap().list;
+            let (exit_code, stdout, stderr) = invoke_command(&list_command.executable, list_command.args, None)?;
+            if exit_code != 0 {
+                return Err(DscError::Operation(format!("Failed to list resources for provider {provider}: {exit_code} {stderr}")));
+            }
+            for line in stdout.lines() {
+                let Ok(resource) = serde_json::from_str::<DscResource>(&line) else {
+                    return Err(DscError::Operation(format!("Failed to parse resource from provider {provider}: {line}")));
+                };
+                self.resources.insert(resource.type_name.clone(), resource);
             }
         }
 
@@ -82,8 +110,7 @@ fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
         type_name: manifest.resource_type.clone(),
         implemented_as: ImplementedAs::Command,
         path: path.to_str().unwrap().to_string(),
-        parent_path: path.parent().unwrap().to_str().unwrap().to_string(),
-        manifest: Some(manifest),
+        manifest: Some(serde_json::to_value(manifest)?),
         ..Default::default()
     };
 
