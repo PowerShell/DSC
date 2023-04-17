@@ -89,7 +89,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     return Err(DscError::Operation(format!("Failed to parse resource from provider {provider}: {line}")));
                 };
                 if resource.requires.is_none() {
-                    return Err(DscError::MissingRequires(provider.clone(), resource.type_name.clone()));
+                    return Err(DscError::MissingRequires(provider.clone(), resource.type_name));
                 }
                 self.resources.insert(resource.type_name.clone(), resource);
             }
