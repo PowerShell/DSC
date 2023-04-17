@@ -88,6 +88,9 @@ impl ResourceDiscovery for CommandDiscovery {
                 let Ok(resource) = serde_json::from_str::<DscResource>(line) else {
                     return Err(DscError::Operation(format!("Failed to parse resource from provider {provider}: {line}")));
                 };
+                if resource.requires.is_none() {
+                    return Err(DscError::MissingRequires(provider.clone(), resource.type_name.clone()));
+                }
                 self.resources.insert(resource.type_name.clone(), resource);
             }
         }

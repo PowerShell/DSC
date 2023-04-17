@@ -15,4 +15,6 @@ pub struct Args {
 pub enum SubCommand {
     #[clap(name = "list", about = "Returns some test resources.")]
     List,
+    #[clap(name = "listmissingrequires", about = "Returns some test resources with invalid schema.")]
+    ListMissingRequires,
 }

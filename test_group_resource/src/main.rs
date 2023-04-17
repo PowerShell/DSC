@@ -39,6 +39,19 @@ fn main() {
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());
             println!("{}", serde_json::to_string(&resource2).unwrap());
+        },
+        SubCommand::ListMissingRequires => {
+            let resource1 = DscResource {
+                type_name: "InvalidResource".to_string(),
+                version: "1.0.0".to_string(),
+                implemented_as: ImplementedAs::Custom("TestResource".to_string()),
+                path: "test_resource1".to_string(),
+                author: Some("Microsoft".to_string()),
+                properties: vec!["Property1".to_string(), "Property2".to_string()],
+                requires: None,
+                manifest: None,
+            };
+            println!("{}", serde_json::to_string(&resource1).unwrap());
         }
     }
 }
