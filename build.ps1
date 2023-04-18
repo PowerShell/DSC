@@ -28,8 +28,8 @@ else {
 }
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("dsc_lib", "dsc", "osinfo", "y2j")
-$pedantic_clean_projcets = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo")
+$projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j")
+$pedantic_clean_projcets = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource")
 
 if ($IsWindows) {
     $projects += $windows_projects

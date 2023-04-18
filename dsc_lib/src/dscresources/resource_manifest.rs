@@ -27,6 +27,12 @@ pub struct ResourceManifest {
     /// Details how to call the Test method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<TestMethod>,
+    /// Details how to call the Validate method of the resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub validate: Option<ValidateMethod>,
+    /// Indicates the resource is a provider of other resources.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<Provider>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
     pub exit_codes: Option<HashMap<i32, String>>,
@@ -114,4 +120,26 @@ pub struct TestMethod {
     /// The type of return value expected from the Test method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct ValidateMethod {
+    /// The command to run to validate the state of the resource.
+    pub executable: String,
+    /// The arguments to pass to the command to perform a Validate.
+    pub args: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct Provider {
+    /// The way to list provider supported resources.
+    pub list: ListMethod,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct ListMethod {
+    /// The command to run to list resources supported by a group resource.
+    pub executable: String,
+    /// The arguments to pass to the command to perform a List.
+    pub args: Option<Vec<String>>,
 }
