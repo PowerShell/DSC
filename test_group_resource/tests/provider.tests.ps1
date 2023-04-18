@@ -43,7 +43,8 @@ Describe 'Resource provider tests' {
                     "args": [
                         "listmissingrequires"
                     ]
-                }
+                },
+                "config": "sequence"
             }
         }
 '@
