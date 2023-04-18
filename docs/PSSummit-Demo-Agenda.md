@@ -6,6 +6,7 @@
 * Configuration as JSON
 * Configuration as YAML
 * Get, Set, Test results
+* DependsOn
 
 ## Resource simplification
 
@@ -20,6 +21,8 @@
 * Parallelism
 * General grouping
 * Provider Resources
+  * List
+  * Config
 
 ## PowerShell Group resource
 
