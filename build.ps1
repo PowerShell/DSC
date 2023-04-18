@@ -9,6 +9,19 @@ param(
     [switch]$Test
 )
 
+## Test if Rust is installed
+if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
+    Write-Verbose -Verbose "Rust not found, installing..."
+    if (!$IsWindows) {
+        curl https://sh.rustup.rs -sSf | sh
+    }
+    else {
+        Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
+        & 'temp:/rustup-init.exe'
+        Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
+    }
+}
+
 ## Create the output folder
 $configuration = $Release ? 'release' : 'debug'
 $target = Join-Path $PSScriptRoot 'bin' $configuration
