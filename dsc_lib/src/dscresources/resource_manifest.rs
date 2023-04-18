@@ -134,6 +134,18 @@ pub struct ValidateMethod {
 pub struct Provider {
     /// The way to list provider supported resources.
     pub list: ListMethod,
+    /// Defines how the provider supports accepting configuraiton.
+    pub config: ConfigKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum ConfigKind {
+    /// The provider accepts full unprocessed configuration.
+    #[serde(rename = "full")]
+    Full,
+    /// The provider accepts configuration as a sequence.
+    #[serde(rename = "sequence")]
+    Sequence,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
