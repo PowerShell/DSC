@@ -18,6 +18,8 @@ pub struct DscResource {
     pub version: String,
     /// The file path to the resource.
     pub path: String,
+    // The directory path to the resource.
+    pub directory: String,
     /// The implementation of the resource.
     #[serde(rename="implementedAs")]
     pub implemented_as: ImplementedAs,
@@ -46,6 +48,7 @@ impl DscResource {
             type_name: String::new(),
             version: String::new(),
             path: String::new(),
+            directory: String::new(),
             implemented_as: ImplementedAs::Command,
             author: None,
             properties: Vec::new(),
@@ -115,7 +118,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
-                command_resource::invoke_get(&resource_manifest, filter)
+                command_resource::invoke_get(&resource_manifest, &self.directory, filter)
             },
         }
     }
@@ -130,7 +133,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, desired)
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired)
             },
         }
     }
@@ -159,7 +162,7 @@ impl Invoke for DscResource {
                     Ok(test_result)
                 }
                 else {
-                    command_resource::invoke_test(&resource_manifest, expected)
+                    command_resource::invoke_test(&resource_manifest, &self.directory, expected)
                 }
             },
         }
@@ -175,7 +178,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
-                command_resource::get_schema(&resource_manifest)
+                command_resource::get_schema(&resource_manifest, &self.directory)
             },
         }
     }

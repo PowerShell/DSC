@@ -20,12 +20,12 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 /// # Errors
 ///
 /// Error returned if the resource does not successfully get the current state
-pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult, DscError> {
+pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<GetResult, DscError> {
     if !filter.is_empty() && resource.get.input.is_some() {
-        verify_json(resource, filter)?;
+        verify_json(resource, cwd, filter)?;
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(filter))?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(filter), Some(cwd))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -46,15 +46,15 @@ pub fn invoke_get(resource: &ResourceManifest, filter: &str) -> Result<GetResult
 /// # Errors
 ///
 /// Error returned if the resource does not successfully set the desired state
-pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Result<SetResult, DscError> {
     let Some(set) = &resource.set else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
 
-    verify_json(resource, desired)?;
+    verify_json(resource, cwd, desired)?;
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !set.pre_test.unwrap_or_default() {
-        let test_result = invoke_test(resource, desired)?;
+        let test_result = invoke_test(resource, cwd, desired)?;
         if test_result.diff_properties.is_none() {
             return Ok(SetResult {
                 before_state: test_result.expected_state,
@@ -64,7 +64,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
         }
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(desired))?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(desired), Some(cwd))?;
     let pre_state: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
@@ -72,7 +72,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
 
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), Some(desired))?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), Some(desired), Some(cwd))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -108,7 +108,7 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
         },
         None => {
             // perform a get and compare the result to the expected state
-            let get_result = invoke_get(resource, desired)?;
+            let get_result = invoke_get(resource, cwd, desired)?;
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &get_result.actual_state, &pre_state);
             Ok(SetResult {
@@ -130,13 +130,13 @@ pub fn invoke_set(resource: &ResourceManifest, desired: &str) -> Result<SetResul
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestResult, DscError> {
+pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
     let Some(test) = resource.test.as_ref() else {
         return Err(DscError::NotImplemented("test".to_string()));
     };
 
-    verify_json(resource, expected)?;
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone(), Some(expected))?;
+    verify_json(resource, cwd, expected)?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone(), Some(expected), Some(cwd))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -171,7 +171,7 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
         },
         None => {
             // perform a get and compare the result to the expected state
-            let get_result = invoke_get(resource, expected)?;
+            let get_result = invoke_get(resource, cwd, expected)?;
             let diff_properties = get_diff(&expected_value, &get_result.actual_state);
             Ok(TestResult {
                 expected_state: expected_value,
@@ -191,14 +191,14 @@ pub fn invoke_test(resource: &ResourceManifest, expected: &str) -> Result<TestRe
 /// # Errors
 ///
 /// Error if schema is not available or if there is an error getting the schema
-pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
+pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscError> {
     let Some(schema_kind) = resource.schema.as_ref() else {
         return Err(DscError::SchemaNotAvailable(resource.resource_type.clone()));
     };
 
     match schema_kind {
         SchemaKind::Command(ref command) => {
-            let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone(), None)?;
+            let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd))?;
             if exit_code != 0 {
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
             }
@@ -229,11 +229,12 @@ pub fn get_schema(resource: &ResourceManifest) -> Result<String, DscError> {
 /// * `executable` - The command to execute
 /// * `args` - Optional arguments to pass to the command
 /// * `input` - Optional input to pass to the command
+/// * `cwd` - Optional working directory to execute the command in
 ///
 /// # Errors
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>) -> Result<(i32, String, String), DscError> {
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>) -> Result<(i32, String, String), DscError> {
     let mut command = Command::new(executable);
     if input.is_some() {
         command.stdin(Stdio::piped());
@@ -242,6 +243,9 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     command.stderr(Stdio::piped());
     if let Some(args) = args {
         command.args(args);
+    }
+    if let Some(cwd) = cwd {
+        command.current_dir(cwd);
     }
 
     let mut child = command.spawn()?;
@@ -273,8 +277,8 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     Ok((exit_code, stdout, stderr))
 }
 
-fn verify_json(resource: &ResourceManifest, json: &str) -> Result<(), DscError> {
-    let schema = get_schema(resource)?;
+fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
+    let schema = get_schema(resource, cwd)?;
     let schema: Value = serde_json::from_str(&schema)?;
     let compiled_schema = match JSONSchema::compile(&schema) {
         Ok(schema) => schema,

@@ -48,6 +48,8 @@ pub enum ConfigSubCommand {
     Set,
     #[clap(name = "test", about = "Test the current configuration")]
     Test,
+    #[clap(name = "validate", about = "Validate the current configuration")]
+    Validate,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
