@@ -143,6 +143,10 @@ fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<Outpu
             eprintln!("Testing configuration... NOT IMPLEMENTED YET");
             exit(EXIT_DSC_ERROR);
         },
+        ConfigSubCommand::Validate => {
+            eprintln!("Validate configuration.. NOT IMPLEMENTED YET");
+            exit(EXIT_DSC_ERROR);
+        }
     }
 }
 
@@ -192,7 +196,7 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
         ResourceSubCommand::Schema { resource } => {
             handle_resource_schema(&mut dsc, resource, format);
         },
-    }    
+    }
 }
 
 fn handle_resource_get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
@@ -259,7 +263,7 @@ fn handle_resource_test(dsc: &mut DscManager, resource: &str, input: &Option<Str
             eprintln!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
-    }    
+    }
 }
 
 fn handle_resource_schema(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat>) {
@@ -280,7 +284,7 @@ fn handle_resource_schema(dsc: &mut DscManager, resource: &str, format: &Option<
             eprintln!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
-    }    
+    }
 }
 
 fn get_schema(dsc_type: DscType) -> RootSchema {

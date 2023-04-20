@@ -80,7 +80,7 @@ impl ResourceDiscovery for CommandDiscovery {
             let manifest = serde_json::from_value::<ResourceManifest>(provider_resource.manifest.clone().unwrap())?;
             // invoke the list command
             let list_command = manifest.provider.unwrap().list;
-            let (exit_code, stdout, stderr) = invoke_command(&list_command.executable, list_command.args, None)?;
+            let (exit_code, stdout, stderr) = invoke_command(&list_command.executable, list_command.args, None, Some(&provider_resource.directory))?;
             if exit_code != 0 {
                 return Err(DscError::Operation(format!("Failed to list resources for provider {provider}: {exit_code} {stderr}")));
             }
@@ -113,6 +113,7 @@ fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
         type_name: manifest.resource_type.clone(),
         implemented_as: ImplementedAs::Command,
         path: path.to_str().unwrap().to_string(),
+        directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: Some(serde_json::to_value(manifest)?),
         ..Default::default()
     };
