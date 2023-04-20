@@ -258,18 +258,20 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
         child_stdin.write_all(input.unwrap_or_default().as_bytes())?;
         child_stdin.flush()?;
     }
-    let exit_status = child.wait()?;
 
     let Some(mut child_stdout) = child.stdout.take() else {
         return Err(DscError::CommandOperation("Failed to open stdout".to_string(), executable.to_string()));
     };
+    let mut stdout_buf = Vec::new();
+    child_stdout.read_to_end(&mut stdout_buf)?;
+
     let Some(mut child_stderr) = child.stderr.take() else {
         return Err(DscError::CommandOperation("Failed to open stderr".to_string(), executable.to_string()));
     };
-    let mut stdout_buf = Vec::new();
-    child_stdout.read_to_end(&mut stdout_buf)?;
     let mut stderr_buf = Vec::new();
     child_stderr.read_to_end(&mut stderr_buf)?;
+
+    let exit_status = child.wait()?;
 
     let exit_code = exit_status.code().unwrap_or(EXIT_PROCESS_TERMINATED);
     let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
