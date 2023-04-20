@@ -1,32 +1,23 @@
-# Example on how concurrency would be defined in the configuration.
+# Example configuration mixing native app resources with classic PS resources
 $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
 resources:
-- name: PS7
-  type: DSC/PowerShell
+- name: my PS
+  type: DSC/PowerShellGroup
   properties:
     resources:
-    - name: psgallery
-      type: Microsoft.PowerShell.PSGallery/PSGallery
+    - name: PSGetRepository
+      type: MSFT_PSRepository
       properties:
-        name: foo
-        url: http://bar
-    - name: my file
-      type: xFile/File
+        Name: PSGallery
+        SourceLocation: https://www.powershellgallery.com/api/v2
+    - name: MoveFile
+      type: TestFileDscResource/FileResource
       properties:
-        path: xyz
-        content: hello world
-- name: WinPS
-  type: DSC/WindowsPowerShell
+        SourcePath: C:\Windows\System32\WindowsPowerShell\v1\powershell.exe
+        Ensure: Present
+- name: current user registry
+  type: Microsoft.Windows/Registry
   properties:
-    resources:
-    - name: psgallery
-      type: Microsoft.PowerShell.PSGallery/PSGallery
-      properties:
-        name: foo
-        url: http://bar
-    - name: my file
-      type: xFile/File
-      properties:
-        path: xyz
-        content: hello world
-
+    keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
+    valueName: ProductName
+    _ensure: present

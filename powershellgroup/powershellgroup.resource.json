@@ -1,0 +1,31 @@
+{
+    "manifestVersion": "1.0",
+    "type": "DSC/PowerShellGroup",
+    "version": "0.1.0",
+    "description": "Resource provider to classic DSC Powershell resources.",
+    "is_resource_provider": true,
+    "list": {
+      "executable": "pwsh",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "C:\\DSCv3\\powershellgroup\\powershellgroup.resource.ps1 List"
+      ]
+    },
+    "get": {
+      "executable": "pwsh",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "$Input | C:\\DSCv3\\powershellgroup\\powershellgroup.resource.ps1 Get"
+      ]
+      },
+    "exitCodes": {
+      "0": "Success"
+    }
+  }
+  

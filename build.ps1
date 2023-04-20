@@ -48,6 +48,8 @@ if ($IsWindows) {
     $projects += $windows_projects
 }
 
+Copy-Item "$PSScriptRoot/powershellgroup/*" $target -Force -ErrorAction Ignore
+
 $failed = $false
 foreach ($project in $projects) {
     ## Build format_json

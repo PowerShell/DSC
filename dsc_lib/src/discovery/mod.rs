@@ -6,8 +6,10 @@ mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscerror::DscError;
-use crate::dscresources::dscresource::DscResource;
+use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use regex::RegexBuilder;
+use serde_json::Value;
+use std::process::Command;
 
 pub struct Discovery {
     resources: Vec<DscResource>,

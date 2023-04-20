@@ -113,8 +113,14 @@ fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
         type_name: manifest.resource_type.clone(),
         implemented_as: ImplementedAs::Command,
         path: path.to_str().unwrap().to_string(),
+<<<<<<< HEAD
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: Some(serde_json::to_value(manifest)?),
+=======
+        parent_path: path.parent().unwrap().to_str().unwrap().to_string(),
+        is_resource_provider: manifest.is_resource_provider.unwrap_or_default(),
+        manifest: Some(manifest.clone()),
+>>>>>>> Group code 1
         ..Default::default()
     };
 
