@@ -6,7 +6,7 @@ use resource_manifest::ResourceManifest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use super::{command_resource, powershell_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult}};
+use super::{command_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
