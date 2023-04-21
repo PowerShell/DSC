@@ -34,6 +34,7 @@ pub struct DscResource {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
 pub enum ImplementedAs {
     /// A command line executable
     Command,
