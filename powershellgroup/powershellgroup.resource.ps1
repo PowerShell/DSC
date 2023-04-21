@@ -53,21 +53,19 @@ if ($Operation -eq 'List')
 elseif ($Operation -eq 'Get')
 {
     $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    
-    $inputht = @{}
-    $ResourceTypeName = ""
 
-    $inputobj_pscustomobj.psobject.properties | Foreach { 
-        if ($_.Name -eq "Resource")
+    $result = @()
+    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    {
+        foreach($r in $inputobj_pscustomobj.resources)
         {
-            $ResourceTypeName = $_.Value
-        }
-        else
-        {
-       ` $inputht[$_.Name] = $_.Value
+            $inputht = @{}
+            $ResourceTypeName = ($r.type -split "/")[1]
+            $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
+            $result += Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht
         }
     }
-    $result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht
+
     $result | ConvertTo-Json
 }
 else

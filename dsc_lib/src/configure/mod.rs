@@ -60,7 +60,6 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-
         for resource in &config.resources {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
@@ -86,6 +85,10 @@ impl Configurator {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
+
+            //TODO: remove this after schema validation for classic PS resources is implemented
+            if resource.resource_type == "DSC/PowerShellGroup" {continue;}
+
             let input = serde_json::to_string(&resource.properties)?;
             let schema = match dsc_resource.schema() {
                 Ok(schema) => schema,
