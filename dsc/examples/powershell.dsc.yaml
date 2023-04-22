@@ -1,23 +1,21 @@
 # Example configuration mixing native app resources with classic PS resources
 $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
 resources:
-- name: my PS
+- name: Use class PowerShell resources
   type: DSC/PowerShellGroup
   properties:
     resources:
-    - name: PSGetRepository
-      type: MSFT_PSRepository
+    - name: OpenSSH service
+      type: PsDesiredStateConfiguration/MSFT_ServiceResource
       properties:
-        Name: PSGallery
-        SourceLocation: https://www.powershellgallery.com/api/v2
-    - name: MoveFile
-      type: TestFileDscResource/FileResource
+        Name: sshd
+    - name: Administrator
+      type: PsDesiredStateConfiguration/MSFT_UserResource
       properties:
-        SourcePath: C:\Windows\System32\WindowsPowerShell\v1\powershell.exe
-        Ensure: Present
+        UserName: administrator
 - name: current user registry
   type: Microsoft.Windows/Registry
   properties:
     keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
     valueName: ProductName
-    _ensure: present
+    _ensure: Present
