@@ -6,6 +6,8 @@
 * Configuration as JSON
 * Configuration as YAML
 * Get, Set, Test results
+* Messages
+  * Invalid schema
 * DependsOn
 
 ## Resource simplification
