@@ -134,8 +134,8 @@ fn test_config() {
         ],
         "match": [
             {
-                "conditional": "group",
-                "criteria": "administrator",
+                "conditionalkey": "group",
+                "conditionalvalue": "administrator",
                 "data": {
                     "passwordauthentication": {
                         "value": "yes"
@@ -147,8 +147,8 @@ fn test_config() {
                 }
             },
             {
-                "conditional": "user",
-                "criteria": "anoncvs",
+                "conditionalKey": "user",
+                "conditionalValue": "anoncvs",
                 "data": {
                     "passwordauthentication": {
                         "value": "no"

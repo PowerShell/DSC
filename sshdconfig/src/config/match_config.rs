@@ -246,8 +246,10 @@ pub struct MatchSubContainer {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct MatchContainer {
-    pub conditional: MatchConditional,
-    pub criteria: String,
+    #[serde(rename = "conditionalkey", alias = "conditionalKey")]
+    pub conditional_key: MatchConditional,
+    #[serde(rename = "conditionalvalue", alias = "conditionalValue")]
+    pub conditional_value: String,
     pub data: MatchSubContainer,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]

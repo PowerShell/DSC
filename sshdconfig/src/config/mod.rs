@@ -26,19 +26,19 @@ impl SshdManager {
     pub fn import_sshd_config(&self, filepath: &PathBuf) -> Result<(), SshdConfigError> {
         // populate self.config from filepath to sshd_config
         // can use convert_text_to_json
-        // update self.is_default hashmap to false for each keyword in data
+        // update self.is_default hashmap to false for each keyword from file
         Ok(())
     }
 
     pub fn import_json(&self, data: &String) -> Result<(), SshdConfigError> {
         // populate self.config from data
-        // update self.is_default hashmap to false for each keyword in data
+        // update self.is_default hashmap to false for each keyword from data
         Ok(())
     }
 
     pub fn get(&self, keywords: &Option<Vec<String>>, defaults: bool) -> Result<String, SshdConfigError> {
         // if keywords are provided, filter current config string to those values
-        // if a keyword is provided but not set in the current config, set to NULL
+        // if a keyword is provided but not set in the current config, set value to NULL
         // return string of current config as json
         Ok("".to_string())
     }
@@ -63,7 +63,7 @@ impl SshdManager {
     }
 
     pub fn get_keywords_from_json(&self, data: &String) -> Result<Option<Vec<String>>, SshdConfigError> {
-        // read sshdconfig from filepath, parse sshdconfig, and return a list of the keywords
+        // read sshdconfig from json, parse sshdconfig, and return a list of the keywords
         Ok(Some(Vec::new()))
     }
 
