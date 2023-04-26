@@ -120,8 +120,8 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
-        "passwordauthentication": "yes",
-        "syslogfacility": "INFO",
+        "passwordAuthentication": "yes",
+        "syslogFacility": "INFO",
         "subsystem": [
             {
                 "name": "powershell",
@@ -129,18 +129,18 @@ fn test_config() {
             }
         ],
         "port": [
-            { "value": "24" },
-            { "value": "23" }
+            { "value": 24 },
+            { "value": 23 }
         ],
         "match": [
             {
-                "conditionalkey": "group",
-                "conditionalvalue": "administrator",
+                "conditionalKey": "group",
+                "conditionalValue": "administrator",
                 "data": {
-                    "passwordauthentication": {
+                    "PasswordAuthentication": {
                         "value": "yes"
                     },
-                    "authorizedkeysfile": {
+                    "authorizedKeysFile": {
                         "value": "test.txt",
                         "_ensure": "Absent"
                     }
@@ -150,7 +150,7 @@ fn test_config() {
                 "conditionalKey": "user",
                 "conditionalValue": "anoncvs",
                 "data": {
-                    "passwordauthentication": {
+                    "passwordAuthentication": {
                         "value": "no"
                     }
                 }
