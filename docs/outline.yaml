@@ -96,6 +96,9 @@ Resources:
         Covers expected behavior for error handling and how to implement it.
     - Logging: |
         Covers expected behavior for log messages and how to implement them.
+    - Troubleshooting: |
+        Thought process a user should follow when diagnosing why a configuration has failed.
+        Common or known errors and required workarounds.
   # The remaining sections cover language-specific concepts and tutorials. The
   # top-level tutorials for each language are re-included here.
   Python:
