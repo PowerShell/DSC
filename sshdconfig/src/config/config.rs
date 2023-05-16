@@ -425,7 +425,7 @@ impl SshdConfig {
         match serde_json::to_string(self) {
             Ok(json) => json,
             Err(e) => {
-                eprintln!("Failed to serialize to JSON: {}", e);
+                eprintln!("Failed to serialize to JSON: {e}");
                 String::new()
             }
         }

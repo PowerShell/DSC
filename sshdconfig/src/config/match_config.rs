@@ -1,20 +1,20 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::config::*;
+use crate::config::config::{EnsureKind, GatewayPorts, IgnoreRhosts, PermitRootLogin, RepeatKeywordString, TCPFwd, YesNo};
 
 /// This file defines structs
 /// related to the match keyword and how it will
-/// be represented within the config_data struct
+/// be represented within the `config_data` struct
 /// #Example
 /// an sshd_config file with the following:
 /// Match Group administrators
 ///     AuthorizedKeysFile C:\\programdata\\ssh\\administrators_authorized_keys
 /// Match User anoncvs
 ///     PermitListen 1234
-/// Each block is represented by the MatchContainer struct
+/// Each block is represented by the `MatchContainer` struct
 /// in order to preserve the order when writing to sshd_config
 /// the keywords within each match block are
-/// represented by the MatchSubContainer struct
+/// represented by the `MatchSubContainer` struct
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MatchConditional {
@@ -86,7 +86,7 @@ pub struct MatchKeywordIgnoreRhosts {
     pub ensure: Option<EnsureKind>,
 }
 
-/// MatchSubContainer holds the key-value 
+/// `MatchSubContainer` holds the key-value 
 /// pairs from sshd_config
 /// TODO: need to confirm if all the accepted Match keywords
 /// are "normal" keywords with just values

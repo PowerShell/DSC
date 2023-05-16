@@ -4,7 +4,7 @@ pub mod config;
 pub mod config_helper;
 pub mod match_config;
 
-use config::*;
+use config::SshdConfig;
 
 use crate::sshdconfig_error::SshdConfigError;
 

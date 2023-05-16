@@ -8,9 +8,9 @@ pub enum InputData {
     None,
 }
 
-// parse_input_helper will unwrap inputs from command line
+// get_input_data will unwrap inputs from command line
 // and ensure that, at most, one input source is provided
-pub fn parse_input_helper(input_config_text: &Option<String>, input_config_json: &Option<String>, 
+pub fn get_input_data(input_config_text: &Option<String>, input_config_json: &Option<String>, 
     input_config_stdin: &Option<String>) -> Result<InputData, SshdConfigError> {
     Ok(InputData::None)
 }
@@ -24,13 +24,13 @@ pub fn get_input_filepath(filepath: &Option<String>) -> Result<PathBuf, SshdConf
     Ok(PathBuf::from("not implemented yet"))
 }
 
-// parse_input calls out to parse_input_helper and 
+// parse_input calls out to get_input_data and 
 // get_input_filepath since this is shared between
 // the get, set, and test commands
 pub fn parse_input(input_config_text: &Option<String>, 
     input_config_json: &Option<String>, input_config_stdin: &Option<String>, 
     curr_filepath: &Option<String>) -> Result<(InputData, SshdManager), SshdConfigError> {
-    let input_data = parse_input_helper(input_config_text, input_config_json, input_config_stdin)?;
+    let input_data = get_input_data(input_config_text, input_config_json, input_config_stdin)?;
     let curr_filepath = get_input_filepath(curr_filepath)?;
     let sshdconfig = SshdManager::new();
     sshdconfig.import_sshd_config(&curr_filepath)?;
@@ -59,7 +59,7 @@ pub fn initialize_new_config(input_data: &InputData) -> Result<SshdConfig, SshdC
     match serde_json::from_str(&input_json) {
         Ok(result) => Ok(result),
         Err(e) => {
-            eprintln!("Error importing new sshd config from json: {}", e);
+            eprintln!("Error importing new sshd config from json: {e}");
             return Err(SshdConfigError::NotImplemented);
         }
     }
@@ -70,8 +70,8 @@ pub fn initialize_new_config(input_data: &InputData) -> Result<SshdConfig, SshdC
 // to a specific set of keywords
 pub fn parse_keywords(data: &InputData, sshd_config: &SshdManager) -> Result<Option<Vec<String>>,SshdConfigError> {
     match data {
-        InputData::Text(data) => sshd_config.get_keywords_from_file(&data),
-        InputData::Json(data) => sshd_config.get_keywords_from_json(&data),
+        InputData::Text(data) => sshd_config.get_keywords_from_file(data),
+        InputData::Json(data) => sshd_config.get_keywords_from_json(data),
         InputData::None => Ok(None)
     }
 }
