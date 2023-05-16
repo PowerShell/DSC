@@ -85,6 +85,15 @@ pub enum TCPFwd {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ConfigValidation {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stdout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stderr: Option<String>,
+    pub exit_code: i32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RepeatKeywordString {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
