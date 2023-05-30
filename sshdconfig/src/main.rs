@@ -129,6 +129,9 @@ fn test_config() {
             { "value": 24 },
             { "value": 23 }
         ],
+        "authorizedKeysFile": {
+            "value": "test"
+        },
         "match": [
             {
                 "conditionalKey": "group",
@@ -149,7 +152,8 @@ fn test_config() {
                 "data": {
                     "passwordAuthentication": {
                         "value": "no"
-                    }
+                    },
+                    "authorizedKeysFile": "test.txt"
                 }
             }
         ]
