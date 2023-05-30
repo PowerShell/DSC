@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-pub mod config;
-pub mod config_helper;
-pub mod match_config;
+pub mod match_container;
+pub mod shared;
+pub mod sshd;
 
-use config::SshdConfig;
+use sshd::SshdConfig;
 
 use crate::sshdconfig_error::SshdConfigError;
 
@@ -161,4 +161,3 @@ impl Default for SshdManager {
         Self::new()
     }
 }
-

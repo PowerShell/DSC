@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{sshdconfig_error::*, config::{config::SshdConfig, SshdManager}};
+use crate::{sshdconfig_error::*, config::{sshd::SshdConfig, SshdManager}};
 
 pub enum InputData {
     Text(PathBuf),

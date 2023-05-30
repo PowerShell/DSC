@@ -1,7 +1,7 @@
 use args::{Cli, Commands};
 use atty::Stream;
 use clap::Parser;
-use config::config::SshdConfig;
+use config::sshd::SshdConfig;
 use input_helper::{initialize_new_config, parse_input, parse_keywords};
 use sshdconfig_error::{EXIT_INPUT_INVALID, EXIT_NOT_IN_DESIRED_STATE, EXIT_SUCCESS, EXIT_UNSPECIFIED_ERR};
 use std::{io::{self, Read}, process::exit};
@@ -137,9 +137,7 @@ fn test_config() {
                 "conditionalKey": "group",
                 "conditionalValue": "administrator",
                 "data": {
-                    "PasswordAuthentication": {
-                        "value": "yes"
-                    },
+                    "PasswordAuthentication": "yes",
                     "authorizedKeysFile": {
                         "value": "test.txt",
                         "_ensure": "Absent"
@@ -151,7 +149,8 @@ fn test_config() {
                 "conditionalValue": "anoncvs",
                 "data": {
                     "passwordAuthentication": {
-                        "value": "no"
+                        "value": "no",
+                        "_ensure": "Absent"
                     },
                     "authorizedKeysFile": "test.txt"
                 }
