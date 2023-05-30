@@ -1,28 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
-use crate::config::shared::{AddressFamilyObject, CompressionObject, EnsureKind, GatewayPortsObject, 
-    IgnoreRhostsObject, PermitRootLoginObject, StringObject, TCPFwdObject, YesNoObject};
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct RepeatKeywordString {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    pub value: String,
-    #[serde(rename = "_ensure")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ensure: Option<EnsureKind>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct RepeatKeywordInt {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    pub value: i32,
-    #[serde(rename = "_ensure")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ensure: Option<EnsureKind>,
-}
+use crate::config::shared::{AddressFamilyObject, CompressionObject, GatewayPortsObject, IntObject, IgnoreRhostsObject, 
+    PermitRootLoginObject, RepeatKeywordInt, RepeatKeywordString, StringObject, TCPFwdObject, YesNoObject};
 
 // The main struct for sshd_config data -
 // contains all keywords permitted in a sshd_config file, and their corresponding arg type
@@ -37,15 +17,18 @@ pub struct RepeatKeywordInt {
 pub struct SshdConfig {
     #[serde(rename = "acceptEnv", alias = "AcceptEnv")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub accept_env: Option<StringObject>,
+    // multiple environment variables can be seaprated by whitespace or
+    // spread across multiple AcceptEnv directives
+    pub accept_env: Option<Vec<RepeatKeywordString>>,
     #[serde(rename = "addressFamily", alias = "AddressFamily")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_family: Option<AddressFamilyObject>,
     #[serde(rename = "allowAgentForwarding", alias = "AllowAgentForwarding")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub allow_agent_forwarding: Option<StringObject>,
+    pub allow_agent_forwarding: Option<YesNoObject>,
     #[serde(rename = "allowGroups", alias = "AllowGroups")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    // input is list of group name patterns separated by whitespace
     pub allow_groups: Option<StringObject>,
     #[serde(rename = "allowStreamLocalForwarding", alias = "AllowStreamLocalForwarding")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -55,9 +38,11 @@ pub struct SshdConfig {
     pub allow_tcp_forwarding: Option<TCPFwdObject>,
     #[serde(rename = "allowUsers", alias = "AllowUsers")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    // input is list of user name patterns separated by whitespace
     pub allow_users: Option<StringObject>,
     #[serde(rename = "authenticationMethods", alias = "AuthenticationMethods")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    // input is one or more comma-separated lists, each list separated by whitespace 
     pub authentication_methods: Option<StringObject>,
     #[serde(rename = "authorizedKeysCommand", alias = "AuthorizedKeysCommand")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -67,6 +52,7 @@ pub struct SshdConfig {
     pub authorized_keys_command_user: Option<StringObject>,
     #[serde(rename = "authorizedKeysFile", alias = "AuthorizedKeysFile")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    // input is one or more files names each separated by whitespace or "none"
     pub authorized_keys_file: Option<StringObject>,
     #[serde(rename = "authorizedPrincipalsCommand", alias = "AuthorizedPrincipalsCommand")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -80,26 +66,29 @@ pub struct SshdConfig {
     #[serde(rename = "Banner", alias = "banner")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub banner: Option<StringObject>,
-    #[serde(rename = "cASignatureAlgorithms", alias = "CASignatureAlgorithms")]
+    #[serde(rename = "caSignatureAlgorithms", alias = "CASignatureAlgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    // input is a comma separated list, starting with + or -
     pub ca_signature_algorithms: Option<StringObject>,
     #[serde(rename = "challengeresponseauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub challenge_response_authentication: Option<StringObject>,
+    pub challenge_response_authentication: Option<YesNoObject>,
     #[serde(rename = "channelTimeout", alias = "ChannelTimeout")]
     #[serde(skip_serializing_if = "Option::is_none")]
+    // input is "type=interval" format each separated by whitespace
     pub channel_timeout: Option<StringObject>,
     #[serde(rename = "chrootDirectory", alias = "ChrootDirectory")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chroot_directory: Option<StringObject>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    // input is a comma separated list, starting with +,-,^
     pub ciphers: Option<StringObject>,
     #[serde(rename = "clientAliveCountMax", alias = "ClientAliveCountMax")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_alive_count_max: Option<StringObject>,
+    pub client_alive_count_max: Option<IntObject>,
     #[serde(rename = "clientAliveInterval", alias = "ClientAliveInterval")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_alive_interval: Option<StringObject>,
+    pub client_alive_interval: Option<IntObject>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub compression: Option<CompressionObject>,
     #[serde(rename = "denyGroups", alias = "DenyGroups")]

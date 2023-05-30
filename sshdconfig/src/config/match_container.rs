@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::shared::{EnsureKind, GatewayPortsObject, IgnoreRhostsObject, 
-    PermitRootLoginObject, StringObject, TCPFwdObject, YesNoObject};
+use crate::config::shared::{EnsureKind, GatewayPortsObject, IntObject, IgnoreRhostsObject, 
+    PermitRootLoginObject, RepeatKeywordString, StringObject, TCPFwdObject, YesNoObject};
 
 /// This file defines structs
 /// related to the match keyword and how it will
@@ -50,10 +50,10 @@ pub enum MatchConditional {
 pub struct MatchSubContainer {
     #[serde(rename = "acceptEnv", alias = "AcceptEnv")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub accept_env: Option<StringObject>,
+    pub accept_env: Option<Vec<RepeatKeywordString>>,
     #[serde(rename = "allowAgentForwarding", alias = "AllowAgentForwarding")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub allow_agent_forwarding: Option<StringObject>,
+    pub allow_agent_forwarding: Option<YesNoObject>,
     #[serde(rename = "allowGroups", alias = "AllowGroups")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_groups: Option<StringObject>,
@@ -95,7 +95,7 @@ pub struct MatchSubContainer {
     pub ca_signature_algorithms: Option<StringObject>,
     #[serde(rename = "challengeresponseauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub challenge_response_authentication: Option<StringObject>,
+    pub challenge_response_authentication: Option<YesNoObject>,
     #[serde(rename = "channelTimeout", alias = "ChannelTimeout")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub channel_timeout: Option<StringObject>,
@@ -104,10 +104,10 @@ pub struct MatchSubContainer {
     pub chroot_directory: Option<StringObject>,
     #[serde(rename = "clientAliveCountMax", alias = "ClientAliveCountMax")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_alive_count_max: Option<StringObject>,
+    pub client_alive_count_max: Option<IntObject>,
     #[serde(rename = "clientAliveInterval", alias = "ClientAliveInterval")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_alive_interval: Option<StringObject>,
+    pub client_alive_interval: Option<IntObject>,
     #[serde(rename = "denyGroups", alias = "DenyGroups")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deny_groups: Option<StringObject>,

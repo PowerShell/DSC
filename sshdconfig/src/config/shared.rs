@@ -87,6 +87,18 @@ pub enum IgnoreRhosts {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
+pub enum IntObject {
+    Object{
+        value: i32, 
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>
+    },
+    Int(i32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum IgnoreRhostsObject {
     Object{
         value: IgnoreRhosts,
@@ -121,6 +133,26 @@ pub enum PermitRootLoginObject {
         ensure: Option<EnsureKind>,
     },
     String(PermitRootLogin),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct RepeatKeywordInt {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub value: i32,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct RepeatKeywordString {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub value: String,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
