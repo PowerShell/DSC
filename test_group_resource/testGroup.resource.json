@@ -1,0 +1,28 @@
+{
+    "manifestVersion": "1.0",
+    "type": "Test/TestGroup",
+    "version": "0.1.0",
+    "get": {
+        "executable": "test_group_resource",
+        "args": [
+            "get"
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "test_group_resource",
+            "args": [
+                "schema"
+            ]
+        }
+    },
+    "provider": {
+        "list": {
+            "executable": "test_group_resource",
+            "args": [
+                "list"
+            ]
+        },
+        "config": "sequence"
+    }
+}

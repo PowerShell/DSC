@@ -1,0 +1,43 @@
+{
+  "manifestVersion": "1.0",
+  "type": "DSC/AssertionGroup",
+  "version": "0.1.0",
+  "description": "`test` will be invoked for all resources in the supplied configuration.",
+  "get": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "test"
+    ],
+    "input": "stdin"
+  },
+  "set": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "test"
+    ],
+    "input": "stdin",
+    "preTest": true,
+    "return": "state"
+  },
+  "test": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "test"
+    ],
+    "input": "stdin",
+    "return": "state"
+  },
+  "exitCodes": {
+    "0": "Success"
+  },
+  "validate": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "validate"
+    ]
+  }
+}

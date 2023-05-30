@@ -1,0 +1,32 @@
+# Example on how concurrency would be defined in the configuration.
+$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+resources:
+- name: PS7
+  type: DSC/PowerShell
+  properties:
+    resources:
+    - name: psgallery
+      type: Microsoft.PowerShell.PSGallery/PSGallery
+      properties:
+        name: foo
+        url: http://bar
+    - name: my file
+      type: xFile/File
+      properties:
+        path: xyz
+        content: hello world
+- name: WinPS
+  type: DSC/WindowsPowerShell
+  properties:
+    resources:
+    - name: psgallery
+      type: Microsoft.PowerShell.PSGallery/PSGallery
+      properties:
+        name: foo
+        url: http://bar
+    - name: my file
+      type: xFile/File
+      properties:
+        path: xyz
+        content: hello world
+

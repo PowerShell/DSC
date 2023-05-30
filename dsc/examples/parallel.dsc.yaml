@@ -1,0 +1,47 @@
+# Example on how concurrency would be defined in the configuration.
+$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+metadata:
+  _timeoutSeconds: 600 # example of setting timeout for orchestration, should be namespaced?
+resources:
+- name: myParallelGroup
+  type: DSC/ParallelGroup # each resource in this group would run in parallel
+  properties:
+    resources:
+    - name: os
+      type: Microsoft/OSInfo
+      properties: {}
+    - name: windows product name
+      type: Microsoft.Windows/Registry
+      properties:
+        keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
+        valueName: ProductName
+    - name: system root
+      type: Microsoft.Windows/Registry
+      properties:
+        keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
+        valueName: SystemRoot
+- name: myGroup
+  type: DSC/Group # each resource in this group would run in sequence
+  properties:
+    resources:
+    - name: current user registry
+      type: Microsoft.Windows/Registry
+      properties:
+        keyPath: HKCU\example
+        _ensure: present
+    - name: current user registry 2
+      type: Microsoft.Windows/Registry
+      properties:
+        keyPath: HKCU\example2
+        _ensure: present
+    - name: mygroup
+      type: DSC/Group
+      properties:
+        resources:
+        - name: myreg
+          type: Microsoft.Windows.Registry
+          properties:
+            keyPath: HKCU\example2
+            _ensure: absent
+  dependsOn:
+  - '[DSC/ParallelGroup]myParallelGroup'
