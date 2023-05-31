@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::shared::{EnsureKind, GatewayPortsObject, IntObject, IgnoreRhostsObject, 
-    PermitRootLoginObject, RepeatKeywordString, StringObject, TCPFwdObject, YesNoObject};
+use crate::config::shared::{EnsureKind, GatewayPortsObject, IntObject, IgnoreRhostsObject, LogLevelObject,
+    PermitRootLoginObject, PermitTunnelObject, PubkeyAuthOptionsObject, RepeatKeywordString, StringObject, TCPFwdObject, YesNoObject};
 
 /// This file defines structs
 /// related to the match keyword and how it will
@@ -116,10 +116,10 @@ pub struct MatchSubContainer {
     pub deny_users: Option<StringObject>,
     #[serde(rename = "disableForwarding", alias = "DisableForwarding")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub disable_forwarding: Option<StringObject>,
+    pub disable_forwarding: Option<YesNoObject>,
     #[serde(rename = "exposeAuthInfo", alias = "ExposeAuthInfo")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub expose_auth_info: Option<StringObject>,
+    pub expose_auth_info: Option<YesNoObject>,
     #[serde(rename = "forceCommand", alias = "ForceCommand")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub force_command: Option<StringObject>,
@@ -128,7 +128,7 @@ pub struct MatchSubContainer {
     pub gateway_ports: Option<GatewayPortsObject>,
     #[serde(rename = "gssapiauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub gss_authentication: Option<StringObject>,
+    pub gss_authentication: Option<YesNoObject>,
     #[serde(rename = "hostbasedAcceptedAlgorithms", alias = "HostbasedAcceptedAlgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hostbased_accepted_algorithms: Option<StringObject>,
@@ -137,10 +137,10 @@ pub struct MatchSubContainer {
     pub hostbased_accepted_key_types: Option<StringObject>,
     #[serde(rename = "hostbasedAuthentication", alias = "HostbasedAuthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hostbased_authentication: Option<StringObject>,
+    pub hostbased_authentication: Option<YesNoObject>,
     #[serde(rename = "hostbasedUsesNameFromPacketOnly", alias = "HostbasedUsesNameFromPacketOnly")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hostbased_uses_name_from_packet_only: Option<StringObject>,
+    pub hostbased_uses_name_from_packet_only: Option<YesNoObject>,
     #[serde(rename = "ignoreRhosts", alias = "IgnoreRhosts")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ignore_rhosts: Option<IgnoreRhostsObject>,
@@ -152,26 +152,26 @@ pub struct MatchSubContainer {
     pub ipq_o_s: Option<StringObject>,
     #[serde(rename = "kbdInteractiveAuthentication", alias = "KbdInteractiveAuthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub kbd_interactive_authentication: Option<StringObject>,
+    pub kbd_interactive_authentication: Option<YesNoObject>,
     #[serde(rename = "kerberosAuthentication", alias = "KerberosAuthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub kerberos_authentication: Option<StringObject>,
+    pub kerberos_authentication: Option<YesNoObject>,
     #[serde(rename = "logLevel", alias = "LogLevel")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub log_level: Option<StringObject>,
+    pub log_level: Option<LogLevelObject>,
     #[serde(rename = "logVerbose", alias = "LogVerbose")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub log_verbose: Option<StringObject>,
     #[serde(rename = "maxAuthTries", alias = "MaxAuthTries")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_auth_tries: Option<StringObject>,
+    pub max_auth_tries: Option<IntObject>,
     #[serde(rename = "maxSessions", alias = "MaxSessions")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_sessions: Option<StringObject>,
+    pub max_sessions: Option<IntObject>,
     #[serde(rename = "passwordAuthentication", alias = "PasswordAuthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password_authentication: Option<YesNoObject>,
-    #[serde(rename = "permitemptypasswords")]
+    #[serde(rename = "permitEmptyPasswords", alias = "PermitEmptyPasswords")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub empty_passwd: Option<StringObject>,
     #[serde(rename = "permitListen", alias = "PermitListen")]
@@ -185,13 +185,13 @@ pub struct MatchSubContainer {
     pub permit_root_login: Option<PermitRootLoginObject>,
     #[serde(rename = "permitTTY", alias = "PermitTTY")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub permit_tty: Option<StringObject>,
+    pub permit_tty: Option<YesNoObject>,
     #[serde(rename = "permitTunnel", alias = "PermitTunnel")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub permit_tunnel: Option<StringObject>,
+    pub permit_tunnel: Option<PermitTunnelObject>,
     #[serde(rename = "permitUserRC", alias = "PermitUserRC")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub permit_user_rc: Option<StringObject>,
+    pub permit_user_rc: Option<YesNoObject>,
     #[serde(rename = "pubkeyAcceptedAlgorithms", alias = "PubkeyAcceptedAlgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pubkey_accepted_algorithms: Option<StringObject>,
@@ -200,10 +200,10 @@ pub struct MatchSubContainer {
     pub pubkey_accepted_key_types: Option<StringObject>,
     #[serde(rename = "pubkeyAuthentication", alias = "PubkeyAuthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pubkey_authentication: Option<StringObject>,
+    pub pubkey_authentication: Option<YesNoObject>,
     #[serde(rename = "pubkeyAuthOptions", alias = "PubkeyAuthOptions")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pubkey_auth_options: Option<StringObject>,
+    pub pubkey_auth_options: Option<PubkeyAuthOptionsObject>,
     #[serde(rename = "rDomain", alias = "RDomain")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub r_domain: Option<StringObject>,
@@ -212,7 +212,7 @@ pub struct MatchSubContainer {
     pub rekey_limit: Option<StringObject>,
     #[serde(rename = "requiredRSASize", alias = "RequiredRSASize")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub required_rsa_size: Option<StringObject>,
+    pub required_rsa_size: Option<IntObject>,
     #[serde(rename = "revokedKeys", alias = "RevokedKeys")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub revoked_keys: Option<StringObject>,
@@ -227,7 +227,7 @@ pub struct MatchSubContainer {
     pub stream_local_bind_mask: Option<StringObject>,
     #[serde(rename = "streamLocalBindUnlink", alias = "StreamLocalBindUnlink")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub stream_local_bind_unlink: Option<StringObject>,
+    pub stream_local_bind_unlink: Option<YesNoObject>,
     #[serde(rename = "trustedUserCAKeys", alias = "TrustedUserCAKeys")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trusted_user_ca_keys: Option<StringObject>,
@@ -236,13 +236,13 @@ pub struct MatchSubContainer {
     pub unused_connection_timeout: Option<StringObject>,
     #[serde(rename = "x11DisplayOffset", alias = "X11DisplayOffset")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub x11_display_offset: Option<StringObject>,
+    pub x11_display_offset: Option<IntObject>,
     #[serde(rename = "x11Forwarding", alias = "X11Forwarding")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub x11_forwarding: Option<StringObject>,
+    pub x11_forwarding: Option<YesNoObject>,
     #[serde(rename = "x11UseLocalhost", alias = "X11UseLocalhost")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub x11_use_localhost: Option<StringObject>    
+    pub x11_use_localhost: Option<YesNoObject>    
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
