@@ -3,16 +3,30 @@ use serde::{Deserialize, Serialize};
 use crate::config::match_container::MatchContainer;
 use crate::config::shared::{AddressFamilyObject, CompressionObject, FingerprintHashObject, GatewayPortsObject, IntObject, IgnoreRhostsObject, LogLevelObject,
     PermitRootLoginObject, PermitTunnelObject, PubkeyAuthOptionsObject, RepeatKeywordInt, RepeatKeywordString, StringObject, SysLogFacilityObject, TCPFwdObject, YesNoObject};
-
-// The main struct for sshd_config data -
-// contains all keywords permitted in a sshd_config file, and their corresponding arg type
-// In general, most keywords fall into one of the following types: Yes/No, String, or Repeated.
-// Most keyword types are objects to allow for input formatted as either keyword-value or keyword-value & _ensure
-// some keywords (like Compression) have a subset of permitted values so they are explicitly defined enums,
-// some keywords (like Port) can be repeated so they have an explicitly defined struct.
-// The Match keyword has its own struct, that is defined in match_container.rs
-// There is also a section for defaults, which will point to another SshdConfig struct
-// that only contains the keywords and values that are set by SSHD 
+/// A struct representing sshd_config data
+///
+/// # Examples
+///
+/// ```
+/// let sshd_config = SshdConfig { passwordAuthentication: "no", port: 23 };
+/// assert_eq!(sshd_config.password_authentication, "no");
+/// assert_eq!(sshd_config.port, 23);
+/// ```
+///
+/// # Fields
+///
+/// * Each keyword permitted in sshd_config is an optional field: https://man.openbsd.org/sshd_config.5
+/// * `purge`: an optional boolean for set commands, will clobber existing config when set to true
+/// * `defaults`: points to another SshdConfig struct that only contains keywords-values set by SSHD
+/// 
+///
+/// # Note
+///
+/// In general, most sshd_config keywords fall into one of the following types: Yes/No, String, or Repeated.
+/// Most keyword types are objects to allow for input formatted as either keyword-value or keyword-value & _ensure.
+/// Some keywords (like Compression) have a subset of permitted values so they are explicitly defined enums.
+/// Some keywords (like Port) can be repeated so they have an explicitly defined struct.
+/// The Match keyword has its own struct, that is defined in match_container.rs.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SshdConfig {
     #[serde(rename = "acceptEnv", alias = "AcceptEnv")]

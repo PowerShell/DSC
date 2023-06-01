@@ -2,28 +2,39 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::shared::{EnsureKind, GatewayPortsObject, IntObject, IgnoreRhostsObject, LogLevelObject,
     PermitRootLoginObject, PermitTunnelObject, PubkeyAuthOptionsObject, RepeatKeywordString, StringObject, TCPFwdObject, YesNoObject};
-
-/// This file defines structs
-/// related to the match keyword and how it will
-/// be represented within the `config_data` struct
-/// #Example
-/// an sshd_config file with the following:
-/// Match Group administrators
-///     AuthorizedKeysFile C:\\programdata\\ssh\\administrators_authorized_keys
-/// Match User anoncvs
-///     PermitListen 1234
-/// Each block is represented by the `MatchContainer` struct
-/// in order to preserve the order when writing to sshd_config
-/// the keywords within each match block are
-/// represented by the `MatchSubContainer` struct
-
+/// An enum representing different arguments to Match
+///
+/// # Examples
+///
+/// ```
+/// let user = MatchConditional::User;
+/// let group = MatchConditional::Group;
+///
+/// assert_eq!(user, MatchConditional::User);
+/// assert_eq!(group, MatchConditional::Group;
+/// ```
+///
+/// # Variants
+///
+/// * `User`: match on the user's name
+/// * `Group`: match on the user's group
+/// * `Host`: match on the host machine name
+/// * `LocalAddress`: match on the local address
+/// * `LocalPort`: match on the local port
+/// * `RDomain`: match on the rdomain on which connection was recevied
+/// * `Address`: match on the address
+/// * `All`: matches on all criteria
+///
+/// # Note
+///
+/// A Match conditional must include one of the Variants described above
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MatchConditional {
     #[serde(rename = "user")]
     User,
     #[serde(rename = "group")]
     Group,
-    #[serde(rename = "hosts")]
+    #[serde(rename = "host")]
     Host,
     #[serde(rename = "localaddress")]
     LocalAddress,
@@ -37,15 +48,24 @@ pub enum MatchConditional {
     All,
 }
 
-/// `MatchSubContainer` holds the key-value 
-/// pairs from sshd_config
-/// TODO: need to confirm if all the accepted Match keywords
-/// are "normal" keywords with just values
-/// or if any can be repeated
-/// So far, testing match keywords that accept multiple values
-/// have found that they require the values to be on the same line
-/// and separated by whitespace , example: PermitListen
-/// TODO: is there a good way to reuse sshdconfig struct with only keywords that apply to match
+/// A struct representing sshd_config keywords applicable inside a Match block
+///
+/// # Examples
+///
+/// ```
+/// let match_data = MatchSubContainer { passwordAuthentication: "no", maxSessions: 18};
+/// assert_eq!(match_data.password_authentication, "no");
+/// assert_eq!(match_data.max_sessions, 18);
+/// ```
+///
+/// # Fields
+///
+/// * Each keyword permitted inside a Match block in sshd_config is an optional field: https://man.openbsd.org/sshd_config.5
+/// 
+/// # Note
+///
+/// All keywords listed here are also applicable to SshdConfig struct
+// TODO: is there a good way to reuse sshdconfig struct with only keywords that apply to match?
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct MatchSubContainer {
     #[serde(rename = "acceptEnv", alias = "AcceptEnv")]
@@ -245,6 +265,29 @@ pub struct MatchSubContainer {
     pub x11_use_localhost: Option<YesNoObject>    
 }
 
+/// A struct representing a Match block within sshd_config
+///
+/// # Examples
+///
+/// ```
+/// let match_block = MatchContainer { conditionalKey: "group", conditionalValue: "Administrators", data: {"passwordAuthentication": "no", "maxSessions": 18}};
+/// assert_eq!(match_block.conditionalKey, "group");
+/// assert_eq!(match_block.conditionalValue, Administrators);
+/// assert_eq!(match_block.data.passwordAuthentication, "no");
+/// assert_eq!(match_block.data.maxSessions, 18);
+/// ```
+///
+/// # Fields
+///
+/// * `conditional_key`: the word after "Match" in sshd_config
+/// * `conditional_value`: the last word in the Match line in sshd_config
+/// * `data`: the lines following the Match conditional line that should override global settings when the criteria is met
+/// * `ensure`: optional field, determines whether the Match block should be Present or Absent in sshd_config
+/// 
+///
+/// # Note
+///
+/// sshd_config is order sensitive regarding Match
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct MatchContainer {
     #[serde(rename = "conditionalKey")]
