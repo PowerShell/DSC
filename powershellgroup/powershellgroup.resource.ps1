@@ -11,6 +11,7 @@ param(
 
 $ProgressPreference = 'Ignore'
 $WarningPreference = 'Ignore'
+$VerbosePreference = 'Ignore'
 $script:ResourceCache = @{}
 
 function RefreshCache
@@ -33,6 +34,7 @@ function RefreshCache
 if ($Operation -eq 'List')
 {
     $DscResources= Get-DscResource
+    #TODO: following should be added to debug stream of every operation
     #$m = gmo PSDesiredStateConfiguration
     #$r += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
     #$r[0] | ConvertTo-Json -Compress -Depth 3
@@ -73,7 +75,11 @@ if ($Operation -eq 'List')
 }
 elseif ($Operation -eq 'Get')
 {
-    $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+    $inputobj_pscustomobj = $null
+    if ($stdinput)
+    {
+        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+    }
 
     $result = @()
 
@@ -83,19 +89,207 @@ elseif ($Operation -eq 'Get')
     {
         foreach($r in $inputobj_pscustomobj.resources)
         {
-            Write-Output $r.type
+            #Write-Output $r.type
             $cachedResourceInfo = $script:ResourceCache[$r.type]
             if ($cachedResourceInfo)
             {
                 $inputht = @{}
                 $ResourceTypeName = ($r.type -split "/")[1]
                 $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
-                $result += Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht
+                $e = $null
+                $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+                if ($e)
+                {
+                    # By this point Invoke-DscResource already wrote error message to stderr stream,
+                    # so we just need to signal error to the caller by non-zero exit code.
+                    exit 1
+                }
+                $result += $op_result
             }
             else
             {
-                Write-Output "Can not find type in cache"
+                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
+                Write-Error $errmsg
+                exit 1
             }
+        }
+    }
+    else # we are processing an individual resource call
+    {
+        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
+        if ($cachedResourceInfo)
+        {
+            $inputht = @{}
+            $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
+            $inputobj_pscustomobj.psobject.properties | %{ 
+                if ($_.Name -ne "type")
+                {
+                    $inputht[$_.Name] = $_.Value
+                }
+            }
+            $e = $null
+            $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            if ($e)
+            {
+                # By this point Invoke-DscResource already wrote error message to stderr stream,
+                # so we just need to signal error to the caller by non-zero exit code.
+                exit 1
+            }
+            $result = $op_result
+        }
+        else
+        {
+            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
+            Write-Error $errmsg
+            exit 1
+        }
+    }
+
+    $result | ConvertTo-Json
+}
+elseif ($Operation -eq 'Set')
+{
+    $inputobj_pscustomobj = $null
+    if ($stdinput)
+    {
+        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+    }
+
+    $result = @()
+
+    RefreshCache
+
+    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    {
+        foreach($r in $inputobj_pscustomobj.resources)
+        {
+            #Write-Output $r.type
+            $cachedResourceInfo = $script:ResourceCache[$r.type]
+            if ($cachedResourceInfo)
+            {
+                $inputht = @{}
+                $ResourceTypeName = ($r.type -split "/")[1]
+                $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
+                $e = $null
+                $op_result = Invoke-DscResource -Method Set -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+                if ($e)
+                {
+                    # By this point Invoke-DscResource already wrote error message to stderr stream,
+                    # so we just need to signal error to the caller by non-zero exit code.
+                    exit 1
+                }
+                $result += $op_result
+            }
+            else
+            {
+                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
+                Write-Error $errmsg
+                exit 1
+            }
+        }
+    }
+    else # we are processing an individual resource call
+    {
+        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
+        if ($cachedResourceInfo)
+        {
+            $inputht = @{}
+            $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
+            $inputobj_pscustomobj.psobject.properties | %{ 
+                if ($_.Name -ne "type")
+                {
+                    $inputht[$_.Name] = $_.Value
+                }
+            }
+            $e = $null
+            $op_result = Invoke-DscResource -Method Set -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            if ($e)
+            {
+                # By this point Invoke-DscResource already wrote error message to stderr stream,
+                # so we just need to signal error to the caller by non-zero exit code.
+                exit 1
+            }
+            $result = $op_result
+        }
+        else
+        {
+            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
+            Write-Error $errmsg
+            exit 1
+        }
+    }
+
+    $result | ConvertTo-Json
+}
+elseif ($Operation -eq 'Test')
+{
+    $inputobj_pscustomobj = $null
+    if ($stdinput)
+    {
+        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+    }
+
+    $result = @()
+
+    RefreshCache
+
+    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    {
+        foreach($r in $inputobj_pscustomobj.resources)
+        {
+            #Write-Output $r.type
+            $cachedResourceInfo = $script:ResourceCache[$r.type]
+            if ($cachedResourceInfo)
+            {
+                $inputht = @{}
+                $ResourceTypeName = ($r.type -split "/")[1]
+                $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
+                $e = $null
+                $op_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+                if ($e)
+                {
+                    # By this point Invoke-DscResource already wrote error message to stderr stream,
+                    # so we just need to signal error to the caller by non-zero exit code.
+                    exit 1
+                }
+                $result += $op_result
+            }
+            else
+            {
+                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
+                Write-Error $errmsg
+                exit 1
+            }
+        }
+    }
+    else # we are processing an individual resource call
+    {
+        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
+        if ($cachedResourceInfo)
+        {
+            $inputht = @{}
+            $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
+            $inputobj_pscustomobj.psobject.properties | %{ 
+                if ($_.Name -ne "type")
+                {
+                    $inputht[$_.Name] = $_.Value
+                }
+            }
+            $e = $null
+            $op_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            if ($e)
+            {
+                # By this point Invoke-DscResource already wrote error message to stderr stream,
+                # so we just need to signal error to the caller by non-zero exit code.
+                exit 1
+            }
+            $result = $op_result
+        }
+        else
+        {
+            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
+            Write-Error $errmsg
+            exit 1
         }
     }
 
@@ -103,5 +297,5 @@ elseif ($Operation -eq 'Get')
 }
 else
 {
-    "ERROR: Unsupported operation."
+    "ERROR: Unsupported operation requested from powershellgroup.resource.ps1"
 }

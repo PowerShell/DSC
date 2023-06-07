@@ -7,7 +7,7 @@ use crate::dscerror::DscError;
 use crate::dscresources::dscresource::{Invoke};
 use crate::discovery::{Discovery};
 use self::config_doc::Configuration;
-use self::config_result::{ConfigurationGetResult, ResourceMessage, MessageLevel};
+use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ResourceMessage, MessageLevel};
 
 pub mod config_doc;
 pub mod config_result;
@@ -64,12 +64,85 @@ impl Configurator {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
+            //TODO: add to debug stream:println!("{}", &resource.resource_type);
             let filter = serde_json::to_string(&resource.properties)?;
             let get_result = dsc_resource.get(&filter)?;
             let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: get_result,
+            };
+            result.results.push(resource_result);
+        }
+
+        Ok(result)
+    }
+
+    /// Invoke the set operation on a resource.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_action` - The error action to use.
+    /// * `progress_callback` - A callback to call when progress is made.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying resource fails.
+    pub fn invoke_set(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
+        let (config, messages, had_errors) = self.validate_config()?;
+        let mut result = ConfigurationSetResult::new();
+        result.messages = messages;
+        result.had_errors = had_errors;
+        if had_errors {
+            return Ok(result);
+        }
+        for resource in &config.resources {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            };
+            //TODO: add to debug stream:println!("{}", &resource.resource_type);
+            let desired = serde_json::to_string(&resource.properties)?;
+            let set_result = dsc_resource.set(&desired)?;
+            let resource_result = config_result::ResourceSetResult {
+                name: resource.name.clone(),
+                resource_type: resource.resource_type.clone(),
+                result: set_result,
+            };
+            result.results.push(resource_result);
+        }
+
+        Ok(result)
+    }
+
+    /// Invoke the test operation on a resource.
+    ///
+    /// # Arguments
+    ///
+    /// * `error_action` - The error action to use.
+    /// * `progress_callback` - A callback to call when progress is made.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying resource fails.
+    pub fn invoke_test(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationTestResult, DscError> {
+        let (config, messages, had_errors) = self.validate_config()?;
+        let mut result = ConfigurationTestResult::new();
+        result.messages = messages;
+        result.had_errors = had_errors;
+        if had_errors {
+            return Ok(result);
+        }
+        for resource in &config.resources {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            };
+            //TODO: add to debug stream:println!("{}", &resource.resource_type);
+            let expected = serde_json::to_string(&resource.properties)?;
+            let test_result = dsc_resource.test(&expected)?;
+            let resource_result = config_result::ResourceTestResult {
+                name: resource.name.clone(),
+                resource_type: resource.resource_type.clone(),
+                result: test_result,
             };
             result.results.push(resource_result);
         }
@@ -86,6 +159,8 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
 
+            //TODO: add to debug stream: println!("validate_config - resource_type - {}", resource.resource_type);
+            
             //TODO: remove this after schema validation for classic PS resources is implemented
             if resource.resource_type == "DSC/PowerShellGroup" {continue;}
 

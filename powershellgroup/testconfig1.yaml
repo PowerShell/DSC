@@ -14,6 +14,7 @@ resources:
       properties:
         Path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
         Ensure: Present
+        SourcePath: C:\Temp\Z1.txt
 - name: Current OS name from registry
   type: Microsoft.Windows/Registry
   properties:
