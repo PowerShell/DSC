@@ -104,18 +104,6 @@ pub enum IgnoreRhosts {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum IntObject {
-    Object{
-        value: i32, 
-        #[serde(rename = "_ensure")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        ensure: Option<EnsureKind>
-    },
-    Int(i32),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(untagged)]
 pub enum IgnoreRhostsObject {
     Object{
         value: IgnoreRhosts,
@@ -124,6 +112,18 @@ pub enum IgnoreRhostsObject {
         ensure: Option<EnsureKind>,
     },
     String(IgnoreRhosts),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum IntObject {
+    Object{
+        value: i32, 
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>
+    },
+    Int(i32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -226,10 +226,17 @@ pub enum PubkeyAuthOptionsObject {
 pub struct RepeatKeywordInt {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    pub value: i32,
+    pub value: u32,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RepeatKeywordIntObject {
+    Vec(Vec<RepeatKeywordInt>),
+    Int(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -240,6 +247,13 @@ pub struct RepeatKeywordString {
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RepeatKeywordStringObject {
+    Vec(Vec<RepeatKeywordString>),
+    String(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

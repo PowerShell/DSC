@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::config::shared::{EnsureKind, GatewayPortsObject, IntObject, IgnoreRhostsObject, LogLevelObject,
-    PermitRootLoginObject, PermitTunnelObject, PubkeyAuthOptionsObject, RepeatKeywordString, StringObject, TCPFwdObject, YesNoObject};
+    PermitRootLoginObject, PermitTunnelObject, PubkeyAuthOptionsObject, RepeatKeywordStringObject, StringObject, TCPFwdObject, YesNoObject};
 /// An enum representing different arguments to Match
 ///
 /// # Examples
@@ -70,7 +70,7 @@ pub enum MatchConditional {
 pub struct MatchSubContainer {
     #[serde(rename = "acceptEnv", alias = "AcceptEnv")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub accept_env: Option<Vec<RepeatKeywordString>>,
+    pub accept_env: Option<RepeatKeywordStringObject>,
     #[serde(rename = "allowAgentForwarding", alias = "AllowAgentForwarding")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_agent_forwarding: Option<YesNoObject>,

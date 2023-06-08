@@ -13,12 +13,6 @@ fn test_config() {
     {
         "passwordAuthentication": "yes",
         "syslogFacility": "INFO",
-        "subsystem": [
-            {
-                "name": "powershell",
-                "value": "pwsh.exe"
-            }
-        ],
         "port": [
             { "value": 24 },
             { "value": 23 }

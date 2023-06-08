@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
 use crate::config::shared::{AddressFamilyObject, CompressionObject, FingerprintHashObject, GatewayPortsObject, IntObject, IgnoreRhostsObject, LogLevelObject,
-    PermitRootLoginObject, PermitTunnelObject, PubkeyAuthOptionsObject, RepeatKeywordInt, RepeatKeywordString, StringObject, SysLogFacilityObject, TCPFwdObject, YesNoObject};
+    PermitRootLoginObject, PermitTunnelObject, PubkeyAuthOptionsObject, RepeatKeywordIntObject, RepeatKeywordStringObject, StringObject, SysLogFacilityObject, TCPFwdObject, YesNoObject};
 /// A struct representing sshd_config data
 ///
 /// # Examples
@@ -33,7 +33,7 @@ pub struct SshdConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     // multiple environment variables can be seaprated by whitespace or
     // spread across multiple AcceptEnv directives
-    pub accept_env: Option<Vec<RepeatKeywordString>>,
+    pub accept_env: Option<RepeatKeywordStringObject>,
     #[serde(rename = "addressFamily", alias = "AddressFamily")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_family: Option<AddressFamilyObject>,
@@ -273,8 +273,9 @@ pub struct SshdConfig {
     #[serde(rename = "pidFile", alias = "PidFile")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pid_file: Option<StringObject>,
+    #[serde(alias = "Port")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub port: Option<Vec<RepeatKeywordInt>>,
+    pub port: Option<RepeatKeywordIntObject>,
     #[serde(rename = "printLastLog", alias = "PrintLastLog")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub print_last_log: Option<YesNoObject>,
@@ -327,7 +328,7 @@ pub struct SshdConfig {
     pub strict_modes: Option<YesNoObject>,
     #[serde(rename = "Subsystem", alias = "subsystem")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub subsystem: Option<Vec<RepeatKeywordString>>,
+    pub subsystem: Option<RepeatKeywordStringObject>,
     #[serde(rename = "syslogfacility")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub syslog_facility: Option<SysLogFacilityObject>,
