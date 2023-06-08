@@ -1,0 +1,59 @@
+{
+    "manifestVersion": "1.0",
+    "type": "DSC/WindowsPowerShellGroup",
+    "version": "0.1.0",
+    "description": "Resource provider to classic DSC Powershell resources in Windows PowerShell.",
+    "provider": {
+      "list": {
+        "executable": "powershell",
+        "args": [
+          "-NoLogo",
+          "-NonInteractive",
+          "-NoProfile",
+          "-Command",
+          "./powershellgroup.resource.ps1 -WinPS List"
+        ]
+        },
+      "config": "full"
+    },
+    "get": {
+      "executable": "powershell",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "$Input | ./powershellgroup.resource.ps1 -WinPS Get"
+      ]
+      },
+    "set": {
+      "executable": "powershell",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "$Input | ./powershellgroup.resource.ps1 -WinPS Set"
+      ],
+      "input": "stdin",
+      "preTest": true,
+      "return": "state"
+      },
+    "test": {
+      "executable": "powershell",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "$Input | ./powershellgroup.resource.ps1 -WinPS Test"
+      ],
+      "input": "stdin",
+      "return": "state"
+      },
+    "exitCodes": {
+      "0": "Success",
+      "1": "Error"
+    }
+  }
+  

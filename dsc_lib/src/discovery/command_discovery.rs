@@ -76,6 +76,8 @@ impl ResourceDiscovery for CommandDiscovery {
 
         // now go through the provider resources and add them to the list of resources
         for provider in &self.provider_resources {
+            //println!("ResourceDiscovery - provider - {}", provider);
+            
             let provider_resource = self.resources.get(provider).unwrap();
             let manifest = serde_json::from_value::<ResourceManifest>(provider_resource.manifest.clone().unwrap())?;
             // invoke the list command
@@ -84,6 +86,8 @@ impl ResourceDiscovery for CommandDiscovery {
             if exit_code != 0 {
                 return Err(DscError::Operation(format!("Failed to list resources for provider {provider}: {exit_code} {stderr}")));
             }
+            //println!("ResourceDiscovery - provider/stdout - {}", stdout);
+            //println!("ResourceDiscovery - provider/stderr - {}", stderr);
             for line in stdout.lines() {
                 match serde_json::from_str::<DscResource>(line){
                     Result::Ok(resource) => {

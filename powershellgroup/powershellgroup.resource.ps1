@@ -5,6 +5,8 @@
 param(
     [ValidateSet('List','Get','Set','Test')]
     $Operation = 'List',
+    [Switch]
+    $WinPS = $false,
     [Parameter(ValueFromPipeline)]
     $stdinput
 )
@@ -30,6 +32,8 @@ function RefreshCache
         $script:ResourceCache[$fullResourceTypeName] = $r
     }
 }
+
+Import-Module PSDesiredStateConfiguration
 
 if ($Operation -eq 'List')
 {
@@ -58,6 +62,8 @@ if ($Operation -eq 'List')
 
         $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
         $script:ResourceCache[$fullResourceTypeName] = $r
+        
+       if ($WinPS) {$requiresString = "DSC/WindowsPowerShellGroup"} else {$requiresString = "DSC/PowerShellGroup"}
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
@@ -67,7 +73,7 @@ if ($Operation -eq 'List')
             implementedAs = $r.ImplementationDetail;
             author = $author_string;
             properties = $propertyList;
-            requires = "DSC/PowerShellGroup"
+            requires = $requiresString
         }
 
         $z | ConvertTo-Json -Compress
@@ -94,10 +100,12 @@ elseif ($Operation -eq 'Get')
             if ($cachedResourceInfo)
             {
                 $inputht = @{}
-                $ResourceTypeName = ($r.type -split "/")[1]
+                $typeparts = $r.type -split "/"
+                $ModuleName = $typeparts[0]
+                $ResourceTypeName = $typeparts[1]
                 $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
                 $e = $null
-                $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+                $op_result = Invoke-DscResource -Method Get -ModuleName $ModuleName -Name $ResourceTypeName -Property $inputht -ErrorVariable e
                 if ($e)
                 {
                     # By this point Invoke-DscResource already wrote error message to stderr stream,
