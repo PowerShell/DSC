@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum AddressFamily {
+pub enum AddressFamilyKeyword {
     #[serde(rename = "inet")]
     INet,
     #[serde(rename = "inet6")]
@@ -12,18 +12,18 @@ pub enum AddressFamily {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum AddressFamilyObject {
+pub enum AddressFamily {
     Object{
-        value: AddressFamily,
+        value: AddressFamilyKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(AddressFamily),
+    String(AddressFamilyKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Compression {
+pub enum CompressionKeyword {
     #[serde(rename = "yes")]
     Yes,
     #[serde(rename = "no")]
@@ -34,14 +34,14 @@ pub enum Compression {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum CompressionObject {
+pub enum Compression {
     Object{
-        value: Compression,
+        value: CompressionKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(Compression),
+    String(CompressionKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -51,7 +51,7 @@ pub enum EnsureKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum FingerprintHash {
+pub enum FingerprintHashKeyword {
     #[serde(rename = "md5")]
     Md5,
     #[serde(rename = "sha256")]
@@ -60,18 +60,18 @@ pub enum FingerprintHash {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum FingerprintHashObject {
+pub enum FingerprintHash {
     Object{
-        value: FingerprintHash,
+        value: FingerprintHashKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(FingerprintHash),
+    String(FingerprintHashKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum GatewayPorts {
+pub enum GatewayPortsKeyword {
     #[serde(rename = "yes")]
     Yes,
     #[serde(rename = "no")]
@@ -82,18 +82,18 @@ pub enum GatewayPorts {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum GatewayPortsObject {
+pub enum GatewayPorts {
     Object{
-        value: GatewayPorts,
+        value: GatewayPortsKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(GatewayPorts),
+    String(GatewayPortsKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum IgnoreRhosts {
+pub enum IgnoreRhostsKeyword {
     #[serde(rename = "yes")]
     Yes,
     #[serde(rename = "no")]
@@ -104,31 +104,31 @@ pub enum IgnoreRhosts {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum IgnoreRhostsObject {
+pub enum IgnoreRhosts {
     Object{
-        value: IgnoreRhosts,
+        value: IgnoreRhostsKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(IgnoreRhosts),
+    String(IgnoreRhostsKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum IntObject {
+pub enum Numeric {
     Object{
-        value: i32, 
+        value: u32, 
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>
     },
-    Int(i32),
+    Int(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum LogLevel {
+pub enum LogLevelKeyword {
     QUIET,
     FATAL,
     ERROR,
@@ -142,18 +142,18 @@ pub enum LogLevel {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum LogLevelObject {
+pub enum LogLevel {
     Object{
-        value: LogLevel,
+        value: LogLevelKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(LogLevel),
+    String(LogLevelKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum PermitRootLogin {
+pub enum PermitRootLoginKeyword {
     #[serde(rename = "without-password")]
     WithoutPassword,
     #[serde(rename = "prohibit-password")]
@@ -168,18 +168,18 @@ pub enum PermitRootLogin {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum PermitRootLoginObject {
+pub enum PermitRootLogin {
     Object{
-        value: PermitRootLogin,
+        value: PermitRootLoginKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(PermitRootLogin),
+    String(PermitRootLoginKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum PermitTunnel {
+pub enum PermitTunnelKeyword {
     #[serde(rename = "ethernet")]
     Ethernet,
     #[serde(rename = "yes")]
@@ -190,18 +190,18 @@ pub enum PermitTunnel {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum PermitTunnelObject {
+pub enum PermitTunnel {
     Object{
-        value: PermitTunnel,
+        value: PermitTunnelKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(PermitTunnel),
+    String(PermitTunnelKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum PubkeyAuthOptions {
+pub enum PubkeyAuthOptionsKeyword {
     #[serde(rename = "none")]
     None,
     #[serde(rename = "touch-required")]
@@ -212,20 +212,18 @@ pub enum PubkeyAuthOptions {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum PubkeyAuthOptionsObject {
+pub enum PubkeyAuthOptions {
     Object{
-        value: PubkeyAuthOptions,
+        value: PubkeyAuthOptionsKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(PubkeyAuthOptions),
+    String(PubkeyAuthOptionsKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct RepeatKeywordInt {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+pub struct RepeatNumericKeyword {
     pub value: u32,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -233,14 +231,7 @@ pub struct RepeatKeywordInt {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum RepeatKeywordIntObject {
-    Vec(Vec<RepeatKeywordInt>),
-    Int(u32),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct RepeatKeywordString {
+pub struct RepeatTextKeyword {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub value: String,
@@ -250,26 +241,7 @@ pub struct RepeatKeywordString {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum RepeatKeywordStringObject {
-    Vec(Vec<RepeatKeywordString>),
-    String(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum StringObject {
-    Object{
-        value: String, 
-        #[serde(rename = "_ensure")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        ensure: Option<EnsureKind>
-    },
-    String(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum SysLogFacility {
+pub enum SysLogFacilityKeyword {
     DAEMON, 
     USER, 
     AUTH, 
@@ -285,18 +257,18 @@ pub enum SysLogFacility {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum SysLogFacilityObject {
+pub enum SysLogFacility {
     Object{
-        value: SysLogFacility,
+        value: SysLogFacilityKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(SysLogFacility),
+    String(SysLogFacilityKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum TCPFwd {
+pub enum TCPFwdKeyword {
     #[serde(rename = "yes")]
     Yes,
     #[serde(rename = "no")]
@@ -311,18 +283,30 @@ pub enum TCPFwd {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum TCPFwdObject {
+pub enum TCPFwd {
     Object{
-        value: TCPFwd,
+        value: TCPFwdKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    String(TCPFwd),
+    String(TCPFwdKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum YesNo {
+#[serde(untagged)]
+pub enum Text {
+    Object{
+        value: String, 
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>
+    },
+    String(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum YesNoKeyword {
     #[serde(rename = "yes")]
     Yes,
     #[serde(rename = "no")]
@@ -331,12 +315,12 @@ pub enum YesNo {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum YesNoObject {
+pub enum YesNo {
     Object{
-        value: YesNo,
+        value: YesNoKeyword,
         #[serde(rename = "_ensure")]
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
-    YesNo(YesNo),
+    YesNo(YesNoKeyword),
 }

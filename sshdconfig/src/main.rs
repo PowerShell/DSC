@@ -13,23 +13,23 @@ fn test_config() {
     {
         "passwordAuthentication": "yes",
         "syslogFacility": "INFO",
+        "authorizedKeysFile": [{
+            "value": "test"
+        }],
         "port": [
             { "value": 24 },
             { "value": 23 }
         ],
-        "authorizedKeysFile": {
-            "value": "test"
-        },
         "match": [
             {
                 "conditionalKey": "group",
                 "conditionalValue": "administrator",
                 "data": {
                     "PasswordAuthentication": "yes",
-                    "authorizedKeysFile": {
+                    "authorizedKeysFile": [{
                         "value": "test.txt",
                         "_ensure": "Absent"
-                    }
+                    }]
                 }
             },
             {
@@ -40,7 +40,7 @@ fn test_config() {
                         "value": "no",
                         "_ensure": "Absent"
                     },
-                    "authorizedKeysFile": "test.txt"
+                    "authorizedKeysFile": ["test.txt"]
                 }
             }
         ]
