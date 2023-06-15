@@ -97,7 +97,7 @@ impl ResourceDiscovery for CommandDiscovery {
                         self.resources.insert(resource.type_name.clone(), resource);
                     },
                     Result::Err(err) => {
-                        return Err(DscError::Operation(format!("Failed to parse resource from provider {provider}: {line} /// {err}")));
+                        return Err(DscError::Operation(format!("Failed to parse resource from provider {provider}: {line} -> {err}")));
                     }
                 };
             }

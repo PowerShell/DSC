@@ -5,16 +5,16 @@ use args::{Args, ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand, Su
 use atty::Stream;
 use clap::Parser;
 use dsc_lib::{configure::{Configurator, ErrorAction, config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult}}, configure::config_doc::Configuration, DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
+use dsc_lib::dscerror::DscError;
 use schemars::{schema_for, schema::RootSchema};
 use serde_yaml::Value;
+use std::collections::HashMap;
 use std::io::{self, Read};
 use std::process::exit;
 use syntect::easy::HighlightLines;
 use syntect::parsing::SyntaxSet;
 use syntect::highlighting::{ThemeSet, Style};
 use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
-use std::collections::HashMap;
-use dsc_lib::dscerror::DscError;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
