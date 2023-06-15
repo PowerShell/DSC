@@ -32,8 +32,8 @@ use crate::config::keywords::{AddressFamily, Compression, FingerprintHash, Gatew
 pub struct SshdConfig {
     #[serde(rename = "acceptEnv", alias = "AcceptEnv", alias = "acceptenv")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // multiple environment variables can be separated by whitespace or
-    // spread across multiple AcceptEnv directives but process all as vec
+    /// multiple environment variables can be separated by whitespace or
+    /// spread across multiple AcceptEnv directives but process all as vec
     pub accept_env: Option<Vec<Text>>,
 
     #[serde(rename = "addressFamily", alias = "AddressFamily", alias = "addressfamily")]
@@ -46,7 +46,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "allowGroups", alias = "AllowGroups", alias = "allowgroups")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is list of group name patterns separated by whitespace
+    /// input is list of group name patterns separated by whitespace
     pub allow_groups: Option<Vec<Text>>,
 
     #[serde(rename = "allowStreamLocalForwarding", alias = "AllowStreamLocalForwarding", alias = "allowstreamlocalforwarding")]
@@ -59,12 +59,12 @@ pub struct SshdConfig {
 
     #[serde(rename = "allowUsers", alias = "AllowUsers", alias = "allowusers")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is list of user name patterns separated by whitespace
+    /// input is list of user name patterns separated by whitespace
     pub allow_users: Option<Vec<Text>>,
 
     #[serde(rename = "authenticationMethods", alias = "AuthenticationMethods", alias = "authenticationmethods")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is one or more comma-separated lists, each list separated by whitespace 
+    /// input is one or more comma-separated lists, each list separated by whitespace 
     pub authentication_methods: Option<Text>,
 
     #[serde(rename = "authorizedKeysCommand", alias = "AuthorizedKeysCommand", alias = "authorizedkeyscommand")]
@@ -77,7 +77,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "authorizedKeysFile", alias = "AuthorizedKeysFile", alias = "authorizedkeysfile")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is one or more files names each separated by whitespace or "none"
+    /// input is one or more files names each separated by whitespace or "none"
     pub authorized_keys_file: Option<Vec<Text>>,
 
     #[serde(rename = "authorizedPrincipalsCommand", alias = "AuthorizedPrincipalsCommand", alias = "authorizedprincipalscommand")]
@@ -98,7 +98,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "caSignatureAlgorithms", alias = "CASignatureAlgorithms", alias = "casignaturealgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is a comma separated list, starting with + or -
+    /// input is a comma separated list, starting with + or -
     pub ca_signature_algorithms: Option<Text>,
 
     #[serde(rename = "challengeResponseAuthentication", alias = "ChallengeResponseAuthentication", alias = "challengeresponseauthentication")]
@@ -107,7 +107,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "channelTimeout", alias = "ChannelTimeout", alias = "channeltimeout")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is "type=interval" format each separated by whitespace
+    /// input is "type=interval" format each separated by whitespace
     pub channel_timeout: Option<Vec<Text>>,
 
     #[serde(rename = "chrootDirectory", alias = "ChrootDirectory", alias = "chrootdirectory")]
@@ -115,7 +115,7 @@ pub struct SshdConfig {
     pub chroot_directory: Option<Text>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is a comma separated list, starting with +,-,^
+    /// input is a comma separated list, starting with +,-,^
     pub ciphers: Option<Text>,
 
     #[serde(rename = "clientAliveCountMax", alias = "ClientAliveCountMax", alias = "clientalivecountmax")]
@@ -132,12 +132,12 @@ pub struct SshdConfig {
 
     #[serde(rename = "denyGroups", alias = "DenyGroups", alias = "denygroups")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is list of user group patterns separated by whitespace
+    /// input is list of user group patterns separated by whitespace
     pub deny_groups: Option<Vec<Text>>,
 
     #[serde(rename = "denyUsers", alias = "DenyUsers", alias = "denyusers")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is list of user name patterns separated by whitespace
+    /// input is list of user name patterns separated by whitespace
     pub deny_users: Option<Vec<Text>>,
 
     #[serde(rename = "disableForwarding", alias = "DisableForwarding", alias = "disableforwarding")]
@@ -178,7 +178,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "hostbasedAcceptedAlgorithms", alias = "HostbasedAcceptedAlgorithms", alias = "hostbasedacceptedalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is a comma separated list, starting with +,-,^
+    /// input is a comma separated list, starting with +,-,^
     pub hostbased_accepted_algorithms: Option<Text>,
 
     #[serde(rename = "hostbasedAcceptedKeyTypes", alias = "HostbasedAcceptedKeyTypes", alias = "hostbasedacceptedkeytypes")]
@@ -211,7 +211,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "hostKeyAlgorithms", alias = "HostKeyAlgorithms", alias = "hostkeyalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is a comma separated list
+    /// input is a comma separated list
     pub host_key_algorithms: Option<Text>,
 
     #[serde(rename = "ignoreRhosts", alias = "IgnoreRhosts", alias = "ignorerhosts")]
@@ -228,7 +228,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "iPQoS", alias = "IPQoS", alias = "ipqos")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // accepts one or two arguments, separated by whitespace
+    /// accepts one or two arguments, separated by whitespace
     pub ipq_o_s: Option<Vec<Text>>,
 
     #[serde(rename = "kbdInteractiveAuthentication", alias = "KbdInteractiveAuthentication", alias = "kbdinteractiveauthentication")]
@@ -253,7 +253,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "kexAlgorithms", alias = "KexAlgorithms", alias = "kexalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is a comma separated list, starting with +,-,^
+    /// input is a comma separated list, starting with +,-,^
     pub kex_algorithms: Option<Text>,
 
     #[serde(rename = "listenAddress", alias = "ListenAddress", alias = "listenaddress")]
@@ -273,7 +273,7 @@ pub struct SshdConfig {
     pub log_verbose: Option<Text>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is a comma separated list, starting with +,-,^
+    /// input is a comma separated list, starting with +,-,^
     pub macs: Option<Text>,
 
     #[serde(rename = "match", alias = "Match", alias = "match")]
@@ -290,7 +290,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "maxStartups", alias = "MaxStartups", alias = "maxstartups")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // format is start:rate:full
+    /// format is start:rate:full
     pub max_startups: Option<Text>,
 
     #[serde(rename = "moduliFile", alias = "ModuliFile", alias = "modulifile")]
@@ -307,12 +307,12 @@ pub struct SshdConfig {
 
     #[serde(rename = "permitListen", alias = "PermitListen", alias = "permitlisten")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // format of port or host:port with multiple entries separated by whitespace
+    /// format of port or host:port with multiple entries separated by whitespace
     pub permit_listen: Option<Vec<Text>>,
 
     #[serde(rename = "permitOpen", alias = "PermitOpen", alias = "permitopen")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // format of host:port, IPv4_addr:port, [IPV6_addr]:port with multiple entries separated by whitespace
+    /// format of host:port, IPv4_addr:port, [IPV6_addr]:port with multiple entries separated by whitespace
     pub permit_open: Option<Vec<Text>>,
 
     #[serde(rename = "permitRootLogin", alias = "PermitRootLogin", alias = "permitrootlogin")]
@@ -329,7 +329,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "permitUserEnvironment", alias = "PermitUserEnvironment", alias = "permituserenvironment")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // valid options are yes, no or a pattern-list specifying which environment variable names to accept
+    // /valid options are yes, no or a pattern-list specifying which environment variable names to accept
     pub permit_user_environment: Option<Text>,
 
     #[serde(rename = "permitUserRC", alias = "PermitUserRC", alias = "permituserrc")]
@@ -338,12 +338,12 @@ pub struct SshdConfig {
 
     #[serde(rename = "perSourceMaxStartups", alias = "PerSourceMaxStartups", alias = "persourcemaxstartups")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // number of unauthenticated connections allowed from a given source address, or “none” if there is no limit
+    /// number of unauthenticated connections allowed from a given source address, or “none” if there is no limit
     pub per_source_max_startups: Option<Text>,
 
     #[serde(rename = "perSourceNetBlockSize", alias = "PerSourceNetBlockSize", alias = "persourcenetblocksize")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // Values for IPv4 and optionally IPv6 may be specified, separated by a colon
+    /// Values for IPv4 and optionally IPv6 may be specified, separated by a colon
     pub per_source_net_block_size: Option<Text>,
 
     #[serde(rename = "pidFile", alias = "PidFile", alias = "pidfile")]
@@ -364,7 +364,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "pubkeyAcceptedAlgorithms", alias = "PubkeyAcceptedAlgorithms", alias = "pubkeyacceptedalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input is a comma separated list, starting with +,-,^
+    /// input is a comma separated list, starting with +,-,^
     pub pubkey_accepted_algorithms: Option<Text>,
 
     #[serde(rename = "pubkeyAcceptedKeyTypes", alias = "PubkeyAcceptedKeyTypes", alias = "pubkeyacceptedkeytypes")]
@@ -401,7 +401,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "setEnv", alias = "SetEnv", alias = "setenv")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    // input in format of "NAME=VALUE" separated by whitespace
+    /// input in format of "NAME=VALUE" separated by whitespace
     pub set_env: Option<Vec<Text>>,
 
     #[serde(rename = "sKeyAuthentication", alias = "skeyauthentication")]
