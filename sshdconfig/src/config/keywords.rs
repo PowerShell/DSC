@@ -167,6 +167,14 @@ pub enum LogLevel {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct MaxStartups {
+    pub start: u32,
+    pub rate: u32,
+    pub full: u32,
+    pub ensure: Option<EnsureKind>,
+  }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PermitRootLoginKeyword {
     /// Represents a deprecated alias of prohibit-password
     #[serde(rename = "without-password")]
@@ -261,8 +269,7 @@ pub struct RepeatNumericKeyword {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RepeatTextKeyword {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub name: String,
     pub value: String,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]

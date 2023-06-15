@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
-use crate::config::keywords::{AddressFamily, Compression, FingerprintHash, GatewayPorts, IgnoreRhosts, LogLevel, Numeric,
-    PermitRootLogin, PermitTunnel, PubkeyAuthOptions, RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
+use crate::config::keywords::{AddressFamily, Compression, FingerprintHash, GatewayPorts, 
+    IgnoreRhosts, LogLevel, MaxStartups, Numeric, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, 
+    RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
 
 /// A struct representing sshd_config data
 ///
@@ -65,7 +66,7 @@ pub struct SshdConfig {
     #[serde(rename = "authenticationMethods", alias = "AuthenticationMethods", alias = "authenticationmethods")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is one or more comma-separated lists, each list separated by whitespace 
-    pub authentication_methods: Option<Text>,
+    pub authentication_methods: Option<Vec<Text>>,
 
     #[serde(rename = "authorizedKeysCommand", alias = "AuthorizedKeysCommand", alias = "authorizedkeyscommand")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -291,7 +292,7 @@ pub struct SshdConfig {
     #[serde(rename = "maxStartups", alias = "MaxStartups", alias = "maxstartups")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// format is start:rate:full
-    pub max_startups: Option<Text>,
+    pub max_startups: Option<MaxStartups>,
 
     #[serde(rename = "moduliFile", alias = "ModuliFile", alias = "modulifile")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -402,7 +403,7 @@ pub struct SshdConfig {
     #[serde(rename = "setEnv", alias = "SetEnv", alias = "setenv")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input in format of "NAME=VALUE" separated by whitespace
-    pub set_env: Option<Vec<Text>>,
+    pub set_env: Option<Vec<RepeatTextKeyword>>,
 
     #[serde(rename = "sKeyAuthentication", alias = "skeyauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
