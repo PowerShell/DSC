@@ -11,6 +11,18 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
+        "channeltimeout": [
+            {
+                "type": "agent-connection",
+                "seconds": 10
+            },
+            {
+                "type": {
+                    "subsystem": "sftp"
+                },
+                "minutes": 1
+            }
+        ],
         "permitopen": [
             {
                 "ipv4": "1.2.3.4",
@@ -53,10 +65,6 @@ fn test_config() {
         "syslogFacility": "AUTH",
         "authorizedKeysFile": [{
             "value": "test"
-        }],
-        "channeltimeout": [{
-            "type": "agent-connection",
-            "interval": "5m"
         }],
         "port": [
             { "value": 24 },

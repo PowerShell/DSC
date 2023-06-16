@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::keywords::{EnsureKind, GatewayPorts, IgnoreRhosts, IPQoS, Lists, ListsSubset, LogLevel, 
+use crate::config::keywords::{ChannelTimeout, EnsureKind, GatewayPorts, IgnoreRhosts, IPQoS, Lists, ListsSubset, LogLevel, 
     Numeric, PermitListen, PermitOpen, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, Text, TCPFwd, YesNo};
 
 /// An enum representing different arguments to Match
@@ -135,7 +135,7 @@ pub struct MatchSubContainer {
 
     #[serde(rename = "channelTimeout", alias = "ChannelTimeout", alias = "channeltimeout")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub channel_timeout: Option<Vec<Text>>,
+    pub channel_timeout: Option<Vec<ChannelTimeout>>,
 
     #[serde(rename = "chrootDirectory", alias = "ChrootDirectory", alias = "chrootdirectory")]
     #[serde(skip_serializing_if = "Option::is_none")]

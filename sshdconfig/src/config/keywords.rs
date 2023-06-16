@@ -52,6 +52,71 @@ pub enum AnyNone {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ChannelTimeoutCombined {
+    Keyword(ChannelTimeoutKeywords),
+    SessionSubsystem(ChannelTimeoutSubsystem)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ChannelTimeoutKeywords {
+    /// Represents channels to the ssh-agent
+    #[serde(rename = "agent-connection")]
+    AgentConnection,
+    /// Represents channels established via local or dynamic forwarding
+    #[serde(rename = "direct-tcpip")]
+    DirectTcpIp,
+    /// Represents channels established via remote forwarding
+    #[serde(rename = "forwarded-tcpip")]
+    ForwardedTcpIp,
+    /// Represents channels established for command execution sessions
+    #[serde(rename = "session:command")]
+    SessionCommand,
+    /// Represents channels established for interactive shell sessions
+    #[serde(rename = "session:shell")]
+    SessionShell,
+    /// Represents channels established for x11 forwarding
+    #[serde(rename = "x11-connection")]
+    X11Connection,
+    /// Represents channels established for these session types: command, shell and subsystem
+    #[serde(rename = "session:*")]
+    WildcardSession,
+    /// Represents both direct-tcpip and forwarded-tcpip sessions
+    #[serde(rename = "*-tcpip")]
+    WildcardTcpIp,
+    /// Represents both agent-connection and x11-connection sessions
+    #[serde(rename = "*-connection")]
+    WildcardConnection,
+    /// Represents all channel types
+    #[serde(rename = "*")]
+    Wildcard,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ChannelTimeoutSubsystem {
+    pub subsystem: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ChannelTimeout {
+    #[serde(rename = "type")]
+    type_keyword: ChannelTimeoutCombined,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    weeks: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    days: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hours: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    minutes: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    seconds: Option<u32>,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum CompressionKeyword {
     #[serde(rename = "yes")]
     Yes,
@@ -73,16 +138,6 @@ pub enum Compression {
     /// Represents the legacy synonym for yes
     #[serde(rename = "delayed")]
     Delayed,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct ChannelTimeout {
-    #[serde(rename = "type")]
-    type_keyword: String,
-    interval: String,
-    #[serde(rename = "_ensure")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
