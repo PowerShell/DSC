@@ -11,6 +11,15 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
+        "maxstartups": {
+            "start": 10,
+            "rate": 20,
+            "full": 30
+        },
+        "ciphers": {
+            "action": "add",
+            "values": ["*"]
+        },
         "listenaddress": [
             {
                 "hostname": "localhost",

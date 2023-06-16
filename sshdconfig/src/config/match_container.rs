@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::keywords::{EnsureKind, GatewayPorts, IgnoreRhosts, IPQoS, LogLevel, 
+use crate::config::keywords::{EnsureKind, GatewayPorts, IgnoreRhosts, IPQoS, Lists, ListsSubset, LogLevel, 
     Numeric, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, Text, TCPFwd, YesNo};
 
 /// An enum representing different arguments to Match
@@ -127,7 +127,7 @@ pub struct MatchSubContainer {
 
     #[serde(rename = "caSignatureAlgorithms", alias = "CASignatureAlgorithms", alias = "casignaturealgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ca_signature_algorithms: Option<Text>,
+    pub ca_signature_algorithms: Option<ListsSubset>,
 
     #[serde(rename = "challengeResponseAuthentication", alias = "ChallengeResponseAuthentication", alias = "challengeresponseauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -179,7 +179,7 @@ pub struct MatchSubContainer {
 
     #[serde(rename = "hostbasedAcceptedAlgorithms", alias = "HostbasedAcceptedAlgorithms", alias = "hostbasedacceptedalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub hostbased_accepted_algorithms: Option<Text>,
+    pub hostbased_accepted_algorithms: Option<Lists>,
 
     #[serde(rename = "hostbasedacceptedkeytypes", alias = "HostbasedAcceptedKeyTypes", alias = "hostbasedacceptedkeytypes")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -263,7 +263,7 @@ pub struct MatchSubContainer {
 
     #[serde(rename = "pubkeyAcceptedAlgorithms", alias = "PubkeyAcceptedAlgorithms", alias = "pubkeyacceptedalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pubkey_accepted_algorithms: Option<Text>,
+    pub pubkey_accepted_algorithms: Option<Lists>,
     
     #[serde(rename = "pubkeyAcceptedKeyTypes", alias = "PubkeyAcceptedKeyTypes", alias = "pubkeyacceptedkeytypes")]
     #[serde(skip_serializing_if = "Option::is_none")]

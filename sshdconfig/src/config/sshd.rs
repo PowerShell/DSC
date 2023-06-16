@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
 use crate::config::keywords::{AddressFamily, ChannelTimeout, Compression, FingerprintHash, GatewayPorts, 
-    IgnoreRhosts, IPQoS, ListenAddress, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PerSourceMaxStartups,
+    IgnoreRhosts, IPQoS, Lists, ListsSubset, ListenAddress, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PerSourceMaxStartups,
     PubkeyAuthOptions, RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
 
 /// A struct representing sshd_config data
@@ -100,7 +100,7 @@ pub struct SshdConfig {
     #[serde(rename = "caSignatureAlgorithms", alias = "CASignatureAlgorithms", alias = "casignaturealgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is a comma separated list, starting with + or -
-    pub ca_signature_algorithms: Option<Text>,
+    pub ca_signature_algorithms: Option<ListsSubset>,
 
     #[serde(rename = "challengeResponseAuthentication", alias = "ChallengeResponseAuthentication", alias = "challengeresponseauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -117,7 +117,7 @@ pub struct SshdConfig {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is a comma separated list, starting with +,-,^
-    pub ciphers: Option<Text>,
+    pub ciphers: Option<Lists>,
 
     #[serde(rename = "clientAliveCountMax", alias = "ClientAliveCountMax", alias = "clientalivecountmax")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -180,7 +180,7 @@ pub struct SshdConfig {
     #[serde(rename = "hostbasedAcceptedAlgorithms", alias = "HostbasedAcceptedAlgorithms", alias = "hostbasedacceptedalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is a comma separated list, starting with +,-,^
-    pub hostbased_accepted_algorithms: Option<Text>,
+    pub hostbased_accepted_algorithms: Option<Lists>,
 
     #[serde(rename = "hostbasedAcceptedKeyTypes", alias = "HostbasedAcceptedKeyTypes", alias = "hostbasedacceptedkeytypes")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -255,7 +255,7 @@ pub struct SshdConfig {
     #[serde(rename = "kexAlgorithms", alias = "KexAlgorithms", alias = "kexalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is a comma separated list, starting with +,-,^
-    pub kex_algorithms: Option<Text>,
+    pub kex_algorithms: Option<Lists>,
 
     #[serde(rename = "listenAddress", alias = "ListenAddress", alias = "listenaddress")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -275,7 +275,7 @@ pub struct SshdConfig {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is a comma separated list, starting with +,-,^
-    pub macs: Option<Text>,
+    pub macs: Option<Lists>,
 
     #[serde(rename = "match", alias = "Match", alias = "match")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -366,7 +366,7 @@ pub struct SshdConfig {
     #[serde(rename = "pubkeyAcceptedAlgorithms", alias = "PubkeyAcceptedAlgorithms", alias = "pubkeyacceptedalgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is a comma separated list, starting with +,-,^
-    pub pubkey_accepted_algorithms: Option<Text>,
+    pub pubkey_accepted_algorithms: Option<Lists>,
 
     #[serde(rename = "pubkeyAcceptedKeyTypes", alias = "PubkeyAcceptedKeyTypes", alias = "pubkeyacceptedkeytypes")]
     #[serde(skip_serializing_if = "Option::is_none")]

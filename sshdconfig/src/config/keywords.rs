@@ -1,6 +1,24 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Actions {
+    #[serde(rename = "add")]
+    Add,
+    #[serde(rename = "remove")]
+    Remove,
+    #[serde(rename = "insert")]
+    Insert,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ActionsSubset {
+    #[serde(rename = "add")]
+    Add,
+    #[serde(rename = "remove")]
+    Remove,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AddressFamilyKeyword {
     /// Represents using IPv4 only
     #[serde(rename = "inet")]
@@ -282,6 +300,20 @@ pub enum ListenAddress {
         #[serde(skip_serializing_if = "Option::is_none")]
         ensure: Option<EnsureKind>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Lists {
+    pub action: Actions,
+    pub values: Vec<String>,
+    pub ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ListsSubset {
+    pub action: ActionsSubset,
+    pub values: Vec<String>,
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
