@@ -17,8 +17,11 @@ if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
     }
     else {
         Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
+        Write-Verbose -Verbose "Use the default settings to ensure build works"
         & 'temp:/rustup-init.exe'
         Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
+        Write-Verbose -Verbose "PowerShell needs to be restarted to find `cargo`"
+        return
     }
 }
 
