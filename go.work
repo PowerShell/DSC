@@ -1,0 +1,6 @@
+go 1.19
+
+use (
+	./docs/examples/app
+	./docs/examples/go
+)
