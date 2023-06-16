@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::config::keywords::{EnsureKind, GatewayPorts, IgnoreRhosts, IPQoS, Lists, ListsSubset, LogLevel, 
-    Numeric, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, Text, TCPFwd, YesNo};
+    Numeric, PermitListen, PermitOpen, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, Text, TCPFwd, YesNo};
 
 /// An enum representing different arguments to Match
 ///
@@ -239,11 +239,11 @@ pub struct MatchSubContainer {
 
     #[serde(rename = "permitListen", alias = "PermitListen", alias = "permitlisten")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub permit_listen: Option<Vec<Text>>,
+    pub permit_listen: Option<PermitListen>,
 
     #[serde(rename = "permitOpen", alias = "PermitOpen", alias = "permitopen")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub permit_open: Option<Vec<Text>>,
+    pub permit_open: Option<PermitOpen>,
 
     #[serde(rename = "permitRootLogin", alias = "PermitRootLogin", alias = "permitrootlogin")]
     #[serde(skip_serializing_if = "Option::is_none")]

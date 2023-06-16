@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
 use crate::config::keywords::{AddressFamily, ChannelTimeout, Compression, FingerprintHash, GatewayPorts, 
-    IgnoreRhosts, IPQoS, Lists, ListsSubset, ListenAddress, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PerSourceMaxStartups,
-    PubkeyAuthOptions, RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
+    IgnoreRhosts, IPQoS, Lists, ListsSubset, ListenAddress, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitListen, 
+    PermitOpen, PermitRootLogin, PermitTunnel, PerSourceMaxStartups, PubkeyAuthOptions, RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
 
 /// A struct representing sshd_config data
 ///
@@ -309,12 +309,12 @@ pub struct SshdConfig {
     #[serde(rename = "permitListen", alias = "PermitListen", alias = "permitlisten")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// format of port or host:port with multiple entries separated by whitespace
-    pub permit_listen: Option<Vec<Text>>,
+    pub permit_listen: Option<PermitListen>,
 
     #[serde(rename = "permitOpen", alias = "PermitOpen", alias = "permitopen")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// format of host:port, IPv4_addr:port, [IPV6_addr]:port with multiple entries separated by whitespace
-    pub permit_open: Option<Vec<Text>>,
+    pub permit_open: Option<PermitOpen>,
 
     #[serde(rename = "permitRootLogin", alias = "PermitRootLogin", alias = "permitrootlogin")]
     #[serde(skip_serializing_if = "Option::is_none")]

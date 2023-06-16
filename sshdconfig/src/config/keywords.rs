@@ -44,6 +44,14 @@ pub enum AddressFamily {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AnyNone {
+    #[serde(rename = "any")]
+    Any,
+    #[serde(rename = "none")]
+    None,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum CompressionKeyword {
     #[serde(rename = "yes")]
     Yes,
@@ -368,6 +376,84 @@ pub enum None {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PermitHostKeyword {
+    host: String,
+    port: PermitPort,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PermitIpv4Keyword {
+    ipv4: String,
+    port: PermitPort,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PermitIpv6Keyword {
+    ipv6: String,
+    port: PermitPort,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PermitPort {
+    Wildcard(Wildcard),
+    Int(u32)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PermitListenKeyword {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    host: Option<String>,
+    port: PermitPort,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PermitListen {
+    Keyword(Vec<PermitListenKeyword>),
+    AnyNone(AnyNone),
+    AnyNoneEnsure {
+        value: AnyNone,
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>,
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PermitOpenKeyword {
+    Host(PermitHostKeyword),
+    Ipv4(PermitIpv4Keyword),
+    Ipv6(PermitIpv6Keyword),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PermitOpen {
+    Keyword(Vec<PermitOpenKeyword>),
+    AnyNone(AnyNone),
+    AnyNoneEnsure {
+        value: AnyNone,
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>,
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PermitRootLoginKeyword {
     /// Represents a deprecated alias of prohibit-password
     #[serde(rename = "without-password")]
@@ -559,6 +645,12 @@ pub enum Text {
         ensure: Option<EnsureKind>
     },
     String(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Wildcard {
+    #[serde(rename = "*")]
+    Wildcard
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

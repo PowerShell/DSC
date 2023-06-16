@@ -11,6 +11,21 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
+        "permitopen": [
+            {
+                "ipv4": "1.2.3.4",
+                "port": 22
+            },
+            {
+                "ipv6": "2.3.4.5",
+                "port": 23
+            },
+            {
+                "host": "localhost", 
+                "port": 25
+            }
+        ],
+        "permitlisten": "none",
         "maxstartups": {
             "start": 10,
             "rate": 20,
