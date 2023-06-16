@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
-use crate::config::keywords::{AddressFamily, Compression, FingerprintHash, GatewayPorts, 
-    IgnoreRhosts, LogLevel, MaxStartups, Numeric, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, 
+use crate::config::keywords::{AddressFamily, ChannelTimeout, Compression, FingerprintHash, GatewayPorts, 
+    IgnoreRhosts, IPQoS, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, 
     RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
 
 /// A struct representing sshd_config data
@@ -109,7 +109,7 @@ pub struct SshdConfig {
     #[serde(rename = "channelTimeout", alias = "ChannelTimeout", alias = "channeltimeout")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is "type=interval" format each separated by whitespace
-    pub channel_timeout: Option<Vec<Text>>,
+    pub channel_timeout: Option<Vec<ChannelTimeout>>,
 
     #[serde(rename = "chrootDirectory", alias = "ChrootDirectory", alias = "chrootdirectory")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -230,7 +230,7 @@ pub struct SshdConfig {
     #[serde(rename = "iPQoS", alias = "IPQoS", alias = "ipqos")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// accepts one or two arguments, separated by whitespace
-    pub ipq_o_s: Option<Vec<Text>>,
+    pub ipq_o_s: Option<IPQoS>,
 
     #[serde(rename = "kbdInteractiveAuthentication", alias = "KbdInteractiveAuthentication", alias = "kbdinteractiveauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -345,7 +345,7 @@ pub struct SshdConfig {
     #[serde(rename = "perSourceNetBlockSize", alias = "PerSourceNetBlockSize", alias = "persourcenetblocksize")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Values for IPv4 and optionally IPv6 may be specified, separated by a colon
-    pub per_source_net_block_size: Option<Text>,
+    pub per_source_net_block_size: Option<NetBlockSize>,
 
     #[serde(rename = "pidFile", alias = "PidFile", alias = "pidfile")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -425,7 +425,7 @@ pub struct SshdConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subsystem: Option<Vec<RepeatTextKeyword>>,
 
-    #[serde(rename = "syslogfacility", alias = "SyslogFacility")]
+    #[serde(rename = "syslogFacility", alias = "SyslogFacility", alias = "syslogfacility")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub syslog_facility: Option<SysLogFacility>,
 

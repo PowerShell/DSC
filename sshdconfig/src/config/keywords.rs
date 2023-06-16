@@ -50,6 +50,16 @@ pub enum Compression {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ChannelTimeout {
+    #[serde(rename = "type")]
+    type_keyword: String,
+    interval: String,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ensure: Option<EnsureKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EnsureKind {
     Present,
     Absent,
@@ -128,6 +138,116 @@ pub enum IgnoreRhosts {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum IPQoSKeywords {
+    /// Represents assured forwarding class, lowest service assurance
+    #[serde(alias = "af11")]
+    AF11,
+    /// Represents low-latency, lower service assurance compared to AF13 and AF14
+    #[serde(alias = "af12")]
+    AF12,
+    /// Represents low-latency, lower service assurance compared to AF14
+    #[serde(alias = "af13")] 
+    AF13, 
+    /// Represents low-latency; default value for interactive sessions
+    #[serde(alias = "af21")]
+    AF21, 
+    /// Represents lower service assurance compared to AF23
+    #[serde(alias = "af22")]
+    Af22, 
+    // Represents lower service assurance compared to AF31
+    #[serde(alias = "af23")]
+    AF23, 
+    /// Represents moderate level of service assurance
+    #[serde(alias = "af31")]
+    AF31, 
+    /// Represents moderate level of service assurance
+    #[serde(alias = "af32")]
+    AF32, 
+    /// Represents moderate level of service assurance
+    #[serde(alias = "af33")]
+    AF33, 
+    /// Represents high level of service assurance
+    #[serde(alias = "af41")]
+    AF41,
+    /// Represents high level of service assurance
+    #[serde(alias = "af42")] 
+    AF42, 
+    /// Represents highest level of service assurance from AF class
+    #[serde(alias = "af43")]
+    AF43, 
+    /// Represents lowest level of service quality of class selector values
+    #[serde(alias = "cs0")]
+    CS0, 
+    /// Represents lower effort; default value effort for non-interactive sessions
+    #[serde(alias = "cs1")]
+    CS1, 
+    /// Represents low level of service quality
+    #[serde(alias = "cs2")]
+    CS2, 
+    /// Represents medium level of service quality
+    #[serde(alias = "cs3")]
+    CS3, 
+    /// Represents medium level of service quality
+    #[serde(alias = "cs4")]
+    CS4, 
+    /// Represents high level of service quality
+    #[serde(alias = "cs5")]
+    CS5, 
+    /// Represents high level of service quality
+    #[serde(alias = "cs6")]
+    CS6, 
+    #[serde(alias = "cs7")]
+    /// Represents highest level of service quality of class selector values
+    CS7, 
+    #[serde(alias = "ef")]
+    /// Represents expedited forwading class
+    EF, 
+    #[serde(alias = "le")]
+    /// Represents low extra delay bacgkround transport class
+    LE, 
+    #[serde(alias = "lowdelay", alias = "lowDelay")]
+    /// Represents a deprecated alias for EF class
+    LowDelay, 
+    #[serde(alias = "throughput")]
+    /// Represents preference for high throughput
+    Throughput, 
+    /// Represents preference for reliable delivery
+    #[serde(alias = "reliability")]
+    Reliability,
+    /// Represents preference to use OS default
+    #[serde(alias = "none")]
+    None,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum IPQoSCombined {
+    Keyword(IPQoSKeywords),
+    Int(u32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum IPQoS {
+    Single{
+        #[serde(rename = "allSessions")]
+        all_sessions: IPQoSCombined,
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>
+    },
+    Double{
+        #[serde(rename = "interactiveSessions")]
+        interactive_sessions: IPQoSCombined,
+        #[serde(rename = "nonInteractiveSessions")]
+        non_interactive_sessions: IPQoSCombined,
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Numeric {
     Object{
@@ -173,6 +293,16 @@ pub struct MaxStartups {
     pub full: u32,
     pub ensure: Option<EnsureKind>,
   }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct NetBlockSize {
+    ipv4: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ipv6: Option<String>,
+    #[serde(rename = "_ensure")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ensure: Option<EnsureKind>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PermitRootLoginKeyword {

@@ -11,10 +11,17 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
+        "ipqos": {
+            "allSessions": "none"
+        },
         "passwordAuthentication": "yes",
-        "syslogFacility": "INFO",
+        "syslogFacility": "AUTH",
         "authorizedKeysFile": [{
             "value": "test"
+        }],
+        "channeltimeout": [{
+            "type": "agent-connection",
+            "interval": "5m"
         }],
         "port": [
             { "value": 24 },
