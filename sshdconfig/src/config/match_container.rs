@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::keywords::{ChannelTimeout, EnsureKind, GatewayPorts, IgnoreRhosts, IPQoS, Lists, ListsSubset, LogLevel, 
-    Numeric, PermitListen, PermitOpen, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, Text, TCPFwd, YesNo};
+use crate::config::keywords::{ChannelTimeout, EnsureKind, GatewayPorts, IgnoreRhosts, 
+    IPQoS, Lists, ListsAddRemove, LogLevel, Numeric, PermitListen, PermitOpen, 
+    PermitRootLogin, PermitTunnel, PubkeyAuthOptions, Text, TCPFwd, YesNo};
 
 /// An enum representing different arguments to Match
 ///
@@ -127,7 +128,7 @@ pub struct MatchSubContainer {
 
     #[serde(rename = "caSignatureAlgorithms", alias = "CASignatureAlgorithms", alias = "casignaturealgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ca_signature_algorithms: Option<ListsSubset>,
+    pub ca_signature_algorithms: Option<ListsAddRemove>,
 
     #[serde(rename = "challengeResponseAuthentication", alias = "ChallengeResponseAuthentication", alias = "challengeresponseauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]

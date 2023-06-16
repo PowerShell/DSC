@@ -2,18 +2,23 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Actions {
+    /// Represents adding corresponding values to existing values
     #[serde(rename = "add")]
     Add,
+    /// Represents removing corresponding values from existing values
     #[serde(rename = "remove")]
     Remove,
+    /// Represents inserting corresponding values in front of existing values
     #[serde(rename = "insert")]
     Insert,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum ActionsSubset {
+pub enum AddRemove {
+    /// Represents adding corresponding values to existing values
     #[serde(rename = "add")]
     Add,
+    /// Represents removing corresponding values from existing values
     #[serde(rename = "remove")]
     Remove,
 }
@@ -331,18 +336,6 @@ pub enum IPQoS {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Numeric {
-    Object{
-        value: u32, 
-        #[serde(rename = "_ensure")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        ensure: Option<EnsureKind>
-    },
-    Int(u32),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(untagged)]
 pub enum ListenAddress {
     Hostname{
         hostname: String,
@@ -373,8 +366,8 @@ pub struct Lists {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct ListsSubset {
-    pub action: ActionsSubset,
+pub struct ListsAddRemove {
+    pub action: AddRemove,
     pub values: Vec<String>,
     pub ensure: Option<EnsureKind>,
 }
@@ -428,6 +421,18 @@ pub struct NetBlockSize {
 pub enum None {
     #[serde(alias = "none")]
     None
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Numeric {
+    Object{
+        value: u32, 
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>
+    },
+    Int(u32),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

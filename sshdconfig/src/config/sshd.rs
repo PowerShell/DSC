@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
 use crate::config::keywords::{AddressFamily, ChannelTimeout, Compression, FingerprintHash, GatewayPorts, 
-    IgnoreRhosts, IPQoS, Lists, ListsSubset, ListenAddress, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitListen, 
-    PermitOpen, PermitRootLogin, PermitTunnel, PerSourceMaxStartups, PubkeyAuthOptions, RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
+    IgnoreRhosts, IPQoS, Lists, ListsAddRemove, ListenAddress, LogLevel, MaxStartups, NetBlockSize, 
+    Numeric, PermitListen, PermitOpen, PermitRootLogin, PermitTunnel, PerSourceMaxStartups, PubkeyAuthOptions, 
+    RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
 
 /// A struct representing sshd_config data
 ///
@@ -100,7 +101,7 @@ pub struct SshdConfig {
     #[serde(rename = "caSignatureAlgorithms", alias = "CASignatureAlgorithms", alias = "casignaturealgorithms")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// input is a comma separated list, starting with + or -
-    pub ca_signature_algorithms: Option<ListsSubset>,
+    pub ca_signature_algorithms: Option<ListsAddRemove>,
 
     #[serde(rename = "challengeResponseAuthentication", alias = "ChallengeResponseAuthentication", alias = "challengeresponseauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]
