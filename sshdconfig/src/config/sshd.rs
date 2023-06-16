@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
 use crate::config::keywords::{AddressFamily, ChannelTimeout, Compression, FingerprintHash, GatewayPorts, 
-    IgnoreRhosts, IPQoS, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, 
-    RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
+    IgnoreRhosts, IPQoS, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PerSourceMaxStartups,
+    PubkeyAuthOptions, RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
 
 /// A struct representing sshd_config data
 ///
@@ -340,7 +340,7 @@ pub struct SshdConfig {
     #[serde(rename = "perSourceMaxStartups", alias = "PerSourceMaxStartups", alias = "persourcemaxstartups")]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// number of unauthenticated connections allowed from a given source address, or “none” if there is no limit
-    pub per_source_max_startups: Option<Text>,
+    pub per_source_max_startups: Option<PerSourceMaxStartups>,
 
     #[serde(rename = "perSourceNetBlockSize", alias = "PerSourceNetBlockSize", alias = "persourcenetblocksize")]
     #[serde(skip_serializing_if = "Option::is_none")]

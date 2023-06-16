@@ -11,6 +11,7 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
+        "persourcemaxstartups": "none",
         "ipqos": {
             "allSessions": "none"
         },

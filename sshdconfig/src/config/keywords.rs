@@ -219,6 +219,7 @@ pub enum IPQoSKeywords {
     None,
 }
 
+/// Combining untagged enum (IPQoSKeywords) & tagged enum (Int(u32)) for parsing
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum IPQoSCombined {
@@ -305,6 +306,12 @@ pub struct NetBlockSize {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum None {
+    #[serde(alias = "none")]
+    None
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PermitRootLoginKeyword {
     /// Represents a deprecated alias of prohibit-password
     #[serde(rename = "without-password")]
@@ -361,6 +368,25 @@ pub enum PermitTunnel {
         ensure: Option<EnsureKind>,
     },
     String(PermitTunnelKeyword),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PerSourceMaxStartupsKeyword {
+    None(None),
+    Int(u32),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PerSourceMaxStartups {
+    Object{
+        value: PerSourceMaxStartupsKeyword,
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>,
+    },
+    Line(PerSourceMaxStartupsKeyword),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
