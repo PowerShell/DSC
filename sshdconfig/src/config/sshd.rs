@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::match_container::MatchContainer;
 use crate::config::keywords::{AddressFamily, ChannelTimeout, Compression, FingerprintHash, GatewayPorts, 
-    IgnoreRhosts, IPQoS, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PerSourceMaxStartups,
+    IgnoreRhosts, IPQoS, ListenAddress, LogLevel, MaxStartups, NetBlockSize, Numeric, PermitRootLogin, PermitTunnel, PerSourceMaxStartups,
     PubkeyAuthOptions, RepeatNumericKeyword, RepeatTextKeyword, Text, SysLogFacility, TCPFwd, YesNo};
 
 /// A struct representing sshd_config data
@@ -259,7 +259,7 @@ pub struct SshdConfig {
 
     #[serde(rename = "listenAddress", alias = "ListenAddress", alias = "listenaddress")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub listen_address: Option<Vec<Text>>,
+    pub listen_address: Option<Vec<ListenAddress>>,
 
     #[serde(rename = "loginGraceTime", alias = "LoginGraceTime", alias = "logingracetime")]
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -11,6 +11,16 @@ fn main() {
 fn test_config() {
     let input_json: &str = r#"
     {
+        "listenaddress": [
+            {
+                "hostname": "localhost",
+                "address": "1.2.3.4"
+            },
+            {
+                "ipv4": "1.2.3.4",
+                "port": 22
+            }
+        ],
         "persourcemaxstartups": "none",
         "ipqos": {
             "allSessions": "none"

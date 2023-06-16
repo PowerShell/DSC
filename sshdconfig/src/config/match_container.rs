@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::keywords::{EnsureKind, GatewayPorts, IgnoreRhosts, LogLevel, 
+use crate::config::keywords::{EnsureKind, GatewayPorts, IgnoreRhosts, IPQoS, LogLevel, 
     Numeric, PermitRootLogin, PermitTunnel, PubkeyAuthOptions, Text, TCPFwd, YesNo};
 
 /// An enum representing different arguments to Match
@@ -203,7 +203,7 @@ pub struct MatchSubContainer {
 
     #[serde(rename = "iPQoS", alias = "IPQoS", alias = "ipqos")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ipq_o_s: Option<Vec<Text>>,
+    pub ipq_o_s: Option<IPQoS>,
 
     #[serde(rename = "kbdInteractiveAuthentication", alias = "KbdInteractiveAuthentication", alias = "kbdinteractiveauthentication")]
     #[serde(skip_serializing_if = "Option::is_none")]

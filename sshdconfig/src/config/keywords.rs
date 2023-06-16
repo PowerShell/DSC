@@ -262,6 +262,30 @@ pub enum Numeric {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
+pub enum ListenAddress {
+    Hostname{
+        hostname: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        address: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        port: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        rdomain: Option<String>,
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>,
+    },
+    IPv4{
+        ipv4: String,
+        port: u32,
+        #[serde(rename = "_ensure")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ensure: Option<EnsureKind>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum LogLevelKeyword {
     QUIET,
     FATAL,
@@ -373,7 +397,9 @@ pub enum PermitTunnel {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PerSourceMaxStartupsKeyword {
+    /// Represents no limit on number of authenticated connections allowed from a given source address
     None(None),
+    /// Represents limit on number of authenticated connections allowed from a given source address
     Int(u32),
 }
 
