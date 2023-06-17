@@ -29,7 +29,11 @@ function Find-LibPath {
     Write-Verbose -Verbose "Finding lib path"
     try {
         Push-Location "${env:ProgramFiles(x86)}\Windows Kits\10\lib"
-        Set-Location "$(Get-ChildItem -Directory | Sort-Object name -Descending | Select-Object -First 1)\um\$($env:PROCESSOR_ARCHITECTURE)" -ErrorAction Stop
+        $arch = $env:PROCESSOR_ARCHITECTURE
+        if ($arch -eq 'AMD64') {
+            $arch = 'x64'
+        }
+        Set-Location "$(Get-ChildItem -Directory | Sort-Object name -Descending | Select-Object -First 1)\um\$arch" -ErrorAction Stop
         $libPath = (Get-Location).Path
         Write-Verbose -Verbose "Using $libPath"
         $libPath
