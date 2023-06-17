@@ -20,9 +20,73 @@ if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Use the default settings to ensure build works"
         & 'temp:/rustup-init.exe'
         Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
-        Write-Verbose -Verbose "PowerShell needs to be restarted to find 'cargo'"
-        return
     }
+}
+
+$BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+
+function Find-LibPath {
+    Write-Verbose -Verbose "Finding lib path"
+    try {
+        Push-Location "${env:ProgramFiles(x86)}\Windows Kits\10\lib"
+        Set-Location "$(Get-ChildItem -Directory | Sort-Object name -Descending | Select-Object -First 1)\um\$($env:PROCESSOR_ARCHITECTURE)" -ErrorAction Stop
+        $libPath = (Get-Location).Path
+        Write-Verbose -Verbose "Using $libPath"
+        $libPath
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Find-LinkExe {
+    try {
+        # unfortunately, vs buildtools installer doesn't simply add the exes to PATH so we have to search for them
+        Write-Verbose -Verbose "Finding link.exe"
+        Push-Location $BuildToolsPath
+        Set-Location "$(Get-ChildItem -Directory | Sort-Object name -Descending | Select-Object -First 1)\bin\Host$($env:PROCESSOR_ARCHITECTURE)\x64" -ErrorAction Stop
+        $linkexe = (Get-Location).Path
+        Write-Verbose -Verbose "Using $linkexe"
+        $linkexe
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+if ($IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
+    if (!(Test-Path $BuildToolsPath)) {
+        Write-Verbose -Verbose "link.exe not found, installing C++ build tools"
+        Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
+        $args = @('--passive','--add','Microsoft.VisualStudio.Workload.VCTools','--includerecommended')
+        if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
+            $args += '--add','Microsoft.VisualStudio.Component.VC.Tools.ARM64'
+        }
+        Start-Process -FilePath 'temp:/vs_buildtools.exe' -ArgumentList $args -Wait
+        Remove-Item temp:/vs_installer.exe -ErrorAction Ignore
+        Write-Verbose -Verbose "Updating env vars"
+        $machineEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine).Split(';')
+        $userEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User).Split(';')
+        $pathEnv = ($env:PATH).Split(';')
+        foreach ($env in $machineEnv) {
+            if ($pathEnv -notcontains $env) {
+                $pathEnv += $env
+            }
+        }
+        foreach ($env in $userEnv) {
+            if ($pathEnv -notcontains $env) {
+                $pathEnv += $env
+            }
+        }
+        $env:PATH = $pathEnv -join ';'
+    }
+
+    $linkexe = Find-LinkExe
+    $env:PATH += ";$linkexe"
+}
+
+if ($IsWindows -and $null -eq $env:MS_SDK_BASE_DOS) {
+    $env:MS_SDK_BASE_DOS = Find-LibPath
 }
 
 ## Create the output folder
