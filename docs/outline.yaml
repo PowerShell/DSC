@@ -1,0 +1,190 @@
+# This document includes a rough outline for the DSCv3 documentation. It's
+# broken down into a few categories:
+
+# - Configurations - Covers applying and authoring configuration docs
+# - Resources - Covers invoking and developing resources
+# - Modules - Covers creating and organizing modules
+# - Repositories - Covers what repositories are and how to use them
+# - Schemas - Documents all public schemas related to DSC
+# - Reference - Documents the first-party published apps, modules, commands,
+#   and resources.
+
+Overview:
+  - What is DSC?: |
+      Explains DSC's value as a platform rather than a solution and how it
+      integrates with other tools. Calls out why DSC doesn't have a built-in
+      server-mode. Discusses DSC's abstraction over imperative scripting.
+  - Configuration as Code: |
+      An introduction to declarative configuration, idempotency, and how DSC
+      fits into everything.
+  - Glossary: |
+      Canonical list of terms and definitions to make it easier for folks to
+      understand things given how many of the terms are normal nouns.
+
+# Using and writing configurations
+Configurations:
+  Tutorials:
+    - How to manage a configuration with DSC: |
+        Covers using `dsc config get` with a pre-defined configuration. Best if
+        this can be run against a pre-defined node or used to configure a fresh
+        install.
+    - How to author a DSC configuration: |
+        Covers authoring a basic configuration YAML to set a configuration file.
+        We may need a good mock app that we can use for this and other tutorials.
+    - How to use assertions with DSC: |
+        Covers how to use assertions in a configuration and shows their use case.
+    - How to group DSC Resources: |
+        Covers how and why to group DSC Resources in a configuration.
+    - How to configure DSC Resources in parallel: |
+        Covers how and why to use parallel groups in a configuration.
+    - How to parameterize a DSC configuration: |
+        Covers how and why to use parameters in a configuration.
+    - How to use variables in a DSC configuration: |
+        Covers how and why to use variables in a configuration.
+    - How to author a complex DSC configuration: |
+        Covers authoring an advanced configuration YAML that uses all the
+        available options, including variables, parameter
+  Concepts:
+    - Overview: |
+        Covers the idea of configurations and their basic structure. Provides
+        general information about topic areas and links to them.
+    - Parameters: |
+        How configuration parameters work and best practices for using them.
+    - Variables: |
+        How configuration variables work and best practices for using them.
+    - Resources: |
+        What Resources are and how they're composed in a configuration.
+    - Resource Groups: |
+        The grouping options for resources, including parallel and assertions
+
+# Invoking and writing resources
+Resources:
+  Tutorials:
+    - How to manage a resource with DSC: |
+        Covers using `dsc resource get/test/set` with a single resource, like
+        using `Invoke-DscResource`.
+    - How to write a DSC Resource Manifest: |
+        Covers authoring a DSC Resource manifest for a pre-defined resource,
+        explaining the various options.
+    # All the "How to write a DSC Resource in..." articles should reimplement
+    # the same resource but in a different language, so readers can compare
+    # them. Ideally, this is for a mock application where we control all the
+    # requirements in full and it can make for a useful demo.
+    - How to write a DSC Resource in Python: |
+        Covers implementing the shared example DSC Resource in Python with
+        current best practices.
+    - How to write a DSC Resource in Rust: |
+        Covers implementing the shared example DSC Resource in Rust with
+        current best practices.
+    - How to write a DSC Resource in Go: |
+        Covers implementing the shared example DSC Resource in Go with
+        current best practices.
+    - How to write a DSC Resource in PowerShell: |
+        Covers implementing the shared example DSC Resource in PowerShell with
+        current best practices.
+  Concepts:
+    # This section is universal concepts that apply across all implementations
+    - Anatomy of a DSC Resource: |
+        Explains how DSC Resources are structured, including their manifests,
+        inputs, and outputs.
+    - Manifests: |
+        Covers resource manifests, how they affect the resource's behavior, and
+        how they're used by DSC.
+    - Schemas: |
+        Covers options for providing the DSC Resource's schema.
+    - Error Handling: |
+        Covers expected behavior for error handling and how to implement it.
+    - Logging: |
+        Covers expected behavior for log messages and how to implement them.
+    - Troubleshooting: |
+        Thought process a user should follow when diagnosing why a configuration has failed.
+        Common or known errors and required workarounds.
+  # The remaining sections cover language-specific concepts and tutorials. The
+  # top-level tutorials for each language are re-included here.
+  Python:
+    - How to write a DSC Resource in Python
+  Rust:
+    - How to write a DSC Resource in Rust
+  Go:
+    - How to write a DSC Resource in Go
+  PowerShell:
+    - How to write a DSC Resource in PowerShell
+    - Class-based DSC Resources: |
+        Covers how class-based DSC Resources are different from other
+        implementations.
+
+
+Modules:
+  Tutorials:
+    - How to publish a DSC module
+    - How to update a DSC module
+    - How to find a DSC module
+  Concepts:
+    - Anatomy of a DSC module
+    - Publishing DSC modules
+    - Best Practices
+
+Repositories:
+  Tutorials:
+    - How to register a DSC Repository
+    - How to install DSC Resources from a DSC Repository
+    - How to setup a DSC Repository
+  Concepts:
+    - What is a DSC Repository
+    - The Microsoft DSC Repository
+    - The PowerShell Gallery as a DSC Repository
+
+# Public schemas
+Schemas:
+  - Results:
+      - Invoke:
+          - Get
+          - Set
+          - Test
+      - Configure:
+          - Get
+          - Set
+          - Test
+  - Resources:
+      - Manifest      # Root
+      - InputKind
+      - SchemaKind
+      - SchemaCommand
+      - ReturnKind
+      - GetMethod
+      - SetMethod
+      - TestMethod
+      - ValidateMethod
+      - Provider
+      - ConfigKind
+      - ListMethod
+  - Configuration:
+      - Document  # Root
+      - Parameter
+      - DataType
+      - Resource
+
+# Covers the reference docs for the things we publish
+Reference:
+  dsc:
+    Overview: |
+      Covers the `dsc` native command and the built-in resources.
+    Commands:
+      - root
+      - config
+      - module
+      - repo
+      - resource
+    Resources:
+      - Group
+      - AssertionGroup
+      - ParallelGroup
+  Microsoft:
+    Resources:
+      - OSInfo
+  Microsoft.Windows:
+    Resources:
+      - Registry
+  PSDscResources:
+    Resources:
+      - (each DSC Resource)
