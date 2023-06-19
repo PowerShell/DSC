@@ -226,82 +226,82 @@ pub enum IgnoreRhosts {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum IPQoSKeywords {
     /// Represents assured forwarding class, lowest service assurance
-    #[serde(alias = "af11")]
-    AF11,
+    #[serde(rename = "assuredForwardingLevel11", alias = "af11")]
+    AssuredForwardingLevel11,
     /// Represents low-latency, lower service assurance compared to AF13 and AF14
-    #[serde(alias = "af12")]
-    AF12,
+    #[serde(rename = "assuredForwardingLevel12", alias = "af12")]
+    AssuredForwardingLevel12,
     /// Represents low-latency, lower service assurance compared to AF14
-    #[serde(alias = "af13")] 
-    AF13, 
+    #[serde(rename = "assuredForwardingLevel13", alias = "af13")] 
+    AssuredForwardingLevel13, 
     /// Represents low-latency; default value for interactive sessions
-    #[serde(alias = "af21")]
-    AF21, 
+    #[serde(rename = "assuredForwardingLevel21", alias = "af21")]
+    AssuredForwardingLevel21, 
     /// Represents lower service assurance compared to AF23
-    #[serde(alias = "af22")]
-    Af22, 
+    #[serde(rename = "assuredForwardingLevel22", alias = "af22")]
+    AssuredForwardingLevel22, 
     // Represents lower service assurance compared to AF31
-    #[serde(alias = "af23")]
-    AF23, 
+    #[serde(rename = "assuredForwardingLevel23", alias = "af23")]
+    AssuredForwardingLevel23, 
     /// Represents moderate level of service assurance
-    #[serde(alias = "af31")]
-    AF31, 
+    #[serde(rename = "assuredForwardingLevel31", alias = "af31")]
+    AssuredForwardingLevel31, 
     /// Represents moderate level of service assurance
-    #[serde(alias = "af32")]
-    AF32, 
+    #[serde(rename = "assuredForwardingLevel32", alias = "af32")]
+    AssuredForwardingLevel32, 
     /// Represents moderate level of service assurance
-    #[serde(alias = "af33")]
-    AF33, 
+    #[serde(rename = "assuredForwardingLevel33", alias = "af33")]
+    AssuredForwardingLevel33, 
     /// Represents high level of service assurance
-    #[serde(alias = "af41")]
-    AF41,
+    #[serde(rename = "assuredForwardingLevel41", alias = "af41")]
+    AssuredForwardingLevel41,
     /// Represents high level of service assurance
-    #[serde(alias = "af42")] 
-    AF42, 
+    #[serde(rename = "assuredForwardingLevel42", alias = "af42")] 
+    AssuredForwardingLevel42, 
     /// Represents highest level of service assurance from AF class
-    #[serde(alias = "af43")]
-    AF43, 
+    #[serde(rename = "assuredForwardingLevel43", alias = "af43")]
+    AssuredForwardingLevel43, 
     /// Represents lowest level of service quality of class selector values
-    #[serde(alias = "cs0")]
-    CS0, 
+    #[serde(rename = "classSelectorLevel0", alias = "cs0")]
+    ClassSelectorLevel0, 
     /// Represents lower effort; default value effort for non-interactive sessions
-    #[serde(alias = "cs1")]
-    CS1, 
+    #[serde(rename = "classSelectorLevel1", alias = "cs1")]
+    ClassSelectorLevel1, 
     /// Represents low level of service quality
-    #[serde(alias = "cs2")]
-    CS2, 
+    #[serde(rename = "classSelectorLevel2", alias = "cs2")]
+    ClassSelectorLevel2, 
     /// Represents medium level of service quality
-    #[serde(alias = "cs3")]
-    CS3, 
+    #[serde(rename = "classSelectorLevel3", alias = "cs3")]
+    ClassSelectorLevel3, 
     /// Represents medium level of service quality
-    #[serde(alias = "cs4")]
-    CS4, 
+    #[serde(rename = "classSelectorLevel4", alias = "cs4")]
+    ClassSelectorLevel4, 
     /// Represents high level of service quality
-    #[serde(alias = "cs5")]
-    CS5, 
+    #[serde(rename = "classSelectorLevel5", alias = "cs5")]
+    ClassSelectorLevel5, 
     /// Represents high level of service quality
-    #[serde(alias = "cs6")]
-    CS6, 
-    #[serde(alias = "cs7")]
+    #[serde(rename = "classSelectorLevel6", alias = "cs6")]
+    ClassSelectorLevel6, 
+    #[serde(rename = "classSelectorLevel7", alias = "cs7")]
     /// Represents highest level of service quality of class selector values
-    CS7, 
-    #[serde(alias = "ef")]
-    /// Represents expedited forwading class
-    EF, 
-    #[serde(alias = "le")]
-    /// Represents low extra delay bacgkround transport class
-    LE, 
-    #[serde(alias = "lowdelay", alias = "lowDelay")]
+    ClassSelectorLevel7, 
+    #[serde(rename = "expeditedForwarding", alias = "ef")]
+    /// Represents expedited forwarding class
+    ExpeditedForwarding, 
+    #[serde(rename = "lowerEffort", alias = "le")]
+    /// Represents lower effort transport
+    LowerEffort, 
+    #[serde(rename = "lowDelay", alias = "lowdelay")]
     /// Represents a deprecated alias for EF class
     LowDelay, 
-    #[serde(alias = "throughput")]
+    #[serde(rename = "throughput")]
     /// Represents preference for high throughput
     Throughput, 
     /// Represents preference for reliable delivery
-    #[serde(alias = "reliability")]
+    #[serde(rename = "reliability")]
     Reliability,
     /// Represents preference to use OS default
-    #[serde(alias = "none")]
+    #[serde(rename = "none")]
     None,
 }
 

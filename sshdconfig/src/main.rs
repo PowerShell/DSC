@@ -59,7 +59,7 @@ fn test_config() {
         ],
         "persourcemaxstartups": "none",
         "ipqos": {
-            "allSessions": "none"
+            "allSessions": "assuredForwardingLevel11"
         },
         "passwordAuthentication": "yes",
         "syslogFacility": "AUTH",
