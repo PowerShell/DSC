@@ -10,6 +10,9 @@ import (
 	"strings"
 )
 
+// Defines a valid PFlag that you can use to take a JSON blob as a flag value
+// in your Cobra command. This is required to support sending JSON blobs to
+// the resource from stdin.
 type JSONFlag struct {
 	Target interface{}
 }
@@ -34,12 +37,12 @@ func (f *JSONFlag) Type() string {
 }
 
 // HandleStdIn returns an array of arguments, appending the --inputJSON flag
-// with the accompanying JSON blob for every line of JSON piped to the command
-// from stdin. It expects JSON blobs to be passed one-per-line.
+// with the accompanying JSON blob. It expects that the full input from stdin
+// is a single JSON blob.
 //
-// For example, if you called gotstoy with a single blob:
+// For example, if you called gotstoy with a single-line JSON blob:
 //
-//	'{ "scope": "machine" }' | gotstoy get
+//	`{ "scope": "machine" }` | gotstoy get
 //
 // It returns the args:
 //
@@ -56,16 +59,11 @@ func HandleStdIn(args []string) []string {
 			panic(err)
 		}
 
-		jsonInputs := []string{}
-		jsonBlobs := strings.Split(string(stdin), "\n")
-		for _, blob := range jsonBlobs {
-			blob = strings.Trim(blob, "\r")
-			if blob != "" {
-				jsonInputs = append(jsonInputs, blob)
-			}
-		}
-		for _, blob := range jsonInputs {
-			args = append(args, "--inputJSON", blob)
+		jsonBlob := strings.Trim(string(stdin), "\n")
+		jsonBlob = strings.Trim(jsonBlob, "\r")
+		jsonBlob = strings.TrimSpace(jsonBlob)
+		if jsonBlob != "" {
+			args = append(args, "--inputJSON", jsonBlob)
 		}
 	}
 

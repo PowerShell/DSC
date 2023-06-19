@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/PowerShell/DSC/docs/examples/gotstoy/config"
@@ -21,13 +20,29 @@ var setCmd = &cobra.Command{
 	fictional TSToy application's configuration files.
 	
 	If you specify a JSON blob from stdin or with the --inputJSON flag, it uses
-	the values from that blob, ignoring the --scope, --ensure,
-	--updateAutomatically, and --updateFrequency flags.
+	the values from that blob. You must specify the scope key in the JSON. All
+	other keys are optional. If you don't specify the ensure key, the command
+	defaults to ensure as present. If you don't specify the updateAutomatically
+	or updateFrequency keys, the command ignores those settings. When you
+	specify a JSON blob, you can't use the --scope, --ensure,
+	--updateAutomatically, or --updateFrequency flags.
 	
 	If you're not specifying a JSON blob, you must specify the --scope flag.
 
-	If you don't specify the --ensure flag, the default value is present.`,
-	RunE: setState,
+	If you're not specifying a JSON blob and don't specify the --ensure flag,
+	the default value is present.
+	
+	The set command enforces the specified settings on the application's
+	configuration file for the specified scope. When ensure is absent, the
+	command deletes the configuration file for that scope if it exists. When
+	ensure is present, the command creates the file if it doesn't exist and
+	sets the specified values as needed if it does.
+	
+	The command returns the JSON representation of the enforced state as a
+	single-line string.`,
+	RunE:              setState,
+	Args:              cobra.NoArgs,
+	ValidArgsFunction: validArgs,
 }
 
 func init() {
@@ -37,7 +52,22 @@ func init() {
 func setState(cmd *cobra.Command, args []string) error {
 	enforcing := config.Settings{}
 	if inputJson != nil {
-
+		if inputJson.Scope != scope.Undefined {
+			enforcing.Scope = inputJson.Scope
+		} else {
+			return fmt.Errorf("no target scope specified")
+		}
+		if inputJson.Ensure != ensure.Undefined {
+			enforcing.Ensure = inputJson.Ensure
+		} else {
+			enforcing.Ensure = ensure.Present
+		}
+		if inputJson.UpdateAutomatically != nil {
+			enforcing.UpdateAutomatically = inputJson.UpdateAutomatically
+		}
+		if inputJson.UpdateFrequency != 0 {
+			enforcing.UpdateFrequency = inputJson.UpdateFrequency
+		}
 	} else {
 		if targetScope != scope.Undefined {
 			enforcing.Scope = targetScope
@@ -50,7 +80,7 @@ func setState(cmd *cobra.Command, args []string) error {
 			enforcing.Ensure = ensure.Present
 		}
 		if rootCmd.PersistentFlags().Lookup("updateAutomatically").Changed {
-			enforcing.UpdateAutomatically = updateAutomatically
+			enforcing.UpdateAutomatically = &updateAutomatically
 		}
 		if updateFrequency != 0 {
 			enforcing.UpdateFrequency = updateFrequency
@@ -62,12 +92,10 @@ func setState(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	enforcingJson, err := json.Marshal(enforcing)
+	enforced, err := enforcing.Enforce()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("setting:", string(enforcingJson))
-
-	return nil
+	return enforced.Print(pretty)
 }

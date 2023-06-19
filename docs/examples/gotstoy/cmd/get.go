@@ -4,9 +4,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/PowerShell/DSC/docs/examples/gotstoy/config"
 	"github.com/PowerShell/DSC/docs/examples/gotstoy/config/scope"
 	"github.com/spf13/cobra"
@@ -30,7 +27,9 @@ var getCmd = &cobra.Command{
 	both scopes.
 	
 	The configuration settings are returned as JSON blobs, one per line.`,
-	RunE: getState,
+	RunE:              getState,
+	Args:              cobra.NoArgs,
+	ValidArgsFunction: validArgs,
 }
 
 func init() {
@@ -60,13 +59,10 @@ func getState(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		// Marshal the configuration's current state to JSON, omitting the
-		// empty keys.
-		configJson, err := json.Marshal(configSettings)
+		err = configSettings.Print(pretty)
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(configJson))
 	}
 
 	return nil

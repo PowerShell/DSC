@@ -1,5 +1,4 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 project_name: gotstoy
 before:
   hooks:
@@ -34,6 +33,11 @@ archives:
     format_overrides:
     - goos: windows
       format: zip
+    # Add the resource manifest to the archive
+    files:
+      - src: gotstoy.resource.json
+        strip_parent: true
+    rlcp: true
 checksum:
   name_template: 'checksums.txt'
 snapshot:
