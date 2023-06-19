@@ -25,8 +25,8 @@ var (
 var cfgFile string
 var autoUpdate bool
 var checkFrequency int
-var MachineConfig map[string]interface{}
-var UserConfig map[string]interface{}
+var MachineConfig map[string]any
+var UserConfig map[string]any
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -107,7 +107,7 @@ func initConfig() {
 	}
 }
 
-func getScopedConfigFile(scope config.Scope) map[string]interface{} {
+func getScopedConfigFile(scope config.Scope) map[string]any {
 	folder := config.MachineFolder
 	if scope == config.User {
 		folder = config.UserFolder
@@ -120,10 +120,11 @@ func getScopedConfigFile(scope config.Scope) map[string]interface{} {
 
 	// If a config file exists, read it in.
 	if err := v.ReadInConfig(); err == nil {
+		vConfig := config.FromMap(v.AllSettings())
 		if scope == config.User {
-			UserConfig = v.AllSettings()
+			UserConfig = vConfig.ToMap()
 		} else {
-			MachineConfig = v.AllSettings()
+			MachineConfig = vConfig.ToMap()
 		}
 		return v.AllSettings()
 	}

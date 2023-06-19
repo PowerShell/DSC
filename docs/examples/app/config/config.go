@@ -30,13 +30,54 @@ func (o *Options) ToJson() ([]byte, error) {
 	return json.Marshal(o)
 }
 
-func (o *Options) ToMap() map[string]interface{} {
-	var m map[string]interface{}
+func (o *Options) ToMap() map[string]any {
+	var m map[string]any
 
 	jsonBytes, _ := o.ToJson()
 	json.Unmarshal(jsonBytes, &m)
 
+	// need to remove the CheckFrequency value if it's zero, because that's
+	// functionally unset.
+	updates, ok := m["Updates"].(map[string]any)
+	if ok {
+		if updates["CheckFrequency"].(float64) == 0 {
+			delete(updates, "CheckFrequency")
+			m["Updates"] = updates
+		}
+	}
+
 	return m
+}
+
+// Converts the viper map of settings to an instance of Options. This is
+// required for handling how viper fully downcases keys. It ensures that
+// the show command can display a consistent set of values from the
+// configuration options.
+func FromMap(data map[string]any) Options {
+	options := Options{}
+	updates, ok := data["updates"].(map[string]any)
+	if !ok {
+		return options
+	}
+
+	auto, ok := updates["automatic"].(bool)
+	if ok {
+		options.Updates.Automatic = auto
+	}
+
+	// if the map came from JSON, it's a float64
+	floatFreq, ok := updates["checkfrequency"].(float64)
+	if ok && floatFreq != 0 {
+		options.Updates.CheckFrequency = int(floatFreq)
+	}
+
+	// if the map came from viper, it's an integer
+	intFreq, ok := updates["checkfrequency"].(int)
+	if ok && intFreq != 0 {
+		options.Updates.CheckFrequency = intFreq
+	}
+
+	return options
 }
 
 type Scope int

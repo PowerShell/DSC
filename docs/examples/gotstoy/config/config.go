@@ -111,8 +111,8 @@ func (s *Settings) Validate(quiet bool) (isValid bool, err error) {
 //	}
 //	`
 func (s *Settings) NewAppConfigJson() ([]byte, error) {
-	settings := make(map[string]interface{})
-	updates := make(map[string]interface{})
+	settings := make(map[string]any)
+	updates := make(map[string]any)
 	addUpdates := false
 	if s.UpdateAutomatically != nil {
 		addUpdates = true
@@ -184,8 +184,8 @@ func (s *Settings) getConfigPath() string {
 //
 // This function has no specific error handling so the caller can
 // distinguish between the underlying errors and make its own decisions.
-func GetAppConfigMap(targetScope scope.Value) (map[string]interface{}, error) {
-	var configMap map[string]interface{}
+func GetAppConfigMap(targetScope scope.Value) (map[string]any, error) {
+	var configMap map[string]any
 
 	// Retrieve the actual path to the configuration the app expects
 	path, err := GetAppConfigPath(targetScope)
@@ -237,7 +237,7 @@ func GetAppConfigSettings(targetScope scope.Value) (Settings, error) {
 	// Check for the update settings
 	updates, ok := configMap["updates"]
 	if ok {
-		for key, value := range updates.(map[string]interface{}) {
+		for key, value := range updates.(map[string]any) {
 			switch key {
 			case "automatic":
 				auto := value.(bool)
@@ -374,17 +374,17 @@ func (s *Settings) update(currentSettings Settings) (*Settings, error) {
 	// Check for the update settings
 	updates, ok := currentMap["updates"]
 	if !ok {
-		currentMap["updates"] = make(map[string]interface{})
+		currentMap["updates"] = make(map[string]any)
 		updates = currentMap["updates"]
 	}
 
 	if s.UpdateAutomatically != nil {
-		updates.(map[string]interface{})["automatic"] = *s.UpdateAutomatically
+		updates.(map[string]any)["automatic"] = *s.UpdateAutomatically
 	}
 	if s.UpdateFrequency != 0 {
-		updates.(map[string]interface{})["checkFrequency"] = s.UpdateFrequency
+		updates.(map[string]any)["checkFrequency"] = s.UpdateFrequency
 	}
-	currentMap["updates"] = updates.(map[string]interface{})
+	currentMap["updates"] = updates.(map[string]any)
 
 	configJson, err := json.MarshalIndent(currentMap, "", "  ")
 	if err != nil {

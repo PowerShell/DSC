@@ -55,7 +55,7 @@ func run(cmd *cobra.Command, args []string) {
 		printConfig(UserConfig, "User", configFile)
 	}
 	if slices.Contains(only, "final") {
-		printConfig(viper.AllSettings(), "Final", final)
+		printConfig(getFinalConfig(), "Final", final)
 	}
 }
 
@@ -89,7 +89,7 @@ func printConfigOnly(target string) {
 	case "user":
 		targetConfig = UserConfig
 	case "final":
-		targetConfig = viper.AllSettings()
+		targetConfig = getFinalConfig()
 	default:
 		targetConfig = config.Default.ToMap()
 	}
@@ -125,4 +125,10 @@ func getJsonFormatter() {
 		formatter = colorjson.NewFormatter()
 		formatter.Indent = 2
 	}
+}
+
+func getFinalConfig() map[string]any {
+	vConfig := config.FromMap(viper.AllSettings())
+
+	return vConfig.ToMap()
 }
