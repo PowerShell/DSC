@@ -1,4 +1,5 @@
 use config::sshd::SshdConfig;
+use chrono::Duration;
 use std::{io::{self, Read}, process::exit};
 
 pub mod config;
@@ -14,13 +15,13 @@ fn test_config() {
         "channeltimeout": [
             {
                 "type": "agent-connection",
-                "seconds": 10
+                "interval": "1h30m"
             },
             {
                 "type": {
                     "subsystem": "sftp"
                 },
-                "minutes": 1
+                "interval": "10s"
             }
         ],
         "permitopen": [

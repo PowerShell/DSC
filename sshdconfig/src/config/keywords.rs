@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use chrono::Duration;
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Actions {
@@ -106,16 +107,8 @@ pub struct ChannelTimeoutSubsystem {
 pub struct ChannelTimeout {
     #[serde(rename = "type")]
     type_keyword: ChannelTimeoutCombined,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    weeks: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    days: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    hours: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    minutes: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    seconds: Option<u32>,
+    #[serde(deserialize_with = "parse_duration", serialize_with = "format_duration")]
+    interval: Duration,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
     ensure: Option<EnsureKind>,
@@ -731,4 +724,96 @@ pub enum YesNo {
         ensure: Option<EnsureKind>,
     },
     YesNo(YesNoKeyword),
+}
+
+fn parse_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let input: &str = Deserialize::deserialize(deserializer)?;
+    let mut number = String::new();
+    let mut duration = Duration::seconds(0);
+
+    for c in input.chars() {
+        if c.is_numeric() {
+            number.push(c);
+        } else {
+            if let Ok(parsed) = number.parse::<i64>() {
+                match c {
+                    's' | 'S' => { 
+                        duration = duration + Duration::seconds(parsed);
+                    },
+                    'm' | 'M' => { 
+                        duration = duration + Duration::minutes(parsed);
+                    },
+                    'h' | 'H' => { 
+                        duration = duration + Duration::hours(parsed);
+                    },
+                    'd' | 'D' => { 
+                        duration = duration + Duration::days(parsed);
+                    },
+                    'w' | 'W' => { 
+                        duration = duration + Duration::weeks(parsed);
+                    },
+                    _ => { 
+                        return Err(serde::de::Error::invalid_value(
+                            de::Unexpected::Char(c),
+                            &"w, d, h, m, and s are expected characters"
+                        ));
+                    }
+                }
+            } else {
+                return Err(serde::de::Error::invalid_value(
+                    de::Unexpected::Str(number.as_str()),
+                    &"expected a number"
+                ));
+            }
+            number = String::new();
+        }
+    }
+
+    // parse after iterating, as no character input can also indicate seconds
+    if !number.is_empty() {
+        if let Ok(parsed) = number.parse::<i64>() {
+            duration = duration + Duration::seconds(parsed);
+        }
+        else {
+            println!("Failed to parse number.");
+        }
+    }
+
+    Ok(duration)
+}
+
+fn format_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut duration = duration.clone();
+    let mut duration_fmt = String::new();
+    let weeks = duration.num_weeks();
+    if weeks > 0 {
+        duration = duration - Duration::weeks(weeks);
+        duration_fmt.push_str(format!("{}w", weeks).as_str());
+    }
+    let days = duration.num_days();
+    if days > 0 {
+        duration = duration - Duration::days(days);
+        duration_fmt.push_str(format!("{}d", days).as_str());
+    }
+    let hours = duration.num_hours();
+    if hours > 0 {
+        duration = duration - Duration::hours(hours);
+        duration_fmt.push_str(format!("{}h", hours).as_str());
+    }
+    let mins = duration.num_minutes();
+    if mins > 0 {
+        duration = duration - Duration::minutes(mins);
+        duration_fmt.push_str(format!("{}m", mins).as_str());
+    }
+    let seconds = duration.num_seconds();
+    if seconds > 0 {
+        duration_fmt.push_str(format!("{}s", seconds).as_str());
+    }
+    serializer.serialize_str(&duration_fmt)
 }
