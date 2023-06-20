@@ -73,6 +73,28 @@ fn main() {
     exit(EXIT_SUCCESS);
 }
 
+fn serde_json_value_to_string(json: &serde_json::Value) -> String
+{
+    match serde_json::to_string(&json) {
+        Ok(json_string) => json_string,
+        Err(err) => {
+            eprintln!("Error: Failed to convert JSON to string: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
+fn new_configurator(json_string: &str) -> Configurator
+{
+    match Configurator::new(json_string) {
+        Ok(configurator) => configurator,
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
 fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
     if stdin.is_none() {
         eprintln!("Configuration must be piped to STDIN");
@@ -100,21 +122,9 @@ fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<Outpu
         }
     };
 
-    let json_string = match serde_json::to_string(&json) {
-        Ok(json_string) => json_string,
-        Err(err) => {
-            eprintln!("Error: Failed to convert JSON to string: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
+    let json_string = serde_json_value_to_string(&json);
+    let configurator = new_configurator(&json_string);
 
-    let configurator = match Configurator::new(&json_string) {
-        Ok(configurator) => configurator,
-        Err(err) => {
-            eprintln!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
     match subcommand {
         ConfigSubCommand::Get => {
             match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
@@ -235,9 +245,9 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
     }
 }
 
-fn add_fields_to_json(json: &String, fields_to_add: &HashMap<String, String>) -> Result<String, DscError>
+fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -> Result<String, DscError>
 {
-    let mut v = serde_json::from_str::<serde_json::Value>(&json)?;
+    let mut v = serde_json::from_str::<serde_json::Value>(json)?;
 
     if let serde_json::Value::Object(ref mut map) = v {
         for (k, v) in fields_to_add {
@@ -260,15 +270,13 @@ fn add_type_name_to_json(json: String, type_name: String) -> String
         j = String::from("{}");
     }
 
-    let result = match add_fields_to_json(&j, &map) {
+    match add_fields_to_json(&j, &map) {
         Ok(json) => json,
         Err(err) => {
             eprintln!("JSON Error: {err}");
             exit(EXIT_JSON_ERROR);
         }
-    };
-
-    result
+    }
 }
 
 fn handle_resource_get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
