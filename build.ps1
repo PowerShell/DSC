@@ -122,6 +122,7 @@ if (!$found) {
 
 if ($Test) {
     $failed = $false
+    Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
     Install-module PSDesiredStateConfiguration -RequiredVersion 2.0.7
     foreach ($project in $projects) {
         ## Build format_json
