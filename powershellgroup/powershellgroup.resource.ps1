@@ -55,14 +55,16 @@ if ($Operation -eq 'List')
         elseif ($r.ParentPath) { $moduleName = Split-Path $r.ParentPath | Split-Path | Split-Path -Leaf }
 
         $propertyList = @()
-        if ($r.Properties)
+        foreach ($p in $r.Properties)
         {
-            $propertyList = @($r.Properties.Name)
+            if ($p.Name)
+            {
+                $propertyList += $p.Name
+            }
         }
 
         $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
         $script:ResourceCache[$fullResourceTypeName] = $r
-        
        if ($WinPS) {$requiresString = "DSC/WindowsPowerShellGroup"} else {$requiresString = "DSC/PowerShellGroup"}
 
         $z = [pscustomobject]@{
