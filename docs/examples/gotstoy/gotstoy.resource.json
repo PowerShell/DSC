@@ -12,7 +12,7 @@
         "executable": "gotstoy",
         "args": ["set"],
         "input": "stdin",
-        "preTest": false,
+        "preTest": true,
         "return": "state"
     },
     "schema": {
