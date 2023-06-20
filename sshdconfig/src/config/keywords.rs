@@ -1,5 +1,6 @@
 use chrono::Duration;
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde_json::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Actions {
@@ -106,12 +107,12 @@ pub struct ChannelTimeoutSubsystem {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ChannelTimeout {
     #[serde(rename = "type")]
-    type_keyword: ChannelTimeoutCombined,
+    pub type_keyword: ChannelTimeoutCombined,
     #[serde(deserialize_with = "parse_duration", serialize_with = "format_duration")]
-    interval: Duration,
+    pub interval: Duration,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ensure: Option<EnsureKind>,
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -402,12 +403,12 @@ pub struct MaxStartups {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct NetBlockSize {
-    ipv4: String,
+    pub ipv4: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ipv6: Option<String>,
+    pub ipv6: Option<String>,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ensure: Option<EnsureKind>,
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -430,29 +431,29 @@ pub enum Numeric {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PermitHostKeyword {
-    host: String,
-    port: PermitPort,
+    pub host: String,
+    pub port: PermitPort,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ensure: Option<EnsureKind>,
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PermitIpv4Keyword {
-    ipv4: String,
-    port: PermitPort,
+    pub ipv4: String,
+    pub port: PermitPort,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ensure: Option<EnsureKind>,
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PermitIpv6Keyword {
-    ipv6: String,
-    port: PermitPort,
+    pub ipv6: String,
+    pub port: PermitPort,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ensure: Option<EnsureKind>,
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -465,11 +466,11 @@ pub enum PermitPort {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PermitListenKeyword {
     #[serde(skip_serializing_if = "Option::is_none")]
-    host: Option<String>,
-    port: PermitPort,
+    pub host: Option<String>,
+    pub port: PermitPort,
     #[serde(rename = "_ensure")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    ensure: Option<EnsureKind>,
+    pub ensure: Option<EnsureKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -758,14 +759,14 @@ where
                     _ => { 
                         return Err(serde::de::Error::invalid_value(
                             de::Unexpected::Char(c),
-                            &"w, d, h, m, and s are expected characters"
+                            &"Expected characters are: s, m, h, w, and d"
                         ));
                     }
                 }
             } else {
                 return Err(serde::de::Error::invalid_value(
                     de::Unexpected::Str(number.as_str()),
-                    &"expected a number"
+                    &"Expected a number"
                 ));
             }
             number = String::new();
@@ -778,7 +779,10 @@ where
             duration = duration + Duration::seconds(parsed);
         }
         else {
-            println!("Failed to parse number.");
+            return Err(serde::de::Error::invalid_value(
+                de::Unexpected::Str(number.as_str()),
+                &"Expected a number"
+            ));
         }
     }
 
@@ -816,4 +820,73 @@ where
         duration_fmt.push_str(format!("{}s", seconds).as_str());
     }
     serializer.serialize_str(&duration_fmt)
+}
+
+#[test]
+fn test_channel_timeout_interval_without_character() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "480"
+    }
+    "#;
+    let channel_timeout: ChannelTimeout = serde_json::from_str(input_json).unwrap();
+    assert_eq!(channel_timeout.interval, Duration::seconds(480));
+    let channel_timeout_fmt = serde_json::to_string(&channel_timeout).unwrap();
+    assert_eq!(channel_timeout_fmt, "{\"type\":\"agent-connection\",\"interval\":\"8m\"}")
+}
+
+#[test]
+fn test_channel_timeout_interval_with_character() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "30m"
+    }
+    "#;
+    let channel_timeout: ChannelTimeout = serde_json::from_str(input_json).unwrap();
+    assert_eq!(channel_timeout.interval, Duration::minutes(30));
+    let channel_timeout_fmt = serde_json::to_string(&channel_timeout).unwrap();
+    assert_eq!(channel_timeout_fmt, "{\"type\":\"agent-connection\",\"interval\":\"30m\"}")
+}
+
+#[test]
+fn test_channel_timeout_interval_with_characters() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "1W2d3H4m5S"
+    }
+    "#;
+    let channel_timeout: ChannelTimeout = serde_json::from_str(input_json).unwrap();
+    assert_eq!(
+        channel_timeout.interval, 
+        Duration::weeks(1) + Duration::days(2) + Duration::hours(3) + Duration::minutes(4) + Duration::seconds(5)
+    );
+    let channel_timeout_fmt = serde_json::to_string(&channel_timeout).unwrap();
+    assert_eq!(channel_timeout_fmt, "{\"type\":\"agent-connection\",\"interval\":\"1w2d3h4m5s\"}")
+}
+
+#[test]
+fn test_channel_timeout_invalid_character() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "z"
+    }
+    "#;
+    let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
+    assert!(channel_timeout.is_err());
+}
+
+#[test]
+fn test_channel_timeout_invalid_character_after_num() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "2x"
+    }
+    "#;
+    let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
+    assert!(channel_timeout.is_err());
 }
