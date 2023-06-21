@@ -163,6 +163,12 @@ if ($Test) {
 
         "Updated PSModulePath is:"
         $env:PSModulePath
+
+        $InstallTargetDir = ($env:PSModulePath -split ";")[0]
+        Find-Module -Name 'Pester' -Repository 'PSGallery' | Save-Module -Path $InstallTargetDir
+
+        "Updated Pester module location:"
+        (Get-Module -Name Pester -ListAvailable).Path
     }
 
     Invoke-Pester -ErrorAction Stop
