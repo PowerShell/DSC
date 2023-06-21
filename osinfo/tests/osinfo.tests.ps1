@@ -4,6 +4,12 @@
 Describe 'osinfo resource tests' {
 
     It 'should get osinfo' {
+        if ($IsLinux)
+        {
+            "Searching for dsc executable in osinfo:"
+            whereis dsc
+        }
+        
         $out = dsc resource get -r Microsoft/osinfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
