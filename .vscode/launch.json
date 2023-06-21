@@ -20,6 +20,14 @@
             "type": "cppvsdbg",
             "request": "attach",
             "processId": "${command:pickProcess}",
+        },
+        {
+            "name": "Debug sshdconfig",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/sshdconfig/target/debug/sshdconfig.exe",
+            "args": ["get"],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

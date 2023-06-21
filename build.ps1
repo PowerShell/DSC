@@ -91,7 +91,7 @@ else {
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 $projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j")
-$pedantic_clean_projcets = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource")
+$pedantic_clean_projects = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
 
 if ($IsWindows) {
     $projects += $windows_projects
@@ -104,7 +104,7 @@ foreach ($project in $projects) {
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
         if ($Clippy) {
-            if ($pedantic_clean_projcets -contains $project) {
+            if ($pedantic_clean_projects -contains $project) {
                 Write-Verbose -Verbose "Running clippy with pedantic for $project"
                 cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
             }
