@@ -4,11 +4,6 @@
 Describe 'Resource provider tests' {
 
     It 'Can list provider resources' {
-        if ($IsLinux)
-        {
-            "Searching for dsc executable in 'Can list provider resources':"
-            whereis dsc
-        }
 
         $out = dsc resource list *testresource* | ConvertFrom-Json | Sort-Object -Property type
         $out.Count | Should -Be 2

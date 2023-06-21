@@ -82,7 +82,15 @@ impl ResourceDiscovery for CommandDiscovery {
             let manifest = serde_json::from_value::<ResourceManifest>(provider_resource.manifest.clone().unwrap())?;
             // invoke the list command
             let list_command = manifest.provider.unwrap().list;
-            let (exit_code, stdout, stderr) = invoke_command(&list_command.executable, list_command.args, None, Some(&provider_resource.directory))?;
+            let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args, None, Some(&provider_resource.directory))
+            {
+                Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
+                Err(_e) => {
+                    //TODO: add to debug stream: println!("Could not start {}: {}", list_command.executable, e);
+                    continue;
+                },
+            };
+
             if exit_code != 0 {
                 return Err(DscError::Operation(format!("Failed to list resources for provider {provider}: {exit_code} {stderr}")));
             }
