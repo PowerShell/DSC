@@ -8,12 +8,12 @@ Describe 'Resource provider tests' {
         $out[0].type | Should -BeExactly 'TestResource1'
         $out[0].version | Should -Be '1.0.0'
         $out[0].path | Should -BeExactly 'test_resource1'
-        $out[0].implementedas.custom | Should -BeExactly 'TestResource'
+        $out[0].implementedas | Should -BeExactly 'TestResource'
         $out[0].requires | Should -BeExactly 'Test/TestGroup'
         $out[1].type | Should -BeExactly 'TestResource2'
         $out[1].version | Should -Be '1.0.1'
         $out[1].path | Should -BeExactly 'test_resource2'
-        $out[1].implementedas.custom | Should -BeExactly 'TestResource'
+        $out[1].implementedas | Should -BeExactly 'TestResource'
         $out[1].requires | Should -BeExactly 'Test/TestGroup'
     }
 
