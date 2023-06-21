@@ -2,12 +2,6 @@
 # Licensed under the MIT License.
 
 Describe 'Resource provider tests' {
-    BeforeAll {
-        if ($IsLinux)
-        {
-            whereis dsc
-        }
-    }
 
     It 'Can list provider resources' {
         $out = dsc resource list *testresource* | ConvertFrom-Json | Sort-Object -Property type
