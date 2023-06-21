@@ -22,7 +22,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Get works on class-based resource' {
         
-        $r = "{'Name':'TestClassResource1'}" | dsc.exe resource get -r PSTestModule/TestClassResource
+        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actual_state.Prop1 | Should -BeExactly 'ValueForProp1'
@@ -30,7 +30,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Get works on script-based resource' {
         
-        $r = "{'Name':'TestPSRepository1'}" | dsc.exe resource get -r PSTestModule/TestPSRepository
+        $r = "{'Name':'TestPSRepository1'}" | dsc resource get -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actual_state.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
@@ -38,7 +38,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Test works on class-based resource' {
         
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc.exe resource test -r PSTestModule/TestClassResource
+        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actual_state.InDesiredState | Should -Be $True
@@ -46,7 +46,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Test works on script-based resource' {
         
-        $r = "{'Name':'TestPSRepository1','PackageManagementProvider':'NuGet'}" | dsc.exe resource test -r PSTestModule/TestPSRepository
+        $r = "{'Name':'TestPSRepository1','PackageManagementProvider':'NuGet'}" | dsc resource test -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actual_state.InDesiredState | Should -Be $True
@@ -54,7 +54,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Set works on class-based resource' {
         
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc.exe resource set -r PSTestModule/TestClassResource
+        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.after_state.RebootRequired | Should -Not -BeNull
@@ -62,7 +62,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Set works on script-based resource' {
         
-        $r = "{'Name':'TestPSRepository1'}" | dsc.exe resource set -r PSTestModule/TestPSRepository
+        $r = "{'Name':'TestPSRepository1'}" | dsc resource set -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.after_state.RebootRequired | Should -Not -BeNull

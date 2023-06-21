@@ -130,6 +130,12 @@ if ($Test) {
     "For debug - env:PATH is:"
     $env:PATH
 
+    # On Windows remove duplicated WinPS resources that break PSDesiredStateConfiguration module
+    if ($IsWindows) {
+        $a = $env:PSModulePath -split ";" | ? { $_ -notmatch 'WindowsPowerShell' }
+        $env:PSModulePath = $a -join ';'
+    }
+
     foreach ($project in $projects) {
         ## Build format_json
         Write-Host -ForegroundColor Cyan "Testing $project ..."
