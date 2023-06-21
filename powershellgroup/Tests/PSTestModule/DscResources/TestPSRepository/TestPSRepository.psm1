@@ -44,151 +44,35 @@ function Test-TargetResource {
     [OutputType([System.Boolean])]
     param
     (
-        [Parameter()]
-        [ValidateSet('Present', 'Absent')]
-        [System.String]
-        $Ensure = 'Present',
-
         [Parameter(Mandatory = $true)]
         [System.String]
         $Name,
 
         [Parameter()]
         [System.String]
-        $SourceLocation,
-
-        [Parameter()]
-        [System.String]
-        $ScriptSourceLocation,
-
-        [Parameter()]
-        [System.String]
-        $PublishLocation,
-
-        [Parameter()]
-        [System.String]
-        $ScriptPublishLocation,
-
-        [Parameter()]
-        [ValidateSet('Trusted', 'Untrusted')]
-        [System.String]
-        $InstallationPolicy = 'Untrusted',
-
-        [Parameter()]
-        [System.String]
-        $PackageManagementProvider = 'NuGet'
+        $PackageManagementProvider
     )
-<#
-    Write-Verbose -Message ($localizedData.TestTargetResourceMessage -f $Name)
-
-    $returnValue = $false
-
-    $getTargetResourceResult = Get-TargetResource -Name $Name
-
-    if ($Ensure -eq $getTargetResourceResult.Ensure) {
-        if ($getTargetResourceResult.Ensure -eq 'Present' ) {
-            $returnValue = Test-DscParameterState `
-                -CurrentValues $getTargetResourceResult `
-                -DesiredValues $PSBoundParameters `
-                -ValuesToCheck @(
-                'SourceLocation'
-                'ScriptSourceLocation'
-                'PublishLocation'
-                'ScriptPublishLocation'
-                'InstallationPolicy'
-                'PackageManagementProvider'
-            )
-        }
-        else {
-            $returnValue = $true
-        }
+    
+    if (($Name -eq "TestPSRepository1") -and ($PackageManagementProvider -eq 'NuGet'))
+    {
+        return $true
     }
-
-    if ($returnValue) {
-        Write-Verbose -Message ($localizedData.InDesiredState -f $Name)
+    else
+    {
+        return $false
     }
-    else {
-        Write-Verbose -Message ($localizedData.NotInDesiredState -f $Name)
-    }
-
-    return $returnValue#>
 }
 
 function Set-TargetResource {
     [CmdletBinding()]
     param
     (
-        [Parameter()]
-        [ValidateSet('Present', 'Absent')]
-        [System.String]
-        $Ensure = 'Present',
-
         [Parameter(Mandatory = $true)]
         [System.String]
         $Name,
 
         [Parameter()]
         [System.String]
-        $SourceLocation,
-
-        [Parameter()]
-        [System.String]
-        $ScriptSourceLocation,
-
-        [Parameter()]
-        [System.String]
-        $PublishLocation,
-
-        [Parameter()]
-        [System.String]
-        $ScriptPublishLocation,
-
-        [Parameter()]
-        [ValidateSet('Trusted', 'Untrusted')]
-        [System.String]
-        $InstallationPolicy = 'Untrusted',
-
-        [Parameter()]
-        [System.String]
-        $PackageManagementProvider = 'NuGet'
+        $PackageManagementProvider
     )
-
-    <#$getTargetResourceResult = Get-TargetResource -Name $Name
-
-    # Determine if the repository should be present or absent.
-    if ($Ensure -eq 'Present') {
-        $repositoryParameters = New-SplatParameterHashTable `
-            -FunctionBoundParameters $PSBoundParameters `
-            -ArgumentNames @(
-            'Name'
-            'SourceLocation'
-            'ScriptSourceLocation'
-            'PublishLocation'
-            'ScriptPublishLocation'
-            'InstallationPolicy'
-            'PackageManagementProvider'
-        )
-
-        # Determine if the repository is already present.
-        if ($getTargetResourceResult.Ensure -eq 'Present') {
-            Write-Verbose -Message ($localizedData.RepositoryExist -f $Name)
-
-            # Repository exist, update the properties.
-            Set-PSRepository @repositoryParameters -ErrorAction 'Stop'
-        }
-        else {
-            Write-Verbose -Message ($localizedData.RepositoryDoesNotExist -f $Name)
-
-            # Repository did not exist, create the repository.
-            Register-PSRepository @repositoryParameters -ErrorAction 'Stop'
-        }
-    }
-    else {
-        if ($getTargetResourceResult.Ensure -eq 'Present') {
-            Write-Verbose -Message ($localizedData.RemoveExistingRepository -f $Name)
-
-            # Repository did exist, remove the repository.
-            Unregister-PSRepository -Name $Name -ErrorAction 'Stop'
-        }
-    }#>
 }
