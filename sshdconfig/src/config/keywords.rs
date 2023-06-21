@@ -899,7 +899,7 @@ fn test_channel_timeout_invalid_character_after_num() {
 }
 
 #[test]
-fn test_channel_timeout_invalid_character_valid_num() {
+fn test_channel_timeout_valid_character_no_num() {
     let input_json: &str = r#"
     {
         "type": "agent-connection",
@@ -932,4 +932,51 @@ fn test_channel_timeout_decimal_input() {
     "#;
     let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
     assert!(channel_timeout.is_err());
+}
+
+#[test]
+fn test_channel_timeout_repeat_character() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "1h2h3m"
+    }
+    "#;
+    let channel_timeout: ChannelTimeout = serde_json::from_str(input_json).unwrap();
+    // sshd logic permits repeated (valid) characters
+    assert_eq!(
+        channel_timeout.interval, 
+        Duration::hours(1) + Duration::hours(2) + Duration::minutes(3)
+    );
+    let channel_timeout_fmt = serde_json::to_string(&channel_timeout).unwrap();
+    assert_eq!(channel_timeout_fmt, "{\"type\":\"agent-connection\",\"interval\":\"3h3m\"}")
+}
+
+#[test]
+fn test_channel_timeout_negative_number() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "-2h2m"
+    }
+    "#;
+    let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
+    assert!(channel_timeout.is_err());
+}
+
+#[test]
+fn test_channel_timeout_zero_number() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "0h3m"
+    }
+    "#;
+    let channel_timeout: ChannelTimeout = serde_json::from_str(input_json).unwrap();
+    assert_eq!(
+        channel_timeout.interval, 
+        Duration::minutes(3)
+    );
+    let channel_timeout_fmt = serde_json::to_string(&channel_timeout).unwrap();
+    assert_eq!(channel_timeout_fmt, "{\"type\":\"agent-connection\",\"interval\":\"3m\"}")
 }
