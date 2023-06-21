@@ -9,6 +9,11 @@ Describe 'osinfo resource tests' {
             "Searching for dsc executable in osinfo:"
             whereis dsc
         }
+        else
+        {
+            "Test Debug message"
+            whereis dsc
+        }
         
         $out = dsc resource get -r Microsoft/osinfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
