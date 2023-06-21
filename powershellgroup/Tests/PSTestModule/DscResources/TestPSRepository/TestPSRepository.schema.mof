@@ -1,0 +1,14 @@
+[ClassVersion("1.0.0.0"),FriendlyName("TestPSRepository")]
+class TestPSRepository : OMI_BaseResource
+{
+    [Key] String Name;
+    [Write, ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
+    [Write] String SourceLocation;
+    [Write] String ScriptSourceLocation;
+    [Write] String PublishLocation;
+    [Write] String ScriptPublishLocation;
+    [Write, ValueMap{"Trusted","Untrusted"}, Values{"Trusted","Untrusted"}] String InstallationPolicy;
+    [Write] String PackageManagementProvider;
+    [Read] Boolean Trusted;
+    [Read] Boolean Registered;
+};
