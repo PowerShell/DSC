@@ -2,6 +2,13 @@
 # Licensed under the MIT License.
 
 Describe 'osinfo resource tests' {
+    BeforeAll {
+        if ($IsLinux)
+        {
+            whereis dsc
+        }
+    }
+
     It 'should get osinfo' {
         $out = dsc resource get -r Microsoft/osinfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0

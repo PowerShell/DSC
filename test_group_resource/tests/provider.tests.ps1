@@ -2,10 +2,15 @@
 # Licensed under the MIT License.
 
 Describe 'Resource provider tests' {
+    BeforeAll {
+        if ($IsLinux)
+        {
+            whereis dsc
+        }
+    }
+
     It 'Can list provider resources' {
-        "BEFORE dsc resource list" | out-Host
         $out = dsc resource list *testresource* | ConvertFrom-Json | Sort-Object -Property type
-        "AFTER dsc resource list" | out-Host
         $out.Count | Should -Be 2
         $out[0].type | Should -BeExactly 'TestResource1'
         $out[0].version | Should -Be '1.0.0'
