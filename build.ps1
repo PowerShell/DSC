@@ -126,6 +126,8 @@ if ($Test) {
     "Installing module PSDesiredStateConfiguration 2.0.7"
     Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
     Install-module PSDesiredStateConfiguration -RequiredVersion 2.0.7
+    "Installing module Pester"
+    Install-module Pester -WarningAction Ignore
 
     "For debug - env:PATH is:"
     $env:PATH
