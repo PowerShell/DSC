@@ -759,14 +759,14 @@ where
                     _ => { 
                         return Err(serde::de::Error::invalid_value(
                             de::Unexpected::Char(c),
-                            &"Expected characters are: s, m, h, w, and d"
+                            &"Expected characters are: s, m, h, d, and w"
                         ));
                     }
                 }
             } else {
                 return Err(serde::de::Error::invalid_value(
                     de::Unexpected::Str(number.as_str()),
-                    &"Expected a number"
+                    &"Expected an integer"
                 ));
             }
             number = String::new();
@@ -781,9 +781,16 @@ where
         else {
             return Err(serde::de::Error::invalid_value(
                 de::Unexpected::Str(number.as_str()),
-                &"Expected a number"
+                &"Expected an integer"
             ));
         }
+    }
+
+    if duration.is_zero() {
+        return Err(serde::de::Error::invalid_value(
+            de::Unexpected::Str(input), 
+            &"Expected a time interval"
+        ));
     }
 
     Ok(duration)
@@ -885,6 +892,42 @@ fn test_channel_timeout_invalid_character_after_num() {
     {
         "type": "agent-connection",
         "interval": "2x"
+    }
+    "#;
+    let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
+    assert!(channel_timeout.is_err());
+}
+
+#[test]
+fn test_channel_timeout_invalid_character_valid_num() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "2dh3s"
+    }
+    "#;
+    let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
+    assert!(channel_timeout.is_err());
+}
+
+#[test]
+fn test_channel_timeout_empty_input() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": ""
+    }
+    "#;
+    let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
+    assert!(channel_timeout.is_err());
+}
+
+#[test]
+fn test_channel_timeout_decimal_input() {
+    let input_json: &str = r#"
+    {
+        "type": "agent-connection",
+        "interval": "10.5"
     }
     "#;
     let channel_timeout: Result<ChannelTimeout, Error> = serde_json::from_str(input_json);
