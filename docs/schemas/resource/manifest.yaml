@@ -1,0 +1,376 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     https://aka.ms/dsc/schemas/resource/manifest.yaml
+
+title: Command-based DSC Resource Manifest
+description: >-
+  Defines a valid command-based DSC Resource.
+
+type: object
+required:
+  - manifestVersion
+  - type
+  - version
+  - get
+properties:
+  manifestVersion:
+    title: Manifest Version
+    description: >-
+      The semver of the DSC Resource manifest schema to validate this manifest
+      with.
+    $ref: "#/$defs/semver"
+    enums:
+      - '1.0'
+
+  type:
+    title: Resource Type
+    description: >-
+      The namespaced name of the DSC Resource, like using the syntax:
+      `<owner>[.<group>][.<area>]/<name>`, like `Microsoft.SqlServer/Database`
+      or `Microsoft.SqlServer.Database/User`.
+    type: string
+    pattern: ^\w+(\.\w+){0,2}\/\w+$
+
+  version:
+    title: Resource Semantic Version
+    description: >-
+      The semantic version (semver) of the DSC Resource. This version
+      identifies the DSC Resource, not the version of the application it
+      manages.
+    $ref: "#/$defs/semver"
+
+  description:
+    title: Resource Description
+    description: >-
+      A short synopsis of the DSC Resource's purpose.
+    type: string
+    # Should this include a maximum length or a pattern that forbids newlines?
+  
+  tags:
+    title: Tags
+    description: >-
+      An array of short strings used to search for DSC Resources.
+    type: array
+    items:
+      type: string
+      pattern: ^\w+$
+
+  get:
+    title: Get Method
+    description: >-
+      Defines how DSC must call the DSC Resource to get the current state of an
+      instance.
+    type: object
+    required:
+      - executable
+    properties:
+      executable:
+        $ref: "#/$defs/executable"
+      args:
+        $ref: "#/$defs/args"
+      input:
+        $ref: "#/$defs/input"
+    examples:
+      - executable: registry
+        args:
+            - config
+            - get
+        input: stdin
+      - executable: osinfo
+
+  set:
+    title: Set Method
+    description: >-
+      Defines how DSC must call the DSC Resource to set the desired state of
+      an instance and how to process the output from the DSC Resource.
+    type: object
+    required:
+      - executable
+      - input
+    properties:
+      executable:
+        $ref: "#/$defs/executable"
+      args:
+        $ref: "#/$defs/args"
+      input:
+        $ref: "#/$defs/input"
+      preTest:
+        title: Resource Performs Pre-Test
+        description: >-
+          Defines whether the DSC Resource performs its own test to ensure
+          idempotency when calling the `set` command. Set this value to `true`
+          if the DSC Resource tests input before modifying system state.
+        type: boolean
+        default: false
+      return:
+        title: Set Command Return Type
+        description: >-
+          Defines whether the command returns a JSON blob of the DSC Resource's
+          state after the set operation or the state and an array of the
+          properties the DSC Resource modified.
+        $ref: "#/$defs/return"
+    examples:
+      - executable: registry
+        args:
+          - config
+          - set
+        input:   stdin
+        preTest: true
+        return:  state
+
+  test:
+    title: Test Method
+    description: >-
+      Defines how DSC must call the DSC Resource to test if an instance is in
+      the desired state and how to process the output from the DSC Resource.
+    type: object
+    required:
+      - executable
+      - input
+    properties:
+      executable:
+        $ref: "#/$defs/executable"
+      args:
+        $ref: "#/$defs/args"
+      input:
+        $ref: "#/$defs/input"
+      return:
+        title: Test Command Return Type
+        description: >-
+          Defines whether the command returns a JSON blob of the DSC Resource's
+          current state or the state and an array of the properties that are
+          out of the desired state.
+        $ref: "#/$defs/return"
+    examples:
+      - executable: registry
+        args:
+          - config
+          - test
+        input:  stdin
+        return: state
+
+  validate:
+    title: Validate Method
+    description: >-
+      Defines how DSC must call the DSC Resource to validate the state of an
+      instance. This method is mandatory for DSC Group Resources. It's ignored
+      for all other DSC Resources.
+    type: object
+    required:
+      - executable
+    properties:
+      executable:
+        $ref: "#/$defs/executable"
+      args:
+        $ref: "#/$defs/args"
+
+    examples:
+      - executable: dsc
+        args:
+          - config
+          - validate
+
+  # I'm not clear on how this works in practice
+  provider:
+    title: Provider
+    description: >-
+      Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider
+      enables users to manage resources that don't have their own manifests with
+      DSC.
+    type: object
+    required:
+      - list
+      - config
+    properties:
+      list:
+        title: List Command
+        description: >-
+          Defines how DSC must call the DSC Resource Provider to list its supported
+          DSC Resources.
+        type: object
+        required:
+          - executable
+        properties:
+          executable:
+            $ref: "#/$defs/executable"
+          args:
+            $ref: "#/$defs/args"
+      config:
+        title: Expected Configuration
+        description: >-
+          Defines whether the provider expects to receive a full and unprocessed
+          configuration as a single JSON blob over stdin or a sequence of JSON
+          Lines for each child resource's configurations.
+        type: string
+        enum:
+          - full
+          - sequence
+    examples:
+      - config: full
+        list:
+          executable: pwsh
+          args:
+            - -NoLogo
+            - -NonInteractive
+            - -NoProfile
+            - -Command
+            - ./powershellgroup.resource.ps1 List
+
+
+  # This setting in the root of the schema implies exit codes must have the same
+  # meaning across all executions. What about implementations that support
+  # multiple executables? Should exitCodes be a key that exists on
+  # command/method objects too?
+  exitCodes:
+    title: Exit Codes
+    description: >-
+      This property defines a map of valid exit codes for the DSC Resource.
+      DSC always interprets exit code `0` as a successful operation and any
+      other exit code as an error. Use this property to indicate human-readable
+      semantic meanings for the DSC Resource's exit codes.
+    type: object
+    propertyNames:
+      pattern: "^[0-9]+$"
+    patternProperties:
+      "^[0-9]+$":
+        type: string
+    examples:
+      - exitCodes:
+          "0": Success
+          "1": Invalid parameter
+          "2": Invalid input
+          "3": Registry error
+          "4": JSON serialization failed
+
+  # While the current implementation is somewhat confusing in the schema, I
+  # think it's actually easier to document. Mainly, the complexity comes from
+  # the expected object having exactly one property with exclusive key names.
+  # If a DSC Resource could specify a combination of these values, the schema
+  # would be less complex.
+  schema:
+    title: Instance Schema
+    description: >-
+      Defines how DSC must validate a JSON blob representing an instance of the
+      DSC Resource.
+    type: object
+    oneOf:
+      - required: [command]
+      - required: [embedded]
+    properties:
+      command:
+        title: Instance Schema Command
+        description: >-
+          Defines how DSC must call the DSC Resource to get the JSON Schema for
+          validating a JSON blob representing an instance of the DSC Resource.
+        type: object
+        required: executable
+        properties:
+          executable:
+            $ref: "#/$defs/executable"
+          args:
+            $ref: "#/$defs/args"
+      embedded:
+        title: Embedded Instance Schema
+        description: >-
+          Defines the JSON Schema DSC must use to validate a JSON blob
+          representing an instance of the DSC Resource.
+        type: object
+        minProperties: 1
+      url:
+        title: Instance Schema URL
+        description: >-
+          Defines the URL to the DSC Resource's JSON schema for integrating
+          tools.
+        type: string
+        format: uri
+    examples:
+      - command:
+          executable: registry
+          args:
+            - schema
+      - embedded:
+          $schema: http://json-schema.org/draft-07/schema#
+          title: OSInfo
+          type: object
+          required: []
+          properties:
+            $id:
+              type: string
+            architecture:
+              type: [string, "null"]
+            bitness:
+              $ref: "#/definitions/Bitness"
+            codename:
+              type: [string, "null"]
+            edition:
+              type: [string, "null"]
+            family:
+              $ref: "#/definitions/Family"
+            version:
+              type: string
+          additionalProperties: false
+          definitions:
+            Bitness:
+              type: string
+              enum: ["32", "64", "unknown"]
+            Family:
+              type: string
+              enum: [Linux, macOS, Windows]
+      - url: https://json.schemastore.org/rust-toolchain.json
+
+$defs:
+  args:
+    title: Executable Command Arguments
+    description: >-
+      The list of arguments to pass to the command.
+    type: array
+    items:
+      type: string
+  executable:
+    title: Executable Command Name
+    description: >-
+      The name of the command to run.
+    type: string
+  input:
+    title: Executable Command Input Type
+    description: >-
+      Defines how DSC should pass input to the command, either as arguments or
+      JSON over stdin.
+    type: string
+    enum:
+      - args
+      - stdin
+    default: args
+  return:
+    type: string
+    enum:
+      - state
+      - stateAndDiff
+    default: state
+  semver:
+    title: Semantic Version
+    description: >-
+      A valid semantic version (semver) string. For reference, see https://semver.org/
+    type: string
+    pattern: >-
+      ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+    $comment: |
+      This pattern was taken from the semver website's FAQ:
+
+      https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+
+      It's the suggested regex pattern for JavaScript.
+
+      This is the same pattern, made multi-line for easier readability.
+
+      ```
+      ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+      (?:-(
+        (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+        (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))
+      *))?
+      (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+      ```
+      
+      The first line matches the `major.minor.patch` components of the version. The middle lines match
+      the pre-release components. The last line matches the build metadata component.
