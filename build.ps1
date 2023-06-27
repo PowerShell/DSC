@@ -41,14 +41,12 @@ else {
 }
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j")
+$projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j", "powershellgroup")
 $pedantic_clean_projcets = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource")
 
 if ($IsWindows) {
     $projects += $windows_projects
 }
-
-Copy-Item "$PSScriptRoot/powershellgroup/*" $target -Force -ErrorAction Ignore
 
 $failed = $false
 foreach ($project in $projects) {
@@ -56,18 +54,22 @@ foreach ($project in $projects) {
     Write-Host -ForegroundColor Cyan "Building $project ..."
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
-        if ($Clippy) {
-            if ($pedantic_clean_projcets -contains $project) {
-                Write-Verbose -Verbose "Running clippy with pedantic for $project"
-                cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+
+        if (Test-Path "./Cargo.toml")
+        {
+            if ($Clippy) {
+                if ($pedantic_clean_projcets -contains $project) {
+                    Write-Verbose -Verbose "Running clippy with pedantic for $project"
+                    cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                }
+                else {
+                    Write-Verbose -Verbose "Running clippy for $project"
+                    cargo clippy @flags -- -Dwarnings
+                }
             }
             else {
-                Write-Verbose -Verbose "Running clippy for $project"
-                cargo clippy @flags -- -Dwarnings
+                cargo build @flags
             }
-        }
-        else {
-            cargo build @flags
         }
 
         if ($LASTEXITCODE -ne 0) {
@@ -82,6 +84,7 @@ foreach ($project in $projects) {
         }
 
         Copy-Item "*.resource.json" $target -Force -ErrorAction Ignore
+        Copy-Item "*.resource.ps1" $target -Force -ErrorAction Ignore
         Copy-Item "*.command.json" $target -Force -ErrorAction Ignore
 
     } finally {
