@@ -140,10 +140,13 @@ if ($Test) {
         Write-Host -ForegroundColor Cyan "Testing $project ..."
         try {
             Push-Location "$PSScriptRoot/$project"
-            cargo test
+            if (Test-Path "./Cargo.toml")
+            {
+                cargo test
 
-            if ($LASTEXITCODE -ne 0) {
-                $failed = $true
+                if ($LASTEXITCODE -ne 0) {
+                    $failed = $true
+                }
             }
         } finally {
             Pop-Location
