@@ -17,9 +17,58 @@ if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
     }
     else {
         Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
+        Write-Verbose -Verbose "Use the default settings to ensure build works"
         & 'temp:/rustup-init.exe'
         Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
     }
+}
+
+$BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+
+function Find-LinkExe {
+    try {
+        # this helper may not be needed anymore, but keeping in case the install doesn't work for everyone
+        Write-Verbose -Verbose "Finding link.exe"
+        Push-Location $BuildToolsPath
+        Set-Location "$(Get-ChildItem -Directory | Sort-Object name -Descending | Select-Object -First 1)\bin\Host$($env:PROCESSOR_ARCHITECTURE)\x64" -ErrorAction Stop
+        $linkexe = (Get-Location).Path
+        Write-Verbose -Verbose "Using $linkexe"
+        $linkexe
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+if ($IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
+    if (!(Test-Path $BuildToolsPath)) {
+        Write-Verbose -Verbose "link.exe not found, installing C++ build tools"
+        Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
+        $arg = @('--passive','--add','Microsoft.VisualStudio.Workload.VCTools','--includerecommended')
+        if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
+            $arg += '--add','Microsoft.VisualStudio.Component.VC.Tools.ARM64'
+        }
+        Start-Process -FilePath 'temp:/vs_buildtools.exe' -ArgumentList $arg -Wait
+        Remove-Item temp:/vs_installer.exe -ErrorAction Ignore
+        Write-Verbose -Verbose "Updating env vars"
+        $machineEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine).Split(';')
+        $userEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User).Split(';')
+        $pathEnv = ($env:PATH).Split(';')
+        foreach ($env in $machineEnv) {
+            if ($pathEnv -notcontains $env) {
+                $pathEnv += $env
+            }
+        }
+        foreach ($env in $userEnv) {
+            if ($pathEnv -notcontains $env) {
+                $pathEnv += $env
+            }
+        }
+        $env:PATH = $pathEnv -join ';'
+    }
+
+    #$linkexe = Find-LinkExe
+    #$env:PATH += ";$linkexe"
 }
 
 ## Create the output folder
@@ -42,7 +91,7 @@ else {
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 $projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j", "powershellgroup")
-$pedantic_clean_projcets = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource")
+$pedantic_clean_projects = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
 
 if ($IsWindows) {
     $projects += $windows_projects

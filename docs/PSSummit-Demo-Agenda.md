@@ -5,13 +5,16 @@
 * Configuration schema a subset of ARM template schema
 * Configuration as JSON
 * Configuration as YAML
+* Output formatting
 * Get, Set, Test results
+* Messages
+  * Invalid schema
 * DependsOn
 
 ## Resource simplification
 
 * Resource manifest schema
-* Get, Set, Test
+* Get, Set, Test, Schema
 * Returning current state after Set
 * Returning differences
 
@@ -22,7 +25,7 @@
 * General grouping
 * Provider Resources
   * List
-  * Config
+  * Validation
 
 ## PowerShell Group resource
 
