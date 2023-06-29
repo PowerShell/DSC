@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     https://schemas.microsoft.com/dsc/2023/07/results/resource/list.yaml
+
+title: DSC Resource list result
+description: >-
+  Describes the return data for a DSC Resource instance from the
+  `dsc resource list` command.
+
+type: object
+properties:
+  type:
+    # Even though I used the defined type here, I noticed that the Test*
+    # resources don't follow that pattern - their type name is just a name,
+    # no prefix. Should we have a different schema for those, or should this
+    # be relaxed?
+    $ref: /dsc/2023/07/definitions/resourceType.yaml
+  version:
+    # Only the Test* resources seem to have this field populated.
+    $ref: /dsc/2023/07/definitions/semver.yaml
+  path:
+    # This value seems to mean something different for the Test* resources
+    title: Path
+    description: >-
+      Indicates the path to the DSC Resource on the file system.
+    type: string
+  directory:
+    # This value seems to mean something different for the Test* resources
+    title: Directory
+    description: >-
+      Indicates the path to the folder containing the DSC Resource on the file
+      system.
+    type: string
+  implementedAs:
+    title: Implemented as
+    description: >-
+      Indicates how the DSC Resource was implemented. To specify a custom
+      implementation, specify this value as an object with the `custom`
+      property.
+    oneOf:
+      - title: Standard implementation
+        description: >-
+          Indicates that the DSC Resource is implemented as one of the standard
+          implementations built into DSC.
+        type: string
+        enum:
+          - Command
+      
+      # Need to understand how this works to document it more usefully
+      - title: Custom implementation
+        description: >-
+          Indicates that the DSC Resource uses a custom implementation.
+        type: object
+        required:
+          - custom
+        properties:
+          custom:
+            title: Custom implementation name
+            description: >-
+              The name of the custom implementation.
+            type: string
+  author:
+    # Only the Test* resources seem to have this field populated.
+    title: Author
+    description: >-
+      Indicates the name of the person or organization that developed and
+      maintains the DSC Resource.
+    type:
+      - string
+      - 'null'
+  properties:
+    # Only the Test* resources seem to have this field populated.
+    title: Properties
+    description: >-
+      Defines the DSC Resource's property names.
+    type: array
+    items:
+      type: string
+      pattern: ^\w+$
+  requires:
+    title: Required DSC Resource Provider
+    description: >-
+      Defines the fully qualified type name of the DSC Resource Provider the
+      DSC Resource depends on.
+    oneOf:
+      - $ref: /dsc/2023/07/definitions/resourceType.yaml
+      - type: 'null'
+  manifest:
+    $ref: /dsc/2023/07/resource/manifest.yaml

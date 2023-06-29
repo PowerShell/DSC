@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://schemas.microsoft.com/dsc/2023/07/resource/manifest.schema.yaml
+
+title: Instance Schema
+description: >-
+  Defines how DSC must validate a JSON blob representing an instance of the
+  DSC Resource.
+
+# While the current implementation is somewhat confusing in the schema, I
+# think it's actually easier to document. Mainly, the complexity comes from
+# the expected object having exactly one property with exclusive key names.
+# If a DSC Resource could specify a combination of these values, the schema
+# would be less complex.
+type: object
+oneOf:
+  - required: [command]
+  - required: [embedded]
+properties:
+  command:
+    title: Instance Schema Command
+    description: >-
+      Defines how DSC must call the DSC Resource to get the JSON Schema for
+      validating a JSON blob representing an instance of the DSC Resource.
+    type: object
+    required:
+      - executable
+    properties:
+      executable:
+        $ref: /dsc/2023/07/definitions/commandExecutable.yaml
+      args:
+        $ref: /dsc/2023/07/definitions/commandArgs.yaml
+  embedded:
+    title: Embedded Instance Schema
+    description: >-
+      Defines the JSON Schema DSC must use to validate a JSON blob
+      representing an instance of the DSC Resource.
+    type: object
+    minProperties: 1
+  url:
+    title: Instance Schema URL
+    description: >-
+      Defines the URL to the DSC Resource's JSON schema for integrating tools.
+    type: string
+    format: uri
+
+examples:
+  - command:
+      executable: registry
+      args:
+        - schema
+  - embedded:
+      $schema: http://json-schema.org/draft-07/schema#
+      title: OSInfo
+      type: object
+      required: []
+      properties:
+        $id:
+          type: string
+        architecture:
+          type: [string, "null"]
+        bitness:
+          $ref: "#/definitions/Bitness"
+        codename:
+          type: [string, "null"]
+        edition:
+          type: [string, "null"]
+        family:
+          $ref: "#/definitions/Family"
+        version:
+          type: string
+      additionalProperties: false
+      definitions:
+        Bitness:
+          type: string
+          enum: ["32", "64", "unknown"]
+        Family:
+          type: string
+          enum: [Linux, macOS, Windows]

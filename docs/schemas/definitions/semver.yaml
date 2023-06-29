@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     https://schemas.microsoft.com/dsc/2023/07/definitions/semver.yaml
+
+type: string
+title: Semantic Version
+description: >-
+  A valid semantic version (semver) string. For reference, see https://semver.org/
+pattern: >-
+  ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+
+$comment: |
+  This pattern comes from the semver website's FAQ:
+
+  https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+
+  It's the suggested regex pattern for JavaScript.
+
+  This is the same pattern, made multi-line for easier readability.
+
+  ```
+  ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+  (?:-(
+    (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+    (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))
+  *))?
+  (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+  ```
+  
+  The first line matches the `major.minor.patch` components of the version. The middle lines match
+  the pre-release components. The last line matches the build metadata component.

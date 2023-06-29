@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://schemas.microsoft.com/dsc/2023/07/definitions/resourceType.yaml
+
+title: DSC Resource fully qualified type name
+description: |
+  The namespaced name of the DSC Resource, using the syntax:
+
+  <owner>[.<group>][.<area>]/<name>
+
+  For example:
+
+    - Microsoft.SqlServer/Database
+    - Microsoft.SqlServer.Database/User
+
+type: string
+pattern: ^\w+(\.\w+){0,2}\/\w+$

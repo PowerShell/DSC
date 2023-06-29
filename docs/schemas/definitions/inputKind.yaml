@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     https://schemas.microsoft.com/dsc/2023/07/definitions/inputKind.yaml
+
+title: Executable Command Input Type
+description: >-
+  Defines how DSC should pass input to the command, either as arguments or
+  JSON over stdin.
+type: string
+enum:
+  - args
+  - stdin
+default: args

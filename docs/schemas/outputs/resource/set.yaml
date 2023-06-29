@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     https://schemas.microsoft.com/dsc/2023/07/results/resource/set.yaml
+
+title: DSC Resource set result
+description: >-
+  Describes the return data for a DSC Resource instance from the
+  `dsc resource set` command.
+
+type: object
+required:
+  - before_state
+  - after_state
+  - changed_properties
+properties:
+  before_state:
+    title: State before enforcing
+    description: >-
+      This property always represents the desired state of the DSC Resource
+      instance before the `set` method runs. DSC validates this return value
+      against the DSC Resource's schema.
+    type: object
+  after_state:
+    title: State after enforcing
+    description: >-
+      This property always represents the current state of the DSC Resource
+      instance as returned by its `set` method after enforcing the desired
+      state. DSC validates this return value against the DSC Resource's schema.
+    type: object
+  changed_properties:
+    title: Changed Properties
+    description: >-
+      This property always represents the list of property names for the DSC
+      Resource instance that the `set` method modified. When this value is an
+      empty array, the `set` method didn't enforce any properties for the
+      instance.
+    type: array
+    default: []
+    items:
+      type: string

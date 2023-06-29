@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://schemas.microsoft.com/dsc/2023/07/config/document.yaml
+
+title: DSC Configuration Document schema
+description: >-
+  Describes a valid DSC Configuration Document.
+
+type: object
+required:
+  - $schema
+  - resources
+properties:
+  $schema:
+    title: Schema
+    description: >-
+      This property must be the canonical URL of the DSC Configuration Document
+      schema that the document is implemented for.
+    type: string
+    format: uri
+    enum:
+      - https://schemas.microsoft.com/dsc/2023/07/config/document.yaml
+
+  parameters:
+    $ref: /dsc/2023/07/config/document.parameters.yaml
+
+  variables:
+    title: Configuration variables
+    description: >-
+      Defines a set of reusable values for the configuration document. The
+      names of this value's properties are the strings used to reference a
+      variable's value.
+    type: object
+
+  resources:
+    $ref: /dsc/2023/07/config/document.resources.yaml
+
+  metadata:
+    title: Configuration metadata
+    description: >-
+      Defines a set of key-value pairs for the configuration. This metadata
+      isn't validated.
+    type: object
