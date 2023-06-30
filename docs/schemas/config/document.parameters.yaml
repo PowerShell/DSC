@@ -19,12 +19,12 @@ patternProperties:
       - type
     properties:
       type:
-        $ref: /dsc/2023/07/definitions/dataType.yaml
+        $ref: /dsc/2023/07/definitions/parameters/dataType.yaml
       defaultValue:
         title: Default value
         description: >-
           Defines the default value for the parameter.
-        $ref: "#/$defs/ValidValueTypes"
+        $ref: /dsc/2023/07/definitions/parameters/validValueTypes.yaml
       allowedValues:
         title: Allowed values
         description: >-
@@ -32,7 +32,7 @@ patternProperties:
           parameter is defined with any other values, it's invalid.
         type: array
         items:
-          $ref: "#/$defs/ValidValueTypes"
+          $ref: /dsc/2023/07/definitions/parameters/validValueTypes.yaml
       description:
         title: Parameter description
         description: >-
@@ -50,56 +50,11 @@ patternProperties:
             type:
               const: int
         then:
-          $ref: "#/$defs/IntegerValidationProperties"
+          $ref: /dsc/2023/07/definitions/parameters/integerValidationProperties.yaml
       - if:
           oneOf:
             - properties: { type: { const: string } }
             - properties: { type: { const: securestring } }
             - properties: { type: { const: array } }
         then:
-          $ref: "#/$defs/LengthValidationProperties"
-
-$defs:
-  ValidValueTypes:
-    type:
-      - string
-      - integer
-      - object
-      - array
-      - boolean
-  IntegerValidationProperties:
-    properties:
-      minValue:
-        title: Minimum value
-        description: >-
-          The minimum valid value for an integer type. If defined with the
-          `maxValue` property, this value must be less than the value of
-          `maxValue`.
-        type: integer
-        minimum: 0
-      maxValue:
-        title: Maximum value
-        description: >-
-          The maximum valid value for an integer type. If defined with the
-          `minValue` property, this value must be greater than the value of
-          `minValue`.
-        type: integer
-        minimum: 0
-  LengthValidationProperties:
-    properties:
-      minLength:
-        title: Minimum length
-        description: >-
-          The minimum valid length for a `string`, `securestring`, or `array`.
-          If defined with the `maxLength` property, this value must be less
-          than the value of `maxLength`.
-        type: integer
-        minimum: 0
-      maxLength:
-        title: Maximum length
-        description: >-
-          The maximum valid length for a `string`, `securestring`, or `array`.
-          If defined with the `minLength` property, this value must be less
-          than the value of `minLength`.
-        type: integer
-        minimum: 0
+          $ref: /dsc/2023/07/definitions/parameters/lengthValidationProperties.yaml

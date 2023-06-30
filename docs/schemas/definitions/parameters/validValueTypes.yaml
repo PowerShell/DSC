@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/validValueTypes.yaml
+
+$comment: |
+  This schema fragment makes it a little easier to compose the valid properties
+  for DSC Configuration document parameters. As-written, values must be one of
+  those on this list - the schema definition for dataType excludes `null` and
+  numbers with fractional parts, like `3.5`.
+
+type:
+  - string
+  - integer
+  - object
+  - array
+  - boolean

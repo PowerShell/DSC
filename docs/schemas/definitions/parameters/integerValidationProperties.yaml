@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/integerValidationProperties.yaml
+
+$comment: |
+  This schema fragment makes it a little easier to compose the valid properties
+  for DSC Configuration document parameters. These only apply to `int` type
+  parameters.
+
+properties:
+  minValue:
+    title: Minimum value
+    description: >-
+      The minimum valid value for an integer type. If defined with the
+      `maxValue` property, this value must be less than the value of
+      `maxValue`.
+    type: integer
+    minimum: 0
+  maxValue:
+    title: Maximum value
+    description: >-
+      The maximum valid value for an integer type. If defined with the
+      `minValue` property, this value must be greater than the value of
+      `minValue`.
+    type: integer
+    minimum: 0
