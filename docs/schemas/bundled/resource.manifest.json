@@ -1,0 +1,582 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.microsoft.com/dsc/2023/07/bundled/resource.manifest.json",
+  "title": "Command-based DSC Resource Manifest",
+  "description": "Defines a valid command-based DSC Resource.",
+  "type": "object",
+  "required": [
+    "manifestVersion",
+    "type",
+    "version",
+    "get"
+  ],
+  "properties": {
+    "manifestVersion": {
+      "title": "Manifest Version",
+      "description": "The semver of the DSC Resource manifest schema to validate this manifest with.",
+      "$ref": "/dsc/2023/07/definitions/semver.json",
+      "enums": [
+        "1.0"
+      ]
+    },
+    "type": {
+      "$ref": "/dsc/2023/07/definitions/resourceType.json"
+    },
+    "version": {
+      "title": "Resource Semantic Version",
+      "description": "The semantic version (semver) of the DSC Resource. This version identifies the DSC Resource, not the version of the application it manages.",
+      "$ref": "/dsc/2023/07/definitions/semver.json"
+    },
+    "description": {
+      "title": "Resource Description",
+      "description": "A short synopsis of the DSC Resource's purpose.",
+      "type": "string"
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "An array of short strings used to search for DSC Resources.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$"
+      }
+    },
+    "get": {
+      "$ref": "/dsc/2023/07/resource/manifest.get.json"
+    },
+    "set": {
+      "$ref": "/dsc/2023/07/resource/manifest.set.json"
+    },
+    "test": {
+      "$ref": "/dsc/2023/07/resource/manifest.test.json"
+    },
+    "validate": {
+      "$ref": "/dsc/2023/07/resource/manifest.validate.json"
+    },
+    "provider": {
+      "$ref": "/dsc/2023/07/resource/manifest.provider.json"
+    },
+    "exitCodes": {
+      "title": "Exit Codes",
+      "description": "This property defines a map of valid exit codes for the DSC Resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC Resource's exit codes.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[0-9]+$"
+      },
+      "patternProperties": {
+        "^[0-9]+$": {
+          "type": "string"
+        }
+      },
+      "examples": [
+        {
+          "exitCodes": {
+            "0": "Success",
+            "1": "Invalid parameter",
+            "2": "Invalid input",
+            "3": "Registry error",
+            "4": "JSON serialization failed"
+          }
+        }
+      ]
+    },
+    "schema": {
+      "$ref": "/dsc/2023/07/resource/manifest.schema.json"
+    }
+  },
+  "$defs": {
+    "https://schemas.microsoft.com/dsc/2023/07/definitions/semver.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/semver.json",
+      "type": "string",
+      "title": "Semantic Version",
+      "description": "A valid semantic version (semver) string. For reference, see https://semver.org/",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "$comment": "This pattern comes from the semver website's FAQ:\n\nhttps://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n\nIt's the suggested regex pattern for JavaScript.\n\nThis is the same pattern, made multi-line for easier readability.\n\n```\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n"
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/definitions/resourceType.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/resourceType.json",
+      "title": "DSC Resource fully qualified type name",
+      "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+      "type": "string",
+      "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.get.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.get.json",
+      "title": "Get Method",
+      "description": "Defines how DSC must call the DSC Resource to get the current state of an instance.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/dsc/2023/07/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/dsc/2023/07/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/dsc/2023/07/definitions/inputKind.json"
+        }
+      },
+      "examples": [
+        {
+          "executable": "registry",
+          "args": [
+            "config",
+            "get"
+          ],
+          "input": "stdin"
+        },
+        {
+          "executable": "osinfo"
+        }
+      ]
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.set.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.set.json",
+      "title": "Set Method",
+      "description": "Defines how DSC must call the DSC Resource to set the desired state of an instance and how to process the output from the DSC Resource.",
+      "type": "object",
+      "required": [
+        "executable",
+        "input"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/dsc/2023/07/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/dsc/2023/07/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/dsc/2023/07/definitions/inputKind.json"
+        },
+        "preTest": {
+          "title": "Resource Performs Pre-Test",
+          "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
+          "type": "boolean",
+          "default": false
+        },
+        "return": {
+          "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
+          "$ref": "/dsc/2023/07/definitions/returnKind.json"
+        }
+      },
+      "examples": [
+        {
+          "executable": "registry",
+          "args": [
+            "config",
+            "set"
+          ],
+          "input": "stdin",
+          "preTest": true,
+          "return": "state"
+        }
+      ]
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.test.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.test.json",
+      "title": "Test Method",
+      "description": "Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how to process the output from the DSC Resource.",
+      "type": "object",
+      "required": [
+        "executable",
+        "input"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/dsc/2023/07/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/dsc/2023/07/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/dsc/2023/07/definitions/inputKind.json"
+        },
+        "return": {
+          "title": "Test Command Return Type",
+          "description": "Defines whether the command returns a JSON blob of the DSC Resource's current state or the state and an array of the properties that are out of the desired state.",
+          "$ref": "/dsc/2023/07/definitions/returnKind.json"
+        }
+      },
+      "examples": [
+        {
+          "executable": "registry",
+          "args": [
+            "config",
+            "test"
+          ],
+          "input": "stdin",
+          "return": "state"
+        }
+      ]
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.validate.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.validate.json",
+      "title": "Validate Method",
+      "description": "Defines how DSC must call the DSC Resource to validate the state of an instance. This method is mandatory for DSC Group Resources. It's ignored for all other DSC Resources.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/dsc/2023/07/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/dsc/2023/07/definitions/commandArgs.json"
+        }
+      },
+      "examples": [
+        {
+          "executable": "dsc",
+          "args": [
+            "config",
+            "validate"
+          ]
+        }
+      ]
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.provider.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.provider.json",
+      "title": "Provider",
+      "description": "Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to manage resources that don't have their own manifests with DSC.",
+      "type": "object",
+      "required": [
+        "list",
+        "config"
+      ],
+      "properties": {
+        "list": {
+          "title": "List Command",
+          "description": "Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.",
+          "type": "object",
+          "required": [
+            "executable"
+          ],
+          "properties": {
+            "executable": {
+              "$ref": "/dsc/2023/07/definitions/commandExecutable.json"
+            },
+            "args": {
+              "$ref": "/dsc/2023/07/definitions/commandArgs.json"
+            }
+          }
+        },
+        "config": {
+          "title": "Expected Configuration",
+          "description": "Defines whether the provider expects to receive a full and unprocessed configuration as a single JSON blob over stdin or a sequence of JSON Lines for each child resource's configurations.",
+          "type": "string",
+          "enum": [
+            "full",
+            "sequence"
+          ]
+        }
+      },
+      "examples": [
+        {
+          "config": "full",
+          "list": {
+            "executable": "pwsh",
+            "args": [
+              "-NoLogo",
+              "-NonInteractive",
+              "-NoProfile",
+              "-Command",
+              "./powershellgroup.resource.ps1 List"
+            ]
+          }
+        }
+      ]
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/manifest.schema.json",
+      "title": "Instance Schema",
+      "description": "Defines how DSC must validate a JSON blob representing an instance of the DSC Resource.",
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "command"
+          ]
+        },
+        {
+          "required": [
+            "embedded"
+          ]
+        }
+      ],
+      "properties": {
+        "command": {
+          "title": "Instance Schema Command",
+          "description": "Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC Resource.",
+          "type": "object",
+          "required": [
+            "executable"
+          ],
+          "properties": {
+            "executable": {
+              "$ref": "/dsc/2023/07/definitions/commandExecutable.json"
+            },
+            "args": {
+              "$ref": "/dsc/2023/07/definitions/commandArgs.json"
+            }
+          }
+        },
+        "embedded": {
+          "title": "Embedded Instance Schema",
+          "description": "Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the DSC Resource.",
+          "type": "object",
+          "required": [
+            "$schema",
+            "type",
+            "properties"
+          ],
+          "properties": {
+            "type": {
+              "title": "Instance Type",
+              "description": "Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always have the `object` type.",
+              "const": "object"
+            },
+            "$schema": {
+              "title": "DSC Resource instance schema dialect",
+              "description": "Defines which dialect of JSON Schema the DSC Resource is using to validate instances.",
+              "type": "string",
+              "format": "uri-reference",
+              "enum": [
+                "https://json-schema.org/draft/2020-12/schema",
+                "https://json-schema.org/draft/2019-09/schema",
+                "http://json-schema.org/draft-07/schema#"
+              ]
+            },
+            "$id": {
+              "title": "DSC Resource instance schema ID",
+              "description": "Defines the unique ID for the DSC Resource's instance schema.",
+              "type": "string",
+              "format": "uri-reference"
+            },
+            "properties": {
+              "title": "Instance Properties",
+              "description": "Defines the schema for the DSC Resource's properties. Must define at least one property.",
+              "type": "object",
+              "minProperties": 1,
+              "unevaluatedProperties": {
+                "anyOf": [
+                  {
+                    "$ref": "https://json-schema.org/draft/2020-12/schema"
+                  },
+                  {
+                    "$ref": "https://json-schema.org/draft/2019-09/schema"
+                  },
+                  {
+                    "$ref": "http://json-schema.org/draft-07/schema#"
+                  }
+                ]
+              },
+              "properties": {
+                "_ensure": {
+                  "title": "Standard Property: _ensure",
+                  "description": "Indicates that the DSC Resource uses the standard `_ensure` property to specify whether an instance should exist with the `Present` and `Absent` enums.",
+                  "const": {
+                    "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/ensure.json"
+                  }
+                },
+                "_inDesiredState": {
+                  "title": "Standard Property: _inDesiredState",
+                  "description": "Indicates that the DSC Resource returns this value for it's own `test` method. This property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC Resource relies on DSC's synthetic testing.",
+                  "const": {
+                    "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/inDesiredState.json"
+                  }
+                },
+                "_purge": {
+                  "title": "Standard Property: _purge",
+                  "description": "Indicates that the DSC Resource uses the standard `_purge` property to specify whether the DSC Resource should remove all non-specified members when it manages an array of members or values.",
+                  "const": {
+                    "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/purge.json"
+                  }
+                },
+                "_rebootRequested": {
+                  "title": "Standard property: _rebootRequested",
+                  "description": "Indicates that the DSC Resource uses the standard `_rebootRequested` property to report whether the machine should be rebooted after the `set` method executes.",
+                  "const": {
+                    "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/rebootRequested.json"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "url": {
+          "title": "Instance Schema URL",
+          "description": "Defines the URL to the DSC Resource's JSON schema for integrating tools.",
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "examples": [
+        {
+          "command": {
+            "executable": "registry",
+            "args": [
+              "schema"
+            ]
+          }
+        },
+        {
+          "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "OSInfo",
+            "type": "object",
+            "required": [],
+            "properties": {
+              "$id": {
+                "type": "string"
+              },
+              "architecture": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "bitness": {
+                "$ref": "#/definitions/Bitness"
+              },
+              "codename": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "edition": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "family": {
+                "$ref": "#/definitions/Family"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "definitions": {
+              "Bitness": {
+                "type": "string",
+                "enum": [
+                  "32",
+                  "64",
+                  "unknown"
+                ]
+              },
+              "Family": {
+                "type": "string",
+                "enum": [
+                  "Linux",
+                  "macOS",
+                  "Windows"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/definitions/commandExecutable.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/commandExecutable.json",
+      "title": "Executable Command Name",
+      "description": "The name of the command to run.",
+      "type": "string"
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/definitions/commandArgs.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/commandArgs.json",
+      "title": "Executable Command Arguments",
+      "description": "The list of arguments to pass to the command.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/definitions/inputKind.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/inputKind.json",
+      "title": "Executable Command Input Type",
+      "description": "Defines how DSC should pass input to the command, either as arguments or JSON over stdin.",
+      "type": "string",
+      "enum": [
+        "args",
+        "stdin"
+      ],
+      "default": "args"
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/definitions/returnKind.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/returnKind.json",
+      "title": "Return Kind",
+      "type": "string",
+      "enum": [
+        "state",
+        "stateAndDiff"
+      ],
+      "default": "state",
+      "$comment": "While the enumeration for return kind is the same for the `set` and `test`\nmethod, the way it changes the behavior of the command isn't. The description\nkeyword isn't included here because the respective schemas for those methods\ndocument the behavior themselves."
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/properties/ensure.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/ensure.json",
+      "title": "Ensure Existence",
+      "description": "Indicates whether the DSC Resource instance should exist.",
+      "type": "string",
+      "enum": [
+        "Absent",
+        "Present"
+      ]
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/properties/inDesiredState.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/inDesiredState.json",
+      "title": "Instance is in the Desired State",
+      "description": "Indicates whether the instance is in the desired state. This property is only returned by the `test` method.",
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "readOnly": true
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/properties/purge.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/purge.json",
+      "title": "Purge",
+      "description": "Indicates that only the components described in the DSC Resource should exist. If other components exist, the DSC Resource is out of the desired state. When enforcing desired state, the DSC Resource removes unmanaged components.",
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "writeOnly": true
+    },
+    "https://schemas.microsoft.com/dsc/2023/07/resource/properties/rebootRequested.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/rebootRequested.json",
+      "title": "Reboot Requested",
+      "description": "Indicates that the set operation requires a reboot before it's fully complete.",
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "readOnly": true
+    }
+  }
+}

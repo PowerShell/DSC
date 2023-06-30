@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.microsoft.com/dsc/2023/07/bundled/config.document.json",
+  "title": "DSC Configuration Document schema",
+  "description": "Describes a valid DSC Configuration Document.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "resources"
+  ],
+  "properties": {
+    "$schema": {
+      "title": "Schema",
+      "description": "This property must be the canonical URL of the DSC Configuration Document schema that the document is implemented for.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://schemas.microsoft.com/dsc/2023/07/config/document.json"
+      ]
+    },
+    "parameters": {
+      "$ref": "#/$defs/dsc/2023/07/config/document.parameters.json"
+    },
+    "variables": {
+      "title": "Configuration variables",
+      "description": "Defines a set of reusable values for the configuration document. The names of this value's properties are the strings used to reference a variable's value.",
+      "type": "object"
+    },
+    "resources": {
+      "$ref": "#/$defs/dsc/2023/07/config/document.resources.json"
+    },
+    "metadata": {
+      "title": "Configuration metadata",
+      "description": "Defines a set of key-value pairs for the configuration. This metadata isn't validated.",
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "dsc": {
+      "2023": {
+        "07": {
+          "config": {
+            "document.parameters.json": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "$id": "https://schemas.microsoft.com/dsc/2023/07/config/document.parameters.json",
+              "title": "DSC Configuration document parameters",
+              "description": "Defines runtime options for the configuration. Users and integrating tools can override use the defined parameters to pass alternate values to the configuration.",
+              "type": "object",
+              "patternProperties": {
+                ".": {
+                  "title": "Parameter",
+                  "description": "Defines a runtime option for a DSC Configuration Document.",
+                  "type": "object",
+                  "required": [
+                    "type"
+                  ],
+                  "properties": {
+                    "type": {
+                      "$ref": "#/$defs/dsc/2023/07/definitions/parameters/dataType.json"
+                    },
+                    "defaultValue": {
+                      "title": "Default value",
+                      "description": "Defines the default value for the parameter.",
+                      "$ref": "#/$defs/dsc/2023/07/definitions/parameters/validValueTypes.json"
+                    },
+                    "allowedValues": {
+                      "title": "Allowed values",
+                      "description": "Defines a list of valid values for the parameter. If the parameter is defined with any other values, it's invalid.",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/dsc/2023/07/definitions/parameters/validValueTypes.json"
+                      }
+                    },
+                    "description": {
+                      "title": "Parameter description",
+                      "description": "Defines a synopsis for the parameter explaining its purpose.",
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "title": "Parameter metadata",
+                      "description": "Defines a set of key-value pairs for the parameter. This metadata isn't validated.",
+                      "type": "object"
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "type": {
+                            "const": "int"
+                          }
+                        }
+                      },
+                      "then": {
+                        "$ref": "#/$defs/dsc/2023/07/definitions/parameters/integerValidationProperties.json"
+                      }
+                    },
+                    {
+                      "if": {
+                        "oneOf": [
+                          {
+                            "properties": {
+                              "type": {
+                                "const": "string"
+                              }
+                            }
+                          },
+                          {
+                            "properties": {
+                              "type": {
+                                "const": "securestring"
+                              }
+                            }
+                          },
+                          {
+                            "properties": {
+                              "type": {
+                                "const": "array"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "then": {
+                        "$ref": "#/$defs/dsc/2023/07/definitions/parameters/lengthValidationProperties.json"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "document.resources.json": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "$id": "https://schemas.microsoft.com/dsc/2023/07/config/document.resources.json",
+              "title": "DSC Configuration document resources",
+              "description": "Defines a list of DSC Resource instances for the configuration to manage.",
+              "type": "array",
+              "items": {
+                "title": "DSC Resource instance",
+                "type": "object",
+                "required": [
+                  "type",
+                  "name"
+                ],
+                "properties": {
+                  "type": {
+                    "$ref": "#/$defs/dsc/2023/07/definitions/resourceType.json"
+                  },
+                  "name": {
+                    "$ref": "#/$defs/dsc/2023/07/definitions/instanceName.json"
+                  },
+                  "dependsOn": {
+                    "title": "Instance depends on",
+                    "description": "Defines a list of DSC Resource instances that DSC must successfully process before processing this instance. Each value for this property must be the value of another DSC Resource instance's `name` property.",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "uniqueItems": true
+                    }
+                  },
+                  "properties": {
+                    "title": "Managed instance properties",
+                    "description": "Defines the properties of the DSC Resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC Resource's schema.",
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "definitions": {
+            "parameters": {
+              "dataType.json": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/dataType.json",
+                "title": "Data Type",
+                "description": "Defines the data type for the value.",
+                "type": "string",
+                "enum": [
+                  "string",
+                  "securestring",
+                  "int",
+                  "bool",
+                  "object",
+                  "secureobject",
+                  "array"
+                ]
+              },
+              "validValueTypes.json": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/validValueTypes.json",
+                "$comment": "This schema fragment makes it a little easier to compose the valid properties\nfor DSC Configuration document parameters. As-written, values must be one of\nthose on this list - the schema definition for dataType excludes `null` and\nnumbers with fractional parts, like `3.5`.\n",
+                "type": [
+                  "string",
+                  "integer",
+                  "object",
+                  "array",
+                  "boolean"
+                ]
+              },
+              "integerValidationProperties.json": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/integerValidationProperties.json",
+                "$comment": "This schema fragment makes it a little easier to compose the valid properties\nfor DSC Configuration document parameters. These only apply to `int` type\nparameters.\n",
+                "properties": {
+                  "minValue": {
+                    "title": "Minimum value",
+                    "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "maxValue": {
+                    "title": "Maximum value",
+                    "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "lengthValidationProperties.json": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/lengthValidationProperties.json",
+                "$comment": "This schema fragment makes it a little easier to compose the valid properties\nfor DSC Configuration document parameters. These only apply to `string`,\n`securestring`, and `array` type parameters.\n",
+                "properties": {
+                  "minLength": {
+                    "title": "Minimum length",
+                    "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "maxLength": {
+                    "title": "Maximum length",
+                    "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            },
+            "resourceType.json": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/resourceType.json",
+              "title": "DSC Resource fully qualified type name",
+              "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+              "type": "string",
+              "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+            },
+            "instanceName.json": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "$id": "https://schemas.microsoft.com/dsc/2023/07/definitions/instanceName.json",
+              "title": "Instance name",
+              "description": "The short, human-readable name for a DSC Resource instance. Must be unique within a DSC Configuration document.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

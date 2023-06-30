@@ -1,0 +1,65 @@
+{
+    "$schema": "resource.manifest.vscode.json",
+    "manifestVersion": "1.0",
+    "type": "TSToy.Example/gotstoy",
+    "version": "0.1.0",
+    "description": "The go implementation of a DSC Resource for the fictional TSToy application.",
+    "get": {
+        "executable": "gotstoy",
+        "args": ["get"],
+        "input": "stdin"
+    },
+    "set": {
+        "executable": "gotstoy",
+        "args": ["set"],
+        "input": "stdin",
+        "preTest": false,
+        "return": "state"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Golang TSToy Resource",
+            "type": "object",
+            "required": [
+                "scope"
+            ],
+            "properties": {
+                "ensure": {
+                    "title": "Ensure configuration file existence",
+                    "description": "Defines whether the application's configuration file for this scope should exist or not.",
+                    "type": "string",
+                    "enum": [
+                        "present",
+                        "absent"
+                    ],
+                    "default": "present"
+                },
+                "scope": {
+                    "title": "Target configuration scope",
+                    "description": "Defines which of the application's configuration files the resource should manage.",
+                    "type": "string",
+                    "enum": [
+                        "machine",
+                        "user"
+                    ]
+                },
+                "updateAutomatically": {
+                    "title": "Should update automatically",
+                    "description": "Indicates whether the application should check for updates when it starts.",
+                    "type": "boolean"
+                },
+                "updateFrequency": {
+                    "title": "Update check frequency",
+                    "description": "Indicates how many days the application should wait before checking for updates.",
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 90
+                },
+                "_ensure": {
+                    "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/ensure.json"
+                }
+            }
+        }
+    }
+}

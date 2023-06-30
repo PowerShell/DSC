@@ -6,7 +6,7 @@ title: DSC Resource fully qualified type name
 description: |
   The namespaced name of the DSC Resource, using the syntax:
 
-  <owner>[.<group>][.<area>]/<name>
+  owner[.group][.area]/name
 
   For example:
 

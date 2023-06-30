@@ -42,16 +42,27 @@ properties:
       - properties
     properties:
       type:
+        title: Instance Type
+        description: >-
+          Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always
+          have the `object` type.
         # Ensures the DSC Resource is always an object
         const: object
       $schema:
         # Ensures the DSC Resource always uses a schema we can understand
+        title: DSC Resource instance schema dialect
+        description: >-
+          Defines which dialect of JSON Schema the DSC Resource is using to validate instances.
         type: string
         format: uri-reference
         enum:
           - https://json-schema.org/draft/2020-12/schema
+          - https://json-schema.org/draft/2019-09/schema
           - http://json-schema.org/draft-07/schema#
       $id:
+        title: DSC Resource instance schema ID
+        description: >-
+          Defines the unique ID for the DSC Resource's instance schema.
         # Currently optional - maybe we should require this?
         type: string
         format: uri-reference
@@ -60,21 +71,47 @@ properties:
         # least one property, ensures all unevaluated properties are of a kind
         # we can understand, and makes the standard properties available to
         # manifest authors.
+        title: Instance Properties
+        description: >-
+          Defines the schema for the DSC Resource's properties. Must define at least one property.
         type: object
         minProperties: 1
         unevaluatedProperties:
           anyOf:
             - $ref: https://json-schema.org/draft/2020-12/schema
+            - $ref: https://json-schema.org/draft/2019-09/schema
             - $ref: http://json-schema.org/draft-07/schema#
         properties:
           _ensure:
-            $ref: /dsc/2023/07/resource/properties/ensure.yaml
+            title: 'Standard Property: _ensure'
+            description: >-
+              Indicates that the DSC Resource uses the standard `_ensure` property to specify
+              whether an instance should exist with the `Present` and `Absent` enums.
+            const:
+              $ref: https://schemas.microsoft.com/dsc/2023/07/resource/properties/ensure.yaml
           _inDesiredState:
-            $ref: /dsc/2023/07/resource/properties/inDesiredState.yaml
+            title: 'Standard Property: _inDesiredState'
+            description: >-
+              Indicates that the DSC Resource returns this value for it's own `test` method. This
+              property is mandatory when the manifest defines the `test` property. It shouldn't
+              be included if the DSC Resource relies on DSC's synthetic testing.
+            const:
+              $ref: https://schemas.microsoft.com/dsc/2023/07/resource/properties/inDesiredState.yaml
           _purge:
-            $ref: /dsc/2023/07/resource/properties/purge.yaml
+            title: 'Standard Property: _purge'
+            description: >-
+              Indicates that the DSC Resource uses the standard `_purge` property to specify
+              whether the DSC Resource should remove all non-specified members when it manages
+              an array of members or values.
+            const:
+              $ref: https://schemas.microsoft.com/dsc/2023/07/resource/properties/purge.yaml
           _rebootRequested:
-            $ref: /dsc/2023/07/resource/properties/rebootRequested.yaml
+            title: 'Standard property: _rebootRequested'
+            description: >-
+              Indicates that the DSC Resource uses the standard `_rebootRequested` property to
+              report whether the machine should be rebooted after the `set` method executes.
+            const:
+              $ref: https://schemas.microsoft.com/dsc/2023/07/resource/properties/rebootRequested.yaml
   url:
     title: Instance Schema URL
     description: >-
