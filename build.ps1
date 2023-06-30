@@ -175,11 +175,18 @@ if (!$found) {
 if ($Test) {
     $failed = $false
     
-    "Installing module PSDesiredStateConfiguration 2.0.7"
-    Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-    Install-module PSDesiredStateConfiguration -RequiredVersion 2.0.7
-    "Installing module Pester"
-    Install-module Pester -WarningAction Ignore
+    $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
+    if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
+    {   "Installing module PSDesiredStateConfiguration 2.0.7"
+        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+        Install-Module PSDesiredStateConfiguration -RequiredVersion 2.0.7
+    }
+
+    if (-not(Get-Module -ListAvailable -Name Pester))
+    {   "Installing module Pester"
+        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+        Install-Module Pester -WarningAction Ignore
+    }
 
     "For debug - env:PATH is:"
     $env:PATH
@@ -222,8 +229,11 @@ if ($Test) {
         "Updated PSModulePath is:"
         $env:PSModulePath
 
-        $InstallTargetDir = ($env:PSModulePath -split ";")[0]
-        Find-Module -Name 'Pester' -Repository 'PSGallery' | Save-Module -Path $InstallTargetDir
+        if (-not(Get-Module -ListAvailable -Name Pester))
+        {   "Installing module Pester"
+            $InstallTargetDir = ($env:PSModulePath -split ";")[0]
+            Find-Module -Name 'Pester' -Repository 'PSGallery' | Save-Module -Path $InstallTargetDir
+        }
 
         "Updated Pester module location:"
         (Get-Module -Name Pester -ListAvailable).Path
