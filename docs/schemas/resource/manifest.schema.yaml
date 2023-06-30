@@ -36,7 +36,45 @@ properties:
       Defines the JSON Schema DSC must use to validate a JSON blob
       representing an instance of the DSC Resource.
     type: object
-    minProperties: 1
+    required:
+      - $schema
+      - type
+      - properties
+    properties:
+      type:
+        # Ensures the DSC Resource is always an object
+        const: object
+      $schema:
+        # Ensures the DSC Resource always uses a schema we can understand
+        type: string
+        format: uri-reference
+        enum:
+          - https://json-schema.org/draft/2020-12/schema
+          - http://json-schema.org/draft-07/schema#
+      $id:
+        # Currently optional - maybe we should require this?
+        type: string
+        format: uri-reference
+      properties:
+        # Defines the property validation - requires authors to specify at
+        # least one property, ensures all unevaluated properties are of a kind
+        # we can understand, and makes the standard properties available to
+        # manifest authors.
+        type: object
+        minProperties: 1
+        unevaluatedProperties:
+          anyOf:
+            - $ref: https://json-schema.org/draft/2020-12/schema
+            - $ref: http://json-schema.org/draft-07/schema#
+        properties:
+          _ensure:
+            $ref: /dsc/2023/07/resource/properties/ensure.yaml
+          _inDesiredState:
+            $ref: /dsc/2023/07/resource/properties/inDesiredState.yaml
+          _purge:
+            $ref: /dsc/2023/07/resource/properties/purge.yaml
+          _rebootRequested:
+            $ref: /dsc/2023/07/resource/properties/rebootRequested.yaml
   url:
     title: Instance Schema URL
     description: >-
