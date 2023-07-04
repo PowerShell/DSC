@@ -102,6 +102,75 @@ fn new_configurator(json_string: &str) -> Configurator
     }
 }
 
+fn handle_config_subcommand_get(configurator: Configurator, format: &Option<OutputFormat>)
+{
+    match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
+        Ok(result) => {
+            let json = match serde_json::to_string(&result) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            if result.had_errors {
+                exit(EXIT_DSC_ERROR);
+            }
+        },
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
+fn handle_config_subcommand_set(configurator: Configurator, format: &Option<OutputFormat>)
+{
+    match configurator.invoke_set(ErrorAction::Continue, || { /* code */ }) {
+        Ok(result) => {
+            let json = match serde_json::to_string(&result) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            if result.had_errors {
+                exit(EXIT_DSC_ERROR);
+            }
+        },
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
+fn handle_config_subcommand_test(configurator: Configurator, format: &Option<OutputFormat>)
+{
+    match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
+        Ok(result) => {
+            let json = match serde_json::to_string(&result) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            if result.had_errors {
+                exit(EXIT_DSC_ERROR);
+            }
+        },
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
 fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
     if stdin.is_none() {
         eprintln!("Configuration must be piped to STDIN");
@@ -134,67 +203,13 @@ fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<Outpu
 
     match subcommand {
         ConfigSubCommand::Get => {
-            match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
-                Ok(result) => {
-                    let json = match serde_json::to_string(&result) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {err}");
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, format);
-                    if result.had_errors {
-                        exit(EXIT_DSC_ERROR);
-                    }
-                },
-                Err(err) => {
-                    eprintln!("Error: {err}");
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
+            handle_config_subcommand_get(configurator, format);
         },
         ConfigSubCommand::Set => {
-            match configurator.invoke_set(ErrorAction::Continue, || { /* code */ }) {
-                Ok(result) => {
-                    let json = match serde_json::to_string(&result) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {err}");
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, format);
-                    if result.had_errors {
-                        exit(EXIT_DSC_ERROR);
-                    }
-                },
-                Err(err) => {
-                    eprintln!("Error: {err}");
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
+            handle_config_subcommand_set(configurator, format);
         },
         ConfigSubCommand::Test => {
-            match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
-                Ok(result) => {
-                    let json = match serde_json::to_string(&result) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {err}");
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, format);
-                    if result.had_errors {
-                        exit(EXIT_DSC_ERROR);
-                    }
-                },
-                Err(err) => {
-                    eprintln!("Error: {err}");
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
+            handle_config_subcommand_test(configurator, format);
         },
         ConfigSubCommand::Validate => {
             eprintln!("Validate configuration.. NOT IMPLEMENTED YET");
