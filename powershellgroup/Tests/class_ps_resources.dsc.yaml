@@ -1,0 +1,14 @@
+$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+resources:
+- name: Working with classic DSC resources
+  type: DSC/PowerShellGroup
+  properties:
+    resources:
+    - name: Repository Info
+      type: PSTestModule/TestPSRepository
+      properties:
+        Name: TestPSRepository1
+    - name: Class-resource Info
+      type: PSTestModule/TestClassResource
+      properties:
+        Name: TestClassResource1

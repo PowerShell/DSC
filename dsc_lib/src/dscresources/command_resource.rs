@@ -26,11 +26,18 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
     }
 
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(filter), Some(cwd))?;
+    //println!("{stdout}");
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
-    let result: Value = serde_json::from_str(&stdout)?;
+    let result: Value = match serde_json::from_str(&stdout){
+        Result::Ok(r) => {r},
+        Result::Err(err) => {
+            return Err(DscError::Operation(format!("Failed to parse json from get {}|{}|{} -> {err}", &resource.get.executable, stdout, stderr)))
+        }
+    };
+
     Ok(GetResult {
         actual_state: result,
     })
@@ -50,7 +57,6 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Resu
     let Some(set) = &resource.set else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
-
     verify_json(resource, cwd, desired)?;
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !set.pre_test.unwrap_or_default() {
@@ -63,7 +69,6 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Resu
             });
         }
     }
-
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(desired), Some(cwd))?;
     let pre_state: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
@@ -71,15 +76,20 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Resu
     else {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
-
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), Some(desired), Some(cwd))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
-
     match set.returns {
         Some(ReturnKind::State) => {
-            let actual_value: Value = serde_json::from_str(&stdout)?;
+
+            let actual_value: Value = match serde_json::from_str(&stdout){
+                Result::Ok(r) => {r},
+                Result::Err(err) => {
+                    return Err(DscError::Operation(format!("Failed to parse json from set {}|{}|{} -> {err}", &set.executable, stdout, stderr)))
+                }
+            };
+
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &actual_value, &pre_state);
             Ok(SetResult {
@@ -144,7 +154,12 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     let expected_value: Value = serde_json::from_str(expected)?;
     match test.returns {
         Some(ReturnKind::State) => {
-            let actual_value: Value = serde_json::from_str(&stdout)?;
+            let actual_value: Value = match serde_json::from_str(&stdout){
+                Result::Ok(r) => {r},
+                Result::Err(err) => {
+                    return Err(DscError::Operation(format!("Failed to parse json from test {}|{}|{} -> {err}", &test.executable, stdout, stderr)))
+                }
+            };
             let diff_properties = get_diff(&expected_value, &actual_value);
             Ok(TestResult {
                 expected_state: expected_value,
@@ -280,6 +295,13 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 }
 
 fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
+    
+    //TODO: add to debug stream:
+    //println!("verify_json - resource_type - {}", resource.resource_type);
+
+    //TODO: remove this after schema validation for classic PS resources is implemented
+    if resource.resource_type == "DSC/PowerShellGroup" {return Ok(());}
+
     let schema = get_schema(resource, cwd)?;
     let schema: Value = serde_json::from_str(&schema)?;
     let compiled_schema = match JSONSchema::compile(&schema) {

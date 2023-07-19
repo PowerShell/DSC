@@ -4,9 +4,18 @@
 use args::{Args, ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand, SubCommand};
 use atty::Stream;
 use clap::Parser;
-use dsc_lib::{configure::{Configurator, ErrorAction, config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult}}, configure::config_doc::Configuration, DscManager, dscresources::dscresource::{DscResource, Invoke}, dscresources::invoke_result::{GetResult, SetResult, TestResult}, dscresources::resource_manifest::ResourceManifest};
+use dsc_lib::{
+    configure::{Configurator, ErrorAction,
+        config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult}},
+    configure::config_doc::Configuration,
+    DscManager,
+    dscresources::dscresource::{DscResource, Invoke},
+    dscresources::invoke_result::{GetResult, SetResult, TestResult},
+    dscresources::resource_manifest::ResourceManifest,
+    dscerror::DscError};
 use schemars::{schema_for, schema::RootSchema};
 use serde_yaml::Value;
+use std::collections::HashMap;
 use std::io::{self, Read};
 use std::process::exit;
 use syntect::easy::HighlightLines;
@@ -71,6 +80,86 @@ fn main() {
     exit(EXIT_SUCCESS);
 }
 
+fn serde_json_value_to_string(json: &serde_json::Value) -> String
+{
+    match serde_json::to_string(&json) {
+        Ok(json_string) => json_string,
+        Err(err) => {
+            eprintln!("Error: Failed to convert JSON to string: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
+fn handle_config_subcommand_get(configurator: Configurator, format: &Option<OutputFormat>)
+{
+    match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
+        Ok(result) => {
+            let json = match serde_json::to_string(&result) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            if result.had_errors {
+                exit(EXIT_DSC_ERROR);
+            }
+        },
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
+fn handle_config_subcommand_set(configurator: Configurator, format: &Option<OutputFormat>)
+{
+    match configurator.invoke_set(ErrorAction::Continue, || { /* code */ }) {
+        Ok(result) => {
+            let json = match serde_json::to_string(&result) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            if result.had_errors {
+                exit(EXIT_DSC_ERROR);
+            }
+        },
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
+fn handle_config_subcommand_test(configurator: Configurator, format: &Option<OutputFormat>)
+{
+    match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
+        Ok(result) => {
+            let json = match serde_json::to_string(&result) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            if result.had_errors {
+                exit(EXIT_DSC_ERROR);
+            }
+        },
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
 fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
     if stdin.is_none() {
         eprintln!("Configuration must be piped to STDIN");
@@ -98,14 +187,7 @@ fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<Outpu
         }
     };
 
-    let json_string = match serde_json::to_string(&json) {
-        Ok(json_string) => json_string,
-        Err(err) => {
-            eprintln!("Error: Failed to convert JSON to string: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
-
+    let json_string = serde_json_value_to_string(&json);
     let configurator = match Configurator::new(&json_string) {
         Ok(configurator) => configurator,
         Err(err) => {
@@ -113,35 +195,16 @@ fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<Outpu
             exit(EXIT_DSC_ERROR);
         }
     };
+
     match subcommand {
         ConfigSubCommand::Get => {
-            match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
-                Ok(result) => {
-                    let json = match serde_json::to_string(&result) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            eprintln!("JSON Error: {err}");
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, format);
-                    if result.had_errors {
-                        exit(EXIT_DSC_ERROR);
-                    }
-                },
-                Err(err) => {
-                    eprintln!("Error: {err}");
-                    exit(EXIT_DSC_ERROR);
-                }
-            }
+            handle_config_subcommand_get(configurator, format);
         },
         ConfigSubCommand::Set => {
-            eprintln!("Setting configuration... NOT IMPLEMENTED YET");
-            exit(EXIT_DSC_ERROR);
+            handle_config_subcommand_set(configurator, format);
         },
         ConfigSubCommand::Test => {
-            eprintln!("Testing configuration... NOT IMPLEMENTED YET");
-            exit(EXIT_DSC_ERROR);
+            handle_config_subcommand_test(configurator, format);
         },
         ConfigSubCommand::Validate => {
             eprintln!("Validate configuration.. NOT IMPLEMENTED YET");
@@ -199,10 +262,53 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
     }
 }
 
+fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -> Result<String, DscError>
+{
+    let mut v = serde_json::from_str::<serde_json::Value>(json)?;
+
+    if let serde_json::Value::Object(ref mut map) = v {
+        for (k, v) in fields_to_add {
+            map.insert(k.clone(), serde_json::Value::String(v.clone()));
+        }
+    }
+    
+    let result = serde_json::to_string(&v)?;
+    Ok(result)
+}
+
+fn add_type_name_to_json(json: String, type_name: String) -> String
+{
+    let mut map:HashMap<String,String> = HashMap::new();
+    map.insert(String::from("type"), type_name);
+
+    let mut j = json;
+    if j.is_empty()
+    {
+        j = String::from("{}");
+    }
+
+    match add_fields_to_json(&j, &map) {
+        Ok(json) => json,
+        Err(err) => {
+            eprintln!("JSON Error: {err}");
+            exit(EXIT_JSON_ERROR);
+        }
+    }
+}
+
 fn handle_resource_get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     // TODO: support streaming stdin which includes resource and input
-    let input = get_input(input, stdin);
-    let resource = get_resource(dsc, resource);
+    let mut input = get_input(input, stdin);
+    let mut resource = get_resource(dsc, resource);
+    //TODO: add to debug stream: println!("handle_resource_get - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    if resource.requires.is_some()
+    {
+        input = add_type_name_to_json(input, resource.type_name);
+        resource = get_resource(dsc, &resource.requires.clone().unwrap());
+    }
+
+    //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
+
     match resource.get(input.as_str()) {
         Ok(result) => {
             // convert to json
@@ -223,8 +329,19 @@ fn handle_resource_get(dsc: &mut DscManager, resource: &str, input: &Option<Stri
 }
 
 fn handle_resource_set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let input = get_input(input, stdin);
-    let resource = get_resource(dsc, resource);
+    let mut input = get_input(input, stdin);
+    let mut resource = get_resource(dsc, resource);
+
+    //TODO: add to debug stream: println!("handle_resource_set - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+
+    if resource.requires.is_some()
+    {
+        input = add_type_name_to_json(input, resource.type_name);
+        resource = get_resource(dsc, &resource.requires.clone().unwrap());
+    }
+
+    //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
+
     match resource.set(input.as_str()) {
         Ok(result) => {
             // convert to json
@@ -245,8 +362,19 @@ fn handle_resource_set(dsc: &mut DscManager, resource: &str, input: &Option<Stri
 }
 
 fn handle_resource_test(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let input = get_input(input, stdin);
-    let resource = get_resource(dsc, resource);
+    let mut input = get_input(input, stdin);
+    let mut resource = get_resource(dsc, resource);
+
+    //TODO: add to debug stream: println!("handle_resource_test - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+
+    if resource.requires.is_some()
+    {
+        input = add_type_name_to_json(input, resource.type_name);
+        resource = get_resource(dsc, &resource.requires.clone().unwrap());
+    }
+
+    //TODO: add to debug stream: println!("handle_resource_test - input - {}", input);
+
     match resource.test(input.as_str()) {
         Ok(result) => {
             // convert to json

@@ -1,0 +1,11 @@
+# Example configuration mixing native app resources with classic PS resources
+$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+resources:
+- name: Get info from classic DSC resources
+  type: DSC/WindowsPowerShellGroup
+  properties:
+    resources:
+    - name: Get Info
+      type: PSDesiredStateConfiguration/MSFT_ServiceResource
+      properties:
+        Name: sshd

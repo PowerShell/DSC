@@ -6,7 +6,7 @@ mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscerror::DscError;
-use crate::dscresources::dscresource::DscResource;
+use crate::dscresources::dscresource::{DscResource};
 use regex::RegexBuilder;
 
 pub struct Discovery {

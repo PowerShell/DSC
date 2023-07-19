@@ -90,7 +90,7 @@ else {
 }
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j")
+$projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j", "powershellgroup")
 $pedantic_clean_projects = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
 
 if ($IsWindows) {
@@ -103,18 +103,22 @@ foreach ($project in $projects) {
     Write-Host -ForegroundColor Cyan "Building $project ..."
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
-        if ($Clippy) {
-            if ($pedantic_clean_projects -contains $project) {
-                Write-Verbose -Verbose "Running clippy with pedantic for $project"
-                cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+
+        if (Test-Path "./Cargo.toml")
+        {
+            if ($Clippy) {
+                if ($pedantic_clean_projcets -contains $project) {
+                    Write-Verbose -Verbose "Running clippy with pedantic for $project"
+                    cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                }
+                else {
+                    Write-Verbose -Verbose "Running clippy for $project"
+                    cargo clippy @flags -- -Dwarnings
+                }
             }
             else {
-                Write-Verbose -Verbose "Running clippy for $project"
-                cargo clippy @flags -- -Dwarnings
+                cargo build @flags
             }
-        }
-        else {
-            cargo build @flags
         }
 
         if ($LASTEXITCODE -ne 0) {
@@ -129,6 +133,7 @@ foreach ($project in $projects) {
         }
 
         Copy-Item "*.resource.json" $target -Force -ErrorAction Ignore
+        Copy-Item "*.resource.ps1" $target -Force -ErrorAction Ignore
         Copy-Item "*.command.json" $target -Force -ErrorAction Ignore
 
     } finally {
@@ -169,15 +174,38 @@ if (!$found) {
 
 if ($Test) {
     $failed = $false
+    
+    $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
+    if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
+    {   "Installing module PSDesiredStateConfiguration 2.0.7"
+        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+        Install-Module PSDesiredStateConfiguration -RequiredVersion 2.0.7
+    }
+
+    if (-not(Get-Module -ListAvailable -Name Pester))
+    {   "Installing module Pester"
+        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+        Install-Module Pester -WarningAction Ignore
+    }
+
+    "For debug - env:PATH is:"
+    $env:PATH
+
     foreach ($project in $projects) {
         ## Build format_json
         Write-Host -ForegroundColor Cyan "Testing $project ..."
         try {
             Push-Location "$PSScriptRoot/$project"
-            cargo test
+            if (Test-Path "./Cargo.toml")
+            {
+                if (Test-Path "./Cargo.toml")
+                {
+                    cargo test
 
-            if ($LASTEXITCODE -ne 0) {
-                $failed = $true
+                    if ($LASTEXITCODE -ne 0) {
+                        $failed = $true
+                    }
+                }
             }
         } finally {
             Pop-Location
@@ -186,6 +214,29 @@ if ($Test) {
 
     if ($failed) {
         throw "Test failed"
+    }
+
+    "PSModulePath is:"
+    $env:PSModulePath
+    "Pester module located in:"
+    (Get-Module -Name Pester -ListAvailable).Path
+
+    # On Windows disable duplicated WinPS resources that break PSDesiredStateConfiguration module
+    if ($IsWindows) {
+        $a = $env:PSModulePath -split ";" | ? { $_ -notmatch 'WindowsPowerShell' }
+        $env:PSModulePath = $a -join ';'
+
+        "Updated PSModulePath is:"
+        $env:PSModulePath
+
+        if (-not(Get-Module -ListAvailable -Name Pester))
+        {   "Installing module Pester"
+            $InstallTargetDir = ($env:PSModulePath -split ";")[0]
+            Find-Module -Name 'Pester' -Repository 'PSGallery' | Save-Module -Path $InstallTargetDir
+        }
+
+        "Updated Pester module location:"
+        (Get-Module -Name Pester -ListAvailable).Path
     }
 
     Invoke-Pester -ErrorAction Stop
