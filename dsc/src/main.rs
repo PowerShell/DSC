@@ -91,17 +91,6 @@ fn serde_json_value_to_string(json: &serde_json::Value) -> String
     }
 }
 
-fn new_configurator(json_string: &str) -> Configurator
-{
-    match Configurator::new(json_string) {
-        Ok(configurator) => configurator,
-        Err(err) => {
-            eprintln!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    }
-}
-
 fn handle_config_subcommand_get(configurator: Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
@@ -199,7 +188,13 @@ fn handle_config_subcommand(subcommand: &ConfigSubCommand, format: &Option<Outpu
     };
 
     let json_string = serde_json_value_to_string(&json);
-    let configurator = new_configurator(&json_string);
+    let configurator = match Configurator::new(&json_string) {
+        Ok(configurator) => configurator,
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    };
 
     match subcommand {
         ConfigSubCommand::Get => {

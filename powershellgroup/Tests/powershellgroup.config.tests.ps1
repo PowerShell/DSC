@@ -7,7 +7,7 @@ Describe 'PowerShellGroup resource tests' {
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += ";" + $PSScriptRoot
 
-        $configPath = Join-path $PSScriptRoot "testconfig2.yaml"
+        $configPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
