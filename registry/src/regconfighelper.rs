@@ -77,8 +77,6 @@ pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
 
 pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
     let mut reg_result: RegistryConfig = RegistryConfig::default();
-    let in_desired_state = true;
-
     let reg_key: RegistryKey;
     match &config.value_name {
         None => {
@@ -137,7 +135,7 @@ pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryErr
         }
     };
 
-    Ok((reg_json, in_desired_state))
+    Ok(reg_json)
 }
 
 fn get_parent_key_path(key_path: &str) -> Result<&str, RegistryError> {

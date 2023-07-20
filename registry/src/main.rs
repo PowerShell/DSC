@@ -119,7 +119,7 @@ fn main() {
                 args::ConfigSubCommand::Set => {
                     match regconfighelper::config_set(&config) {
                         Ok(result) => {
-                            json = result.0;
+                            json = result;
                         },
                         Err(err) => {
                             eprintln!("Error setting config: {}", err);
