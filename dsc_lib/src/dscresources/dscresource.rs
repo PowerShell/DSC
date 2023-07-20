@@ -6,7 +6,7 @@ use resource_manifest::ResourceManifest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use super::{command_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult}};
+use super::{command_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -33,7 +33,7 @@ pub struct DscResource {
     pub manifest: Option<Value>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum ImplementedAs {
     /// A command line executable
@@ -100,6 +100,17 @@ pub trait Invoke {
     /// This function will return an error if the underlying resource fails.
     fn test(&self, expected: &str) -> Result<TestResult, DscError>;
 
+    /// Invoke the validate operation on the resource.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The configuration as JSON to have the resource validate.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying resource or validation fails.
+    fn validate(&self, config: &str) -> Result<ValidateResult, DscError>;
+
     /// Get the schema for the resource.
     ///
     /// # Errors
@@ -165,6 +176,21 @@ impl Invoke for DscResource {
                 else {
                     command_resource::invoke_test(&resource_manifest, &self.directory, expected)
                 }
+            },
+        }
+    }
+
+    fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
+        match &self.implemented_as {
+            ImplementedAs::Custom(_custom) => {
+                Err(DscError::NotImplemented("validate custom resources".to_string()))
+            },
+            ImplementedAs::Command => {
+                let Some(manifest) = &self.manifest else {
+                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                };
+                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                command_resource::invoke_validate(&resource_manifest, &self.directory, config)
             },
         }
     }

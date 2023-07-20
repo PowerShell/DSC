@@ -59,7 +59,7 @@ pub enum SchemaKind {
     /// The schema is embedded in the manifest.
     #[serde(rename = "embedded")]
     Embedded(Value),
-    /// The schema is retrieved from a URL.
+    /// The schema is retrieved from a URL.  Required for intellisense support.
     #[serde(rename = "url")]
     Url(String),
 }
@@ -123,7 +123,7 @@ pub struct TestMethod {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct ValidateMethod {
+pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Validate.
