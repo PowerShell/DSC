@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://schemas.microsoft.com/dsc/2023/07/config/document.resource.yaml
+
+title: DSC Resource instance
+type: object
+required:
+  - type
+  - name
+properties:
+  type:
+    $ref: /dsc/2023/07/definitions/resourceType.yaml
+  name:
+    $ref: /dsc/2023/07/definitions/instanceName.yaml
+  dependsOn:
+    title: Instance depends on
+    description: >-
+      Defines a list of DSC Resource instances that DSC must successfully
+      process before processing this instance. Each value for this property
+      must be the value of another DSC Resource instance's `name` property.
+    type: array
+    items:
+      type: string
+      uniqueItems: true
+      pattern: ^\[\w+(\.\w+){0,2}\/\w+\].+$
+  properties:
+    title: Managed instance properties
+    description: >-
+      Defines the properties of the DSC Resource this instance manages. This
+      property's value must be an object. DSC validates the property's value
+      against the DSC Resource's schema.
+    type: object

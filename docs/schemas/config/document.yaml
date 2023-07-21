@@ -22,7 +22,14 @@ properties:
       - https://schemas.microsoft.com/dsc/2023/07/config/document.yaml
 
   parameters:
-    $ref: /dsc/2023/07/config/document.parameters.yaml
+    title: DSC Configuration document parameters
+    description: >-
+      Defines runtime options for the configuration. Users and integrating tools
+      can override use the defined parameters to pass alternate values to the
+      configuration.
+    type: object
+    additionalProperties:
+      $ref: /dsc/2023/07/config/document.parameters.yaml
 
   variables:
     title: Configuration variables
@@ -33,7 +40,13 @@ properties:
     type: object
 
   resources:
-    $ref: /dsc/2023/07/config/document.resources.yaml
+    title: DSC Configuration document resources
+    description: >-
+      Defines a list of DSC Resource instances for the configuration to manage.
+    type: array
+    minItems: 1
+    items:
+      $ref: /dsc/2023/07/config/document.resource.yaml
 
   metadata:
     title: Configuration metadata

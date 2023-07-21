@@ -21,7 +21,7 @@ properties:
     description: Defines a set of reusable values for the configuration document. The names of this value's properties are the strings used to reference a variable's value.
     type: object
   resources:
-    $ref: /dsc/2023/07/config/document.resources.yaml
+    $ref: /dsc/2023/07/config/dataTypes.yaml
   metadata:
     title: Configuration metadata
     description: Defines a set of key-value pairs for the configuration. This metadata isn't validated.
@@ -42,7 +42,7 @@ $defs:
         - type
         properties:
           type:
-            $ref: /dsc/2023/07/definitions/parameters/dataType.yaml
+            $ref: /dsc/2023/07/definitions/parameters/dataTypes.yaml
           defaultValue:
             title: Default value
             description: Defines the default value for the parameter.
@@ -81,9 +81,9 @@ $defs:
                   const: array
           then:
             $ref: /dsc/2023/07/definitions/parameters/lengthValidationProperties.yaml
-  https://schemas.microsoft.com/dsc/2023/07/config/document.resources.yaml:
+  https://schemas.microsoft.com/dsc/2023/07/config/dataTypes.yaml:
     $schema: https://json-schema.org/draft/2020-12/schema
-    $id: https://schemas.microsoft.com/dsc/2023/07/config/document.resources.yaml
+    $id: https://schemas.microsoft.com/dsc/2023/07/config/dataTypes.yaml
     title: DSC Configuration document resources
     description: Defines a list of DSC Resource instances for the configuration to manage.
     type: array
@@ -109,9 +109,9 @@ $defs:
           title: Managed instance properties
           description: Defines the properties of the DSC Resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC Resource's schema.
           type: object
-  https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/dataType.yaml:
+  https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/dataTypes.yaml:
     $schema: https://json-schema.org/draft/2020-12/schema
-    $id: https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/dataType.yaml
+    $id: https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/dataTypes.yaml
     title: Data Type
     description: Defines the data type for the value.
     type: string
