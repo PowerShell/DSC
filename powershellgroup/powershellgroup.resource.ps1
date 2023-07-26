@@ -33,7 +33,20 @@ function RefreshCache
     }
 }
 
-Import-Module PSDesiredStateConfiguration
+$DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable |
+    Sort-Object -Property Version -Descending |
+    Select-Object -First 1
+
+if ($null -eq $DscModule)
+{
+    Write-Error "Could not find and import the PSDesiredStateConfiguration module."
+    # Missing module is okay for listing resources
+    if ($Operation -eq 'List') { exit 0 }
+
+    exit 1
+}
+
+Import-Module $DscModule
 
 if ($Operation -eq 'List')
 {
