@@ -255,7 +255,7 @@ fn validate_config(config: &str) {
     };
 
     // then validate each resource
-    for resource_block in config_value["resources"].as_array().unwrap().into_iter() {
+    for resource_block in config_value["resources"].as_array().unwrap().iter() {
         let type_name = resource_block["type"].as_str().unwrap_or_else(|| {
             eprintln!("Error: Resource type not specified");
             exit(EXIT_INVALID_INPUT);
@@ -275,7 +275,7 @@ fn validate_config(config: &str) {
                     },
                 };
                 if manifest.validate.is_some() {
-                    let result = match resource.validate(&config) {
+                    let result = match resource.validate(config) {
                         Ok(result) => result,
                         Err(e) => {
                             eprintln!("Error: Failed to validate resource: {e}");
