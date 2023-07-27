@@ -4,6 +4,7 @@ resources:
 - name: my assertions
   type: DSC/AssertionGroup
   properties:
+    $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
     resources:
     - name: os
       type: Microsoft/OSInfo
@@ -20,6 +21,6 @@ resources:
   type: Microsoft.Windows/Registry
   properties:
     keyPath: HKCU\example
-    _ensure: present
+    _ensure: Present
   dependsOn:
   - '[DSC/Assertion]my assertions' # should we include the type or just the name? Is there a scenario to depend on a deeply nested resource?

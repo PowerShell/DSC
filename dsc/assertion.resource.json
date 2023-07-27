@@ -33,6 +33,16 @@
   "exitCodes": {
     "0": "Success"
   },
+  "schema": {
+    "command": {
+      "executable": "dsc",
+      "args": [
+        "schema",
+        "--type",
+        "configuration"
+      ]
+    }
+  },
   "validate": {
     "executable": "dsc",
     "args": [
