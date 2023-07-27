@@ -16,7 +16,8 @@ resources:
         keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
         valueName: SystemRoot
         valueData:
-          String: C:\Windows
+          # this is deliberately set to z: drive so that the assertion fails
+          String: Z:\Windows
 - name: current user registry
   type: Microsoft.Windows/Registry
   properties:
