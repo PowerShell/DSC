@@ -75,7 +75,7 @@ pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
     }
 }
 
-pub fn config_set(config: &RegistryConfig) -> Result<(String, bool), RegistryError> {
+pub fn config_set(config: &RegistryConfig) -> Result<String, RegistryError> {
     let mut reg_result: RegistryConfig = RegistryConfig::default();
     let reg_key: RegistryKey;
     match &config.value_name {
