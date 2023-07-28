@@ -358,7 +358,11 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
             }
             for resource in dsc.find_resource(&resource_name.clone().unwrap_or_default()) {
                 // if description is specified, skip if resource description does not contain it
-                if resource.manifest.is_some() && (description.is_some() || tags.is_some()) {
+                if description.is_some() || tags.is_some() {
+                    if resource.manifest.is_none() {
+                        continue;
+                    }
+
                     let resource_manifest = match serde_json::from_value::<ResourceManifest>(resource.clone().manifest.unwrap().clone()) {
                         Ok(resource_manifest) => resource_manifest,
                         Err(err) => {
