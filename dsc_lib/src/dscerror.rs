@@ -59,4 +59,7 @@ pub enum DscError {
         code: i32,
         message: String,
     },
+
+    #[error("Validation: {0}")]
+    Validation(String),
 }

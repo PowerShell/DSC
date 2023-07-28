@@ -33,3 +33,12 @@ pub struct TestResult {
     /// The properties that were different from the expected state.
     pub diff_properties: Option<Vec<String>>,
 }
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ValidateResult {
+    /// Whether the supplied configuration is valid.
+    pub valid: bool,
+    /// Reason for the validation result.
+    pub reason: Option<String>,
+}

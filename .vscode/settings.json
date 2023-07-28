@@ -1,0 +1,16 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./dsc/Cargo.toml",
+        "./dsc_lib/Cargo.toml",
+        "./env/Cargo.toml",
+        "./ntreg/Cargo.toml",
+        "./ntstatuserror/Cargo.toml",
+        "./ntuserinfo/Cargo.toml",
+        "./osinfo/Cargo.toml",
+        "./pal/Cargo.toml",
+        "./registry/Cargo.toml",
+        "./test_group_resource/Cargo.toml",
+        "./y2j/Cargo.toml"
+    ],
+    "rust-analyzer.showUnlinkedFileNotification": true
+}

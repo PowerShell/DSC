@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};
 
 use crate::dscerror::DscError;
-use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult}};
+use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult}};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -195,6 +195,21 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             })
         },
     }
+}
+
+pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> Result<ValidateResult, DscError> {
+    // TODO: use schema to validate config if validate is not implemented
+    let Some(validate) = resource.validate.as_ref() else {
+        return Err(DscError::NotImplemented("validate".to_string()));
+    };
+
+    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, validate.args.clone(), Some(config), Some(cwd))?;
+    if exit_code != 0 {
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    }
+
+    let result: ValidateResult = serde_json::from_str(&stdout)?;
+    Ok(result)
 }
 
 /// Get the JSON schema for a resource
