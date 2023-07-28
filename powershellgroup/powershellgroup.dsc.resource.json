@@ -3,6 +3,9 @@
     "type": "DSC/PowerShellGroup",
     "version": "0.1.0",
     "description": "Resource provider to classic DSC Powershell resources.",
+    "tags": [
+      "PowerShell"
+    ],
     "provider": {
       "list": {
         "executable": "pwsh",
@@ -56,4 +59,3 @@
       "1": "Error"
     }
   }
-  
