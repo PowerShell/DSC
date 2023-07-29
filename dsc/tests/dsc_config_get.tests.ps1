@@ -15,13 +15,13 @@ Describe 'dsc config get tests' {
         $out.results.Count | Should -Be 3
         $out.results[0].Name | Should -Be 'os'
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
-        $out.results[0].result.actual_state.family | Should -BeExactly 'Windows'
+        $out.results[0].result.actualState.family | Should -BeExactly 'Windows'
         $out.results[1].Name | Should -Be 'windows product name'
         $out.results[1].type | Should -BeExactly 'Microsoft.Windows/Registry'
-        $out.results[1].result.actual_state.valueData.String | Should -BeLike 'Windows*'
+        $out.results[1].result.actualState.valueData.String | Should -BeLike 'Windows*'
         $out.results[2].Name | Should -Be 'system root'
         $out.results[2].type | Should -BeExactly 'Microsoft.Windows/Registry'
-        $out.results[2].result.actual_state.valueData.String | Should -BeExactly $env:SystemRoot
+        $out.results[2].result.actualState.valueData.String | Should -BeExactly $env:SystemRoot
     }
 
     It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {
