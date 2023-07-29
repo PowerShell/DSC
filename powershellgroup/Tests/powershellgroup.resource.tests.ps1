@@ -57,7 +57,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.after_state.RebootRequired | Should -Not -BeNull
+        $res.afterState.RebootRequired | Should -Not -BeNull
     }
 
     It 'Set works on script-based resource' -Skip:(!$IsWindows){
@@ -65,6 +65,6 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestPSRepository1'}" | dsc resource set -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.after_state.RebootRequired | Should -Not -BeNull
+        $res.afterState.RebootRequired | Should -Not -BeNull
     }
 }

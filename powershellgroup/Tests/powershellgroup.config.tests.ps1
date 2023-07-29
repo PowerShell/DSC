@@ -36,7 +36,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = Get-Content -Raw $configPath | dsc config set
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results.result.after_state[0].RebootRequired | Should -Not -BeNull
-        $res.results.result.after_state[1].RebootRequired | Should -Not -BeNull
+        $res.results.result.afterState[0].RebootRequired | Should -Not -BeNull
+        $res.results.result.afterState[1].RebootRequired | Should -Not -BeNull
     }
 }
