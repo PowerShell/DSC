@@ -9,7 +9,7 @@ use serde_json::Value;
 #[serde(deny_unknown_fields)]
 pub struct GetResult {
     /// The state of the resource as it was returned by the Get method.
-    /// #[serde(rename = "actualState")]
+    #[serde(rename = "actualState")]
     pub actual_state: Value,
 }
 
