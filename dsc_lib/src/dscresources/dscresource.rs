@@ -169,7 +169,8 @@ impl Invoke for DscResource {
                     let test_result = TestResult {
                         expected_state: serde_json::from_str(expected)?,
                         actual_state: get_result.actual_state,
-                        diff_properties: Some(diff_properties),
+                        in_desired_state: diff_properties.is_empty(),
+                        diff_properties,
                     };
                     Ok(test_result)
                 }

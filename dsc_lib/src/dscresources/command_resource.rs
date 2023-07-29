@@ -61,7 +61,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Resu
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !set.pre_test.unwrap_or_default() {
         let test_result = invoke_test(resource, cwd, desired)?;
-        if test_result.diff_properties.is_none() {
+        if test_result.in_desired_state {
             return Ok(SetResult {
                 before_state: test_result.expected_state,
                 after_state: test_result.actual_state,
@@ -164,7 +164,8 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             Ok(TestResult {
                 expected_state: expected_value,
                 actual_state: actual_value,
-                diff_properties: Some(diff_properties),
+                in_desired_state: diff_properties.is_empty(),
+                diff_properties,
             })
         },
         Some(ReturnKind::StateAndDiff) => {
@@ -181,7 +182,8 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             Ok(TestResult {
                 expected_state: expected_value,
                 actual_state: actual_value,
-                diff_properties: Some(diff_properties),
+                in_desired_state: diff_properties.is_empty(),
+                diff_properties,
             })
         },
         None => {
@@ -191,7 +193,8 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             Ok(TestResult {
                 expected_state: expected_value,
                 actual_state: get_result.actual_state,
-                diff_properties: Some(diff_properties),
+                in_desired_state: diff_properties.is_empty(),
+                diff_properties,
             })
         },
     }
@@ -310,7 +313,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 }
 
 fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
-    
+
     //TODO: add to debug stream:
     //println!("verify_json - resource_type - {}", resource.resource_type);
 

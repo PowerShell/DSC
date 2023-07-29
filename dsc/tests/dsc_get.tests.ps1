@@ -33,10 +33,10 @@ Describe 'config get tests' {
         $output = $json | dsc resource get -r $resource
         $LASTEXITCODE | Should -Be 0
         $output = $output | ConvertFrom-Json
-        $output.actual_state.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
-        $output.actual_state.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
-        $output.actual_state.valueName | Should -BeExactly 'ProductName'
-        $output.actual_state.valueData.String | Should -Match 'Windows .*'
+        $output.actualState.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
+        $output.actualState.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
+        $output.actualState.valueName | Should -BeExactly 'ProductName'
+        $output.actualState.valueData.String | Should -Match 'Windows .*'
     }
 
     It 'invalid input is validated against schema' -Skip:(!$IsWindows) {
