@@ -52,7 +52,7 @@ Describe 'Resource provider tests' {
 '@
         $oldPath = $env:PATH
         try {
-            Set-Content -Path testdrive:/invalid.resource.json -Value $invalid_manifest
+            Set-Content -Path testdrive:/invalid.dsc.resource.json -Value $invalid_manifest
             $env:PATH += [System.IO.Path]::PathSeparator + (Resolve-Path (Resolve-Path $TestDrive -Relative))
 
             $out = dsc resource list *invalid* 2>&1

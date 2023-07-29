@@ -132,7 +132,7 @@ foreach ($project in $projects) {
             Copy-Item "$path/$project" $target -ErrorAction Ignore
         }
 
-        Copy-Item "*.resource.json" $target -Force -ErrorAction Ignore
+        Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
         Copy-Item "*.resource.ps1" $target -Force -ErrorAction Ignore
         Copy-Item "*.command.json" $target -Force -ErrorAction Ignore
 
@@ -174,7 +174,7 @@ if (!$found) {
 
 if ($Test) {
     $failed = $false
-    
+
     $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
     if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
     {   "Installing module PSDesiredStateConfiguration 2.0.7"
