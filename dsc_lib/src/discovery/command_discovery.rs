@@ -124,6 +124,8 @@ fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
     let resource = DscResource {
         type_name: manifest.resource_type.clone(),
         implemented_as: ImplementedAs::Command,
+        description: manifest.description.clone(),
+        version: manifest.version.clone(),
         path: path.to_str().unwrap().to_string(),
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: Some(serde_json::to_value(manifest)?),

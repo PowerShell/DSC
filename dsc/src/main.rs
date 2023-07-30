@@ -23,6 +23,7 @@ use syntect::easy::HighlightLines;
 use syntect::parsing::SyntaxSet;
 use syntect::highlighting::{ThemeSet, Style};
 use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+use tablewriter::Table;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -30,6 +31,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod tablewriter;
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_ARGS: i32 = 1;
@@ -348,20 +350,40 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
                     exit(EXIT_DSC_ERROR);
                 }
             };
+            let mut write_table = false;
+            let mut table = Table::new(vec!["Type", "Version", "Requires", "Description"]);
+            if format.is_none() && atty::is(Stream::Stdout) {
+                // write as table if fornat is not specified and interactive
+                write_table = true;
+            }
             for resource in dsc.find_resource(&resource_name.clone().unwrap_or_default()) {
-                // convert to json
-                let json = match serde_json::to_string(&resource) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        eprintln!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
-                    }
-                };
-                write_output(&json, format);
-                // insert newline separating instances if writing to console
-                if atty::is(Stream::Stdout) {
-                    println!();
+                if write_table {
+                    table.add_row(vec![
+                        resource.type_name,
+                        resource.version,
+                        resource.requires.unwrap_or_default(),
+                        resource.description.unwrap_or_default()
+                    ]);
                 }
+                else {
+                    // convert to json
+                    let json = match serde_json::to_string(&resource) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            eprintln!("JSON Error: {err}");
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    };
+                    write_output(&json, format);
+                    // insert newline separating instances if writing to console
+                    if atty::is(Stream::Stdout) {
+                        println!();
+                    }
+                }
+            }
+
+            if write_table {
+                table.print();
             }
         },
        ResourceSubCommand::Get { resource, input } => {

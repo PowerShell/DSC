@@ -18,6 +18,8 @@ pub struct DscResource {
     pub version: String,
     /// The file path to the resource.
     pub path: String,
+    /// The description of the resource.
+    pub description: Option<String>,
     // The directory path to the resource.
     pub directory: String,
     /// The implementation of the resource.
@@ -48,6 +50,7 @@ impl DscResource {
         Self {
             type_name: String::new(),
             version: String::new(),
+            description: None,
             path: String::new(),
             directory: String::new(),
             implemented_as: ImplementedAs::Command,
