@@ -62,7 +62,7 @@ impl Table {
             // if row is too wide and last character is not a space, truncate and add ellipsis unicode character
             if row_str.len() > width as usize {
                 row_str.truncate(width as usize);
-                if !row_str.ends_with(" ") {
+                if !row_str.ends_with(' ') {
                     row_str.pop();
                     row_str.push('…');
                 }
