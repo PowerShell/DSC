@@ -31,8 +31,8 @@ pub struct SetResult {
 #[serde(deny_unknown_fields)]
 pub struct TestResult {
     /// The state of the resource as it was expected to be.
-    #[serde(rename = "expectedState")]
-    pub expected_state: Value,
+    #[serde(rename = "desiredState")]
+    pub desired_state: Value,
     /// The state of the resource as it was returned by the Get method.
     #[serde(rename = "actualState")]
     pub actual_state: Value,

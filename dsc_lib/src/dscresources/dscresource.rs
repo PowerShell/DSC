@@ -164,10 +164,10 @@ impl Invoke for DscResource {
                 let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
-                    let expected_state = serde_json::from_str(expected)?;
-                    let diff_properties = get_diff(&expected_state, &get_result.actual_state);
+                    let desired_state = serde_json::from_str(expected)?;
+                    let diff_properties = get_diff(&desired_state, &get_result.actual_state);
                     let test_result = TestResult {
-                        expected_state: serde_json::from_str(expected)?,
+                        desired_state: serde_json::from_str(expected)?,
                         actual_state: get_result.actual_state,
                         in_desired_state: diff_properties.is_empty(),
                         diff_properties,

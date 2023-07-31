@@ -63,7 +63,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Resu
         let test_result = invoke_test(resource, cwd, desired)?;
         if test_result.in_desired_state {
             return Ok(SetResult {
-                before_state: test_result.expected_state,
+                before_state: test_result.desired_state,
                 after_state: test_result.actual_state,
                 changed_properties: None,
             });
@@ -162,7 +162,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             };
             let diff_properties = get_diff(&expected_value, &actual_value);
             Ok(TestResult {
-                expected_state: expected_value,
+                desired_state: expected_value,
                 actual_state: actual_value,
                 in_desired_state: diff_properties.is_empty(),
                 diff_properties,
@@ -180,7 +180,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
             Ok(TestResult {
-                expected_state: expected_value,
+                desired_state: expected_value,
                 actual_state: actual_value,
                 in_desired_state: diff_properties.is_empty(),
                 diff_properties,
@@ -191,7 +191,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             let get_result = invoke_get(resource, cwd, expected)?;
             let diff_properties = get_diff(&expected_value, &get_result.actual_state);
             Ok(TestResult {
-                expected_state: expected_value,
+                desired_state: expected_value,
                 actual_state: get_result.actual_state,
                 in_desired_state: diff_properties.is_empty(),
                 diff_properties,
