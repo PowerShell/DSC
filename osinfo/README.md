@@ -32,7 +32,7 @@ Example output (note in this doc it's formatted, but the command outputs as one 
 Since this resource takes no input, you can simply run:
 
 ```powershell
-dsc resource get -r osinfo
+dsc3 resource get -r osinfo
 ```
 
 Example output as YAML:
@@ -52,7 +52,7 @@ A `test` does require input, but keep in mind this resource doesn't implement sc
 is not validated:
 
 ```powershell
-'{"type":"Unknown"}' | dsc resource test -r osinfo
+'{"type":"Unknown"}' | dsc3 resource test -r osinfo
 ```
 
 Example output as YAML:
