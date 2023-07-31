@@ -1,14 +1,14 @@
-# `dsc` command for using DSC resources
+# `dsc3` command for using DSC resources
 
 ## DESCRIPTION
 
-The `dsc` command is used to discover, invoke DSC resources, and apply configuration.
+The `dsc3` command is used to discover, invoke DSC resources, and apply configuration.
 
 ## Usage
 
 Apply configuration or invoke specific DSC resources
 
-Usage: dsc [OPTIONS] <COMMAND>
+Usage: dsc3 [OPTIONS] <COMMAND>
 
 Commands:
   config    Apply a configuration document

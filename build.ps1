@@ -90,8 +90,8 @@ else {
 }
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j", "powershellgroup")
-$pedantic_clean_projects = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
+$projects = @("dsc_lib", "dsc3", "osinfo", "test_group_resource", "y2j", "powershellgroup")
+$pedantic_clean_projects = @("dsc_lib", "dsc3", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
 
 if ($IsWindows) {
     $projects += $windows_projects
@@ -174,7 +174,7 @@ if (!$found) {
 
 if ($Test) {
     $failed = $false
-    
+
     $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
     if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
     {   "Installing module PSDesiredStateConfiguration 2.0.7"

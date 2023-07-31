@@ -5,7 +5,7 @@ Describe 'Resource provider tests' {
 
     It 'Can list provider resources' {
 
-        $out = dsc resource list *testresource* | ConvertFrom-Json | Sort-Object -Property type
+        $out = dsc3 resource list *testresource* | ConvertFrom-Json | Sort-Object -Property type
         $out.Count | Should -Be 2
         $out[0].type | Should -BeExactly 'TestResource1'
         $out[0].version | Should -Be '1.0.0'
@@ -55,7 +55,7 @@ Describe 'Resource provider tests' {
             Set-Content -Path testdrive:/invalid.resource.json -Value $invalid_manifest
             $env:PATH += [System.IO.Path]::PathSeparator + (Resolve-Path (Resolve-Path $TestDrive -Relative))
 
-            $out = dsc resource list *invalid* 2>&1
+            $out = dsc3 resource list *invalid* 2>&1
             $LASTEXITCODE | Should -Be 2
             ,$out | Should -Match ".*?'requires'*"
         }

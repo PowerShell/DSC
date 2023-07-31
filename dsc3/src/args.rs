@@ -11,7 +11,7 @@ pub enum OutputFormat {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "dsc", version = "0.2.0", about = "Apply configuration or invoke specific DSC resources", long_about = None)]
+#[clap(name = "dsc3", version = "3.0.0-alpha.1", about = "Apply configuration or invoke specific DSC resources", long_about = None)]
 pub struct Args {
     /// The subcommand to run
     #[clap(subcommand)]
