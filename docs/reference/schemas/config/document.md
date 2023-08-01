@@ -18,9 +18,10 @@ DSC Configurations enable users to define state by combining different DSC Resou
 configuration document uses parameters and variables to pass to a set of one or more resources that
 define a desired state.
 
-A configuration document can be defined as either YAML or JSON. For ease of authoring, Microsoft recommneds drafting configuration documents in YAML.
+A configuration document can be defined as either YAML or JSON. For ease of authoring, Microsoft
+recommneds drafting configuration documents in YAML.
 
-For DSC's authoring tools to recognize a file as a DSC Configuration document, the file name must
+For DSC's authoring tools to recognize a file as a DSC Configuration document, the filename must
 end with `.dsc.config.json` or `.dsc.config.yaml`.
 
 For more information, see [DSC Configurations overview][01]
@@ -67,9 +68,13 @@ Required: false
 
 ### parameters
 
-The `parameters` property defines a set of runtime options for the configuration. Each parameter is defined as key-value pair. The key for each pair defines the name of the parameter. The value for each pair must be an object that defines the `type` keyword to indicate how DSC should process the parameter.
+The `parameters` property defines a set of runtime options for the configuration. Each parameter is
+defined as key-value pair. The key for each pair defines the name of the parameter. The value for
+each pair must be an object that defines the `type` keyword to indicate how DSC should process the
+parameter.
 
-Parameters may be overridden at run-time, enabling re-use of the same configuration document for different contexts.
+Parameters may be overridden at run-time, enabling re-use of the same configuration document for
+different contexts.
 
 For more information about defining parameters in a configuration, see
 [DSC Configuration document parameter schema][02]. For more information about using parameters in a
@@ -104,7 +109,10 @@ Required: false
 The `resources` property defines a list of DSC Resource instances that the configuration manages.
 Every instance in the list must be unique, but instances may share the same DSC Resource type.
 
-For more information about defining a valid resource instance in a configuration, see [DSC Configuration document resource schema][05]. For more information about how DSC uses resources in a configuration, see [DSC Configuration resources][06] and [DSC Configuration resource groups][07].
+For more information about defining a valid resource instance in a configuration, see
+[DSC Configuration document resource schema][05]. For more information about how DSC uses resources
+in a configuration, see [DSC Configuration resources][06] and
+[DSC Configuration resource groups][07].
 
 ```yaml
 Type:               array

@@ -1,5 +1,7 @@
 # DSC Configuration document resource schema
 
+## Synopsis
+
 Defines instances of DSC Resources that compose a configuration.
 
 ## Metadata
@@ -44,8 +46,8 @@ Required: true
 ### type
 
 The `type` property identifies the instance's DSC Resource. The value for this property must be the
-valid fully-qualified type name for the resource. For more information about type names, see
-[Anatomy of a command-based DSC Resource][01].
+valid fully qualified type name for the resource. For more information about type names, see
+[DSC Resource fully qualified type name schema reference][01].
 
 ```yaml
 Type:     string
@@ -68,7 +70,8 @@ Required: true
 
 ### dependsOn
 
-To declare that a resource instance is dependent on another instance in the configuration, define the `dependsOn` property.
+To declare that a resource instance is dependent on another instance in the configuration, define
+the `dependsOn` property.
 
 This property must be an array of dependency declarations. Each dependency must use this
 syntax:
@@ -93,7 +96,7 @@ Valid Items Type:     string
 Valid Items Pattern:  ^\[\w+(\.\w+){0,2}\/\w+\].+$
 ```
 
-[01]: ../../../resources/concepts/anatomy.md
+[01]: ../definitions/resourceType.md
 [02]: ../../../resources/concepts/assertion-resources.md
 [03]: ../../../resources/concepts/schemas.md
 [04]: ../../../configurations/concepts/dependencies.md

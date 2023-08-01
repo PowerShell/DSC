@@ -1,5 +1,7 @@
 # DSC Configuration document parameter schema
 
+## Synopsis
+
 Defines runtime options for a configuration.
 
 ## Metadata
@@ -20,7 +22,8 @@ Parameters are defined as key-value pairs in the `parameters` property of a conf
 The key is the parameter's name, which is used to reference the parameter in the [resources][01]
 property of the configuration document. The value is an object that defines the parameter.
 
-Every parameter defines its data type. Parameters may also define a default value, validation checks, a description of their purpose, and arbitrary metadata.
+Every parameter defines its data type. Parameters may also define a default value, validation
+checks, a description of their purpose, and arbitrary metadata.
 
 ## Required Properties
 
@@ -100,7 +103,8 @@ Parameters may limit the set of valid values for the parameter by defining the `
 property. DSC validates parameters passed at runtime and defined as `defaultValue` against this
 list of values. If any of the values is invalid, DSC raises an error.
 
-This property is always an array. If this property is defined, it must include at least one item in the list of values.
+This property is always an array. If this property is defined, it must include at least one item in
+the list of values.
 
 ```yaml
 Type:     array

@@ -24,7 +24,8 @@ doesn't exist, the resource creates the instance during the set operation.
 When `_ensure` is set to `Absent` for the desired state, the instance is expected to not exist. If
 it does exist, the resource removes the instance during the set operation.
 
-To add this property to a resource's instance schema, define the property with the following snippet:
+To add this property to a resource's instance schema, define the property with the following
+snippet:
 
 ```json
 "_ensure": {

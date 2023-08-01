@@ -36,6 +36,7 @@
       "title": "Tags",
       "description": "An array of short strings used to search for DSC Resources.",
       "type": "array",
+      "uniqueItems": true,
       "items": {
         "type": "string",
         "pattern": "^\\w+$"

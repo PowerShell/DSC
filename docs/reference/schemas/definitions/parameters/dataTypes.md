@@ -1,5 +1,7 @@
 # DSC configuration parameter data type schema reference
 
+## Synopsis
+
 Defines valid data types for a DSC configuration parameter
 
 ## Metadata
@@ -38,7 +40,8 @@ Access parameters in a configuration using this syntax:
 "[parameter('<parameter-name>')]"
 ```
 
-In YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value. If the syntax isn't quoted, YAML interprets the syntax as an array.
+In YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.
+If the syntax isn't quoted, YAML interprets the syntax as an array.
 
 ```yaml
 valid:  "[parameter('example')]"
@@ -51,7 +54,8 @@ invalid:
 
 ## Arrays
 
-Arrays are a list of one or more values. The values in the array can be any valid data type. Values in the array can be the same type or different types.
+Arrays are a list of one or more values. The values in the array can be any valid data type. Values
+in the array can be the same type or different types.
 
 ```yaml
 parameters:
@@ -113,7 +117,9 @@ parameters:
 
 ## Integers
 
-Integer values are numbers without a fractional part. Integer values may be limited by integrating tools or the DSC Resources they're used with. DSC itself supports integer values between `-9223372036854775808` and `9223372036854775807`.
+Integer values are numbers without a fractional part. Integer values may be limited by integrating
+tools or the DSC Resources they're used with. DSC itself supports integer values between
+`-9223372036854775808` and `9223372036854775807`.
 
 ```yaml
 parameters:
@@ -188,9 +194,10 @@ parameters:
     defaultValue: This example includes spaces and 'quoted' "text."
 ```
 
-To define a long string without newlines in YAML, use the folded block syntax by adding a `>` and a line break after the key. Then, indent the next line. Every line in the string must start
-at the same level of indentation. The lines are combined with a single space instead of newlines.
-To trim trailing whitespace, use `>-` instead of `>`.
+To define a long string without newlines in YAML, use the folded block syntax by adding a `>` and a
+line break after the key. Then, indent the next line. Every line in the string must start at the
+same level of indentation. The lines are combined with a single space instead of newlines. To trim
+trailing whitespace, use `>-` instead of `>`.
 
 ```yaml
 parameters:
@@ -241,3 +248,5 @@ parameters:
   sensitiveOptions:
     type: secureobject
 ```
+
+[01]: ../../config/document.md

@@ -132,7 +132,8 @@ Default:  []
 ### embedded
 
 The `embedded` property defines the full JSON schema for DSC to validate instances of the DSC
-Resource. The value for this property must be a valid JSON schema that defines the `$schema`, `type`, and `properties` keywords.
+Resource. The value for this property must be a valid JSON schema that defines the `$schema`,
+`type`, and `properties` keywords.
 
 ```yaml
 Type: object
