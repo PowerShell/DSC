@@ -13,8 +13,8 @@ Describe 'config test tests' {
         $out = $current | dsc resource test -r *registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
-        $out.actual_state._inDesiredState | Should -BeTrue
-        $out.diff_properties | Should -BeNullOrEmpty
+        $out.inDesiredState | Should -BeTrue
+        $out.differingProperties | Should -BeNullOrEmpty
     }
 
     It 'should confirm non-matching state' -Skip:(!$IsWindows) {
@@ -30,9 +30,9 @@ Describe 'config test tests' {
         $out = $json | dsc resource test -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
-        $out.actual_state._inDesiredState | Should -BeFalse
-        $out.diff_properties.Count | Should -Be 1
-        $out.diff_properties[0] | Should -BeExactly 'valueData'
+        $out.inDesiredState | Should -BeFalse
+        $out.differingProperties.Count | Should -Be 1
+        $out.differingProperties[0] | Should -BeExactly 'valueData'
     }
 
     It 'should confirm non-matching multiple state' -Skip:(!$IsWindows) {
@@ -48,9 +48,9 @@ Describe 'config test tests' {
         $out = $json | dsc resource test -r *registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
-        $out.actual_state._inDesiredState | Should -BeFalse
-        $out.diff_properties.Count | Should -Be 2
-        $out.diff_properties[0] | Should -BeExactly 'valueName'
-        $out.diff_properties[1] | Should -BeExactly 'valueData'
+        $out.inDesiredState | Should -BeFalse
+        $out.differingProperties.Count | Should -Be 2
+        $out.differingProperties[0] | Should -BeExactly 'valueName'
+        $out.differingProperties[1] | Should -BeExactly 'valueData'
     }
 }

@@ -17,9 +17,9 @@ Describe 'config argument tests' {
         param($text)
         $output = $text | dsc resource get -r *registry
         $output = $output | ConvertFrom-Json
-        $output.actual_state.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
-        $output.actual_state.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
-        $output.actual_state.valueName | Should -BeExactly 'ProductName'
-        $output.actual_state.valueData.String | Should -Match 'Windows .*'
+        $output.actualState.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
+        $output.actualState.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
+        $output.actualState.valueName | Should -BeExactly 'ProductName'
+        $output.actualState.valueData.String | Should -Match 'Windows .*'
     }
 }

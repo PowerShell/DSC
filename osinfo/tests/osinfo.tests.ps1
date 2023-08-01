@@ -6,31 +6,31 @@ Describe 'osinfo resource tests' {
         $out = dsc resource get -r Microsoft/osinfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
-            $out.actual_state.family | Should -BeExactly 'Windows'
+            $out.actualState.family | Should -BeExactly 'Windows'
         }
         elseif ($IsLinux) {
-            $out.actual_state.family | Should -BeExactly 'Linux'
+            $out.actualState.family | Should -BeExactly 'Linux'
         }
         elseif ($IsMacOS) {
-            $out.actual_state.family | Should -BeExactly 'MacOS'
+            $out.actualState.family | Should -BeExactly 'MacOS'
         }
 
-        $out.actual_state.version | Should -Not -BeNullOrEmpty
+        $out.actualState.version | Should -Not -BeNullOrEmpty
         if ([Environment]::Is64BitProcess) {
-            $out.actual_state.bitness | Should -BeExactly '64'
+            $out.actualState.bitness | Should -BeExactly '64'
         }
         else {
-            $out.actual_state.bitness | Should -BeExactly '32'
+            $out.actualState.bitness | Should -BeExactly '32'
         }
     }
 
     It 'should perform synthetic test' {
         $out = '{"family": "does_not_exist"}' | dsc resource test -r '*osinfo' | ConvertFrom-Json
         $actual = dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json
-        $out.actual_state.family | Should -BeExactly $actual.actual_state.family
-        $out.actual_state.version | Should -BeExactly $actual.actual_state.version
-        $out.actual_state.bitness | Should -BeExactly $actual.actual_state.bitness
-        $out.actual_state.edition | Should -BeExactly $actual.actual_state.edition
-        $out.diff_properties | Should -Be @('family')
+        $out.actualState.family | Should -BeExactly $actual.actualState.family
+        $out.actualState.version | Should -BeExactly $actual.actualState.version
+        $out.actualState.bitness | Should -BeExactly $actual.actualState.bitness
+        $out.actualState.edition | Should -BeExactly $actual.actualState.edition
+        $out.differingproperties | Should -Be @('family')
     }
 }
