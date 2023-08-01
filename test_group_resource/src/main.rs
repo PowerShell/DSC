@@ -16,6 +16,7 @@ fn main() {
             let resource1 = DscResource {
                 type_name: "TestResource1".to_string(),
                 version: "1.0.0".to_string(),
+                description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
                 path: "test_resource1".to_string(),
                 directory: "test_directory".to_string(),
@@ -29,6 +30,7 @@ fn main() {
             let resource2 = DscResource {
                 type_name: "TestResource2".to_string(),
                 version: "1.0.1".to_string(),
+                description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
                 path: "test_resource2".to_string(),
                 directory: "test_directory".to_string(),
@@ -46,6 +48,7 @@ fn main() {
             let resource1 = DscResource {
                 type_name: "InvalidResource".to_string(),
                 version: "1.0.0".to_string(),
+                description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
                 path: "test_resource1".to_string(),
                 directory: "test_directory".to_string(),
