@@ -59,7 +59,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     let path = entry.path();
                     if path.is_file() {
                         let file_name = path.file_name().unwrap().to_str().unwrap();
-                        if file_name.ends_with(".resource.json") {
+                        if file_name.to_lowercase().ends_with(".dsc.resource.json") {
                             let resource = import_manifest(&path)?;
                             if resource.manifest.is_some() {
                                 let manifest = serde_json::from_value::<ResourceManifest>(resource.manifest.clone().unwrap())?;
