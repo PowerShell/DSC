@@ -424,21 +424,6 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
                     if atty::is(Stream::Stdout) {
                         println!();
                     }
-                    else {
-                        // convert to json
-                        let json = match serde_json::to_string(&resource) {
-                            Ok(json) => json,
-                            Err(err) => {
-                                eprintln!("JSON Error: {err}");
-                                exit(EXIT_JSON_ERROR);
-                            }
-                        };
-                        write_output(&json, format);
-                        // insert newline separating instances if writing to console
-                        if atty::is(Stream::Stdout) {
-                            println!();
-                        }
-                    }
                 }
             }
 
