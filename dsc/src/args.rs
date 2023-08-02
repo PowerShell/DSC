@@ -58,6 +58,10 @@ pub enum ResourceSubCommand {
     List {
         /// Optional filter to apply to the list of resources
         resource_name: Option<String>,
+        #[clap(short, long, help = "Description keyword to search for in the resource description")]
+        description: Option<String>,
+        #[clap(short, long, help = "Tag to search for in the resource tags")]
+        tags: Option<Vec<String>>,
     },
     #[clap(name = "get", about = "Invoke the get operation to a resource", arg_required_else_help = true)]
     Get {

@@ -1,6 +1,11 @@
 {
   "manifestVersion": "1.0",
   "type": "Microsoft.Windows/Registry",
+  "description": "Registry configuration provider for the Windows Registry",
+  "tags": [
+    "Windows",
+    "NT"
+  ],
   "version": "0.1.0",
   "get": {
     "executable": "registry",

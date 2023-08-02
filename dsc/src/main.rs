@@ -342,7 +342,7 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name } => {
+        ResourceSubCommand::List { resource_name, description, tags } => {
             match dsc.initialize_discovery() {
                 Ok(_) => (),
                 Err(err) => {
@@ -357,6 +357,51 @@ fn handle_resource_subcommand(subcommand: &ResourceSubCommand, format: &Option<O
                 write_table = true;
             }
             for resource in dsc.find_resource(&resource_name.clone().unwrap_or_default()) {
+                // if description is specified, skip if resource description does not contain it
+                if description.is_some() || tags.is_some() {
+                    if resource.manifest.is_none() {
+                        continue;
+                    }
+
+                    let resource_manifest = match serde_json::from_value::<ResourceManifest>(resource.clone().manifest.unwrap().clone()) {
+                        Ok(resource_manifest) => resource_manifest,
+                        Err(err) => {
+                            eprintln!("Error in manifest for {0}: {err}", resource.type_name);
+                            continue;
+                        }
+                    };
+
+                    if description.is_some() {
+                        if resource_manifest.description.is_none() {
+                            continue;
+                        }
+
+                        if !resource_manifest.description.unwrap().to_lowercase().contains(&description.as_ref().unwrap().to_lowercase()) {
+                            continue;
+                        }
+                    }
+
+                    // if tags is specified, skip if resource tags do not contain the tags
+                    if tags.is_some() {
+                        if resource_manifest.tags.is_none() {
+                            continue;
+                        }
+
+                        let mut found = false;
+                        for tag_to_find in tags.clone().unwrap() {
+                            for tag in resource_manifest.tags.clone().unwrap() {
+                                if tag.to_lowercase() == tag_to_find.to_lowercase() {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if !found {
+                            continue;
+                        }
+                    }
+                }
+
                 if write_table {
                     table.add_row(vec![
                         resource.type_name,

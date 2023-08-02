@@ -19,6 +19,8 @@ pub struct ResourceManifest {
     pub version: String,
     /// The description of the resource.
     pub description: Option<String>,
+    /// Tags for the resource.
+    pub tags: Option<Vec<String>>,
     /// Details how to call the Get method of the resource.
     pub get: GetMethod,
     /// Details how to call the Set method of the resource.

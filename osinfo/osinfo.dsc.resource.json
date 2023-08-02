@@ -1,5 +1,12 @@
 {
     "manifestVersion": "1.0",
+    "description": "Returns information about the operating system.",
+    "tags": [
+        "os",
+        "linux",
+        "windows",
+        "macos"
+    ],
     "type": "Microsoft/OSInfo",
     "version": "0.1.0",
     "get": {
