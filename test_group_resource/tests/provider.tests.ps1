@@ -7,7 +7,7 @@ Describe 'Resource provider tests' {
 
         $out = dsc resource list *testresource* | ConvertFrom-Json | Sort-Object -Property type
         $out.Count | Should -Be 2
-        $out[0].type | Should -BeExactly 'TestResource1'
+        $out[0].type | Should -BeExactly 'Test/TestResource1'
         $out[0].version | Should -Be '1.0.0'
         $out[0].path | Should -BeExactly 'test_resource1'
         $out[0].implementedas | Should -BeExactly 'TestResource'

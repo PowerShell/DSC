@@ -14,7 +14,7 @@ fn main() {
     match args.subcommand {
         SubCommand::List => {
             let resource1 = DscResource {
-                type_name: "TestResource1".to_string(),
+                type_name: "Test/TestResource1".to_string(),
                 version: "1.0.0".to_string(),
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
@@ -28,7 +28,7 @@ fn main() {
                 }).unwrap()),
             };
             let resource2 = DscResource {
-                type_name: "TestResource2".to_string(),
+                type_name: "Test/TestResource2".to_string(),
                 version: "1.0.1".to_string(),
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
