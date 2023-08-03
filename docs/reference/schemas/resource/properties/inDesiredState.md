@@ -8,7 +8,7 @@ Indicates whether an instance is in the desired state.
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/resource/properties/inDesiredState.json
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json
 Type           : [boolean, 'null']
 Read Only      : true
 ```
@@ -36,7 +36,7 @@ snippet:
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/inDesiredState.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json"
 }
 ```
 

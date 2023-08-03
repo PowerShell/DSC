@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/definitions/returnKind.yaml
+
+title: Return Kind
+type: string
+enum:
+  - state
+  - stateAndDiff
+default: state
+
+$comment: |-
+  While the enumeration for return kind is the same for the `set` and `test`
+  method, the way it changes the behavior of the command isn't. The description
+  keyword isn't included here because the respective schemas for those methods
+  document the behavior themselves.

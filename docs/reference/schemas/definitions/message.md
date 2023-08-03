@@ -8,7 +8,7 @@ A message emitted by a DSC Resource with associated metadata.
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/definitions/message.yaml
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/message.json
 Type           : object
 ```
 

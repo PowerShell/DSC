@@ -8,7 +8,7 @@ Indicates whether an instance should exist.
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/resource/properties/ensure.json
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/ensure.json
 Type           : string
 Valid Values   : [Absent, Present]
 ```
@@ -29,7 +29,7 @@ snippet:
 
 ```json
 "_ensure": {
-  "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/ensure.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/ensure.json"
 }
 ```
 

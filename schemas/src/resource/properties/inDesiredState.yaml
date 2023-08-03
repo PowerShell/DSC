@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/resource/properties/inDesiredState.yaml
+
+title: Instance is in the Desired State
+description: >-
+  Indicates whether the instance is in the desired state. This property is only
+  returned by the `test` method.
+
+type:
+  - boolean
+  - 'null'
+readOnly: true

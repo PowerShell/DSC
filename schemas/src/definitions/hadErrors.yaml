@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/definitions/hadErrors.yaml
+
+title: Had Errors
+description: >-
+  Indicates whether any of the DSC Resources returned a non-zero exit code.
+type: boolean

@@ -8,7 +8,7 @@ Defines valid data types for a DSC configuration parameter
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/definitions/parameters/dataTypes.yaml
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json
 Type           : string
 Valid Values:
   - array

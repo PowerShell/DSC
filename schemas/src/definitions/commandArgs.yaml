@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+
+title: Executable Command Arguments
+description: >-
+  The list of arguments to pass to the command.
+type: array
+items:
+  type: string

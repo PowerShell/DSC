@@ -8,7 +8,7 @@ The YAML or JSON file that defines a DSC Configuration.
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/config/document.json
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 Type           : object
 ```
 
@@ -52,7 +52,7 @@ Type:     string
 Required: true
 Format:   URI
 Valid Values:
-  - https://schemas.microsoft.com/dsc/2023/07/config/document.yaml
+  - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 ```
 
 ### metadata
@@ -83,7 +83,7 @@ configuration, see [DSC Configuration parameters][03]
 ```yaml
 Type:                  object
 Required:              false
-Valid Property Schema: https://schemas.microsoft.com/dsc/2023/07/config/document.parameter.yaml
+Valid Property Schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json
 ```
 
 ### variables
@@ -118,7 +118,7 @@ in a configuration, see [DSC Configuration resources][06] and
 Type:               array
 Required:           false
 Minimum Item Count: 1
-Valid Item Schema:  https://schemas.microsoft.com/dsc/2023/07/config/document.resource.json
+Valid Item Schema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
 ```
 
 [01]: ../../../configurations/overview.md

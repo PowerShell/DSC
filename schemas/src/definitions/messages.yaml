@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/definitions/messages.yaml
+
+title: Messages
+description: >-
+  A list of structured messages emitted by the DSC Resources during an
+  operation.
+
+type: array
+items:
+  $ref: /<PREFIX>/<VERSION>/definitions/message.yaml

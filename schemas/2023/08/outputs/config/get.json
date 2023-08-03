@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/config/get.json",
+  "title": "DSC Configuration get command result",
+  "description": "Represents the data structure returned by the `dsc config get` command.",
+  "type": "object",
+  "required": [
+    "results",
+    "messages",
+    "hadErrors"
+  ],
+  "properties": {
+    "results": {
+      "title": "Results",
+      "description": "The results of the `get` method for every DSC Resource instance in the DSC Configuration Document with the instance's name and type.",
+      "type": "array",
+      "items": {
+        "title": "Get Result",
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "result"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/instanceName.json"
+          },
+          "type": {
+            "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json"
+          },
+          "result": {
+            "$ref": "/PowerShell/DSC/main/schemas/2023/08/results/resource/get.json"
+          }
+        }
+      }
+    },
+    "messages": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/messages.json"
+    },
+    "hadErrors": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/hadErrors.json"
+    }
+  }
+}

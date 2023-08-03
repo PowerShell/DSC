@@ -8,7 +8,7 @@ Indicates that the resource should treat non-defined entries in a list as invali
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/resource/properties/purge.json
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/purge.json
 Type           : [boolean, 'null']
 Write Only     : true
 ```
@@ -37,6 +37,6 @@ snippet:
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://schemas.microsoft.com/dsc/2023/07/resource/properties/purge.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/purge.json"
 }
 ```

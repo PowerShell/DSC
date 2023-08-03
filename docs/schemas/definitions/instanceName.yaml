@@ -1,9 +1,0 @@
-# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
-$schema: https://json-schema.org/draft/2020-12/schema
-$id:     https://schemas.microsoft.com/dsc/2023/07/definitions/instanceName.yaml
-
-title: Instance name
-description: >-
-  The short, human-readable name for a DSC Resource instance. Must be unique
-  within a DSC Configuration document.
-type: string

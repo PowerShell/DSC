@@ -1,8 +1,0 @@
-# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
-$schema: https://json-schema.org/draft/2020-12/schema
-$id:     https://schemas.microsoft.com/dsc/2023/07/definitions/commandExecutable.yaml
-
-title: Executable Command Name
-description: >-
-  The name of the command to run.
-type: string

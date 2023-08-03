@@ -8,7 +8,7 @@ Defines how to retrieve a DSC Resource instance.
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/resource/manifest.get.json
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.get.json
 Type           : object
 ```
 

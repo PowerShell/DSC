@@ -8,7 +8,7 @@ The result output from the `dsc resource test` command.
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/results/resource/test.yaml
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/test.json
 Type           : object
 ```
 

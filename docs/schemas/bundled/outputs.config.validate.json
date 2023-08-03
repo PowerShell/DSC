@@ -1,9 +1,0 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.microsoft.com/dsc/2023/07/bundled/outputs.config.validate.json",
-  "$comment": "Not implemented yet.\n",
-  "title": "DSC Resource schema result",
-  "description": "Describes the return data for a DSC Resource from the `dsc config validate` command.",
-  "type": "object",
-  "$defs": {}
-}

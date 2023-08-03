@@ -1,14 +1,14 @@
-# DSC Configuration document resource schema
+# DSC Configuration document resource instance schema
 
 ## Synopsis
 
-Defines instances of DSC Resources that compose a configuration.
+Defines a DSC Resource instance in a configuration document.
 
 ## Metadata
 
 ```yaml
 Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://schemas.microsoft.com/dsc/2023/07/config/document.resources.json
+Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
 Type           : object
 ```
 
