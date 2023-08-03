@@ -17,7 +17,7 @@ Please read the rest of this document to ensure a smooth contribution process.
 
 ## Contributing to Issues
 
-* Check if the issue you are going to file already exists in our [GitHub issues](https://github.com/powershell/powershell-docs-DSC/).
+* Check if the issue you are going to file already exists in our [GitHub issues](https://github.com/powershell/DSC/).
 * If you can't find your issue already,
   [open a new issue](https://github.com/PowerShell/DSC/issues/new/choose),
   making sure to follow the directions as best you can.
