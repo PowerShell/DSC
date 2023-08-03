@@ -6,14 +6,14 @@ use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::ResourceManifest;
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
 pub struct CommandDiscovery {
-    pub resources: HashMap<String, DscResource>,
+    pub resources: BTreeMap<String, DscResource>,
     provider_resources: Vec<String>,
     initialized: bool,
 }
@@ -21,7 +21,7 @@ pub struct CommandDiscovery {
 impl CommandDiscovery {
     pub fn new() -> CommandDiscovery {
         CommandDiscovery {
-            resources: HashMap::new(),
+            resources: BTreeMap::new(),
             provider_resources: Vec::new(),
             initialized: false,
         }
