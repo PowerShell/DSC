@@ -55,14 +55,17 @@ if ($Operation -eq 'List')
     #$m = gmo PSDesiredStateConfiguration
     #$r += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
     #$r[0] | ConvertTo-Json -Compress -Depth 3
-
     foreach ($r in $DscResources)
     {
+        if ($r.ImplementedAs -eq "Binary")
+        {
+            continue
+        }
+
         $version_string = "";
         if ($r.Version) { $version_string = $r.Version.ToString() }
         $author_string = "";
         if ($r.author) { $author_string = $r.CompanyName.ToString() }
-
         $moduleName = "";
         if ($r.ModuleName) { $moduleName = $r.ModuleName }
         elseif ($r.ParentPath) { $moduleName = Split-Path $r.ParentPath | Split-Path | Split-Path -Leaf }
