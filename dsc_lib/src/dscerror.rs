@@ -84,6 +84,12 @@ pub struct StreamMessage {
     pub resource_path: String
 }
 
+impl Default for StreamMessage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StreamMessage {
     pub fn new() -> Self {
         Self {
@@ -95,22 +101,22 @@ impl StreamMessage {
         }
     }
     pub fn new_error(message: String, resource_type_name: Option<String>, resource_path: Option<String>) -> StreamMessage {
-        return StreamMessage {
+        StreamMessage {
             message: message.clone(),
             message_type: StreamMessageType::Error,
             time: Local::now(),
             resource_type_name: resource_type_name.unwrap_or("None".to_string()),
             resource_path: resource_path.unwrap_or("None".to_string())
-        };
+        }
     }
     pub fn new_warning(message: String, resource_type_name: Option<String>, resource_path: Option<String>) -> StreamMessage {
-        return StreamMessage {
+        StreamMessage {
             message: message.clone(),
             message_type: StreamMessageType::Warning,
             time: Local::now(),
             resource_type_name: resource_type_name.unwrap_or("None".to_string()).clone(),
             resource_path: resource_path.unwrap_or("None".to_string()).clone()
-        };
+        }
     }
     pub fn print(&self, error_format:&StreamMessageType, warning_format:&StreamMessageType) -> Result<(), DscError>{
         if self.message_type == StreamMessageType::Error
