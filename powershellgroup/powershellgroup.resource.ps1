@@ -33,6 +33,11 @@ function RefreshCache
     }
 }
 
+if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -ge 4))
+{
+    throw "PowerShell 7.4 is not currently supported by PowerShellGroup resource; please use PS 7.3.  Tracking issue: https://github.com/PowerShell/DSC/issues/128"
+}
+
 $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable |
     Sort-Object -Property Version -Descending |
     Select-Object -First 1
