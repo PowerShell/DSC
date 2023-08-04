@@ -19,7 +19,7 @@ properties:
     type: string
     format: uri
     enum:
-      - /<PREFIX>/<VERSION>/config/document.yaml
+      - <HOST>/<PREFIX>/<VERSION>/config/document.yaml
 
   parameters:
     title: DSC Configuration document parameters
