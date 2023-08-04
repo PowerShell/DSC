@@ -19,7 +19,7 @@ configuration document uses parameters and variables to pass to a set of one or 
 define a desired state.
 
 A configuration document can be defined as either YAML or JSON. For ease of authoring, Microsoft
-recommneds drafting configuration documents in YAML.
+recommends drafting configuration documents in YAML.
 
 For DSC's authoring tools to recognize a file as a DSC Configuration document, the filename must
 end with `.dsc.config.json` or `.dsc.config.yaml`.
@@ -116,7 +116,7 @@ in a configuration, see [DSC Configuration resources][06] and
 
 ```yaml
 Type:               array
-Required:           false
+Required:           true
 Minimum Item Count: 1
 Valid Item Schema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
 ```
