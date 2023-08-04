@@ -5,7 +5,7 @@ use crate::discovery::discovery_trait::{ResourceDiscovery};
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::ResourceManifest;
 use crate::dscresources::command_resource::invoke_command;
-use crate::dscerror::DscError;
+use crate::dscerror::{DscError, StreamMessage, StreamMessageType};
 use std::collections::HashMap;
 use std::env;
 use std::fs::File;
@@ -15,6 +15,7 @@ use std::path::Path;
 pub struct CommandDiscovery {
     pub resources: HashMap<String, DscResource>,
     provider_resources: Vec<String>,
+    initialization_messages: Vec<StreamMessage>,
     initialized: bool,
 }
 
@@ -23,6 +24,7 @@ impl CommandDiscovery {
         CommandDiscovery {
             resources: HashMap::new(),
             provider_resources: Vec::new(),
+            initialization_messages: Vec::new(),
             initialized: false,
         }
     }
@@ -77,37 +79,65 @@ impl ResourceDiscovery for CommandDiscovery {
         // now go through the provider resources and add them to the list of resources
         for provider in &self.provider_resources {
             let provider_resource = self.resources.get(provider).unwrap();
+            let provider_type_name = provider_resource.type_name.clone();
+            let provider_path = provider_resource.path.clone();
             let manifest = serde_json::from_value::<ResourceManifest>(provider_resource.manifest.clone().unwrap())?;
             // invoke the list command
             let list_command = manifest.provider.unwrap().list;
             let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args, None, Some(&provider_resource.directory))
             {
                 Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
-                Err(_e) => {
-                    //TODO: add to debug stream: println!("Could not start {}: {}", list_command.executable, e);
+                Err(e) => {
+                    self.initialization_messages.push(StreamMessage::new_error(
+                        format!("Could not start {}: {}", list_command.executable, e),
+                        Some(provider_type_name.clone()),
+                        Some(provider_path.clone())));
+
                     continue;
                 },
             };
 
             if exit_code != 0 {
-                return Err(DscError::Operation(format!("Failed to list resources for provider {provider}: {exit_code} {stderr}")));
+                self.initialization_messages.push(StreamMessage::new_error(
+                    format!("Provider failed to list resources with exit code {exit_code}: {stderr}"),
+                    Some(provider_type_name.clone()),
+                    Some(provider_path.clone())));
             }
+            
             for line in stdout.lines() {
                 match serde_json::from_str::<DscResource>(line){
                     Result::Ok(resource) => {
                         if resource.requires.is_none() {
-                            return Err(DscError::MissingRequires(provider.clone(), resource.type_name));
+                            self.initialization_messages.push(StreamMessage::new_error(
+                                DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string(),
+                                Some(resource.type_name.clone()),
+                                Some(resource.path.clone())));
+                            
+                            continue;
                         }
                         self.resources.insert(resource.type_name.clone(), resource);
                     },
                     Result::Err(err) => {
-                        return Err(DscError::Operation(format!("Failed to parse resource from provider {provider}: {line} -> {err}")));
+                        self.initialization_messages.push(StreamMessage::new_error(
+                            format!("Failed to parse resource: {line} -> {err}"),
+                            Some(provider_type_name.clone()),
+                            Some(provider_path.clone())));
+                        
+                        continue;
                     }
                 };
             }
         }
 
         self.initialized = true;
+        Ok(())
+    }
+
+    fn print_initialization_messages(&mut self, error_format:StreamMessageType, warning_format:StreamMessageType) -> Result<(), DscError>{
+        for msg in &self.initialization_messages {
+            msg.print(&error_format, &warning_format)?;
+        }
+        
         Ok(())
     }
 }

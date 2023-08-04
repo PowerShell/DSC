@@ -5,8 +5,7 @@ mod command_discovery;
 mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::dscerror::DscError;
-use crate::dscresources::dscresource::{DscResource};
+use crate::{dscresources::dscresource::DscResource, dscerror::DscError, dscerror::StreamMessageType};
 use regex::RegexBuilder;
 
 pub struct Discovery {
@@ -43,6 +42,8 @@ impl Discovery {
 
         for mut discovery_type in discovery_types {
             discovery_type.initialize()?;
+            discovery_type.print_initialization_messages(StreamMessageType::Warning, StreamMessageType::Warning)?;
+            
             let discovered_resources = discovery_type.discover();
             for resource in discovered_resources {
                 resources.push(resource.clone());
