@@ -18,7 +18,7 @@ With DSCv3, you can:
 
 ### Differences from PowerShell DSC
 
-This project builds upon the [foundational versions of DSC](https://github.com/powershell/psdesiredstateconfiguration) but with significant new considerations.
+This project builds upon the [foundational versions of DSC](https://github.com/powershell/psdesiredstateconfiguration) but with significant new considerations. Compatibility with community resources is a high priority.
 
 DSCv3 differs from PowerShell DSC in a few important ways:
 
