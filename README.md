@@ -46,8 +46,12 @@ To install DSC v3:
 
 If you're new to DSC or configuration management, we recommend reviewing the [documentation][02].
 
+### Learning and authoring tutorials
+
 If you're already familiar with DSC or just want to start experimenting with v3, we recommend
-reviewing the [Samples repository][03] and the accompanying [tutorial site][04].
+reviewing the [Samples repository][03] and the accompanying [tutorial site][04]. The Samples
+repo is ready to accept Pull Requests, which is a great way to contribute while v3 is in early
+phases of development.
 
 ## Integrating with DSCv3
 
