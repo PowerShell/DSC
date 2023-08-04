@@ -1,0 +1,61 @@
+host:    https://raw.githubusercontent.com
+prefix:  PowerShell/DSC/main/schemas
+version: 2023/08
+bundle_schemas:
+  # Resource manifest bundle
+  - ConfigFilePath:  resource/manifest.json
+    Name:            manifest
+    OutputDirectory: bundled/resource
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  # Configuration document bundle
+  - ConfigFilePath:  config/document.json
+    Name:            document
+    OutputDirectory: bundled/config
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  # Output schema bundles
+  - ConfigFilePath:  outputs/schema.json
+    Name:            schema
+    OutputDirectory: bundled/outputs
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/config/get.json
+    Name:            get
+    OutputDirectory: bundled/outputs/config
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/config/set.json
+    Name:            set
+    OutputDirectory: bundled/outputs/config
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/config/test.json
+    Name:            test
+    OutputDirectory: bundled/outputs/config
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/resource/get.json
+    Name:            get
+    OutputDirectory: bundled/outputs/resource
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/resource/list.json
+    Name:            list
+    OutputDirectory: bundled/outputs/resource
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/resource/schema.json
+    Name:            schema
+    OutputDirectory: bundled/outputs/resource
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/resource/set.json
+    Name:            set
+    OutputDirectory: bundled/outputs/resource
+    OutputFormat:    ['Json']
+
+  - ConfigFilePath:  outputs/resource/test.json
+    Name:            test
+    OutputDirectory: bundled/outputs/resource
+    OutputFormat:    ['Json']

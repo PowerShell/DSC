@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.test.json",
+  "title": "Test Method",
+  "description": "Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how to process the output from the DSC Resource.",
+  "type": "object",
+  "required": [
+    "executable",
+    "input"
+  ],
+  "properties": {
+    "executable": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
+    },
+    "args": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandArgs.json"
+    },
+    "input": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json"
+    },
+    "return": {
+      "title": "Test Command Return Type",
+      "description": "Defines whether the command returns a JSON blob of the DSC Resource's current state or the state and an array of the properties that are out of the desired state.",
+      "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json"
+    }
+  },
+  "examples": [
+    {
+      "executable": "registry",
+      "args": [
+        "config",
+        "test"
+      ],
+      "input": "stdin",
+      "return": "state"
+    }
+  ]
+}

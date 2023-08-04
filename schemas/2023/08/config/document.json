@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json",
+  "title": "DSC Configuration Document schema",
+  "description": "Describes a valid DSC Configuration Document.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "resources"
+  ],
+  "properties": {
+    "$schema": {
+      "title": "Schema",
+      "description": "This property must be the canonical URL of the DSC Configuration Document schema that the document is implemented for.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json"
+      ]
+    },
+    "parameters": {
+      "title": "DSC Configuration document parameters",
+      "description": "Defines runtime options for the configuration. Users and integrating tools can override use the defined parameters to pass alternate values to the configuration.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json"
+      }
+    },
+    "variables": {
+      "title": "Configuration variables",
+      "description": "Defines a set of reusable values for the configuration document. The names of this value's properties are the strings used to reference a variable's value.",
+      "type": "object"
+    },
+    "resources": {
+      "title": "DSC Configuration document resources",
+      "description": "Defines a list of DSC Resource instances for the configuration to manage.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json"
+      }
+    },
+    "metadata": {
+      "title": "Configuration metadata",
+      "description": "Defines a set of key-value pairs for the configuration. This metadata isn't validated.",
+      "type": "object"
+    }
+  }
+}

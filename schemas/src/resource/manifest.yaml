@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.yaml
+
+title: Command-based DSC Resource Manifest
+description: >-
+  Defines a valid command-based DSC Resource.
+
+type: object
+required:
+  - manifestVersion
+  - type
+  - version
+  - get
+properties:
+  manifestVersion:
+    title: Manifest Version
+    description: >-
+      The semver of the DSC Resource manifest schema to validate this manifest
+      with.
+    $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+    enums:
+      - '1.0'
+  type:
+    $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
+  version:
+    title: Resource Semantic Version
+    description: >-
+      The semantic version (semver) of the DSC Resource. This version
+      identifies the DSC Resource, not the version of the application it
+      manages.
+    $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+  description:
+    title: Resource Description
+    description: >-
+      A short synopsis of the DSC Resource's purpose.
+    # Should this include a maximum length or a pattern that forbids newlines?
+    type: string
+  tags:
+    title: Tags
+    description: >-
+      An array of short strings used to search for DSC Resources.
+    type: array
+    uniqueItems: true
+    items:
+      type: string
+      pattern: ^\w+$
+  get:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.get.yaml
+  set:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.set.yaml
+  test:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.test.yaml
+  validate:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.validate.yaml
+  provider:
+    # I'm not clear on how this works in practice
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.provider.yaml
+  exitCodes:
+    # This setting in the root of the schema implies exit codes must have the
+    # same meaning across all executions. What about implementations that
+    # support multiple executables? Should exitCodes be a key that exists on
+    # command/method objects too?
+    title: Exit Codes
+    description: >-
+      This property defines a map of valid exit codes for the DSC Resource.
+      DSC always interprets exit code `0` as a successful operation and any
+      other exit code as an error. Use this property to indicate human-readable
+      semantic meanings for the DSC Resource's exit codes.
+    type: object
+    propertyNames:
+      pattern: "^[0-9]+$"
+    patternProperties:
+      "^[0-9]+$":
+        type: string
+    examples:
+      - exitCodes:
+          "0": Success
+          "1": Invalid parameter
+          "2": Invalid input
+          "3": Registry error
+          "4": JSON serialization failed
+  schema:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.schema.yaml

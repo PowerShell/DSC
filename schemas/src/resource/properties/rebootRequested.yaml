@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/properties/rebootRequested.yaml
+
+title: Reboot Requested
+description: >-
+  Indicates that the set operation requires a reboot before it's fully complete.
+
+type:
+  - boolean
+  - 'null'
+readOnly: true

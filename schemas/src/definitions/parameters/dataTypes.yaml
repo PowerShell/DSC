@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/definitions/parameters/dataTypes.yaml
+
+title: Data Types
+description: >-
+  Defines the data type for the value.
+type: string
+enum:
+  - string
+  - securestring
+  - int
+  - bool
+  - object
+  - secureobject
+  - array
