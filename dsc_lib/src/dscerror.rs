@@ -115,11 +115,11 @@ impl StreamMessage {
     pub fn print(&self, error_format:&StreamMessageType, warning_format:&StreamMessageType) -> Result<(), DscError>{
         if self.message_type == StreamMessageType::Error
         {
-            println!("{:?} -> {} {}", error_format, self.resource_type_name, self.message);
+            eprintln!("{:?} -> {} {}", error_format, self.resource_type_name, self.message);
         }
         if self.message_type == StreamMessageType::Warning
         {
-            println!("{:?} -> {} {}", warning_format, self.resource_type_name, self.message);
+            eprintln!("{:?} -> {} {}", warning_format, self.resource_type_name, self.message);
         }
         
         Ok(())
