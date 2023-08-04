@@ -6,7 +6,7 @@
 
 $pathSeparator = [System.IO.Path]::PathSeparator
 $paths = $env:PATH.Split($pathSeparator)
-if (-not $paths -contains $PWD) {
-    $env:PATH = $PWD + $pathSeparator + $env:PATH
-    Write-Host -ForegroundColor Green "Added $PWD to PATH"
+if ($paths -notcontains $PWD) {
+    $env:PATH = "$PWD" + $pathSeparator + $env:PATH
+    Write-Host -ForegroundColor Green "Added $PWD to `$env:PATH"
 }
