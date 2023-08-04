@@ -3,8 +3,8 @@
 
 param(
     [switch]$Release,
-    [ValidateSet('none','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc')]
-    $architecture = 'none',
+    [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
+    $architecture = 'current',
     [switch]$Clippy,
     [switch]$Test
 )
@@ -73,21 +73,22 @@ if ($IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
 
 ## Create the output folder
 $configuration = $Release ? 'release' : 'debug'
-$target = Join-Path $PSScriptRoot 'bin' $configuration
+$flags = @($Release ? '-r' : $null)
+if ($architecture -eq 'current') {
+    $path = ".\target\$configuration"
+    $target = Join-Path $PSScriptRoot 'bin' $configuration
+}
+else {
+    $flags += '--target'
+    $flags += $architecture
+    $path = ".\target\$architecture\$configuration"
+    $target = Join-Path $PSScriptRoot 'bin' $architecture $configuration
+}
+
 if (Test-Path $target) {
     Remove-Item $target -Recurse -ErrorAction Stop
 }
 New-Item -ItemType Directory $target > $null
-
-$flags = @($Release ? '-r' : $null)
-if ($architecture -ne 'none') {
-    $flags += '--target'
-    $flags += $architecture
-    $path = ".\target\$architecture\$configuration"
-}
-else {
-    $path = ".\target\$configuration"
-}
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 $projects = @("dsc_lib", "dsc", "osinfo", "test_group_resource", "y2j", "powershellgroup")
@@ -100,7 +101,7 @@ if ($IsWindows) {
 $failed = $false
 foreach ($project in $projects) {
     ## Build format_json
-    Write-Host -ForegroundColor Cyan "Building $project ..."
+    Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
@@ -145,6 +146,8 @@ if ($failed) {
     Write-Host -ForegroundColor Red "Build failed"
     exit 1
 }
+
+Copy-Item $PSScriptRoot/tools/add-path.ps1 $target -Force -ErrorAction Ignore
 
 $relative = Resolve-Path $target -Relative
 Write-Host -ForegroundColor Green "`nEXE's are copied to $target ($relative)"

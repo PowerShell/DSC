@@ -2,7 +2,6 @@
     "rust-analyzer.linkedProjects": [
         "./dsc/Cargo.toml",
         "./dsc_lib/Cargo.toml",
-        "./env/Cargo.toml",
         "./ntreg/Cargo.toml",
         "./ntstatuserror/Cargo.toml",
         "./ntuserinfo/Cargo.toml",
