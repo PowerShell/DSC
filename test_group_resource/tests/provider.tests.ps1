@@ -56,7 +56,7 @@ Describe 'Resource provider tests' {
             $env:PATH += [System.IO.Path]::PathSeparator + (Resolve-Path (Resolve-Path $TestDrive -Relative))
 
             $out = dsc resource list *invalid* 2>&1
-            $LASTEXITCODE | Should -Be 2
+            $LASTEXITCODE | Should -Be 0
             ,$out | Should -Match ".*?'requires'*"
         }
         finally {
