@@ -15,7 +15,7 @@ use std::path::Path;
 pub struct CommandDiscovery {
     pub resources: BTreeMap<String, DscResource>,
     provider_resources: Vec<String>,
-    initialization_messages: Vec<StreamMessage>,
+    discovery_messages: Vec<StreamMessage>, // this will later be used to display only messages for resources used in specific operation
     initialized: bool,
 }
 
@@ -24,7 +24,7 @@ impl CommandDiscovery {
         CommandDiscovery {
             resources: BTreeMap::new(),
             provider_resources: Vec::new(),
-            initialization_messages: Vec::new(),
+            discovery_messages: Vec::new(),
             initialized: false,
         }
     }
@@ -88,7 +88,7 @@ impl ResourceDiscovery for CommandDiscovery {
             {
                 Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
                 Err(e) => {
-                    self.initialization_messages.push(StreamMessage::new_error(
+                    self.discovery_messages.push(StreamMessage::new_error(
                         format!("Could not start {}: {}", list_command.executable, e),
                         Some(provider_type_name.clone()),
                         Some(provider_path.clone())));
@@ -98,7 +98,7 @@ impl ResourceDiscovery for CommandDiscovery {
             };
 
             if exit_code != 0 {
-                self.initialization_messages.push(StreamMessage::new_error(
+                self.discovery_messages.push(StreamMessage::new_error(
                     format!("Provider failed to list resources with exit code {exit_code}: {stderr}"),
                     Some(provider_type_name.clone()),
                     Some(provider_path.clone())));
@@ -108,7 +108,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 match serde_json::from_str::<DscResource>(line){
                     Result::Ok(resource) => {
                         if resource.requires.is_none() {
-                            self.initialization_messages.push(StreamMessage::new_error(
+                            self.discovery_messages.push(StreamMessage::new_error(
                                 DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string(),
                                 Some(resource.type_name.clone()),
                                 Some(resource.path.clone())));
@@ -118,7 +118,7 @@ impl ResourceDiscovery for CommandDiscovery {
                         self.resources.insert(resource.type_name.clone(), resource);
                     },
                     Result::Err(err) => {
-                        self.initialization_messages.push(StreamMessage::new_error(
+                        self.discovery_messages.push(StreamMessage::new_error(
                             format!("Failed to parse resource: {line} -> {err}"),
                             Some(provider_type_name.clone()),
                             Some(provider_path.clone())));
@@ -134,7 +134,7 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 
     fn print_initialization_messages(&mut self, error_format:StreamMessageType, warning_format:StreamMessageType) -> Result<(), DscError>{
-        for msg in &self.initialization_messages {
+        for msg in &self.discovery_messages {
             msg.print(&error_format, &warning_format)?;
         }
         
