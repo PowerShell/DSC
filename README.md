@@ -18,6 +18,8 @@ With DSCv3, you can:
 
 ### Differences from PowerShell DSC
 
+This project is the next generation of DSC and leverages the [PSDesiredStateConfiguration module](https://github.com/powershell/psdesiredstateconfiguration) to maintain compatibility with existing PowerShell based resources.
+
 DSCv3 differs from PowerShell DSC in a few important ways:
 
 - DSCv3 doesn't depend on PowerShell. You can use DSCv3 without PowerShell installed and manage
