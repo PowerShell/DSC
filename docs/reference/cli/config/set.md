@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc config set' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc config set
+---
+
 # dsc config set
 
 ## Synopsis

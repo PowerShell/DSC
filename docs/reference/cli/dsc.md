@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc
+---
+
 # dsc
 
 ## Synopsis
@@ -52,7 +59,7 @@ dsc help <COMMAND> [<SUBCOMMAND>]
 For example, `dsc help config` gets the help for the `config` subcommand. `dsc help config set`
 gets the help for the `config set` subcommand.
 
-You can also use the [--help](#h---help) option on a command to display the help information. For
+You can also use the [--help](#-h---help) option on a command to display the help information. For
 example, `dsc config --help` or `dsc config set --help`.
 
 ## Options
@@ -95,6 +102,6 @@ Type:      Boolean
 Mandatory: false
 ```
 
-[01]: config.md
+[01]: config/command.md
 [02]: resource/command.md
-[03]: schema.md
+[03]: schema/command.md

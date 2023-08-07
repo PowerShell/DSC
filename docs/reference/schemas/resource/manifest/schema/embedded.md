@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for the embedded instance schema in a DSC Resource manifest
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Resource manifest embedded schema reference
+---
+
 # DSC Resource manifest embedded schema reference
 
 ## Synopsis

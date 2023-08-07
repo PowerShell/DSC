@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc config test' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc config test
+---
+
 # dsc config test
 
 ## Synopsis

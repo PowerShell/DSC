@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for the data returned by the 'dsc config set' command.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc config set result schema reference
+---
+
 # dsc config set result schema reference
 
 ## Synopsis

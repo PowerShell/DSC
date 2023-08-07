@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for the 'schema' property in a DSC Resource manifest
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Resource manifest schema property schema reference
+---
+
 # DSC Resource manifest schema property reference
 
 ## Synopsis

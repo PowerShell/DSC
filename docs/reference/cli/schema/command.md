@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc schema' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc schema
+---
+
 # dsc schema
 
 ## Synopsis
@@ -7,7 +14,7 @@ Gets the JSON schema for a DSC type.
 ## Syntax
 
 ```sh
-dsc [Options] --type <TYPE>
+dsc schema [Options] --type <TYPE>
 ```
 
 ## Description
@@ -90,12 +97,12 @@ Type:      Boolean
 Mandatory: false
 ```
 
-[01]: ../schemas/outputs/resource/list.md
-[02]: ../schemas/resource/manifest.md
-[03]: ../schemas/outputs/resource/get.md
-[04]: ../schemas/outputs/resource/set.md
-[05]: ../schemas/outputs/resource/test.md
-[06]: ../schemas/configuration/document.md
-[07]: ../schemas/outputs/config/get.md
-[08]: ../schemas/outputs/config/set.md
-[09]: ../schemas/outputs/config/test.md
+[01]: ../../schemas/outputs/resource/list.md
+[02]: ../../schemas/resource/manifest/root.md
+[03]: ../../schemas/outputs/resource/get.md
+[04]: ../../schemas/outputs/resource/set.md
+[05]: ../../schemas/outputs/resource/test.md
+[06]: ../../schemas/config/document.md
+[07]: ../../schemas/outputs/config/get.md
+[08]: ../../schemas/outputs/config/set.md
+[09]: ../../schemas/outputs/config/test.md

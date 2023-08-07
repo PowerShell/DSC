@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for the data returned by the 'dsc resource test' command.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc resource test result schema reference
+---
+
 # dsc resource test result schema reference
 
 ## Synopsis

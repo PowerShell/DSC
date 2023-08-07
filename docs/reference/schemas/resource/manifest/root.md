@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for a DSC Resource manifest
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       Command-based DSC Resource manifest schema reference
+---
+
 # Command-based DSC Resource manifest schema reference
 
 ## Synopsis
@@ -205,4 +212,4 @@ Required: true
 [04]: test.md
 [05]: validate.md
 [06]: provider.md
-[07]: schema.md
+[07]: schema/property.md
