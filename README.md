@@ -18,7 +18,9 @@ With DSCv3, you can:
 
 ### Differences from PowerShell DSC
 
-This project is the next generation of DSC and leverages the [PSDesiredStateConfiguration module](https://github.com/powershell/psdesiredstateconfiguration) to maintain compatibility with existing PowerShell based resources.
+This project is the next generation of DSC and leverages the
+[PSDesiredStateConfiguration module][00] to maintain compatibility with existing PowerShell based
+resources.
 
 DSCv3 differs from PowerShell DSC in a few important ways:
 
@@ -42,7 +44,7 @@ To install DSC v3:
 1. Expand the release archive.
 1. Add the folder containing the expanded archive contents to the `PATH`.
 
-## Expore DSCv3
+## Explore DSCv3
 
 If you're new to DSC or configuration management, we recommend reviewing the [documentation][02].
 
@@ -63,6 +65,7 @@ DSCv3 uses JSON schemas to define the structure of resources, configuration docu
 outputs that DSCv3 returns. These schemas make it easier to integrate DSCv3 with other tools,
 because they standardize and document how to interface with DSCv3.
 
+[00]: https://github.com/powershell/psdesiredstateconfiguration
 [01]: https://github.com/PowerShell/DSC/releases/latest
 [02]: https://learn.microsoft.com/powershell/dsc/overview?view=dsc-3.0&preserve-view=true
 [03]: https://github.com/PowerShell/DSC-Samples
