@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc resource set' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc resource set
+---
+
 # dsc resource set
 
 ## Synopsis

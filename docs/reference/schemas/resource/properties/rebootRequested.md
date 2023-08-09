@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for the '_rebootRequested' well-known DSC Resource property.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Resource _rebootRequested property schema
+---
+
 # DSC Resource _rebootRequested property schema
 
 ## Synopsis

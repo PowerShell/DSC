@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for the '_ensure' well-known DSC Resource property.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Resource _ensure property schema
+---
+
 # DSC Resource _ensure property schema
 
 ## Synopsis

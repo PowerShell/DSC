@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for a Desired State Configuration document.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Configuration document schema reference
+---
+
 # DSC Configuration document schema reference
 
 ## Synopsis
@@ -24,7 +31,7 @@ recommends drafting configuration documents in YAML.
 For DSC's authoring tools to recognize a file as a DSC Configuration document, the filename must
 end with `.dsc.config.json` or `.dsc.config.yaml`.
 
-For more information, see [DSC Configurations overview][01]
+<!-- For more information, see [DSC Configurations overview][01]. -->
 
 The rest of this document describes the schema DSC uses to validation configuration documents.
 
@@ -77,8 +84,10 @@ Parameters may be overridden at run-time, enabling re-use of the same configurat
 different contexts.
 
 For more information about defining parameters in a configuration, see
-[DSC Configuration document parameter schema][02]. For more information about using parameters in a
-configuration, see [DSC Configuration parameters][03]
+[DSC Configuration document parameter schema][02].
+
+<!-- For more information about using parameters in a configuration, see
+[DSC Configuration parameters][03] -->
 
 ```yaml
 Type:                  object
@@ -96,8 +105,8 @@ This can help reduce the amount of copied values and options for resources in th
 which makes the document easier to read and maintain. Unlike parameters, variables can only be
 defined in the configuration and can't be overridden at run-time.
 
-For more information about using variables in a configuration, see
-[DSC Configuration variables][04].
+<!-- For more information about using variables in a configuration, see
+[DSC Configuration variables][04]. -->
 
 ```yaml
 Type:     object
@@ -110,9 +119,10 @@ The `resources` property defines a list of DSC Resource instances that the confi
 Every instance in the list must be unique, but instances may share the same DSC Resource type.
 
 For more information about defining a valid resource instance in a configuration, see
-[DSC Configuration document resource schema][05]. For more information about how DSC uses resources
-in a configuration, see [DSC Configuration resources][06] and
-[DSC Configuration resource groups][07].
+[DSC Configuration document resource schema][05].
+
+<!-- For more information about how DSC uses resources in a configuration, see
+[DSC Configuration resources][06] and [DSC Configuration resource groups][07]. -->
 
 ```yaml
 Type:               array
@@ -121,10 +131,10 @@ Minimum Item Count: 1
 Valid Item Schema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
 ```
 
-[01]: ../../../configurations/overview.md
+<!-- [01]: ../../../configurations/overview.md -->
 [02]: parameter.md
-[03]: ../../../configurations/parameters.md
-[04]: ../../../configurations/variables.md
+<!-- [03]: ../../../configurations/parameters.md -->
+<!-- [04]: ../../../configurations/variables.md -->
 [05]: resource.md
-[06]: ../../../configurations/resources.md
-[07]: ../../../configurations/resource-groups.md
+<!-- [06]: ../../../configurations/resources.md -->
+<!-- [07]: ../../../configurations/resource-groups.md -->

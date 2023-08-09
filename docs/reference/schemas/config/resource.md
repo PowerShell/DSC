@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for a resource instance in a Desired State Configuration document.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Configuration document resource instance schema
+---
+
 # DSC Configuration document resource instance schema
 
 ## Synopsis
@@ -58,10 +65,10 @@ Pattern:  ^\w+(\.\w+){0,2}\/\w+$
 ### properties
 
 The `properties` of a resource instance define its desired state. The value of this property must
-be an object. For [assertion  resources][02], the value may be an empty object (`{}`). DSC uses the
+be an object. For assertion  resources, the value may be an empty object (`{}`). DSC uses the
 DSC Resource's instance schema to validate the defined properties.
 
-For more information about instance schemas in DSC, see [DSC Resource instance schemas][03].
+<!-- For more information about instance schemas in DSC, see [DSC Resource instance schemas][03]. -->
 
 ```yaml
 Type:     object
@@ -86,7 +93,7 @@ and `<instance-name>` is the dependency's `name` property.
 Multiple instances can depend on the same instance, but every dependency for an instance must be
 unique in that instance's `dependsOn` property.
 
-For more information, see [Configuration resource dependencies][04].
+<!-- For more information, see [Configuration resource dependencies][04]. -->
 
 ```yaml
 Type:                 array
@@ -97,6 +104,6 @@ Valid Items Pattern:  ^\[\w+(\.\w+){0,2}\/\w+\].+$
 ```
 
 [01]: ../definitions/resourceType.md
-[02]: ../../../resources/concepts/assertion-resources.md
-[03]: ../../../resources/concepts/schemas.md
-[04]: ../../../configurations/concepts/dependencies.md
+<!-- [02]: ../../../resources/concepts/assertion-resources.md -->
+<!-- [03]: ../../../resources/concepts/schemas.md -->
+<!-- [04]: ../../../configurations/concepts/dependencies.md -->

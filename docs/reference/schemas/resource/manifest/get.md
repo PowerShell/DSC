@@ -1,4 +1,11 @@
-# Command-based DSC Resource manifest schema reference
+---
+description: JSON schema reference for the 'get' property in a DSC Resource manifest
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Resource manifest get property schema reference
+---
+
+# DSC Resource manifest get property schema reference
 
 ## Synopsis
 

@@ -1,3 +1,12 @@
+---
+description: >-
+  Information about the list of well-known DSC Resource properties, including their purpose and how
+  to add them to a resource's manifest.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC well-known properties
+---
+
 # DSC well-known properties
 
 DSC has support for several well-known properties. Some well-known properties enable a DSC Resource

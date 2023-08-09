@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc resource get' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc resource get
+---
+
 # dsc resource get
 
 ## Synopsis
@@ -130,4 +137,4 @@ This command returns JSON output that includes the actual state of the instance.
 information, see [dsc resource get result schema][02].
 
 [01]: ../config/get.md
-[02]: ../../schemas/outputs/resource/
+[02]: ../../schemas/outputs/resource/get.md

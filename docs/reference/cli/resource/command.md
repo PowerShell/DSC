@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc resource' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc resource
+---
+
 # dsc resource
 
 ## Synopsis
@@ -57,7 +64,7 @@ dsc resource help [<SUBCOMMAND>]
 For example, `dsc resource help` gets the help for this command. `dsc resource help list`
 gets the help for the `list` subcommand.
 
-You can also use the [--help](#h---help) option on the command or subcommand to display the help
+You can also use the [--help](#-h---help) option on the command or subcommand to display the help
 information. For example, `dsc resource --help` or `dsc resource set --help`.
 
 ## Options

@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for a structured message returned from a 'dsc config' command.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       Structured message schema reference
+---
+
 # Structured message schema reference
 
 ## Synopsis

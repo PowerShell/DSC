@@ -1,3 +1,10 @@
+---
+description: Command line reference for the 'dsc resource list' command
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       dsc resource list
+---
+
 # dsc resource list
 
 ## Synopsis
@@ -173,4 +180,4 @@ This command returns a JSON object for each resource that includes the resource'
 manifest settings, and other metadata. For more information, see
 [dsc resource list result schema][01].
 
-[01]: ../../schemas/output/resource/list.md
+[01]: ../../schemas/outputs/resource/list.md

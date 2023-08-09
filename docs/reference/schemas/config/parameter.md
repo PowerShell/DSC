@@ -1,3 +1,10 @@
+---
+description: JSON schema reference for a parameter in a Desired State Configuration document.
+ms.date:     08/04/2023
+ms.topic:    reference
+title:       DSC Configuration document parameter schema
+---
+
 # DSC Configuration document parameter schema
 
 ## Synopsis
@@ -181,5 +188,5 @@ Type:     int
 Required: false
 ```
 
-[01]: resources.md
+[01]: resource.md
 [02]: ../definitions/parameters/dataTypes.md
