@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use jsonschema::JSONSchema;
+use boon::{Compiler, Schemas};
 
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::{Invoke};
@@ -181,13 +181,18 @@ impl Configurator {
                 },
             };
             let schema = serde_json::from_str(&schema)?;
-            let compiled_schema = match JSONSchema::compile(&schema) {
-                Ok(schema) => schema,
+
+            let mut schemas = Schemas::new();
+            let mut schema_compiler = Compiler::new();
+            schema_compiler.add_resource(&(resource.resource_type), schema)?;
+
+            let compiled_schema = match schema_compiler.compile(&(resource.resource_type), &mut schemas) {
+                Ok(sch_index) => sch_index,
                 Err(e) => {
                     messages.push(ResourceMessage {
                         name: resource.name.clone(),
                         resource_type: resource.resource_type.clone(),
-                        message: format!("Failed to compile schema: {e}"),
+                        message: format!("Failed to compile schema: {e:#}"),
                         level: MessageLevel::Error,
                     });
                     has_errors = true;
@@ -195,15 +200,11 @@ impl Configurator {
                 },
             };
             let input = serde_json::from_str(&input)?;
-            if let Err(err) = compiled_schema.validate(&input) {
-                let mut error = format!("Resource '{}' failed validation: ", resource.name);
-                for e in err {
-                    error.push_str(&format!("\n{e} "));
-                }
+            if let Err(err) = schemas.validate(&input, compiled_schema) {
                 messages.push(ResourceMessage {
                     name: resource.name.clone(),
                     resource_type: resource.resource_type.clone(),
-                    message: error,
+                    message: format!("Resource '{}' failed validation: {err:#}", resource.name),
                     level: MessageLevel::Error,
                 });
                 has_errors = true;

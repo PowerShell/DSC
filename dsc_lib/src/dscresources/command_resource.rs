@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use jsonschema::JSONSchema;
+use boon::{Compiler, Schemas};
 use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};
 
@@ -322,22 +322,24 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
 
     let schema = get_schema(resource, cwd)?;
     let schema: Value = serde_json::from_str(&schema)?;
-    let compiled_schema = match JSONSchema::compile(&schema) {
-        Ok(schema) => schema,
+
+    let mut schemas = Schemas::new();
+    let mut schema_compiler = Compiler::new();
+    if let Err(e) = schema_compiler.add_resource(&(resource.resource_type), schema) {
+        return Err(DscError::Schema(e.to_string()));
+    };
+
+    let compiled_schema = match schema_compiler.compile(&(resource.resource_type), &mut schemas) {
+        Ok(sch_index) => sch_index,
         Err(e) => {
-            return Err(DscError::Schema(e.to_string()));
-        },
+            return Err(DscError::Schema(format!("{e:#}")));
+        }
     };
     let json: Value = serde_json::from_str(json)?;
-    let result = match compiled_schema.validate(&json) {
+    let result = match schemas.validate(&json, compiled_schema) {
         Ok(_) => Ok(()),
         Err(err) => {
-            let mut error = String::new();
-            for e in err {
-                error.push_str(&format!("{e} "));
-            }
-
-            Err(DscError::Schema(error))
+            Err(DscError::Schema(format!("{err:#}")))
         },
     };
     result

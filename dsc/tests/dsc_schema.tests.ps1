@@ -7,7 +7,7 @@ Describe 'config schema tests' {
         $LASTEXITCODE | Should -Be 0
         $schema | Should -Not -BeNullOrEmpty
         $schema = $schema | ConvertFrom-Json
-        $schema.'$schema' | Should -BeExactly 'http://json-schema.org/draft-07/schema#'
+        $schema.'$schema' | Should -BeExactly 'https://json-schema.org/draft/2019-09/schema'
     }
 
     It 'return dsc schema: <type>' -Skip:(!$IsWindows) -TestCases @(
@@ -26,6 +26,6 @@ Describe 'config schema tests' {
         $LASTEXITCODE | Should -Be 0
         $schema | Should -Not -BeNullOrEmpty
         $schema = $schema | ConvertFrom-Json
-        $schema.'$schema' | Should -BeExactly 'http://json-schema.org/draft-07/schema#'
+        $schema.'$schema' | Should -BeExactly 'https://json-schema.org/draft/2019-09/schema'
     }
 }

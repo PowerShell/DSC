@@ -13,8 +13,8 @@ use dsc_lib::{
     dscresources::invoke_result::{GetResult, SetResult, TestResult},
     dscresources::resource_manifest::ResourceManifest,
     dscerror::DscError};
-use jsonschema::{JSONSchema, ValidationError};
-use schemars::{schema_for, schema::RootSchema};
+use boon::{Compiler, Schemas, ValidationError};
+use schemars::{schema::RootSchema, gen::SchemaSettings};
 use serde_yaml::Value;
 use std::collections::HashMap;
 use std::io::{self, Read};
@@ -225,12 +225,18 @@ fn validate_config(config: &str) {
             exit(EXIT_DSC_ERROR);
         },
     };
-    let compiled_schema = match JSONSchema::compile(&schema) {
-        Ok(schema) => schema,
+    let mut schemas = Schemas::new();
+    let mut schema_compiler = Compiler::new();
+    if let Err(err) = schema_compiler.add_resource("Configuration", schema) {
+        eprintln!("Error: Failed to add schema: {err:#}");
+        exit(EXIT_DSC_ERROR);
+    };
+    let compiled_schema = match schema_compiler.compile("Configuration", &mut schemas) {
+        Ok(sch_index) => sch_index,
         Err(e) => {
-            eprintln!("Error: Failed to compile schema: {e}");
+            eprintln!("Error: Failed to compile schema: {e:#}");
             exit(EXIT_DSC_ERROR);
-        },
+        }
     };
     let config_value = match serde_json::from_str(config) {
         Ok(config) => config,
@@ -239,14 +245,10 @@ fn validate_config(config: &str) {
             exit(EXIT_INVALID_INPUT);
         },
     };
-    if let Err(err) = compiled_schema.validate(&config_value) {
-        let mut error = "Configuration failed validation: ".to_string();
-        for e in err {
-            error.push_str(&format!("\n{e} "));
-        }
-        eprintln!("{}", error);
+    if let Err(err) = schemas.validate(&config_value, compiled_schema) {
+        eprintln!("Configuration failed validation: {err:#}");
         exit(EXIT_INVALID_INPUT);
-    };
+    }
 
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
@@ -304,23 +306,24 @@ fn validate_config(config: &str) {
                             exit(EXIT_DSC_ERROR);
                         },
                     };
-                    let compiled_schema = match JSONSchema::compile(&schema) {
-                        Ok(schema) => schema,
+                    let mut schemas = Schemas::new();
+                    let mut schema_compiler = Compiler::new();
+                    if let Err(err) = schema_compiler.add_resource("Configuration", schema) {
+                        eprintln!("Error: Failed to add schema: {err}");
+                        exit(EXIT_DSC_ERROR);
+                    };
+                    let compiled_schema = match schema_compiler.compile("Configuration", &mut schemas) {
+                        Ok(sch_index) => sch_index,
                         Err(e) => {
                             eprintln!("Error: Failed to compile schema: {e}");
                             exit(EXIT_DSC_ERROR);
-                        },
+                        }
                     };
                     let properties = resource_block["properties"].clone();
-                    let _result: Result<(), ValidationError> = match compiled_schema.validate(&properties) {
+                    let _result: Result<(), ValidationError> = match schemas.validate(&properties, compiled_schema) {
                         Ok(_) => Ok(()),
                         Err(err) => {
-                            let mut error = String::new();
-                            for e in err {
-                                error.push_str(&format!("{e} "));
-                            }
-
-                            eprintln!("Error: Resource {type_name} failed validation: {error}");
+                            eprintln!("Error: Resource {type_name} failed validation: {err}");
                             exit(EXIT_VALIDATION_FAILED);
                         },
                     };
@@ -600,33 +603,43 @@ fn handle_resource_schema(dsc: &mut DscManager, resource: &str, format: &Option<
 }
 
 fn get_schema(dsc_type: DscType) -> RootSchema {
+    // Define how the schemas should be generated so they're 2019-09 compliant.
+    // 2019-09 is _mostly_ compatible with 2020-12, but schemars doesn't support
+    // outputting to 2020-12 yet.
+    let settings = SchemaSettings::draft2019_09().with(|s| {
+        // Don't add null to the type list for optional fields. In JSON Schema,
+        // explicit null means something different from "not present".
+        s.option_add_null_type = false;
+    });
+    let gen = settings.into_generator();
+
     match dsc_type {
         DscType::GetResult => {
-            schema_for!(GetResult)
+            gen.into_root_schema_for::<GetResult>()
         },
         DscType::SetResult => {
-            schema_for!(SetResult)
+            gen.into_root_schema_for::<SetResult>()
         },
         DscType::TestResult => {
-            schema_for!(TestResult)
+            gen.into_root_schema_for::<TestResult>()
         },
         DscType::DscResource => {
-            schema_for!(DscResource)
+            gen.into_root_schema_for::<DscResource>()
         },
         DscType::ResourceManifest => {
-            schema_for!(ResourceManifest)
+            gen.into_root_schema_for::<ResourceManifest>()
         },
         DscType::Configuration => {
-            schema_for!(Configuration)
+            gen.into_root_schema_for::<Configuration>()
         },
         DscType::ConfigurationGetResult => {
-            schema_for!(ConfigurationGetResult)
+            gen.into_root_schema_for::<ConfigurationGetResult>()
         },
         DscType::ConfigurationSetResult => {
-            schema_for!(ConfigurationSetResult)
+            gen.into_root_schema_for::<ConfigurationSetResult>()
         },
         DscType::ConfigurationTestResult => {
-            schema_for!(ConfigurationTestResult)
+            gen.into_root_schema_for::<ConfigurationTestResult>()
         },
     }
 }

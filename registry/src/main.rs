@@ -9,7 +9,7 @@ use std::env;
 use args::Arguments;
 use atty::Stream;
 use clap::Parser;
-use schemars::schema_for;
+use schemars::gen::SchemaSettings;
 use std::{io::{self, Read}, process::exit};
 
 use crate::config::RegistryConfig;
@@ -147,7 +147,16 @@ fn main() {
             println!("{}", json);
         },
         args::SubCommand::Schema { pretty } => {
-            let schema = schema_for!(RegistryConfig);
+            // Define how the schemas should be generated so they're 2019-09 compliant.
+            // 2019-09 is _mostly_ compatible with 2020-12, but schemars doesn't support
+            // outputting to 2020-12 yet.
+            let settings = SchemaSettings::draft2019_09().with(|s| {
+                // Don't add null to the type list for optional fields. In JSON Schema,
+                // explicit null means something different from "not present".
+                s.option_add_null_type = false;
+            });
+            let gen = settings.into_generator();
+            let schema = gen.into_root_schema_for::<RegistryConfig>();
             let json = if pretty {
                 serde_json::to_string_pretty(&schema).unwrap()
             }

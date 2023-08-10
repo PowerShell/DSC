@@ -28,6 +28,9 @@ pub enum DscError {
     #[error("JSON: {0}")]
     Json(#[from] serde_json::Error),
 
+    #[error("JSON Schema compiling: {0}")]
+    JsonCompile(#[from] boon::CompileError),
+
     #[error("Manifest: {0}\nJSON: {1}")]
     Manifest(String, serde_json::Error),
 

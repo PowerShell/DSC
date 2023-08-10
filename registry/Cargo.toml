@@ -15,6 +15,7 @@ lto = true
 
 [dependencies]
 atty = { version = "0.2" }
+boon = "0.5.1"
 clap = { version = "4.1", features = ["derive"] }
 crossterm = { version = "0.26" }
 ntreg = { path = "../ntreg" }
