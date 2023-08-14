@@ -1,5 +1,5 @@
 # Sample configuration with invalid properties that don't match the resource schema.
-$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 resources:
 - name: os
   type: Microsoft/OSInfo

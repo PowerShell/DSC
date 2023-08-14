@@ -1,5 +1,5 @@
 # Example on how concurrency would be defined in the configuration.
-$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 metadata:
   _timeoutSeconds: 600 # example of setting timeout for orchestration, should be namespaced?
 resources:

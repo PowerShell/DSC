@@ -77,7 +77,7 @@ pub struct Resource {
     pub properties: Option<HashMap<String, Value>>,
 }
 
-const SCHEMA: &str = "https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json";
+const SCHEMA: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json";
 
 impl Default for Configuration {
     fn default() -> Self {
