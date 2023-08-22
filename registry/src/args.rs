@@ -58,9 +58,9 @@ pub enum SubCommand {
         find: String,
         #[clap(short, long, help = "Recursively find.")]
         recurse: bool,
-        #[clap(short, long, help = "Only find keys.")]
+        #[clap(long, help = "Only find keys.")]
         keys_only: bool,
-        #[clap(short, long, help = "Only find values.")]
+        #[clap(long, help = "Only find values.")]
         values_only: bool,
     },
     #[clap(name = "config", about = "Manage registry configuration.", arg_required_else_help = true)]
