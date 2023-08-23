@@ -1,6 +1,13 @@
 # Example configuration that uses assertions to validate the environment before running the configuration.
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 resources:
+- name: current user registry
+  type: Microsoft.Windows/Registry
+  properties:
+    keyPath: HKCU\example
+    _ensure: Present
+  dependsOn:
+  - "[resourceId('DSC/AssertionGroup','my assertions')]"
 - name: my assertions
   type: DSC/AssertionGroup
   properties:
@@ -18,10 +25,3 @@ resources:
         valueData:
           # this is deliberately set to z: drive so that the assertion fails
           String: Z:\Windows
-- name: current user registry
-  type: Microsoft.Windows/Registry
-  properties:
-    keyPath: HKCU\example
-    _ensure: Present
-  dependsOn:
-  - '[DSC/Assertion]my assertions' # should we include the type or just the name? Is there a scenario to depend on a deeply nested resource?
