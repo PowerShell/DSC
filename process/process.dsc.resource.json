@@ -1,0 +1,12 @@
+{
+    "manifestVersion": "1.0",
+    "description": "Returns information about running processes.",
+    "type": "Microsoft/ProcessList",
+    "version": "0.1.0",
+    "get": {
+        "executable": "process"
+    },
+    "export": {
+        "executable": "process"
+    }
+}
