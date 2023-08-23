@@ -28,7 +28,17 @@ fn print_task_list() {
 
 #[cfg(not(windows))]
 fn print_task_list() {
+    for prc in procfs::process::all_processes().unwrap() {
+        
+        let mut p = process_info::ProcessInfo::new();
+        p.pid = prc.pid();
+        //p.name = i.get_pname();
+        //p.cmdline = i.get_cmd_params();
 
+        let json = serde_json::to_string(&p).unwrap();
+        println!("{json}");
+        }
+    }
 }
 
 fn main() {
