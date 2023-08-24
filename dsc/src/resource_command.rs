@@ -129,6 +129,30 @@ pub fn schema(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
     }
 }
 
+pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat>) {
+    let resource = get_resource(dsc, resource);
+
+    match resource.export() {
+        Ok(result) => {
+            for instance in result.actual_state
+            {
+                let json = match serde_json::to_string(&instance) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        eprintln!("JSON Error: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_output(&json, format);
+            }
+        }
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
 pub fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
     // check if resource is JSON or just a name
     match serde_json::from_str(resource) {

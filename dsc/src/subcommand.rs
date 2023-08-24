@@ -365,5 +365,8 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
         ResourceSubCommand::Schema { resource } => {
             resource_command::schema(&mut dsc, resource, format);
         },
+        ResourceSubCommand::Export { resource} => {
+            resource_command::export(&mut dsc, resource, format);
+        },
     }
 }

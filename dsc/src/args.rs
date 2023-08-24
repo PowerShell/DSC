@@ -89,6 +89,11 @@ pub enum ResourceSubCommand {
         #[clap(short, long, help = "The name of the resource to get the JSON schema")]
         resource: String,
     },
+    #[clap(name = "export", about = "Retrieve all resource instances", arg_required_else_help = true)]
+    Export {
+        #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `export` on")]
+        resource: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
