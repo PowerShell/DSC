@@ -4,9 +4,24 @@
     "type": "Microsoft/ProcessList",
     "version": "0.1.0",
     "get": {
-        "executable": "process"
+        "executable": "process",
+        "args": [
+          "get"
+        ]
+    },
+    "set": {
+        "executable": "process",
+        "args": [
+          "set"
+        ],
+        "input": "stdin",
+        "preTest": true,
+        "return": "state"
     },
     "export": {
-        "executable": "process"
+        "executable": "process",
+        "args": [
+          "list"
+        ]
     }
 }
