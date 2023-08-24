@@ -92,7 +92,7 @@ New-Item -ItemType Directory $target > $null
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 $projects = @("dsc_lib", "dsc", "osinfo", "process", "test_group_resource", "y2j", "powershellgroup")
-$pedantic_clean_projects = @("dsc_lib", "dsc", "osinfo", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
+$pedantic_clean_projects = @("dsc_lib", "dsc", "osinfo", "process", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
 
 if ($IsWindows) {
     $projects += $windows_projects
