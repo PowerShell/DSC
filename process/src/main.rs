@@ -4,43 +4,17 @@
 mod process_info;
 use std::env;
 use std::process::exit;
+use sysinfo::{ProcessExt, System, SystemExt, PidExt};
 
-#[cfg(windows)]
 fn print_task_list() {
 
-    unsafe{
-        let tl = tasklist::Tasklist::new();
-        for i in tl{
-
-            let mut p = process_info::ProcessInfo::new();
-            p.pid = i.get_pid();
-            p.name = i.get_pname();
-            p.cmdline = i.get_cmd_params();
-
-            let json = serde_json::to_string(&p).unwrap();
-            println!("{json}");
-        }
-    }
-}
-
-#[cfg(not(windows))]
-fn print_task_list() {
-    for prc in procfs::process::all_processes().unwrap() {
-        
+    let mut s = System::new();
+    s.refresh_processes();
+    for (pid, process) in s.processes() {
         let mut p = process_info::ProcessInfo::new();
-        let proc = prc.as_ref().expect("Can't get all_processes");
-        p.pid = proc.pid() as u32;
-        p.name = match proc.exe() {
-            Ok(exe) => { String::from(exe.file_name().expect("Can't get process filename").to_str().unwrap()) }
-            Err(_) => { String::from("") }
-        };
-
-        if p.name.is_empty() { continue; };
-
-        p.cmdline = match proc.cmdline() {
-            Ok(cmdline_vector) => { cmdline_vector.join(" ") }
-            Err(_) => { String::from("") }
-        };
+        p.pid = pid.as_u32();
+        p.name = String::from(process.name());
+        p.cmdline = format!("{:?}", process.cmd());
 
         let json = serde_json::to_string(&p).unwrap();
         println!("{json}");

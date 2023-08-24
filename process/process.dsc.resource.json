@@ -17,11 +17,5 @@
         "input": "stdin",
         "preTest": true,
         "return": "state"
-    },
-    "export": {
-        "executable": "process",
-        "args": [
-          "list"
-        ]
     }
 }
