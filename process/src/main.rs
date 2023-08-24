@@ -27,28 +27,25 @@ fn help() {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    match args.len() {
+    if args.len() == 2 {
         // one argument passed
-        2 => {
-            match args[1].as_str() {
-                "list" => {
-                    print_task_list();
-                    exit(0);
-                },
-                "set" => { // used for testing only
-                    println!("{{\"result\":\"Ok\"}}");
-                    exit(0);
-                },
-                _ => {
-                    help();
-                    exit(1);
-                },
-            }
-        },
-        // all the other cases
-        _ => {
-            help();
-            exit(1);
+        match args[1].as_str() {
+            "list" => {
+                print_task_list();
+                exit(0);
+            },
+            "set" => { // used for testing only
+                println!("{{\"result\":\"Ok\"}}");
+                exit(0);
+            },
+            _ => {
+                help();
+                exit(1);
+            },
         }
+    }
+    else {
+        help();
+        exit(1);
     }
 }
