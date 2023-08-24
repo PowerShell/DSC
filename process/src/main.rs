@@ -6,11 +6,6 @@ use std::env;
 use std::process::exit;
 
 #[cfg(windows)]
-use tasklist;
-#[cfg(not(windows))]
-use procfs;
-
-#[cfg(windows)]
 fn print_task_list() {
 
     unsafe{
@@ -40,7 +35,7 @@ fn print_task_list() {
             Err(_) => { String::from("") }
         };
 
-        if p.name == "" { continue; };
+        if p.name.is_empty() { continue; };
 
         p.cmdline = match proc.cmdline() {
             Ok(cmdline_vector) => { cmdline_vector.join(" ") }
