@@ -54,7 +54,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 ///
 /// Error returned if the resource does not successfully set the desired state
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Result<SetResult, DscError> {
-    let Some(set) = &resource.set else {
+    let Some(set) = resource.set.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
@@ -69,7 +69,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Resu
             });
         }
     }
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(desired), Some(cwd))?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), Some(desired), Some(cwd))?;
     let pre_state: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
@@ -256,12 +256,10 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 }
 
 pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportResult, DscError> {
-
     let (exit_code, stdout, stderr) = invoke_command(&resource.export.clone().unwrap().executable, resource.export.clone().unwrap().args.clone(), None, Some(cwd))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
-
     let mut instances: Vec<Value> = Vec::new();
     for line in stdout.lines()
     {

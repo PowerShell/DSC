@@ -3,7 +3,8 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
+use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult, ExportResult};
+use crate::configure::config_doc;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum MessageLevel {
@@ -122,6 +123,41 @@ impl ConfigurationTestResult {
 }
 
 impl Default for ConfigurationTestResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ResourceExportResult {
+    pub name: String,
+    #[serde(rename="type")]
+    pub resource_type: String,
+    pub result: ExportResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ConfigurationExportResult {
+    pub result: Option<config_doc::Configuration>,
+    pub messages: Vec<ResourceMessage>,
+    #[serde(rename = "hadErrors")]
+    pub had_errors: bool,
+}
+
+impl ConfigurationExportResult {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            result: None,
+            messages: Vec::new(),
+            had_errors: false,
+        }
+    }
+}
+
+impl Default for ConfigurationExportResult {
     fn default() -> Self {
         Self::new()
     }

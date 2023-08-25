@@ -50,6 +50,8 @@ pub enum ConfigSubCommand {
     Test,
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate,
+    #[clap(name = "export", about = "Export the current configuration")]
+    Export
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]

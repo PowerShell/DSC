@@ -7,8 +7,9 @@ use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
 use crate::discovery::Discovery;
 use self::config_doc::Configuration;
-use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ResourceMessage, MessageLevel};
 use self::depends_on::get_resource_invocation_order;
+use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
+use std::collections::HashMap;
 
 pub mod config_doc;
 pub mod config_result;
@@ -148,6 +149,40 @@ impl Configurator {
             };
             result.results.push(resource_result);
         }
+
+        Ok(result)
+    }
+
+    pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
+        let (config, messages, had_errors) = self.validate_config()?;
+        let mut result = ConfigurationExportResult::new();
+        result.messages = messages;
+        result.had_errors = had_errors;
+        if had_errors {
+            return Ok(result);
+        };
+        let mut conf = config_doc::Configuration::new();
+
+        for resource in &config.resources {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            };
+            let export_result = dsc_resource.export()?;
+
+            for (i, instance) in export_result.actual_state.iter().enumerate()
+            {
+                let mut r = config_doc::Resource::new();
+                r.resource_type = dsc_resource.type_name.clone();
+                r.name = format!("{}-{i}", r.resource_type);
+                let props: HashMap<String, serde_json::Value> = serde_json::from_value(instance.clone()).unwrap();
+                r.properties = Some(props);
+
+                conf.resources.push(r);
+            }
+
+        }
+
+        result.result = Some(conf);
 
         Ok(result)
     }
