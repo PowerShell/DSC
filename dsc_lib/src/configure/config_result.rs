@@ -3,7 +3,7 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult, ExportResult};
+use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 use crate::configure::config_doc;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -126,15 +126,6 @@ impl Default for ConfigurationTestResult {
     fn default() -> Self {
         Self::new()
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct ResourceExportResult {
-    pub name: String,
-    #[serde(rename="type")]
-    pub resource_type: String,
-    pub result: ExportResult,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
