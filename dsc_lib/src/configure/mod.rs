@@ -155,9 +155,13 @@ impl Configurator {
 
     pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
-        let mut result = ConfigurationExportResult::new();
-        result.messages = messages;
-        result.had_errors = had_errors;
+
+        let mut result = ConfigurationExportResult {
+            result: None,
+            messages,
+            had_errors
+        };
+
         if had_errors {
             return Ok(result);
         };

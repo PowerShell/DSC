@@ -12,7 +12,7 @@ Describe 'resource export tests' {
 
     It 'Export can be called on a configuration' {
 
-        $json = @'
+        $yaml = @'
             $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
             resources:
             - name: Processes
@@ -20,7 +20,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $json | dsc config export
+        $out = $yaml | dsc config export
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
@@ -28,7 +28,7 @@ Describe 'resource export tests' {
 
     It 'Configuration Export can be piped to configuration Set' {
 
-        $json = @'
+        $yaml = @'
             $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
             resources:
             - name: Processes
@@ -36,7 +36,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $json | dsc config export | dsc config set
+        $out = $yaml | dsc config export | dsc config set
         $LASTEXITCODE | Should -Be 0
         $set_results = $out | ConvertFrom-Json
         $set_results.results.count | Should -BeGreaterThan 1
