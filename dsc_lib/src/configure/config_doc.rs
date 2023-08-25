@@ -116,3 +116,9 @@ impl Resource {
         }
     }
 }
+
+impl Default for Resource {
+    fn default() -> Self {
+        Self::new()
+    }
+}

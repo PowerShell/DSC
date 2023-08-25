@@ -263,7 +263,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportRes
     let mut instances: Vec<Value> = Vec::new();
     for line in stdout.lines()
     {
-        let instance: Value = match serde_json::from_str(&line){
+        let instance: Value = match serde_json::from_str(line){
             Result::Ok(r) => {r},
             Result::Err(err) => {
                 return Err(DscError::Operation(format!("Failed to parse json from export {}|{}|{} -> {err}", &resource.export.clone().unwrap().executable, stdout, stderr)))
