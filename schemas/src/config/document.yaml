@@ -1,10 +1,20 @@
 # yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
-$schema: https://json-schema.org/draft/2020-12/schema
-$id: <HOST>/<PREFIX>/<VERSION>/config/document.yaml
+$schema:     https://json-schema.org/draft/2020-12/schema
+$id:         <HOST>/<PREFIX>/<VERSION>/config/document.yaml
+title:       DSC Configuration Document schema
+description: Describes a valid DSC Configuration Document.
 
-title: DSC Configuration Document schema
-description: >-
+markdownDescription: | # VS Code only
+  > [Online Documentation][01]
+
   Describes a valid DSC Configuration Document.
+
+  DSC Configurations enable users to define state by combining different DSC Resources. A
+  configuration document uses parameters and variables to pass to a set of one or more resources
+  that define a desired state.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true
+
 
 type: object
 required:
@@ -14,39 +24,99 @@ properties:
   $schema:
     title: Schema
     description: >-
-      This property must be the canonical URL of the DSC Configuration Document
-      schema that the document is implemented for.
+      This property must be the canonical URL of the DSC Configuration Document schema that the
+      document is implemented for.
     type: string
     format: uri
     enum:
       - <HOST>/<PREFIX>/<VERSION>/config/document.yaml
+    # VS Code only:
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      This property must be the canonical URL of the DSC Configuration Document schema that the
+      document is implemented for.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#schema
+    markdownEnumDescriptions:
+      - Indicates that the configuration document adheres to the `<VERSION>` schema.
 
   parameters:
     title: DSC Configuration document parameters
     description: >-
-      Defines runtime options for the configuration. Users and integrating tools
-      can override use the defined parameters to pass alternate values to the
-      configuration.
+      Defines runtime options for the configuration. Users and integrating tools can override use
+      the defined parameters to pass alternate values to the configuration.
     type: object
     additionalProperties:
       $ref: /<PREFIX>/<VERSION>/config/document.parameter.yaml
+    # VS Code only
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      Defines runtime options for the configuration. Users and integrating tools can override use
+      the defined parameters to pass alternate values to the configuration.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#parameters
+    defaultSnippets:
+      - label:       New Parameter
+        description: Defines a new runtime option for the configuration.
+        body:
+          '${1:parameterId}': 
+            type: '$2'
+            defaultValue: '$3'
+            allowedValues: ['$4']
+            description: '$5'
+      - label:       New Integer Parameter
+        description: Defines a new runtime option for the configuration as an integer value.
+        body:
+          '${1:integerParameterId}': 
+            type:         int
+            defaultValue: '$2'
+            description:  '$3'
+            minValue:     '$4'
+            maxValue:     '$5'
 
   variables:
     title: Configuration variables
     description: >-
-      Defines a set of reusable values for the configuration document. The
-      names of this value's properties are the strings used to reference a
-      variable's value.
+      Defines a set of reusable values for the configuration document. The names of this value's
+      properties are the strings used to reference a variable's value.
     type: object
+    # VS Code only
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      Defines a set of reusable values for the configuration document. The names of this value's
+      properties are the strings used to reference a variable's value.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#variables
+    defaultSnippets:
+      - label:       New variable property
+        description: Defines a new variable as a key-value pair
+        body:        { '${1:metadataName}': '$2' }
+      - label:       New variable property (object)
+        description: Defines a new key-value pair for the variables where the value is an object.
+        body:
+          '${1:variableName}': { '${2:key}': '${3:value}' }
+      - label:       New variable property (array)
+        description: Defines a new key-value pair for the variables where the value is an array.
+        body:
+          '${1:variableName}': ['${2:firstValue}', '${3:secondValue}']
 
   resources:
-    title: DSC Configuration document resources
-    description: >-
-      Defines a list of DSC Resource instances for the configuration to manage.
-    type: array
-    minItems: 1
+    title:       DSC Configuration document resources
+    description: Defines a list of DSC Resource instances for the configuration to manage.
+    type:        array
+    minItems:    1
     items:
       $ref: /<PREFIX>/<VERSION>/config/document.resource.yaml
+    # VS Code only
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      Defines a list of DSC Resource instances for the configuration to manage.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#resources
 
   metadata:
     title: Configuration metadata
@@ -54,3 +124,22 @@ properties:
       Defines a set of key-value pairs for the configuration. This metadata
       isn't validated.
     type: object
+    # VS Code only
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      Defines a set of key-value pairs for the configuration. This metadata isn't validated.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#metadata-1
+    defaultSnippets:
+      - label:       New Metadata Property
+        description: Defines a key-value pair for the metadata
+        body:        { '${1:metadataName}': '$2' }
+      - label:       New metadata property (object)
+        description: Defines a new key-value pair for the metadata where the value is an object.
+        body:
+          '${1:metadataName}': { '${2:key}': '${3:value}' }
+      - label:       New metadata property (array)
+        description: Defines a new key-value pair for the metadata where the value is an array.
+        body:
+          '${1:metadataName}': ['${2:firstValue}', '${3:secondValue}']

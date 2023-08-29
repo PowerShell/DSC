@@ -6,14 +6,10 @@
   "type": "object",
   "oneOf": [
     {
-      "required": [
-        "command"
-      ]
+      "required": "command"
     },
     {
-      "required": [
-        "embedded"
-      ]
+      "required": "embedded"
     }
   ],
   "properties": {
@@ -21,9 +17,7 @@
       "title": "Instance Schema Command",
       "description": "Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC Resource.",
       "type": "object",
-      "required": [
-        "executable"
-      ],
+      "required": "executable",
       "properties": {
         "executable": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -61,13 +55,13 @@
         },
         "$id": {
           "title": "DSC Resource instance schema ID",
-          "description": "Defines the unique ID for the DSC Resource's instance schema.",
+          "description": "Defines the unique ID for the DSC Resource's instance schema. If the instance schema is published to its own public URI, set this keyword to that URI.",
           "type": "string",
           "format": "uri-reference"
         },
         "properties": {
           "title": "Instance Properties",
-          "description": "Defines the schema for the DSC Resource's properties. Must define at least one property.",
+          "description": "Defines the properties that DSC can retrieve and manage for the resource's instances. This keyword must define at least one property as a key-value pair. The key is the property's name. The value is a subschema that validates the property.",
           "type": "object",
           "minProperties": 1,
           "unevaluatedProperties": {
@@ -127,9 +121,7 @@
     {
       "command": {
         "executable": "registry",
-        "args": [
-          "schema"
-        ]
+        "args": "schema"
       }
     },
     {

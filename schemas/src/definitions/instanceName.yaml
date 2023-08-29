@@ -7,3 +7,12 @@ description: >-
   The short, human-readable name for a DSC Resource instance. Must be unique
   within a DSC Configuration document.
 type: string
+
+# VS Code only
+markdownDescription: |
+  > [Online Documentation][01]
+
+  The short, human-readable name for a DSC Resource instance. Must be unique within a DSC
+  Configuration document.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#name

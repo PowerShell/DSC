@@ -4,9 +4,7 @@
   "title": "Parameter",
   "description": "Defines a runtime option for a DSC Configuration Document.",
   "type": "object",
-  "required": [
-    "type"
-  ],
+  "required": "type",
   "properties": {
     "type": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json"
@@ -45,15 +43,17 @@
         }
       },
       "then": {
-        "minValue": {
-          "title": "Minimum value",
-          "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
-          "type": "integer"
-        },
-        "maxValue": {
-          "title": "Maximum value",
-          "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
-          "type": "integer"
+        "properties": {
+          "minValue": {
+            "title": "Minimum value",
+            "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
+            "type": "integer"
+          },
+          "maxValue": {
+            "title": "Maximum value",
+            "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
+            "type": "integer"
+          }
         }
       }
     },
@@ -84,17 +84,141 @@
         ]
       },
       "then": {
-        "minLength": {
-          "title": "Minimum length",
-          "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
-          "type": "integer",
-          "minimum": 0
-        },
-        "maxLength": {
-          "title": "Maximum length",
-          "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
-          "type": "integer",
-          "minimum": 0
+        "properties": {
+          "minLength": {
+            "title": "Minimum length",
+            "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxLength": {
+            "title": "Maximum length",
+            "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "string"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "securestring"
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "string"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "secureobject"
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "object"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "int"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "integer"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "array"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "array"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "bool"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "boolean"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "boolean"
+            }
+          }
         }
       }
     }

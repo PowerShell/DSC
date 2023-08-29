@@ -14,9 +14,7 @@
       "description": "This property must be the canonical URL of the DSC Configuration Document schema that the document is implemented for.",
       "type": "string",
       "format": "uri",
-      "enum": [
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json"
-      ]
+      "enum": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json"
     },
     "parameters": {
       "title": "DSC Configuration document parameters",
@@ -92,15 +90,17 @@
             }
           },
           "then": {
-            "minValue": {
-              "title": "Minimum value",
-              "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
-              "type": "integer"
-            },
-            "maxValue": {
-              "title": "Maximum value",
-              "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
-              "type": "integer"
+            "properties": {
+              "minValue": {
+                "title": "Minimum value",
+                "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
+                "type": "integer"
+              },
+              "maxValue": {
+                "title": "Maximum value",
+                "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
+                "type": "integer"
+              }
             }
           }
         },
@@ -131,17 +131,141 @@
             ]
           },
           "then": {
-            "minLength": {
-              "title": "Minimum length",
-              "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
-              "type": "integer",
-              "minimum": 0
-            },
-            "maxLength": {
-              "title": "Maximum length",
-              "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
-              "type": "integer",
-              "minimum": 0
+            "properties": {
+              "minLength": {
+                "title": "Minimum length",
+                "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+                "type": "integer",
+                "minimum": 0
+              },
+              "maxLength": {
+                "title": "Maximum length",
+                "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "oneOf": [
+              {
+                "properties": {
+                  "type": {
+                    "const": "string"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "type": {
+                    "const": "securestring"
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "string"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "oneOf": [
+              {
+                "properties": {
+                  "type": {
+                    "const": "object"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "type": {
+                    "const": "secureobject"
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "object"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "int"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "integer"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "array"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "bool"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "boolean"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "boolean"
+                }
+              }
             }
           }
         }
@@ -151,6 +275,7 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json",
       "title": "DSC Resource instance",
+      "description": "Defines an instance of a DSC Resource in a configuration.",
       "type": "object",
       "required": [
         "type",
@@ -184,7 +309,7 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json",
       "title": "Data Types",
-      "description": "Defines the data type for the value.",
+      "description": "Defines the data type for the parameter value.",
       "type": "string",
       "enum": [
         "string",
@@ -199,6 +324,7 @@
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json",
+      "$comment": "This schema fragment makes it a little easier to compose the valid properties\nfor DSC Configuration document parameters. As-written, values must be one of\nthose on this list - the schema definition for dataType excludes `null` and\nnumbers with fractional parts, like `3.5`.\n",
       "type": [
         "string",
         "integer",
