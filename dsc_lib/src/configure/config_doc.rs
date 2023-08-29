@@ -71,6 +71,7 @@ pub struct Resource {
     /// A friendly name for the resource instance
     pub name: String, // friendly unique instance name
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
+    #[schemars(regex(pattern = r"^\[resourceId\('[a-zA-Z0-9\.]+/[a-zA-Z0-9]+','[a-zA-Z0-9 ]+'\)]$"))]
     pub depends_on: Option<Vec<String>>,
     // `identity` can be used for run-as
     #[serde(skip_serializing_if = "Option::is_none")]

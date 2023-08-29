@@ -4,13 +4,15 @@
 use jsonschema::JSONSchema;
 
 use crate::dscerror::DscError;
-use crate::dscresources::dscresource::{Invoke};
-use crate::discovery::{Discovery};
+use crate::dscresources::dscresource::Invoke;
+use crate::discovery::Discovery;
 use self::config_doc::Configuration;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ResourceMessage, MessageLevel};
+use self::depends_on::get_resource_invocation_order;
 
 pub mod config_doc;
 pub mod config_result;
+pub mod depends_on;
 
 pub struct Configurator {
     config: String,
@@ -60,9 +62,9 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in &config.resources {
+        for resource in get_resource_invocation_order(&config)? {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+                return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             //TODO: add to debug stream:println!("{}", &resource.resource_type);
             let filter = serde_json::to_string(&resource.properties)?;
@@ -96,9 +98,9 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in &config.resources {
+        for resource in get_resource_invocation_order(&config)? {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+                return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             //TODO: add to debug stream:println!("{}", &resource.resource_type);
             let desired = serde_json::to_string(&resource.properties)?;
@@ -132,9 +134,9 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in &config.resources {
+        for resource in get_resource_invocation_order(&config)? {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+                return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             //TODO: add to debug stream:println!("{}", &resource.resource_type);
             let expected = serde_json::to_string(&resource.properties)?;
@@ -160,7 +162,6 @@ impl Configurator {
             };
 
             //TODO: add to debug stream: println!("validate_config - resource_type - {}", resource.resource_type);
-            
             //TODO: remove this after schema validation for classic PS resources is implemented
             if resource.resource_type == "DSC/PowerShellGroup" {continue;}
 
