@@ -1,0 +1,164 @@
+trigger: none
+
+variables:
+  - name: BuildConfiguration
+    value: 'Release'
+  - name: PackageRoot
+    value: '$(System.ArtifactsDirectory)/Packages'
+  - group: DSCAPIScan
+  - group: Azure Blob variable group
+
+resources:
+  repositories:
+  - repository: ComplianceRepo
+    type: github
+    endpoint: ComplianceGHRepo
+    name: PowerShell/compliance
+    ref: fixApiScanNet6
+
+stages:
+- stage: Build
+  displayName: Build Native Binaries
+  dependsOn: []
+  jobs:
+  - job: BuildWin
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMS2019-Rust-Secure
+    displayName: Windows
+    strategy:
+      matrix:
+        Windows x64:
+          buildName: x86_64-pc-windows-msvc
+        Windows x64_arm64:
+          buildName: aarch64-pc-windows-msvc
+
+    steps:
+    - template: windows-build.yml
+
+  - job: SignWin
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMS2019-Rust-Secure
+
+    displayName: Sign Windows
+    variables:
+    - group: ESRP
+    dependsOn: BuildWin
+    strategy:
+      matrix:
+        Windows x64:
+          buildName: x86_64-pc-windows-msvc
+        Windows x64_arm64:
+          buildName: aarch64-pc-windows-msvc
+
+    steps:
+    - template: windows-sign.yml
+
+  - job: BuildLinux
+    displayName: Linux
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMSUbuntu20.04-Secure
+    strategy:
+      matrix:
+        Linux ARM64 GNU:
+          buildName: aarch64-unknown-linux-gnu
+        Linux ARM64 MUSL:
+          buildName: aarch64-unknown-linux-musl
+        Linux x64 GNU:
+          buildName: x86_64-unknown-linux-gnu
+        Linux x64 MUSL:
+          buildName: x86_64-unknown-linux-musl
+    steps:
+    - template: linux.yml
+
+  - job: BuildMac
+    displayName: Build Native Binaries on macOS
+    pool:
+      vmImage: macOS-Latest
+    steps:
+    - template: mac.yml
+
+- stage: compliance
+  displayName: Compliance
+  dependsOn: Build
+  jobs:
+  - job: Compliance_Job
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMS2019-PS-Native-Secure
+    steps:
+    - checkout: self
+      clean: true
+    - checkout: ComplianceRepo
+      clean: true
+
+    - download: current
+      artifact: release
+
+    - download: current
+      artifact: signed
+
+    - template: setVersion.yml
+
+    - pwsh: |
+        Get-ChildItem -Path 'ENV:'
+      displayName: Capture environment
+
+    - powershell: |
+        $null = New-Item $(PackageRoot) -ItemType Directory -Force -Verbose
+        if(-not (Test-Path '$(Pipeline.Workspace)/release' ))
+        {
+          New-Item -ItemType Directory -Path '$(Pipeline.Workspace)/release' -Force
+        }
+        Invoke-WebRequest -Uri '$(PSRPBlobUrl)' -OutFile $(Pipeline.Workspace)/release/psrp.zip -Verbose
+      displayName: 'Download PSRP package'
+
+    - powershell: 'Get-ChildItem $(Pipeline.Workspace)/release'
+      displayName: 'Capture downloaded zips'
+
+    - powershell: |
+        $extractedRoot = New-Item $(Pipeline.Workspace)/uncompressed -ItemType Directory -Force -Verbose
+        Get-ChildItem $(Pipeline.Workspace)/release/*.zip | ForEach-Object {
+            $baseName = $_.BaseName
+            if($baseName -match 'x64_arm') {
+                Write-Verbose "Skipping expanding file $_.Name" -Verbose
+            }
+            else {
+                $folderPath = Join-Path $extractedRoot $baseName
+                Expand-Archive $_.FullName -DestinationPath $folderPath -Force
+            }
+        }
+        Write-Host "Extracted files:"
+        Get-ChildItem -Recurse $extractedRoot -File
+      displayName: 'Extract All Zips'
+
+    - pwsh: |
+        Write-Verbose -Verbose "$(PackageVersion)"
+      displayName: 'Write the package version'
+
+    - template: assembly-module-compliance.yml@ComplianceRepo
+      parameters:
+        # binskim
+        AnalyzeTarget: '$(Pipeline.Workspace)/uncompressed/*.dll'
+        AnalyzeSymPath: 'SRV*'
+        # component-governance
+        sourceScanPath: '$(Build.SourcesDirectory)/DSC'
+        # credscan
+        suppressionsFile: ''
+        # TermCheck
+        optionsRulesDBPath: ''
+        optionsFTPath: ''
+        # tsa-upload
+        codeBaseName: 'DSC'
+        # selections
+        softwareName: 'DSC'
+        softwareNameFolder: '$(Pipeline.Workspace)/uncompressed'
+        softwareVersion: '$(PackageVersion)'
+        connectionString: RunAs=App;AppId=$(APIScanClient);TenantId=$(APIScanTenant);AppKey=$(APIScanSecret)
+        APIScan: true # set to false when not using Windows APIs.
