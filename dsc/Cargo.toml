@@ -14,6 +14,7 @@ lto = true
 atty = { version = "0.2" }
 clap = { version = "4.1", features = ["derive"] }
 crossterm = { version = "0.26.1" }
+ctrlc = { version = "3.4.0" }
 dsc_lib = { path = "../dsc_lib" }
 jsonschema = "0.17"
 schemars = { version = "0.8.12" }
