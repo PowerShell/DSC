@@ -50,8 +50,17 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(());
         }
 
-        let Some(path_env) = env::var_os("PATH") else {
-            return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
+        // try DSC_RESOURCE_PATH env var first otherwise use PATH
+        let path_env = match env::var_os("DSC_RESOURCE_PATH") {
+            Some(value) => value,
+            None => {
+                match env::var_os("PATH") {
+                    Some(value) => value,
+                    None => {
+                        return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
+                    }
+                }
+            }
         };
 
         for path in env::split_paths(&path_env) {
@@ -103,7 +112,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     Some(provider_type_name.clone()),
                     Some(provider_path.clone())));
             }
-            
+
             for line in stdout.lines() {
                 match serde_json::from_str::<DscResource>(line){
                     Result::Ok(resource) => {
@@ -112,7 +121,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                 DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string(),
                                 Some(resource.type_name.clone()),
                                 Some(resource.path.clone())));
-                            
+
                             continue;
                         }
                         self.resources.insert(resource.type_name.clone(), resource);
@@ -122,7 +131,7 @@ impl ResourceDiscovery for CommandDiscovery {
                             format!("Failed to parse resource: {line} -> {err}"),
                             Some(provider_type_name.clone()),
                             Some(provider_path.clone())));
-                        
+
                         continue;
                     }
                 };
@@ -137,7 +146,7 @@ impl ResourceDiscovery for CommandDiscovery {
         for msg in &self.discovery_messages {
             msg.print(&error_format, &warning_format)?;
         }
-        
+
         Ok(())
     }
 }
