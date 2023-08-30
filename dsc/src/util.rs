@@ -32,6 +32,7 @@ pub const EXIT_DSC_ERROR: i32 = 2;
 pub const EXIT_JSON_ERROR: i32 = 3;
 pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
+pub const EXIT_CTRL_C: i32 = 6;
 
 pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
 {

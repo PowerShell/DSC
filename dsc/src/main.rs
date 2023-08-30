@@ -22,6 +22,10 @@ fn main() {
     #[cfg(debug_assertions)]
     check_debug();
 
+    if ctrlc::set_handler(ctrlc_handler).is_err() {
+        eprintln!("Error: Failed to set Ctrl-C handler");
+    }
+
     let args = Args::parse();
 
     let stdin: Option<String> = if atty::is(Stream::Stdin) {
@@ -60,6 +64,11 @@ fn main() {
     }
 
     exit(util::EXIT_SUCCESS);
+}
+
+fn ctrlc_handler() {
+    eprintln!("Ctrl-C received");
+    exit(util::EXIT_CTRL_C);
 }
 
 #[cfg(debug_assertions)]
