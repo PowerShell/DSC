@@ -80,7 +80,7 @@ stages:
     pool:
       name: PowerShell1ES
       demands:
-      - ImageOverride -equals PSMMS2019-PS-Native-Secure
+      - ImageOverride -equals PSMMS2019-Rust-Secure
     steps:
     - checkout: self
       clean: true
@@ -93,43 +93,9 @@ stages:
     - download: current
       artifact: signed
 
-    - template: setVersion.yml
-
     - pwsh: |
         Get-ChildItem -Path 'ENV:'
       displayName: Capture environment
-
-    - powershell: |
-        $null = New-Item $(PackageRoot) -ItemType Directory -Force -Verbose
-        if(-not (Test-Path '$(Pipeline.Workspace)/release' ))
-        {
-          New-Item -ItemType Directory -Path '$(Pipeline.Workspace)/release' -Force
-        }
-        Invoke-WebRequest -Uri '$(PSRPBlobUrl)' -OutFile $(Pipeline.Workspace)/release/psrp.zip -Verbose
-      displayName: 'Download PSRP package'
-
-    - powershell: 'Get-ChildItem $(Pipeline.Workspace)/release'
-      displayName: 'Capture downloaded zips'
-
-    - powershell: |
-        $extractedRoot = New-Item $(Pipeline.Workspace)/uncompressed -ItemType Directory -Force -Verbose
-        Get-ChildItem $(Pipeline.Workspace)/release/*.zip | ForEach-Object {
-            $baseName = $_.BaseName
-            if($baseName -match 'x64_arm') {
-                Write-Verbose "Skipping expanding file $_.Name" -Verbose
-            }
-            else {
-                $folderPath = Join-Path $extractedRoot $baseName
-                Expand-Archive $_.FullName -DestinationPath $folderPath -Force
-            }
-        }
-        Write-Host "Extracted files:"
-        Get-ChildItem -Recurse $extractedRoot -File
-      displayName: 'Extract All Zips'
-
-    - pwsh: |
-        Write-Verbose -Verbose "$(PackageVersion)"
-      displayName: 'Write the package version'
 
     - template: assembly-module-compliance.yml@ComplianceRepo
       parameters:
