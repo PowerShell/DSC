@@ -6,7 +6,6 @@ variables:
   - name: PackageRoot
     value: '$(System.ArtifactsDirectory)/Packages'
   - group: DSCAPIScan
-  - group: Azure Blob variable group
 
 resources:
   repositories:
