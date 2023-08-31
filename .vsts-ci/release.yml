@@ -38,26 +38,6 @@ stages:
     - powershell: ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
 
-  - job: SignWin
-    pool:
-      name: PowerShell1ES
-      demands:
-      - ImageOverride -equals PSMMS2019-Rust-Secure
-
-    displayName: Sign Windows
-    variables:
-    - group: ESRP
-    dependsOn: BuildWin
-    strategy:
-      matrix:
-        Windows x64:
-          buildName: x86_64-pc-windows-msvc
-        Windows x64_arm64:
-          buildName: aarch64-pc-windows-msvc
-
-    steps:
-    - template: windows-sign.yml
-
   - job: BuildLinux
     displayName: Linux
     pool:
