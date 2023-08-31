@@ -35,7 +35,8 @@ stages:
           buildName: aarch64-pc-windows-msvc
 
     steps:
-    - template: windows-build.yml
+    - powershell: ./build.ps1 -Release -Architecture $(buildName)
+      displayName: 'Build $(buildName)'
 
   - job: SignWin
     pool:
@@ -74,14 +75,22 @@ stages:
         Linux x64 MUSL:
           buildName: x86_64-unknown-linux-musl
     steps:
-    - template: linux.yml
+    - powershell: ./build.ps1 -Release -Architecture $(buildName)
+      displayName: 'Build $(buildName)'
 
   - job: BuildMac
     displayName: Build Native Binaries on macOS
     pool:
       vmImage: macOS-Latest
+    strategy:
+      matrix:
+        macOS x64:
+          buildName: x86_64-apple-darwin
+        macOS arm64:
+          buildName: aarch64-apple-darwin
     steps:
-    - template: mac.yml
+    - powershell: ./build.ps1 -Release -Architecture $(buildName)
+      displayName: 'Build $(buildName)'
 
 - stage: compliance
   displayName: Compliance
