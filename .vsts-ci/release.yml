@@ -34,7 +34,7 @@ stages:
           buildName: aarch64-pc-windows-msvc
 
     steps:
-    - powershell: ./build.ps1 -Release -Architecture $(buildName)
+    - pwsh: ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
 
   - job: BuildLinux
@@ -54,7 +54,7 @@ stages:
         Linux x64 MUSL:
           buildName: x86_64-unknown-linux-musl
     steps:
-    - powershell: ./build.ps1 -Release -Architecture $(buildName)
+    - pwsh: ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
 
   - job: BuildMac
@@ -68,7 +68,7 @@ stages:
         macOS arm64:
           buildName: aarch64-apple-darwin
     steps:
-    - powershell: ./build.ps1 -Release -Architecture $(buildName)
+    - pwsh: ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
 
 - stage: compliance
