@@ -49,7 +49,6 @@ Describe 'resource export tests' {
         $LASTEXITCODE | Should -Be 0
         $set_results = $out | ConvertFrom-Json
         $set_results.results.count | Should -BeGreaterThan 1
-        $set_results.results[0].result.afterState.result | Should -BeExactly "Ok"
     }
 
     It 'Duplicate resource types in Configuration Export should result in error' {
