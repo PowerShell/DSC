@@ -69,7 +69,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Resu
             });
         }
     }
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), Some(desired), Some(cwd))?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(desired), Some(cwd))?;
     let pre_state: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
