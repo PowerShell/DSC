@@ -19,6 +19,9 @@ pub enum DscError {
     #[error("HTTP status: {0}")]
     HttpStatus(StatusCode),
 
+    #[error("Regex: {0}")]
+    Regex(#[from] regex::Error),
+
     #[error("Invalid configuration:\n{0}")]
     InvalidConfiguration(String),
 
@@ -127,7 +130,7 @@ impl StreamMessage {
         {
             eprintln!("{:?} -> {} {}", warning_format, self.resource_type_name, self.message);
         }
-        
+
         Ok(())
     }
 }
