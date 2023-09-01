@@ -3,9 +3,8 @@
 
 use crate::args::OutputFormat;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
-use dsc_lib::configure::config_doc::Resource;
 use dsc_lib::configure::config_doc::Configuration;
-use std::collections::HashMap;
+use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::invoke_result::GetResult;
 
 use dsc_lib::{
@@ -166,24 +165,7 @@ pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
 
     let mut conf = Configuration::new();
 
-    let export_result = match dsc_resource.export() {
-        Ok(export) => { export }
-        Err(err) => {
-            eprintln!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
-
-    for (i, instance) in export_result.actual_state.iter().enumerate()
-    {
-        let mut r = Resource::new();
-        r.resource_type = dsc_resource.type_name.clone();
-        r.name = format!("{}-{i}", r.resource_type);
-        let props: HashMap<String, serde_json::Value> = serde_json::from_value(instance.clone()).unwrap();
-        r.properties = Some(props);
-
-        conf.resources.push(r);
-    }
+    add_resource_export_results_to_configuration(&dsc_resource, &mut conf);
 
     let json = match serde_json::to_string(&conf) {
         Ok(json) => json,

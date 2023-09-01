@@ -8,6 +8,8 @@ Describe 'resource export tests' {
         $out = dsc resource export -r Microsoft/Process
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
+        $config_with_process_list.'$schema' | Should -Not -BeNullOrEmpty
+        $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
 
@@ -17,6 +19,7 @@ Describe 'resource export tests' {
         $LASTEXITCODE | Should -Be 0
         $process_list = $out | ConvertFrom-Json
         $process_list.resources.count | Should -BeGreaterThan 1
+        $process_list | % {$_.actualState | Should -Not -BeNullOrEmpty}
     }
 
     It 'Export can be called on a configuration' {
@@ -32,6 +35,8 @@ Describe 'resource export tests' {
         $out = $yaml | dsc config export
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
+        $config_with_process_list.'$schema' | Should -Not -BeNullOrEmpty
+        $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
 
