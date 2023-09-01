@@ -3,11 +3,7 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-<<<<<<< HEAD
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
-=======
-use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult, ExportResult};
->>>>>>> 660b56b (Configuration export functionality and tests)
 use crate::configure::config_doc;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

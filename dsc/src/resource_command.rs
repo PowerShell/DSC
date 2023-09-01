@@ -3,6 +3,9 @@
 
 use crate::args::OutputFormat;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
+use dsc_lib::configure::config_doc::Resource;
+use dsc_lib::configure::config_doc::Configuration;
+use std::collections::HashMap;
 
 use dsc_lib::{
     dscresources::dscresource::{Invoke, DscResource},
@@ -130,27 +133,37 @@ pub fn schema(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
 }
 
 pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat>) {
-    let resource = get_resource(dsc, resource);
+    let dsc_resource = get_resource(dsc, resource);
 
-    match resource.export() {
-        Ok(result) => {
-            for instance in result.actual_state
-            {
-                let json = match serde_json::to_string(&instance) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        eprintln!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
-                    }
-                };
-                write_output(&json, format);
-            }
-        }
+    let mut conf = Configuration::new();
+
+    let export_result = match dsc_resource.export() {
+        Ok(export) => { export }
         Err(err) => {
             eprintln!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
+    };
+
+    for (i, instance) in export_result.actual_state.iter().enumerate()
+    {
+        let mut r = Resource::new();
+        r.resource_type = dsc_resource.type_name.clone();
+        r.name = format!("{}-{i}", r.resource_type);
+        let props: HashMap<String, serde_json::Value> = serde_json::from_value(instance.clone()).unwrap();
+        r.properties = Some(props);
+
+        conf.resources.push(r);
     }
+
+    let json = match serde_json::to_string(&conf) {
+        Ok(json) => json,
+        Err(err) => {
+            eprintln!("JSON Error: {err}");
+            exit(EXIT_JSON_ERROR);
+        }
+    };
+    write_output(&json, format);
 }
 
 pub fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
