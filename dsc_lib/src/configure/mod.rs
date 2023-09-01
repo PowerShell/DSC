@@ -159,7 +159,7 @@ impl Configurator {
         let mut map: HashMap<&String, i32> = HashMap::new();
         let mut result: HashSet<String> = HashSet::new();
         let resource_list = &config.resources;
-        if resource_list.len() == 0 {
+        if resource_list.is_empty() {
             return Vec::new();
         }
 
@@ -178,8 +178,10 @@ impl Configurator {
     pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
 
-        for duplicate in Self::find_duplicate_resource_types(&config)
+        let duplicates = Self::find_duplicate_resource_types(&config);
+        if !duplicates.is_empty()
         {
+            let duplicate = &duplicates[0];
             return Err(DscError::Validation(format!("Resource {duplicate} specified multiple times")));
         }
 
