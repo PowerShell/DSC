@@ -28,6 +28,13 @@ fn help() {
     println!("usage: process list");
 }
 
+fn print_input() {
+    let mut buffer: Vec<u8> = Vec::new();
+    io::stdin().read_to_end(&mut buffer).unwrap();
+    let input = String::from_utf8(buffer);
+    println!("{}", input.unwrap());
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 2 {
@@ -42,17 +49,15 @@ fn main() {
                 exit(0);
             },
             "get" => { // used for testing only
-                let mut buffer: Vec<u8> = Vec::new();
-                io::stdin().read_to_end(&mut buffer).unwrap();
-                let input = String::from_utf8(buffer);
-                println!("{}", input.unwrap());
+                print_input();
                 exit(0);
             },
             "set" => { // used for testing only
-                let mut buffer: Vec<u8> = Vec::new();
-                io::stdin().read_to_end(&mut buffer).unwrap();
-                let input = String::from_utf8(buffer);
-                println!("{}", input.unwrap());
+                print_input();
+                exit(0);
+            },
+            "test" => { // used for testing only
+                print_input();
                 exit(0);
             },
             _ => {

@@ -23,8 +23,9 @@
       "args": [
         "test"
       ],
-      "input": "stdin"
-  },
+      "input": "stdin",
+      "return": "state"
+    },
     "export": {
       "executable": "process",
       "args": [
