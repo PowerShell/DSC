@@ -432,15 +432,15 @@
                       },
                       "dependsOn": {
                         "title": "Instance depends on",
-                        "description": "Defines a list of DSC Resource instances that DSC must successfully process before processing this instance. Each value for this property must be the value of another DSC Resource instance's `name` property.",
+                        "description": "Defines a list of DSC Resource instances that DSC must successfully process before processing this instance. Each value for this property must be the `resourceID()` lookup for another instance in the configuration. Multiple instances can depend on the same instance, but every dependency for an instance must be unique in that instance's `dependsOn` property.",
                         "type": "array",
                         "items": {
                           "type": "string",
                           "uniqueItems": true,
-                          "pattern": "^\\[\\w+(\\.\\w+){0,2}\\/\\w+\\].+$",
-                          "patternErrorMessage": "Invalid value, must be a value like `[<type>]<name>`, such as `[Microsoft/OSInfo]Foo`.\n\nThe `<type>` and `<name>` should be the fully qualified type of the resource and its\nfriendly name in the configuration.\n"
+                          "pattern": "^\\[resourceId\\(\\s*'\\w+(\\.\\w+){0,2}\\/\\w+'\\s*,\\s*'[a-zA-Z0-9 ]+'\\s*\\)\\]$",
+                          "patternErrorMessage": "Invalid value, must be a value like `[resourceId('<type>', '<name>`)], such as\n`[resourceId('Microsoft/OSInfo', 'Foo')]`.\n\nThe `<type>` and `<name>` should be the fully qualified type of the resource and its\nfriendly name in the configuration.\n"
                         },
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of DSC Resource instances that DSC must successfully process before processing\nthis instance. Each value for this property must be the value of another DSC Resource\ninstance's `name` property.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1\n"
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of DSC Resource instances that DSC must successfully process before processing\nthis instance. Each value for this property must be the `resourceID()` lookup for another\ninstance in the configuration. Multiple instances can depend on the same instance, but every\ndependency for an instance must be unique in that instance's `dependsOn` property.\n\nThe `resourceID()` function uses this syntax:\n\n```yaml\n\"[resourceId('<resource-type-name>', '']<instance-name>\"\n```\n\nThe `<resource-type-name>` value is the `type` property of the dependent resource and\n`<instance-name>` is the dependency's `name` property. When adding a dependency in a\nYAML-format configuration document, always wrap the `resourceID()` lookup in double quotes\n(`\"`).\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1\n"
                       },
                       "properties": {
                         "title": "Managed instance properties",
@@ -532,9 +532,12 @@
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/instanceName.json",
                     "title": "Instance name",
-                    "description": "The short, human-readable name for a DSC Resource instance. Must be unique within a DSC Configuration document.",
+                    "description": "The short, human-readable name for a DSC Resource instance. Must be unique within a DSC Configuration document. Must be a non-empty string containing only letters, numbers, and spaces.",
                     "type": "string",
-                    "markdownDescription": "> [Online Documentation][01]\n\nThe short, human-readable name for a DSC Resource instance. Must be unique within a DSC\nConfiguration document.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#name\n"
+                    "pattern": "^[a-zA-Z0-9 ]+$",
+                    "minLength": 1,
+                    "patternErrorMessage": "Invalid value for instance name. An instance name must be a non-empty string containing only\nletters, numbers, and spaces.\n",
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines the short, human-readable name for a DSC Resource instance. This property must be unique\nwithin a DSC Configuration document. If any resource instances share the same name, DSC raises an\nerror.\n\nThe instance name must be a non-empty string containing only letters, numbers, and spaces.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#name\n"
                   }
                 }
               }
