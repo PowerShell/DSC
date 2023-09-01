@@ -35,7 +35,7 @@ Describe 'resource export tests' {
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
 
-    It 'Configuration Export can be piped to configuration Set' {
+    It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {
 
         $yaml = @'
             $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
