@@ -31,7 +31,13 @@
     "return": "state"
   },
   "exitCodes": {
-    "0": "Success"
+    "0": "Success",
+    "1": "Invalid argument",
+    "2": "Resource error",
+    "3": "JSON Serialization error",
+    "4": "Invalid input format",
+    "5": "Resource instance failed schema validation",
+    "6": "Command cancelled"
   },
   "schema": {
     "command": {
