@@ -5,9 +5,18 @@ Describe 'resource export tests' {
     
     It 'Export can be called on individual resource' {
 
-        $processes = dsc resource export -r Microsoft/Process
+        $out = dsc resource export -r Microsoft/Process
         $LASTEXITCODE | Should -Be 0
-        $processes.count | Should -BeGreaterThan 1
+        $config_with_process_list = $out | ConvertFrom-Json
+        $config_with_process_list.resources.count | Should -BeGreaterThan 1
+    }
+
+    It 'get --all can be called on individual resource' {
+
+        $out = dsc resource get --all -r Microsoft/Process
+        $LASTEXITCODE | Should -Be 0
+        $process_list = $out | ConvertFrom-Json
+        $process_list.resources.count | Should -BeGreaterThan 1
     }
 
     It 'Export can be called on a configuration' {
