@@ -102,6 +102,21 @@ Type:      Boolean
 Mandatory: false
 ```
 
+## Exit Codes
+
+The `dsc` command uses semantic exit codes. Each exit code represents a different result for the
+execution of the command.
+
+| Exit Code |                                                 Meaning                                                 |
+| :-------: | :------------------------------------------------------------------------------------------------------ |
+|    `0`    | The command executed successfully without any errors.                                                   |
+|    `1`    | The command failed because it received invalid arguments.                                               |
+|    `2`    | The command failed because a resource raised an error.                                                  |
+|    `3`    | The command failed because a value couldn't be serialized to or deserialized from JSON.                 |
+|    `4`    | The command failed because input for the command wasn't valid YAML or JSON.                             |
+|    `5`    | The command failed because a resource definition or instance value was invalid against its JSON schema. |
+|    `6`    | The command was cancelled by a <kbd>Ctrl</kbd>+<kbd>C</kbd> interruption.                               |
+
 [01]: config/command.md
 [02]: resource/command.md
 [03]: schema/command.md

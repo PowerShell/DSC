@@ -8,3 +8,7 @@ description: >-
 type: array
 items:
   type: string
+
+markdownDescription: |
+  Defines an array of strings to pass as arguments to the command. DSC passes the arguments to the
+  command in the order they're specified.

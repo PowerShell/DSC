@@ -10,3 +10,11 @@ type:
   - boolean
   - 'null'
 readOnly: true
+
+# VS Code only
+markdownDescription: |
+  > [Online Documentation][01]
+
+  Indicates that the set operation requires a reboot before it's fully complete.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/rebootrequested?view=dsc-3.0&preserveView=true

@@ -10,3 +10,14 @@ type: string
 enum:
   - Absent
   - Present
+
+# VS Code Only
+markdownDescription: |
+  > [Online Documentation][01]
+
+  Indicates whether the DSC Resource instance should exist.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/ensure?view=dsc-3.0&preserveView=true
+markdownEnumDescriptions:
+  - Indicates that the instance shouldn't exist.
+  - Indicates that the instance should exist.

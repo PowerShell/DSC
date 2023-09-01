@@ -15,3 +15,24 @@ description: |
 
 type: string
 pattern: ^\w+(\.\w+){0,2}\/\w+$
+
+# VS Code only
+markdownDescription: |
+  > [Online Documentation][01]
+
+  The namespaced name of the DSC Resource, using the syntax:
+
+  ```text
+  owner[.group][.area]/name
+  ```
+
+  For example:
+
+  - `Microsoft.SqlServer/Database`
+  - `Microsoft.SqlServer.Database/User`
+
+  [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserveView=true
+patternErrorMessage: |
+  Invalid type name. Valid resource type names always define an owner and a name separated by a
+  slash, like `Microsoft/OSInfo`. Type names may optionally include a group and area to namespace
+  the resource under the owner, like `Microsoft.Windows/Registry`.

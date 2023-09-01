@@ -4,9 +4,7 @@
   "title": "Get Method",
   "description": "Defines how DSC must call the DSC Resource to get the current state of an instance.",
   "type": "object",
-  "required": [
-    "executable"
-  ],
+  "required": "executable",
   "properties": {
     "executable": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"

@@ -11,3 +11,15 @@ enum:
   - args
   - stdin
 default: args
+
+# VS Code only
+markdownDescription: |
+  Defines how DSC should pass input to the command, either as arguments or JSON over `stdin`.
+markdownEnumDescriptions:
+  # args
+  - |
+      Indicates that the resource expects the properties of an instance to be specified with
+      command line arguments. This option isn't implemented yet.
+  # stdin
+  - |
+      Indicates that the resource expects a JSON blob representing an instance from `stdin`.

@@ -4,8 +4,7 @@ $id: <HOST>/<PREFIX>/<VERSION>/resource/manifest.schema.yaml
 
 title: Instance Schema
 description: >-
-  Defines how DSC must validate a JSON blob representing an instance of the
-  DSC Resource.
+  Defines how DSC must validate a JSON blob representing an instance of the DSC Resource.
 
 # While the current implementation is somewhat confusing in the schema, I
 # think it's actually easier to document. Mainly, the complexity comes from
@@ -20,8 +19,8 @@ properties:
   command:
     title: Instance Schema Command
     description: >-
-      Defines how DSC must call the DSC Resource to get the JSON Schema for
-      validating a JSON blob representing an instance of the DSC Resource.
+      Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob
+      representing an instance of the DSC Resource.
     type: object
     required:
       - executable
@@ -30,11 +29,26 @@ properties:
         $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
       args:
         $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+    # VS Code only
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob
+      representing an instance of the DSC Resource.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#command
   embedded:
     title: Embedded Instance Schema
     description: >-
-      Defines the JSON Schema DSC must use to validate a JSON blob
-      representing an instance of the DSC Resource.
+      Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the
+      DSC Resource.
+    markdownDescription: | # VS Code only
+      > [Online Documentation][01]
+
+      Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the
+      DSC Resource.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserveView=true
     type: object
     required:
       - $schema
@@ -48,6 +62,13 @@ properties:
           have the `object` type.
         # Ensures the DSC Resource is always an object
         const: object
+        markdownDescription: | # VS Code only
+          > [Online Documentation][01]
+
+          Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always
+          have the `object` type.
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserveView=true#type
       $schema:
         # Ensures the DSC Resource always uses a schema we can understand
         title: DSC Resource instance schema dialect
@@ -59,13 +80,46 @@ properties:
           - https://json-schema.org/draft/2020-12/schema
           - https://json-schema.org/draft/2019-09/schema
           - http://json-schema.org/draft-07/schema#
+        # VS Code only
+        markdownDescription: | # VS Code only
+          > [Online Documentation][01]
+
+          Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always
+          have the `object` type. DSC only supports JSON Schema Draft 07 and later.
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserveView=true#type
+        markdownEnumDescriptions:
+          # https://json-schema.org/draft/2020-12/schema
+          - |
+              Indicates the resource instance schema adheres to [JSON Schema Draft 2020-12][01].
+
+              [01]: https://json-schema.org/specification-links.html#2020-12
+          # https://json-schema.org/draft/2019-09/schema
+          - |
+              Indicates the resource instance schema adheres to [JSON Schema Draft 2019-09][01].
+
+              [01]: https://json-schema.org/specification-links.html#draft-2019-09-formerly-known-as-draft-8
+          # http://json-schema.org/draft-07/schema#
+          - |
+              Indicates the resource instance schema adheres to [JSON Schema Draft 07][01].
+
+              [01]: https://json-schema.org/specification-links.html#draft-7
       $id:
         title: DSC Resource instance schema ID
         description: >-
-          Defines the unique ID for the DSC Resource's instance schema.
+          Defines the unique ID for the DSC Resource's instance schema. If the instance schema is
+          published to its own public URI, set this keyword to that URI.
         # Currently optional - maybe we should require this?
         type: string
         format: uri-reference
+        markdownDescription: |
+          > [Online Documentation][01]
+
+          Defines the unique ID for the DSC Resource's instance schema. If the instance schema is
+          published to its own public URI, set this keyword to that URI.
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#id
+
       properties:
         # Defines the property validation - requires authors to specify at
         # least one property, ensures all unevaluated properties are of a kind
@@ -73,7 +127,17 @@ properties:
         # manifest authors.
         title: Instance Properties
         description: >-
-          Defines the schema for the DSC Resource's properties. Must define at least one property.
+          Defines the properties that DSC can retrieve and manage for the resource's instances.
+          This keyword must define at least one property as a key-value pair. The key is the
+          property's name. The value is a subschema that validates the property.
+        markdownDescription: | # VS Code only
+          > [Online Documentation][01]
+
+          Defines the properties that DSC can retrieve and manage for the resource's instances.
+          This keyword must define at least one property as a key-value pair. The key is the
+          property's name. The value is a subschema that validates the property.
+
+          [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#properties
         type: object
         minProperties: 1
         unevaluatedProperties:
@@ -89,6 +153,14 @@ properties:
               whether an instance should exist with the `Present` and `Absent` enums.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/ensure.yaml
+            # VS Code only
+            markdownDescription: |
+              > [Online Documentation][01]
+
+              Indicates that the DSC Resource uses the standard `_ensure` property to specify
+              whether an instance should exist with the `Present` and `Absent` enums.
+
+              [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/ensure?view=dsc-3.0&preserveView=true
           _inDesiredState:
             title: 'Standard Property: _inDesiredState'
             description: >-
@@ -97,6 +169,15 @@ properties:
               be included if the DSC Resource relies on DSC's synthetic testing.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/inDesiredState.yaml
+            # VS Code only
+            markdownDescription: |
+              > [Online Documentation][01]
+
+              Indicates that the DSC Resource returns this value for it's own `test` method. This
+              property is mandatory when the manifest defines the `test` property. It shouldn't
+              be included if the DSC Resource relies on DSC's synthetic testing.
+
+              [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/indesiredstate?view=dsc-3.0&preserveView=true
           _purge:
             title: 'Standard Property: _purge'
             description: >-
@@ -105,6 +186,15 @@ properties:
               an array of members or values.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/purge.yaml
+            # VS Code only
+            markdownDescription: |
+              > [Online Documentation][01]
+
+              Indicates that the DSC Resource uses the standard `_purge` property to specify
+              whether the DSC Resource should remove all non-specified members when it manages
+              an array of members or values.
+
+              [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/purge?view=dsc-3.0&preserveView=true
           _rebootRequested:
             title: 'Standard property: _rebootRequested'
             description: >-
@@ -112,12 +202,27 @@ properties:
               report whether the machine should be rebooted after the `set` method executes.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/rebootRequested.yaml
+            # VS Code only
+            markdownDescription: |
+              > [Online Documentation][01]
+
+              Indicates that the DSC Resource uses the standard `_rebootRequested` property to
+              report whether the machine should be rebooted after the `set` method executes.
+
+              [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/rebootrequested?view=dsc-3.0&preserveView=true
   url:
     title: Instance Schema URL
     description: >-
       Defines the URL to the DSC Resource's JSON schema for integrating tools.
     type: string
     format: uri
+    # VS Code only
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      Defines the URL to the DSC Resource's JSON schema for integrating tools.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#url
 
 examples:
   - command:
@@ -152,3 +257,23 @@ examples:
         Family:
           type: string
           enum: [Linux, macOS, Windows]
+
+# VS Code only
+markdownDescription: |
+  > [Online Documentation][01]
+
+  Defines how DSC must validate a JSON blob representing an instance of the DSC Resource.
+
+  The JSON schema can be defined dynamically with the `command` property or statically with the
+  `embedded` property.
+
+  For development purposes, it can be more convenient to use the `command` property and avoid
+  needing to adjust both the code and the schema.
+
+  Microsoft recommends using the `embedded` property when publishing a resource publicly. When the
+  manifest declares the schema with the `command` property, DSC calls the command at the beginning
+  of any operation using the resource, possibly impacting performance. The schema is also
+  unavailable to integrating tools when the resource isn't installed locally. When the schema is
+  embedded in the manifest, DSC and integrating tools only need the manifest itself.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true

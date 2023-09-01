@@ -34,17 +34,13 @@
           "title": "Standard implementation",
           "description": "Indicates that the DSC Resource is implemented as one of the standard implementations built into DSC.",
           "type": "string",
-          "enum": [
-            "Command"
-          ]
+          "enum": "Command"
         },
         {
           "title": "Custom implementation",
           "description": "Indicates that the DSC Resource uses a custom implementation.",
           "type": "object",
-          "required": [
-            "custom"
-          ],
+          "required": "custom",
           "properties": {
             "custom": {
               "title": "Custom implementation name",
@@ -102,14 +98,14 @@
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
       "type": "string",
       "title": "Semantic Version",
-      "description": "A valid semantic version (semver) string. For reference, see https://semver.org/",
+      "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json",
       "title": "Command-based DSC Resource Manifest",
-      "description": "Defines a valid command-based DSC Resource.",
+      "description": "Defines the information DSC and integrating require to process and call a command-based DSC Resource.",
       "type": "object",
       "required": [
         "manifestVersion",
@@ -139,7 +135,7 @@
         },
         "tags": {
           "title": "Tags",
-          "description": "An array of short strings used to search for DSC Resources.",
+          "description": "Defines a list of searchable terms for the resource.",
           "type": "array",
           "uniqueItems": true,
           "items": {
@@ -173,6 +169,18 @@
             "^[0-9]+$": {
               "type": "string"
             }
+          },
+          "unevaluatedProperties": false,
+          "default": {
+            "0": "Success",
+            "1": "Error"
+          },
+          "examples": {
+            "0": "Success",
+            "1": "Invalid parameter",
+            "2": "Invalid input",
+            "3": "Registry error",
+            "4": "JSON serialization failed"
           }
         },
         "schema": {
@@ -197,7 +205,20 @@
         "input": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json"
         }
-      }
+      },
+      "examples": [
+        {
+          "executable": "registry",
+          "args": [
+            "config",
+            "get"
+          ],
+          "input": "stdin"
+        },
+        {
+          "executable": "osinfo"
+        }
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.set.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -229,6 +250,16 @@
           "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json"
         }
+      },
+      "examples": {
+        "executable": "registry",
+        "args": [
+          "config",
+          "set"
+        ],
+        "input": "stdin",
+        "preTest": true,
+        "return": "state"
       }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.test.json": {
@@ -256,6 +287,15 @@
           "description": "Defines whether the command returns a JSON blob of the DSC Resource's current state or the state and an array of the properties that are out of the desired state.",
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json"
         }
+      },
+      "examples": {
+        "executable": "registry",
+        "args": [
+          "config",
+          "test"
+        ],
+        "input": "stdin",
+        "return": "state"
       }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.validate.json": {
@@ -272,6 +312,13 @@
         "args": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandArgs.json"
         }
+      },
+      "examples": {
+        "executable": "dsc",
+        "args": [
+          "config",
+          "validate"
+        ]
       }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.provider.json": {
@@ -306,6 +353,19 @@
           "enum": [
             "full",
             "sequence"
+          ]
+        }
+      },
+      "examples": {
+        "config": "full",
+        "list": {
+          "executable": "pwsh",
+          "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            "./powershellgroup.resource.ps1 List"
           ]
         }
       }
@@ -367,13 +427,13 @@
             },
             "$id": {
               "title": "DSC Resource instance schema ID",
-              "description": "Defines the unique ID for the DSC Resource's instance schema.",
+              "description": "Defines the unique ID for the DSC Resource's instance schema. If the instance schema is published to its own public URI, set this keyword to that URI.",
               "type": "string",
               "format": "uri-reference"
             },
             "properties": {
               "title": "Instance Properties",
-              "description": "Defines the schema for the DSC Resource's properties. Must define at least one property.",
+              "description": "Defines the properties that DSC can retrieve and manage for the resource's instances. This keyword must define at least one property as a key-value pair. The key is the property's name. The value is a subschema that validates the property.",
               "type": "object",
               "minProperties": 1,
               "unevaluatedProperties": {
@@ -428,7 +488,74 @@
           "type": "string",
           "format": "uri"
         }
-      }
+      },
+      "examples": [
+        {
+          "command": {
+            "executable": "registry",
+            "args": "schema"
+          }
+        },
+        {
+          "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "OSInfo",
+            "type": "object",
+            "required": [],
+            "properties": {
+              "$id": {
+                "type": "string"
+              },
+              "architecture": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "bitness": {
+                "$ref": "#/definitions/Bitness"
+              },
+              "codename": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "edition": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "family": {
+                "$ref": "#/definitions/Family"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "definitions": {
+              "Bitness": {
+                "type": "string",
+                "enum": [
+                  "32",
+                  "64",
+                  "unknown"
+                ]
+              },
+              "Family": {
+                "type": "string",
+                "enum": [
+                  "Linux",
+                  "macOS",
+                  "Windows"
+                ]
+              }
+            }
+          }
+        }
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -468,7 +595,8 @@
         "state",
         "stateAndDiff"
       ],
-      "default": "state"
+      "default": "state",
+      "$comment": "While the enumeration for return kind is the same for the `set` and `test`\nmethod, the way it changes the behavior of the command isn't. The description\nkeyword isn't included here because the respective schemas for those methods\ndocument the behavior themselves."
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/ensure.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

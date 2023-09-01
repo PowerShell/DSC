@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json",
   "title": "Command-based DSC Resource Manifest",
-  "description": "Defines a valid command-based DSC Resource.",
+  "description": "Defines the information DSC and integrating require to process and call a command-based DSC Resource.",
   "type": "object",
   "required": [
     "manifestVersion",
@@ -15,9 +15,7 @@
       "title": "Manifest Version",
       "description": "The semver of the DSC Resource manifest schema to validate this manifest with.",
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
-      "enums": [
-        "1.0"
-      ]
+      "enums": "1.0"
     },
     "type": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json"
@@ -34,7 +32,7 @@
     },
     "tags": {
       "title": "Tags",
-      "description": "An array of short strings used to search for DSC Resources.",
+      "description": "Defines a list of searchable terms for the resource.",
       "type": "array",
       "uniqueItems": true,
       "items": {
@@ -69,17 +67,18 @@
           "type": "string"
         }
       },
-      "examples": [
-        {
-          "exitCodes": {
-            "0": "Success",
-            "1": "Invalid parameter",
-            "2": "Invalid input",
-            "3": "Registry error",
-            "4": "JSON serialization failed"
-          }
-        }
-      ]
+      "unevaluatedProperties": false,
+      "default": {
+        "0": "Success",
+        "1": "Error"
+      },
+      "examples": {
+        "0": "Success",
+        "1": "Invalid parameter",
+        "2": "Invalid input",
+        "3": "Registry error",
+        "4": "JSON serialization failed"
+      }
     },
     "schema": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json"
