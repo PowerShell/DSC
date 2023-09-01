@@ -385,8 +385,9 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                 table.print();
             }
         },
-       ResourceSubCommand::Get { resource, input } => {
-            resource_command::get(&mut dsc, resource, input, stdin, format);
+       ResourceSubCommand::Get { resource, input, all } => {
+            if *all { resource_command::get_all(&mut dsc, resource, input, stdin, format); }
+            else { resource_command::get(&mut dsc, resource, input, stdin, format); };
         },
         ResourceSubCommand::Set { resource, input } => {
             resource_command::set(&mut dsc, resource, input, stdin, format);

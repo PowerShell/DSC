@@ -256,6 +256,12 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 }
 
 pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportResult, DscError> {
+
+    if resource.export.is_none()
+    {
+        return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
+    }
+
     let (exit_code, stdout, stderr) = invoke_command(&resource.export.clone().unwrap().executable, resource.export.clone().unwrap().args.clone(), None, Some(cwd))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));

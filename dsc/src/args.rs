@@ -67,6 +67,8 @@ pub enum ResourceSubCommand {
     },
     #[clap(name = "get", about = "Invoke the get operation to a resource", arg_required_else_help = true)]
     Get {
+        #[clap(short, long, help = "Get all instances of the resource")]
+        all: bool,
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `get` on")]
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]

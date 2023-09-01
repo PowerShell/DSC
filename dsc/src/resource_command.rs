@@ -6,6 +6,7 @@ use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_n
 use dsc_lib::configure::config_doc::Resource;
 use dsc_lib::configure::config_doc::Configuration;
 use std::collections::HashMap;
+use dsc_lib::dscresources::invoke_result::GetResult;
 
 use dsc_lib::{
     dscresources::dscresource::{Invoke, DscResource},
@@ -42,6 +43,34 @@ pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
             eprintln!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
+    }
+}
+
+pub fn get_all(dsc: &mut DscManager, resource: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
+    let resource = get_resource(dsc, resource);
+
+    let export_result = match resource.export() {
+        Ok(export) => { export }
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    };
+
+    for instance in export_result.actual_state
+    {
+        let get_result = GetResult {
+            actual_state: instance.clone(),
+        };
+
+        let json = match serde_json::to_string(&get_result) {
+            Ok(json) => json,
+            Err(err) => {
+                eprintln!("JSON Error: {err}");
+                exit(EXIT_JSON_ERROR);
+            }
+        };
+        write_output(&json, format);
     }
 }
 
