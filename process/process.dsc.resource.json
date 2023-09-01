@@ -15,9 +15,16 @@
           "set"
         ],
         "input": "stdin",
-        "preTest": true,
+        "preTest": false,
         "return": "state"
     },
+    "test": {
+      "executable": "process",
+      "args": [
+        "test"
+      ],
+      "input": "stdin"
+  },
     "export": {
       "executable": "process",
       "args": [
