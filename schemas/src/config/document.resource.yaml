@@ -17,16 +17,18 @@ properties:
     title: Instance depends on
     description: >-
       Defines a list of DSC Resource instances that DSC must successfully process before processing
-      this instance. Each value for this property must be the value of another DSC Resource
-      instance's `name` property.
+      this instance. Each value for this property must be the `resourceID()` lookup for another
+      instance in the configuration. Multiple instances can depend on the same instance, but every
+      dependency for an instance must be unique in that instance's `dependsOn` property.
     type: array
     items:
       type: string
       uniqueItems: true
-      pattern: ^\[\w+(\.\w+){0,2}\/\w+\].+$
+      pattern: ^\[resourceId\(\s*'\w+(\.\w+){0,2}\/\w+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)\]$
       # VS Code only
       patternErrorMessage: |
-        Invalid value, must be a value like `[<type>]<name>`, such as `[Microsoft/OSInfo]Foo`.
+        Invalid value, must be a value like `[resourceId('<type>', '<name>`)], such as
+        `[resourceId('Microsoft/OSInfo', 'Foo')]`.
 
         The `<type>` and `<name>` should be the fully qualified type of the resource and its
         friendly name in the configuration.
@@ -34,8 +36,20 @@ properties:
       > [Online Documentation][01]
 
       Defines a list of DSC Resource instances that DSC must successfully process before processing
-      this instance. Each value for this property must be the value of another DSC Resource
-      instance's `name` property.
+      this instance. Each value for this property must be the `resourceID()` lookup for another
+      instance in the configuration. Multiple instances can depend on the same instance, but every
+      dependency for an instance must be unique in that instance's `dependsOn` property.
+
+      The `resourceID()` function uses this syntax:
+
+      ```yaml
+      "[resourceId('<resource-type-name>', '']<instance-name>"
+      ```
+
+      The `<resource-type-name>` value is the `type` property of the dependent resource and
+      `<instance-name>` is the dependency's `name` property. When adding a dependency in a
+      YAML-format configuration document, always wrap the `resourceID()` lookup in double quotes
+      (`"`).
 
       [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1
   properties:
