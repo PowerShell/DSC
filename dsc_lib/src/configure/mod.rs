@@ -10,6 +10,7 @@ use self::config_doc::Configuration;
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub mod config_doc;
 pub mod config_result;
@@ -153,8 +154,34 @@ impl Configurator {
         Ok(result)
     }
 
+    fn find_duplicate_resource_types(config: &Configuration) -> Vec<String>
+    {
+        let mut map: HashMap<&String, i32> = HashMap::new();
+        let mut result: HashSet<String> = HashSet::new();
+        let resource_list = &config.resources;
+        if resource_list.len() == 0 {
+            return Vec::new();
+        }
+
+        for r in resource_list
+        {
+            let v = map.entry(&r.resource_type).or_insert(0);
+            *v += 1;
+            if *v > 1 {
+                result.insert(r.resource_type.clone());
+            }
+        }
+
+        result.into_iter().collect()
+    }
+
     pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
+
+        for duplicate in Self::find_duplicate_resource_types(&config)
+        {
+            return Err(DscError::Validation(format!("Resource {duplicate} specified multiple times")));
+        }
 
         let mut result = ConfigurationExportResult {
             result: None,

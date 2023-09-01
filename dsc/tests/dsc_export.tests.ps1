@@ -51,4 +51,23 @@ Describe 'resource export tests' {
         $set_results.results.count | Should -BeGreaterThan 1
         $set_results.results[0].result.afterState.result | Should -BeExactly "Ok"
     }
+
+    It 'Duplicate resource types in Configuration Export should result in error' {
+
+        $yaml = @'
+            $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+            resources:
+            - name: Processes
+              type: Microsoft/Process
+              properties:
+                pid: 0
+            - name: Processes
+              type: Microsoft/Process
+              properties:
+                pid: 0
+'@
+        $out = $yaml | dsc config export 2>&1
+        $LASTEXITCODE | Should -Be 2
+        $out | Should -BeLike '*specified multiple times*'
+    }
 }
