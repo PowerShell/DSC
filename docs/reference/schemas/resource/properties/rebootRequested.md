@@ -14,10 +14,10 @@ Indicates whether an instance is in the desired state.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/rebootRequested.json
-Type           : [boolean, 'null']
-Read Only      : true
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/rebootRequested.json
+Type:          [boolean, 'null']
+ReadOnly:      true
 ```
 
 ## Description

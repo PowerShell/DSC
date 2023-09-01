@@ -14,9 +14,9 @@ The JSON file that defines a command-based DSC Resource.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json
+Type:          object
 ```
 
 ## Description
@@ -47,11 +47,10 @@ manifest validates against. This property is mandatory. DSC uses this value to v
 manifest against the correct JSON schema.
 
 ```yaml
-Type:     string
-Required: true
-Pattern:  ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
-Valid Values:
-  - '1.0'
+Type:        string
+Required:    true
+Pattern:     ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+ValidValues: ['1.0']
 ```
 
 ### type
@@ -95,12 +94,11 @@ property must be an array of strings. Each tag must contain only alphanumeric ch
 underscores. No other characters are permitted. Each tag must be unique.
 
 ```yaml
-Type:     array
-Required: false
-Valid Items:
-  Type:    string
-  Pattern: ^\w+$
-  Unique:  true
+Type:              array
+Required:          false
+ItemsMustBeUnique: true
+ItemsType:         string
+ItemsPattern:      ^\w+$
 ```
 
 ### get
@@ -182,11 +180,10 @@ Define this property as a set of key-value pairs where:
 DSC interprets exit code `0` as a successful operation and any other exit code as an error.
 
 ```yaml
-Type:     object
-Required: false
-Valid Properties:
-  Name Pattern: ^[0-9]+#
-  Value Type:   string
+Type:                object
+Required:            false
+PropertyNamePattern: ^[0-9]+#
+PropertyValueType:   string
 ```
 
 ### schema

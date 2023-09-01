@@ -14,9 +14,9 @@ A message emitted by a DSC Resource with associated metadata.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/message.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/message.json
+Type:          object
 ```
 
 ## Description
@@ -67,12 +67,9 @@ Required: true
 Indicates the severity of the message.
 
 ```yaml
-Type:     string
-Required: true
-Valid Values:
-  - Error
-  - Warning
-  - Information
+Type:         string
+Required:     true
+Valid Values: [Error, Warning, Information]
 ```
 
 [01]: resourceType.md

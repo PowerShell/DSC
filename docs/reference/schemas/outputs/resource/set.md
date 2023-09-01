@@ -14,9 +14,9 @@ The result output from the `dsc resource set` command.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/set.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/set.json
+Type:          object
 ```
 
 ## Description
@@ -60,7 +60,7 @@ Defines the names of the properties the set operation enforced. If this value is
 the resource made no changes during the set operation.
 
 ```yaml
-Type:       array
-Required:   true
-Items Type: string
+Type:      array
+Required:  true
+ItemsType: string
 ```

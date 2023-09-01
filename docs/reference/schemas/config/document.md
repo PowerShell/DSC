@@ -14,9 +14,9 @@ The YAML or JSON file that defines a DSC Configuration.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+Type:          object
 ```
 
 ## Description
@@ -55,11 +55,12 @@ adheres to. DSC uses this property when validating the configuration document be
 configuration operations.
 
 ```yaml
-Type:     string
-Required: true
-Format:   URI
-Valid Values:
-  - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+Type:        string
+Required:    true
+Format:      URI
+ValidValues: [
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+             ]
 ```
 
 ### metadata
@@ -90,9 +91,9 @@ For more information about defining parameters in a configuration, see
 [DSC Configuration parameters][03] -->
 
 ```yaml
-Type:                  object
-Required:              false
-Valid Property Schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json
+Type:                object
+Required:            false
+ValidPropertySchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json
 ```
 
 ### variables
@@ -125,10 +126,10 @@ For more information about defining a valid resource instance in a configuration
 [DSC Configuration resources][06] and [DSC Configuration resource groups][07]. -->
 
 ```yaml
-Type:               array
-Required:           true
-Minimum Item Count: 1
-Valid Item Schema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
+Type:             array
+Required:         true
+MinimumItemCount: 1
+ValidItemSchema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
 ```
 
 <!-- [01]: ../../../configurations/overview.md -->

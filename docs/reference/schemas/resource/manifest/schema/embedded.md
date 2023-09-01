@@ -14,9 +14,9 @@ Defines a JSON Schema that validates a DSC Resource instance.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json#/properties/embedded
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json#/properties/embedded
+Type:          object
 ```
 
 ## Description
@@ -47,13 +47,14 @@ how to interpret them.
 DSC only supports JSON Schema Draft 07 and later.
 
 ```yaml
-Type:     string
-Required: true
-Format:   uri-reference
-Valid Values:
-  - https://json-schema.org/draft/2020-12/schema
-  - https://json-schema.org/draft/2019-09/schema
-  - http://json-schema.org/draft-07/schema#
+Type:        string
+Required:    true
+Format:      uri-reference
+ValidValues: [
+                https://json-schema.org/draft/2020-12/schema
+                https://json-schema.org/draft/2019-09/schema
+                http://json-schema.org/draft-07/schema#
+              ]
 ```
 
 ### $id
@@ -73,9 +74,9 @@ The `type` keyword defines what kind of value the instance is. Instances must be
 keyword to `object`.
 
 ```yaml
-Type:        string
-Required:    true
-Valid Value: object
+Type:       string
+Required:   true
+ValidValue: object
 ```
 
 ### properties

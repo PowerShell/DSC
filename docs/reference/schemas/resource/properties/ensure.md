@@ -14,10 +14,10 @@ Indicates whether an instance should exist.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/ensure.json
-Type           : string
-Valid Values   : [Absent, Present]
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/ensure.json
+Type:          string
+ValidValues:   [Absent, Present]
 ```
 
 ## Description

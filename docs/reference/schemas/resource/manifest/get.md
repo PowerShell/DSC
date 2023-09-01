@@ -14,9 +14,9 @@ Defines how to retrieve a DSC Resource instance.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.get.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.get.json
+Type:          object
 ```
 
 ## Description
@@ -112,10 +112,8 @@ be one of the following strings:
 - `stdin` - Indicates that the resource expects a JSON blob representing an instance from `stdin`.
 
 ```yaml
-Type:     string
-Required: false
-Default:  stdin
-Valid Values:
-  - args
-  - stdin
+Type:        string
+Required:    false
+Default:     stdin
+ValidValues: [args, stdin]
 ```

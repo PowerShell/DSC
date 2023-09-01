@@ -14,9 +14,9 @@ The result output from the `dsc resource list` command.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/list.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/list.json
+Type:          object
 ```
 
 ## Description
@@ -133,10 +133,10 @@ resources, this property is an empty array.
 -->
 
 ```yaml
-Type:          array
-Required:      true
-Items Type:    string
-Items Pattern: ^\w+$
+Type:         array
+Required:     true
+ItemsType:    string
+ItemsPattern: ^\w+$
 ```
 
 ### requires
