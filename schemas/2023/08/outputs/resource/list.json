@@ -34,17 +34,13 @@
           "title": "Standard implementation",
           "description": "Indicates that the DSC Resource is implemented as one of the standard implementations built into DSC.",
           "type": "string",
-          "enum": [
-            "Command"
-          ]
+          "enum": "Command"
         },
         {
           "title": "Custom implementation",
           "description": "Indicates that the DSC Resource uses a custom implementation.",
           "type": "object",
-          "required": [
-            "custom"
-          ],
+          "required": "custom",
           "properties": {
             "custom": {
               "title": "Custom implementation name",

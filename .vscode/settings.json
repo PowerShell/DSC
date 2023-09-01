@@ -11,5 +11,15 @@
         "./test_group_resource/Cargo.toml",
         "./y2j/Cargo.toml"
     ],
-    "rust-analyzer.showUnlinkedFileNotification": true
+    "rust-analyzer.showUnlinkedFileNotification": true,
+    "json.schemas": [
+        {
+            "fileMatch": ["**/*.dsc.resource.json"],
+            "url": "/schemas/2023/08/bundled/resource/manifest.vscode.json"
+        }
+    ],
+    "yaml.schemas": {
+        "schemas/2023/08/bundled/config/document.vscode.json": "**.dsc.{yaml,yml,config.yaml,config.yml}",
+        "schemas/2023/08/bundled/resource/manifest.vscode.json": "**.dsc.resource.{yaml,yml}"
+    }
 }

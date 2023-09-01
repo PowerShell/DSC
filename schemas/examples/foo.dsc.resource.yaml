@@ -1,7 +1,7 @@
 # For testing outside of the repository, set the schema in the yaml server directive to:
 #    https://raw.githubusercontent.com/PowerShell/DSC/main/2023/08/resource/manifest.json
 #
-# yaml-language-server: $schema=../2023/08/bundled/resource.manifest.vscode.json
+# Hover on the keys to see the documentation. Try changing values and adding new settings.
 manifestVersion: 1.0.0
 type: Example/Foo
 version: 0.1.0

@@ -3,6 +3,7 @@
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json",
   "title": "DSC Configuration Document schema",
   "description": "Describes a valid DSC Configuration Document.",
+  "markdownDescription": "> [Online Documentation][01]\n\nDescribes a valid DSC Configuration Document.\n\nDSC Configurations enable users to define state by combining different DSC Resources. A\nconfiguration document uses parameters and variables to pass to a set of one or more resources\nthat define a desired state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true\n",
   "type": "object",
   "required": [
     "$schema",
@@ -16,6 +17,10 @@
       "format": "uri",
       "enum": [
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json"
+      ],
+      "markdownDescription": "> [Online Documentation][01]\n\nThis property must be the canonical URL of the DSC Configuration Document schema that the\ndocument is implemented for.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#schema\n",
+      "markdownEnumDescriptions": [
+        "Indicates that the configuration document adheres to the `2023/08` schema."
       ]
     },
     "parameters": {
@@ -24,12 +29,71 @@
       "type": "object",
       "additionalProperties": {
         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json"
-      }
+      },
+      "markdownDescription": "> [Online Documentation][01]\n\nDefines runtime options for the configuration. Users and integrating tools can override use\nthe defined parameters to pass alternate values to the configuration.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#parameters\n",
+      "defaultSnippets": [
+        {
+          "label": "New Parameter",
+          "description": "Defines a new runtime option for the configuration.",
+          "body": {
+            "${1:parameterId}": {
+              "type": "$2",
+              "defaultValue": "$3",
+              "allowedValues": [
+                "$4"
+              ],
+              "description": "$5"
+            }
+          }
+        },
+        {
+          "label": "New Integer Parameter",
+          "description": "Defines a new runtime option for the configuration as an integer value.",
+          "body": {
+            "${1:integerParameterId}": {
+              "type": "int",
+              "defaultValue": "$2",
+              "description": "$3",
+              "minValue": "$4",
+              "maxValue": "$5"
+            }
+          }
+        }
+      ]
     },
     "variables": {
       "title": "Configuration variables",
       "description": "Defines a set of reusable values for the configuration document. The names of this value's properties are the strings used to reference a variable's value.",
-      "type": "object"
+      "type": "object",
+      "markdownDescription": "> [Online Documentation][01]\n\nDefines a set of reusable values for the configuration document. The names of this value's\nproperties are the strings used to reference a variable's value.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#variables\n",
+      "defaultSnippets": [
+        {
+          "label": "New variable property",
+          "description": "Defines a new variable as a key-value pair",
+          "body": {
+            "${1:metadataName}": "$2"
+          }
+        },
+        {
+          "label": "New variable property (object)",
+          "description": "Defines a new key-value pair for the variables where the value is an object.",
+          "body": {
+            "${1:variableName}": {
+              "${2:key}": "${3:value}"
+            }
+          }
+        },
+        {
+          "label": "New variable property (array)",
+          "description": "Defines a new key-value pair for the variables where the value is an array.",
+          "body": {
+            "${1:variableName}": [
+              "${2:firstValue}",
+              "${3:secondValue}"
+            ]
+          }
+        }
+      ]
     },
     "resources": {
       "title": "DSC Configuration document resources",
@@ -38,12 +102,42 @@
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json"
-      }
+      },
+      "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of DSC Resource instances for the configuration to manage.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#resources\n"
     },
     "metadata": {
       "title": "Configuration metadata",
       "description": "Defines a set of key-value pairs for the configuration. This metadata isn't validated.",
-      "type": "object"
+      "type": "object",
+      "markdownDescription": "> [Online Documentation][01]\n\nDefines a set of key-value pairs for the configuration. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#metadata-1\n",
+      "defaultSnippets": [
+        {
+          "label": "New Metadata Property",
+          "description": "Defines a key-value pair for the metadata",
+          "body": {
+            "${1:metadataName}": "$2"
+          }
+        },
+        {
+          "label": "New metadata property (object)",
+          "description": "Defines a new key-value pair for the metadata where the value is an object.",
+          "body": {
+            "${1:metadataName}": {
+              "${2:key}": "${3:value}"
+            }
+          }
+        },
+        {
+          "label": "New metadata property (array)",
+          "description": "Defines a new key-value pair for the metadata where the value is an array.",
+          "body": {
+            "${1:metadataName}": [
+              "${2:firstValue}",
+              "${3:secondValue}"
+            ]
+          }
+        }
+      ]
     }
   },
   "$defs": {
@@ -59,8 +153,11 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json",
                     "title": "Parameter",
                     "description": "Defines a runtime option for a DSC Configuration Document.",
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines a runtime option for a DSC Configuration Document.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true\n",
                     "type": "object",
-                    "required": "type",
+                    "required": [
+                      "type"
+                    ],
                     "properties": {
                       "type": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json"
@@ -68,7 +165,8 @@
                       "defaultValue": {
                         "title": "Default value",
                         "description": "Defines the default value for the parameter.",
-                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json"
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines the default value for the parameter.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#allowedvalues\n"
                       },
                       "allowedValues": {
                         "title": "Allowed values",
@@ -76,17 +174,48 @@
                         "type": "array",
                         "items": {
                           "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json"
-                        }
+                        },
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of valid values for the parameter. If the parameter is defined with any other\nvalues, it's invalid.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#allowedvalues\n"
                       },
                       "description": {
                         "title": "Parameter description",
                         "description": "Defines a synopsis for the parameter explaining its purpose.",
-                        "type": "string"
+                        "type": "string",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a synopsis for the parameter explaining its purpose.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#description-1\n"
                       },
                       "metadata": {
                         "title": "Parameter metadata",
                         "description": "Defines a set of key-value pairs for the parameter. This metadata isn't validated.",
-                        "type": "object"
+                        "type": "object",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a set of key-value pairs for the parameter. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#metadata-1\n",
+                        "defaultSnippets": [
+                          {
+                            "label": "New Metadata Property",
+                            "description": "Defines a key-value pair for the metadata",
+                            "body": {
+                              "${1:metadataName}": "$2"
+                            }
+                          },
+                          {
+                            "label": "New metadata property (object)",
+                            "description": "Defines a new key-value pair for the metadata where the value is an object.",
+                            "body": {
+                              "${1:metadataName}": {
+                                "${2:key}": "${3:value}"
+                              }
+                            }
+                          },
+                          {
+                            "label": "New metadata property (array)",
+                            "description": "Defines a new key-value pair for the metadata where the value is an array.",
+                            "body": {
+                              "${1:metadataName}": [
+                                "${2:firstValue}",
+                                "${3:secondValue}"
+                              ]
+                            }
+                          }
+                        ]
                       }
                     },
                     "allOf": [
@@ -99,15 +228,19 @@
                           }
                         },
                         "then": {
-                          "minValue": {
-                            "title": "Minimum value",
-                            "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
-                            "type": "integer"
-                          },
-                          "maxValue": {
-                            "title": "Maximum value",
-                            "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
-                            "type": "integer"
+                          "properties": {
+                            "minValue": {
+                              "title": "Minimum value",
+                              "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
+                              "type": "integer",
+                              "markdownDescription": "> [Online Documentation][01]\n\nThe minimum valid value for an integer type. If defined with the `maxValue` property,\nthis value must be less than the value of `maxValue`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#minvalue\n"
+                            },
+                            "maxValue": {
+                              "title": "Maximum value",
+                              "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
+                              "type": "integer",
+                              "markdownDescription": "> [Online Documentation][01]\n\nThe maximum valid value for an integer type. If defined with the `minValue` property,\nthis value must be greater than the value of `minValue`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#maxvalue\n"
+                            }
                           }
                         }
                       },
@@ -138,17 +271,143 @@
                           ]
                         },
                         "then": {
-                          "minLength": {
-                            "title": "Minimum length",
-                            "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "maxLength": {
-                            "title": "Maximum length",
-                            "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
-                            "type": "integer",
-                            "minimum": 0
+                          "properties": {
+                            "minLength": {
+                              "title": "Minimum length",
+                              "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+                              "type": "integer",
+                              "minimum": 0,
+                              "markdownDescription": "> [Online Documentation][01]\n\nThe minimum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `maxLength` property, this value must be less than the value of `maxLength`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#minLength\n"
+                            },
+                            "maxLength": {
+                              "title": "Maximum length",
+                              "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+                              "type": "integer",
+                              "minimum": 0,
+                              "markdownDescription": "> [Online Documentation][01]\n\nThe maximum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `minLength` property, this value must be less than the value of `minLength`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#maxLength\n"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "oneOf": [
+                            {
+                              "properties": {
+                                "type": {
+                                  "const": "string"
+                                }
+                              }
+                            },
+                            {
+                              "properties": {
+                                "type": {
+                                  "const": "securestring"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "defaultValue": {
+                              "type": "string"
+                            },
+                            "allowedValues": {
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "oneOf": [
+                            {
+                              "properties": {
+                                "type": {
+                                  "const": "object"
+                                }
+                              }
+                            },
+                            {
+                              "properties": {
+                                "type": {
+                                  "const": "secureobject"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "defaultValue": {
+                              "type": "object"
+                            },
+                            "allowedValues": {
+                              "items": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "int"
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "defaultValue": {
+                              "type": "integer"
+                            },
+                            "allowedValues": {
+                              "items": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "array"
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "defaultValue": {
+                              "type": "array"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "if": {
+                          "properties": {
+                            "type": {
+                              "const": "bool"
+                            }
+                          }
+                        },
+                        "then": {
+                          "properties": {
+                            "defaultValue": {
+                              "type": "boolean"
+                            },
+                            "allowedValues": {
+                              "items": {
+                                "type": "boolean"
+                              }
+                            }
                           }
                         }
                       }
@@ -158,6 +417,7 @@
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json",
                     "title": "DSC Resource instance",
+                    "description": "Defines an instance of a DSC Resource in a configuration.",
                     "type": "object",
                     "required": [
                       "type",
@@ -177,15 +437,44 @@
                         "items": {
                           "type": "string",
                           "uniqueItems": true,
-                          "pattern": "^\\[\\w+(\\.\\w+){0,2}\\/\\w+\\].+$"
-                        }
+                          "pattern": "^\\[\\w+(\\.\\w+){0,2}\\/\\w+\\].+$",
+                          "patternErrorMessage": "Invalid value, must be a value like `[<type>]<name>`, such as `[Microsoft/OSInfo]Foo`.\n\nThe `<type>` and `<name>` should be the fully qualified type of the resource and its\nfriendly name in the configuration.\n"
+                        },
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of DSC Resource instances that DSC must successfully process before processing\nthis instance. Each value for this property must be the value of another DSC Resource\ninstance's `name` property.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1\n"
                       },
                       "properties": {
                         "title": "Managed instance properties",
                         "description": "Defines the properties of the DSC Resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC Resource's schema.",
-                        "type": "object"
+                        "type": "object",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines the properties of the DSC Resource this instance manages. This property's value must\nbe an object. DSC validates the property's value against the DSC Resource's schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1\n"
                       }
-                    }
+                    },
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines an instance of a DSC Resource in a configuration.\n\nThe `resources` property of a DSC Configuration document always includes at least one DSC Resource\ninstance. Together, the instances in a configuration define the desired state that DSC can get,\ntest, and set on a machine.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true\n",
+                    "defaultSnippets": [
+                      {
+                        "label": "New resource instance",
+                        "description": "Defines a new instance of a DSC Resource for the configuration",
+                        "body": {
+                          "type": "$1",
+                          "name": "$2",
+                          "properties": {
+                            "${3:propertyName}": "${4:propertyValue}"
+                          }
+                        }
+                      },
+                      {
+                        "label": "New dependent resource instance",
+                        "description": "Defines a new instance of a DSC Resource for the configuration that depends on another instance.",
+                        "body": {
+                          "type": "$1",
+                          "name": "$2",
+                          "dependsOn": "['[${3:dependencyType}]${4:dependencyName}']",
+                          "properties": {
+                            "${5:propertyName}": "${6:propertyValue}"
+                          }
+                        }
+                      }
+                    ]
                   }
                 },
                 "definitions": {
@@ -194,7 +483,7 @@
                       "$schema": "https://json-schema.org/draft/2020-12/schema",
                       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json",
                       "title": "Data Types",
-                      "description": "Defines the data type for the value.",
+                      "description": "Defines the data type for the parameter value.",
                       "type": "string",
                       "enum": [
                         "string",
@@ -204,11 +493,22 @@
                         "object",
                         "secureobject",
                         "array"
+                      ],
+                      "markdownDescription": "> [Online Documentation][01]\n\nDefines the data type for the parameter value.\n\nThe valid data types for a parameter are:\n\n- `array` for arrays\n- `bool` for booleans\n- `int` for integers\n- `object` for objects\n- `string` for strings\n- `secureobject` for secure objects\n- `securestring` for secure strings\n\nAccess parameters in a configuration using this syntax:\n\n```yaml\n\"[parameter('<parameter-name>')]\"\n```\n\nIn YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.\nIf the syntax isn't quoted, YAML interprets the syntax as an array.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true\n",
+                      "markdownEnumDescriptions": [
+                        "> [Online Documentation][01]\n\nStrings are an arbitrary set of text.\n\nTo define a long strings in YAML, use the folded block syntax or literal block syntax by\nadding a `>` or `|` and a line break after the key. Then, indent the next line. Every line in\nthe string must start at the same level of indentation. You can trim the trailing whitespace\nby using `>-` or `|-` instead.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#strings\n",
+                        "> [Online Documentation][01]\n\nSecure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or\nrecord. If a secure data type parameter is used for a resource instance property that doesn't\nexpect a secure value, the resource may still log or record the value. If the resource has\nindependent logging or recording that isn't handled by DSC, the value may be stored\ninsecurely.\n\nUse secure strings for passwords and secrets. Never define a default value for secure string\nparameters.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects\n",
+                        "> [Online Documentation][01]\n\nInteger values are numbers without a fractional part. Integer values may be limited by\nintegrating tools or the DSC Resources they're used with. DSC itself supports integer values\nbetween `-9223372036854775808` and `9223372036854775807`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#integers\n",
+                        "> [Online Documentation][01]\n\nBoolean values are either `true` or `false`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#booleans\n",
+                        "> [Online Documentation][01]\n\nObjects define a set of key-value pairs. The value for each key can be any valid data type.\nThe values can be the same type or different types.\n\nAccess keys in the object using dot-notation. Dot-notation uses this syntax:\n\n```yaml\n\"[parameters('<parameter-name>').<key-name>]\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#objects\n",
+                        "> [Online Documentation][01]\n\nSecure objects define a set of key-value pairs that DSC and integrating tools shouldn't log\nor record. If a secure data type parameter is used for a resource instance property that\ndoesn't expect a secure value, the resource may still log or record the value. If the\nresource has independent logging or recording that isn't handled by DSC, the value may be\nstored insecurely.\n\nNever define a default value for secure object parameters.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects\n",
+                        "> [Online Documentation][01]\n\nArrays are a list of one or more values. The values in the array can be any valid data type.\nValues in the array can be the same type or different types.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#arrays\n"
                       ]
                     },
                     "validValueTypes.json": {
                       "$schema": "https://json-schema.org/draft/2020-12/schema",
                       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json",
+                      "$comment": "This schema fragment makes it a little easier to compose the valid properties\nfor DSC Configuration document parameters. As-written, values must be one of\nthose on this list - the schema definition for dataType excludes `null` and\nnumbers with fractional parts, like `3.5`.\n",
                       "type": [
                         "string",
                         "integer",
@@ -224,14 +524,17 @@
                     "title": "DSC Resource fully qualified type name",
                     "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
                     "type": "string",
-                    "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+                    "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$",
+                    "markdownDescription": "> [Online Documentation][01]\n\nThe namespaced name of the DSC Resource, using the syntax:\n\n```text\nowner[.group][.area]/name\n```\n\nFor example:\n\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserveView=true\n",
+                    "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include a group and area to namespace\nthe resource under the owner, like `Microsoft.Windows/Registry`.\n"
                   },
                   "instanceName.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/instanceName.json",
                     "title": "Instance name",
                     "description": "The short, human-readable name for a DSC Resource instance. Must be unique within a DSC Configuration document.",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "> [Online Documentation][01]\n\nThe short, human-readable name for a DSC Resource instance. Must be unique within a DSC\nConfiguration document.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#name\n"
                   }
                 }
               }
