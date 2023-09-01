@@ -1,0 +1,65 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft/OSInfo/v0.1.0/schema.json",
+    "title": "OsInfo",
+    "description": "Returns information about the operating system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource\n",
+    "markdownDescription": "The `Microsoft/OSInfo` resource enables you to assert whether a machine meets criteria related to\nthe operating system. The resource is only capable of assertions. It doesn't implement the set\noperation and can't configure the operating system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource\n",
+    "type": "object",
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+        "$id": {
+            "type": "string",
+            "readOnly": true,
+            "title": "Data Type ID",
+            "description": "Returns the unique ID for the OSInfo instance data type.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#id\n",
+            "markdownDescription": "Returns the unique ID for the OSInfo instance data type.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#id\n"
+        },
+        "architecture": {
+            "type": "string",
+            "title": "Processor architecture",
+            "description": "Defines the processor architecture as reported by 'uname -m' on the operating system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#architecture\n",
+            "markdownDescription": "Defines the processor architecture as reported by `uname -m` on the operating system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#architecture\n"
+        },
+        "bitness": {
+            "type": "string",
+            "enum": [
+                "32",
+                "64",
+                "unknown"
+            ],
+            "title": "Operating system bitness",
+            "description": "Defines whether the operating system is a 32-bit or 64-bit operating system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#bitness\n",
+            "markdownDescription": "Defines whether the operating system is a 32-bit or 64-bit operating system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#bitness\n"
+        },
+        "codename": {
+            "type": "string",
+            "title": "Linux codename",
+            "description": "Defines the codename for the operating system as returned from 'lsb_release --codename'.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#codename\n",
+            "markdownDescription": "Defines the codename for the operating system as returned from `lsb_release --codename`.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#codename\n"
+        },
+        "edition": {
+            "type": "string",
+            "title": "Windows edition",
+            "description": "Defines the operating system edition, like 'Windows 11' or 'Windows Server 2016'.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#edition\n",
+            "markdownDescription": "Defines the operating system edition, like `Windows 11` or `Windows Server 2016`.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#edition\n"
+        },
+        "family": {
+            "type": "string",
+            "enum": [
+                "Linux",
+                "MacOS",
+                "Windows"
+            ],
+            "title": "Operating system family",
+            "description": "Defines whether the operating system is Linux, macOS, or Windows.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#family\n",
+            "markdownDescription": "Defines whether the operating system is Linux, macOS, or Windows.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#family\n"
+        },
+        "version": {
+            "type": "string",
+            "title": "Operating system version",
+            "description": "Defines the version of the operating system as a string.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version\n",
+            "markdownDescription": "Defines the version of the operating system as a string.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version\n"
+        }
+    }
+}
