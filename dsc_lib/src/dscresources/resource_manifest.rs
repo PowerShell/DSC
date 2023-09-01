@@ -29,6 +29,9 @@ pub struct ResourceManifest {
     /// Details how to call the Test method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<TestMethod>,
+    /// Details how to call the Export method of the resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub export: Option<ExportMethod>,
     /// Details how to call the Validate method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validate: Option<ValidateMethod>,
@@ -129,6 +132,14 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Validate.
+    pub args: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct ExportMethod {
+    /// The command to run to enumerate instances of the resource.
+    pub executable: String,
+    /// The arguments to pass to the command to perform a Export.
     pub args: Option<Vec<String>>,
 }
 

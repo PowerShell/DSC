@@ -6,7 +6,7 @@ use resource_manifest::ResourceManifest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use super::{command_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult}};
+use super::{command_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -120,6 +120,13 @@ pub trait Invoke {
     ///
     /// This function will return an error if the underlying resource fails.
     fn schema(&self) -> Result<String, DscError>;
+
+    /// Invoke the export operation on the resource.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying resource fails.
+    fn export(&self) -> Result<ExportResult, DscError>;
 }
 
 impl Invoke for DscResource {
@@ -210,6 +217,21 @@ impl Invoke for DscResource {
                 };
                 let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
                 command_resource::get_schema(&resource_manifest, &self.directory)
+            },
+        }
+    }
+
+    fn export(&self) -> Result<ExportResult, DscError> {
+        match &self.implemented_as {
+            ImplementedAs::Custom(_custom) => {
+                Err(DscError::NotImplemented("export custom resources".to_string()))
+            },
+            ImplementedAs::Command => {
+                let Some(manifest) = &self.manifest else {
+                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                };
+                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                command_resource::invoke_export(&resource_manifest, &self.directory)
             },
         }
     }

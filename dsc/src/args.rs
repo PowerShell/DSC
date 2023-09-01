@@ -50,6 +50,8 @@ pub enum ConfigSubCommand {
     Test,
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate,
+    #[clap(name = "export", about = "Export the current configuration")]
+    Export
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -65,6 +67,8 @@ pub enum ResourceSubCommand {
     },
     #[clap(name = "get", about = "Invoke the get operation to a resource", arg_required_else_help = true)]
     Get {
+        #[clap(short, long, help = "Get all instances of the resource")]
+        all: bool,
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `get` on")]
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]
@@ -87,6 +91,11 @@ pub enum ResourceSubCommand {
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {
         #[clap(short, long, help = "The name of the resource to get the JSON schema")]
+        resource: String,
+    },
+    #[clap(name = "export", about = "Retrieve all resource instances", arg_required_else_help = true)]
+    Export {
+        #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `export` on")]
         resource: String,
     },
 }

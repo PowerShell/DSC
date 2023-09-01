@@ -91,3 +91,34 @@ impl Default for Configuration {
         }
     }
 }
+
+impl Configuration {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            schema: SCHEMA.to_string(),
+            parameters: None,
+            variables: None,
+            resources: Vec::new(),
+            metadata: None,
+        }
+    }
+}
+
+impl Resource {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            resource_type: String::new(),
+            name: String::new(),
+            depends_on: None,
+            properties: None,
+        }
+    }
+}
+
+impl Default for Resource {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -5,10 +5,12 @@ use jsonschema::JSONSchema;
 
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
+use crate::DscResource;
 use crate::discovery::Discovery;
 use self::config_doc::Configuration;
-use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ResourceMessage, MessageLevel};
 use self::depends_on::get_resource_invocation_order;
+use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
+use std::collections::{HashMap, HashSet};
 
 pub mod config_doc;
 pub mod config_result;
@@ -23,6 +25,21 @@ pub struct Configurator {
 pub enum ErrorAction {
     Continue,
     Stop,
+}
+
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration) {
+    let export_result = resource.export().unwrap();
+
+    for (i, instance) in export_result.actual_state.iter().enumerate()
+    {
+        let mut r = config_doc::Resource::new();
+        r.resource_type = resource.type_name.clone();
+        r.name = format!("{}-{i}", r.resource_type);
+        let props: HashMap<String, serde_json::Value> = serde_json::from_value(instance.clone()).unwrap();
+        r.properties = Some(props);
+
+        conf.resources.push(r);
+    }
 }
 
 impl Configurator {
@@ -148,6 +165,60 @@ impl Configurator {
             };
             result.results.push(resource_result);
         }
+
+        Ok(result)
+    }
+
+    fn find_duplicate_resource_types(config: &Configuration) -> Vec<String>
+    {
+        let mut map: HashMap<&String, i32> = HashMap::new();
+        let mut result: HashSet<String> = HashSet::new();
+        let resource_list = &config.resources;
+        if resource_list.is_empty() {
+            return Vec::new();
+        }
+
+        for r in resource_list
+        {
+            let v = map.entry(&r.resource_type).or_insert(0);
+            *v += 1;
+            if *v > 1 {
+                result.insert(r.resource_type.clone());
+            }
+        }
+
+        result.into_iter().collect()
+    }
+
+    pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
+        let (config, messages, had_errors) = self.validate_config()?;
+
+        let duplicates = Self::find_duplicate_resource_types(&config);
+        if !duplicates.is_empty()
+        {
+            let duplicates_string = &duplicates.join(",");
+            return Err(DscError::Validation(format!("Resource(s) {duplicates_string} specified multiple times")));
+        }
+
+        let mut result = ConfigurationExportResult {
+            result: None,
+            messages,
+            had_errors
+        };
+
+        if had_errors {
+            return Ok(result);
+        };
+        let mut conf = config_doc::Configuration::new();
+
+        for resource in &config.resources {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            };
+            add_resource_export_results_to_configuration(&dsc_resource, &mut conf);
+        }
+
+        result.result = Some(conf);
 
         Ok(result)
     }
