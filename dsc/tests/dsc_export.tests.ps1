@@ -8,7 +8,7 @@ Describe 'resource export tests' {
         $out = dsc resource export -r Microsoft/Process
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
-        $config_with_process_list.'$schema' | Should -Not -BeNullOrEmpty
+        $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
         $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
@@ -35,7 +35,7 @@ Describe 'resource export tests' {
         $out = $yaml | dsc config export
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
-        $config_with_process_list.'$schema' | Should -Not -BeNullOrEmpty
+        $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
         $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
