@@ -34,7 +34,10 @@ stages:
           buildName: aarch64-pc-windows-msvc
 
     steps:
-    - pwsh: ./build.ps1 -Release -Architecture $(buildName)
+    - pwsh: |
+        rustup default stable
+        rustup target add $(buildName)
+        ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
 
   - job: BuildLinux
@@ -54,7 +57,10 @@ stages:
         Linux x64 MUSL:
           buildName: x86_64-unknown-linux-musl
     steps:
-    - pwsh: ./build.ps1 -Release -Architecture $(buildName)
+    - pwsh: |
+        rustup default stable
+        rustup target add $(buildName)
+        ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
 
   - job: BuildMac
@@ -68,7 +74,9 @@ stages:
         macOS arm64:
           buildName: aarch64-apple-darwin
     steps:
-    - pwsh: ./build.ps1 -Release -Architecture $(buildName)
+    - pwsh: |
+        rustup target add $(buildName)
+        ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
 
 - stage: compliance
