@@ -4,11 +4,21 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/properties/purge.yaml
 
 title: Purge
 description: >-
-  Indicates that only the components described in the DSC Resource should exist.
-  If other components exist, the DSC Resource is out of the desired state. When
-  enforcing desired state, the DSC Resource removes unmanaged components.
+  Indicates that only the components described in the DSC Resource should exist. If other
+  components exist, the DSC Resource is out of the desired state. When enforcing desired state, the
+  DSC Resource removes unmanaged components.
 
 type:
   - boolean
   - 'null'
 writeOnly: true
+
+# VS Code only
+markdownDescription: |
+  > [Online Documentation][01]
+
+  Indicates that only the components described in the DSC Resource should exist. If other
+  components exist, the DSC Resource is out of the desired state. When enforcing desired state, the
+  DSC Resource removes unmanaged components.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/purge?view=dsc-3.0&preserveView=true

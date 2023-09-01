@@ -4,7 +4,7 @@ $id: <HOST>/<PREFIX>/<VERSION>/definitions/parameters/dataTypes.yaml
 
 title: Data Types
 description: >-
-  Defines the data type for the value.
+  Defines the data type for the parameter value.
 type: string
 enum:
   - string
@@ -14,3 +14,111 @@ enum:
   - object
   - secureobject
   - array
+
+# VS Code only
+markdownDescription: |
+  > [Online Documentation][01]
+
+  Defines the data type for the parameter value.
+
+  The valid data types for a parameter are:
+
+  - `array` for arrays
+  - `bool` for booleans
+  - `int` for integers
+  - `object` for objects
+  - `string` for strings
+  - `secureobject` for secure objects
+  - `securestring` for secure strings
+
+  Access parameters in a configuration using this syntax:
+
+  ```yaml
+  "[parameter('<parameter-name>')]"
+  ```
+
+  In YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.
+  If the syntax isn't quoted, YAML interprets the syntax as an array.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true
+markdownEnumDescriptions:
+  # string
+  - |
+      > [Online Documentation][01]
+      
+      Strings are an arbitrary set of text.
+
+      To define a long strings in YAML, use the folded block syntax or literal block syntax by
+      adding a `>` or `|` and a line break after the key. Then, indent the next line. Every line in
+      the string must start at the same level of indentation. You can trim the trailing whitespace
+      by using `>-` or `|-` instead.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#strings
+
+  # securestring
+  - |
+      > [Online Documentation][01]
+
+      Secure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or
+      record. If a secure data type parameter is used for a resource instance property that doesn't
+      expect a secure value, the resource may still log or record the value. If the resource has
+      independent logging or recording that isn't handled by DSC, the value may be stored
+      insecurely.
+
+      Use secure strings for passwords and secrets. Never define a default value for secure string
+      parameters.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects
+
+  # int
+  - |
+      > [Online Documentation][01]
+
+      Integer values are numbers without a fractional part. Integer values may be limited by
+      integrating tools or the DSC Resources they're used with. DSC itself supports integer values
+      between `-9223372036854775808` and `9223372036854775807`.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#integers
+  # bool
+  - |
+      > [Online Documentation][01]
+
+      Boolean values are either `true` or `false`.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#booleans
+  # object
+  - |
+      > [Online Documentation][01]
+
+      Objects define a set of key-value pairs. The value for each key can be any valid data type.
+      The values can be the same type or different types.
+
+      Access keys in the object using dot-notation. Dot-notation uses this syntax:
+
+      ```yaml
+      "[parameters('<parameter-name>').<key-name>]
+      ```
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#objects
+
+  # secureobject
+  - |
+      > [Online Documentation][01]
+
+      Secure objects define a set of key-value pairs that DSC and integrating tools shouldn't log
+      or record. If a secure data type parameter is used for a resource instance property that
+      doesn't expect a secure value, the resource may still log or record the value. If the
+      resource has independent logging or recording that isn't handled by DSC, the value may be
+      stored insecurely.
+
+      Never define a default value for secure object parameters.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects
+  # array
+  - |
+      > [Online Documentation][01]
+
+      Arrays are a list of one or more values. The values in the array can be any valid data type.
+      Values in the array can be the same type or different types.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#arrays

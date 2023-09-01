@@ -6,3 +6,9 @@ title: Executable Command Name
 description: >-
   The name of the command to run.
 type: string
+
+# VS Code only
+markdownDescription: |
+  Defines the name of the command to run. The value must be the name of a command discoverable in
+  the system's `PATH` environment variable or the full path to the command. A file extension is
+  only required when the command isn't recognizable by the operating system as an executable.

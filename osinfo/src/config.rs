@@ -4,22 +4,29 @@
 use serde::Serialize;
 use std::string::ToString;
 
+/// Returns information about the operating system.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OsInfo {
+    /// Returns the unique ID for the OSInfo instance data type.
     #[serde(rename = "$id")]
     pub id: String,
     family: Family,
+    /// Defines the version of the operating system as a string.
     version: String,
+    /// Defines the Windows operating system edition, like `Windows 11` or `Windows Server 2016`.
     #[serde(skip_serializing_if = "Option::is_none")]
     edition: Option<String>,
+    /// Defines the codename for the operating system as returned from `lsb_release --codename`.
     #[serde(skip_serializing_if = "Option::is_none")]
     codename: Option<String>,
     bitness: Bitness,
+    /// Defines the processor architecture as reported by `uname -m` on the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
     architecture: Option<String>,
 }
 
+/// Defines whether the operating system is a 32-bit or 64-bit operating system.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Bitness {
     #[serde(rename = "32")]
@@ -30,6 +37,7 @@ pub enum Bitness {
     Unknown,
 }
 
+/// Defines whether the operating system is Linux, macOS, or Windows.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Family {
     Linux,

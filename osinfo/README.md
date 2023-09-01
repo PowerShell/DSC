@@ -1,21 +1,20 @@
 # osinfo resource
 
-This resource only supports `get` and returns basic information about the OS.
-It is intended to be an example of a assertion type resource where `test` is
-synthetically implemented by DSC.
+This resource only supports `get` and returns basic information about the OS. It's intended to be
+an example of a assertion type resource where `test` is synthetically implemented by DSC.
 
-As this resource is, by design, very basic, it doesn't even include JSON schema
-as it's not intended to accept any input.
+As this resource is, by design, basic, it doesn't even include JSON schema as it's not intended to
+accept any input.
 
-## direct execution
+## Direct invocation
 
-This command takes no arguments so when run will simply output basic info as JSON:
+This command takes no arguments so only outputs basic info as JSON:
 
 ```powershell
 osinfo
 ```
 
-Example output (note in this doc it's formatted, but the command outputs as one line):
+Example output:
 
 ```json
 {
@@ -27,9 +26,13 @@ Example output (note in this doc it's formatted, but the command outputs as one 
 }
 ```
 
-## performing a `get`
+> [!NOTE]
+> In this document it's formatted, but the command outputs as one line of compressed JSON without
+> any whitespace.
 
-Since this resource takes no input, you can simply run:
+## Performing a `get`
+
+Since this resource takes no input, you can run:
 
 ```powershell
 dsc resource get -r osinfo
@@ -46,10 +49,10 @@ actual_state:
   bitness: X64
 ```
 
-## performing a `test`
+## Performing a `test`
 
 A `test` does require input, but keep in mind this resource doesn't implement schema so the input
-is not validated:
+isn't validated:
 
 ```powershell
 '{"type":"Unknown"}' | dsc resource test -r osinfo

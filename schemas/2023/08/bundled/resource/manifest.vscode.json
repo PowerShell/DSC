@@ -2,7 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json",
   "title": "Command-based DSC Resource Manifest",
-  "description": "Defines a valid command-based DSC Resource.",
+  "description": "Defines the information DSC and integrating require to process and call a command-based DSC Resource.",
+  "markdownDescription": "> [Online Documentation][01]\n\nDefines the information DSC and integrating require to process and call a command-based DSC\nResource. For DSC to use a manifest on a system, the manifest file must:\n\n1. Be discoverable in the `PATH` environment variable.\n1. Follow the naming convention `<name>.dsc.resource.json`.\n1. Be valid for this schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true\n",
   "type": "object",
   "required": [
     "manifestVersion",
@@ -17,6 +18,10 @@
       "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
       "enums": [
         "1.0"
+      ],
+      "markdownDescription": "> [Online Documentation][01]\n\nThe semver of the DSC Resource manifest schema to validate this manifest with.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#manifestversion\n",
+      "markdownEnumDescriptions": [
+        "> [Online Documentation][01]\n\nThe initial release version of the manifest schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true\n"
       ]
     },
     "type": {
@@ -25,21 +30,25 @@
     "version": {
       "title": "Resource Semantic Version",
       "description": "The semantic version (semver) of the DSC Resource. This version identifies the DSC Resource, not the version of the application it manages.",
-      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json"
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
+      "markdownDescription": "> [Online Documentation][03]\n\nThe semantic version ([semver][01]) of the DSC Resource. This version identifies the DSC\nResource, not the version of the application it manages.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n[03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#version\n"
     },
     "description": {
       "title": "Resource Description",
       "description": "A short synopsis of the DSC Resource's purpose.",
-      "type": "string"
+      "type": "string",
+      "markdownDescription": "> [Online Documentation][01]\n\nDefines a short synopsis of the DSC Resource's purpose.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#description-1\n"
     },
     "tags": {
       "title": "Tags",
-      "description": "An array of short strings used to search for DSC Resources.",
+      "description": "Defines a list of searchable terms for the resource.",
+      "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of searchable terms for the resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#tags\n",
       "type": "array",
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "pattern": "^\\w+$"
+        "pattern": "^\\w+$",
+        "patternErrorMessage": "Invalid tag. Tags must be a string of alphanumeric characters and underscores. No other\ncharacters are permitted.\n"
       }
     },
     "get": {
@@ -60,24 +69,29 @@
     "exitCodes": {
       "title": "Exit Codes",
       "description": "This property defines a map of valid exit codes for the DSC Resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC Resource's exit codes.",
+      "markdownDescription": "> [Online Documentation][01]\n\nThis property defines a map of valid exit codes for the DSC Resource. DSC always interprets\nexit code `0` as a successful operation and any other exit code as an error. Use this\nproperty to indicate human-readable semantic meanings for the DSC Resource's exit codes.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#exitcodes\n",
       "type": "object",
       "propertyNames": {
-        "pattern": "^[0-9]+$"
+        "pattern": "^[0-9]+$",
+        "patternErrorMessage": "Invalid exit code. Must be a string representing an integer greater than or equal to `0`.\n"
       },
       "patternProperties": {
         "^[0-9]+$": {
           "type": "string"
         }
       },
+      "unevaluatedProperties": false,
+      "default": {
+        "0": "Success",
+        "1": "Error"
+      },
       "examples": [
         {
-          "exitCodes": {
-            "0": "Success",
-            "1": "Invalid parameter",
-            "2": "Invalid input",
-            "3": "Registry error",
-            "4": "JSON serialization failed"
-          }
+          "0": "Success",
+          "1": "Invalid parameter",
+          "2": "Invalid input",
+          "3": "Registry error",
+          "4": "JSON serialization failed"
         }
       ]
     },
@@ -98,8 +112,10 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
                     "type": "string",
                     "title": "Semantic Version",
-                    "description": "A valid semantic version (semver) string. For reference, see https://semver.org/",
-                    "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+                    "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
+                    "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                    "markdownDescription": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n",
+                    "patternErrorMessage": "Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.\n\nThe value may also include pre-release version information and build metadata.\n"
                   },
                   "resourceType.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -107,14 +123,17 @@
                     "title": "DSC Resource fully qualified type name",
                     "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
                     "type": "string",
-                    "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+                    "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$",
+                    "markdownDescription": "> [Online Documentation][01]\n\nThe namespaced name of the DSC Resource, using the syntax:\n\n```text\nowner[.group][.area]/name\n```\n\nFor example:\n\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserveView=true\n",
+                    "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include a group and area to namespace\nthe resource under the owner, like `Microsoft.Windows/Registry`.\n"
                   },
                   "commandExecutable.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json",
                     "title": "Executable Command Name",
                     "description": "The name of the command to run.",
-                    "type": "string"
+                    "type": "string",
+                    "markdownDescription": "Defines the name of the command to run. The value must be the name of a command discoverable in\nthe system's `PATH` environment variable or the full path to the command. A file extension is\nonly required when the command isn't recognizable by the operating system as an executable.\n"
                   },
                   "commandArgs.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -124,7 +143,8 @@
                     "type": "array",
                     "items": {
                       "type": "string"
-                    }
+                    },
+                    "markdownDescription": "Defines an array of strings to pass as arguments to the command. DSC passes the arguments to the\ncommand in the order they're specified.\n"
                   },
                   "inputKind.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -136,7 +156,12 @@
                       "args",
                       "stdin"
                     ],
-                    "default": "args"
+                    "default": "args",
+                    "markdownDescription": "Defines how DSC should pass input to the command, either as arguments or JSON over `stdin`.\n",
+                    "markdownEnumDescriptions": [
+                      "Indicates that the resource expects the properties of an instance to be specified with\ncommand line arguments. This option isn't implemented yet.\n",
+                      "Indicates that the resource expects a JSON blob representing an instance from `stdin`.\n"
+                    ]
                   },
                   "returnKind.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -147,7 +172,8 @@
                       "state",
                       "stateAndDiff"
                     ],
-                    "default": "state"
+                    "default": "state",
+                    "$comment": "While the enumeration for return kind is the same for the `set` and `test`\nmethod, the way it changes the behavior of the command isn't. The description\nkeyword isn't included here because the respective schemas for those methods\ndocument the behavior themselves."
                   }
                 },
                 "resource": {
@@ -156,8 +182,11 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.get.json",
                     "title": "Get Method",
                     "description": "Defines how DSC must call the DSC Resource to get the current state of an instance.",
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines how DSC must call the DSC Resource to get the current state of an instance.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true\n",
                     "type": "object",
-                    "required": "executable",
+                    "required": [
+                      "executable"
+                    ],
                     "properties": {
                       "executable": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -168,13 +197,27 @@
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json"
                       }
-                    }
+                    },
+                    "examples": [
+                      {
+                        "executable": "registry",
+                        "args": [
+                          "config",
+                          "get"
+                        ],
+                        "input": "stdin"
+                      },
+                      {
+                        "executable": "osinfo"
+                      }
+                    ]
                   },
                   "manifest.set.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.set.json",
                     "title": "Set Method",
                     "description": "Defines how DSC must call the DSC Resource to set the desired state of an instance and how to process the output from the DSC Resource.",
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines how DSC must call the DSC Resource to set the desired state of an instance and how to\nprocess the output from the DSC Resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true\n",
                     "type": "object",
                     "required": [
                       "executable",
@@ -194,19 +237,38 @@
                         "title": "Resource Performs Pre-Test",
                         "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
                         "type": "boolean",
-                        "default": false
+                        "default": false,
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines whether the DSC Resource performs its own test to ensure idempotency when calling the\n`set` command. Set this value to `true` if the DSC Resource tests input before modifying\nsystem state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true#pretest\n"
                       },
                       "return": {
                         "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
-                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json"
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines whether the command returns a JSON blob of the DSC Resource's state after the set\noperation or the state and an array of the properties the DSC Resource modified.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true#return\n",
+                        "markdownEnumDescriptions": [
+                          "Indicates that the resource returns only the instance's final state after the set\noperation as a JSON blob.\n",
+                          "Indicates that the resource returns the instance's final state and an array of property\nnames that the resource modified.\n"
+                        ]
                       }
-                    }
+                    },
+                    "examples": [
+                      {
+                        "executable": "registry",
+                        "args": [
+                          "config",
+                          "set"
+                        ],
+                        "input": "stdin",
+                        "preTest": true,
+                        "return": "state"
+                      }
+                    ]
                   },
                   "manifest.test.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.test.json",
                     "title": "Test Method",
                     "description": "Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how to process the output from the DSC Resource.",
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines how DSC must call the DSC Resource to test if an instance is in the desired state and how\nto process the output from the DSC Resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserveView=true\n",
                     "type": "object",
                     "required": [
                       "executable",
@@ -225,17 +287,36 @@
                       "return": {
                         "title": "Test Command Return Type",
                         "description": "Defines whether the command returns a JSON blob of the DSC Resource's current state or the state and an array of the properties that are out of the desired state.",
-                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json"
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines whether the command returns a JSON blob of the DSC Resource's current state or the\nstate and an array of the properties that are out of the desired state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserveView=true#return\n",
+                        "markdownEnumDescriptions": [
+                          "Indicates that the resource returns only the instance's actual state.\n",
+                          "Indicates that the resource returns the instance's actual state and an array of property\nnames that are out of the desired state.\n"
+                        ]
                       }
-                    }
+                    },
+                    "examples": [
+                      {
+                        "executable": "registry",
+                        "args": [
+                          "config",
+                          "test"
+                        ],
+                        "input": "stdin",
+                        "return": "state"
+                      }
+                    ]
                   },
                   "manifest.validate.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.validate.json",
                     "title": "Validate Method",
                     "description": "Defines how DSC must call the DSC Resource to validate the state of an instance. This method is mandatory for DSC Group Resources. It's ignored for all other DSC Resources.",
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines how DSC must call the DSC Resource to validate the state of an instance. This method is\nmandatory for DSC Group Resources. It's ignored for all other DSC Resources.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserveView=true\n",
                     "type": "object",
-                    "required": "executable",
+                    "required": [
+                      "executable"
+                    ],
                     "properties": {
                       "executable": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -243,13 +324,23 @@
                       "args": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandArgs.json"
                       }
-                    }
+                    },
+                    "examples": [
+                      {
+                        "executable": "dsc",
+                        "args": [
+                          "config",
+                          "validate"
+                        ]
+                      }
+                    ]
                   },
                   "manifest.provider.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.provider.json",
                     "title": "Provider",
                     "description": "Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to manage resources that don't have their own manifests with DSC.",
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to\nmanage resources that don't have their own manifests with DSC.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true\n",
                     "type": "object",
                     "required": [
                       "list",
@@ -259,8 +350,11 @@
                       "list": {
                         "title": "List Command",
                         "description": "Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines how DSC must call the DSC Resource Provider to list its supported DSC Resources.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true#list\n",
                         "type": "object",
-                        "required": "executable",
+                        "required": [
+                          "executable"
+                        ],
                         "properties": {
                           "executable": {
                             "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -277,9 +371,29 @@
                         "enum": [
                           "full",
                           "sequence"
+                        ],
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines whether the provider expects to receive a full and unprocessed configuration as a\nsingle JSON blob over stdin or a sequence of JSON Lines for each child resource's\nconfigurations.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true#config\n",
+                        "markdownEnumDescriptions": [
+                          "Indicates that the provider expects a JSON blob containing the full and unprocessed\nconfiguration as a single JSON blob over `stdin`.\n",
+                          "Indicates that the provider expects each resource's configuration as a [JSON Line][01]\nover `stdin`.\n\n[01]: https://jsonlines.org/\n"
                         ]
                       }
-                    }
+                    },
+                    "examples": [
+                      {
+                        "config": "full",
+                        "list": {
+                          "executable": "pwsh",
+                          "args": [
+                            "-NoLogo",
+                            "-NonInteractive",
+                            "-NoProfile",
+                            "-Command",
+                            "./powershellgroup.resource.ps1 List"
+                          ]
+                        }
+                      }
+                    ]
                   },
                   "manifest.schema.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -289,10 +403,14 @@
                     "type": "object",
                     "oneOf": [
                       {
-                        "required": "command"
+                        "required": [
+                          "command"
+                        ]
                       },
                       {
-                        "required": "embedded"
+                        "required": [
+                          "embedded"
+                        ]
                       }
                     ],
                     "properties": {
@@ -300,7 +418,9 @@
                         "title": "Instance Schema Command",
                         "description": "Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC Resource.",
                         "type": "object",
-                        "required": "executable",
+                        "required": [
+                          "executable"
+                        ],
                         "properties": {
                           "executable": {
                             "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -308,11 +428,13 @@
                           "args": {
                             "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandArgs.json"
                           }
-                        }
+                        },
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob\nrepresenting an instance of the DSC Resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#command\n"
                       },
                       "embedded": {
                         "title": "Embedded Instance Schema",
                         "description": "Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the DSC Resource.",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines the JSON Schema DSC must use to validate a JSON blob representing an instance of the\nDSC Resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserveView=true\n",
                         "type": "object",
                         "required": [
                           "$schema",
@@ -323,7 +445,8 @@
                           "type": {
                             "title": "Instance Type",
                             "description": "Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always have the `object` type.",
-                            "const": "object"
+                            "const": "object",
+                            "markdownDescription": "> [Online Documentation][01]\n\nDefines the JSON type for an instance of the DSC Resource. DSC Resource instances always\nhave the `object` type.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserveView=true#type\n"
                           },
                           "$schema": {
                             "title": "DSC Resource instance schema dialect",
@@ -334,17 +457,25 @@
                               "https://json-schema.org/draft/2020-12/schema",
                               "https://json-schema.org/draft/2019-09/schema",
                               "http://json-schema.org/draft-07/schema#"
+                            ],
+                            "markdownDescription": "> [Online Documentation][01]\n\nDefines the JSON type for an instance of the DSC Resource. DSC Resource instances always\nhave the `object` type. DSC only supports JSON Schema Draft 07 and later.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserveView=true#type\n",
+                            "markdownEnumDescriptions": [
+                              "Indicates the resource instance schema adheres to [JSON Schema Draft 2020-12][01].\n\n[01]: https://json-schema.org/specification-links.html#2020-12\n",
+                              "Indicates the resource instance schema adheres to [JSON Schema Draft 2019-09][01].\n\n[01]: https://json-schema.org/specification-links.html#draft-2019-09-formerly-known-as-draft-8\n",
+                              "Indicates the resource instance schema adheres to [JSON Schema Draft 07][01].\n\n[01]: https://json-schema.org/specification-links.html#draft-7\n"
                             ]
                           },
                           "$id": {
                             "title": "DSC Resource instance schema ID",
-                            "description": "Defines the unique ID for the DSC Resource's instance schema.",
+                            "description": "Defines the unique ID for the DSC Resource's instance schema. If the instance schema is published to its own public URI, set this keyword to that URI.",
                             "type": "string",
-                            "format": "uri-reference"
+                            "format": "uri-reference",
+                            "markdownDescription": "> [Online Documentation][01]\n\nDefines the unique ID for the DSC Resource's instance schema. If the instance schema is\npublished to its own public URI, set this keyword to that URI.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#id\n"
                           },
                           "properties": {
                             "title": "Instance Properties",
-                            "description": "Defines the schema for the DSC Resource's properties. Must define at least one property.",
+                            "description": "Defines the properties that DSC can retrieve and manage for the resource's instances. This keyword must define at least one property as a key-value pair. The key is the property's name. The value is a subschema that validates the property.",
+                            "markdownDescription": "> [Online Documentation][01]\n\nDefines the properties that DSC can retrieve and manage for the resource's instances.\nThis keyword must define at least one property as a key-value pair. The key is the\nproperty's name. The value is a subschema that validates the property.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#properties\n",
                             "type": "object",
                             "minProperties": 1,
                             "unevaluatedProperties": {
@@ -366,28 +497,32 @@
                                 "description": "Indicates that the DSC Resource uses the standard `_ensure` property to specify whether an instance should exist with the `Present` and `Absent` enums.",
                                 "const": {
                                   "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/ensure.json"
-                                }
+                                },
+                                "markdownDescription": "> [Online Documentation][01]\n\nIndicates that the DSC Resource uses the standard `_ensure` property to specify\nwhether an instance should exist with the `Present` and `Absent` enums.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/ensure?view=dsc-3.0&preserveView=true\n"
                               },
                               "_inDesiredState": {
                                 "title": "Standard Property: _inDesiredState",
                                 "description": "Indicates that the DSC Resource returns this value for it's own `test` method. This property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC Resource relies on DSC's synthetic testing.",
                                 "const": {
                                   "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json"
-                                }
+                                },
+                                "markdownDescription": "> [Online Documentation][01]\n\nIndicates that the DSC Resource returns this value for it's own `test` method. This\nproperty is mandatory when the manifest defines the `test` property. It shouldn't\nbe included if the DSC Resource relies on DSC's synthetic testing.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/indesiredstate?view=dsc-3.0&preserveView=true\n"
                               },
                               "_purge": {
                                 "title": "Standard Property: _purge",
                                 "description": "Indicates that the DSC Resource uses the standard `_purge` property to specify whether the DSC Resource should remove all non-specified members when it manages an array of members or values.",
                                 "const": {
                                   "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/purge.json"
-                                }
+                                },
+                                "markdownDescription": "> [Online Documentation][01]\n\nIndicates that the DSC Resource uses the standard `_purge` property to specify\nwhether the DSC Resource should remove all non-specified members when it manages\nan array of members or values.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/purge?view=dsc-3.0&preserveView=true\n"
                               },
                               "_rebootRequested": {
                                 "title": "Standard property: _rebootRequested",
                                 "description": "Indicates that the DSC Resource uses the standard `_rebootRequested` property to report whether the machine should be rebooted after the `set` method executes.",
                                 "const": {
                                   "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/rebootRequested.json"
-                                }
+                                },
+                                "markdownDescription": "> [Online Documentation][01]\n\nIndicates that the DSC Resource uses the standard `_rebootRequested` property to\nreport whether the machine should be rebooted after the `set` method executes.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/rebootrequested?view=dsc-3.0&preserveView=true\n"
                               }
                             }
                           }
@@ -397,9 +532,80 @@
                         "title": "Instance Schema URL",
                         "description": "Defines the URL to the DSC Resource's JSON schema for integrating tools.",
                         "type": "string",
-                        "format": "uri"
+                        "format": "uri",
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines the URL to the DSC Resource's JSON schema for integrating tools.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true#url\n"
                       }
-                    }
+                    },
+                    "examples": [
+                      {
+                        "command": {
+                          "executable": "registry",
+                          "args": [
+                            "schema"
+                          ]
+                        }
+                      },
+                      {
+                        "embedded": {
+                          "$schema": "http://json-schema.org/draft-07/schema#",
+                          "title": "OSInfo",
+                          "type": "object",
+                          "required": [],
+                          "properties": {
+                            "$id": {
+                              "type": "string"
+                            },
+                            "architecture": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "bitness": {
+                              "$ref": "#/definitions/Bitness"
+                            },
+                            "codename": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "edition": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "family": {
+                              "$ref": "#/definitions/Family"
+                            },
+                            "version": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "definitions": {
+                            "Bitness": {
+                              "type": "string",
+                              "enum": [
+                                "32",
+                                "64",
+                                "unknown"
+                              ]
+                            },
+                            "Family": {
+                              "type": "string",
+                              "enum": [
+                                "Linux",
+                                "macOS",
+                                "Windows"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "markdownDescription": "> [Online Documentation][01]\n\nDefines how DSC must validate a JSON blob representing an instance of the DSC Resource.\n\nThe JSON schema can be defined dynamically with the `command` property or statically with the\n`embedded` property.\n\nFor development purposes, it can be more convenient to use the `command` property and avoid\nneeding to adjust both the code and the schema.\n\nMicrosoft recommends using the `embedded` property when publishing a resource publicly. When the\nmanifest declares the schema with the `command` property, DSC calls the command at the beginning\nof any operation using the resource, possibly impacting performance. The schema is also\nunavailable to integrating tools when the resource isn't installed locally. When the schema is\nembedded in the manifest, DSC and integrating tools only need the manifest itself.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserveView=true\n"
                   }
                 }
               }

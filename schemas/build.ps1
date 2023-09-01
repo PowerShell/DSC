@@ -27,6 +27,9 @@ param(
 begin {
     class LocalJsonSchemaRegistry {
         [Specialized.OrderedDictionary]
+        $FileMap
+
+        [Specialized.OrderedDictionary]
         $Map
         
         [Generic.List[Specialized.OrderedDictionary]]
@@ -37,8 +40,9 @@ begin {
         [string]$SchemaVersion
 
         LocalJsonSchemaRegistry() {
-            $this.Map = [Specialized.OrderedDictionary]::new()
-            $this.List = [Generic.List[Specialized.OrderedDictionary]]::new()
+            $this.FileMap = [Specialized.OrderedDictionary]::new()
+            $this.Map     = [Specialized.OrderedDictionary]::new()
+            $this.List    = [Generic.List[Specialized.OrderedDictionary]]::new()
         }
 
         LocalJsonSchemaRegistry(
@@ -49,6 +53,7 @@ begin {
             $this.SchemaHost    = $SchemaHost
             $this.SchemaPrefix  = $SchemaPrefix
             $this.SchemaVersion = $SchemaVersion
+            $this.FileMap       = [Specialized.OrderedDictionary]::new()
             $this.Map           = [Specialized.OrderedDictionary]::new()
             $this.List          = [Generic.List[Specialized.OrderedDictionary]]::new()
         }
@@ -77,8 +82,14 @@ begin {
 
                 $Schema.GetEnumerator().Where({$_.Key -ne $KeyName}).ForEach({
                     if ($_.Value -is [Object[]]) {
-                        $MungedKeyValue = Remove-JsonSchemaKey -KeyName $KeyName -SchemaList $_.Value
-                        $MungedSchema.Add($_.Key, $MungedKeyValue)
+                        if ($_.Value.Count -ge 1) {
+                            $MungedKeyValue = Remove-JsonSchemaKey -KeyName $KeyName -SchemaList $_.Value
+                            $MungedSchema.Add($_.Key, $MungedKeyValue)
+                        } else {
+                            $MungedSchema.Add($_.Key, $_.Value)
+                        }
+                        # $MungedKeyValue = Remove-JsonSchemaKey -KeyName $KeyName -SchemaList $_.Value
+                        # $MungedSchema.Add($_.Key, $MungedKeyValue)
                     } elseif ($_.Value -is [Specialized.OrderedDictionary]) {
                         $MungedKeyValue = Remove-JsonSchemaKey -KeyName $KeyName -Schema $_.Value
                         $MungedSchema.Add($_.Key, $MungedKeyValue)
@@ -146,6 +157,7 @@ begin {
                     $Info.List.Add($Schema)
                     $Info.Map.Add($SchemaID, $Schema)
                     $Info.Map.Add($SchemaRefID, $Schema)
+                    $Info.FileMap.Add($_.FullName, $Schema)
                 }
             }
 
@@ -463,6 +475,19 @@ begin {
             if (-not (Test-Path -Path $OutputDirectory)) {
                 $null = New-Item -Path $OutputDirectory -ItemType Directory -Force
             }
+            $VSCodeKeywords = @(
+                'defaultSnippets'
+                'errorMessage'
+                'patternErrorMessage'
+                'deprecationMessage'
+                'enumDescriptions'
+                'markdownEnumDescriptions'
+                'markdownDescription'
+                'doNotSuggest'
+                'suggestSortText'
+                'allowComments'
+                'allowTrailingCommas'
+            )
         }
 
         process {
@@ -481,6 +506,10 @@ begin {
             if ($MergeForNormal) {
                 $Bundled = Merge-JsonSchema @SharedMergeParams
                 | Set-BundledSchemaID -BundledName $Name
+
+                foreach ($VSCodeKeyword in $VSCodeKeywords) {
+                    $Bundled = Remove-JsonSchemaKey -Schema $Bundled -KeyName $VSCodeKeyword
+                }
 
                 if ($OutputFormat -contains 'json') {
                     $Bundled
@@ -516,6 +545,20 @@ begin {
             }
         }
     }
+
+    $VSCodeKeywords = @(
+        'defaultSnippets'
+        'errorMessage'
+        'patternErrorMessage'
+        'deprecationMessage'
+        'enumDescriptions'
+        'markdownEnumDescriptions'
+        'markdownDescription'
+        'doNotSuggest'
+        'suggestSortText'
+        'allowComments'
+        'allowTrailingCommas'
+    )
 }
 
 process {
@@ -541,8 +584,7 @@ process {
             $null = New-Item -Path $SchemaFolder -ItemType Directory -Force
         }
 
-        $SchemaContent
-        | yayaml\ConvertFrom-Yaml
+        $SchemaContent | yayaml\ConvertFrom-Yaml
         | ConvertTo-Json -Depth 99
         | ForEach-Object { $_ -replace '\r\n', "`n" }
         | Out-File -FilePath ($SchemaPath -replace '\.yaml$', '.json') -Force
@@ -558,8 +600,8 @@ process {
         SchemaHost       = $Config.host
         SchemaPrefix     = $Config.prefix
         SchemaVersion    = $Config.version
-        WithoutExamples  = $true
-        WithoutComments  = $true
+        # WithoutExamples  = $true
+        # WithoutComments  = $true
     }
     $SchemaRegistry = Get-LocalJsonSchemaRegistry @RegistryParameters
 
@@ -589,6 +631,30 @@ process {
         }
         Write-Verbose "Exporting: $($BundleToExport | ConvertTo-Json)"
         Export-MergedJsonSchema @BundleToExport -SchemaRegistry $SchemaRegistry -ErrorAction Stop
+    }
+
+    # Remove VS Code keywords from non-bundled schemas
+    # $SchemaRegistry.FileMap.GetEnumerator() | ForEach-Object -Process {
+    #     $SchemaPath = $_.Key
+    #     $SchemaData = $_.Value
+
+    #     $SchemaData
+    #     | ConvertTo-Json -Depth 99
+    #     | ForEach-Object { $_ -replace '\r\n', "`n" }
+    #     | Out-File -FilePath $SchemaPath -Force
+    # }
+
+    $SchemaRegistry.FileMap.GetEnumerator() | ForEach-Object -Process {
+        $SchemaPath = $_.Key
+        $SchemaData = $_.Value
+        foreach ($VSCodeKeyword in $VSCodeKeywords) {
+            $SchemaData = Remove-JsonSchemaKey -Schema $SchemaData -KeyName $VSCodeKeyword
+        }
+        
+        $SchemaData
+        | ConvertTo-Json -Depth 99
+        | ForEach-Object { $_ -replace '\r\n', "`n" }
+        | Out-File -FilePath $SchemaPath -Force
     }
 }
 

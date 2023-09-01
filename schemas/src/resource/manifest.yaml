@@ -4,7 +4,19 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.yaml
 
 title: Command-based DSC Resource Manifest
 description: >-
-  Defines a valid command-based DSC Resource.
+  Defines the information DSC and integrating require to process and call a command-based DSC
+  Resource.
+markdownDescription: | # VS Code only
+  > [Online Documentation][01]
+
+  Defines the information DSC and integrating require to process and call a command-based DSC
+  Resource. For DSC to use a manifest on a system, the manifest file must:
+
+  1. Be discoverable in the `PATH` environment variable.
+  1. Follow the naming convention `<name>.dsc.resource.json`.
+  1. Be valid for this schema.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true
 
 type: object
 required:
@@ -16,35 +28,86 @@ properties:
   manifestVersion:
     title: Manifest Version
     description: >-
-      The semver of the DSC Resource manifest schema to validate this manifest
-      with.
+      The semver of the DSC Resource manifest schema to validate this manifest with.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
     enums:
       - '1.0'
+    # VS Code Only
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      The semver of the DSC Resource manifest schema to validate this manifest with.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#manifestversion
+    markdownEnumDescriptions:
+      # 1.0
+      - |
+        > [Online Documentation][01]
+
+        The initial release version of the manifest schema.
+
+        [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true
   type:
     $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
   version:
     title: Resource Semantic Version
     description: >-
-      The semantic version (semver) of the DSC Resource. This version
-      identifies the DSC Resource, not the version of the application it
-      manages.
+      The semantic version (semver) of the DSC Resource. This version identifies the DSC Resource,
+      not the version of the application it manages.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+    markdownDescription: | # VS Code only
+      > [Online Documentation][03]
+
+      The semantic version ([semver][01]) of the DSC Resource. This version identifies the DSC
+      Resource, not the version of the application it manages.
+
+      This value uses the [suggested regular expression][02] to validate whether the string is valid
+      semver. This is the same pattern, made multi-line for easier readability:
+
+      ```regex
+      ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)
+      (?:-(
+        (?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)
+        (?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))
+      *))?
+      (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+      ```
+
+      The first line matches the `major.minor.patch` components of the version. The middle lines match
+      the pre-release components. The last line matches the build metadata component.
+
+      [01]: https://semver.org/
+      [02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+      [03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#version
   description:
     title: Resource Description
     description: >-
       A short synopsis of the DSC Resource's purpose.
-    # Should this include a maximum length or a pattern that forbids newlines?
     type: string
+    markdownDescription: | # VS Code only
+      > [Online Documentation][01]
+
+      Defines a short synopsis of the DSC Resource's purpose.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#description-1
   tags:
     title: Tags
     description: >-
-      An array of short strings used to search for DSC Resources.
+      Defines a list of searchable terms for the resource.
+    markdownDescription: | # VS Code only
+      > [Online Documentation][01]
+
+      Defines a list of searchable terms for the resource.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#tags
     type: array
     uniqueItems: true
     items:
       type: string
       pattern: ^\w+$
+      patternErrorMessage: | # VS Code only
+        Invalid tag. Tags must be a string of alphanumeric characters and underscores. No other
+        characters are permitted.
   get:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.get.yaml
   set:
@@ -54,7 +117,6 @@ properties:
   validate:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.validate.yaml
   provider:
-    # I'm not clear on how this works in practice
     $ref: /<PREFIX>/<VERSION>/resource/manifest.provider.yaml
   exitCodes:
     # This setting in the root of the schema implies exit codes must have the
@@ -63,22 +125,34 @@ properties:
     # command/method objects too?
     title: Exit Codes
     description: >-
-      This property defines a map of valid exit codes for the DSC Resource.
-      DSC always interprets exit code `0` as a successful operation and any
-      other exit code as an error. Use this property to indicate human-readable
-      semantic meanings for the DSC Resource's exit codes.
+      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      exit code `0` as a successful operation and any other exit code as an error. Use this
+      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+    markdownDescription: |
+      > [Online Documentation][01]
+
+      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      exit code `0` as a successful operation and any other exit code as an error. Use this
+      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#exitcodes
     type: object
     propertyNames:
       pattern: "^[0-9]+$"
+      patternErrorMessage: |
+        Invalid exit code. Must be a string representing an integer greater than or equal to `0`.
     patternProperties:
       "^[0-9]+$":
         type: string
+    unevaluatedProperties: false
+    default:
+      '0': Success
+      '1': Error
     examples:
-      - exitCodes:
-          "0": Success
-          "1": Invalid parameter
-          "2": Invalid input
-          "3": Registry error
-          "4": JSON serialization failed
+      - '0': Success
+        '1': Invalid parameter
+        '2': Invalid input
+        '3': Registry error
+        '4': JSON serialization failed
   schema:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.schema.yaml

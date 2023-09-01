@@ -4,9 +4,17 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.validate.yaml
 
 title: Validate Method
 description: >-
-  Defines how DSC must call the DSC Resource to validate the state of an
-  instance. This method is mandatory for DSC Group Resources. It's ignored for
-  all other DSC Resources.
+  Defines how DSC must call the DSC Resource to validate the state of an instance. This method is
+  mandatory for DSC Group Resources. It's ignored for all other DSC Resources.
+
+markdownDescription: | # VS Code only
+  > [Online Documentation][01]
+
+  Defines how DSC must call the DSC Resource to validate the state of an instance. This method is
+  mandatory for DSC Group Resources. It's ignored for all other DSC Resources.
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserveView=true
+
 type: object
 required:
   - executable
