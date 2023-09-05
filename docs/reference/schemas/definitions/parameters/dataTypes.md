@@ -14,17 +14,10 @@ Defines valid data types for a DSC configuration parameter
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json
-Type           : string
-Valid Values:
-  - array
-  - bool
-  - int
-  - object
-  - string
-  - secureobject
-  - securestring
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json
+Type:          string
+ValidValues:   [array, bool, int, object, string, secureobject, securestring]
 ```
 
 ## Description

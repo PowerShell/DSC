@@ -14,9 +14,9 @@ Defines how to test whether a DSC Resource instance is in the desired state.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.test.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.test.json
+Type:          object
 ```
 
 ## Description
@@ -117,12 +117,10 @@ be one of the following strings:
   `stdin`.
 
 ```yaml
-Type:     string
-Required: false
-Default:  stdin
-Valid Values:
-  - args
-  - stdin
+Type:        string
+Required:    false
+Default:     stdin
+ValidValues: [args, stdin]
 ```
 
 ### return
@@ -137,10 +135,8 @@ property must be one of the following strings:
 The default value is `state`.
 
 ```yaml
-Type: string
-Required: false
-Default:  state
-Valid Values:
-  - state
-  - stateAndDiff
+Type:        string
+Required:    false
+Default:     state
+ValidValues: [state, stateAndDiff]
 ```

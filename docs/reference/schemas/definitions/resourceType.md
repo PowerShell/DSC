@@ -14,10 +14,10 @@ Identifies a DSC Resource.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json
-Type           : string
-Pattern        : ^\w+(\.\w+){0,2}\/\w+$
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json
+Type:          string
+Pattern:       ^\w+(\.\w+){0,2}\/\w+$
 ```
 
 ## Description

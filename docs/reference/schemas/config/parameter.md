@@ -14,9 +14,9 @@ Defines runtime options for a configuration.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json
+Type:          object
 ```
 
 ## Description
@@ -75,16 +75,9 @@ For more information about data types, see
 [DSC configuration parameter data type schema reference][02].
 
 ```yaml
-Type:     string
-Required: true
-Valid Values:
-  - string
-  - securestring
-  - int
-  - bool
-  - object
-  - secureobject
-  - array
+Type:        string
+Required:    true
+ValidValues: [string, securestring, int, bool, object, secureobject, array]
 ```
 
 ### defaultValue
@@ -95,13 +88,8 @@ runtime and no default value is defined, DSC raises an error. The value must be 
 parameter's `type`.
 
 ```yaml
-Required: false
-Valid JSON Types:
-  - string
-  - integer
-  - object
-  - array
-  - boolean
+Required:       false
+ValidJSONTypes: [string, integer, object, array, boolean]
 ```
 
 ### allowedValues
@@ -114,14 +102,9 @@ This property is always an array. If this property is defined, it must include a
 the list of values.
 
 ```yaml
-Type:     array
-Required: false
-Valid Item JSON Types:
-  - string
-  - integer
-  - object
-  - array
-  - boolean
+Type:               array
+Required:           false
+ValidItemJSONTypes: [string, integer, object, array, boolean]
 ```
 
 ### minLength
@@ -137,9 +120,9 @@ If this property is defined with the `maxLength` property, this property must be
 `maxLength`. If it isn't, DSC raises an error.
 
 ```yaml
-Type:          int
-Required:      false
-Minimum Value: 0
+Type:         int
+Required:     false
+MinimumValue: 0
 ```
 
 ### maxLength
@@ -155,9 +138,9 @@ If this property is defined with the `minLength` property, this property must be
 `minLength`. If it isn't, DSC raises an error.
 
 ```yaml
-Type:          int
-Required:      false
-Minimum Value: 0
+Type:         int
+Required:     false
+MinimumValue: 0
 ```
 
 ### minValue

@@ -14,9 +14,9 @@ Defines how to retrieve the JSON Schema that validates a DSC Resource instance.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json
+Type:          object
 ```
 
 ## Description
@@ -108,9 +108,8 @@ authoring tools and other integrating applications to validate instances without
 command locally.
 
 ```yaml
-Type:     object
-Required Properties:
-  - executable
+Type:               object
+RequiredProperties: [executable]
 ```
 
 #### executable
@@ -143,8 +142,8 @@ Resource. The value for this property must be a valid JSON schema that defines t
 `type`, and `properties` keywords.
 
 ```yaml
-Type: object
-Minimum Property Count: 1
+Type:                 object
+MinimumPropertyCount: 1
 ```
 
 ### url

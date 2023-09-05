@@ -73,18 +73,19 @@ schema the application returns:
   `dsc config test` command.
 
 ```yaml
-Type:      String
-Mandatory: true
-Valid Values:
-  - dsc-resource
-  - resource-manifest
-  - get-result
-  - set-result
-  - test-result
-  - configuration
-  - configuration-get-result
-  - configuration-set-result
-  - configuration-test-result
+Type:        String
+Mandatory:   true
+ValidValues: [
+               dsc-resource,
+               resource-manifest,
+               get-result,
+               set-result,
+               test-result,
+               configuration,
+               configuration-get-result,
+               configuration-set-result,
+               configuration-test-result
+             ]
 ```
 
 ### -h, --help

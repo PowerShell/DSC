@@ -73,13 +73,10 @@ To set the output format for a command or subcommand, specify this option before
 `dsc --format pretty-json resource list`.
 
 ```yaml
-Type:          String
-Mandatory:     false
-Default Value: yaml
-Valid Values:
-  - json
-  - pretty-json
-  - yaml
+Type:         String
+Mandatory:    false
+DefaultValue: yaml
+ValidValues:  [json, pretty-json, yaml]
 ```
 
 ### -h, --help

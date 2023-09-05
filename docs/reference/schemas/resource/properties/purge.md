@@ -14,10 +14,10 @@ Indicates that the resource should treat non-defined entries in a list as invali
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/purge.json
-Type           : [boolean, 'null']
-Write Only     : true
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/purge.json
+Type:          [boolean, 'null']
+WriteOnly:     true
 ```
 
 ## Description

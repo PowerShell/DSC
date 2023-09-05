@@ -17,12 +17,12 @@
     },
     "dependsOn": {
       "title": "Instance depends on",
-      "description": "Defines a list of DSC Resource instances that DSC must successfully process before processing this instance. Each value for this property must be the value of another DSC Resource instance's `name` property.",
+      "description": "Defines a list of DSC Resource instances that DSC must successfully process before processing this instance. Each value for this property must be the `resourceID()` lookup for another instance in the configuration. Multiple instances can depend on the same instance, but every dependency for an instance must be unique in that instance's `dependsOn` property.",
       "type": "array",
       "items": {
         "type": "string",
         "uniqueItems": true,
-        "pattern": "^\\[\\w+(\\.\\w+){0,2}\\/\\w+\\].+$"
+        "pattern": "^\\[resourceId\\(\\s*'\\w+(\\.\\w+){0,2}\\/\\w+'\\s*,\\s*'[a-zA-Z0-9 ]+'\\s*\\)\\]$"
       }
     },
     "properties": {

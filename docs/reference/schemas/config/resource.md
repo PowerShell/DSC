@@ -14,9 +14,9 @@ Defines a DSC Resource instance in a configuration document.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json
+Type:          object
 ```
 
 ## Description
@@ -45,9 +45,13 @@ The `name` property of a resource instance defines the short, human-readable nam
 Resource instance. This property must be unique within a DSC Configuration document. If any
 resource instances share the same name, DSC raises an error.
 
+The instance name must be a non-empty string containing only letters, numbers, and spaces.
+
 ```yaml
-Type:     string
-Required: true
+Type:          string
+Required:      true
+MinimumLength: 1
+Pattern:       ^[a-zA-Z0-9 ]+$
 ```
 
 ### type
@@ -80,30 +84,62 @@ Required: true
 To declare that a resource instance is dependent on another instance in the configuration, define
 the `dependsOn` property.
 
-This property must be an array of dependency declarations. Each dependency must use this
-syntax:
+This property defines a list of DSC Resource instances that DSC must successfully process before
+processing this instance. Each value for this property must be the `resourceID()` lookup for
+another instance in the configuration. Multiple instances can depend on the same instance, but
+every dependency for an instance must be unique in that instance's `dependsOn` property.
+
+The `resourceID()` function uses this syntax:
 
 ```yaml
-"[<resource-type-name>]<instance-name>"
+"[resourceId('<resource-type-name>', '<instance-name>']"
 ```
 
-In the dependency syntax, `<resource-type-name>` is the `type` property of the dependent resource
-and `<instance-name>` is the dependency's `name` property.
+The `<resource-type-name>` value is the `type` property of the dependent resource and
+`<instance-name>` is the dependency's `name` property. When adding a dependency in a YAML-format
+configuration document, always wrap the `resourceID()` lookup in double quotes (`"`).
 
-Multiple instances can depend on the same instance, but every dependency for an instance must be
-unique in that instance's `dependsOn` property.
+For example, this instance depends on an instance of the `Microsoft.Windows/Registry`
+resource named `Tailspin Key`:
+
+```yaml
+- name: Tailspin Key
+  type: Microsoft.Windows/Registry
+  properties:
+    keyPath: HKCU\tailspin
+    _ensure: Present
+- name: Update Tailspin Automatically
+  type: Microsoft.Windows/Registry
+  properties:
+    keyPath:   HKCU\tailspin\updates
+    valueName: automatic
+    valueData:
+      String: enable
+  dependsOn:
+    - "[resourceId('Microsoft.Windows/Registry', 'Tailspin Key')]"
+```
+
+> [!NOTE]
+> When defining dependencies for [nested resource instances][02], instances can only reference
+> dependencies in the same resource provider or group instance. They can't use the `resourceId()`
+> function to lookup instances at the top-level of the configuration document or inside another
+> provider or group instance.
+>
+> If a top-level instance depends on a nested instance, use the `resourceId()` function to lookup
+> the instance of the provider or group containing the dependency instance instead.
 
 <!-- For more information, see [Configuration resource dependencies][04]. -->
 
 ```yaml
-Type:                 array
-Required:             false
-Items Must be Unique: true
-Valid Items Type:     string
-Valid Items Pattern:  ^\[\w+(\.\w+){0,2}\/\w+\].+$
+Type:              array
+Required:          false
+ItemsMustBeUnique: true
+ItemsType:         string
+ItemsPattern:      ^\[resourceId\(\s*'\w+(\.\w+){0,2}\/\w+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)\]$
 ```
 
 [01]: ../definitions/resourceType.md
+[02]: /powershell/dsc/glossary#nested-resource-instance
 <!-- [02]: ../../../resources/concepts/assertion-resources.md -->
 <!-- [03]: ../../../resources/concepts/schemas.md -->
 <!-- [04]: ../../../configurations/concepts/dependencies.md -->

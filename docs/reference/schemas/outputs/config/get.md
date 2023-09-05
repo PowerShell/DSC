@@ -14,9 +14,9 @@ The result output from the `dsc config get` command.
 ## Metadata
 
 ```yaml
-Schema Dialect : https://json-schema.org/draft/2020-12/schema
-Schema ID      : https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/config/get.json
-Type           : object
+SchemaDialect: https://json-schema.org/draft/2020-12/schema
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/config/get.json
+Type:          object
 ```
 
 ## Description
@@ -41,9 +41,9 @@ configuration document. Every entry in the list includes the resource's type nam
 and the result data for an instance.
 
 ```yaml
-Type:     array
-Required: true
-Items Type: object
+Type:      array
+Required:  true
+ItemsType: object
 ```
 
 #### type
