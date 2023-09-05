@@ -1,7 +1,7 @@
 {
     "manifestVersion": "1.0",
     "description": "Returns information about running processes.",
-    "type": "Microsoft/ProcessList",
+    "type": "Microsoft/Process",
     "version": "0.1.0",
     "get": {
         "executable": "process",
@@ -15,7 +15,41 @@
           "set"
         ],
         "input": "stdin",
-        "preTest": true,
+        "preTest": false,
         "return": "state"
+    },
+    "test": {
+      "executable": "process",
+      "args": [
+        "test"
+      ],
+      "input": "stdin",
+      "return": "state"
+    },
+    "export": {
+      "executable": "process",
+      "args": [
+        "list"
+      ]
+    },
+    "schema": {
+      "embedded": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Process",
+        "type": "object",
+        "required": [],
+        "properties": {
+            "pid": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "cmdline": {
+              "type": "string"
+            }
+        },
+        "additionalProperties": false
+      }
     }
 }

@@ -52,3 +52,11 @@ pub struct ValidateResult {
     /// Reason for the validation result.
     pub reason: Option<String>,
 }
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ExportResult {
+    /// The state of the resource as it was returned by the Get method.
+    #[serde(rename = "actualState")]
+    pub actual_state: Vec<Value>,
+}

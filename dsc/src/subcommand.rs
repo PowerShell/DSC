@@ -86,6 +86,35 @@ pub fn config_test(configurator: Configurator, format: &Option<OutputFormat>)
     }
 }
 
+pub fn config_export(configurator: Configurator, format: &Option<OutputFormat>)
+{
+    match configurator.invoke_export(ErrorAction::Continue, || { /* code */ }) {
+        Ok(result) => {
+            let json = match serde_json::to_string(&result.result) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            if result.had_errors {
+
+                for msg in result.messages
+                {
+                    eprintln!("{:?} message {}", msg.level, msg.message);
+                };
+
+                exit(EXIT_DSC_ERROR);
+            }
+        },
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
 pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
     if stdin.is_none() {
         eprintln!("Configuration must be piped to STDIN");
@@ -134,6 +163,9 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
         },
         ConfigSubCommand::Validate => {
             validate_config(&json_string);
+        },
+        ConfigSubCommand::Export => {
+            config_export(configurator, format);
         }
     }
 }
@@ -353,8 +385,9 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                 table.print();
             }
         },
-       ResourceSubCommand::Get { resource, input } => {
-            resource_command::get(&mut dsc, resource, input, stdin, format);
+       ResourceSubCommand::Get { resource, input, all } => {
+            if *all { resource_command::get_all(&mut dsc, resource, input, stdin, format); }
+            else { resource_command::get(&mut dsc, resource, input, stdin, format); };
         },
         ResourceSubCommand::Set { resource, input } => {
             resource_command::set(&mut dsc, resource, input, stdin, format);
@@ -364,6 +397,9 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
         },
         ResourceSubCommand::Schema { resource } => {
             resource_command::schema(&mut dsc, resource, format);
+        },
+        ResourceSubCommand::Export { resource} => {
+            resource_command::export(&mut dsc, resource, format);
         },
     }
 }

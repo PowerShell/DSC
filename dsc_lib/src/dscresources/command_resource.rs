@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::{process::Command, io::{Write, Read}, process::Stdio};
 
 use crate::dscerror::DscError;
-use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult}};
+use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -54,7 +54,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 ///
 /// Error returned if the resource does not successfully set the desired state
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Result<SetResult, DscError> {
-    let Some(set) = &resource.set else {
+    let Some(set) = resource.set.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
@@ -253,6 +253,34 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
             Ok(body)
         },
     }
+}
+
+pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportResult, DscError> {
+
+    if resource.export.is_none()
+    {
+        return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
+    }
+
+    let (exit_code, stdout, stderr) = invoke_command(&resource.export.clone().unwrap().executable, resource.export.clone().unwrap().args.clone(), None, Some(cwd))?;
+    if exit_code != 0 {
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    }
+    let mut instances: Vec<Value> = Vec::new();
+    for line in stdout.lines()
+    {
+        let instance: Value = match serde_json::from_str(line){
+            Result::Ok(r) => {r},
+            Result::Err(err) => {
+                return Err(DscError::Operation(format!("Failed to parse json from export {}|{}|{} -> {err}", &resource.export.clone().unwrap().executable, stdout, stderr)))
+            }
+        };
+        instances.push(instance);
+    }
+
+    Ok(ExportResult {
+        actual_state: instances,
+    })
 }
 
 /// Invoke a command and return the exit code, stdout, and stderr.
