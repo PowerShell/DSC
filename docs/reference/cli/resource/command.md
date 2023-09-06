@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource' command
-ms.date:     08/04/2023
+ms.date:     09/06/2023
 ms.topic:    reference
 title:       dsc resource
 ---
@@ -29,27 +29,32 @@ directly. To manage resource instances in a configuration, see the [dsc config][
 The `list` command returns the list of available DSC Resources with an optional filter. For more
 information, see [dsc resource list][02].
 
+### export
+
+The `export` command generates a configuration document that defines the current state of every
+instance for a specified resource. For more information, see [dsc resource export][03].
+
 ### get
 
 The `get` command invokes the get operation for a resource, returning the current state of a
-resource instance. For more information, see [dsc resource get][03].
+resource instance. For more information, see [dsc resource get][04].
 
 ### set
 
 The `set` command invokes the set operation for a resource, enforcing the desired state of a
-resource instance and returning the final state. For more information, see [dsc resource set][04].
+resource instance and returning the final state. For more information, see [dsc resource set][05].
 
 ### test
 
 The `test` command invokes the test operation for a resource, returning the expected and actual
 state of an instance and an array of properties that are out of the desired state. For more
-information, see [dsc resource test][05].
+information, see [dsc resource test][06].
 
 ### schema
 
 The `schema` command returns the JSON Schema for instances of a resource. This schema validates an
 instance before any operations are sent to the resource. For more information, see
-[dsc resource schema][06].
+[dsc resource schema][07].
 
 ### help
 
@@ -81,7 +86,8 @@ Mandatory: false
 
 [01]: ../config/command.md
 [02]: list.md
-[03]: get.md
-[04]: set.md
-[05]: test.md
-[06]: schema.md
+[03]: export.md
+[04]: get.md
+[05]: set.md
+[06]: test.md
+[07]: schema.md
