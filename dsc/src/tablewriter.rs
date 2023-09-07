@@ -7,12 +7,22 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(header: Vec<&str>) -> Table {
+    /// Create a new table.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `header` - The header row
+    /// 
+    /// # Returns
+    /// 
+    /// * `Table` - The new table
+    #[must_use]
+    pub fn new(header: &[&str]) -> Table {
         let mut column_widths = Vec::new();
-        for header_text in header.iter() {
+        for header_text in header {
             column_widths.push(header_text.len());
         }
-        let header = header.iter().map(|s| s.to_string()).collect::<Vec<String>>();
+        let header = header.iter().map(|s| (*s).to_string()).collect::<Vec<String>>();
         Table {
             header,
             rows: Vec::new(),
@@ -20,6 +30,11 @@ impl Table {
         }
     }
 
+    /// Add a row to the table.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `row` - The row to add
     pub fn add_row(&mut self, row: Vec<String>) {
         for (i, column) in row.iter().enumerate() {
             if column.len() > self.column_widths[i] {
@@ -29,8 +44,9 @@ impl Table {
         self.rows.push(row);
     }
 
+    /// Print the table to the console.
     pub fn print(&self) {
-        let (width, _) = size().unwrap();
+        let (width, _) = size().unwrap_or((80, 25));
         // make header bright green
         println!("\x1b[1;32m");
         let mut header_row = String::new();

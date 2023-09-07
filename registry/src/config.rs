@@ -24,7 +24,7 @@ pub enum RegistryValueData {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "Registry", deny_unknown_fields)]
-pub struct RegistryConfig {
+pub struct Registry {
     /// The ID of the resource.  Value is ignored for input.
     #[serde(rename = "$id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
@@ -53,12 +53,12 @@ pub struct RegistryConfig {
     pub in_desired_state: Option<bool>,
 }
 
-impl RegistryConfig {
+impl Registry {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {
             Ok(json) => json,
             Err(e) => {
-                eprintln!("Failed to serialize to JSON: {}", e);
+                eprintln!("Failed to serialize to JSON: {e}");
                 String::new()
             }
         }
@@ -67,7 +67,7 @@ impl RegistryConfig {
 
 const ID: &str = "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json";
 
-impl Default for RegistryConfig {
+impl Default for Registry {
     fn default() -> Self {
         Self {
             id: Some(ID.to_string()),
