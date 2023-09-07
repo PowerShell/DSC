@@ -20,9 +20,12 @@ dsc resource list [Options] <RESOURCE_NAME>
 ## Description
 
 The `list` subcommand searches for available DSC Resources and returns their information. DSC
-discovers resources by first searching the `PATH` for `.dsc.resource.json` files. If any of the
-discovered resources are resource providers, DSC then calls the providers to list their resources,
-too.
+discovers resources by first searching the `PATH` or `DSC_RESOURCE_PATH` environment variable for
+`.dsc.resource.json` files. For more information about the environment variables DSC uses, see
+[Environment variables][01]
+
+If any of the discovered resources are resource providers, DSC then calls the providers to list
+their resources, too.
 
 DSC returns the list of discovered resources with their implementation information and metadata. If
 the command includes the `RESOURCE_NAME` argument, DSC filters the list of discovered resources
@@ -178,6 +181,7 @@ Mandatory: false
 
 This command returns a JSON object for each resource that includes the resource's type, version,
 manifest settings, and other metadata. For more information, see
-[dsc resource list result schema][01].
+[dsc resource list result schema][02].
 
-[01]: ../../schemas/outputs/resource/list.md
+[01]: ../dsc.md#environment-variables
+[02]: ../../schemas/outputs/resource/list.md
