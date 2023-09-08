@@ -99,6 +99,16 @@ Type:      Boolean
 Mandatory: false
 ```
 
+## Environment Variables
+
+By default, the `dsc` command searches for command-based DSC Resource manifests in the folders
+defined by the `PATH` environment variable. If the `DSC_RESOURCE_PATH` environment variable is
+defined, `dsc` searches the folders in `DSC_RESOURCE_PATH` instead of `PATH`.
+
+The `DSC_RESOURCE_PATH` environment must be an environment variable that follows the same
+conventions as the `PATH` environment variable for the operating system. Separate folder paths with
+a semicolon (`;`) on Windows and a colon (`:`) on other platforms.
+
 ## Exit Codes
 
 The `dsc` command uses semantic exit codes. Each exit code represents a different result for the

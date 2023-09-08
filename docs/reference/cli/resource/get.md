@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource get' command
-ms.date:     08/04/2023
+ms.date:     09/06/2023
 ms.topic:    reference
 title:       dsc resource get
 ---
@@ -21,8 +21,8 @@ dsc resource get [Options] --resource <RESOURCE>
 
 The `get` subcommand returns the current state of a resource instance.
 
-This subcommand returns one instance from a specific DSC Resource. To return multiple resources,
-use a resource group or the [dsc config get][01] command.
+By default, this subcommand returns one instance from a specific DSC Resource. To return multiple
+resources, use the `--all` parameter, a resource group, or the [dsc config get][01] command.
 
 Any properties the resource requires for retrieving the state of an instance must be passed to this
 command as JSON. The JSON can be passed to this command from stdin or with the `--input` option.
@@ -91,6 +91,23 @@ actualState:
 
 ## Options
 
+### -a, --all
+
+Specifies that the command should return every instance of the specified DSC Resource instead of a
+specific instance.
+
+This option is only valid when the Resource is an exportable resource that defines the
+[export][02] section in the input configuration. If the resource type isn't exportable, DSC raises
+an error.
+
+When this option is specified, DSC ignores the `--input` option and any JSON sent to the command
+from stdin.
+
+```yaml
+Type:      Boolean
+Mandatory: false
+```
+
 ### -r, --resource
 
 Specifies the fully qualified type name of the DSC Resource to use, like
@@ -116,6 +133,8 @@ an error.
 This option can't be used with JSON over stdin. Choose whether to pass the instance JSON to the
 command over stdin or with the `--input` flag.
 
+DSC ignores this option when the `--all` option is specified.
+
 ```yaml
 Type:      String
 Mandatory: false
@@ -133,8 +152,14 @@ Mandatory: false
 
 ## Output
 
-This command returns JSON output that includes the actual state of the instance. For more
-information, see [dsc resource get result schema][02].
+By default, this command returns JSON output that includes the actual state of the instance. When
+the `--all` option is specified, the command returns the JSON output for each instance as
+[JSON Lines][03].
+
+For more information about the structure of the output JSON, see
+[dsc resource get result schema][04].
 
 [01]: ../config/get.md
-[02]: ../../schemas/outputs/resource/get.md
+[02]: ../../schemas/resource/manifest/export.md
+[03]: https://jsonlines.org/
+[04]: ../../schemas/outputs/resource/get.md

@@ -146,6 +146,9 @@
         "get": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.get.json"
         },
+        "export": {
+          "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.export.json"
+        },
         "set": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.set.json"
         },
@@ -219,6 +222,22 @@
           "executable": "osinfo"
         }
       ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.export.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.export.json",
+      "title": "Get Method",
+      "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
+      "type": "object",
+      "required": "executable",
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandArgs.json"
+        }
+      }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.set.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
