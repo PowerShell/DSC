@@ -43,6 +43,9 @@
     "get": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.get.json"
     },
+    "export": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.export.json"
+    },
     "set": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.set.json"
     },

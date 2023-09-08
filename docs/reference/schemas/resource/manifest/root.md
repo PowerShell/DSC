@@ -101,6 +101,27 @@ ItemsType:         string
 ItemsPattern:      ^\w+$
 ```
 
+### export
+
+The `export` property defines how to call the resource to get the current state of every instance.
+When this property is defined, users can:
+
+- Specify an instance of the resource in the input configuration for the [dsc config export][02]
+  command to generate an usable configuration document.
+- Specify the resource with the [dsc resource export][03] command to generate a configuration
+  document that defines every instance of the resource.
+- Specify the resource with the [dsc resource get][04] command and the [--all][05] option to return
+  the current state for every instance of the resource.
+
+The value of this property must be an object. The object's `executable` property, defining the name
+of the command to call, is mandatory. The `args` property is optional. For more
+information, see [DSC Resource manifest export property schema reference][06].
+
+```yaml
+Type:     object
+Required: true
+```
+
 ### get
 
 The `get` property defines how to call the resource to get the current state of an instance. This
@@ -108,7 +129,7 @@ property is mandatory for all resources.
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` and `input` properties are optional. For more
-information, see [DSC Resource manifest get property schema reference][02].
+information, see [DSC Resource manifest get property schema reference][07].
 
 ```yaml
 Type:     object
@@ -124,7 +145,7 @@ test whether the instance is in the desired state.
 
 The value of this property must be an object. The `executable` property, defining the name of the
 command to call, is mandatory. The `args` `input`, `preTest`, and `returns` properties are
-optional. For more information, see [DSC Resource manifest set property schema reference][03].
+optional. For more information, see [DSC Resource manifest set property schema reference][08].
 
 ```yaml
 Type:     object
@@ -139,7 +160,7 @@ property isn't defined, DSC performs a basic synthetic test for instances of the
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` `input`, and `returns` properties are optional.
-For more information, see [DSC Resource manifest test property schema reference][04].
+For more information, see [DSC Resource manifest test property schema reference][09].
 
 ```yaml
 Type:     object
@@ -153,7 +174,7 @@ property is mandatory for DSC Group Resources. DSC ignores this property for all
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` property is optional. For more information, see
-[DSC Resource manifest validate property schema reference][05].
+[DSC Resource manifest validate property schema reference][10].
 
 ```yaml
 Type:     object
@@ -167,7 +188,7 @@ When specified, the `provider` property defines the resource as a DSC Resource P
 The value of this property must be an object. The object's `list` and `config` properties are
 mandatory. The `list` property defines how to call the provider to return the resources that the
 provider can manage. The `config` property defines how the provider expects input. For more
-information, see the [DSC Resource manifest provider property schema reference][06].
+information, see the [DSC Resource manifest provider property schema reference][11].
 
 ### exitCodes
 
@@ -196,7 +217,7 @@ resource. This property must always be an object that defines one of the followi
 - `embedded` - When you specify the `embedded` property, DSC uses the defined value as the JSON
   schema.
 
-For more information, see [DSC Resource manifest schema property reference][07].
+For more information, see [DSC Resource manifest schema property reference][12].
 
 ```yaml
 Type:     object
@@ -204,9 +225,14 @@ Required: true
 ```
 
 [01]: ../../definitions/resourceType.md
-[02]: get.md
-[03]: set.md
-[04]: test.md
-[05]: validate.md
-[06]: provider.md
-[07]: schema/property.md
+[02]: ../../../cli/config/export.md
+[03]: ../../../cli/resource/export.md
+[04]: ../../../cli/resource/get.md
+[05]: ../../../cli/resource/get.md#a---all
+[06]: export.md
+[07]: get.md
+[08]: set.md
+[09]: test.md
+[10]: validate.md
+[11]: provider.md
+[12]: schema/property.md
