@@ -33,4 +33,18 @@ Describe 'osinfo resource tests' {
         $out.actualState.edition | Should -BeExactly $actual.actualState.edition
         $out.differingproperties | Should -Be @('family')
     }
+
+    It 'should support export' {
+        $out = dsc resource export -r Microsoft/osinfo | ConvertFrom-Json
+        $out.actualState.'$id' | Should -BeExactly ' https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json'
+        if ($IsWindows) {
+            $out.actualState.family | Should -BeExactly 'Windows'
+        }
+        elseif ($IsLinux) {
+            $out.actualState.family | Should -BeExactly 'Linux'
+        }
+        elseif ($IsMacOS) {
+            $out.actualState.family | Should -BeExactly 'MacOS'
+        }
+    }
 }
