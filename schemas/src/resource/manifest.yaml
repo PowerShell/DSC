@@ -110,6 +110,8 @@ properties:
         characters are permitted.
   get:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.get.yaml
+  export:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.export.yaml
   set:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.set.yaml
   test:
