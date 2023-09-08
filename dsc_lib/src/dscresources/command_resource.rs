@@ -200,6 +200,21 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     }
 }
 
+/// Invoke the validate operation against a command resource.
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource manifest for the command resource.
+/// * `cwd` - The current working directory.
+/// * `config` - The configuration to validate in JSON.
+/// 
+/// # Returns
+/// 
+/// * `ValidateResult` - The result of the validate operation.
+/// 
+/// # Errors
+/// 
+/// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> Result<ValidateResult, DscError> {
     // TODO: use schema to validate config if validate is not implemented
     let Some(validate) = resource.validate.as_ref() else {
@@ -255,14 +270,27 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
     }
 }
 
+/// Invoke the export operation on a resource
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource manifest
+/// * `cwd` - The current working directory
+/// 
+/// # Returns
+/// 
+/// * `ExportResult` - The result of the export operation
+/// 
+/// # Errors
+/// 
+/// Error returned if the resource does not successfully export the current state
 pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportResult, DscError> {
 
-    if resource.export.is_none()
-    {
+    let Some(export) = resource.export.as_ref() else {
         return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
-    }
+    };
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.export.clone().unwrap().executable, resource.export.clone().unwrap().args.clone(), None, Some(cwd))?;
+    let (exit_code, stdout, stderr) = invoke_command(&export.executable, export.args.clone(), None, Some(cwd))?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -272,7 +300,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportRes
         let instance: Value = match serde_json::from_str(line){
             Result::Ok(r) => {r},
             Result::Err(err) => {
-                return Err(DscError::Operation(format!("Failed to parse json from export {}|{}|{} -> {err}", &resource.export.clone().unwrap().executable, stdout, stderr)))
+                return Err(DscError::Operation(format!("Failed to parse json from export {}|{}|{} -> {err}", &export.executable, stdout, stderr)))
             }
         };
         instances.push(instance);

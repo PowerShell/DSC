@@ -94,6 +94,8 @@ impl Default for StreamMessage {
 }
 
 impl StreamMessage {
+    /// Create a new message
+    #[must_use]
     pub fn new() -> Self {
         Self {
             message: String::new(),
@@ -103,6 +105,19 @@ impl StreamMessage {
             resource_path: String::new(),
         }
     }
+
+    /// Create a new error message
+    /// 
+    /// # Arguments
+    /// 
+    /// * `message` - The message to display
+    /// * `resource_type_name` - The name of the resource type
+    /// * `resource_path` - The path to the resource
+    /// 
+    /// # Returns
+    /// 
+    /// * `StreamMessage` - The new message
+    #[must_use]
     pub fn new_error(message: String, resource_type_name: Option<String>, resource_path: Option<String>) -> StreamMessage {
         StreamMessage {
             message,
@@ -112,6 +127,19 @@ impl StreamMessage {
             resource_path: resource_path.unwrap_or("None".to_string())
         }
     }
+
+    /// Create a new warning message
+    /// 
+    /// # Arguments
+    /// 
+    /// * `message` - The message to display
+    /// * `resource_type_name` - The name of the resource type
+    /// * `resource_path` - The path to the resource
+    /// 
+    /// # Returns
+    /// 
+    /// * `StreamMessage` - The new message
+    #[must_use]
     pub fn new_warning(message: String, resource_type_name: Option<String>, resource_path: Option<String>) -> StreamMessage {
         StreamMessage {
             message,
@@ -121,6 +149,17 @@ impl StreamMessage {
             resource_path: resource_path.unwrap_or("None".to_string())
         }
     }
+
+    /// Print the message to the console
+    /// 
+    /// # Arguments
+    /// 
+    /// * `error_format` - The format to use for error messages
+    /// * `warning_format` - The format to use for warning messages
+    /// 
+    /// # Errors
+    /// 
+    /// * `DscError` - If there is an error writing to the console
     pub fn print(&self, error_format:&StreamMessageType, warning_format:&StreamMessageType) -> Result<(), DscError>{
         if self.message_type == StreamMessageType::Error
         {

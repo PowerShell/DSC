@@ -27,19 +27,31 @@ pub enum ErrorAction {
     Stop,
 }
 
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration) {
-    let export_result = resource.export().unwrap();
+/// Add the results of an export operation to a configuration.
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource to export.
+/// * `conf` - The configuration to add the results to.
+///
+/// # Errors
+/// 
+/// This function will return an error if the underlying resource fails.
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration) -> Result<(), DscError> {
+    let export_result = resource.export()?;
 
     for (i, instance) in export_result.actual_state.iter().enumerate()
     {
         let mut r = config_doc::Resource::new();
         r.resource_type = resource.type_name.clone();
         r.name = format!("{}-{i}", r.resource_type);
-        let props: HashMap<String, serde_json::Value> = serde_json::from_value(instance.clone()).unwrap();
+        let props: HashMap<String, serde_json::Value> = serde_json::from_value(instance.clone())?;
         r.properties = Some(props);
 
         conf.resources.push(r);
     }
+
+    Ok(())
 }
 
 impl Configurator {
@@ -190,6 +202,20 @@ impl Configurator {
         result.into_iter().collect()
     }
 
+    /// Invoke the export operation on a configuration.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `error_action` - The error action to use.
+    /// * `progress_callback` - A callback to call when progress is made.
+    /// 
+    /// # Returns
+    /// 
+    /// * `ConfigurationExportResult` - The result of the export operation.
+    /// 
+    /// # Errors
+    /// 
+    /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
 
@@ -215,7 +241,7 @@ impl Configurator {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
-            add_resource_export_results_to_configuration(&dsc_resource, &mut conf);
+            add_resource_export_results_to_configuration(&dsc_resource, &mut conf)?;
         }
 
         result.result = Some(conf);

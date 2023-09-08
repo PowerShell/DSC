@@ -7,6 +7,19 @@ use crate::configure::config_doc::Resource;
 use crate::configure::Configuration;
 use crate::DscError;
 
+/// Gets the invocation order of resources based on their dependencies
+/// 
+/// # Arguments
+/// 
+/// * `config` - The configuration to get the invocation order for
+/// 
+/// # Returns
+/// 
+/// * `Result<Vec<Resource>, DscError>` - The invocation order of resources
+/// 
+/// # Errors
+/// 
+/// * `DscError::Validation` - The configuration is invalid
 pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resource>, DscError> {
     let mut order: Vec<Resource> = Vec::new();
     let depends_on_regex = Regex::new(r"^\[resourceId\(\s*'(?<type>[a-zA-Z0-9\.]+/[a-zA-Z0-9]+)'\s*,\s*'(?<name>[a-zA-Z0-9 ]+)'\s*\)]$")?;
@@ -17,17 +30,14 @@ pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resou
         }
 
         let mut dependency_already_in_order = true;
-        if resource.depends_on.is_some() {
-            let depends_on = resource.depends_on.clone().unwrap();
+        if let Some(depends_on) = resource.depends_on.clone() {
             for dependency in depends_on {
-                // validate syntax of dependency
-                if !depends_on_regex.is_match(&dependency) {
-                    return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect for resource name '{0}': {dependency}", resource.name)));
-                }
-
                 // validate dependency exists
-                let resource_type = depends_on_regex.captures(&dependency).unwrap().name("type").unwrap().as_str();
-                let resource_name = depends_on_regex.captures(&dependency).unwrap().name("name").unwrap().as_str();
+                let Some(captures) = depends_on_regex.captures(&dependency) else {
+                  return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect for resource name '{0}': {dependency}", resource.name)));
+                };
+                let resource_type = captures.name("type").ok_or(DscError::Validation("Resource type missing".to_string()))?.as_str();
+                let resource_name = captures.name("name").ok_or(DscError::Validation("Resource name missing".to_string()))?.as_str();
                 // find the resource by name
                 let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(resource_name)) else {
                     return Err(DscError::Validation(format!("'dependsOn' resource name '{resource_name}' does not exist for resource named '{0}'", resource.name)));
@@ -49,13 +59,19 @@ pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resou
         // make sure the resource is not already in the order
         if order.iter().any(|r| r.name == resource.name && r.resource_type == resource.resource_type) {
             // if dependencies were already in the order, then this might be a circular dependency
-            if resource.depends_on.is_some() && dependency_already_in_order {
+            if dependency_already_in_order {
+                let Some(ref depends_on) = resource.depends_on else {
+                  continue;
+                };
                 // check if the order has resource before its dependencies
-                let resource_index = order.iter().position(|r| r.name == resource.name && r.resource_type == resource.resource_type).unwrap();
-                for dependency in resource.depends_on.clone().unwrap() {
-                    let resource_type = depends_on_regex.captures(&dependency).unwrap().name("type").unwrap().as_str();
-                    let resource_name = depends_on_regex.captures(&dependency).unwrap().name("name").unwrap().as_str();
-                    let dependency_index = order.iter().position(|r| r.name == resource_name && r.resource_type == resource_type).unwrap();
+                let resource_index = order.iter().position(|r| r.name == resource.name && r.resource_type == resource.resource_type).ok_or(DscError::Validation("Resource not found in order".to_string()))?;
+                for dependency in depends_on {
+                    let Some(captures) = depends_on_regex.captures(dependency) else {
+                      return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect for resource name '{0}': {dependency}", resource.name)));
+                    };
+                    let resource_type = captures.name("type").ok_or(DscError::Validation("Resource type not found in dependency".to_string()))?.as_str();
+                    let resource_name = captures.name("name").ok_or(DscError::Validation("Resource name not found in dependency".to_string()))?.as_str();
+                    let dependency_index = order.iter().position(|r| r.name == resource_name && r.resource_type == resource_type).ok_or(DscError::Validation("Dependency not found in order".to_string()))?;
                     if resource_index < dependency_index {
                         return Err(DscError::Validation(format!("Circular dependency detected for resource named '{0}'", resource.name)));
                     }

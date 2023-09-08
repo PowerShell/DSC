@@ -18,10 +18,9 @@ pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
     let mut input = get_input(input, stdin);
     let mut resource = get_resource(dsc, resource);
     //TODO: add to debug stream: println!("handle_resource_get - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if resource.requires.is_some()
-    {
+    if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &resource.requires.clone().unwrap());
+        resource = get_resource(dsc, &requires.clone());
     }
 
     //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
@@ -79,10 +78,9 @@ pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
 
     //TODO: add to debug stream: println!("handle_resource_set - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
-    if resource.requires.is_some()
-    {
+    if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &resource.requires.clone().unwrap());
+        resource = get_resource(dsc, &requires.clone());
     }
 
     //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
@@ -112,10 +110,9 @@ pub fn test(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin:
 
     //TODO: add to debug stream: println!("handle_resource_test - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
-    if resource.requires.is_some()
-    {
+    if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &resource.requires.clone().unwrap());
+        resource = get_resource(dsc, &requires.clone());
     }
 
     //TODO: add to debug stream: println!("handle_resource_test - input - {}", input);
@@ -165,7 +162,13 @@ pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
 
     let mut conf = Configuration::new();
 
-    add_resource_export_results_to_configuration(&dsc_resource, &mut conf);
+    match add_resource_export_results_to_configuration(&dsc_resource, &mut conf) {
+        Ok(_) => (),
+        Err(err) => {
+            eprintln!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
 
     let json = match serde_json::to_string(&conf) {
         Ok(json) => json,

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::config::{EnsureKind, RegistryConfig, RegistryValueData};
+use crate::config::{EnsureKind, Registry, RegistryValueData};
 use ntreg::{registry_key::RegistryKey, registry_value::RegistryValueData as NtRegistryValueData, registry_value::RegistryValue};
 use ntstatuserror::{NtStatusError, NtStatusErrorKind};
 use std::fmt::{Display, Formatter};
@@ -22,15 +22,14 @@ impl From<NtStatusError> for RegistryError {
 impl Display for RegistryError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            RegistryError::NtStatus(err) => write!(f, "{}", err),
-            RegistryError::Json(err) => write!(f, "{}", err),
-            RegistryError::Input(err) => write!(f, "{}", err),
+            RegistryError::NtStatus(err) => write!(f, "{err}"),
+            RegistryError::Json(err) | RegistryError::Input(err) => write!(f, "{err}"),
         }
     }
 }
 
-pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
-    let mut reg_result = RegistryConfig::default();
+pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
+    let mut reg_result = Registry::default();
 
     let reg_key = match RegistryKey::new(config.key_path.as_str()) {
         Ok(reg_key) => reg_key,
@@ -75,8 +74,8 @@ pub fn config_get(config: &RegistryConfig) -> Result<String, RegistryError> {
     }
 }
 
-pub fn config_set(config: &RegistryConfig) -> Result<String, RegistryError> {
-    let mut reg_result: RegistryConfig = RegistryConfig::default();
+pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
+    let mut reg_result: Registry = Registry::default();
     let reg_key: RegistryKey;
     match &config.value_name {
         None => {
@@ -142,7 +141,7 @@ fn get_parent_key_path(key_path: &str) -> Result<&str, RegistryError> {
     match key_path.rfind('\\') {
         Some(index) => Ok(&key_path[..index]),
         None => {
-            Err(RegistryError::Input(format!("Invalid key path: {}", key_path)))
+            Err(RegistryError::Input(format!("Invalid key path: {key_path}")))
         }
     }
 }
@@ -215,7 +214,7 @@ fn get_valid_parent_key_and_subkeys(key_path: &str) -> Result<(RegistryKey, Vec<
     Ok((parent_key, subkeys))
 }
 
-pub fn validate_config(config: &RegistryConfig) -> Result<(), RegistryError>{
+pub fn validate_config(config: &Registry) -> Result<(), RegistryError>{
     if config.value_data.is_some() && config.value_name.is_none() {
         return Err(RegistryError::Input("value_name is required when value_data is specified.".to_string()));
     }
@@ -223,7 +222,7 @@ pub fn validate_config(config: &RegistryConfig) -> Result<(), RegistryError>{
     Ok(())
 }
 
-pub fn config_test(config: &RegistryConfig) -> Result<String, RegistryError> {
+pub fn config_test(config: &Registry) -> Result<String, RegistryError> {
     if config.value_name.is_none() {
         Ok(test_key(config)?)
     }
@@ -232,8 +231,8 @@ pub fn config_test(config: &RegistryConfig) -> Result<String, RegistryError> {
     }
 }
 
-fn test_value(config: &RegistryConfig) -> Result<String, RegistryError> {
-    let mut reg_result: RegistryConfig = Default::default();
+fn test_value(config: &Registry) -> Result<String, RegistryError> {
+    let mut reg_result: Registry = Registry::default();
     let mut in_desired_state = true;
 
     let reg_key = match RegistryKey::new(config.key_path.as_str()) {
@@ -293,7 +292,7 @@ fn test_value(config: &RegistryConfig) -> Result<String, RegistryError> {
     Ok(reg_result.to_json())
 }
 
-fn reg_values_are_eq(config: &RegistryConfig, reg_value: &RegistryValue) -> Result<bool, RegistryError> {
+fn reg_values_are_eq(config: &Registry, reg_value: &RegistryValue) -> Result<bool, RegistryError> {
     let mut in_desired_state = true;
 
     if !reg_value.name.eq(config.value_name.as_ref().unwrap().as_str()) {
@@ -308,7 +307,7 @@ fn reg_values_are_eq(config: &RegistryConfig, reg_value: &RegistryValue) -> Resu
     }
     else {
         let reg_value_data = convert_ntreg_data(&reg_value.data)?;
-        if reg_value_data != config.value_data.to_owned().unwrap() {
+        if reg_value_data != config.value_data.clone().unwrap() {
             in_desired_state = false;
         }
     }
@@ -316,8 +315,8 @@ fn reg_values_are_eq(config: &RegistryConfig, reg_value: &RegistryValue) -> Resu
     Ok(in_desired_state)
 }
 
-fn test_key(config: &RegistryConfig) -> Result<String, RegistryError> {
-    let mut reg_result: RegistryConfig = Default::default();
+fn test_key(config: &Registry) -> Result<String, RegistryError> {
+    let mut reg_result: Registry = Registry::default();
 
     let key_exists = match RegistryKey::new(config.key_path.as_str()) {
         Ok( _ ) => {
@@ -386,7 +385,7 @@ fn test_registry_value_present() {
     }
     "#;
 
-    let config: RegistryConfig = serde_json::from_str(input_json).unwrap();
+    let config: Registry = serde_json::from_str(input_json).unwrap();
     let json = config_test(&config).unwrap();
     assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","valueName":"ProgramFilesPath","valueData":{"ExpandString":"%ProgramFiles%"},"_inDesiredState":true}"#);
 }
@@ -401,7 +400,7 @@ fn test_registry_value_absent() {
     }
     "#;
 
-    let config: RegistryConfig = serde_json::from_str(input_json).unwrap();
+    let config: Registry = serde_json::from_str(input_json).unwrap();
     let json = config_test(&config).unwrap();
     assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","_inDesiredState":true}"#);
 }
