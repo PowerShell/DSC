@@ -36,15 +36,15 @@ Describe 'osinfo resource tests' {
 
     It 'should support export' {
         $out = dsc resource export -r Microsoft/osinfo | ConvertFrom-Json
-        $out.actualState.'$id' | Should -BeExactly ' https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json'
+        $out.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
         if ($IsWindows) {
-            $out.actualState.family | Should -BeExactly 'Windows'
+            $out.resources[0].properties.family | Should -BeExactly 'Windows'
         }
         elseif ($IsLinux) {
-            $out.actualState.family | Should -BeExactly 'Linux'
+            $out.resources[0].properties.family | Should -BeExactly 'Linux'
         }
         elseif ($IsMacOS) {
-            $out.actualState.family | Should -BeExactly 'MacOS'
+            $out.resources[0].properties.family | Should -BeExactly 'MacOS'
         }
     }
 }
