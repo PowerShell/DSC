@@ -92,7 +92,7 @@ New-Item -ItemType Directory $target > $null
 
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 $projects = @("dsc_lib", "dsc", "osinfo", "process", "test_group_resource", "y2j", "powershellgroup")
-$pedantic_clean_projects = @("dsc_lib", "dsc", "osinfo", "process", "y2j", "pal", "ntstatuserror", "ntuserinfo", "test_group_resource", "sshdconfig")
+$pedantic_unclean_projects = @("ntreg")
 
 if ($IsWindows) {
     $projects += $windows_projects
@@ -108,13 +108,13 @@ foreach ($project in $projects) {
         if (Test-Path "./Cargo.toml")
         {
             if ($Clippy) {
-                if ($pedantic_clean_projcets -contains $project) {
-                    Write-Verbose -Verbose "Running clippy with pedantic for $project"
-                    cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
-                }
-                else {
+                if ($pedantic_unclean_projects -contains $project) {
                     Write-Verbose -Verbose "Running clippy for $project"
                     cargo clippy @flags -- -Dwarnings
+                }
+                else {
+                    Write-Verbose -Verbose "Running clippy with pedantic for $project"
+                    cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
                 }
             }
             else {

@@ -153,7 +153,7 @@ fn get_data_value(value_information: PKEY_VALUE_FULL_INFORMATION) -> RegistryVal
     };
 
     let data_ptr = unsafe {
-        (value_information as *const u8).add((*value_information).DataOffset as usize) as *const u8
+        (value_information as *const u8).add((*value_information).DataOffset as usize)
     };
 
     let data = unsafe {

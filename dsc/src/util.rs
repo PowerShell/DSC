@@ -21,7 +21,7 @@ use std::collections::HashMap;
 use std::process::exit;
 use syntect::{
     easy::HighlightLines,
-    highlighting::{Style, ThemeSet},
+    highlighting::ThemeSet,
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
@@ -34,6 +34,16 @@ pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
 
+/// Get string representation of JSON value.
+/// 
+/// # Arguments
+/// 
+/// * `json` - The JSON to convert
+/// 
+/// # Returns
+/// 
+/// * `String` - The JSON as a string
+#[must_use]
 pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
 {
     match serde_json::to_string(&json) {
@@ -45,6 +55,21 @@ pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
     }
 }
 
+/// Add fields to the JSON.
+/// 
+/// # Arguments
+/// 
+/// * `json` - The JSON to add the fields to
+/// * `fields_to_add` - The fields to add
+/// 
+/// # Returns
+/// 
+/// * `String` - The JSON with the fields added
+/// 
+/// # Errors
+/// 
+/// * `DscError` - The JSON is invalid
+#[allow(clippy::implicit_hasher)]
 pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -> Result<String, DscError>
 {
     let mut v = serde_json::from_str::<serde_json::Value>(json)?;
@@ -59,6 +84,17 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
     Ok(result)
 }
 
+/// Add the type property value to the JSON.
+/// 
+/// # Arguments
+/// 
+/// * `json` - The JSON to add the type property to
+/// * `type_name` - The type name to add
+/// 
+/// # Returns
+/// 
+/// * `String` - The JSON with the type property added
+#[must_use]
 pub fn add_type_name_to_json(json: String, type_name: String) -> String
 {
     let mut map:HashMap<String,String> = HashMap::new();
@@ -79,6 +115,16 @@ pub fn add_type_name_to_json(json: String, type_name: String) -> String
     }
 }
 
+/// Get the JSON schema for requested type.
+/// 
+/// # Arguments
+/// 
+/// * `dsc_type` - The type of schema to get
+/// 
+/// # Returns
+/// 
+/// * `RootSchema` - The schema
+#[must_use]
 pub fn get_schema(dsc_type: DscType) -> RootSchema {
     match dsc_type {
         DscType::GetResult => {
@@ -111,6 +157,12 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
     }
 }
 
+/// Write the output to the console
+/// 
+/// # Arguments
+/// 
+/// * `json` - The JSON to write
+/// * `format` - The format to use
 pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     let mut is_json = true;
     if atty::is(Stream::Stdout) {
@@ -153,16 +205,21 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
 
         let ps = SyntaxSet::load_defaults_newlines();
         let ts = ThemeSet::load_defaults();
-        let syntax = if is_json {
-            ps.find_syntax_by_extension("json").unwrap()
+        let Some(syntax) = (if is_json {
+            ps.find_syntax_by_extension("json")
         } else {
-            ps.find_syntax_by_extension("yaml").unwrap()
+            ps.find_syntax_by_extension("yaml")
+        }) else {
+            println!("{json}");
+            return;
         };
 
         let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
 
         for line in LinesWithEndings::from(&output) {
-            let ranges: Vec<(Style, &str)> = h.highlight_line(line, &ps).unwrap();
+            let Ok(ranges) = h.highlight_line(line, &ps) else {
+                continue;
+            };
             let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
             print!("{escaped}");
         }
