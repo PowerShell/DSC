@@ -17,7 +17,7 @@ use jsonschema::{JSONSchema, ValidationError};
 use serde_yaml::Value;
 use std::process::exit;
 
-pub fn config_get(configurator: Configurator, format: &Option<OutputFormat>)
+pub fn config_get(configurator: &Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -40,7 +40,7 @@ pub fn config_get(configurator: Configurator, format: &Option<OutputFormat>)
     }
 }
 
-pub fn config_set(configurator: Configurator, format: &Option<OutputFormat>)
+pub fn config_set(configurator: &Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_set(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -63,7 +63,7 @@ pub fn config_set(configurator: Configurator, format: &Option<OutputFormat>)
     }
 }
 
-pub fn config_test(configurator: Configurator, format: &Option<OutputFormat>)
+pub fn config_test(configurator: &Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -86,7 +86,7 @@ pub fn config_test(configurator: Configurator, format: &Option<OutputFormat>)
     }
 }
 
-pub fn config_export(configurator: Configurator, format: &Option<OutputFormat>)
+pub fn config_export(configurator: &Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_export(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -116,15 +116,15 @@ pub fn config_export(configurator: Configurator, format: &Option<OutputFormat>)
 }
 
 pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
-    if stdin.is_none() {
+    let Some(stdin) = stdin else {
         eprintln!("Configuration must be piped to STDIN");
         exit(EXIT_INVALID_ARGS);
-    }
+    };
 
-    let json: serde_json::Value = match serde_json::from_str(stdin.as_ref().unwrap()) {
+    let json: serde_json::Value = match serde_json::from_str(stdin.as_ref()) {
         Ok(json) => json,
         Err(_) => {
-            match serde_yaml::from_str::<Value>(stdin.as_ref().unwrap()) {
+            match serde_yaml::from_str::<Value>(stdin.as_ref()) {
                 Ok(yaml) => {
                     match serde_json::to_value(yaml) {
                         Ok(json) => json,
@@ -153,23 +153,24 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
 
     match subcommand {
         ConfigSubCommand::Get => {
-            config_get(configurator, format);
+            config_get(&configurator, format);
         },
         ConfigSubCommand::Set => {
-            config_set(configurator, format);
+            config_set(&configurator, format);
         },
         ConfigSubCommand::Test => {
-            config_test(configurator, format);
+            config_test(&configurator, format);
         },
         ConfigSubCommand::Validate => {
             validate_config(&json_string);
         },
         ConfigSubCommand::Export => {
-            config_export(configurator, format);
+            config_export(&configurator, format);
         }
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn validate_config(config: &str) {
     // first validate against the config schema
     let schema = match serde_json::to_value(get_schema(DscType::Configuration)) {
@@ -198,7 +199,7 @@ pub fn validate_config(config: &str) {
         for e in err {
             error.push_str(&format!("\n{e} "));
         }
-        eprintln!("{}", error);
+        eprintln!("{error}");
         exit(EXIT_INVALID_INPUT);
     };
 
@@ -211,7 +212,11 @@ pub fn validate_config(config: &str) {
     };
 
     // then validate each resource
-    for resource_block in config_value["resources"].as_array().unwrap().iter() {
+    let Some(resources) = config_value["resources"].as_array() else {
+        eprintln!("Error: Resources not specified");
+        exit(EXIT_INVALID_INPUT);
+    };
+    for resource_block in resources {
         let type_name = resource_block["type"].as_str().unwrap_or_else(|| {
             eprintln!("Error: Resource type not specified");
             exit(EXIT_INVALID_INPUT);
@@ -305,7 +310,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                 }
             };
             let mut write_table = false;
-            let mut table = Table::new(vec!["Type", "Version", "Requires", "Description"]);
+            let mut table = Table::new(&["Type", "Version", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if fornat is not specified and interactive
                 write_table = true;
@@ -313,11 +318,10 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
             for resource in dsc.find_resource(&resource_name.clone().unwrap_or_default()) {
                 // if description is specified, skip if resource description does not contain it
                 if description.is_some() || tags.is_some() {
-                    if resource.manifest.is_none() {
+                    let Some(ref resource_manifest) = resource.manifest else {
                         continue;
-                    }
-
-                    let resource_manifest = match serde_json::from_value::<ResourceManifest>(resource.clone().manifest.unwrap().clone()) {
+                    };
+                    let manifest = match serde_json::from_value::<ResourceManifest>(resource_manifest.clone()) {
                         Ok(resource_manifest) => resource_manifest,
                         Err(err) => {
                             eprintln!("Error in manifest for {0}: {err}", resource.type_name);
@@ -325,25 +329,20 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                         }
                     };
 
-                    if description.is_some() {
-                        if resource_manifest.description.is_none() {
-                            continue;
-                        }
-
-                        if !resource_manifest.description.unwrap().to_lowercase().contains(&description.as_ref().unwrap().to_lowercase()) {
-                            continue;
-                        }
+                    if description.is_some() &&
+                        (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
+                        continue;
                     }
 
                     // if tags is specified, skip if resource tags do not contain the tags
-                    if tags.is_some() {
-                        if resource_manifest.tags.is_none() {
+                    if let Some(tags) = tags {
+                        let Some(manifest_tags) = manifest.tags else {
                             continue;
-                        }
+                        };
 
                         let mut found = false;
-                        for tag_to_find in tags.clone().unwrap() {
-                            for tag in resource_manifest.tags.clone().unwrap() {
+                        for tag_to_find in tags {
+                            for tag in &manifest_tags {
                                 if tag.to_lowercase() == tag_to_find.to_lowercase() {
                                     found = true;
                                     break;
@@ -385,7 +384,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                 table.print();
             }
         },
-       ResourceSubCommand::Get { resource, input, all } => {
+        ResourceSubCommand::Get { resource, input, all } => {
             if *all { resource_command::get_all(&mut dsc, resource, input, stdin, format); }
             else { resource_command::get(&mut dsc, resource, input, stdin, format); };
         },

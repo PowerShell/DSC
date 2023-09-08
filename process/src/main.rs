@@ -48,15 +48,7 @@ fn main() {
                 }
                 exit(0);
             },
-            "get" => { // used for testing only
-                print_input();
-                exit(0);
-            },
-            "set" => { // used for testing only
-                print_input();
-                exit(0);
-            },
-            "test" => { // used for testing only
+            "get" | "set" | "test" => { // used for testing only
                 print_input();
                 exit(0);
             },

@@ -12,7 +12,7 @@ use clap::Parser;
 use schemars::schema_for;
 use std::{io::{self, Read}, process::exit};
 
-use crate::config::RegistryConfig;
+use crate::config::Registry;
 
 mod args;
 #[cfg(onecore)]
@@ -26,6 +26,7 @@ const EXIT_INVALID_INPUT: i32 = 2;
 const EXIT_REGISTRY_ERROR: i32 = 3;
 const EXIT_JSON_SERIALIZATION_FAILED: i32 = 4;
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     #[cfg(debug_assertions)]
     check_debug();
@@ -39,31 +40,28 @@ fn main() {
         let input = match String::from_utf8(buffer) {
             Ok(input) => input,
             Err(e) => {
-                eprintln!("Invalid UTF-8 sequence: {}", e);
+                eprintln!("Invalid UTF-8 sequence: {e}");
                 exit(EXIT_INVALID_INPUT);
             }
         };
         Some(input)
     };
 
-    let mut config: RegistryConfig = Default::default();
+    let mut config: Registry = Registry::default();
     // check if input is valid for subcommand
     match args.subcommand {
         args::SubCommand::Config { subcommand: _ } => {
-            match input {
-                Some(input) => {
+            if let Some(input) = input {
                     config = match serde_json::from_str(&input) {
                         Ok(config) => config,
                         Err(err) => {
-                            eprintln!("Error JSON does not match schema: {}", err);
+                            eprintln!("Error JSON does not match schema: {err}");
                             exit(EXIT_INVALID_INPUT);
                         }
                     };
-                },
-                None => {
-                    eprintln!("Error: Input JSON via STDIN is required for config subcommand.");
-                    exit(EXIT_INVALID_PARAMETER);
-                }
+            } else {
+                eprintln!("Error: Input JSON via STDIN is required for config subcommand.");
+                exit(EXIT_INVALID_PARAMETER);
             }
         }
         _ => {
@@ -76,26 +74,26 @@ fn main() {
 
     match args.subcommand {
         args::SubCommand::Query { key_path, value_name, recurse } => {
-            eprintln!("Get key_path: {}, value_name: {:?}, recurse: {}", key_path, value_name, recurse);
+            eprintln!("Get key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
         },
         args::SubCommand::Set { key_path, value } => {
-            eprintln!("Set key_path: {}, value: {}", key_path, value);
+            eprintln!("Set key_path: {key_path}, value: {value}");
         },
         args::SubCommand::Test => {
             eprintln!("Test");
         },
         args::SubCommand::Remove { key_path, value_name, recurse } => {
-            eprintln!("Remove key_path: {}, value_name: {:?}, recurse: {}", key_path, value_name, recurse);
+            eprintln!("Remove key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
         },
         args::SubCommand::Find { key_path, find, recurse, keys_only, values_only } => {
-            eprintln!("Find key_path: {}, find: {}, recurse: {:?}, keys_only: {:?}, values_only: {:?}", key_path, find, recurse, keys_only, values_only);
+            eprintln!("Find key_path: {key_path}, find: {find}, recurse: {recurse:?}, keys_only: {keys_only:?}, values_only: {values_only:?}");
         },
         args::SubCommand::Config { subcommand } => {
             let json: String;
             match regconfighelper::validate_config(&config) {
                 Ok(_) => {},
                 Err(err) => {
-                    eprintln!("Error validating config: {}", err);
+                    eprintln!("Error validating config: {err}");
                     exit(EXIT_INVALID_INPUT);
                 }
             }
@@ -111,7 +109,7 @@ fn main() {
                             json = config;
                         },
                         Err(err) => {
-                            eprintln!("Error getting config: {}", err);
+                            eprintln!("Error getting config: {err}");
                             exit(EXIT_REGISTRY_ERROR);
                         }
                     }
@@ -122,7 +120,7 @@ fn main() {
                             json = result;
                         },
                         Err(err) => {
-                            eprintln!("Error setting config: {}", err);
+                            eprintln!("Error setting config: {err}");
                             exit(EXIT_REGISTRY_ERROR);
                         }
                     }
@@ -133,7 +131,7 @@ fn main() {
                             json = result;
                         },
                         Err(err) => {
-                            eprintln!("Error testing config: {}", err);
+                            eprintln!("Error testing config: {err}");
                             exit(EXIT_REGISTRY_ERROR);
                         }
                     }
@@ -144,17 +142,17 @@ fn main() {
                 exit(EXIT_JSON_SERIALIZATION_FAILED);
             }
 
-            println!("{}", json);
+            println!("{json}");
         },
         args::SubCommand::Schema { pretty } => {
-            let schema = schema_for!(RegistryConfig);
+            let schema = schema_for!(Registry);
             let json = if pretty {
                 serde_json::to_string_pretty(&schema).unwrap()
             }
             else {
                 serde_json::to_string(&schema).unwrap()
             };
-            println!("{}", json);
+            println!("{json}");
         },
     }
 
@@ -167,15 +165,10 @@ fn check_debug() {
         eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
-            match event {
-                event::Event::Key(_key) => {
-                    break;
-                }
-                _ => {
-                    eprintln!("Unexpected event: {:?}", event);
-                    continue;
-                }
+            if let event::Event::Key(_key) = event {
+                break;
             }
+            eprintln!("Unexpected event: {event:?}");
         }
     }
 }
