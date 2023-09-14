@@ -35,7 +35,6 @@ stages:
 
     steps:
     - pwsh: |
-        rustup default stable
         rustup target add $(buildName)
         ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
@@ -46,23 +45,23 @@ stages:
       name: PowerShell1ES
       demands:
       - ImageOverride -equals PSMMSUbuntu20.04-Secure
-    strategy:
-      matrix:
-        Linux ARM64 GNU:
-          buildName: aarch64-unknown-linux-gnu
-        Linux ARM64 MUSL:
-          buildName: aarch64-unknown-linux-musl
-        Linux x64 GNU:
-          buildName: x86_64-unknown-linux-gnu
-        Linux x64 MUSL:
-          buildName: x86_64-unknown-linux-musl
     steps:
     - pwsh: |
         $env:PATH += ':~/.cargo/bin'
-        rustup default stable
-        rustup target add $(buildName)
-        ./build.ps1 -Release -Architecture $(buildName)
-      displayName: 'Build $(buildName)'
+        ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
+      displayName: 'Build x86_64-unknown-linux-gnu'
+
+  - job: BuildLinuxArm64
+    displayName: Linux ARM64
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMSUbuntu20.04-ARM64-Secure
+    steps:
+    - pwsh: |
+        $env:PATH += ':~/.cargo/bin'
+        ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
+      displayName: 'Build aarch64-unknown-linux-gnu'
 
   - job: BuildMac
     displayName: Build Native Binaries on macOS
