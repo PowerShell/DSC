@@ -58,6 +58,7 @@ stages:
           buildName: x86_64-unknown-linux-musl
     steps:
     - pwsh: |
+        $env:PATH += ':~/.cargo/bin'
         rustup default stable
         rustup target add $(buildName)
         ./build.ps1 -Release -Architecture $(buildName)
