@@ -56,7 +56,7 @@ stages:
     pool:
       name: PowerShell1ES
       demands:
-      - ImageOverride -equals PSMMSUbuntu20.04-ARM64-Secure
+      - ImageOverride -equals PSMMSUbuntu20.04-ARM64-secure
     steps:
     - pwsh: |
         $env:PATH += ':~/.cargo/bin'
