@@ -33,4 +33,18 @@ Describe 'osinfo resource tests' {
         $out.actualState.edition | Should -BeExactly $actual.actualState.edition
         $out.differingproperties | Should -Be @('family')
     }
+
+    It 'should support export' {
+        $out = dsc resource export -r Microsoft/osinfo | ConvertFrom-Json
+        $out.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
+        if ($IsWindows) {
+            $out.resources[0].properties.family | Should -BeExactly 'Windows'
+        }
+        elseif ($IsLinux) {
+            $out.resources[0].properties.family | Should -BeExactly 'Linux'
+        }
+        elseif ($IsMacOS) {
+            $out.resources[0].properties.family | Should -BeExactly 'MacOS'
+        }
+    }
 }
