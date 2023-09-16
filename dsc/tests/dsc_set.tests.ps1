@@ -3,23 +3,27 @@
 
 Describe 'config set tests' {
     BeforeEach {
-        $json = @'
-        {
-            "keyPath": "HKCU\\1\\2\\3",
-            "_ensure": "Absent"
-        }
+        if ($IsWindows) {
+            $json = @'
+            {
+                "keyPath": "HKCU\\1\\2\\3",
+                "_ensure": "Absent"
+            }
 '@
-        $json | registry config set
+            $json | registry config set
+        }
     }
 
     AfterEach {
-        $json = @'
-        {
-            "keyPath": "HKCU\\1",
-            "_ensure": "Absent"
-        }
+        if ($IsWindows) {
+            $json = @'
+            {
+                "keyPath": "HKCU\\1",
+                "_ensure": "Absent"
+            }
 '@
-        $json | registry config set
+            $json | registry config set
+        }
     }
 
     It 'can set and remove a registry value' -Skip:(!$IsWindows) {
@@ -61,5 +65,67 @@ Describe 'config set tests' {
         $result.afterState.keyPath | Should -BeNullOrEmpty
         $result.changedProperties | Should -Be @('keyPath')
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
+    }
+
+    It 'set can be used on a resource that does not implement test' {
+        $manifest = @'
+        {
+            "manifestVersion": "1.0.0",
+            "type": "Test/SetNoTest",
+            "version": "0.1.0",
+            "get": {
+                "executable": "pwsh",
+                "args": [
+                    "-NoLogo",
+                    "-NonInteractive",
+                    "-NoProfile",
+                    "-Command",
+                    "'{ \"test\": true }'"
+                ]
+            },
+            "set": {
+                "executable": "pwsh",
+                "input": "stdin",
+                "args": [
+                    "-NoLogo",
+                    "-NonInteractive",
+                    "-NoProfile",
+                    "-Command",
+                    "'{ \"test\": false }'"
+                ],
+                "return": "state"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "$id": "https://test",
+                    "title": "test",
+                    "description": "test",
+                    "type": "object",
+                    "required": [],
+                    "additionalProperties": false,
+                    "properties": {
+                        "test": {
+                            "type": "boolean",
+                            "description": "test"
+                        }
+                    }
+                }
+            }
+        }
+'@
+
+        Set-Content -Path "$TestDrive/SetNoTest.dsc.resource.json" -Value $manifest
+        $oldPath = $env:DSC_RESOURCE_PATH
+        try {
+            $env:DSC_RESOURCE_PATH = $TestDrive
+            $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.BeforeState.test | Should -Be $true
+            $out.AfterState.test | Should -Be $false
+        }
+        finally {
+            $env:DSC_RESOURCE_PATH = $oldPath
+        }
     }
 }

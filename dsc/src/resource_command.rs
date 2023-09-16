@@ -74,6 +74,11 @@ pub fn get_all(dsc: &mut DscManager, resource: &str, _input: &Option<String>, _s
 
 pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
+    if input.is_empty() {
+        eprintln!("Error: Input is empty");
+        exit(EXIT_INVALID_ARGS);
+    }
+
     let mut resource = get_resource(dsc, resource);
 
     //TODO: add to debug stream: println!("handle_resource_set - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
@@ -85,7 +90,7 @@ pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
 
     //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
 
-    match resource.set(input.as_str()) {
+    match resource.set(input.as_str(), true) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {

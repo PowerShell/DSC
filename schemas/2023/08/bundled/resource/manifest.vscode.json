@@ -255,12 +255,12 @@
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json"
                       },
-                      "preTest": {
+                      "implementsPreTest": {
                         "title": "Resource Performs Pre-Test",
                         "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
                         "type": "boolean",
                         "default": false,
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines whether the DSC Resource performs its own test to ensure idempotency when calling the\n`set` command. Set this value to `true` if the DSC Resource tests input before modifying\nsystem state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true#pretest\n"
+                        "markdownDescription": "> [Online Documentation][01]\n\nDefines whether the DSC Resource performs its own test to ensure idempotency when calling the\n`set` command. Set this value to `true` if the DSC Resource tests input before modifying\nsystem state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true#implementsPreTest\n"
                       },
                       "return": {
                         "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
@@ -280,7 +280,7 @@
                           "set"
                         ],
                         "input": "stdin",
-                        "preTest": true,
+                        "implementsPreTest": true,
                         "return": "state"
                       }
                     ]

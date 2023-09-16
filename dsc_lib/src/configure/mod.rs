@@ -28,14 +28,14 @@ pub enum ErrorAction {
 }
 
 /// Add the results of an export operation to a configuration.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
 ///
 /// # Errors
-/// 
+///
 /// This function will return an error if the underlying resource fails.
 pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration) -> Result<(), DscError> {
     let export_result = resource.export()?;
@@ -119,7 +119,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_set(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
+    pub fn invoke_set(&self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
         result.messages = messages;
@@ -133,7 +133,7 @@ impl Configurator {
             };
             //TODO: add to debug stream:println!("{}", &resource.resource_type);
             let desired = serde_json::to_string(&resource.properties)?;
-            let set_result = dsc_resource.set(&desired)?;
+            let set_result = dsc_resource.set(&desired, skip_test)?;
             let resource_result = config_result::ResourceSetResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
@@ -203,18 +203,18 @@ impl Configurator {
     }
 
     /// Invoke the export operation on a configuration.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `error_action` - The error action to use.
     /// * `progress_callback` - A callback to call when progress is made.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `ConfigurationExportResult` - The result of the export operation.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;

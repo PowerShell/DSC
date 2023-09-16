@@ -107,7 +107,7 @@ pub struct SetMethod {
     /// How to pass required input for a Set.
     pub input: InputKind,
     /// Whether to run the Test method before the Set method.  True means the resource will perform its own test before running the Set method.
-    #[serde(rename = "preTest", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "implementsPreTest", skip_serializing_if = "Option::is_none")]
     pub pre_test: Option<bool>,
     /// The type of return value expected from the Set method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
