@@ -20,7 +20,7 @@ pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
     //TODO: add to debug stream: println!("handle_resource_get - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
     if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &requires.clone());
+        resource = get_resource(dsc, &requires);
     }
 
     //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
@@ -85,7 +85,7 @@ pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
 
     if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &requires.clone());
+        resource = get_resource(dsc, &requires);
     }
 
     //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
@@ -117,7 +117,7 @@ pub fn test(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin:
 
     if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &requires.clone());
+        resource = get_resource(dsc, &requires);
     }
 
     //TODO: add to debug stream: println!("handle_resource_test - input - {}", input);
