@@ -20,7 +20,7 @@
             "set"
         ],
         "input": "stdin",
-        "implementsPreTest": false,
+        "implementsPretest": false,
         "return": "state"
     },
     "schema": {

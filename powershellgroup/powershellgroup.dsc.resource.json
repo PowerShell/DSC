@@ -39,7 +39,7 @@
         "$Input | ./powershellgroup.resource.ps1 Set"
       ],
       "input": "stdin",
-      "implementsPreTest": true,
+      "implementsPretest": true,
       "return": "state"
       },
     "test": {
