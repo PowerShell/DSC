@@ -49,17 +49,18 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 ///
 /// * `resource` - The resource manifest
 /// * `desired` - The desired state of the resource in JSON
+/// * `skip_test` - If true, skip the test and directly invoke the set operation
 ///
 /// # Errors
 ///
 /// Error returned if the resource does not successfully set the desired state
-pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
     let Some(set) = resource.set.as_ref() else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
-    if !set.pre_test.unwrap_or_default() {
+    if !skip_test && !set.pre_test.unwrap_or_default() {
         let test_result = invoke_test(resource, cwd, desired)?;
         if test_result.in_desired_state {
             return Ok(SetResult {
@@ -201,19 +202,19 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 }
 
 /// Invoke the validate operation against a command resource.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `resource` - The resource manifest for the command resource.
 /// * `cwd` - The current working directory.
 /// * `config` - The configuration to validate in JSON.
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `ValidateResult` - The result of the validate operation.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> Result<ValidateResult, DscError> {
     // TODO: use schema to validate config if validate is not implemented
@@ -271,18 +272,18 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 }
 
 /// Invoke the export operation on a resource
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `resource` - The resource manifest
 /// * `cwd` - The current working directory
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `ExportResult` - The result of the export operation
-/// 
+///
 /// # Errors
-/// 
+///
 /// Error returned if the resource does not successfully export the current state
 pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportResult, DscError> {
 

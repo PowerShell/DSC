@@ -42,7 +42,7 @@ pub fn config_get(configurator: &Configurator, format: &Option<OutputFormat>)
 
 pub fn config_set(configurator: &Configurator, format: &Option<OutputFormat>)
 {
-    match configurator.invoke_set(ErrorAction::Continue, || { /* code */ }) {
+    match configurator.invoke_set(false, ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,

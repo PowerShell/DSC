@@ -18,7 +18,7 @@
       "test"
     ],
     "input": "stdin",
-    "preTest": true,
+    "implementsPretest": true,
     "return": "state"
   },
   "test": {

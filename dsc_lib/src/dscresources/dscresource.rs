@@ -86,11 +86,12 @@ pub trait Invoke {
     /// # Arguments
     ///
     /// * `desired` - The desired state as JSON to apply to the resource.
+    /// * `skip_test` - Whether to skip the test operation.
     ///
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn set(&self, desired: &str) -> Result<SetResult, DscError>;
+    fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError>;
 
     /// Invoke the test operation on the resource.
     ///
@@ -145,7 +146,7 @@ impl Invoke for DscResource {
         }
     }
 
-    fn set(&self, desired: &str) -> Result<SetResult, DscError> {
+    fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -155,7 +156,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired)
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test)
             },
         }
     }

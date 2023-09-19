@@ -172,7 +172,7 @@
         "input": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json"
         },
-        "preTest": {
+        "implementsPretest": {
           "title": "Resource Performs Pre-Test",
           "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
           "type": "boolean",
@@ -190,7 +190,7 @@
           "set"
         ],
         "input": "stdin",
-        "preTest": true,
+        "implementsPretest": true,
         "return": "state"
       }
     },
