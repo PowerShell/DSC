@@ -93,7 +93,7 @@ impl ResourceDiscovery for CommandDiscovery {
             let manifest = serde_json::from_value::<ResourceManifest>(provider_resource.manifest.clone().unwrap())?;
             // invoke the list command
             let list_command = manifest.provider.unwrap().list;
-            let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args, None, Some(&provider_resource.directory))
+            let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args, None, Some(&provider_resource.directory), None)
             {
                 Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
                 Err(e) => {
