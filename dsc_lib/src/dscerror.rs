@@ -25,6 +25,9 @@ pub enum DscError {
     #[error("Invalid configuration:\n{0}")]
     InvalidConfiguration(String),
 
+    #[error("Unsupported manifest version: {0}.  Must be: {1}")]
+    InvalidManifestSchemaVersion(String, String),
+
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
 
@@ -107,15 +110,15 @@ impl StreamMessage {
     }
 
     /// Create a new error message
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `message` - The message to display
     /// * `resource_type_name` - The name of the resource type
     /// * `resource_path` - The path to the resource
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `StreamMessage` - The new message
     #[must_use]
     pub fn new_error(message: String, resource_type_name: Option<String>, resource_path: Option<String>) -> StreamMessage {
@@ -129,15 +132,15 @@ impl StreamMessage {
     }
 
     /// Create a new warning message
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `message` - The message to display
     /// * `resource_type_name` - The name of the resource type
     /// * `resource_path` - The path to the resource
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `StreamMessage` - The new message
     #[must_use]
     pub fn new_warning(message: String, resource_type_name: Option<String>, resource_path: Option<String>) -> StreamMessage {
@@ -151,14 +154,14 @@ impl StreamMessage {
     }
 
     /// Print the message to the console
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `error_format` - The format to use for error messages
     /// * `warning_format` - The format to use for warning messages
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// * `DscError` - If there is an error writing to the console
     pub fn print(&self, error_format:&StreamMessageType, warning_format:&StreamMessageType) -> Result<(), DscError>{
         if self.message_type == StreamMessageType::Error

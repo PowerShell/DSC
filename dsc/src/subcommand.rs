@@ -11,7 +11,7 @@ use dsc_lib::{
     configure::{Configurator, ErrorAction},
     DscManager,
     dscresources::dscresource::{ImplementedAs, Invoke},
-    dscresources::resource_manifest::ResourceManifest,
+    dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
 use jsonschema::{JSONSchema, ValidationError};
 use serde_yaml::Value;
@@ -321,7 +321,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                     let Some(ref resource_manifest) = resource.manifest else {
                         continue;
                     };
-                    let manifest = match serde_json::from_value::<ResourceManifest>(resource_manifest.clone()) {
+                    let manifest = match import_manifest(resource_manifest.clone()) {
                         Ok(resource_manifest) => resource_manifest,
                         Err(err) => {
                             eprintln!("Error in manifest for {0}: {err}", resource.type_name);

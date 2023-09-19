@@ -6,12 +6,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
+use crate::dscerror::DscError;
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceManifest {
     /// The version of the resource manifest schema.
-    #[serde(rename = "manifestVersion")]
-    pub manifest_version: String,
+    #[serde(rename = "$schema")]
+    pub schema_version: String,
     /// The namespaced name of the resource.
     #[serde(rename = "type")]
     pub resource_type: String,
@@ -167,4 +169,27 @@ pub struct ListMethod {
     pub executable: String,
     /// The arguments to pass to the command to perform a List.
     pub args: Option<Vec<String>>,
+}
+
+/// Import a resource manifest from a JSON value.
+///
+/// # Arguments
+///
+/// * `manifest` - The JSON value to import.
+///
+/// # Returns
+///
+/// * `Result<ResourceManifest, DscError>` - The imported resource manifest.
+///
+/// # Errors
+///
+/// * `DscError` - The JSON value is invalid or the schema version is not supported.
+pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
+    const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json";
+    let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
+    if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
+        return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
+    }
+
+    Ok(manifest)
 }
