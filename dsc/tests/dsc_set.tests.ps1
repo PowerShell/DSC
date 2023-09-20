@@ -70,7 +70,7 @@ Describe 'config set tests' {
     It 'set can be used on a resource that does not implement test' {
         $manifest = @'
         {
-            "manifestVersion": "1.0.0",
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
             "type": "Test/SetNoTest",
             "version": "0.1.0",
             "get": {

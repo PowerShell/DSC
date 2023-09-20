@@ -22,7 +22,7 @@ Describe 'Resource provider tests' {
     It 'Error if provider resource is missing "requires" member' {
         $invalid_manifest = @'
         {
-            "manifestVersion": "1.0",
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
             "type": "Test/InvalidTestGroup",
             "version": "0.1.0",
             "get": {
