@@ -1,6 +1,8 @@
-host:    https://raw.githubusercontent.com
-prefix:  PowerShell/DSC/main/schemas
-version: 2023/08
+host:             https://raw.githubusercontent.com
+prefix:           PowerShell/DSC/main/schemas
+version:          2023/08
+docs_base_url:    https://learn.microsoft.com/powershell/dsc
+docs_version_pin: view=dsc-3.0&preserve-view=true
 bundle_schemas:
   # Resource manifest bundle
   - ConfigFilePath:  resource/manifest.json

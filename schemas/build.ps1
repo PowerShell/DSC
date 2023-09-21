@@ -38,6 +38,8 @@ begin {
         [string]$SchemaHost
         [string]$SchemaPrefix
         [string]$SchemaVersion
+        [string]$DocsBaseUrl
+        [string]$DocsVersionPin
 
         LocalJsonSchemaRegistry() {
             $this.FileMap = [Specialized.OrderedDictionary]::new()
@@ -48,14 +50,18 @@ begin {
         LocalJsonSchemaRegistry(
             [string]$SchemaHost,
             [string]$SchemaPrefix,
-            [string]$SchemaVersion
+            [string]$SchemaVersion,
+            [string]$DocsBaseUrl,
+            [string]$DocsVersionPin
         ) {
-            $this.SchemaHost    = $SchemaHost
-            $this.SchemaPrefix  = $SchemaPrefix
-            $this.SchemaVersion = $SchemaVersion
-            $this.FileMap       = [Specialized.OrderedDictionary]::new()
-            $this.Map           = [Specialized.OrderedDictionary]::new()
-            $this.List          = [Generic.List[Specialized.OrderedDictionary]]::new()
+            $this.SchemaHost     = $SchemaHost
+            $this.SchemaPrefix   = $SchemaPrefix
+            $this.SchemaVersion  = $SchemaVersion
+            $this.DocsBaseUrl    = $DocsBaseUrl
+            $this.DocsVersionPin = $DocsVersionPin
+            $this.FileMap        = [Specialized.OrderedDictionary]::new()
+            $this.Map            = [Specialized.OrderedDictionary]::new()
+            $this.List           = [Generic.List[Specialized.OrderedDictionary]]::new()
         }
 
     }
@@ -128,11 +134,19 @@ begin {
             [string[]]$SchemaDirectories = @(),
             [string]$SchemaHost          = 'https://raw.githubusercontent.com',
             [string]$SchemaPrefix        = 'PowerShell/DSC/main',
-            [string]$SchemaVersion       = '2023/08'
+            [string]$SchemaVersion       = '2023/08',
+            [string]$DocsBaseUrl         = 'https://learn.microsoft.com/powershell/dsc',
+            [string]$DocsVersionPin      = 'view=dsc-3.0&preserve-view=true'
         )
 
         begin {
-            $Info = [LocalJsonSchemaRegistry]::new($SchemaHost, $SchemaPrefix, $SchemaVersion)
+            $Info = [LocalJsonSchemaRegistry]::new(
+                $SchemaHost,
+                $SchemaPrefix,
+                $SchemaVersion,
+                $DocsBaseUrl,
+                $DocsVersionPin
+            )
         }
 
         process {
@@ -574,11 +588,13 @@ process {
 
     Get-ChildItem -Path $PSScriptRoot/src -Filter *.yaml -Recurse | ForEach-Object -Process {
         $SchemaContent = Get-Content -Path $_.FullName -Raw
-        $SchemaContent = $SchemaContent -replace '<HOST>',          $Config.host
-        $SchemaContent = $SchemaContent -replace '<PREFIX>',        $Config.prefix
-        $SchemaContent = $SchemaContent -replace '<VERSION>',       $Config.version
-        $SchemaContent = $SchemaContent -replace '(?m)\.yaml$"?,?', '.json'
-        $SchemaPath    = $_.FullName    -replace 'src',             $Config.version
+        $SchemaContent = $SchemaContent -replace '<HOST>',             $Config.host
+        $SchemaContent = $SchemaContent -replace '<PREFIX>',           $Config.prefix
+        $SchemaContent = $SchemaContent -replace '<VERSION>',          $Config.version
+        $SchemaContent = $SchemaContent -replace '<DOCS_BASE_URL>',    $Config.docs_base_url
+        $SchemaContent = $SchemaContent -replace '<DOCS_VERSION_PIN>', $Config.docs_version_pin
+        $SchemaContent = $SchemaContent -replace '(?m)\.yaml$"?,?',    '.json'
+        $SchemaPath    = $_.FullName    -replace 'src',                $Config.version
         $SchemaFolder  = Split-Path -Parent $SchemaPath
         if (-not (Test-Path -Path ($SchemaFolder))) {
             $null = New-Item -Path $SchemaFolder -ItemType Directory -Force
