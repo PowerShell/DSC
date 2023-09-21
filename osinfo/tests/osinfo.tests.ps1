@@ -25,7 +25,13 @@ Describe 'osinfo resource tests' {
     }
 
     It 'should perform synthetic test' {
-        $out = '{"family": "does_not_exist"}' | dsc resource test -r '*osinfo' | ConvertFrom-Json
+        if ($IsWindows) {
+            $invalid = 'Linux'
+        }
+        else {
+            $invalid = 'Windows'
+        }
+        $out = "{`"family`": `"$invalid`"}" | dsc resource test -r '*osinfo' | ConvertFrom-Json
         $actual = dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json
         $out.actualState.family | Should -BeExactly $actual.actualState.family
         $out.actualState.version | Should -BeExactly $actual.actualState.version
