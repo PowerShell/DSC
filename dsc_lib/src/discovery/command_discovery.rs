@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::discovery_trait::{ResourceDiscovery};
+use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::ResourceManifest;
+use crate::dscresources::resource_manifest::{ResourceManifest, import_manifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::{DscError, StreamMessage, StreamMessageType};
 use std::collections::BTreeMap;
@@ -71,9 +71,9 @@ impl ResourceDiscovery for CommandDiscovery {
                     if path.is_file() {
                         let file_name = path.file_name().unwrap().to_str().unwrap();
                         if file_name.to_lowercase().ends_with(".dsc.resource.json") {
-                            let resource = import_manifest(&path)?;
+                            let resource = load_manifest(&path)?;
                             if resource.manifest.is_some() {
-                                let manifest = serde_json::from_value::<ResourceManifest>(resource.manifest.clone().unwrap())?;
+                                let manifest = import_manifest(resource.manifest.clone().unwrap())?;
                                 if manifest.provider.is_some() {
                                     self.provider_resources.push(resource.type_name.clone());
                                 }
@@ -90,7 +90,7 @@ impl ResourceDiscovery for CommandDiscovery {
             let provider_resource = self.resources.get(provider).unwrap();
             let provider_type_name = provider_resource.type_name.clone();
             let provider_path = provider_resource.path.clone();
-            let manifest = serde_json::from_value::<ResourceManifest>(provider_resource.manifest.clone().unwrap())?;
+            let manifest = import_manifest(provider_resource.manifest.clone().unwrap())?;
             // invoke the list command
             let list_command = manifest.provider.unwrap().list;
             let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args, None, Some(&provider_resource.directory), None)
@@ -151,7 +151,7 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 }
 
-fn import_manifest(path: &Path) -> Result<DscResource, DscError> {
+fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let manifest: ResourceManifest = match serde_json::from_reader(reader) {

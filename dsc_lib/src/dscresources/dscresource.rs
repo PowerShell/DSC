@@ -2,11 +2,10 @@
 // Licensed under the MIT License.
 
 use dscerror::DscError;
-use resource_manifest::ResourceManifest;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use super::{command_resource, dscerror, resource_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
+use super::{command_resource, dscerror, resource_manifest::import_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -140,7 +139,7 @@ impl Invoke for DscResource {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_get(&resource_manifest, &self.directory, filter)
             },
         }
@@ -155,7 +154,7 @@ impl Invoke for DscResource {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test)
             },
         }
@@ -172,7 +171,7 @@ impl Invoke for DscResource {
                 };
 
                 // if test is not directly implemented, then we need to handle it here
-                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                let resource_manifest = import_manifest(manifest.clone())?;
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
                     let desired_state = serde_json::from_str(expected)?;
@@ -201,7 +200,7 @@ impl Invoke for DscResource {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_validate(&resource_manifest, &self.directory, config)
             },
         }
@@ -216,7 +215,7 @@ impl Invoke for DscResource {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::get_schema(&resource_manifest, &self.directory)
             },
         }
@@ -231,7 +230,7 @@ impl Invoke for DscResource {
                 let Some(manifest) = &self.manifest else {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
-                let resource_manifest = serde_json::from_value::<ResourceManifest>(manifest.clone())?;
+                let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_export(&resource_manifest, &self.directory)
             },
         }

@@ -5,7 +5,7 @@ Describe 'tests for resource discovery' {
     It 'Use DSC_RESOURCE_PATH instead of PATH when defined' {
         $resourceJson = @'
         {
-            "manifestVersion": "1.0",
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
             "type": "DSC/TestPathResource",
             "version": "0.1.0",
             "get": {
