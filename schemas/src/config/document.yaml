@@ -5,7 +5,9 @@ title:       DSC Configuration Document schema
 description: Describes a valid DSC Configuration Document.
 
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Describes a valid DSC Configuration Document.
 
@@ -13,7 +15,7 @@ markdownDescription: | # VS Code only
   configuration document uses parameters and variables to pass to a set of one or more resources
   that define a desired state.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>
 
 
 type: object
@@ -32,14 +34,17 @@ properties:
       - <HOST>/<PREFIX>/<VERSION>/config/document.yaml
     # VS Code only:
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       This property must be the canonical URL of the DSC Configuration Document schema that the
       document is implemented for.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#schema
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#schema
     markdownEnumDescriptions:
-      - Indicates that the configuration document adheres to the `<VERSION>` schema.
+      - | # <HOST>/<PREFIX>/<VERSION>/config/document.yaml
+          Indicates that the configuration document adheres to the `<VERSION>` schema.
 
   parameters:
     title: DSC Configuration document parameters
@@ -51,12 +56,14 @@ properties:
       $ref: /<PREFIX>/<VERSION>/config/document.parameter.yaml
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines runtime options for the configuration. Users and integrating tools can override use
       the defined parameters to pass alternate values to the configuration.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#parameters
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#parameters
     defaultSnippets:
       - label:       New Parameter
         description: Defines a new runtime option for the configuration.
@@ -84,12 +91,14 @@ properties:
     type: object
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a set of reusable values for the configuration document. The names of this value's
       properties are the strings used to reference a variable's value.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#variables
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#variables
     defaultSnippets:
       - label:       New variable property
         description: Defines a new variable as a key-value pair
@@ -112,11 +121,13 @@ properties:
       $ref: /<PREFIX>/<VERSION>/config/document.resource.yaml
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a list of DSC Resource instances for the configuration to manage.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#resources
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#resources
 
   metadata:
     title: Configuration metadata
@@ -126,11 +137,13 @@ properties:
     type: object
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a set of key-value pairs for the configuration. This metadata isn't validated.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#metadata-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#metadata-1
     defaultSnippets:
       - label:       New Metadata Property
         description: Defines a key-value pair for the metadata

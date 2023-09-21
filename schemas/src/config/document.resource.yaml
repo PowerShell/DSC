@@ -33,7 +33,9 @@ properties:
         The `<type>` and `<name>` should be the fully qualified type of the resource and its
         friendly name in the configuration.
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a list of DSC Resource instances that DSC must successfully process before processing
       this instance. Each value for this property must be the `resourceID()` lookup for another
@@ -51,7 +53,7 @@ properties:
       YAML-format configuration document, always wrap the `resourceID()` lookup in double quotes
       (`"`).
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#properties-1
   properties:
     title: Managed instance properties
     description: >-
@@ -60,16 +62,20 @@ properties:
     type: object
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines the properties of the DSC Resource this instance manages. This property's value must
       be an object. DSC validates the property's value against the DSC Resource's schema.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#properties-1
 
 # VS Code only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines an instance of a DSC Resource in a configuration.
 
@@ -77,7 +83,7 @@ markdownDescription: |
   instance. Together, the instances in a configuration define the desired state that DSC can get,
   test, and set on a machine.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>
 
 defaultSnippets:
   - label:       New resource instance

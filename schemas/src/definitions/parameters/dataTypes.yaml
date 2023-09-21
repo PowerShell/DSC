@@ -17,7 +17,9 @@ enum:
 
 # VS Code only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines the data type for the parameter value.
 
@@ -40,11 +42,12 @@ markdownDescription: |
   In YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.
   If the syntax isn't quoted, YAML interprets the syntax as an array.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>
 markdownEnumDescriptions:
-  # string
-  - |
-      > [Online Documentation][01]
+  - | # string
+      ***
+      [_Online Documentation_][01]
+      ***
       
       Strings are an arbitrary set of text.
 
@@ -53,11 +56,12 @@ markdownEnumDescriptions:
       the string must start at the same level of indentation. You can trim the trailing whitespace
       by using `>-` or `|-` instead.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#strings
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#strings
 
-  # securestring
-  - |
-      > [Online Documentation][01]
+  - | # securestring
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Secure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or
       record. If a secure data type parameter is used for a resource instance property that doesn't
@@ -68,27 +72,32 @@ markdownEnumDescriptions:
       Use secure strings for passwords and secrets. Never define a default value for secure string
       parameters.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#secure-strings-and-objects
 
-  # int
-  - |
-      > [Online Documentation][01]
+  - | # int
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Integer values are numbers without a fractional part. Integer values may be limited by
       integrating tools or the DSC Resources they're used with. DSC itself supports integer values
       between `-9223372036854775808` and `9223372036854775807`.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#integers
-  # bool
-  - |
-      > [Online Documentation][01]
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#integers
+
+  - | # bool
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Boolean values are either `true` or `false`.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#booleans
-  # object
-  - |
-      > [Online Documentation][01]
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#booleans
+
+  - | # object
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Objects define a set of key-value pairs. The value for each key can be any valid data type.
       The values can be the same type or different types.
@@ -99,11 +108,12 @@ markdownEnumDescriptions:
       "[parameters('<parameter-name>').<key-name>]
       ```
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#objects
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#objects
 
-  # secureobject
-  - |
-      > [Online Documentation][01]
+  - | # secureobject
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Secure objects define a set of key-value pairs that DSC and integrating tools shouldn't log
       or record. If a secure data type parameter is used for a resource instance property that
@@ -113,12 +123,14 @@ markdownEnumDescriptions:
 
       Never define a default value for secure object parameters.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects
-  # array
-  - |
-      > [Online Documentation][01]
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#secure-strings-and-objects
+
+  - | # array
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Arrays are a list of one or more values. The values in the array can be any valid data type.
       Values in the array can be the same type or different types.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#arrays
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#arrays

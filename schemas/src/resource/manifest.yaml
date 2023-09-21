@@ -7,7 +7,9 @@ description: >-
   Defines the information DSC and integrating require to process and call a command-based DSC
   Resource.
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines the information DSC and integrating require to process and call a command-based DSC
   Resource. For DSC to use a manifest on a system, the manifest file must:
@@ -16,7 +18,7 @@ markdownDescription: | # VS Code only
   1. Follow the naming convention `<name>.dsc.resource.json`.
   1. Be valid for this schema.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>
 
 type: object
 required:
@@ -34,11 +36,13 @@ properties:
       - '1.0'
     # VS Code Only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       The semver of the DSC Resource manifest schema to validate this manifest with.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#manifestversion
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#manifestversion
     markdownEnumDescriptions:
       # 1.0
       - |
@@ -56,7 +60,9 @@ properties:
       not the version of the application it manages.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
     markdownDescription: | # VS Code only
-      > [Online Documentation][03]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       The semantic version ([semver][01]) of the DSC Resource. This version identifies the DSC
       Resource, not the version of the application it manages.
@@ -85,21 +91,25 @@ properties:
       A short synopsis of the DSC Resource's purpose.
     type: string
     markdownDescription: | # VS Code only
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a short synopsis of the DSC Resource's purpose.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#description-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#description-1
   tags:
     title: Tags
     description: >-
       Defines a list of searchable terms for the resource.
     markdownDescription: | # VS Code only
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a list of searchable terms for the resource.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#tags
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#tags
     type: array
     uniqueItems: true
     items:
@@ -131,13 +141,15 @@ properties:
       exit code `0` as a successful operation and any other exit code as an error. Use this
       property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
       property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#exitcodes
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#exitcodes
     type: object
     propertyNames:
       pattern: "^[0-9]+$"

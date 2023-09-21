@@ -13,8 +13,10 @@ readOnly: true
 
 # VS Code only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Indicates that the set operation requires a reboot before it's fully complete.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/rebootrequested?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/rebootrequested?<DOCS_VERSION_PIN>

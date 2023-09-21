@@ -6,11 +6,13 @@ title: Get Method
 description: >-
   Defines how DSC must call the DSC Resource to get the current state of every instance.
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines how DSC must call the DSC Resource to get the current state of every instance.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/export?<DOCS_VERSION_PIN>
 
 type: object
 required:

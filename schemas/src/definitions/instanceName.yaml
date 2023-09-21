@@ -15,7 +15,9 @@ patternErrorMessage: |
   Invalid value for instance name. An instance name must be a non-empty string containing only
   letters, numbers, and spaces.
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines the short, human-readable name for a DSC Resource instance. This property must be unique
   within a DSC Configuration document. If any resource instances share the same name, DSC raises an
@@ -23,4 +25,4 @@ markdownDescription: |
 
   The instance name must be a non-empty string containing only letters, numbers, and spaces.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#name
+  [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#name

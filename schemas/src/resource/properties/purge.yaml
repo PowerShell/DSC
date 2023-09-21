@@ -15,10 +15,12 @@ writeOnly: true
 
 # VS Code only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Indicates that only the components described in the DSC Resource should exist. If other
   components exist, the DSC Resource is out of the desired state. When enforcing desired state, the
   DSC Resource removes unmanaged components.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/purge?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/purge?<DOCS_VERSION_PIN>

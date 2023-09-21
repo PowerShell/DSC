@@ -7,12 +7,14 @@ description: >-
   Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to
   manage resources that don't have their own manifests with DSC.
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to
   manage resources that don't have their own manifests with DSC.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>
 
 type: object
 required:
@@ -24,11 +26,13 @@ properties:
     description: >-
       Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.
     markdownDescription: | # VS Code only
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true#list
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#list
     type: object
     required:
       - executable
@@ -49,13 +53,15 @@ properties:
       - sequence
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines whether the provider expects to receive a full and unprocessed configuration as a
       single JSON blob over stdin or a sequence of JSON Lines for each child resource's
       configurations.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true#config
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#config
     markdownEnumDescriptions:
       # full
       - |
