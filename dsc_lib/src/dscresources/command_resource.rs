@@ -3,10 +3,9 @@
 
 use jsonschema::JSONSchema;
 use serde_json::Value;
-use std::{process::Command, io::{Write, Read}, process::Stdio};
-
+use std::{collections::HashMap, process::Command, io::{Write, Read}, process::Stdio};
 use crate::dscerror::DscError;
-use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
+use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -21,12 +20,27 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 ///
 /// Error returned if the resource does not successfully get the current state
 pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<GetResult, DscError> {
-    if !filter.is_empty() && resource.get.input.is_some() {
+    let input_kind = if let Some(input_kind) = &resource.get.input {
+        input_kind.clone()
+    }
+    else {
+        InputKind::Stdin
+    };
+
+    let mut env: Option<HashMap<String, String>> = None;
+    let mut input_filter: Option<&str> = None;
+    if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
+
+        if input_kind == InputKind::Env {
+            env = Some(json_to_hashmap(filter)?);
+        }
+        else {
+            input_filter = Some(filter);
+        }
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(filter), Some(cwd))?;
-    //println!("{stdout}");
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), input_filter, Some(cwd), env)?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -59,6 +73,16 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
+
+    let mut env: Option<HashMap<String, String>> = None;
+    let mut input_desired: Option<&str> = None;
+    if set.input == InputKind::Env {
+        env = Some(json_to_hashmap(desired)?);
+    }
+    else {
+        input_desired = Some(desired);
+    }
+
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && !set.pre_test.unwrap_or_default() {
         let test_result = invoke_test(resource, cwd, desired)?;
@@ -70,14 +94,34 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             });
         }
     }
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), Some(desired), Some(cwd))?;
+
+    let mut get_env: Option<HashMap<String, String>> = None;
+    let mut get_input: Option<&str> = None;
+    match &resource.get.input {
+        Some(InputKind::Env) => {
+            get_env = Some(json_to_hashmap(desired)?);
+        },
+        Some(InputKind::Stdin) => {
+            get_input = Some(desired);
+        },
+        None => {
+            // leave input as none
+        },
+    }
+
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, resource.get.args.clone(), get_input, Some(cwd), get_env)?;
+    if exit_code != 0 {
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    }
+
     let pre_state: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
     else {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), Some(desired), Some(cwd))?;
+
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), input_desired, Some(cwd), env)?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -147,7 +191,17 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     };
 
     verify_json(resource, cwd, expected)?;
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone(), Some(expected), Some(cwd))?;
+
+    let mut env: Option<HashMap<String, String>> = None;
+    let mut input_expected: Option<&str> = None;
+    if test.input == InputKind::Env {
+        env = Some(json_to_hashmap(expected)?);
+    }
+    else {
+        input_expected = Some(expected);
+    }
+
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, test.args.clone(), input_expected, Some(cwd), env)?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -222,7 +276,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
         return Err(DscError::NotImplemented("validate".to_string()));
     };
 
-    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, validate.args.clone(), Some(config), Some(cwd))?;
+    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, validate.args.clone(), Some(config), Some(cwd), None)?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -247,7 +301,7 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 
     match schema_kind {
         SchemaKind::Command(ref command) => {
-            let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd))?;
+            let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None)?;
             if exit_code != 0 {
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
             }
@@ -291,7 +345,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportRes
         return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
     };
 
-    let (exit_code, stdout, stderr) = invoke_command(&export.executable, export.args.clone(), None, Some(cwd))?;
+    let (exit_code, stdout, stderr) = invoke_command(&export.executable, export.args.clone(), None, Some(cwd), None)?;
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -324,7 +378,8 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportRes
 /// # Errors
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>) -> Result<(i32, String, String), DscError> {
+#[allow(clippy::implicit_hasher)]
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>) -> Result<(i32, String, String), DscError> {
     let mut command = Command::new(executable);
     if input.is_some() {
         command.stdin(Stdio::piped());
@@ -336,6 +391,9 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     }
     if let Some(cwd) = cwd {
         command.current_dir(cwd);
+    }
+    if let Some(env) = env {
+        command.envs(env);
     }
 
     let mut child = command.spawn()?;
@@ -398,4 +456,49 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
         },
     };
     result
+}
+
+fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
+    let mut map = HashMap::new();
+    let json: Value = serde_json::from_str(json)?;
+    if let Value::Object(obj) = json {
+        for (key, value) in obj {
+            match value {
+                Value::String(s) => {
+                    map.insert(key, s);
+                },
+                Value::Bool(b) => {
+                    map.insert(key, b.to_string());
+                },
+                Value::Number(n) => {
+                    map.insert(key, n.to_string());
+                },
+                Value::Array(a) => {
+                    // only array of number or strings is supported
+                    let mut array = Vec::new();
+                    for v in a {
+                        match v {
+                            Value::String(s) => {
+                                array.push(s);
+                            },
+                            Value::Number(n) => {
+                                array.push(n.to_string());
+                            },
+                            _ => {
+                                return Err(DscError::Operation(format!("Unsupported array value for key {key}.  Only string and number is supported.")));
+                            },
+                        }
+                    }
+                    map.insert(key, array.join(","));
+                },
+                Value::Null => {
+                    continue;
+                }
+                Value::Object(_) => {
+                    return Err(DscError::Operation(format!("Unsupported value for key {key}.  Only string, bool, number, and array is supported.")));
+                },
+            }
+        }
+    }
+    Ok(map)
 }

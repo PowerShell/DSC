@@ -50,9 +50,9 @@ pub struct ResourceManifest {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum InputKind {
-    /// The input is accepted as named parameters.
-    #[serde(rename = "args")]
-    Args,
+    /// The input is accepted as environmental variables.
+    #[serde(rename = "env")]
+    Env,
     /// The input is accepted as a JSON object via STDIN.
     #[serde(rename = "stdin")]
     Stdin,

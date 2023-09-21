@@ -27,7 +27,8 @@
         "-NoProfile",
         "-Command",
         "$Input | ./powershellgroup.resource.ps1 Get"
-      ]
+      ],
+      "input": "stdin"
       },
     "set": {
       "executable": "pwsh",
