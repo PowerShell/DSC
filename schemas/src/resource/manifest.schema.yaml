@@ -97,19 +97,34 @@ properties:
 
           [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>#type
         markdownEnumDescriptions:
-          # https://json-schema.org/draft/2020-12/schema
-          - |
-              Indicates the resource instance schema adheres to [JSON Schema Draft 2020-12][01].
+          - | # https://json-schema.org/draft/2020-12/schema
+              _Draft 2020-12 (recommended)_
+
+              > Indicates that the resource instance schema adheres to
+              > [JSON Schema Draft 2020-12][01].
+              >
+              > This is the latest published draft of JSON Schema and is the draft future drafts
+              > will be most compatible with.
 
               [01]: https://json-schema.org/specification-links.html#2020-12
-          # https://json-schema.org/draft/2019-09/schema
-          - |
-              Indicates the resource instance schema adheres to [JSON Schema Draft 2019-09][01].
+          - | # https://json-schema.org/draft/2019-09/schema
+              _Draft 2019-09_
+
+              > Indicates that the resource instance schema adheres to
+              > [JSON Schema Draft 2019-09][01].
+              >
+              > This is the previous published draft of JSON Schema. It's mostly compatible with
+              > 2020-12, but less extensible and can't be bundled.
 
               [01]: https://json-schema.org/specification-links.html#draft-2019-09-formerly-known-as-draft-8
-          # http://json-schema.org/draft-07/schema#
-          - |
-              Indicates the resource instance schema adheres to [JSON Schema Draft 07][01].
+          - | # http://json-schema.org/draft-07/schema#
+              _Draft 07_
+
+              > Indicates that the resource instance schema adheres to [JSON Schema Draft 07][01].
+              >
+              > This is an older published draft of JSON Schema. It's widely used, but incompatible
+              > with 2019-09 and later. It's less expressive, extensible, maintainable, and isn't
+              > recommended for new schema definitions.
 
               [01]: https://json-schema.org/specification-links.html#draft-7
       $id:

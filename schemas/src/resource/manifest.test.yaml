@@ -45,13 +45,15 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>#return
     markdownEnumDescriptions:
-      # state
-      - |
-          Indicates that the resource returns only the instance's actual state.
-      # stateAndDiff
-      - |
-          Indicates that the resource returns the instance's actual state and an array of property
-          names that are out of the desired state.
+      - | # state
+          _Actual state only_
+
+          > Indicates that the resource returns only the instance's actual state as a JSON blob.
+      - | # stateAndDiff
+          _Actual state and differing properties_
+
+          > Indicates that the resource returns the instance's actual state and an array of
+          > property names that are out of the desired state.
 
 examples:
   - executable: registry

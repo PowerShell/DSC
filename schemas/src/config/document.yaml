@@ -44,7 +44,9 @@ properties:
       [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#schema
     markdownEnumDescriptions:
       - | # <HOST>/<PREFIX>/<VERSION>/config/document.yaml
-          Indicates that the configuration document adheres to the `<VERSION>` schema.
+          <!-- force a line break -->
+
+          > Indicates that the configuration document adheres to the `<VERSION>` schema.
 
   parameters:
     title: DSC Configuration document parameters

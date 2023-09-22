@@ -21,5 +21,13 @@ markdownDescription: |
 
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/ensure?<DOCS_VERSION_PIN>
 markdownEnumDescriptions:
-  - Indicates that the instance shouldn't exist.
-  - Indicates that the instance should exist.
+  - | # Absent
+    _Instance shouldn't exist._
+
+    > If the desired state for `_ensure` is `absent` and the instance exists, the resource removes
+    > the instance during the `set` operation.
+  - | # Present
+    _Instance should exist._
+
+    > If the desired state for `_ensure` is `present` and the instance doesn't exist, the resource
+    > adds or creates the instance during the `set` operation.

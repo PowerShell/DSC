@@ -44,13 +44,8 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#manifestversion
     markdownEnumDescriptions:
-      # 1.0
-      - |
-        > [Online Documentation][01]
-
-        The initial release version of the manifest schema.
-
-        [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true
+      - | # 1.0
+          _Initial release_
   type:
     $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
   version:

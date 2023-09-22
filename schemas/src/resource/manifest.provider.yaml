@@ -63,14 +63,16 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#config
     markdownEnumDescriptions:
-      # full
-      - |
-          Indicates that the provider expects a JSON blob containing the full and unprocessed
-          configuration as a single JSON blob over `stdin`.
-      # sequence
-      - |
-          Indicates that the provider expects each resource's configuration as a [JSON Line][01]
-          over `stdin`.
+      - | # full
+          _Full and unprocessed config as a JSON blob_
+
+          > Indicates that the provider expects a JSON blob containing the full and unprocessed
+          > configuration as a single JSON blob over `stdin`.
+      - | # sequence
+          _Resource instances as JSON Lines_
+
+          > Indicates that the provider expects each resource's configuration as a [JSON Line][01]
+          > over `stdin`.
 
           [01]: https://jsonlines.org/
 

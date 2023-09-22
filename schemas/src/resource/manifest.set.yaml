@@ -62,14 +62,16 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#return
     markdownEnumDescriptions:
-      # state
-      - |
-          Indicates that the resource returns only the instance's final state after the set
-          operation as a JSON blob.
-      # stateAndDiff
-      - |
-          Indicates that the resource returns the instance's final state and an array of property
-          names that the resource modified.
+      - | # state
+          _Final state only_
+
+          > Indicates that the resource returns only the instance's final state after the set
+          > operation as a JSON blob.
+      - | # stateAndDiff
+          _Final state and changed properties_
+
+          > Indicates that the resource returns the instance's final state and an array of property
+          > names that the resource modified.
 
 examples:
   - executable: registry
