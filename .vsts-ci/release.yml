@@ -60,7 +60,7 @@ stages:
   - job: BuildLinuxArm64
     displayName: Linux ARM64
     pool:
-      name: 1es-arm
+      name: ps-powershell-rel-arm
       demands:
       - ImageOverride -equals PSMMSUbuntu20.04-ARM64-secure
     steps:
