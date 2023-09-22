@@ -27,8 +27,43 @@ properties:
     properties:
       executable:
         $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
+        markdownDescription: |
+          ***
+          [_Online Documentation_][01]
+          ***
+
+          Defines the name of the command to run. The value must be the name of a command discoverable
+          in the system's `PATH` environment variable or the full path to the command. A file extension
+          is only required when the command isn't recognizable by the operating system as an
+          executable.
+
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#executable
       args:
         $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+        markdownDescription: |
+          ***
+          [_Online Documentation_][01]
+          ***
+
+          Defines an array of strings to pass as arguments to the command. DSC passes the arguments to
+          the command in the order they're specified.
+
+          For example, the given the following definition:
+
+          ```json
+          {
+            "executable": "registry",
+            "args":       ["schema", "resource"],
+          }
+          ```
+
+          DSC invokes the command for the resource as:
+
+          ```bash
+          registry schema resource
+          ```
+
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#args
     # VS Code only
     markdownDescription: |
       ***
@@ -186,16 +221,20 @@ properties:
               [_Online Documentation_][01]
               ***
 
-              Indicates that the DSC Resource uses the standard `_ensure` property to specify
-              whether an instance should exist with the `Present` and `Absent` enums.
+              Indicates that the resource can enforce whether instances exist using the shared
+              `present` and `absent` semantics. If a resource must distinguish between states
+              beyond whether an instance is `present` or `absent`, the resource should define its
+              own `ensure` property without the leading underscore. This property provides shared
+              semantics for DSC Resources and integrating tools, but doesn't enable any additional
+              built-in processing with DSC.
 
               [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/ensure?<DOCS_VERSION_PIN>
           _inDesiredState:
             title: 'Standard Property: _inDesiredState'
             description: >-
               Indicates that the DSC Resource returns this value for it's own `test` method. This
-              property is mandatory when the manifest defines the `test` property. It shouldn't
-              be included if the DSC Resource relies on DSC's synthetic testing.
+              read-only property is mandatory when the manifest defines the `test` property. It
+              shouldn't be included if the DSC Resource relies on DSC's synthetic testing.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/inDesiredState.yaml
             # VS Code only
@@ -231,8 +270,9 @@ properties:
           _rebootRequested:
             title: 'Standard property: _rebootRequested'
             description: >-
-              Indicates that the DSC Resource uses the standard `_rebootRequested` property to
-              report whether the machine should be rebooted after the `set` method executes.
+              Indicates whether a resource instance requires a reboot after a set operation. To use
+              DSC's built-in reboot notification processing, resources must define this property in
+              their manifest.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/rebootRequested.yaml
             # VS Code only

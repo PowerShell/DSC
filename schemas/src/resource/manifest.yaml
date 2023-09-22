@@ -59,10 +59,10 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      The semantic version ([semver][01]) of the DSC Resource. This version identifies the DSC
+      The semantic version ([semver][02]) of the DSC Resource. This version identifies the DSC
       Resource, not the version of the application it manages.
 
-      This value uses the [suggested regular expression][02] to validate whether the string is valid
+      This value uses the [suggested regular expression][03] to validate whether the string is valid
       semver. This is the same pattern, made multi-line for easier readability:
 
       ```regex
@@ -77,9 +77,9 @@ properties:
       The first line matches the `major.minor.patch` components of the version. The middle lines match
       the pre-release components. The last line matches the build metadata component.
 
-      [01]: https://semver.org/
-      [02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-      [03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#version
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#version
+      [02]: https://semver.org/
+      [03]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
   description:
     title: Resource Description
     description: >-
@@ -135,16 +135,6 @@ properties:
       This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
       property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
-    markdownDescription: |
-      ***
-      [_Online Documentation_][01]
-      ***
-
-      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
-      exit code `0` as a successful operation and any other exit code as an error. Use this
-      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
-
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#exitcodes
     type: object
     propertyNames:
       pattern: "^[0-9]+$"
@@ -163,5 +153,16 @@ properties:
         '2': Invalid input
         '3': Registry error
         '4': JSON serialization failed
+    # VS Code only
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      exit code `0` as a successful operation and any other exit code as an error. Use this
+      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#exitcodes
   schema:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.schema.yaml

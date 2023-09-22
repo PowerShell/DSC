@@ -23,8 +23,43 @@ required:
 properties:
   executable:
     $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines the name of the command to run. The value must be the name of a command discoverable
+      in the system's `PATH` environment variable or the full path to the command. A file extension
+      is only required when the command isn't recognizable by the operating system as an
+      executable.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#executable
   args:
     $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines an array of strings to pass as arguments to the command. DSC passes the arguments to
+      the command in the order they're specified.
+
+      For example, the given the following definition:
+
+      ```json
+      {
+        "executable": "registry",
+        "args":       ["config", "validate"],
+      }
+      ```
+
+      DSC invokes the command for the resource as:
+
+      ```bash
+      registry config validate
+      ```
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#args
 
 examples:
   - executable: dsc
