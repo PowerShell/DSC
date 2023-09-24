@@ -82,17 +82,39 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#metadata-1
     defaultSnippets:
-      - label:       New Metadata Property
-        description: Defines a key-value pair for the metadata
-        body:        { '${1:metadataName}': '$2' }
+      - label:       New metadata property
+        markdownDescription: |-
+          Defines a key-value pair for the metadata:
+
+          ```yaml
+          metadataName: value
+          ```
+        body:
+          ${1:metadataName}: ${2:value}
       - label:       New metadata property (object)
-        description: Defines a new key-value pair for the metadata where the value is an object.
+        markdownDescription: |-
+          Defines a new key-value pair for the metadata where the value is an object.
+
+          ```yaml
+          metadataName:
+            key: value
+          ```
         body:
-          '${1:metadataName}': { '${2:key}': '${3:value}' }
+          ${1:metadataName}:
+            ${2:key}: ${3:value}
       - label:       New metadata property (array)
-        description: Defines a new key-value pair for the metadata where the value is an array.
+        markdownDescription: |-
+          Defines a new key-value pair for the metadata where the value is an array.
+
+          ```yaml
+          metadataName:
+            - firstValue
+            - secondValue
+          ```
         body:
-          '${1:metadataName}': ['${2:firstValue}', '${3:secondValue}']
+          ${1:metadataName}:
+            - ${2:firstValue}
+            - ${3:secondValue}
 
 # Conditional settings depending on parameter type
 allOf:

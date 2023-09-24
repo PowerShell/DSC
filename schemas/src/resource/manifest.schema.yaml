@@ -74,6 +74,20 @@ properties:
       representing an instance of the DSC Resource.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
+    defaultSnippets:
+      - label:       ' Define without arguments'
+        markdownDescription: |
+          Define the `schema` command for the resource when no arguments are required.
+        body:
+          executable: ${1:executable_name}
+      - label:       ' Define with arguments'
+        markdownDescription: |
+          Define the `schema` command for the resource when at least one argument is required.
+        body:
+          executable: ${1:executable_name}
+          args:
+            - ${2:--first-argument}
+
   embedded:
     title: Embedded Instance Schema
     description: >-
@@ -207,6 +221,111 @@ properties:
             - $ref: https://json-schema.org/draft/2020-12/schema
             - $ref: https://json-schema.org/draft/2019-09/schema
             - $ref: http://json-schema.org/draft-07/schema#
+        additionalProperties:
+          defaultSnippets: # VS Code only
+            - label:             ' Define a property'
+              markdownDescription: Define a new property for the resource instance schema.
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                type:        ${3|boolean,string,integer,number,array,object,null|}
+
+            - label:             ' Define a property (boolean)'
+              markdownDescription: |-
+                Define a new [boolean][01] property for the resource instance schema, requiring the
+                value to be either `true` or `false`.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/boolean.html
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                type:        boolean
+
+            - label:             ' Define a property (string)'
+              markdownDescription: |-
+                Define a new [string][01] property for the resource instance schema, requiring the
+                value to be a blob of text.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/string.html
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                type:        string
+
+            - label: ' Define a property (integer)'
+              markdownDescription: |-
+                Define a new [integer][01] property for the resource instance schema, requiring the
+                value to be a number without a fractional part.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/numeric.html
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                type:        integer
+
+            - label: ' Define a property (number)'
+              markdownDescription: |-
+                Define a new [number][01] property for the resource instance schema, requiring the
+                value to be a number that may include a fractional part.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/numeric.html
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                type:        number
+
+            - label: ' Define a property (array)'
+              markdownDescription: |-
+                Define a new [array][01] property for the resource instance schema, requiring the
+                value to be a list of values.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/array.html
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                type:        array
+                items:
+                  type: ${3|boolean,string,integer,number,array,object,null|}
+
+            - label: ' Define a property (object)'
+              markdownDescription: |-
+                Define a new [object][01] property for the resource instance schema, requiring the
+                value to be a set of key-value pairs.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/object.html
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                type:        object
+                properties:
+                  ${3:propertyName}:
+                    title:       ${4:propertyTitle}
+                    description: ${5:explanation of property purpose and usage}
+                    type:        ${6|string,integer,number,array,object,null|}
+
+            - label: ' Define a property (enum)'
+              markdownDescription: |-
+                Define a new [enum][01] property for the resource instance schema that only accepts
+                a defined set of values.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/generic.html#enumerated-values
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                enum:
+                  - ^${3:"first value"}
+                  - ^${4:"second value"}
+            - label: ' Define a property (const)'
+              markdownDescription: |-
+                Define a new [const][01] property for the resource instance schema that only
+                accepts a specific value.
+
+                [01]: https://json-schema.org/understanding-json-schema/reference/generic.html#constant-values
+              body:
+                title:       ${1:property title}
+                description: ${2:explanation of property purpose and usage}
+                const:       ^${3:"constant value"}
+
         properties:
           _ensure:
             title: 'Standard Property: _ensure'
@@ -285,6 +404,14 @@ properties:
               report whether the machine should be rebooted after the `set` method executes.
 
               [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/rebootrequested?<DOCS_VERSION_PIN>
+        defaultSnippets: # VS Code only
+          - label: ' Define an instance property'
+            markdownDescription: Define a property for the resource instance schema.
+            body:
+              ${1:propertyName}:
+                title: ${2:property title}
+                description: ${3:explanation of property purpose and usage}
+                type:        ${4|string,integer,number,array,object,null|}
   url:
     title: Instance Schema URL
     description: >-
@@ -356,3 +483,50 @@ markdownDescription: |
   embedded in the manifest, DSC and integrating tools only need the manifest itself.
 
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>
+
+defaultSnippets: # VS Code only
+  - label: ' Define as command without arguments'
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Define the resource instance schema as a command when no arguments are required.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
+    body:
+      command:
+        executable: ${1:executable_name}
+  - label: ' Define as command with arguments'
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Define the resource instance schema as a command when at least one argument is required.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
+    body:
+      command:
+        executable: ${1:executable_name}
+        args:
+          - ${2:--first-argument}
+  - label: ' Define as an embedded schema'
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Define the resource instance schema embedded in the manifest. This is the preferred option
+      for publicly published resources.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>
+    body:
+      embedded:
+        ${escape_dollar:$}schema: ${1|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
+        type:                     object
+        properties:
+          ${2:name}:
+            title: ${3:property title}
+            description: ${4:explanation of property purpose and usage}
+            type:        ${5|string,integer,number,array,object,null|}

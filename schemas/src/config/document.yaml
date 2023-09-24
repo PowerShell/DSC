@@ -67,23 +67,44 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#parameters
     defaultSnippets:
-      - label:       New Parameter
-        description: Defines a new runtime option for the configuration.
+      - label:       ' New Parameter'
+        markdownDescription: |-
+          Defines a new runtime option for the configuration.
+
+          ```yaml
+          parameterId:
+            type:          <type>
+            description:   <description text>
+            defaultValue:  <value>
+            allowedValues:
+              - <first>
+          ```
         body:
-          '${1:parameterId}': 
-            type: '$2'
-            defaultValue: '$3'
-            allowedValues: ['$4']
-            description: '$5'
-      - label:       New Integer Parameter
-        description: Defines a new runtime option for the configuration as an integer value.
+          ${1:parameterId}:
+            type:          $2
+            description:   $3
+            defaultValue:  $4
+            allowedValues:
+              - $5
+      - label:       ' New Integer Parameter'
+        markdownDescription: |-
+          Defines a new runtime option for the configuration as an integer value.
+
+          ```yaml
+          parameterId:
+            type:          int
+            description:   <description text>
+            defaultValue:  <value>
+            minValue:      <minimum>
+            minValue:      <maximum>
+          ```
         body:
-          '${1:integerParameterId}': 
+          ${1:parameterId}:
             type:         int
-            defaultValue: '$2'
-            description:  '$3'
-            minValue:     '$4'
-            maxValue:     '$5'
+            description:  $2
+            defaultValue: $3
+            minValue:     $4
+            maxValue:     $5
 
   variables:
     title: Configuration variables
@@ -102,17 +123,41 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#variables
     defaultSnippets:
-      - label:       New variable property
-        description: Defines a new variable as a key-value pair
-        body:        { '${1:metadataName}': '$2' }
-      - label:       New variable property (object)
-        description: Defines a new key-value pair for the variables where the value is an object.
+      - label: ' New variable property'
+        markdownDescription: |-
+          Defines a new variable as a key-value pair.
+
+          ```yaml
+          variableName: variableValue
+          ```
         body:
-          '${1:variableName}': { '${2:key}': '${3:value}' }
-      - label:       New variable property (array)
-        description: Defines a new key-value pair for the variables where the value is an array.
+          ${1:variableName}: ${2:variableValue}
+
+      - label: ' New variable property (object)'
+        markdownDescription: |-
+          Defines a new key-value pair for the variables where the value is an object.
+
+          ```yaml
+          variableName:
+            key: value
+          ```
         body:
-          '${1:variableName}': ['${2:firstValue}', '${3:secondValue}']
+          ${1:variableName}:
+            ${2:key}: ${3:value}
+
+      - label: ' New variable property (array)'
+        markdownDescription: |-
+          Defines a new key-value pair for the variables where the value is an array.
+
+          ```yaml
+          variableName:
+            - firstValue
+            - secondValue
+          ```
+        body:
+          ${1:variableName}:
+            - ${2:firstValue}
+            - ${3:secondValue}
 
   resources:
     title:       DSC Configuration document resources
@@ -147,14 +192,36 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#metadata-1
     defaultSnippets:
-      - label:       New Metadata Property
-        description: Defines a key-value pair for the metadata
-        body:        { '${1:metadataName}': '$2' }
+      - label:       New metadata property
+        markdownDescription: |-
+          Defines a key-value pair for the metadata:
+
+          ```yaml
+          metadataName: value
+          ```
+        body:
+          ${1:metadataName}: ${2:value}
       - label:       New metadata property (object)
-        description: Defines a new key-value pair for the metadata where the value is an object.
+        markdownDescription: |-
+          Defines a new key-value pair for the metadata where the value is an object.
+
+          ```yaml
+          metadataName:
+            key: value
+          ```
         body:
-          '${1:metadataName}': { '${2:key}': '${3:value}' }
+          ${1:metadataName}:
+            ${2:key}: ${3:value}
       - label:       New metadata property (array)
-        description: Defines a new key-value pair for the metadata where the value is an array.
+        markdownDescription: |-
+          Defines a new key-value pair for the metadata where the value is an array.
+
+          ```yaml
+          metadataName:
+            - firstValue
+            - secondValue
+          ```
         body:
-          '${1:metadataName}': ['${2:firstValue}', '${3:secondValue}']
+          ${1:metadataName}:
+            - ${2:firstValue}
+            - ${3:secondValue}

@@ -66,3 +66,17 @@ examples:
     args:
       - config
       - validate
+
+defaultSnippets: # VS Code only
+  - label:       ' Define without arguments'
+    markdownDescription: |
+      Define the `validate` command for the resource when no arguments are required.
+    body:
+      executable: ${1:executable_name}
+  - label:       ' Define with arguments'
+    markdownDescription: |
+      Define the `validate` command for the resource when at least one argument is required.
+    body:
+      executable: ${1:executable_name}
+      args:
+        - ${2:--first-argument}

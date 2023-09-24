@@ -125,3 +125,23 @@ examples:
     input:   stdin
     preTest: true
     return:  state
+
+defaultSnippets: # VS Code only
+  - label:       ' Define without arguments'
+    markdownDescription: |
+      Define the `set` command for the resource when no arguments are required.
+    body:
+      input:      ${1|input,args|}
+      preTest:    ^${2|true,false|}
+      return:     ${3|state,stateAndDiff|}
+      executable: ${4:executable_name}
+  - label:       ' Define with arguments'
+    markdownDescription: |
+      Define the `set` command for the resource when at least one argument is required.
+    body:
+      input:      $1
+      preTest:    ^$2
+      return:     $3
+      executable: ${4:executable_name}
+      args:
+        - ${5:--first-argument}

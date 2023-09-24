@@ -32,6 +32,16 @@ properties:
 
         The `<type>` and `<name>` should be the fully qualified type of the resource and its
         friendly name in the configuration.
+      defaultSnippets:
+        - label:       New dependency
+          markdownDescription: |-
+            Defines a new dependency for the resource instance.
+
+            ```yaml
+            "[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]"
+            ```
+          bodyText: >-
+            "[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]"
     markdownDescription: |
       ***
       [_Online Documentation_][01]
@@ -86,20 +96,39 @@ markdownDescription: |
   [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>
 
 defaultSnippets:
-  - label:       New resource instance
-    description: Defines a new instance of a DSC Resource for the configuration
-    body:
-      type: $1
-      name: $2
+  - label:       ' New resource instance'
+    markdownDescription: |-
+      Defines a new instance of a DSC Resource for the configuration.
+
+      ```yaml
+      type: owner[.group][.area]/name
+      name: instance_name
       properties:
-        '${3:propertyName}': '${4:propertyValue}'
-  - label:       New dependent resource instance
-    description: >-
+        propertyName: propertyValue
+      ```
+    body:
+      type: ${1:owner[.group][.area]/name}
+      name: ${2:instance_name}
+      properties:
+        ${3:propertyName}: ${4:propertyValue}
+  - label:       ' New dependent resource instance'
+    markdownDescription: |-
       Defines a new instance of a DSC Resource for the configuration that depends on another
       instance.
-    body:
-      type: $1
-      name: $2
-      dependsOn: "['[${3:dependencyType}]${4:dependencyName}']"
+
+      ```yaml
+      type:      owner[.group][.area]/name
+      name:      instance_name
+      dependsOn:
+        - "[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]"
       properties:
-        '${5:propertyName}': '${6:propertyValue}'
+        propertyName: propertyValue
+      ```
+    body:
+      type:      ${1:owner[.group][.area]/name}
+      name:      ${2:instance_name}
+      dependsOn:
+        - >-
+            "[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]"
+      properties:
+        ${5:propertyName}: ${6:propertyValue}
