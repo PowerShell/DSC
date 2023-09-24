@@ -10,9 +10,12 @@ description: |
   For reference, see https://semver.org/
 pattern: >-
   ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+patternErrorMessage: | # VS Code only
+  Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.
 
-# VS Code only
-markdownDescription: |
+  The value may also include pre-release version information and build metadata.
+
+$comment: |
   A valid semantic version ([semver][01]) string.
 
   This value uses the [suggested regular expression][02] to validate whether the string is valid
@@ -32,7 +35,3 @@ markdownDescription: |
 
   [01]: https://semver.org/
   [02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-patternErrorMessage: |
-  Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.
-
-  The value may also include pre-release version information and build metadata.
