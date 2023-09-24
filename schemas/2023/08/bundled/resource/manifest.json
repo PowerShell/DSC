@@ -15,7 +15,7 @@
       "title": "Manifest Version",
       "description": "The semver of the DSC Resource manifest schema to validate this manifest with.",
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
-      "enums": "1.0"
+      "enum": "1.0"
     },
     "type": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json"
@@ -94,7 +94,8 @@
       "type": "string",
       "title": "Semantic Version",
       "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
-      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -172,7 +173,7 @@
         "input": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json"
         },
-        "implementsPretest": {
+        "preTest": {
           "title": "Resource Performs Pre-Test",
           "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
           "type": "boolean",
@@ -190,7 +191,7 @@
           "set"
         ],
         "input": "stdin",
-        "implementsPretest": true,
+        "preTest": true,
         "return": "state"
       }
     },
@@ -381,6 +382,7 @@
                   }
                 ]
               },
+              "additionalProperties": {},
               "properties": {
                 "_ensure": {
                   "title": "Standard Property: _ensure",
@@ -391,7 +393,7 @@
                 },
                 "_inDesiredState": {
                   "title": "Standard Property: _inDesiredState",
-                  "description": "Indicates that the DSC Resource returns this value for it's own `test` method. This property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC Resource relies on DSC's synthetic testing.",
+                  "description": "Indicates that the DSC Resource returns this value for it's own `test` method. This read-only property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC Resource relies on DSC's synthetic testing.",
                   "const": {
                     "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json"
                   }
@@ -405,7 +407,7 @@
                 },
                 "_rebootRequested": {
                   "title": "Standard property: _rebootRequested",
-                  "description": "Indicates that the DSC Resource uses the standard `_rebootRequested` property to report whether the machine should be rebooted after the `set` method executes.",
+                  "description": "Indicates whether a resource instance requires a reboot after a set operation. To use DSC's built-in reboot notification processing, resources must define this property in their manifest.",
                   "const": {
                     "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/rebootRequested.json"
                   }

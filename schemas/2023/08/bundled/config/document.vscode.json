@@ -3,7 +3,7 @@
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json",
   "title": "DSC Configuration Document schema",
   "description": "Describes a valid DSC Configuration Document.",
-  "markdownDescription": "> [Online Documentation][01]\n\nDescribes a valid DSC Configuration Document.\n\nDSC Configurations enable users to define state by combining different DSC Resources. A\nconfiguration document uses parameters and variables to pass to a set of one or more resources\nthat define a desired state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true\n",
+  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDescribes a valid DSC Configuration Document.\n\nDSC Configurations enable users to define state by combining different DSC Resources. A\nconfiguration document uses parameters and variables to pass to a set of one or more resources\nthat define a desired state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true\n",
   "type": "object",
   "required": [
     "$schema",
@@ -18,9 +18,9 @@
       "enum": [
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json"
       ],
-      "markdownDescription": "> [Online Documentation][01]\n\nThis property must be the canonical URL of the DSC Configuration Document schema that the\ndocument is implemented for.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#schema\n",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThis property must be the canonical URL of the DSC Configuration Document schema that the\ndocument is implemented for.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#schema\n",
       "markdownEnumDescriptions": [
-        "Indicates that the configuration document adheres to the `2023/08` schema."
+        "<!-- force a line break -->\n\n> Indicates that the configuration document adheres to the `2023/08` schema.\n"
       ]
     },
     "parameters": {
@@ -30,30 +30,30 @@
       "additionalProperties": {
         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json"
       },
-      "markdownDescription": "> [Online Documentation][01]\n\nDefines runtime options for the configuration. Users and integrating tools can override use\nthe defined parameters to pass alternate values to the configuration.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#parameters\n",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines runtime options for the configuration. Users and integrating tools can override use\nthe defined parameters to pass alternate values to the configuration.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#parameters\n",
       "defaultSnippets": [
         {
-          "label": "New Parameter",
-          "description": "Defines a new runtime option for the configuration.",
+          "label": " New Parameter",
+          "markdownDescription": "Defines a new runtime option for the configuration.\n\n```yaml\nparameterId:\n  type:          <type>\n  description:   <description text>\n  defaultValue:  <value>\n  allowedValues:\n    - <first>\n```",
           "body": {
             "${1:parameterId}": {
               "type": "$2",
-              "defaultValue": "$3",
+              "description": "$3",
+              "defaultValue": "$4",
               "allowedValues": [
-                "$4"
-              ],
-              "description": "$5"
+                "$5"
+              ]
             }
           }
         },
         {
-          "label": "New Integer Parameter",
-          "description": "Defines a new runtime option for the configuration as an integer value.",
+          "label": " New Integer Parameter",
+          "markdownDescription": "Defines a new runtime option for the configuration as an integer value.\n\n```yaml\nparameterId:\n  type:          int\n  description:   <description text>\n  defaultValue:  <value>\n  minValue:      <minimum>\n  minValue:      <maximum>\n```",
           "body": {
-            "${1:integerParameterId}": {
+            "${1:parameterId}": {
               "type": "int",
-              "defaultValue": "$2",
-              "description": "$3",
+              "description": "$2",
+              "defaultValue": "$3",
               "minValue": "$4",
               "maxValue": "$5"
             }
@@ -65,18 +65,18 @@
       "title": "Configuration variables",
       "description": "Defines a set of reusable values for the configuration document. The names of this value's properties are the strings used to reference a variable's value.",
       "type": "object",
-      "markdownDescription": "> [Online Documentation][01]\n\nDefines a set of reusable values for the configuration document. The names of this value's\nproperties are the strings used to reference a variable's value.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#variables\n",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a set of reusable values for the configuration document. The names of this value's\nproperties are the strings used to reference a variable's value.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#variables\n",
       "defaultSnippets": [
         {
-          "label": "New variable property",
-          "description": "Defines a new variable as a key-value pair",
+          "label": " New variable property",
+          "markdownDescription": "Defines a new variable as a key-value pair.\n\n```yaml\nvariableName: variableValue\n```",
           "body": {
-            "${1:metadataName}": "$2"
+            "${1:variableName}": "${2:variableValue}"
           }
         },
         {
-          "label": "New variable property (object)",
-          "description": "Defines a new key-value pair for the variables where the value is an object.",
+          "label": " New variable property (object)",
+          "markdownDescription": "Defines a new key-value pair for the variables where the value is an object.\n\n```yaml\nvariableName:\n  key: value\n```",
           "body": {
             "${1:variableName}": {
               "${2:key}": "${3:value}"
@@ -84,8 +84,8 @@
           }
         },
         {
-          "label": "New variable property (array)",
-          "description": "Defines a new key-value pair for the variables where the value is an array.",
+          "label": " New variable property (array)",
+          "markdownDescription": "Defines a new key-value pair for the variables where the value is an array.\n\n```yaml\nvariableName:\n  - firstValue\n  - secondValue\n```",
           "body": {
             "${1:variableName}": [
               "${2:firstValue}",
@@ -103,24 +103,24 @@
       "items": {
         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/config/document.resource.json"
       },
-      "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of DSC Resource instances for the configuration to manage.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#resources\n"
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a list of DSC Resource instances for the configuration to manage.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#resources\n"
     },
     "metadata": {
       "title": "Configuration metadata",
       "description": "Defines a set of key-value pairs for the configuration. This metadata isn't validated.",
       "type": "object",
-      "markdownDescription": "> [Online Documentation][01]\n\nDefines a set of key-value pairs for the configuration. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserveView=true#metadata-1\n",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a set of key-value pairs for the configuration. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#metadata-1\n",
       "defaultSnippets": [
         {
-          "label": "New Metadata Property",
-          "description": "Defines a key-value pair for the metadata",
+          "label": "New metadata property",
+          "markdownDescription": "Defines a key-value pair for the metadata:\n\n```yaml\nmetadataName: value\n```",
           "body": {
-            "${1:metadataName}": "$2"
+            "${1:metadataName}": "${2:value}"
           }
         },
         {
           "label": "New metadata property (object)",
-          "description": "Defines a new key-value pair for the metadata where the value is an object.",
+          "markdownDescription": "Defines a new key-value pair for the metadata where the value is an object.\n\n```yaml\nmetadataName:\n  key: value\n```",
           "body": {
             "${1:metadataName}": {
               "${2:key}": "${3:value}"
@@ -129,7 +129,7 @@
         },
         {
           "label": "New metadata property (array)",
-          "description": "Defines a new key-value pair for the metadata where the value is an array.",
+          "markdownDescription": "Defines a new key-value pair for the metadata where the value is an array.\n\n```yaml\nmetadataName:\n  - firstValue\n  - secondValue\n```",
           "body": {
             "${1:metadataName}": [
               "${2:firstValue}",
@@ -153,7 +153,7 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.parameter.json",
                     "title": "Parameter",
                     "description": "Defines a runtime option for a DSC Configuration Document.",
-                    "markdownDescription": "> [Online Documentation][01]\n\nDefines a runtime option for a DSC Configuration Document.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a runtime option for a DSC Configuration Document.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
                       "type"
@@ -166,7 +166,7 @@
                         "title": "Default value",
                         "description": "Defines the default value for the parameter.",
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json",
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines the default value for the parameter.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#allowedvalues\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the default value for the parameter.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#allowedvalues\n"
                       },
                       "allowedValues": {
                         "title": "Allowed values",
@@ -175,30 +175,30 @@
                         "items": {
                           "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/validValueTypes.json"
                         },
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of valid values for the parameter. If the parameter is defined with any other\nvalues, it's invalid.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#allowedvalues\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a list of valid values for the parameter. If the parameter is defined with any other\nvalues, it's invalid.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#allowedvalues\n"
                       },
                       "description": {
                         "title": "Parameter description",
                         "description": "Defines a synopsis for the parameter explaining its purpose.",
                         "type": "string",
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a synopsis for the parameter explaining its purpose.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#description-1\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a synopsis for the parameter explaining its purpose.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#description-1\n"
                       },
                       "metadata": {
                         "title": "Parameter metadata",
                         "description": "Defines a set of key-value pairs for the parameter. This metadata isn't validated.",
                         "type": "object",
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a set of key-value pairs for the parameter. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#metadata-1\n",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a set of key-value pairs for the parameter. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#metadata-1\n",
                         "defaultSnippets": [
                           {
-                            "label": "New Metadata Property",
-                            "description": "Defines a key-value pair for the metadata",
+                            "label": "New metadata property",
+                            "markdownDescription": "Defines a key-value pair for the metadata:\n\n```yaml\nmetadataName: value\n```",
                             "body": {
-                              "${1:metadataName}": "$2"
+                              "${1:metadataName}": "${2:value}"
                             }
                           },
                           {
                             "label": "New metadata property (object)",
-                            "description": "Defines a new key-value pair for the metadata where the value is an object.",
+                            "markdownDescription": "Defines a new key-value pair for the metadata where the value is an object.\n\n```yaml\nmetadataName:\n  key: value\n```",
                             "body": {
                               "${1:metadataName}": {
                                 "${2:key}": "${3:value}"
@@ -207,7 +207,7 @@
                           },
                           {
                             "label": "New metadata property (array)",
-                            "description": "Defines a new key-value pair for the metadata where the value is an array.",
+                            "markdownDescription": "Defines a new key-value pair for the metadata where the value is an array.\n\n```yaml\nmetadataName:\n  - firstValue\n  - secondValue\n```",
                             "body": {
                               "${1:metadataName}": [
                                 "${2:firstValue}",
@@ -233,13 +233,13 @@
                               "title": "Minimum value",
                               "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
                               "type": "integer",
-                              "markdownDescription": "> [Online Documentation][01]\n\nThe minimum valid value for an integer type. If defined with the `maxValue` property,\nthis value must be less than the value of `maxValue`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#minvalue\n"
+                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe minimum valid value for an integer type. If defined with the `maxValue` property,\nthis value must be less than the value of `maxValue`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#minvalue\n"
                             },
                             "maxValue": {
                               "title": "Maximum value",
                               "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
                               "type": "integer",
-                              "markdownDescription": "> [Online Documentation][01]\n\nThe maximum valid value for an integer type. If defined with the `minValue` property,\nthis value must be greater than the value of `minValue`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#maxvalue\n"
+                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe maximum valid value for an integer type. If defined with the `minValue` property,\nthis value must be greater than the value of `minValue`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#maxvalue\n"
                             }
                           }
                         }
@@ -277,14 +277,14 @@
                               "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
                               "type": "integer",
                               "minimum": 0,
-                              "markdownDescription": "> [Online Documentation][01]\n\nThe minimum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `maxLength` property, this value must be less than the value of `maxLength`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#minLength\n"
+                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe minimum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `maxLength` property, this value must be less than the value of `maxLength`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#minLength\n"
                             },
                             "maxLength": {
                               "title": "Maximum length",
                               "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
                               "type": "integer",
                               "minimum": 0,
-                              "markdownDescription": "> [Online Documentation][01]\n\nThe maximum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `minLength` property, this value must be less than the value of `minLength`.\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#maxLength\n"
+                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe maximum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `minLength` property, this value must be less than the value of `minLength`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#maxLength\n"
                             }
                           }
                         }
@@ -438,37 +438,46 @@
                           "type": "string",
                           "uniqueItems": true,
                           "pattern": "^\\[resourceId\\(\\s*'\\w+(\\.\\w+){0,2}\\/\\w+'\\s*,\\s*'[a-zA-Z0-9 ]+'\\s*\\)\\]$",
-                          "patternErrorMessage": "Invalid value, must be a value like `[resourceId('<type>', '<name>`)], such as\n`[resourceId('Microsoft/OSInfo', 'Foo')]`.\n\nThe `<type>` and `<name>` should be the fully qualified type of the resource and its\nfriendly name in the configuration.\n"
+                          "patternErrorMessage": "Invalid value, must be a value like `[resourceId('<type>', '<name>`)], such as\n`[resourceId('Microsoft/OSInfo', 'Foo')]`.\n\nThe `<type>` and `<name>` should be the fully qualified type of the resource and its\nfriendly name in the configuration.\n",
+                          "defaultSnippets": [
+                            {
+                              "label": "New dependency",
+                              "markdownDescription": "Defines a new dependency for the resource instance.\n\n```yaml\n\"[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]\"\n```",
+                              "bodyText": "\"[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]\""
+                            }
+                          ]
                         },
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines a list of DSC Resource instances that DSC must successfully process before processing\nthis instance. Each value for this property must be the `resourceID()` lookup for another\ninstance in the configuration. Multiple instances can depend on the same instance, but every\ndependency for an instance must be unique in that instance's `dependsOn` property.\n\nThe `resourceID()` function uses this syntax:\n\n```yaml\n\"[resourceId('<resource-type-name>', '']<instance-name>\"\n```\n\nThe `<resource-type-name>` value is the `type` property of the dependent resource and\n`<instance-name>` is the dependency's `name` property. When adding a dependency in a\nYAML-format configuration document, always wrap the `resourceID()` lookup in double quotes\n(`\"`).\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a list of DSC Resource instances that DSC must successfully process before processing\nthis instance. Each value for this property must be the `resourceID()` lookup for another\ninstance in the configuration. Multiple instances can depend on the same instance, but every\ndependency for an instance must be unique in that instance's `dependsOn` property.\n\nThe `resourceID()` function uses this syntax:\n\n```yaml\n\"[resourceId('<resource-type-name>', '']<instance-name>\"\n```\n\nThe `<resource-type-name>` value is the `type` property of the dependent resource and\n`<instance-name>` is the dependency's `name` property. When adding a dependency in a\nYAML-format configuration document, always wrap the `resourceID()` lookup in double quotes\n(`\"`).\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#properties-1\n"
                       },
                       "properties": {
                         "title": "Managed instance properties",
                         "description": "Defines the properties of the DSC Resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC Resource's schema.",
                         "type": "object",
-                        "markdownDescription": "> [Online Documentation][01]\n\nDefines the properties of the DSC Resource this instance manages. This property's value must\nbe an object. DSC validates the property's value against the DSC Resource's schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the properties of the DSC Resource this instance manages. This property's value must\nbe an object. DSC validates the property's value against the DSC Resource's schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#properties-1\n"
                       }
                     },
-                    "markdownDescription": "> [Online Documentation][01]\n\nDefines an instance of a DSC Resource in a configuration.\n\nThe `resources` property of a DSC Configuration document always includes at least one DSC Resource\ninstance. Together, the instances in a configuration define the desired state that DSC can get,\ntest, and set on a machine.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an instance of a DSC Resource in a configuration.\n\nThe `resources` property of a DSC Configuration document always includes at least one DSC Resource\ninstance. Together, the instances in a configuration define the desired state that DSC can get,\ntest, and set on a machine.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true\n",
                     "defaultSnippets": [
                       {
-                        "label": "New resource instance",
-                        "description": "Defines a new instance of a DSC Resource for the configuration",
+                        "label": " New resource instance",
+                        "markdownDescription": "Defines a new instance of a DSC Resource for the configuration.\n\n```yaml\ntype: owner[.group][.area]/name\nname: instance_name\nproperties:\n  propertyName: propertyValue\n```",
                         "body": {
-                          "type": "$1",
-                          "name": "$2",
+                          "type": "${1:owner[.group][.area]/name}",
+                          "name": "${2:instance_name}",
                           "properties": {
                             "${3:propertyName}": "${4:propertyValue}"
                           }
                         }
                       },
                       {
-                        "label": "New dependent resource instance",
-                        "description": "Defines a new instance of a DSC Resource for the configuration that depends on another instance.",
+                        "label": " New dependent resource instance",
+                        "markdownDescription": "Defines a new instance of a DSC Resource for the configuration that depends on another\ninstance.\n\n```yaml\ntype:      owner[.group][.area]/name\nname:      instance_name\ndependsOn:\n  - \"[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]\"\nproperties:\n  propertyName: propertyValue\n```",
                         "body": {
-                          "type": "$1",
-                          "name": "$2",
-                          "dependsOn": "['[${3:dependencyType}]${4:dependencyName}']",
+                          "type": "${1:owner[.group][.area]/name}",
+                          "name": "${2:instance_name}",
+                          "dependsOn": [
+                            "\"[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]\""
+                          ],
                           "properties": {
                             "${5:propertyName}": "${6:propertyValue}"
                           }
@@ -494,15 +503,15 @@
                         "secureobject",
                         "array"
                       ],
-                      "markdownDescription": "> [Online Documentation][01]\n\nDefines the data type for the parameter value.\n\nThe valid data types for a parameter are:\n\n- `array` for arrays\n- `bool` for booleans\n- `int` for integers\n- `object` for objects\n- `string` for strings\n- `secureobject` for secure objects\n- `securestring` for secure strings\n\nAccess parameters in a configuration using this syntax:\n\n```yaml\n\"[parameter('<parameter-name>')]\"\n```\n\nIn YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.\nIf the syntax isn't quoted, YAML interprets the syntax as an array.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true\n",
+                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the data type for the parameter value.\n\nThe valid data types for a parameter are:\n\n- `array` for arrays\n- `bool` for booleans\n- `int` for integers\n- `object` for objects\n- `string` for strings\n- `secureobject` for secure objects\n- `securestring` for secure strings\n\nAccess parameters in a configuration using this syntax:\n\n```yaml\n\"[parameter('<parameter-name>')]\"\n```\n\nIn YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.\nIf the syntax isn't quoted, YAML interprets the syntax as an array.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true\n",
                       "markdownEnumDescriptions": [
-                        "> [Online Documentation][01]\n\nStrings are an arbitrary set of text.\n\nTo define a long strings in YAML, use the folded block syntax or literal block syntax by\nadding a `>` or `|` and a line break after the key. Then, indent the next line. Every line in\nthe string must start at the same level of indentation. You can trim the trailing whitespace\nby using `>-` or `|-` instead.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#strings\n",
-                        "> [Online Documentation][01]\n\nSecure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or\nrecord. If a secure data type parameter is used for a resource instance property that doesn't\nexpect a secure value, the resource may still log or record the value. If the resource has\nindependent logging or recording that isn't handled by DSC, the value may be stored\ninsecurely.\n\nUse secure strings for passwords and secrets. Never define a default value for secure string\nparameters.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects\n",
-                        "> [Online Documentation][01]\n\nInteger values are numbers without a fractional part. Integer values may be limited by\nintegrating tools or the DSC Resources they're used with. DSC itself supports integer values\nbetween `-9223372036854775808` and `9223372036854775807`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#integers\n",
-                        "> [Online Documentation][01]\n\nBoolean values are either `true` or `false`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#booleans\n",
-                        "> [Online Documentation][01]\n\nObjects define a set of key-value pairs. The value for each key can be any valid data type.\nThe values can be the same type or different types.\n\nAccess keys in the object using dot-notation. Dot-notation uses this syntax:\n\n```yaml\n\"[parameters('<parameter-name>').<key-name>]\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#objects\n",
-                        "> [Online Documentation][01]\n\nSecure objects define a set of key-value pairs that DSC and integrating tools shouldn't log\nor record. If a secure data type parameter is used for a resource instance property that\ndoesn't expect a secure value, the resource may still log or record the value. If the\nresource has independent logging or recording that isn't handled by DSC, the value may be\nstored insecurely.\n\nNever define a default value for secure object parameters.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects\n",
-                        "> [Online Documentation][01]\n\nArrays are a list of one or more values. The values in the array can be any valid data type.\nValues in the array can be the same type or different types.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#arrays\n"
+                        "_Strings are an arbitrary set of text._\n\n> To define a long strings in YAML, use the folded block syntax or literal block syntax by\n> adding a `>` or `|` and a line break after the key. Then, indent the next line. Every line\n> in the string must start at the same level of indentation. You can trim the trailing\n> whitespace by using `>-` or `|-` instead.\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#strings\n",
+                        "_Secure strings are text that needs to be handled securely._\n\n> Secure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or\n> record. If a secure data type parameter is used for a resource instance property that doesn't\n> expect a secure value, the resource may still log or record the value. If the resource has\n> independent logging or recording that isn't handled by DSC, the value may be stored\n> insecurely.\n>\n> Use secure strings for passwords and secrets. Never define a default value for secure string\n> parameters.\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#secure-strings-and-objects\n",
+                        "_Integer values are numbers without a fractional part._\n\n> Integer values may be limited by integrating tools or the DSC Resources they're used with.\n> DSC itself supports integer values between `-9223372036854775808` and `9223372036854775807`.\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#integers\n",
+                        "_Boolean values are either `true` or `false`._\n\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#booleans\n",
+                        "_Objects define a set of key-value pairs._\n\n> The value for each key can be any valid data type. The values can be the same type or\n> different types.\n>\n> Access keys in the object using dot-notation. Dot-notation uses this syntax:\n>\n> ```yaml\n> \"[parameters('<parameter-name>').<key-name>]\n> ```\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#objects\n",
+                        "_Secure objects are key-value pairs that need to be handled securely._\n\n> Secure objects define a set of key-value pairs that DSC and integrating tools shouldn't log\n> or record. If a secure data type parameter is used for a resource instance property that\n> doesn't expect a secure value, the resource may still log or record the value. If the\n> resource has independent logging or recording that isn't handled by DSC, the value may be\n> stored insecurely.\n>\n> Never define a default value for secure object parameters.\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#secure-strings-and-objects\n",
+                        "_Arrays are a list of one or more values._\n\n> The values in the array can be any valid data type. Values in the array can be the same type\n> or different types.\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#arrays\n"
                       ]
                     },
                     "validValueTypes.json": {
@@ -525,7 +534,7 @@
                     "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
                     "type": "string",
                     "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$",
-                    "markdownDescription": "> [Online Documentation][01]\n\nThe namespaced name of the DSC Resource, using the syntax:\n\n```text\nowner[.group][.area]/name\n```\n\nFor example:\n\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserveView=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe namespaced name of the DSC Resource, using the syntax:\n\n```yaml\nowner[.group][.area]/name\n```\n\nFor example:\n\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserve-view=true\n",
                     "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include a group and area to namespace\nthe resource under the owner, like `Microsoft.Windows/Registry`.\n"
                   },
                   "instanceName.json": {
@@ -537,7 +546,7 @@
                     "pattern": "^[a-zA-Z0-9 ]+$",
                     "minLength": 1,
                     "patternErrorMessage": "Invalid value for instance name. An instance name must be a non-empty string containing only\nletters, numbers, and spaces.\n",
-                    "markdownDescription": "> [Online Documentation][01]\n\nDefines the short, human-readable name for a DSC Resource instance. This property must be unique\nwithin a DSC Configuration document. If any resource instances share the same name, DSC raises an\nerror.\n\nThe instance name must be a non-empty string containing only letters, numbers, and spaces.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#name\n"
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the short, human-readable name for a DSC Resource instance. This property must be unique\nwithin a DSC Configuration document. If any resource instances share the same name, DSC raises an\nerror.\n\nThe instance name must be a non-empty string containing only letters, numbers, and spaces.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#name\n"
                   }
                 }
               }
