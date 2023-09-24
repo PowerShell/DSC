@@ -171,7 +171,7 @@ properties:
     description: >-
       The semver of the DSC Resource manifest schema to validate this manifest with.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
-    enums:
+    enum:
       - '1.0'
     # VS Code Only
     markdownDescription: |
