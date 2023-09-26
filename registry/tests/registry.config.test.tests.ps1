@@ -16,28 +16,28 @@ Describe 'registry config test tests' {
         $out = $json | registry config test
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
-        $result.keyPath | Should -BeNullOrEmpty
+        $result.keyPath | Should -BeExactly "HKLM\Software\Microsoft\Windows NT\$key"
         $result._exist | Should -Be $exist
         ($result.psobject.properties | Measure-Object).Count | Should -Be 4
     }
 
     It 'Can report failure if a registry key <test>' -Skip:(!$IsWindows) -TestCases @(
-        @{ test = 'exists and absent'; exist = 'false'; key = 'CurrentVersion'; expectedKey = 'HKLM\Software\Microsoft\Windows NT\CurrentVersion' }
-        @{ test = 'does not exist and present'; exist = 'true'; key = 'DoesNotExist'; expectedKey = '' }
+        @{ test = 'exists'; exist = 'false'; expectedExist = $true; key = 'CurrentVersion' }
+        @{ test = 'does not exist'; exist = 'true'; expectedExist = $false; key = 'DoesNotExist' }
     ){
-        param($exist, $key, $expectedKey)
+        param($exist, $expectedExist, $key)
         $json = @"
         {
           "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\$key",
-          "_exist": $ensure
+          "_exist": $exist
         }
 "@
         $out = $json | registry config test
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
-        $result.keyPath | Should -BeExactly $expectedKey
+        $result.keyPath | Should -BeExactly "HKLM\Software\Microsoft\Windows NT\$key"
         $result._inDesiredState | Should -Be $false
-        $result._exist | Should -Be $exist
+        $result._exist | Should -BeExactly $expectedExist
         ($result.psobject.properties | Measure-Object).Count | Should -Be 4
     }
 
