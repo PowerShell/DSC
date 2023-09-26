@@ -29,15 +29,15 @@ impl Display for RegistryError {
 }
 
 pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
-    let mut reg_result = Registry::default();
-    reg_result.key_path = config.key_path.clone();
+    let mut reg_result = Registry { key_path: config.key_path.clone(), ..Default::default() };
 
     let reg_key = match RegistryKey::new(config.key_path.as_str()) {
         Ok(reg_key) => reg_key,
         Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            reg_result.exist = Some(false);
             match serde_json::to_string(&reg_result) {
                 Ok(reg_json) => {
-                    reg_result.exist = Some(false);
+                    return Ok(reg_json);
                 },
                 Err(err) => {
                     return Err(RegistryError::Json(err.to_string()));
@@ -49,7 +49,7 @@ pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
         }
     };
 
-    if reg_result.exist != Some(false) && config.value_name.is_some() {
+    if config.value_name.is_some() {
         let reg_value = match reg_key.get_value(config.value_name.as_ref().unwrap().as_str()) {
             Ok(reg_value) => reg_value,
             Err(err) => {
@@ -72,8 +72,7 @@ pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
 }
 
 pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
-    let mut reg_result: Registry = Registry::default();
-    reg_result.key_path = config.key_path.clone();
+    let mut reg_result = Registry { key_path: config.key_path.clone(), ..Default::default() };
     let reg_key: RegistryKey;
     match &config.value_name {
         None => {
