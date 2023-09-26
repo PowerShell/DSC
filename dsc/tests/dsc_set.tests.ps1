@@ -7,7 +7,7 @@ Describe 'config set tests' {
             $json = @'
             {
                 "keyPath": "HKCU\\1\\2\\3",
-                "_ensure": "Absent"
+                "_exist": false
             }
 '@
             $json | registry config set
@@ -19,7 +19,7 @@ Describe 'config set tests' {
             $json = @'
             {
                 "keyPath": "HKCU\\1",
-                "_ensure": "Absent"
+                "_exist": false
             }
 '@
             $json | registry config set
@@ -42,7 +42,7 @@ Describe 'config set tests' {
         $result.afterState.keyPath | Should -Be 'HKCU\1\2\3'
         $result.afterState.valueName | Should -Be 'Hello'
         $result.afterState.valueData.String | Should -Be 'World'
-        $result.changedProperties | Should -Be @('keyPath', 'valueName', 'valueData')
+        $result.changedProperties | Should -Be @('valueName', 'valueData', '_exist')
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
 
         $out = $json | dsc resource get -r *registry
@@ -56,14 +56,14 @@ Describe 'config set tests' {
         $json = @'
         {
             "keyPath": "HKCU\\1",
-            "_ensure": "Absent"
+            "_exist": false
         }
 '@
         $out = $json | dsc resource set -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
-        $result.afterState.keyPath | Should -BeNullOrEmpty
-        $result.changedProperties | Should -Be @('keyPath')
+        $result.afterState.keyPath | Should -BeExactly 'HKCU\1'
+        $result.changedProperties | Should -Be @('_exist')
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
