@@ -245,12 +245,8 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
     }
 
     if let Some(map) = expected.as_object() {
+        let mut handled_exist = false;
         for (key, value) in map {
-            // skip meta properties
-            if key.starts_with('_') || key.starts_with('$') {
-                continue;
-            }
-
             if value.is_object() {
                 let sub_diff = get_diff(value, &actual[key]);
                 if !sub_diff.is_empty() {
@@ -260,7 +256,20 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
             else {
                 match actual.as_object() {
                     Some(actual_object) => {
-                        if actual_object.contains_key(key) {
+                        // handle `_exist` which defaults to `true` if not specified
+                        if key.eq("_exist") {
+                            handled_exist = true;
+                            // if actual object doesn't have `_exist`, it's assumed to be `true`
+                            if !actual_object.contains_key(key) {
+                                if value.as_bool() == Some(false) {
+                                    diff_properties.push(key.to_string());
+                                }
+                            }
+                            else if value != &actual[key] {
+                                diff_properties.push(key.to_string());
+                            }
+                        }
+                        else if actual_object.contains_key(key) {
                             if value != &actual[key] {
                                 diff_properties.push(key.to_string());
                             }
@@ -272,6 +281,18 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                     None => {
                         diff_properties.push(key.to_string());
                     },
+                }
+            }
+        }
+
+        // handle the case where the actual object has `_exist` but wasn't specified in the expected object
+        if !handled_exist {
+            if let Some(actual_object) = actual.as_object() {
+                if actual_object.contains_key("_exist") {
+                    // if expected didn't have `_exist`, it is assumed to be `true` so we only handle `false` case
+                    if actual["_exist"].as_bool() != Some(true) {
+                        diff_properties.push("_exist".to_string());
+                    }
                 }
             }
         }

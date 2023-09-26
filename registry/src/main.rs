@@ -98,8 +98,8 @@ fn main() {
                 }
             }
 
-            if config.ensure.is_none() {
-                config.ensure = Some(config::EnsureKind::Present);
+            if config.exist.is_none() {
+                config.exist = Some(true);
             }
 
             match subcommand {

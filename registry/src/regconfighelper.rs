@@ -76,24 +76,24 @@ pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
 
 pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
     let mut reg_result: Registry = Registry::default();
+    reg_result.key_path = config.key_path.clone();
     let reg_key: RegistryKey;
     match &config.value_name {
         None => {
-            match config.ensure.as_ref().unwrap() {
-                EnsureKind::Present => {
+            match config.exist {
+                Some(true) | None => {
                     open_or_create_key(&config.key_path)?;
-                    reg_result.key_path = config.key_path.clone();
                 },
-                EnsureKind::Absent => {
+                Some(false) => {
+                    reg_result.exist = Some(false);
                     remove_key(&config.key_path)?;
                 },
             }
         },
         Some(value_name) => {
-            reg_result.key_path = config.key_path.clone();
             reg_result.value_name = Some(value_name.clone());
-            match &config.ensure {
-                Some(EnsureKind::Present) | None => {
+            match &config.exist {
+                Some(true) | None => {
                     reg_key = open_or_create_key(&config.key_path)?;
                     match config.value_data.as_ref() {
                         Some(value_data) => {
@@ -114,8 +114,9 @@ pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
                         }
                     }
                 },
-                Some(EnsureKind::Absent) => {
+                Some(false) => {
                     reg_key = open_or_create_key(&config.key_path)?;
+                    reg_result.exist = Some(false);
                     match reg_key.delete_value(value_name) {
                         Ok(_) | Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {},
                         Err(err) => {
@@ -381,7 +382,7 @@ fn test_registry_value_present() {
     {
         "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion",
         "valueName": "ProgramFilesPath",
-        "_ensure": "Present"
+        "_exist": true
     }
     "#;
 
@@ -396,7 +397,7 @@ fn test_registry_value_absent() {
     {
         "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion",
         "valueName": "DoesNotExist",
-        "_ensure": "Absent"
+        "_exist": false
     }
     "#;
 
