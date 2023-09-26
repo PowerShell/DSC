@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::config::{EnsureKind, Registry, RegistryValueData};
+use crate::config::{Registry, RegistryValueData};
 use ntreg::{registry_key::RegistryKey, registry_value::RegistryValueData as NtRegistryValueData, registry_value::RegistryValue};
 use ntstatuserror::{NtStatusError, NtStatusErrorKind};
 use std::fmt::{Display, Formatter};
@@ -30,15 +30,14 @@ impl Display for RegistryError {
 
 pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
     let mut reg_result = Registry::default();
+    reg_result.key_path = config.key_path.clone();
 
     let reg_key = match RegistryKey::new(config.key_path.as_str()) {
         Ok(reg_key) => reg_key,
         Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
             match serde_json::to_string(&reg_result) {
                 Ok(reg_json) => {
-                    // TODO: current design is to return an empty JSON if the key is not found instead of an error
-                    // this makes it consistent with result for _ensure = absent so that a result is returned
-                    return Ok(reg_json);
+                    reg_result.exist = Some(false);
                 },
                 Err(err) => {
                     return Err(RegistryError::Json(err.to_string()));
@@ -50,9 +49,7 @@ pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
         }
     };
 
-    reg_result.key_path = config.key_path.clone();
-
-    if config.value_name.is_some() {
+    if reg_result.exist != Some(false) && config.value_name.is_some() {
         let reg_value = match reg_key.get_value(config.value_name.as_ref().unwrap().as_str()) {
             Ok(reg_value) => reg_value,
             Err(err) => {
@@ -273,8 +270,8 @@ fn test_value(config: &Registry) -> Result<String, RegistryError> {
         }
     };
 
-    match &config.ensure.as_ref().unwrap() {
-        EnsureKind::Present => {
+    match &config.exist {
+        Some(true) | None => {
             if value_exists {
                 in_desired_state = reg_values_are_eq(config, &reg_value)?;
             }
@@ -282,7 +279,7 @@ fn test_value(config: &Registry) -> Result<String, RegistryError> {
                 in_desired_state = false;
             }
         },
-        EnsureKind::Absent => {
+        Some(false) => {
             if value_exists {
                 in_desired_state = false;
             }
@@ -332,14 +329,14 @@ fn test_key(config: &Registry) -> Result<String, RegistryError> {
     };
 
     let mut in_desired_state = true;
-    match &config.ensure.as_ref().unwrap() {
-        EnsureKind::Present => {
+    match &config.exist {
+        Some(true) | None => {
             if !key_exists {
                 reg_result.key_path = String::new();
                 in_desired_state = false;
             }
         },
-        EnsureKind::Absent => {
+        Some(false) => {
             if key_exists {
                 reg_result.key_path = config.key_path.clone();
                 in_desired_state = false;

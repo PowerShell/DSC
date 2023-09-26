@@ -33,13 +33,14 @@ Describe 'registry config set tests' {
         $json = @'
         {
             "keyPath": "HKCU\\1",
-            "_ensure": "Absent"
+            "_exist": false
         }
 '@
         $out = $json | registry config set
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
-        $result.keyPath | Should -BeNullOrEmpty
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 2
+        $result.keyPath | Should -BeExactly 'HKCU\1'
+        $result._exist | Should -Be $false
+        ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 }
