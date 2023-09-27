@@ -15,7 +15,9 @@
       "title": "Manifest Version",
       "description": "The semver of the DSC Resource manifest schema to validate this manifest with.",
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
-      "enum": "1.0"
+      "enum": [
+        "1.0"
+      ]
     },
     "type": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json"
@@ -75,13 +77,15 @@
         "0": "Success",
         "1": "Error"
       },
-      "examples": {
-        "0": "Success",
-        "1": "Invalid parameter",
-        "2": "Invalid input",
-        "3": "Registry error",
-        "4": "JSON serialization failed"
-      }
+      "examples": [
+        {
+          "0": "Success",
+          "1": "Invalid parameter",
+          "2": "Invalid input",
+          "3": "Registry error",
+          "4": "JSON serialization failed"
+        }
+      ]
     },
     "schema": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json"
@@ -111,7 +115,9 @@
       "title": "Get Method",
       "description": "Defines how DSC must call the DSC Resource to get the current state of an instance.",
       "type": "object",
-      "required": "executable",
+      "required": [
+        "executable"
+      ],
       "properties": {
         "executable": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -143,7 +149,9 @@
       "title": "Get Method",
       "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
       "type": "object",
-      "required": "executable",
+      "required": [
+        "executable"
+      ],
       "properties": {
         "executable": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -184,16 +192,18 @@
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json"
         }
       },
-      "examples": {
-        "executable": "registry",
-        "args": [
-          "config",
-          "set"
-        ],
-        "input": "stdin",
-        "implementsPretest": true,
-        "return": "state"
-      }
+      "examples": [
+        {
+          "executable": "registry",
+          "args": [
+            "config",
+            "set"
+          ],
+          "input": "stdin",
+          "implementsPretest": true,
+          "return": "state"
+        }
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.test.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -221,15 +231,17 @@
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/returnKind.json"
         }
       },
-      "examples": {
-        "executable": "registry",
-        "args": [
-          "config",
-          "test"
-        ],
-        "input": "stdin",
-        "return": "state"
-      }
+      "examples": [
+        {
+          "executable": "registry",
+          "args": [
+            "config",
+            "test"
+          ],
+          "input": "stdin",
+          "return": "state"
+        }
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.validate.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -237,7 +249,9 @@
       "title": "Validate Method",
       "description": "Defines how DSC must call the DSC Resource to validate the state of an instance. This method is mandatory for DSC Group Resources. It's ignored for all other DSC Resources.",
       "type": "object",
-      "required": "executable",
+      "required": [
+        "executable"
+      ],
       "properties": {
         "executable": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -246,13 +260,15 @@
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandArgs.json"
         }
       },
-      "examples": {
-        "executable": "dsc",
-        "args": [
-          "config",
-          "validate"
-        ]
-      }
+      "examples": [
+        {
+          "executable": "dsc",
+          "args": [
+            "config",
+            "validate"
+          ]
+        }
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.provider.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -269,7 +285,9 @@
           "title": "List Command",
           "description": "Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.",
           "type": "object",
-          "required": "executable",
+          "required": [
+            "executable"
+          ],
           "properties": {
             "executable": {
               "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -289,19 +307,21 @@
           ]
         }
       },
-      "examples": {
-        "config": "full",
-        "list": {
-          "executable": "pwsh",
-          "args": [
-            "-NoLogo",
-            "-NonInteractive",
-            "-NoProfile",
-            "-Command",
-            "./powershellgroup.resource.ps1 List"
-          ]
+      "examples": [
+        {
+          "config": "full",
+          "list": {
+            "executable": "pwsh",
+            "args": [
+              "-NoLogo",
+              "-NonInteractive",
+              "-NoProfile",
+              "-Command",
+              "./powershellgroup.resource.ps1 List"
+            ]
+          }
         }
-      }
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -311,10 +331,14 @@
       "type": "object",
       "oneOf": [
         {
-          "required": "command"
+          "required": [
+            "command"
+          ]
         },
         {
-          "required": "embedded"
+          "required": [
+            "embedded"
+          ]
         }
       ],
       "properties": {
@@ -322,7 +346,9 @@
           "title": "Instance Schema Command",
           "description": "Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC Resource.",
           "type": "object",
-          "required": "executable",
+          "required": [
+            "executable"
+          ],
           "properties": {
             "executable": {
               "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -427,7 +453,9 @@
         {
           "command": {
             "executable": "registry",
-            "args": "schema"
+            "args": [
+              "schema"
+            ]
           }
         },
         {

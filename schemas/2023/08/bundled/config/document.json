@@ -14,7 +14,9 @@
       "description": "This property must be the canonical URL of the DSC Configuration Document schema that the document is implemented for.",
       "type": "string",
       "format": "uri",
-      "enum": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json"
+      "enum": [
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json"
+      ]
     },
     "parameters": {
       "title": "DSC Configuration document parameters",
@@ -51,7 +53,9 @@
       "title": "Parameter",
       "description": "Defines a runtime option for a DSC Configuration Document.",
       "type": "object",
-      "required": "type",
+      "required": [
+        "type"
+      ],
       "properties": {
         "type": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/parameters/dataTypes.json"

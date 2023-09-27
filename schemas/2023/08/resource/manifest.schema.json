@@ -6,10 +6,14 @@
   "type": "object",
   "oneOf": [
     {
-      "required": "command"
+      "required": [
+        "command"
+      ]
     },
     {
-      "required": "embedded"
+      "required": [
+        "embedded"
+      ]
     }
   ],
   "properties": {
@@ -17,7 +21,9 @@
       "title": "Instance Schema Command",
       "description": "Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC Resource.",
       "type": "object",
-      "required": "executable",
+      "required": [
+        "executable"
+      ],
       "properties": {
         "executable": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -122,7 +128,9 @@
     {
       "command": {
         "executable": "registry",
-        "args": "schema"
+        "args": [
+          "schema"
+        ]
       }
     },
     {

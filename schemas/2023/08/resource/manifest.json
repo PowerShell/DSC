@@ -15,7 +15,9 @@
       "title": "Manifest Version",
       "description": "The semver of the DSC Resource manifest schema to validate this manifest with.",
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
-      "enum": "1.0"
+      "enum": [
+        "1.0"
+      ]
     },
     "type": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json"
@@ -75,13 +77,15 @@
         "0": "Success",
         "1": "Error"
       },
-      "examples": {
-        "0": "Success",
-        "1": "Invalid parameter",
-        "2": "Invalid input",
-        "3": "Registry error",
-        "4": "JSON serialization failed"
-      }
+      "examples": [
+        {
+          "0": "Success",
+          "1": "Invalid parameter",
+          "2": "Invalid input",
+          "3": "Registry error",
+          "4": "JSON serialization failed"
+        }
+      ]
     },
     "schema": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json"

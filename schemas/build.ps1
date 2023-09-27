@@ -90,7 +90,16 @@ begin {
                     if ($_.Value -is [Object[]]) {
                         if ($_.Value.Count -ge 1) {
                             $MungedKeyValue = Remove-JsonSchemaKey -KeyName $KeyName -SchemaList $_.Value
-                            $MungedSchema.Add($_.Key, $MungedKeyValue)
+                            # Need to ensure single-item returns get correctly handled as arays,
+                            # not munged into scalars.
+                            if (
+                                ($MungedKeyValue.Count -eq 1) -or 
+                                ($MungedKeyValue -is [Specialized.OrderedDictionary])
+                            ) {
+                                $MungedSchema.Add($_.Key, [object[]]$MungedKeyValue)
+                            } else {
+                                $MungedSchema.Add($_.Key, $MungedKeyValue)
+                            }
                         } else {
                             $MungedSchema.Add($_.Key, $_.Value)
                         }
