@@ -290,7 +290,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
             if let Some(actual_object) = actual.as_object() {
                 if actual_object.contains_key("_exist") {
                     // if expected didn't have `_exist`, it is assumed to be `true` so we only handle `false` case
-                    if actual["_exist"].as_bool() != Some(true) {
+                    if actual["_exist"].as_bool() == Some(false) {
                         diff_properties.push("_exist".to_string());
                     }
                 }
