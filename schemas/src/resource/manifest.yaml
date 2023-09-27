@@ -39,11 +39,11 @@ defaultSnippets:
         args:       ['${6:argument}']
         input:      ${7:stdin}
       set:
-        executable: ${8:executable name}
-        args:       ['${9:argument}']
-        input:      ${10:stdin}
-        preTest:    ^${11:false}
-        return:     ${12:state}
+        executable:         ${8:executable name}
+        args:             ['${9:argument}']
+        input:              ${10:stdin}
+        implementsPretest: ^${11:false}
+        return:             ${12:state}
       schema:
         embedded:
           ${escape_dollar:$}schema: ${13|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
@@ -71,11 +71,11 @@ defaultSnippets:
         input:      ${10:stdin}
         return:     ${12:state}
       set:
-        executable: ${13:executable name}
-        args:       ['${14:argument}']
-        input:      ${15:stdin}
-        preTest:    ^${16:false}
-        return:     ${17:state}
+        executable:         ${13:executable name}
+        args:             ['${14:argument}']
+        input:              ${15:stdin}
+        implementsPretest: ^${16:false}
+        return:             ${17:state}
       schema:
         embedded:
           ${escape_dollar:$}schema: ${18|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
@@ -110,11 +110,11 @@ defaultSnippets:
         input:      ${10:stdin}
         return:     ${12:state}
       set:
-        executable: ${13:executable name}
-        args:       ['${14:argument}']
-        input:      ${15:stdin}
-        preTest:    ^${16:false}
-        return:     ${17:state}
+        executable:         ${13:executable name}
+        args:             ['${14:argument}']
+        input:              ${15:stdin}
+        implementsPretest: ^${16:false}
+        return:             ${17:state}
       provider:
         config: ${18|full,sequence|}
         list:

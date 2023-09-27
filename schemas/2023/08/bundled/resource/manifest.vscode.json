@@ -26,7 +26,7 @@
             "${9:argument}"
           ],
           "input": "${10:stdin}",
-          "preTest": "^${11:false}",
+          "implementsPretest": "^${11:false}",
           "return": "${12:state}"
         },
         "schema": {
@@ -73,7 +73,7 @@
             "${14:argument}"
           ],
           "input": "${15:stdin}",
-          "preTest": "^${16:false}",
+          "implementsPretest": "^${16:false}",
           "return": "${17:state}"
         },
         "schema": {
@@ -128,7 +128,7 @@
             "${14:argument}"
           ],
           "input": "${15:stdin}",
-          "preTest": "^${16:false}",
+          "implementsPretest": "^${16:false}",
           "return": "${17:state}"
         },
         "provider": {
@@ -501,12 +501,12 @@
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json",
                         "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as arguments or JSON over `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
                       },
-                      "preTest": {
+                      "implementsPretest": {
                         "title": "Resource Performs Pre-Test",
                         "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
                         "type": "boolean",
                         "default": false,
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines whether the DSC Resource performs its own test to ensure idempotency when calling the\n`set` command. Set this value to `true` if the DSC Resource tests input before modifying\nsystem state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#pretest\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines whether the DSC Resource performs its own test to ensure idempotency when calling the\n`set` command. Set this value to `true` if the DSC Resource tests input before modifying\nsystem state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#implementspretest\n"
                       },
                       "return": {
                         "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
@@ -526,7 +526,7 @@
                           "set"
                         ],
                         "input": "stdin",
-                        "preTest": true,
+                        "implementsPretest": true,
                         "return": "state"
                       }
                     ],
@@ -536,7 +536,7 @@
                         "markdownDescription": "Define the `set` command for the resource when no arguments are required.\n",
                         "body": {
                           "input": "${1|input,args|}",
-                          "preTest": "^${2|true,false|}",
+                          "implementsPretest": "^${2|true,false|}",
                           "return": "${3|state,stateAndDiff|}",
                           "executable": "${4:executable_name}"
                         }
@@ -546,7 +546,7 @@
                         "markdownDescription": "Define the `set` command for the resource when at least one argument is required.\n",
                         "body": {
                           "input": "$1",
-                          "preTest": "^$2",
+                          "implementsPretest": "^$2",
                           "return": "$3",
                           "executable": "${4:executable_name}",
                           "args": [

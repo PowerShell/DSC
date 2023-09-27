@@ -71,7 +71,7 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#input
 
-  preTest:
+  implementsPretest:
     title: Resource Performs Pre-Test
     description: >-
       Defines whether the DSC Resource performs its own test to ensure idempotency when calling the
@@ -89,7 +89,7 @@ properties:
       `set` command. Set this value to `true` if the DSC Resource tests input before modifying
       system state.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#pretest
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#implementspretest
   return:
     description: >-
       Defines whether the command returns a JSON blob of the DSC Resource's state after the set
@@ -122,26 +122,26 @@ examples:
     args:
       - config
       - set
-    input:   stdin
-    preTest: true
-    return:  state
+    input:             stdin
+    implementsPretest: true
+    return:            state
 
 defaultSnippets: # VS Code only
   - label:       ' Define without arguments'
     markdownDescription: |
       Define the `set` command for the resource when no arguments are required.
     body:
-      input:      ${1|input,args|}
-      preTest:    ^${2|true,false|}
-      return:     ${3|state,stateAndDiff|}
-      executable: ${4:executable_name}
+      input:              ${1|input,args|}
+      implementsPretest: ^${2|true,false|}
+      return:             ${3|state,stateAndDiff|}
+      executable:         ${4:executable_name}
   - label:       ' Define with arguments'
     markdownDescription: |
       Define the `set` command for the resource when at least one argument is required.
     body:
-      input:      $1
-      preTest:    ^$2
-      return:     $3
-      executable: ${4:executable_name}
+      input:              $1
+      implementsPretest: ^$2
+      return:             $3
+      executable:         ${4:executable_name}
       args:
         - ${5:--first-argument}
