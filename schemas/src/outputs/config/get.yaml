@@ -31,7 +31,7 @@ properties:
         type:
           $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
         result:
-          $ref: /<PREFIX>/<VERSION>/results/resource/get.yaml
+          $ref: /<PREFIX>/<VERSION>/outputs/resource/get.yaml
   messages:
     $ref: /<PREFIX>/<VERSION>/definitions/messages.yaml
   hadErrors:
