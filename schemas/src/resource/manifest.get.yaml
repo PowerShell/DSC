@@ -64,7 +64,9 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines how DSC should pass input to the command, either as arguments or JSON over `stdin`.
+      Defines how DSC should pass input to the command, either as environment variables or JSON
+      over `stdin`. If this value isn't defined, DSC doesn't send the resource any input when
+      invoking the `get` operation.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/get?<DOCS_VERSION_PIN>#input
 
@@ -81,13 +83,13 @@ defaultSnippets: # VS Code only
     markdownDescription: |
       Define the get command for the resource when no arguments are required.
     body:
-      input:      ${1|stdin,args|}
+      input:      ${1|stdin,env|}
       executable: ${2:executable_name}
   - label:       ' Define with arguments'
     markdownDescription: |
       Define the get command for the resource when at least one argument is required.
     body:
-      input:      ${1|stdin,args|}
+      input:      ${1|stdin,env|}
       executable: ${2:executable_name}
       args:
         - ${3:--first-argument}

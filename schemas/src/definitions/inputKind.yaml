@@ -4,22 +4,33 @@ $id:     <HOST>/<PREFIX>/<VERSION>/definitions/inputKind.yaml
 
 title: Executable Command Input Type
 description: >-
-  Defines how DSC should pass input to the command, either as arguments or
-  JSON over stdin.
+  Defines how DSC should pass input to the command, either as environment variables or
+  JSON over stdin. When this value isn't defined, DSC doesn't send the resource any input.
 type: string
 enum:
-  - args
+  - env
   - stdin
-default: args
 
 # VS Code only
 # Don't define markdownDescription - each schema using this must define it, to link correctly.
 markdownEnumDescriptions:
-  - | # args
-      _Command line arguments_
+  - | # env
+      _Environment variables_
 
-      > Indicates that the resource expects the properties of an instance to be specified with
-      > command line arguments. This option isn't implemented yet.
+      > Indicates that the resource expects the properties of an instance to be specified as
+      > environment variables. This option only supports the following data types for instance
+      > properties:
+      >
+      > - `boolean`
+      > - `integer`
+      > - `number`
+      > - `string`
+      > - `array` of `integer` values
+      > - `array` of `number` values
+      > - `array` of `string` values
+      >
+      > If the resource needs to support complex properties with an `object` value or multi-type
+      > arrays, set this to `stdin` instead.
   - | # stdin
       _JSON over `stdin`_
 

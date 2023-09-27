@@ -68,7 +68,9 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines how DSC should pass input to the command, either as arguments or JSON over `stdin`.
+      Defines how DSC should pass input to the command, either as environment variables or JSON
+      over `stdin`. If this value isn't defined, DSC doesn't send the resource any input when
+      invoking the `test` operation.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#input
   return:
@@ -111,15 +113,15 @@ defaultSnippets: # VS Code only
     markdownDescription: |
       Define the `test` command for the resource when no arguments are required.
     body:
-      input:      $1
-      return:     $2
+      input:      ${1|input,env|}
+      return:     ${2|state,stateAndDiff|}
       executable: ${3:executable_name}
   - label:       ' Define with arguments'
     markdownDescription: |
       Define the `test` command for the resource when at least one argument is required.
     body:
-      input:      $1
-      return:     $2
+      input:      ${1|input,env|}
+      return:     ${2|state,stateAndDiff|}
       executable: ${3:executable_name}
       args:
         - ${4:--first-argument}

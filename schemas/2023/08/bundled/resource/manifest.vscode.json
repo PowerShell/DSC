@@ -353,15 +353,14 @@
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json",
                     "title": "Executable Command Input Type",
-                    "description": "Defines how DSC should pass input to the command, either as arguments or JSON over stdin.",
+                    "description": "Defines how DSC should pass input to the command, either as environment variables or JSON over stdin. When this value isn't defined, DSC doesn't send the resource any input.",
                     "type": "string",
                     "enum": [
-                      "args",
+                      "env",
                       "stdin"
                     ],
-                    "default": "args",
                     "markdownEnumDescriptions": [
-                      "_Command line arguments_\n\n> Indicates that the resource expects the properties of an instance to be specified with\n> command line arguments. This option isn't implemented yet.\n",
+                      "_Environment variables_\n\n> Indicates that the resource expects the properties of an instance to be specified as\n> environment variables. This option only supports the following data types for instance\n> properties:\n>\n> - `boolean`\n> - `integer`\n> - `number`\n> - `string`\n> - `array` of `integer` values\n> - `array` of `number` values\n> - `array` of `string` values\n>\n> If the resource needs to support complex properties with an `object` value or multi-type\n> arrays, set this to `stdin` instead.\n",
                       "_JSON over `stdin`_\n\n> Indicates that the resource expects a JSON blob representing an instance from `stdin`.\n> The JSON must adhere to the instance schema.\n"
                     ]
                   },
@@ -400,7 +399,7 @@
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as arguments or JSON over `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. If this value isn't defined, DSC doesn't send the resource any input when\ninvoking the `get` operation.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true#input\n"
                       }
                     },
                     "examples": [
@@ -421,7 +420,7 @@
                         "label": " Define without arguments",
                         "markdownDescription": "Define the get command for the resource when no arguments are required.\n",
                         "body": {
-                          "input": "${1|stdin,args|}",
+                          "input": "${1|stdin,env|}",
                           "executable": "${2:executable_name}"
                         }
                       },
@@ -429,7 +428,7 @@
                         "label": " Define with arguments",
                         "markdownDescription": "Define the get command for the resource when at least one argument is required.\n",
                         "body": {
-                          "input": "${1|stdin,args|}",
+                          "input": "${1|stdin,env|}",
                           "executable": "${2:executable_name}",
                           "args": [
                             "${3:--first-argument}"
@@ -500,7 +499,7 @@
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as arguments or JSON over `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. If this value isn't defined, DSC doesn't send the resource any input when\ninvoking the `set` operation.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
                       },
                       "implementsPretest": {
                         "title": "Resource Performs Pre-Test",
@@ -536,7 +535,7 @@
                         "label": " Define without arguments",
                         "markdownDescription": "Define the `set` command for the resource when no arguments are required.\n",
                         "body": {
-                          "input": "${1|input,args|}",
+                          "input": "${1|input,env|}",
                           "implementsPretest": "^${2|true,false|}",
                           "return": "${3|state,stateAndDiff|}",
                           "executable": "${4:executable_name}"
@@ -546,9 +545,9 @@
                         "label": " Define with arguments",
                         "markdownDescription": "Define the `set` command for the resource when at least one argument is required.\n",
                         "body": {
-                          "input": "$1",
-                          "implementsPretest": "^$2",
-                          "return": "$3",
+                          "input": "${1|input,env|}",
+                          "implementsPretest": "^${2|true,false|}",
+                          "return": "${3|state,stateAndDiff|}",
                           "executable": "${4:executable_name}",
                           "args": [
                             "${5:--first-argument}"
@@ -579,7 +578,7 @@
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as arguments or JSON over `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. If this value isn't defined, DSC doesn't send the resource any input when\ninvoking the `test` operation.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
                       },
                       "return": {
                         "title": "Test Command Return Type",
@@ -608,8 +607,8 @@
                         "label": " Define without arguments",
                         "markdownDescription": "Define the `test` command for the resource when no arguments are required.\n",
                         "body": {
-                          "input": "$1",
-                          "return": "$2",
+                          "input": "${1|input,env|}",
+                          "return": "${2|state,stateAndDiff|}",
                           "executable": "${3:executable_name}"
                         }
                       },
@@ -617,8 +616,8 @@
                         "label": " Define with arguments",
                         "markdownDescription": "Define the `test` command for the resource when at least one argument is required.\n",
                         "body": {
-                          "input": "$1",
-                          "return": "$2",
+                          "input": "${1|input,env|}",
+                          "return": "${2|state,stateAndDiff|}",
                           "executable": "${3:executable_name}",
                           "args": [
                             "${4:--first-argument}"

@@ -67,7 +67,9 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines how DSC should pass input to the command, either as arguments or JSON over `stdin`.
+      Defines how DSC should pass input to the command, either as environment variables or JSON
+      over `stdin`. If this value isn't defined, DSC doesn't send the resource any input when
+      invoking the `set` operation.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#input
 
@@ -131,7 +133,7 @@ defaultSnippets: # VS Code only
     markdownDescription: |
       Define the `set` command for the resource when no arguments are required.
     body:
-      input:              ${1|input,args|}
+      input:              ${1|input,env|}
       implementsPretest: ^${2|true,false|}
       return:             ${3|state,stateAndDiff|}
       executable:         ${4:executable_name}
@@ -139,9 +141,9 @@ defaultSnippets: # VS Code only
     markdownDescription: |
       Define the `set` command for the resource when at least one argument is required.
     body:
-      input:              $1
-      implementsPretest: ^$2
-      return:             $3
+      input:              ${1|input,env|}
+      implementsPretest: ^${2|true,false|}
+      return:             ${3|state,stateAndDiff|}
       executable:         ${4:executable_name}
       args:
         - ${5:--first-argument}
