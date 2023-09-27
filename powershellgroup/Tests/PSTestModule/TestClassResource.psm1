@@ -1,3 +1,8 @@
+enum EnumPropEnumeration {
+    Unexpected
+    Expected
+}
+
 [DscResource()]
 class TestClassResource
 {
@@ -6,6 +11,9 @@ class TestClassResource
 
     [DscProperty()]
     [string] $Prop1
+
+    [DscProperty()]
+    [EnumPropEnumeration] $EnumProp
 
     [void] Set()
     {
@@ -29,6 +37,7 @@ class TestClassResource
         {
             $this.Prop1 = "ValueForProp1"
         }
+        $this.EnumProp = [EnumPropEnumeration]::Expected
         return $this
     }
 }

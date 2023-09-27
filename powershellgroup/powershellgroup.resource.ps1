@@ -176,7 +176,7 @@ elseif ($Operation -eq 'Get')
         }
     }
 
-    $result | ConvertTo-Json
+    $result | ConvertTo-Json -EnumsAsStrings
 }
 elseif ($Operation -eq 'Set')
 {
