@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a DSC Resource manifest
-ms.date:     08/04/2023
+ms.date:     09/27/2023
 ms.topic:    reference
 title:       Command-based DSC Resource manifest schema reference
 ---
@@ -33,24 +33,26 @@ The rest of this document describes the manifest's schema.
 
 The manifest must include these properties:
 
-- [manifestVersion](#manifestversion)
+- [$schema](#schema)
 - [type](#type)
 - [version](#version)
 - [get](#get)
 
 ## Properties
 
-### manifestVersion
+### $schema
 
-The `manifestVersion` property indicates the semantic version (semver) of this schema that the
-manifest validates against. This property is mandatory. DSC uses this value to validate the
-manifest against the correct JSON schema.
+The `$schema` property indicates the canonical URI of this schema that the manifest validates
+against. This property is mandatory. DSC uses this value to validate the manifest against the
+correct JSON schema.
 
 ```yaml
 Type:        string
 Required:    true
-Pattern:     ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
-ValidValues: ['1.0']
+Format:      URI
+ValidValues: [
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json
+             ]
 ```
 
 ### type
@@ -144,8 +146,8 @@ defined, the DSC can't manage instances of the resource. It can only get their c
 test whether the instance is in the desired state.
 
 The value of this property must be an object. The `executable` property, defining the name of the
-command to call, is mandatory. The `args` `input`, `preTest`, and `returns` properties are
-optional. For more information, see [DSC Resource manifest set property schema reference][08].
+command to call, is mandatory. The `args` `input`, `implementsPretest`, and `returns` properties
+are optional. For more information, see [DSC Resource manifest set property schema reference][08].
 
 ```yaml
 Type:     object
