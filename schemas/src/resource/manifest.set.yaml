@@ -72,7 +72,6 @@ properties:
       invoking the `set` operation.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#input
-
   implementsPretest:
     title: Resource Performs Pre-Test
     description: >-
@@ -129,7 +128,7 @@ examples:
     return:            state
 
 defaultSnippets: # VS Code only
-  - label:       ' Define without arguments'
+  - label: ' Define without arguments'
     markdownDescription: |
       Define the `set` command for the resource when no arguments are required.
     body:
@@ -137,7 +136,8 @@ defaultSnippets: # VS Code only
       implementsPretest: ^${2|true,false|}
       return:             ${3|state,stateAndDiff|}
       executable:         ${4:executable_name}
-  - label:       ' Define with arguments'
+
+  - label: ' Define with arguments'
     markdownDescription: |
       Define the `set` command for the resource when at least one argument is required.
     body:

@@ -290,7 +290,7 @@
       "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThis property defines a map of valid exit codes for the DSC Resource. DSC always interprets\nexit code `0` as a successful operation and any other exit code as an error. Use this\nproperty to indicate human-readable semantic meanings for the DSC Resource's exit codes.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserve-view=true#exitcodes\n",
       "defaultSnippets": [
         {
-          "label": "Defined exit codes",
+          "label": " Defined exit codes",
           "description": "Defines exit codes with semantic meaning for the resource.",
           "body": {
             "0": "Success",

@@ -109,14 +109,15 @@ examples:
     return: state
 
 defaultSnippets: # VS Code only
-  - label:       ' Define without arguments'
+  - label: ' Define without arguments'
     markdownDescription: |
       Define the `test` command for the resource when no arguments are required.
     body:
       input:      ${1|input,env|}
       return:     ${2|state,stateAndDiff|}
       executable: ${3:executable_name}
-  - label:       ' Define with arguments'
+
+  - label: ' Define with arguments'
     markdownDescription: |
       Define the `test` command for the resource when at least one argument is required.
     body:

@@ -21,7 +21,7 @@ markdownDescription: | # VS Code only
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>
 
 defaultSnippets:
-  - label:       ' Define a resource'
+  - label: ' Define a resource'
     markdownDescription: |-
       Defines a standard resource that:
 
@@ -33,11 +33,11 @@ defaultSnippets:
       $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
       version:         '${3:0.1.0}'
-      description:     ${4:Synopsis for the resource's purpose}
+      description:      ${4:Synopsis for the resource's purpose}
       get:
-        executable: ${5:executable name}
+        executable:   ${5:executable name}
         args:       ['${6:argument}']
-        input:      ${7:stdin}
+        input:        ${7:stdin}
       set:
         executable:         ${8:executable name}
         args:             ['${9:argument}']
@@ -50,10 +50,11 @@ defaultSnippets:
           type:                     object
           properties:
             ${14:name}:
-              title: ${15:property title}
+              title:       ${15:property title}
               description: ${16:explanation of property purpose and usage}
               type:        ${17|string,integer,number,array,object,null|}
-  - label:       ' Define a resource (group)'
+
+  - label: ' Define a resource (group)'
     markdownDescription: |-
       Defines a group resource that expects a list of resource instances and operates on them.
     body:
@@ -62,14 +63,14 @@ defaultSnippets:
       version:         '${3:0.1.0}'
       description:      ${4:Synopsis for the resource's purpose}
       get:
-        executable: ${5:executable name}
+        executable:   ${5:executable name}
         args:       ['${6:argument}']
-        input:      ${7:stdin}
+        input:        ${7:stdin}
       test:
-        executable: ${8:executable name}
+        executable:   ${8:executable name}
         args:       ['${9:argument}']
-        input:      ${10:stdin}
-        return:     ${12:state}
+        input:        ${10:stdin}
+        return:       ${12:state}
       set:
         executable:         ${13:executable name}
         args:             ['${14:argument}']
@@ -88,10 +89,11 @@ defaultSnippets:
               items:
                 ${escape_dollar:$}ref: <HOST>/<PREFIX>/<VERSION>/config/document.resource.json
             ${21:name}:
-              title: ${22:property title}
+              title:       ${22:property title}
               description: ${23:explanation of property purpose and usage}
               type:        ${24|string,integer,number,array,object,null|}
-  - label:       ' Define a resource (provider)'
+
+  - label: ' Define a resource (provider)'
     markdownDescription: |-
       Defines a provider resource that enables users to define non-command-based DSC Resources in
       the configuration.
@@ -101,14 +103,14 @@ defaultSnippets:
       version:         '${3:0.1.0}'
       description:      ${4:Synopsis for the resource's purpose}
       get:
-        executable: ${5:executable name}
+        executable:   ${5:executable name}
         args:       ['${6:argument}']
-        input:      ${7:stdin}
+        input:        ${7:stdin}
       test:
-        executable: ${8:executable name}
+        executable:   ${8:executable name}
         args:       ['${9:argument}']
-        input:      ${10:stdin}
-        return:     ${12:state}
+        input:        ${10:stdin}
+        return:       ${12:state}
       set:
         executable:         ${13:executable name}
         args:             ['${14:argument}']
@@ -118,7 +120,7 @@ defaultSnippets:
       provider:
         config: ${18|full,sequence|}
         list:
-          executable: ${19:executable name}
+          executable:   ${19:executable name}
           args:       ['${20:argument}']
       schema:
         embedded:
@@ -132,10 +134,11 @@ defaultSnippets:
               items:
                 ${escape_dollar:$}ref: <HOST>/<PREFIX>/<VERSION>/config/document.resource.json
             ${26:name}:
-              title: ${27:property title}
+              title:       ${27:property title}
               description: ${28:explanation of property purpose and usage}
               type:        ${29|string,integer,number,array,object,null|}
-  - label:       ' Define a resource (assertion-only)'
+
+  - label: ' Define a resource (assertion-only)'
     markdownDescription: |-
       Defines an assertion resource that can get the current state of an instance but not configure
       it. By default, the resource relies on DSC's synthetic testing feature. If the resource
@@ -146,16 +149,16 @@ defaultSnippets:
       version:         '${3:0.1.0}'
       description:      ${4:Synopsis for the resource's purpose}
       get:
-        executable: ${5:executable name}
+        executable:   ${5:executable name}
         args:       ['${6:argument}']
-        input:      ${7:stdin}
+        input:        ${7:stdin}
       schema:
         embedded:
           ${escape_dollar:$}schema: ${13|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
           type:                     object
           properties:
             ${14:name}:
-              title: ${15:property title}
+              title:       ${15:property title}
               description: ${16:explanation of property purpose and usage}
               type:        ${17|string,integer,number,array,object,null|}
 
@@ -307,11 +310,11 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#exitcodes
     defaultSnippets:
-      - label:       Defined exit codes
+      - label:     ' Defined exit codes'
         description: Defines exit codes with semantic meaning for the resource.
         body:
           '0': Success
-          ${1:first exit code number}: ${2:first exit code meaning}
+          ${1:first exit code number}:  ${2:first exit code meaning}
           ${3:second exit code number}: ${4:second exit code meaning}
   schema:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.schema.yaml

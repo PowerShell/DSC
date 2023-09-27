@@ -75,12 +75,13 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
     defaultSnippets:
-      - label:       ' Define without arguments'
+      - label: ' Define without arguments'
         markdownDescription: |
           Define the `schema` command for the resource when no arguments are required.
         body:
           executable: ${1:executable_name}
-      - label:       ' Define with arguments'
+
+      - label: ' Define with arguments'
         markdownDescription: |
           Define the `schema` command for the resource when at least one argument is required.
         body:
@@ -223,14 +224,14 @@ properties:
             - $ref: http://json-schema.org/draft-07/schema#
         additionalProperties:
           defaultSnippets: # VS Code only
-            - label:             ' Define a property'
+            - label: ' Define a property'
               markdownDescription: Define a new property for the resource instance schema.
               body:
                 title:       ${1:property title}
                 description: ${2:explanation of property purpose and usage}
                 type:        ${3|boolean,string,integer,number,array,object,null|}
 
-            - label:             ' Define a property (boolean)'
+            - label: ' Define a property (boolean)'
               markdownDescription: |-
                 Define a new [boolean][01] property for the resource instance schema, requiring the
                 value to be either `true` or `false`.
@@ -241,7 +242,7 @@ properties:
                 description: ${2:explanation of property purpose and usage}
                 type:        boolean
 
-            - label:             ' Define a property (string)'
+            - label: ' Define a property (string)'
               markdownDescription: |-
                 Define a new [string][01] property for the resource instance schema, requiring the
                 value to be a blob of text.
@@ -315,6 +316,7 @@ properties:
                 enum:
                   - ^${3:"first value"}
                   - ^${4:"second value"}
+
             - label: ' Define a property (const)'
               markdownDescription: |-
                 Define a new [const][01] property for the resource instance schema that only
@@ -322,8 +324,8 @@ properties:
 
                 [01]: https://json-schema.org/understanding-json-schema/reference/generic.html#constant-values
               body:
-                title:       ${1:property title}
-                description: ${2:explanation of property purpose and usage}
+                title:        ${1:property title}
+                description:  ${2:explanation of property purpose and usage}
                 const:       ^${3:"constant value"}
 
         properties:
@@ -409,7 +411,7 @@ properties:
             markdownDescription: Define a property for the resource instance schema.
             body:
               ${1:propertyName}:
-                title: ${2:property title}
+                title:       ${2:property title}
                 description: ${3:explanation of property purpose and usage}
                 type:        ${4|string,integer,number,array,object,null|}
   url:
@@ -497,6 +499,7 @@ defaultSnippets: # VS Code only
     body:
       command:
         executable: ${1:executable_name}
+
   - label: ' Define as command with arguments'
     markdownDescription: |
       ***
@@ -511,6 +514,7 @@ defaultSnippets: # VS Code only
         executable: ${1:executable_name}
         args:
           - ${2:--first-argument}
+
   - label: ' Define as an embedded schema'
     markdownDescription: |
       ***
@@ -527,6 +531,6 @@ defaultSnippets: # VS Code only
         type:                     object
         properties:
           ${2:name}:
-            title: ${3:property title}
+            title:       ${3:property title}
             description: ${4:explanation of property purpose and usage}
             type:        ${5|string,integer,number,array,object,null|}

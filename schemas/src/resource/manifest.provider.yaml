@@ -123,7 +123,7 @@ examples:
         - ./powershellgroup.resource.ps1 List
 
 defaultSnippets: # VS Code only
-  - label:       ' Define without arguments'
+  - label: ' Define without arguments'
     markdownDescription: |
       Define the provider config kind and `list` command for the resource when no arguments are
       required.
@@ -131,7 +131,8 @@ defaultSnippets: # VS Code only
       config: $1
       list:
         executable: ${2:executable_name}
-  - label:       ' Define with arguments'
+
+  - label: ' Define with arguments'
     markdownDescription: |
       Define the provider config kind and `list` command for the resource when at least one
       argument is required.

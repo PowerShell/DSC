@@ -67,7 +67,7 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#parameters
     defaultSnippets:
-      - label:       ' New Parameter'
+      - label: ' New Parameter'
         markdownDescription: |-
           Defines a new runtime option for the configuration.
 
@@ -86,7 +86,8 @@ properties:
             defaultValue:  $4
             allowedValues:
               - $5
-      - label:       ' New Integer Parameter'
+
+      - label: ' New Integer Parameter'
         markdownDescription: |-
           Defines a new runtime option for the configuration as an integer value.
 
@@ -192,7 +193,7 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#metadata-1
     defaultSnippets:
-      - label:       New metadata property
+      - label: ' New metadata property'
         markdownDescription: |-
           Defines a key-value pair for the metadata:
 
@@ -201,7 +202,8 @@ properties:
           ```
         body:
           ${1:metadataName}: ${2:value}
-      - label:       New metadata property (object)
+
+      - label: ' New metadata property (object)'
         markdownDescription: |-
           Defines a new key-value pair for the metadata where the value is an object.
 
@@ -212,7 +214,8 @@ properties:
         body:
           ${1:metadataName}:
             ${2:key}: ${3:value}
-      - label:       New metadata property (array)
+
+      - label: ' New metadata property (array)'
         markdownDescription: |-
           Defines a new key-value pair for the metadata where the value is an array.
 

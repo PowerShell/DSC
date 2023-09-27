@@ -112,14 +112,14 @@
       "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a set of key-value pairs for the configuration. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#metadata-1\n",
       "defaultSnippets": [
         {
-          "label": "New metadata property",
+          "label": " New metadata property",
           "markdownDescription": "Defines a key-value pair for the metadata:\n\n```yaml\nmetadataName: value\n```",
           "body": {
             "${1:metadataName}": "${2:value}"
           }
         },
         {
-          "label": "New metadata property (object)",
+          "label": " New metadata property (object)",
           "markdownDescription": "Defines a new key-value pair for the metadata where the value is an object.\n\n```yaml\nmetadataName:\n  key: value\n```",
           "body": {
             "${1:metadataName}": {
@@ -128,7 +128,7 @@
           }
         },
         {
-          "label": "New metadata property (array)",
+          "label": " New metadata property (array)",
           "markdownDescription": "Defines a new key-value pair for the metadata where the value is an array.\n\n```yaml\nmetadataName:\n  - firstValue\n  - secondValue\n```",
           "body": {
             "${1:metadataName}": [
@@ -190,14 +190,14 @@
                         "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a set of key-value pairs for the parameter. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#metadata-1\n",
                         "defaultSnippets": [
                           {
-                            "label": "New metadata property",
+                            "label": " New metadata property",
                             "markdownDescription": "Defines a key-value pair for the metadata:\n\n```yaml\nmetadataName: value\n```",
                             "body": {
                               "${1:metadataName}": "${2:value}"
                             }
                           },
                           {
-                            "label": "New metadata property (object)",
+                            "label": " New metadata property (object)",
                             "markdownDescription": "Defines a new key-value pair for the metadata where the value is an object.\n\n```yaml\nmetadataName:\n  key: value\n```",
                             "body": {
                               "${1:metadataName}": {
@@ -206,7 +206,7 @@
                             }
                           },
                           {
-                            "label": "New metadata property (array)",
+                            "label": " New metadata property (array)",
                             "markdownDescription": "Defines a new key-value pair for the metadata where the value is an array.\n\n```yaml\nmetadataName:\n  - firstValue\n  - secondValue\n```",
                             "body": {
                               "${1:metadataName}": [
@@ -441,7 +441,7 @@
                           "patternErrorMessage": "Invalid value, must be a value like `[resourceId('<type>', '<name>`)], such as\n`[resourceId('Microsoft/OSInfo', 'Foo')]`.\n\nThe `<type>` and `<name>` should be the fully qualified type of the resource and its\nfriendly name in the configuration.\n",
                           "defaultSnippets": [
                             {
-                              "label": "New dependency",
+                              "label": " New dependency",
                               "markdownDescription": "Defines a new dependency for the resource instance.\n\n```yaml\n\"[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]\"\n```",
                               "bodyText": "\"[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]\""
                             }

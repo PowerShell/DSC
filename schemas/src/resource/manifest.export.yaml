@@ -59,12 +59,13 @@ properties:
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/export?<DOCS_VERSION_PIN>#args
 
 defaultSnippets: # VS Code only
-  - label:       ' Define without arguments'
+  - label: ' Define without arguments'
     markdownDescription: |
       Define the export command for the resource when no arguments are required.
     body:
       executable: ${1:executable_name}
-  - label:       ' Define with arguments'
+
+  - label: ' Define with arguments'
     markdownDescription: |
       Define the export command for the resource when at least one argument is required.
     body:

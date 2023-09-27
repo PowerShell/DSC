@@ -82,7 +82,7 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#metadata-1
     defaultSnippets:
-      - label:       New metadata property
+      - label: ' New metadata property'
         markdownDescription: |-
           Defines a key-value pair for the metadata:
 
@@ -91,7 +91,8 @@ properties:
           ```
         body:
           ${1:metadataName}: ${2:value}
-      - label:       New metadata property (object)
+
+      - label: ' New metadata property (object)'
         markdownDescription: |-
           Defines a new key-value pair for the metadata where the value is an object.
 
@@ -102,7 +103,8 @@ properties:
         body:
           ${1:metadataName}:
             ${2:key}: ${3:value}
-      - label:       New metadata property (array)
+
+      - label: ' New metadata property (array)'
         markdownDescription: |-
           Defines a new key-value pair for the metadata where the value is an array.
 

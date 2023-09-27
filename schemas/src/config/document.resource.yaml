@@ -33,7 +33,7 @@ properties:
         The `<type>` and `<name>` should be the fully qualified type of the resource and its
         friendly name in the configuration.
       defaultSnippets:
-        - label:       New dependency
+        - label: ' New dependency'
           markdownDescription: |-
             Defines a new dependency for the resource instance.
 
@@ -96,7 +96,7 @@ markdownDescription: |
   [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>
 
 defaultSnippets:
-  - label:       ' New resource instance'
+  - label: ' New resource instance'
     markdownDescription: |-
       Defines a new instance of a DSC Resource for the configuration.
 
@@ -111,7 +111,8 @@ defaultSnippets:
       name: ${2:instance_name}
       properties:
         ${3:propertyName}: ${4:propertyValue}
-  - label:       ' New dependent resource instance'
+
+  - label: ' New dependent resource instance'
     markdownDescription: |-
       Defines a new instance of a DSC Resource for the configuration that depends on another
       instance.
