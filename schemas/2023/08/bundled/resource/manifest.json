@@ -5,18 +5,19 @@
   "description": "Defines the information DSC and integrating require to process and call a command-based DSC Resource.",
   "type": "object",
   "required": [
-    "manifestVersion",
+    "$schema",
     "type",
     "version",
     "get"
   ],
   "properties": {
-    "manifestVersion": {
-      "title": "Manifest Version",
-      "description": "The semver of the DSC Resource manifest schema to validate this manifest with.",
-      "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
+    "$schema": {
+      "title": "Manifest Schema",
+      "description": "This property must be the canonical URL of the Command-based DSC Resource Manifest schema that the manifest is implemented for.",
+      "type": "string",
+      "format": "uri",
       "enum": [
-        "1.0"
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json"
       ]
     },
     "type": {
@@ -92,6 +93,14 @@
     }
   },
   "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json",
+      "title": "DSC Resource fully qualified type name",
+      "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+      "type": "string",
+      "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+    },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/semver.json",
@@ -100,14 +109,6 @@
       "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json",
-      "title": "DSC Resource fully qualified type name",
-      "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
-      "type": "string",
-      "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.get.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

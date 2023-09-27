@@ -30,7 +30,7 @@ defaultSnippets:
       - Relies on DSC's synthetic testing to determine whether an instance is in the desired state
       - Defines an embedded JSON schema.
     body:
-      manifestVersion: '1.0'
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
       version:         '${3:0.1.0}'
       description:     ${4:Synopsis for the resource's purpose}
@@ -57,10 +57,10 @@ defaultSnippets:
     markdownDescription: |-
       Defines a group resource that expects a list of resource instances and operates on them.
     body:
-      manifestVersion: '1.0'
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
       version:         '${3:0.1.0}'
-      description:     ${4:Synopsis for the resource's purpose}
+      description:      ${4:Synopsis for the resource's purpose}
       get:
         executable: ${5:executable name}
         args:       ['${6:argument}']
@@ -96,10 +96,10 @@ defaultSnippets:
       Defines a provider resource that enables users to define non-command-based DSC Resources in
       the configuration.
     body:
-      manifestVersion: '1.0'
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
       version:         '${3:0.1.0}'
-      description:     ${4:Synopsis for the resource's purpose}
+      description:      ${4:Synopsis for the resource's purpose}
       get:
         executable: ${5:executable name}
         args:       ['${6:argument}']
@@ -141,10 +141,10 @@ defaultSnippets:
       it. By default, the resource relies on DSC's synthetic testing feature. If the resource
       implements the `test` operation itself, define the `test` property.
     body:
-      manifestVersion: '1.0'
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
       version:         '${3:0.1.0}'
-      description:     ${4:Synopsis for the resource's purpose}
+      description:      ${4:Synopsis for the resource's purpose}
       get:
         executable: ${5:executable name}
         args:       ['${6:argument}']
@@ -161,27 +161,30 @@ defaultSnippets:
 
 type: object
 required:
-  - manifestVersion
+  - $schema
   - type
   - version
   - get
 properties:
-  manifestVersion:
-    title: Manifest Version
+  $schema:
+    title: Manifest Schema
     description: >-
-      The semver of the DSC Resource manifest schema to validate this manifest with.
-    $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+      This property must be the canonical URL of the Command-based DSC Resource Manifest schema
+      that the manifest is implemented for.
+    type:   string
+    format: uri
     enum:
-      - '1.0'
+      - <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
     # VS Code Only
     markdownDescription: |
       ***
       [_Online Documentation_][01]
       ***
 
-      The semver of the DSC Resource manifest schema to validate this manifest with.
+      This property must be the canonical URL of the Command-based DSC Resource Manifest schema
+      that the manifest is implemented for.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#manifestversion
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#schema
     markdownEnumDescriptions:
       - | # 1.0
           _Initial release_
