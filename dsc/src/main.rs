@@ -7,6 +7,7 @@ use clap::{CommandFactory, Parser};
 use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
+use sysinfo::{Pid, Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info};
 
 #[cfg(debug_assertions)]
@@ -79,7 +80,24 @@ fn main() {
 
 fn ctrlc_handler() {
     error!("Ctrl-C received");
+
+    // get process tree for current process and terminate all processes
+    let mut sys = System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new()));
+    let Ok(current_pid) = get_current_pid() else {
+        eprintln!("Could not get current process id");
+        exit(util::EXIT_CTRL_C);
+    };
+    let Some(current_process) = sys.process(current_pid) else {
+        eprintln!("Could not get current process");
+        exit(util::EXIT_CTRL_C);
+    };
+
+    terminate_subprocesses(sys, current_process);
     exit(util::EXIT_CTRL_C);
+}
+
+fn terminate_subprocesses(sys: &System, process: &Process) {
+    for subprocess in process.
 }
 
 #[cfg(debug_assertions)]
