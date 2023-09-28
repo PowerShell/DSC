@@ -5,6 +5,7 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, serde_json_value_to_string, write_output};
+use tracing::error;
 
 use atty::Stream;
 use dsc_lib::{
@@ -24,7 +25,7 @@ pub fn config_get(configurator: &Configurator, format: &Option<OutputFormat>)
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
@@ -34,7 +35,7 @@ pub fn config_get(configurator: &Configurator, format: &Option<OutputFormat>)
             }
         },
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -47,7 +48,7 @@ pub fn config_set(configurator: &Configurator, format: &Option<OutputFormat>)
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
@@ -57,7 +58,7 @@ pub fn config_set(configurator: &Configurator, format: &Option<OutputFormat>)
             }
         },
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -70,7 +71,7 @@ pub fn config_test(configurator: &Configurator, format: &Option<OutputFormat>)
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
@@ -80,7 +81,7 @@ pub fn config_test(configurator: &Configurator, format: &Option<OutputFormat>)
             }
         },
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -93,7 +94,7 @@ pub fn config_export(configurator: &Configurator, format: &Option<OutputFormat>)
             let json = match serde_json::to_string(&result.result) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
@@ -102,14 +103,14 @@ pub fn config_export(configurator: &Configurator, format: &Option<OutputFormat>)
 
                 for msg in result.messages
                 {
-                    eprintln!("{:?} message {}", msg.level, msg.message);
+                    error!("{:?} message {}", msg.level, msg.message);
                 };
 
                 exit(EXIT_DSC_ERROR);
             }
         },
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -117,7 +118,7 @@ pub fn config_export(configurator: &Configurator, format: &Option<OutputFormat>)
 
 pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
     let Some(stdin) = stdin else {
-        eprintln!("Configuration must be piped to STDIN");
+        error!("Configuration must be piped to STDIN");
         exit(EXIT_INVALID_ARGS);
     };
 
@@ -129,13 +130,13 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
                     match serde_json::to_value(yaml) {
                         Ok(json) => json,
                         Err(err) => {
-                            eprintln!("Error: Failed to convert YAML to JSON: {err}");
+                            error!("Error: Failed to convert YAML to JSON: {err}");
                             exit(EXIT_DSC_ERROR);
                         }
                     }
                 },
                 Err(err) => {
-                    eprintln!("Error: Input is not valid JSON or YAML: {err}");
+                    error!("Error: Input is not valid JSON or YAML: {err}");
                     exit(EXIT_INVALID_INPUT);
                 }
             }
@@ -146,7 +147,7 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
     let configurator = match Configurator::new(&json_string) {
         Ok(configurator) => configurator,
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     };
@@ -176,21 +177,21 @@ pub fn validate_config(config: &str) {
     let schema = match serde_json::to_value(get_schema(DscType::Configuration)) {
         Ok(schema) => schema,
         Err(e) => {
-            eprintln!("Error: Failed to convert schema to JSON: {e}");
+            error!("Error: Failed to convert schema to JSON: {e}");
             exit(EXIT_DSC_ERROR);
         },
     };
     let compiled_schema = match JSONSchema::compile(&schema) {
         Ok(schema) => schema,
         Err(e) => {
-            eprintln!("Error: Failed to compile schema: {e}");
+            error!("Error: Failed to compile schema: {e}");
             exit(EXIT_DSC_ERROR);
         },
     };
     let config_value = match serde_json::from_str(config) {
         Ok(config) => config,
         Err(e) => {
-            eprintln!("Error: Failed to parse configuration: {e}");
+            error!("Error: Failed to parse configuration: {e}");
             exit(EXIT_INVALID_INPUT);
         },
     };
@@ -199,26 +200,26 @@ pub fn validate_config(config: &str) {
         for e in err {
             error.push_str(&format!("\n{e} "));
         }
-        eprintln!("{error}");
+        error!("{error}");
         exit(EXIT_INVALID_INPUT);
     };
 
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     };
 
     // then validate each resource
     let Some(resources) = config_value["resources"].as_array() else {
-        eprintln!("Error: Resources not specified");
+        error!("Error: Resources not specified");
         exit(EXIT_INVALID_INPUT);
     };
     for resource_block in resources {
         let type_name = resource_block["type"].as_str().unwrap_or_else(|| {
-            eprintln!("Error: Resource type not specified");
+            error!("Error: Resource type not specified");
             exit(EXIT_INVALID_INPUT);
         });
         // get the actual resource
@@ -231,7 +232,7 @@ pub fn validate_config(config: &str) {
                 let manifest: ResourceManifest = match serde_json::from_value(manifest) {
                     Ok(manifest) => manifest,
                     Err(e) => {
-                        eprintln!("Error: Failed to parse resource manifest: {e}");
+                        error!("Error: Failed to parse resource manifest: {e}");
                         exit(EXIT_INVALID_INPUT);
                     },
                 };
@@ -239,34 +240,34 @@ pub fn validate_config(config: &str) {
                     let result = match resource.validate(config) {
                         Ok(result) => result,
                         Err(e) => {
-                            eprintln!("Error: Failed to validate resource: {e}");
+                            error!("Error: Failed to validate resource: {e}");
                             exit(EXIT_VALIDATION_FAILED);
                         },
                     };
                     if !result.valid {
                         let reason = result.reason.unwrap_or("No reason provided".to_string());
                         let type_name = resource.type_name;
-                        eprintln!("Resource {type_name} failed validation: {reason}");
+                        error!("Resource {type_name} failed validation: {reason}");
                         exit(EXIT_VALIDATION_FAILED);
                     }
                 }
                 else {
                     // use schema validation
                     let Ok(schema) = resource.schema() else {
-                        eprintln!("Error: Resource {type_name} does not have a schema nor supports validation");
+                        error!("Error: Resource {type_name} does not have a schema nor supports validation");
                         exit(EXIT_VALIDATION_FAILED);
                     };
                     let schema = match serde_json::to_value(&schema) {
                         Ok(schema) => schema,
                         Err(e) => {
-                            eprintln!("Error: Failed to convert schema to JSON: {e}");
+                            error!("Error: Failed to convert schema to JSON: {e}");
                             exit(EXIT_DSC_ERROR);
                         },
                     };
                     let compiled_schema = match JSONSchema::compile(&schema) {
                         Ok(schema) => schema,
                         Err(e) => {
-                            eprintln!("Error: Failed to compile schema: {e}");
+                            error!("Error: Failed to compile schema: {e}");
                             exit(EXIT_DSC_ERROR);
                         },
                     };
@@ -279,7 +280,7 @@ pub fn validate_config(config: &str) {
                                 error.push_str(&format!("{e} "));
                             }
 
-                            eprintln!("Error: Resource {type_name} failed validation: {error}");
+                            error!("Error: Resource {type_name} failed validation: {error}");
                             exit(EXIT_VALIDATION_FAILED);
                         },
                     };
@@ -295,7 +296,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     };
@@ -305,7 +306,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
             match dsc.initialize_discovery() {
                 Ok(_) => (),
                 Err(err) => {
-                    eprintln!("Error: {err}");
+                    error!("Error: {err}");
                     exit(EXIT_DSC_ERROR);
                 }
             };
@@ -324,7 +325,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                     let manifest = match import_manifest(resource_manifest.clone()) {
                         Ok(resource_manifest) => resource_manifest,
                         Err(err) => {
-                            eprintln!("Error in manifest for {0}: {err}", resource.type_name);
+                            error!("Error in manifest for {0}: {err}", resource.type_name);
                             continue;
                         }
                     };
@@ -368,7 +369,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                     let json = match serde_json::to_string(&resource) {
                         Ok(json) => json,
                         Err(err) => {
-                            eprintln!("JSON Error: {err}");
+                            error!("JSON Error: {err}");
                             exit(EXIT_JSON_ERROR);
                         }
                     };

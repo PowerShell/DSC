@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::{collections::HashMap, process::Command, io::{Write, Read}, process::Stdio};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
+use tracing::debug;
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -429,8 +430,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 
 fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
 
-    //TODO: add to debug stream:
-    //println!("verify_json - resource_type - {}", resource.resource_type);
+    debug!("resource_type - {}", resource.resource_type);
 
     //TODO: remove this after schema validation for classic PS resources is implemented
     if resource.resource_type == "DSC/PowerShellGroup" {return Ok(());}

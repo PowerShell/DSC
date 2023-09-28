@@ -25,6 +25,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
+use tracing::error;
 
 pub const EXIT_SUCCESS: i32 = 0;
 pub const EXIT_INVALID_ARGS: i32 = 1;
@@ -49,7 +50,7 @@ pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
     match serde_json::to_string(&json) {
         Ok(json_string) => json_string,
         Err(err) => {
-            eprintln!("Error: Failed to convert JSON to string: {err}");
+            error!("Error: Failed to convert JSON to string: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -109,7 +110,7 @@ pub fn add_type_name_to_json(json: String, type_name: String) -> String
     match add_fields_to_json(&j, &map) {
         Ok(json) => json,
         Err(err) => {
-            eprintln!("JSON Error: {err}");
+            error!("JSON Error: {err}");
             exit(EXIT_JSON_ERROR);
         }
     }
@@ -172,14 +173,14 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
                 let value: serde_json::Value = match serde_json::from_str(json) {
                     Ok(value) => value,
                     Err(err) => {
-                        eprintln!("JSON Error: {err}");
+                        error!("JSON Error: {err}");
                         exit(EXIT_JSON_ERROR);
                     }
                 };
                 match serde_json::to_string_pretty(&value) {
                     Ok(json) => json,
                     Err(err) => {
-                        eprintln!("JSON Error: {err}");
+                        error!("JSON Error: {err}");
                         exit(EXIT_JSON_ERROR);
                     }
                 }
@@ -189,14 +190,14 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
                 let value: serde_json::Value = match serde_json::from_str(json) {
                     Ok(value) => value,
                     Err(err) => {
-                        eprintln!("JSON Error: {err}");
+                        error!("JSON Error: {err}");
                         exit(EXIT_JSON_ERROR);
                     }
                 };
                 match serde_yaml::to_string(&value) {
                     Ok(yaml) => yaml,
                     Err(err) => {
-                        eprintln!("YAML Error: {err}");
+                        error!("YAML Error: {err}");
                         exit(EXIT_JSON_ERROR);
                     }
                 }
