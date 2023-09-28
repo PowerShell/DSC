@@ -47,13 +47,6 @@ stages:
       - ImageOverride -equals PSMMSUbuntu20.04-Secure
     steps:
     - pwsh: |
-        $env:PATH += ':~/.cargo/bin'
-        write-verbose -verbose "~"
-        dir -hidden -path ~
-        write-verbose -verbose ".cargo"
-        dir -path ~/.cargo
-        write-verbose -verbose ".cargo/bin"
-        dir -path ~/.cargo/bin
         ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
       displayName: 'Build x86_64-unknown-linux-gnu'
 
@@ -65,7 +58,6 @@ stages:
       - ImageOverride -equals PSMMSUbuntu20.04-ARM64-secure
     steps:
     - pwsh: |
-        $env:PATH += ':~/.cargo/bin'
         ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
       displayName: 'Build aarch64-unknown-linux-gnu'
 
