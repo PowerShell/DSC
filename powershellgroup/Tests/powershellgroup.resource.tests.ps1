@@ -36,6 +36,22 @@ Describe 'PowerShellGroup resource tests' {
         $res.actualState.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
     }
 
+    It 'Get uses enum names on class-based resource' -Skip:(!$IsWindows){
+
+        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r PSTestModule/TestClassResource
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.EnumProp | Should -BeExactly 'Expected'
+    }
+
+    It 'Get uses enum names on script-based resource' -Skip:(!$IsWindows){
+
+        $r = "{'Name':'TestPSRepository1'}" | dsc resource get -r PSTestModule/TestPSRepository
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.Ensure | Should -BeExactly 'Present'
+    }
+
     It 'Test works on class-based resource' -Skip:(!$IsWindows){
 
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r PSTestModule/TestClassResource

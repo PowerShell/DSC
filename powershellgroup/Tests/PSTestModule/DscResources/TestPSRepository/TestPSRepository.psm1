@@ -1,3 +1,8 @@
+enum EnsureEnumeration {
+    Absent
+    Present
+}
+
 function Get-TargetResource {
     [CmdletBinding()]
     [OutputType([System.Collections.Hashtable])]
@@ -9,7 +14,7 @@ function Get-TargetResource {
     )
 
     $returnValue = @{
-        Ensure                    = 'Absent'
+        Ensure                    = [EnsureEnumeration]::Absent
         Name                      = $Name
         SourceLocation            = $null
         ScriptSourceLocation      = $null
@@ -22,7 +27,7 @@ function Get-TargetResource {
     }
 
     if ($Name -eq "TestPSRepository1") {
-        $returnValue.Ensure = 'Present'
+        $returnValue.Ensure = [EnsureEnumeration]::Present
         $returnValue.SourceLocation = 'https://www.powershellgallery.com/api/v2'
         $returnValue.ScriptSourceLocation = 'https://www.powershellgallery.com/api/v2/items/psscript'
         $returnValue.PublishLocation = 'https://www.powershellgallery.com/api/v2/package/'
