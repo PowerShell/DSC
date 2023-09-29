@@ -35,6 +35,7 @@ stages:
 
     steps:
     - pwsh: |
+        rustup default stable
         rustup target add $(buildName)
         ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
@@ -75,6 +76,7 @@ stages:
           buildName: aarch64-apple-darwin
     steps:
     - pwsh: |
+        rustup default stable
         rustup target add $(buildName)
         ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
