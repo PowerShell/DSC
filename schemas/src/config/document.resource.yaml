@@ -32,8 +32,20 @@ properties:
 
         The `<type>` and `<name>` should be the fully qualified type of the resource and its
         friendly name in the configuration.
+      defaultSnippets:
+        - label: ' New dependency'
+          markdownDescription: |-
+            Defines a new dependency for the resource instance.
+
+            ```yaml
+            "[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]"
+            ```
+          bodyText: >-
+            "[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]"
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a list of DSC Resource instances that DSC must successfully process before processing
       this instance. Each value for this property must be the `resourceID()` lookup for another
@@ -51,7 +63,7 @@ properties:
       YAML-format configuration document, always wrap the `resourceID()` lookup in double quotes
       (`"`).
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#properties-1
   properties:
     title: Managed instance properties
     description: >-
@@ -60,16 +72,20 @@ properties:
     type: object
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines the properties of the DSC Resource this instance manages. This property's value must
       be an object. DSC validates the property's value against the DSC Resource's schema.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true#properties-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#properties-1
 
 # VS Code only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines an instance of a DSC Resource in a configuration.
 
@@ -77,23 +93,43 @@ markdownDescription: |
   instance. Together, the instances in a configuration define the desired state that DSC can get,
   test, and set on a machine.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>
 
 defaultSnippets:
-  - label:       New resource instance
-    description: Defines a new instance of a DSC Resource for the configuration
-    body:
-      type: $1
-      name: $2
+  - label: ' New resource instance'
+    markdownDescription: |-
+      Defines a new instance of a DSC Resource for the configuration.
+
+      ```yaml
+      type: owner[.group][.area]/name
+      name: instance_name
       properties:
-        '${3:propertyName}': '${4:propertyValue}'
-  - label:       New dependent resource instance
-    description: >-
+        propertyName: propertyValue
+      ```
+    body:
+      type: ${1:owner[.group][.area]/name}
+      name: ${2:instance_name}
+      properties:
+        ${3:propertyName}: ${4:propertyValue}
+
+  - label: ' New dependent resource instance'
+    markdownDescription: |-
       Defines a new instance of a DSC Resource for the configuration that depends on another
       instance.
-    body:
-      type: $1
-      name: $2
-      dependsOn: "['[${3:dependencyType}]${4:dependencyName}']"
+
+      ```yaml
+      type:      owner[.group][.area]/name
+      name:      instance_name
+      dependsOn:
+        - "[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]"
       properties:
-        '${5:propertyName}': '${6:propertyValue}'
+        propertyName: propertyValue
+      ```
+    body:
+      type:      ${1:owner[.group][.area]/name}
+      name:      ${2:instance_name}
+      dependsOn:
+        - >-
+            "[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]"
+      properties:
+        ${5:propertyName}: ${6:propertyValue}

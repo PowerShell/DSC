@@ -14,9 +14,11 @@ readOnly: true
 
 # VS Code only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Indicates whether the instance is in the desired state. This property is only returned by the
   `test` method.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/indesiredstate?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/indesiredstate?<DOCS_VERSION_PIN>

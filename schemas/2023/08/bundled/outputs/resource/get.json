@@ -4,7 +4,9 @@
   "title": "dsc resource get result",
   "description": "Describes the return data for a DSC Resource instance from the `dsc resource get` command.",
   "type": "object",
-  "required": "actualState",
+  "required": [
+    "actualState"
+  ],
   "properties": {
     "actualState": {
       "title": "Actual state",

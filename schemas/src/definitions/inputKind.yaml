@@ -4,22 +4,41 @@ $id:     <HOST>/<PREFIX>/<VERSION>/definitions/inputKind.yaml
 
 title: Executable Command Input Type
 description: >-
-  Defines how DSC should pass input to the command, either as arguments or
-  JSON over stdin.
+  Defines how DSC should pass input to the command, either as environment variables or
+  JSON over stdin. When this value isn't defined, DSC doesn't send the resource any input.
 type: string
 enum:
-  - args
+  - env
   - stdin
-default: args
 
 # VS Code only
-markdownDescription: |
-  Defines how DSC should pass input to the command, either as arguments or JSON over `stdin`.
+# Don't define markdownDescription - each schema using this must define it, to link correctly.
 markdownEnumDescriptions:
-  # args
-  - |
-      Indicates that the resource expects the properties of an instance to be specified with
-      command line arguments. This option isn't implemented yet.
-  # stdin
-  - |
-      Indicates that the resource expects a JSON blob representing an instance from `stdin`.
+  - | # env
+      _Environment variables_
+
+      > Indicates that the resource expects the properties of an instance to be specified as
+      > environment variables with the same names and casing.
+      >
+      > This option only supports the following data types for instance properties:
+      >
+      > - `boolean`
+      > - `integer`
+      > - `number`
+      > - `string`
+      > - `array` of `integer` values
+      > - `array` of `number` values
+      > - `array` of `string` values
+      >
+      > For non-array values, DSC sets the environment variable to the specified value as-is. When
+      > the data type is an array of values, DSC sets the environment variable as a comma-delimited
+      > string. For example, the property `foo` with a value of `[1, 2, 3]` is saved in the `foo`
+      > environment variable as `"1,2,3"`.
+      >
+      > If the resource needs to support complex properties with an `object` value or multi-type
+      > arrays, set this to `stdin` instead.
+  - | # stdin
+      _JSON over `stdin`_
+
+      > Indicates that the resource expects a JSON blob representing an instance from `stdin`.
+      > The JSON must adhere to the instance schema.

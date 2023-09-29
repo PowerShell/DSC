@@ -7,12 +7,14 @@ description: >-
   Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to
   manage resources that don't have their own manifests with DSC.
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to
   manage resources that don't have their own manifests with DSC.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>
 
 type: object
 required:
@@ -24,19 +26,56 @@ properties:
     description: >-
       Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.
     markdownDescription: | # VS Code only
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true#list
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#list
     type: object
     required:
       - executable
     properties:
       executable:
         $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
+        markdownDescription: |
+          ***
+          [_Online Documentation_][01]
+          ***
+
+          Defines the name of the command to run. The value must be the name of a command discoverable
+          in the system's `PATH` environment variable or the full path to the command. A file extension
+          is only required when the command isn't recognizable by the operating system as an
+          executable.
+
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#executable
       args:
         $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+        markdownDescription: |
+          ***
+          [_Online Documentation_][01]
+          ***
+
+          Defines an array of strings to pass as arguments to the command. DSC passes the arguments to
+          the command in the order they're specified.
+
+          For example, the given the following definition:
+
+          ```json
+          {
+            "executable": "registry",
+            "args":       ["resources", "list"],
+          }
+          ```
+
+          DSC invokes the command for the resource as:
+
+          ```bash
+          registry resources list
+          ```
+
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#args
   config:
     title: Expected Configuration
     description: >-
@@ -49,22 +88,26 @@ properties:
       - sequence
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines whether the provider expects to receive a full and unprocessed configuration as a
       single JSON blob over stdin or a sequence of JSON Lines for each child resource's
       configurations.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserveView=true#config
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#config
     markdownEnumDescriptions:
-      # full
-      - |
-          Indicates that the provider expects a JSON blob containing the full and unprocessed
-          configuration as a single JSON blob over `stdin`.
-      # sequence
-      - |
-          Indicates that the provider expects each resource's configuration as a [JSON Line][01]
-          over `stdin`.
+      - | # full
+          _Full and unprocessed config as a JSON blob_
+
+          > Indicates that the provider expects a JSON blob containing the full and unprocessed
+          > configuration as a single JSON blob over `stdin`.
+      - | # sequence
+          _Resource instances as JSON Lines_
+
+          > Indicates that the provider expects each resource's configuration as a [JSON Line][01]
+          > over `stdin`.
 
           [01]: https://jsonlines.org/
 
@@ -78,3 +121,24 @@ examples:
         - -NoProfile
         - -Command
         - ./powershellgroup.resource.ps1 List
+
+defaultSnippets: # VS Code only
+  - label: ' Define without arguments'
+    markdownDescription: |
+      Define the provider config kind and `list` command for the resource when no arguments are
+      required.
+    body:
+      config: $1
+      list:
+        executable: ${2:executable_name}
+
+  - label: ' Define with arguments'
+    markdownDescription: |
+      Define the provider config kind and `list` command for the resource when at least one
+      argument is required.
+    body:
+      config: $1
+      list:
+        executable: ${2:executable_name}
+        args:
+          - ${3:--first-argument}

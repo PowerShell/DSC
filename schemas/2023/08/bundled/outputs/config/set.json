@@ -30,7 +30,7 @@
             "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json"
           },
           "result": {
-            "$ref": "/PowerShell/DSC/main/schemas/2023/08/results/resource/set.json"
+            "$ref": "/PowerShell/DSC/main/schemas/2023/08/outputs/resource/set.json"
           }
         }
       }
@@ -59,6 +59,39 @@
       "description": "The namespaced name of the DSC Resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
       "type": "string",
       "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/set.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/set.json",
+      "title": "dsc resource set result",
+      "description": "Describes the return data for a DSC Resource instance from the `dsc resource set` command.",
+      "type": "object",
+      "required": [
+        "beforeState",
+        "afterState",
+        "changedProperties"
+      ],
+      "properties": {
+        "beforeState": {
+          "title": "State before enforcing",
+          "description": "This property always represents the desired state of the DSC Resource instance before the `set` method runs. DSC validates this return value against the DSC Resource's schema.",
+          "type": "object"
+        },
+        "afterState": {
+          "title": "State after enforcing",
+          "description": "This property always represents the current state of the DSC Resource instance as returned by its `set` method after enforcing the desired state. DSC validates this return value against the DSC Resource's schema.",
+          "type": "object"
+        },
+        "changedProperties": {
+          "title": "Changed properties",
+          "description": "This property always represents the list of property names for the DSC Resource instance that the `set` method modified. When this value is an empty array, the `set` method didn't enforce any properties for the instance.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/definitions/messages.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

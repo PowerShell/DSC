@@ -7,12 +7,14 @@ description: >-
   Defines how DSC must call the DSC Resource to set the desired state of an instance and how to
   process the output from the DSC Resource.
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines how DSC must call the DSC Resource to set the desired state of an instance and how to
   process the output from the DSC Resource.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>
 
 type: object
 required:
@@ -21,11 +23,55 @@ required:
 properties:
   executable:
     $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines the name of the command to run. The value must be the name of a command discoverable
+      in the system's `PATH` environment variable or the full path to the command. A file extension
+      is only required when the command isn't recognizable by the operating system as an
+      executable.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#executable
   args:
     $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines an array of strings to pass as arguments to the command. DSC passes the arguments to
+      the command in the order they're specified.
+
+      For example, the given the following definition:
+
+      ```json
+      {
+        "executable": "registry",
+        "args":       ["config", "set"],
+      }
+      ```
+
+      DSC invokes the command for the resource as:
+
+      ```bash
+      registry config set
+      ```
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#args
   input:
     $ref: /<PREFIX>/<VERSION>/definitions/inputKind.yaml
-  preTest:
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines how DSC should pass input to the command, either as environment variables or JSON
+      over `stdin`.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#input
+  implementsPretest:
     title: Resource Performs Pre-Test
     description: >-
       Defines whether the DSC Resource performs its own test to ensure idempotency when calling the
@@ -35,13 +81,15 @@ properties:
     default: false
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines whether the DSC Resource performs its own test to ensure idempotency when calling the
       `set` command. Set this value to `true` if the DSC Resource tests input before modifying
       system state.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true#pretest
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#implementspretest
   return:
     description: >-
       Defines whether the command returns a JSON blob of the DSC Resource's state after the set
@@ -49,27 +97,52 @@ properties:
     $ref: /<PREFIX>/<VERSION>/definitions/returnKind.yaml
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines whether the command returns a JSON blob of the DSC Resource's state after the set
       operation or the state and an array of the properties the DSC Resource modified.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserveView=true#return
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#return
     markdownEnumDescriptions:
-      # state
-      - |
-          Indicates that the resource returns only the instance's final state after the set
-          operation as a JSON blob.
-      # stateAndDiff
-      - |
-          Indicates that the resource returns the instance's final state and an array of property
-          names that the resource modified.
+      - | # state
+          _Final state only_
+
+          > Indicates that the resource returns only the instance's final state after the set
+          > operation as a JSON blob.
+      - | # stateAndDiff
+          _Final state and changed properties_
+
+          > Indicates that the resource returns the instance's final state and an array of property
+          > names that the resource modified.
 
 examples:
   - executable: registry
     args:
       - config
       - set
-    input:   stdin
-    preTest: true
-    return:  state
+    input:             stdin
+    implementsPretest: true
+    return:            state
+
+defaultSnippets: # VS Code only
+  - label: ' Define without arguments'
+    markdownDescription: |
+      Define the `set` command for the resource when no arguments are required.
+    body:
+      input:              ${1|input,env|}
+      implementsPretest: ^${2|true,false|}
+      return:             ${3|state,stateAndDiff|}
+      executable:         ${4:executable_name}
+
+  - label: ' Define with arguments'
+    markdownDescription: |
+      Define the `set` command for the resource when at least one argument is required.
+    body:
+      input:              ${1|input,env|}
+      implementsPretest: ^${2|true,false|}
+      return:             ${3|state,stateAndDiff|}
+      executable:         ${4:executable_name}
+      args:
+        - ${5:--first-argument}

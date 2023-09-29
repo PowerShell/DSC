@@ -6,10 +6,14 @@
   "type": "object",
   "oneOf": [
     {
-      "required": "command"
+      "required": [
+        "command"
+      ]
     },
     {
-      "required": "embedded"
+      "required": [
+        "embedded"
+      ]
     }
   ],
   "properties": {
@@ -17,7 +21,9 @@
       "title": "Instance Schema Command",
       "description": "Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC Resource.",
       "type": "object",
-      "required": "executable",
+      "required": [
+        "executable"
+      ],
       "properties": {
         "executable": {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json"
@@ -77,6 +83,7 @@
               }
             ]
           },
+          "additionalProperties": {},
           "properties": {
             "_ensure": {
               "title": "Standard Property: _ensure",
@@ -87,7 +94,7 @@
             },
             "_inDesiredState": {
               "title": "Standard Property: _inDesiredState",
-              "description": "Indicates that the DSC Resource returns this value for it's own `test` method. This property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC Resource relies on DSC's synthetic testing.",
+              "description": "Indicates that the DSC Resource returns this value for it's own `test` method. This read-only property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC Resource relies on DSC's synthetic testing.",
               "const": {
                 "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json"
               }
@@ -101,7 +108,7 @@
             },
             "_rebootRequested": {
               "title": "Standard property: _rebootRequested",
-              "description": "Indicates that the DSC Resource uses the standard `_rebootRequested` property to report whether the machine should be rebooted after the `set` method executes.",
+              "description": "Indicates whether a resource instance requires a reboot after a set operation. To use DSC's built-in reboot notification processing, resources must define this property in their manifest.",
               "const": {
                 "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/rebootRequested.json"
               }
@@ -121,7 +128,9 @@
     {
       "command": {
         "executable": "registry",
-        "args": "schema"
+        "args": [
+          "schema"
+        ]
       }
     },
     {

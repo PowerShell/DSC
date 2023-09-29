@@ -7,7 +7,9 @@ description: >-
   Defines the information DSC and integrating require to process and call a command-based DSC
   Resource.
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines the information DSC and integrating require to process and call a command-based DSC
   Resource. For DSC to use a manifest on a system, the manifest file must:
@@ -16,37 +18,179 @@ markdownDescription: | # VS Code only
   1. Follow the naming convention `<name>.dsc.resource.json`.
   1. Be valid for this schema.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>
+
+defaultSnippets:
+  - label: ' Define a resource'
+    markdownDescription: |-
+      Defines a standard resource that:
+
+      - Can get the current state of an instance
+      - Can set an instance to the desired state
+      - Relies on DSC's synthetic testing to determine whether an instance is in the desired state
+      - Defines an embedded JSON schema.
+    body:
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:         '${3:0.1.0}'
+      description:      ${4:Synopsis for the resource's purpose}
+      get:
+        executable:   ${5:executable name}
+        args:       ['${6:argument}']
+        input:        ${7:stdin}
+      set:
+        executable:         ${8:executable name}
+        args:             ['${9:argument}']
+        input:              ${10:stdin}
+        implementsPretest: ^${11:false}
+        return:             ${12:state}
+      schema:
+        embedded:
+          ${escape_dollar:$}schema: ${13|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
+          type:                     object
+          properties:
+            ${14:name}:
+              title:       ${15:property title}
+              description: ${16:explanation of property purpose and usage}
+              type:        ${17|string,integer,number,array,object,null|}
+
+  - label: ' Define a resource (group)'
+    markdownDescription: |-
+      Defines a group resource that expects a list of resource instances and operates on them.
+    body:
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:         '${3:0.1.0}'
+      description:      ${4:Synopsis for the resource's purpose}
+      get:
+        executable:   ${5:executable name}
+        args:       ['${6:argument}']
+        input:        ${7:stdin}
+      test:
+        executable:   ${8:executable name}
+        args:       ['${9:argument}']
+        input:        ${10:stdin}
+        return:       ${12:state}
+      set:
+        executable:         ${13:executable name}
+        args:             ['${14:argument}']
+        input:              ${15:stdin}
+        implementsPretest: ^${16:false}
+        return:             ${17:state}
+      schema:
+        embedded:
+          ${escape_dollar:$}schema: ${18|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
+          type:                     object
+          properties:
+            resources:
+              title:       ${19:Resources}
+              description: ${20:Defines a list of resource instances to process}
+              type:        array
+              items:
+                ${escape_dollar:$}ref: <HOST>/<PREFIX>/<VERSION>/config/document.resource.json
+            ${21:name}:
+              title:       ${22:property title}
+              description: ${23:explanation of property purpose and usage}
+              type:        ${24|string,integer,number,array,object,null|}
+
+  - label: ' Define a resource (provider)'
+    markdownDescription: |-
+      Defines a provider resource that enables users to define non-command-based DSC Resources in
+      the configuration.
+    body:
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:         '${3:0.1.0}'
+      description:      ${4:Synopsis for the resource's purpose}
+      get:
+        executable:   ${5:executable name}
+        args:       ['${6:argument}']
+        input:        ${7:stdin}
+      test:
+        executable:   ${8:executable name}
+        args:       ['${9:argument}']
+        input:        ${10:stdin}
+        return:       ${12:state}
+      set:
+        executable:         ${13:executable name}
+        args:             ['${14:argument}']
+        input:              ${15:stdin}
+        implementsPretest: ^${16:false}
+        return:             ${17:state}
+      provider:
+        config: ${18|full,sequence|}
+        list:
+          executable:   ${19:executable name}
+          args:       ['${20:argument}']
+      schema:
+        embedded:
+          ${escape_dollar:$}schema: ${23|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
+          type:                     object
+          properties:
+            resources:
+              title:       ${24:Resources}
+              description: ${25:Defines a list of resource instances to process}
+              type:        array
+              items:
+                ${escape_dollar:$}ref: <HOST>/<PREFIX>/<VERSION>/config/document.resource.json
+            ${26:name}:
+              title:       ${27:property title}
+              description: ${28:explanation of property purpose and usage}
+              type:        ${29|string,integer,number,array,object,null|}
+
+  - label: ' Define a resource (assertion-only)'
+    markdownDescription: |-
+      Defines an assertion resource that can get the current state of an instance but not configure
+      it. By default, the resource relies on DSC's synthetic testing feature. If the resource
+      implements the `test` operation itself, define the `test` property.
+    body:
+      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:         '${3:0.1.0}'
+      description:      ${4:Synopsis for the resource's purpose}
+      get:
+        executable:   ${5:executable name}
+        args:       ['${6:argument}']
+        input:        ${7:stdin}
+      schema:
+        embedded:
+          ${escape_dollar:$}schema: ${13|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
+          type:                     object
+          properties:
+            ${14:name}:
+              title:       ${15:property title}
+              description: ${16:explanation of property purpose and usage}
+              type:        ${17|string,integer,number,array,object,null|}
 
 type: object
 required:
-  - manifestVersion
+  - $schema
   - type
   - version
   - get
 properties:
-  manifestVersion:
-    title: Manifest Version
+  $schema:
+    title: Manifest Schema
     description: >-
-      The semver of the DSC Resource manifest schema to validate this manifest with.
-    $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
-    enums:
-      - '1.0'
+      This property must be the canonical URL of the Command-based DSC Resource Manifest schema
+      that the manifest is implemented for.
+    type:   string
+    format: uri
+    enum:
+      - <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
     # VS Code Only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
-      The semver of the DSC Resource manifest schema to validate this manifest with.
+      This property must be the canonical URL of the Command-based DSC Resource Manifest schema
+      that the manifest is implemented for.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#manifestversion
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#schema
     markdownEnumDescriptions:
-      # 1.0
-      - |
-        > [Online Documentation][01]
-
-        The initial release version of the manifest schema.
-
-        [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true
+      - | # 1.0
+          _Initial release_
   type:
     $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
   version:
@@ -56,12 +200,14 @@ properties:
       not the version of the application it manages.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
     markdownDescription: | # VS Code only
-      > [Online Documentation][03]
+      ***
+      [_Online Documentation_][01]
+      ***
 
-      The semantic version ([semver][01]) of the DSC Resource. This version identifies the DSC
+      The semantic version ([semver][02]) of the DSC Resource. This version identifies the DSC
       Resource, not the version of the application it manages.
 
-      This value uses the [suggested regular expression][02] to validate whether the string is valid
+      This value uses the [suggested regular expression][03] to validate whether the string is valid
       semver. This is the same pattern, made multi-line for easier readability:
 
       ```regex
@@ -76,30 +222,34 @@ properties:
       The first line matches the `major.minor.patch` components of the version. The middle lines match
       the pre-release components. The last line matches the build metadata component.
 
-      [01]: https://semver.org/
-      [02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-      [03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#version
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#version
+      [02]: https://semver.org/
+      [03]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
   description:
     title: Resource Description
     description: >-
       A short synopsis of the DSC Resource's purpose.
     type: string
     markdownDescription: | # VS Code only
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a short synopsis of the DSC Resource's purpose.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#description-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#description-1
   tags:
     title: Tags
     description: >-
       Defines a list of searchable terms for the resource.
     markdownDescription: | # VS Code only
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a list of searchable terms for the resource.
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#tags
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#tags
     type: array
     uniqueItems: true
     items:
@@ -130,14 +280,6 @@ properties:
       This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
       property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
-    markdownDescription: |
-      > [Online Documentation][01]
-
-      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
-      exit code `0` as a successful operation and any other exit code as an error. Use this
-      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
-
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserveView=true#exitcodes
     type: object
     propertyNames:
       pattern: "^[0-9]+$"
@@ -156,5 +298,23 @@ properties:
         '2': Invalid input
         '3': Registry error
         '4': JSON serialization failed
+    # VS Code only
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      exit code `0` as a successful operation and any other exit code as an error. Use this
+      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#exitcodes
+    defaultSnippets:
+      - label:     ' Defined exit codes'
+        description: Defines exit codes with semantic meaning for the resource.
+        body:
+          '0': Success
+          ${1:first exit code number}:  ${2:first exit code meaning}
+          ${3:second exit code number}: ${4:second exit code meaning}
   schema:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.schema.yaml

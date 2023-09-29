@@ -5,11 +5,13 @@ title:       Parameter
 description: Defines a runtime option for a DSC Configuration Document.
 
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines a runtime option for a DSC Configuration Document.
 
-  [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>
 
 
 type: object
@@ -25,11 +27,13 @@ properties:
     $ref: /<PREFIX>/<VERSION>/definitions/parameters/validValueTypes.yaml
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines the default value for the parameter.
 
-      [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#allowedvalues
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#allowedvalues
   allowedValues:
     title: Allowed values
     description: >-
@@ -40,12 +44,14 @@ properties:
       $ref: /<PREFIX>/<VERSION>/definitions/parameters/validValueTypes.yaml
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a list of valid values for the parameter. If the parameter is defined with any other
       values, it's invalid.
 
-      [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#allowedvalues
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#allowedvalues
   description:
     title: Parameter description
     description: >-
@@ -53,11 +59,13 @@ properties:
     type: string
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a synopsis for the parameter explaining its purpose.
 
-      [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#description-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#description-1
   metadata:
     title: Parameter metadata
     description: >-
@@ -66,23 +74,49 @@ properties:
     type: object
     # VS Code only
     markdownDescription: |
-      > [Online Documentation][01]
+      ***
+      [_Online Documentation_][01]
+      ***
 
       Defines a set of key-value pairs for the parameter. This metadata isn't validated.
 
-      [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#metadata-1
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#metadata-1
     defaultSnippets:
-      - label:       New Metadata Property
-        description: Defines a key-value pair for the metadata
-        body:        { '${1:metadataName}': '$2' }
-      - label:       New metadata property (object)
-        description: Defines a new key-value pair for the metadata where the value is an object.
+      - label: ' New metadata property'
+        markdownDescription: |-
+          Defines a key-value pair for the metadata:
+
+          ```yaml
+          metadataName: value
+          ```
         body:
-          '${1:metadataName}': { '${2:key}': '${3:value}' }
-      - label:       New metadata property (array)
-        description: Defines a new key-value pair for the metadata where the value is an array.
+          ${1:metadataName}: ${2:value}
+
+      - label: ' New metadata property (object)'
+        markdownDescription: |-
+          Defines a new key-value pair for the metadata where the value is an object.
+
+          ```yaml
+          metadataName:
+            key: value
+          ```
         body:
-          '${1:metadataName}': ['${2:firstValue}', '${3:secondValue}']
+          ${1:metadataName}:
+            ${2:key}: ${3:value}
+
+      - label: ' New metadata property (array)'
+        markdownDescription: |-
+          Defines a new key-value pair for the metadata where the value is an array.
+
+          ```yaml
+          metadataName:
+            - firstValue
+            - secondValue
+          ```
+        body:
+          ${1:metadataName}:
+            - ${2:firstValue}
+            - ${3:secondValue}
 
 # Conditional settings depending on parameter type
 allOf:
@@ -101,12 +135,14 @@ allOf:
           type: integer
           # VS Code only
           markdownDescription: |
-            > [Online Documentation][01]
+            ***
+            [_Online Documentation_][01]
+            ***
 
             The minimum valid value for an integer type. If defined with the `maxValue` property,
             this value must be less than the value of `maxValue`.
 
-            [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#minvalue
+            [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#minvalue
 
         maxValue:
           title: Maximum value
@@ -116,12 +152,14 @@ allOf:
           type: integer
           # VS Code only
           markdownDescription: |
-            > [Online Documentation][01]
+            ***
+            [_Online Documentation_][01]
+            ***
 
             The maximum valid value for an integer type. If defined with the `minValue` property,
             this value must be greater than the value of `minValue`.
 
-            [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#maxvalue
+            [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#maxvalue
 
   # Additional properties for string and array parameters
   - if:
@@ -140,12 +178,14 @@ allOf:
           minimum: 0
           # VS Code only
           markdownDescription: |
-            > [Online Documentation][01]
+            ***
+            [_Online Documentation_][01]
+            ***
 
             The minimum valid length for a `string`, `securestring`, or `array`. If defined with
             the `maxLength` property, this value must be less than the value of `maxLength`.
 
-            [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#minLength
+            [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#minLength
         maxLength:
           title: Maximum length
           description: >-
@@ -155,12 +195,14 @@ allOf:
           minimum: 0
           # VS Code only
           markdownDescription: |
-            > [Online Documentation][01]
+            ***
+            [_Online Documentation_][01]
+            ***
 
             The maximum valid length for a `string`, `securestring`, or `array`. If defined with
             the `minLength` property, this value must be less than the value of `minLength`.
 
-            [01]: https://learn.microsoft.com/en-us/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserveView=true#maxLength
+            [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#maxLength
   # defaultValue strict validation
   - if:
       oneOf:

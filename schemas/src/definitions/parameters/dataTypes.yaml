@@ -17,7 +17,9 @@ enum:
 
 # VS Code only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines the data type for the parameter value.
 
@@ -40,85 +42,90 @@ markdownDescription: |
   In YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.
   If the syntax isn't quoted, YAML interprets the syntax as an array.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>
 markdownEnumDescriptions:
-  # string
-  - |
-      > [Online Documentation][01]
-      
-      Strings are an arbitrary set of text.
+  - | # string
+      _Strings are an arbitrary set of text._
 
-      To define a long strings in YAML, use the folded block syntax or literal block syntax by
-      adding a `>` or `|` and a line break after the key. Then, indent the next line. Every line in
-      the string must start at the same level of indentation. You can trim the trailing whitespace
-      by using `>-` or `|-` instead.
+      > To define a long strings in YAML, use the folded block syntax or literal block syntax by
+      > adding a `>` or `|` and a line break after the key. Then, indent the next line. Every line
+      > in the string must start at the same level of indentation. You can trim the trailing
+      > whitespace by using `>-` or `|-` instead.
+      >
+      > For more information, see the [_Online Documentation_][01].
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#strings
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#strings
 
-  # securestring
-  - |
-      > [Online Documentation][01]
+  - | # securestring
+      _Secure strings are text that needs to be handled securely._
 
-      Secure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or
-      record. If a secure data type parameter is used for a resource instance property that doesn't
-      expect a secure value, the resource may still log or record the value. If the resource has
-      independent logging or recording that isn't handled by DSC, the value may be stored
-      insecurely.
+      > Secure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or
+      > record. If a secure data type parameter is used for a resource instance property that doesn't
+      > expect a secure value, the resource may still log or record the value. If the resource has
+      > independent logging or recording that isn't handled by DSC, the value may be stored
+      > insecurely.
+      >
+      > Use secure strings for passwords and secrets. Never define a default value for secure string
+      > parameters.
+      >
+      > For more information, see the [_Online Documentation_][01].
 
-      Use secure strings for passwords and secrets. Never define a default value for secure string
-      parameters.
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#secure-strings-and-objects
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects
+  - | # int
+      _Integer values are numbers without a fractional part._
 
-  # int
-  - |
-      > [Online Documentation][01]
+      > Integer values may be limited by integrating tools or the DSC Resources they're used with.
+      > DSC itself supports integer values between `-9223372036854775808` and `9223372036854775807`.
+      >
+      > For more information, see the [_Online Documentation_][01].
 
-      Integer values are numbers without a fractional part. Integer values may be limited by
-      integrating tools or the DSC Resources they're used with. DSC itself supports integer values
-      between `-9223372036854775808` and `9223372036854775807`.
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#integers
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#integers
-  # bool
-  - |
-      > [Online Documentation][01]
+  - | # bool
+      _Boolean values are either `true` or `false`._
 
-      Boolean values are either `true` or `false`.
+      > For more information, see the [_Online Documentation_][01].
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#booleans
-  # object
-  - |
-      > [Online Documentation][01]
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#booleans
 
-      Objects define a set of key-value pairs. The value for each key can be any valid data type.
-      The values can be the same type or different types.
+  - | # object
+      _Objects define a set of key-value pairs._
 
-      Access keys in the object using dot-notation. Dot-notation uses this syntax:
+      > The value for each key can be any valid data type. The values can be the same type or
+      > different types.
+      >
+      > Access keys in the object using dot-notation. Dot-notation uses this syntax:
+      >
+      > ```yaml
+      > "[parameters('<parameter-name>').<key-name>]
+      > ```
+      >
+      > For more information, see the [_Online Documentation_][01].
 
-      ```yaml
-      "[parameters('<parameter-name>').<key-name>]
-      ```
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#objects
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#objects
+  - | # secureobject
+      _Secure objects are key-value pairs that need to be handled securely._
 
-  # secureobject
-  - |
-      > [Online Documentation][01]
+      > Secure objects define a set of key-value pairs that DSC and integrating tools shouldn't log
+      > or record. If a secure data type parameter is used for a resource instance property that
+      > doesn't expect a secure value, the resource may still log or record the value. If the
+      > resource has independent logging or recording that isn't handled by DSC, the value may be
+      > stored insecurely.
+      >
+      > Never define a default value for secure object parameters.
+      >
+      > For more information, see the [_Online Documentation_][01].
 
-      Secure objects define a set of key-value pairs that DSC and integrating tools shouldn't log
-      or record. If a secure data type parameter is used for a resource instance property that
-      doesn't expect a secure value, the resource may still log or record the value. If the
-      resource has independent logging or recording that isn't handled by DSC, the value may be
-      stored insecurely.
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#secure-strings-and-objects
 
-      Never define a default value for secure object parameters.
+  - | # array
+      _Arrays are a list of one or more values._
 
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#secure-strings-and-objects
-  # array
-  - |
-      > [Online Documentation][01]
+      > The values in the array can be any valid data type. Values in the array can be the same type
+      > or different types.
+      >
+      > For more information, see the [_Online Documentation_][01].
 
-      Arrays are a list of one or more values. The values in the array can be any valid data type.
-      Values in the array can be the same type or different types.
-
-      [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserveView=true#arrays
+      [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#arrays

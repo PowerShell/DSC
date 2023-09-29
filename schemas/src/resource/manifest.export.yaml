@@ -6,11 +6,13 @@ title: Get Method
 description: >-
   Defines how DSC must call the DSC Resource to get the current state of every instance.
 markdownDescription: | # VS Code only
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Defines how DSC must call the DSC Resource to get the current state of every instance.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/export?<DOCS_VERSION_PIN>
 
 type: object
 required:
@@ -18,5 +20,55 @@ required:
 properties:
   executable:
     $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines the name of the command to run. The value must be the name of a command discoverable
+      in the system's `PATH` environment variable or the full path to the command. A file extension
+      is only required when the command isn't recognizable by the operating system as an
+      executable.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/export?<DOCS_VERSION_PIN>#executable
   args:
     $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines an array of strings to pass as arguments to the command. DSC passes the arguments to
+      the command in the order they're specified.
+
+      For example, the given the following definition:
+
+      ```json
+      {
+        "executable": "registry",
+        "args":       ["config", "export"],
+      }
+      ```
+
+      DSC invokes the command for the resource as:
+
+      ```bash
+      registry config export
+      ```
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/export?<DOCS_VERSION_PIN>#args
+
+defaultSnippets: # VS Code only
+  - label: ' Define without arguments'
+    markdownDescription: |
+      Define the export command for the resource when no arguments are required.
+    body:
+      executable: ${1:executable_name}
+
+  - label: ' Define with arguments'
+    markdownDescription: |
+      Define the export command for the resource when at least one argument is required.
+    body:
+      executable: ${1:executable_name}
+      args:
+        - ${2:--first-argument}

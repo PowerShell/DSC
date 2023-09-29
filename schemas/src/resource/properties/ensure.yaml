@@ -13,11 +13,21 @@ enum:
 
 # VS Code Only
 markdownDescription: |
-  > [Online Documentation][01]
+  ***
+  [_Online Documentation_][01]
+  ***
 
   Indicates whether the DSC Resource instance should exist.
 
-  [01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/ensure?view=dsc-3.0&preserveView=true
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/ensure?<DOCS_VERSION_PIN>
 markdownEnumDescriptions:
-  - Indicates that the instance shouldn't exist.
-  - Indicates that the instance should exist.
+  - | # Absent
+    _Instance shouldn't exist._
+
+    > If the desired state for `_ensure` is `absent` and the instance exists, the resource removes
+    > the instance during the `set` operation.
+  - | # Present
+    _Instance should exist._
+
+    > If the desired state for `_ensure` is `present` and the instance doesn't exist, the resource
+    > adds or creates the instance during the `set` operation.
