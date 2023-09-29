@@ -499,7 +499,7 @@
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. If this value isn't defined, DSC doesn't send the resource any input when\ninvoking the `set` operation.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
                       },
                       "implementsPretest": {
                         "title": "Resource Performs Pre-Test",
@@ -578,7 +578,7 @@
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. If this value isn't defined, DSC doesn't send the resource any input when\ninvoking the `test` operation.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
                       },
                       "return": {
                         "title": "Test Command Return Type",

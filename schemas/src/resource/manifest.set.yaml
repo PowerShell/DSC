@@ -68,8 +68,7 @@ properties:
       ***
 
       Defines how DSC should pass input to the command, either as environment variables or JSON
-      over `stdin`. If this value isn't defined, DSC doesn't send the resource any input when
-      invoking the `set` operation.
+      over `stdin`.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#input
   implementsPretest:
