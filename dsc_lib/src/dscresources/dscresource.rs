@@ -5,6 +5,7 @@ use dscerror::DscError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use super::{command_resource, dscerror, resource_manifest::import_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
@@ -238,19 +239,35 @@ impl Invoke for DscResource {
 }
 
 #[must_use]
+pub fn get_well_known_properties() -> HashMap<String, Value> {
+    HashMap::<String, Value>::from([
+        ("_exist".to_string(), Value::Bool(true)),
+    ])
+}
+
+#[must_use]
 pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
     let mut diff_properties: Vec<String> = Vec::new();
     if expected.is_null() {
         return diff_properties;
     }
 
-    if let Some(map) = expected.as_object() {
-        for (key, value) in map {
-            // skip meta properties
-            if key.starts_with('_') || key.starts_with('$') {
-                continue;
+    let mut expected = expected.clone();
+    let mut actual = actual.clone();
+
+    if let Some(map) = expected.as_object_mut() {
+        // handle well-known optional properties with default values by adding them
+        for (key, value) in get_well_known_properties() {
+            if !map.contains_key(&key) {
+                map.insert(key.clone(), value.clone());
             }
 
+            if actual.is_object() && actual[&key].is_null() {
+                actual[key.clone()] = value.clone();
+            }
+        }
+
+        for (key, value) in &*map {
             if value.is_object() {
                 let sub_diff = get_diff(value, &actual[key]);
                 if !sub_diff.is_empty() {

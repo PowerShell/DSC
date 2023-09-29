@@ -49,8 +49,9 @@ Describe 'config test tests' {
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.inDesiredState | Should -BeFalse
-        $out.differingProperties.Count | Should -Be 2
+        $out.differingProperties.Count | Should -Be 3
         $out.differingProperties[0] | Should -BeExactly 'valueName'
         $out.differingProperties[1] | Should -BeExactly 'valueData'
+        $out.differingProperties[2] | Should -BeExactly '_exist'
     }
 }

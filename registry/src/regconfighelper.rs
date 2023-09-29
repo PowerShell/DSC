@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::config::{EnsureKind, Registry, RegistryValueData};
+use crate::config::{Registry, RegistryValueData};
 use ntreg::{registry_key::RegistryKey, registry_value::RegistryValueData as NtRegistryValueData, registry_value::RegistryValue};
 use ntstatuserror::{NtStatusError, NtStatusErrorKind};
 use std::fmt::{Display, Formatter};
@@ -29,15 +29,14 @@ impl Display for RegistryError {
 }
 
 pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
-    let mut reg_result = Registry::default();
+    let mut reg_result = Registry { key_path: config.key_path.clone(), ..Default::default() };
 
     let reg_key = match RegistryKey::new(config.key_path.as_str()) {
         Ok(reg_key) => reg_key,
         Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {
+            reg_result.exist = Some(false);
             match serde_json::to_string(&reg_result) {
                 Ok(reg_json) => {
-                    // TODO: current design is to return an empty JSON if the key is not found instead of an error
-                    // this makes it consistent with result for _ensure = absent so that a result is returned
                     return Ok(reg_json);
                 },
                 Err(err) => {
@@ -49,8 +48,6 @@ pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
             return Err(RegistryError::NtStatus(err));
         }
     };
-
-    reg_result.key_path = config.key_path.clone();
 
     if config.value_name.is_some() {
         let reg_value = match reg_key.get_value(config.value_name.as_ref().unwrap().as_str()) {
@@ -75,25 +72,24 @@ pub fn config_get(config: &Registry) -> Result<String, RegistryError> {
 }
 
 pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
-    let mut reg_result: Registry = Registry::default();
+    let mut reg_result = Registry { key_path: config.key_path.clone(), ..Default::default() };
     let reg_key: RegistryKey;
     match &config.value_name {
         None => {
-            match config.ensure.as_ref().unwrap() {
-                EnsureKind::Present => {
+            match config.exist {
+                Some(true) | None => {
                     open_or_create_key(&config.key_path)?;
-                    reg_result.key_path = config.key_path.clone();
                 },
-                EnsureKind::Absent => {
+                Some(false) => {
+                    reg_result.exist = Some(false);
                     remove_key(&config.key_path)?;
                 },
             }
         },
         Some(value_name) => {
-            reg_result.key_path = config.key_path.clone();
             reg_result.value_name = Some(value_name.clone());
-            match &config.ensure {
-                Some(EnsureKind::Present) | None => {
+            match &config.exist {
+                Some(true) | None => {
                     reg_key = open_or_create_key(&config.key_path)?;
                     match config.value_data.as_ref() {
                         Some(value_data) => {
@@ -114,8 +110,9 @@ pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
                         }
                     }
                 },
-                Some(EnsureKind::Absent) => {
+                Some(false) => {
                     reg_key = open_or_create_key(&config.key_path)?;
+                    reg_result.exist = Some(false);
                     match reg_key.delete_value(value_name) {
                         Ok(_) | Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {},
                         Err(err) => {
@@ -232,7 +229,7 @@ pub fn config_test(config: &Registry) -> Result<String, RegistryError> {
 }
 
 fn test_value(config: &Registry) -> Result<String, RegistryError> {
-    let mut reg_result: Registry = Registry::default();
+    let mut reg_result: Registry = Registry { key_path: config.key_path.clone(), ..Default::default()};
     let mut in_desired_state = true;
 
     let reg_key = match RegistryKey::new(config.key_path.as_str()) {
@@ -248,8 +245,6 @@ fn test_value(config: &Registry) -> Result<String, RegistryError> {
             return Err(RegistryError::NtStatus(err));
         }
     };
-
-    reg_result.key_path = config.key_path.clone();
 
     let value_name = config.value_name.as_ref().unwrap();
     let mut value_exists = false;
@@ -272,8 +267,8 @@ fn test_value(config: &Registry) -> Result<String, RegistryError> {
         }
     };
 
-    match &config.ensure.as_ref().unwrap() {
-        EnsureKind::Present => {
+    match &config.exist {
+        Some(true) | None => {
             if value_exists {
                 in_desired_state = reg_values_are_eq(config, &reg_value)?;
             }
@@ -281,13 +276,14 @@ fn test_value(config: &Registry) -> Result<String, RegistryError> {
                 in_desired_state = false;
             }
         },
-        EnsureKind::Absent => {
+        Some(false) => {
             if value_exists {
                 in_desired_state = false;
             }
         }
     }
 
+    reg_result.exist = Some(value_exists);
     reg_result.in_desired_state = Some(in_desired_state);
     Ok(reg_result.to_json())
 }
@@ -316,7 +312,7 @@ fn reg_values_are_eq(config: &Registry, reg_value: &RegistryValue) -> Result<boo
 }
 
 fn test_key(config: &Registry) -> Result<String, RegistryError> {
-    let mut reg_result: Registry = Registry::default();
+    let mut reg_result: Registry = Registry { key_path: config.key_path.clone(), ..Default::default()};
 
     let key_exists = match RegistryKey::new(config.key_path.as_str()) {
         Ok( _ ) => {
@@ -331,21 +327,20 @@ fn test_key(config: &Registry) -> Result<String, RegistryError> {
     };
 
     let mut in_desired_state = true;
-    match &config.ensure.as_ref().unwrap() {
-        EnsureKind::Present => {
+    match &config.exist {
+        Some(true) | None => {
             if !key_exists {
-                reg_result.key_path = String::new();
                 in_desired_state = false;
             }
         },
-        EnsureKind::Absent => {
+        Some(false) => {
             if key_exists {
-                reg_result.key_path = config.key_path.clone();
                 in_desired_state = false;
             }
         }
     }
 
+    reg_result.exist = Some(key_exists);
     reg_result.in_desired_state = Some(in_desired_state);
     Ok(reg_result.to_json())
 }
@@ -381,13 +376,13 @@ fn test_registry_value_present() {
     {
         "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion",
         "valueName": "ProgramFilesPath",
-        "_ensure": "Present"
+        "_exist": true
     }
     "#;
 
     let config: Registry = serde_json::from_str(input_json).unwrap();
     let json = config_test(&config).unwrap();
-    assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","valueName":"ProgramFilesPath","valueData":{"ExpandString":"%ProgramFiles%"},"_inDesiredState":true}"#);
+    assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","valueName":"ProgramFilesPath","valueData":{"ExpandString":"%ProgramFiles%"},"_exist":true,"_inDesiredState":true}"#);
 }
 
 #[test]
@@ -396,11 +391,11 @@ fn test_registry_value_absent() {
     {
         "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion",
         "valueName": "DoesNotExist",
-        "_ensure": "Absent"
+        "_exist": false
     }
     "#;
 
     let config: Registry = serde_json::from_str(input_json).unwrap();
     let json = config_test(&config).unwrap();
-    assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","_inDesiredState":true}"#);
+    assert_eq!(json, r#"{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKLM\\Software\\Microsoft\\Windows\\CurrentVersion","_exist":false,"_inDesiredState":true}"#);
 }

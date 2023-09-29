@@ -5,14 +5,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-pub enum EnsureKind {
-    /// The registry key and value should be present.
-    Present,
-    /// The registry key and value should be absent.
-    Absent,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum RegistryValueData {
     String(String),
     ExpandString(String),
@@ -40,9 +32,9 @@ pub struct Registry {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value_data: Option<RegistryValueData>,
     /// Flag indicating whether the registry value should be present or absent.
-    #[serde(rename = "_ensure")]
+    #[serde(rename = "_exist")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub ensure: Option<EnsureKind>,
+    pub exist: Option<bool>,
     /// Flag indicating whether the registry value should be overwritten if it already exists.
     #[serde(rename = "_clobber")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -74,7 +66,7 @@ impl Default for Registry {
             key_path: String::new(),
             value_name: None,
             value_data: None,
-            ensure: None,
+            exist: None,
             clobber: None,
             in_desired_state: None,
         }
