@@ -9,6 +9,7 @@ use std::io::{self, Read};
 use std::process::exit;
 use tracing::{error, info};
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
+use tracing::{error, debug};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -27,7 +28,9 @@ fn main() {
 
     // create subscriber that writes all events to stderr
     let subscriber = tracing_subscriber::fmt().pretty().with_writer(std::io::stderr).finish();
-    let _ = tracing::subscriber::set_global_default(subscriber).map_err(|_err| eprintln!("Unable to set global default subscriber"));
+    if tracing::subscriber::set_global_default(subscriber).is_err() {
+        eprintln!("Unable to set global default subscriber");
+    }
 
     if ctrlc::set_handler(ctrlc_handler).is_err() {
         error!("Error: Failed to set Ctrl-C handler");
@@ -101,7 +104,10 @@ fn terminate_subprocesses(sys: &System, process: &Process) {
         terminate_subprocesses(sys, subprocess);
     }
 
-    process.kill();
+    debug!("Terminating process {} {}", process.name(), process.pid());
+    if !process.kill() {
+        debug!("Failed to terminate process {} {}", process.name(), process.pid());
+    }
 }
 
 #[cfg(debug_assertions)]
