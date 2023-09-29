@@ -92,12 +92,27 @@ fn ctrlc_handler() {
         exit(util::EXIT_CTRL_C);
     };
 
-    terminate_subprocesses(sys, current_process);
+    terminate_subprocesses(&sys, &current_process);
     exit(util::EXIT_CTRL_C);
 }
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
-    for subprocess in process.
+    for subprocess in sys.processes().values().filter_map(|p|
+        if let Some(parent_pid) = p.parent() {
+            if parent_pid == process.pid() {
+                Some(p)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    )
+
+    terminate_subprocesses(sys, subprocess);
+    }
+
+    process.kill();
 }
 
 #[cfg(debug_assertions)]
