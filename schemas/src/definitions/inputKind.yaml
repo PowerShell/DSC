@@ -18,8 +18,9 @@ markdownEnumDescriptions:
       _Environment variables_
 
       > Indicates that the resource expects the properties of an instance to be specified as
-      > environment variables. This option only supports the following data types for instance
-      > properties:
+      > environment variables with the same names and casing.
+      >
+      > This option only supports the following data types for instance properties:
       >
       > - `boolean`
       > - `integer`
@@ -28,6 +29,11 @@ markdownEnumDescriptions:
       > - `array` of `integer` values
       > - `array` of `number` values
       > - `array` of `string` values
+      >
+      > For non-array values, DSC sets the environment variable to the specified value as-is. When
+      > the data type is an array of values, DSC sets the environment variable as a comma-delimited
+      > string. For example, the property `foo` with a value of `[1, 2, 3]` is saved in the `foo`
+      > environment variable as `"1,2,3"`.
       >
       > If the resource needs to support complex properties with an `object` value or multi-type
       > arrays, set this to `stdin` instead.

@@ -360,7 +360,7 @@
                       "stdin"
                     ],
                     "markdownEnumDescriptions": [
-                      "_Environment variables_\n\n> Indicates that the resource expects the properties of an instance to be specified as\n> environment variables. This option only supports the following data types for instance\n> properties:\n>\n> - `boolean`\n> - `integer`\n> - `number`\n> - `string`\n> - `array` of `integer` values\n> - `array` of `number` values\n> - `array` of `string` values\n>\n> If the resource needs to support complex properties with an `object` value or multi-type\n> arrays, set this to `stdin` instead.\n",
+                      "_Environment variables_\n\n> Indicates that the resource expects the properties of an instance to be specified as\n> environment variables with the same names and casing.\n>\n> This option only supports the following data types for instance properties:\n>\n> - `boolean`\n> - `integer`\n> - `number`\n> - `string`\n> - `array` of `integer` values\n> - `array` of `number` values\n> - `array` of `string` values\n>\n> For non-array values, DSC sets the environment variable to the specified value as-is. When\n> the data type is an array of values, DSC sets the environment variable as a comma-delimited\n> string. For example, the property `foo` with a value of `[1, 2, 3]` is saved in the `foo`\n> environment variable as `\"1,2,3\"`.\n>\n> If the resource needs to support complex properties with an `object` value or multi-type\n> arrays, set this to `stdin` instead.\n",
                       "_JSON over `stdin`_\n\n> Indicates that the resource expects a JSON blob representing an instance from `stdin`.\n> The JSON must adhere to the instance schema.\n"
                     ]
                   },
