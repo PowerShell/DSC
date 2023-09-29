@@ -72,6 +72,7 @@ pub enum DscError {
     Validation(String),
 }
 
+//TODO: remove this and use Tracing APIs instead
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub enum StreamMessageType {
@@ -83,6 +84,7 @@ pub enum StreamMessageType {
     Custom = 5
 }
 
+//TODO: remove this and use Tracing APIs instead
 pub struct StreamMessage {
     pub message: String,
     pub message_type: StreamMessageType,
@@ -91,12 +93,14 @@ pub struct StreamMessage {
     pub resource_path: String
 }
 
+//TODO: remove this and use Tracing APIs instead
 impl Default for StreamMessage {
     fn default() -> Self {
         Self::new()
     }
 }
 
+//TODO: remove this and use Tracing APIs instead
 impl StreamMessage {
     /// Create a new message
     #[must_use]
@@ -110,6 +114,7 @@ impl StreamMessage {
         }
     }
 
+    //TODO: remove this and use Tracing APIs instead
     /// Create a new error message
     ///
     /// # Arguments
@@ -132,6 +137,7 @@ impl StreamMessage {
         }
     }
 
+    //TODO: remove this and use Tracing APIs instead
     /// Create a new warning message
     ///
     /// # Arguments
@@ -154,6 +160,7 @@ impl StreamMessage {
         }
     }
 
+    //TODO: remove this and use Tracing APIs instead
     /// Print the message to the console
     ///
     /// # Arguments
