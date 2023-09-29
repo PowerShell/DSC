@@ -6,6 +6,7 @@ use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_n
 use dsc_lib::configure::config_doc::Configuration;
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::invoke_result::GetResult;
+use tracing::{error, debug};
 
 use dsc_lib::{
     dscresources::dscresource::{Invoke, DscResource},
@@ -17,13 +18,11 @@ pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
     // TODO: support streaming stdin which includes resource and input
     let mut input = get_input(input, stdin);
     let mut resource = get_resource(dsc, resource);
-    //TODO: add to debug stream: println!("handle_resource_get - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
     if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
         resource = get_resource(dsc, &requires);
     }
-
-    //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
 
     match resource.get(input.as_str()) {
         Ok(result) => {
@@ -31,14 +30,14 @@ pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
             write_output(&json, format);
         }
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -46,11 +45,11 @@ pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
 
 pub fn get_all(dsc: &mut DscManager, resource: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
     let resource = get_resource(dsc, resource);
-
+    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
     let export_result = match resource.export() {
         Ok(export) => { export }
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     };
@@ -64,7 +63,7 @@ pub fn get_all(dsc: &mut DscManager, resource: &str, _input: &Option<String>, _s
         let json = match serde_json::to_string(&get_result) {
             Ok(json) => json,
             Err(err) => {
-                eprintln!("JSON Error: {err}");
+                error!("JSON Error: {err}");
                 exit(EXIT_JSON_ERROR);
             }
         };
@@ -75,20 +74,18 @@ pub fn get_all(dsc: &mut DscManager, resource: &str, _input: &Option<String>, _s
 pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
     if input.is_empty() {
-        eprintln!("Error: Input is empty");
+        error!("Error: Input is empty");
         exit(EXIT_INVALID_ARGS);
     }
 
     let mut resource = get_resource(dsc, resource);
 
-    //TODO: add to debug stream: println!("handle_resource_set - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
     if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
         resource = get_resource(dsc, &requires);
     }
-
-    //TODO: add to debug stream: println!("handle_resource_get - input - {}", input);
 
     match resource.set(input.as_str(), true) {
         Ok(result) => {
@@ -96,14 +93,14 @@ pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
             write_output(&json, format);
         }
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -113,14 +110,12 @@ pub fn test(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin:
     let mut input = get_input(input, stdin);
     let mut resource = get_resource(dsc, resource);
 
-    //TODO: add to debug stream: println!("handle_resource_test - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
     if let Some(requires) = resource.requires {
         input = add_type_name_to_json(input, resource.type_name);
         resource = get_resource(dsc, &requires);
     }
-
-    //TODO: add to debug stream: println!("handle_resource_test - input - {}", input);
 
     match resource.test(input.as_str()) {
         Ok(result) => {
@@ -128,14 +123,14 @@ pub fn test(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin:
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
             write_output(&json, format);
         }
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -149,14 +144,14 @@ pub fn schema(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
             match serde_json::from_str::<serde_json::Value>(json.as_str()) {
                 Ok(_) => (),
                 Err(err) => {
-                    eprintln!("Error: {err}");
+                    error!("Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
             write_output(&json, format);
         }
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -170,7 +165,7 @@ pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
     match add_resource_export_results_to_configuration(&dsc_resource, &mut conf) {
         Ok(_) => (),
         Err(err) => {
-            eprintln!("Error: {err}");
+            error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -178,7 +173,7 @@ pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
     let json = match serde_json::to_string(&conf) {
         Ok(json) => json,
         Err(err) => {
-            eprintln!("JSON Error: {err}");
+            error!("JSON Error: {err}");
             exit(EXIT_JSON_ERROR);
         }
     };
@@ -191,26 +186,26 @@ pub fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
         Ok(resource) => resource,
         Err(err) => {
             if resource.contains('{') {
-                eprintln!("Not valid resource JSON: {err}\nInput was: {resource}");
+                error!("Not valid resource JSON: {err}\nInput was: {resource}");
                 exit(EXIT_INVALID_ARGS);
             }
 
             match dsc.initialize_discovery() {
                 Ok(_) => (),
                 Err(err) => {
-                    eprintln!("Error: {err}");
+                    error!("Error: {err}");
                     exit(EXIT_DSC_ERROR);
                 }
             };
             let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
             match resources.len() {
                 0 => {
-                    eprintln!("Error: Resource not found: '{resource}'");
+                    error!("Error: Resource not found: '{resource}'");
                     exit(EXIT_INVALID_ARGS);
                 }
                 1 => resources[0].clone(),
                 _ => {
-                    eprintln!("Error: Multiple resources found");
+                    error!("Error: Multiple resources found");
                     exit(EXIT_INVALID_ARGS);
                 }
             }
@@ -221,7 +216,7 @@ pub fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
 fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
     let input = match (input, stdin) {
         (Some(_input), Some(_stdin)) => {
-            eprintln!("Error: Cannot specify both --input and stdin");
+            error!("Error: Cannot specify both --input and stdin");
             exit(EXIT_INVALID_ARGS);
         }
         (Some(input), None) => input.clone(),
@@ -243,17 +238,17 @@ fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
                     match serde_json::to_string(&yaml) {
                         Ok(json) => json,
                         Err(err) => {
-                            eprintln!("Error: Cannot convert YAML to JSON: {err}");
+                            error!("Error: Cannot convert YAML to JSON: {err}");
                             exit(EXIT_INVALID_ARGS);
                         }
                     }
                 },
                 Err(err) => {
                     if input.contains('{') {
-                        eprintln!("Error: Input is not valid JSON: {json_err}");
+                        error!("Error: Input is not valid JSON: {json_err}");
                     }
                     else {
-                        eprintln!("Error: Input is not valid YAML: {err}");
+                        error!("Error: Input is not valid YAML: {err}");
                     }
                     exit(EXIT_INVALID_ARGS);
                 }

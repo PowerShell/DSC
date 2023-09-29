@@ -6,6 +6,7 @@ use atty::Stream;
 use clap::Parser;
 use std::io::{self, Read};
 use std::process::exit;
+use tracing::error;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -22,8 +23,12 @@ fn main() {
     #[cfg(debug_assertions)]
     check_debug();
 
+    // create subscriber that writes all events to stderr
+    let subscriber = tracing_subscriber::fmt().pretty().with_writer(std::io::stderr).finish();
+    let _ = tracing::subscriber::set_global_default(subscriber).map_err(|_err| eprintln!("Unable to set global default subscriber"));
+
     if ctrlc::set_handler(ctrlc_handler).is_err() {
-        eprintln!("Error: Failed to set Ctrl-C handler");
+        error!("Error: Failed to set Ctrl-C handler");
     }
 
     let args = Args::parse();
@@ -36,7 +41,7 @@ fn main() {
         let input = match String::from_utf8(buffer) {
             Ok(input) => input,
             Err(e) => {
-                eprintln!("Invalid UTF-8 sequence: {e}");
+                error!("Invalid UTF-8 sequence: {e}");
                 exit(util::EXIT_INVALID_ARGS);
             },
         };
@@ -55,7 +60,7 @@ fn main() {
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
                 Err(err) => {
-                    eprintln!("JSON Error: {err}");
+                    error!("JSON Error: {err}");
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
@@ -67,14 +72,14 @@ fn main() {
 }
 
 fn ctrlc_handler() {
-    eprintln!("Ctrl-C received");
+    error!("Ctrl-C received");
     exit(util::EXIT_CTRL_C);
 }
 
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_DSC").is_ok() {
-        eprintln!("attach debugger to pid {} and press a key to continue", std::process::id());
+        error!("attach debugger to pid {} and press a key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
             if let event::Event::Key(key) = event {
@@ -83,7 +88,7 @@ fn check_debug() {
                     break;
                 }
             } else {
-                eprintln!("Unexpected event: {event:?}");
+                error!("Unexpected event: {event:?}");
                 continue;
             }
         }

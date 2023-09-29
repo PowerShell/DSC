@@ -72,6 +72,6 @@ Describe 'resource export tests' {
 '@
         $out = $yaml | dsc config export 2>&1
         $LASTEXITCODE | Should -Be 2
-        $out | Should -BeLike '*specified multiple times*'
+        $out | out-string | Should -BeLike '*specified multiple times*'
     }
 }

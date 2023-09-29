@@ -2,12 +2,11 @@
 // Licensed under the MIT License.
 
 mod args;
-mod schema;
 
 use args::{Args, SubCommand};
 use clap::Parser;
+use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod};
 use dsc_lib::dscresources::dscresource::{DscResource, ImplementedAs};
-use schema::TestManifest;
 
 fn main() {
     let args = Args::parse();
@@ -23,8 +22,24 @@ fn main() {
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
                 requires: Some("Test/TestGroup".to_string()),
-                manifest: Some(serde_json::to_value(TestManifest {
-                    description: "This is a test resource.".to_string(),
+                manifest: Some(serde_json::to_value(ResourceManifest {
+                    description: Some("This is a test resource.".to_string()),
+                    schema_version: "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json".to_string(),
+                    resource_type: "Test/TestResource1".to_string(),
+                    version: "1.0.0".to_string(),
+                    tags: None,
+                    get: GetMethod {
+                        executable: String::new(),
+                        args: None,
+                        input: None,
+                    },
+                    set: None,
+                    test: None,
+                    export: None,
+                    validate: None,
+                    provider: None,
+                    exit_codes: None,
+                    schema: None,
                 }).unwrap()),
             };
             let resource2 = DscResource {
@@ -37,8 +52,24 @@ fn main() {
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
                 requires: Some("Test/TestGroup".to_string()),
-                manifest: Some(serde_json::to_value(TestManifest {
-                    description: "This is a test resource.".to_string(),
+                manifest: Some(serde_json::to_value(ResourceManifest {
+                    description: Some("This is a test resource.".to_string()),
+                    schema_version: "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json".to_string(),
+                    resource_type: "Test/TestResource2".to_string(),
+                    version: "1.0.1".to_string(),
+                    tags: None,
+                    get: GetMethod {
+                        executable: String::new(),
+                        args: None,
+                        input: None,
+                    },
+                    set: None,
+                    test: None,
+                    export: None,
+                    validate: None,
+                    provider: None,
+                    exit_codes: None,
+                    schema: None,
                 }).unwrap()),
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());
