@@ -262,7 +262,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                 map.insert(key.clone(), value.clone());
             }
 
-            if actual[&key].is_null() {
+            if actual.is_object() && actual[&key].is_null() {
                 actual[key.clone()] = value.clone();
             }
         }
