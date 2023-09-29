@@ -267,7 +267,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
             }
         }
 
-        for (key, value) in map.iter() {
+        for (key, value) in &*map {
             if value.is_object() {
                 let sub_diff = get_diff(value, &actual[key]);
                 if !sub_diff.is_empty() {
