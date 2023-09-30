@@ -90,8 +90,9 @@ if (Test-Path $target) {
 }
 New-Item -ItemType Directory $target > $null
 
+# make sure dependencies are built first so clippy runs correctly
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("dsc_lib", "dsc", "osinfo", "process", "test_group_resource", "y2j", "powershellgroup")
+$projects = @("dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
 $pedantic_unclean_projects = @("ntreg")
 
 if ($IsWindows) {
@@ -126,11 +127,13 @@ foreach ($project in $projects) {
             $failed = $true
         }
 
+        $binary = Split-Path $project -Leaf
+
         if ($IsWindows) {
-            Copy-Item "$path/$project.exe" $target -ErrorAction Ignore
+            Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore
         }
         else {
-            Copy-Item "$path/$project" $target -ErrorAction Ignore
+            Copy-Item "$path/$binary" $target -ErrorAction Ignore
         }
 
         Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
@@ -152,6 +155,16 @@ Copy-Item $PSScriptRoot/tools/add-path.ps1 $target -Force -ErrorAction Ignore
 $relative = Resolve-Path $target -Relative
 Write-Host -ForegroundColor Green "`nEXE's are copied to $target ($relative)"
 
+# remove the other target in case switching between them
+$dirSeparator = [System.IO.Path]::DirectorySeparatorChar
+if ($Release) {
+    $oldTarget = $target.Replace($dirSeparator + 'release', $dirSeparator + 'debug')
+}
+else {
+    $oldTarget = $target.Replace($dirSeparator + 'debug', $dirSeparator + 'release')
+}
+$env:PATH = $env:PATH.Replace($oldTarget, '')
+
 $paths = $env:PATH.Split([System.IO.Path]::PathSeparator)
 $found = $false
 foreach ($path in $paths) {
@@ -161,14 +174,8 @@ foreach ($path in $paths) {
     }
 }
 
-# remove the other target in case switching between them
-if ($Release) {
-    $oldTarget = $target.Replace('\release', '\debug')
-}
-else {
-    $oldTarget = $target.Replace('\debug', '\release')
-}
-$env:PATH = $env:PATH.Replace(';' + $oldTarget, '')
+# remove empty entries from path
+$env:PATH = [string]::Join([System.IO.Path]::PathSeparator, $env:PATH.Split([System.IO.Path]::PathSeparator, [StringSplitOptions]::RemoveEmptyEntries))
 
 if (!$found) {
     Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"

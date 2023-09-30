@@ -50,6 +50,9 @@ pub struct ResourceManifest {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum InputKind {
+    /// The input replaces arguments with this token in the command.
+    #[serde(rename = "arg")]
+    Arg(String),
     /// The input is accepted as environmental variables.
     #[serde(rename = "env")]
     Env,
