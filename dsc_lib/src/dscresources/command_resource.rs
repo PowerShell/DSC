@@ -450,11 +450,6 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     child_stderr.read_to_end(&mut stderr_buf)?;
 
     let exit_status = child.wait()?;
-
-    // sleep for 5 seconds
-    info!("Sleeping for 5 seconds");
-    std::thread::sleep(std::time::Duration::from_secs(5));
-
     let exit_code = exit_status.code().unwrap_or(EXIT_PROCESS_TERMINATED);
     let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
     let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
