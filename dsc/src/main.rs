@@ -27,8 +27,7 @@ fn main() {
     check_debug();
 
     // create subscriber that writes all events to stderr
-    let (non_blocking, _guard) = tracing_appender::non_blocking(std::io::stderr());
-    let subscriber = tracing_subscriber::fmt().pretty().with_writer(non_blocking).finish();
+    let subscriber = tracing_subscriber::fmt().pretty().with_writer(std::io::stderr).finish();
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default subscriber");
     }
