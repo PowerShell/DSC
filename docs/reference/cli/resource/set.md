@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource set' command
-ms.date:     08/04/2023
+ms.date:     09/27/2023
 ms.topic:    reference
 title:       dsc resource set
 ---
@@ -31,17 +31,31 @@ This subcommand can only be invoked for command-based DSC Resources that define 
 of their resource manifest. If this subcommand is called for a resource that doesn't define a set
 operation, DSC raises an error.
 
-The subcommand's behavior depends on the value of the `set.preTest` option in the resource
-manifest:
-
-- If the resource's manifest doesn't define the `set.preTest` key as `true`, DSC invokes the
-  resource's test operation to determine whether a set operation is required.
-
-  If the instance is already in the desired state, DSC doesn't invoke the set operation. If the
-  instance isn't in the desired state, DSC invokes the resource's set operation with the desired
-  state as input.
-- If the resource's manifest defines the `set.preTest` key as `true`, DSC invokes the resource's
-  set operation without testing the resource state first.
+> [!IMPORTANT]
+> The `dsc resource set` command always invokes the `set` operation for the resource. Resources
+> may, but aren't required to, implement logic that pretests an instance for the `set` operation.
+>
+> This is different from how [dsc config set][02] works, where DSC always tests an instance, either
+> synthetically or by invoking the `test` operation for the resource, and only invokes `set` for an
+> instance if it's not in the desired state.
+>
+> Command-based resources indicate whether they implement pretest for the `set` operation by
+> defining the [set.implementsPretest][03] property in their resource manifest. If that property is
+> defined as `true`, it indicates that the resource implements pretest. If `set.implementsPretest`
+> is set to `false` or is undefined, the manifest indicates that the resource doesn't implement
+> pretest.
+>
+> If a resource indicates that it implements pretest, users should expect that the resource only
+> modifies an instance during a `set` operation if the pretest shows that the instance isn't in the
+> desired state.
+>
+> If a resource doesn't implement pretest, users should expect that the resource always modifies an
+> instance during a `set` operation.
+>
+> For resources that don't implement pretest for the `set` operation, Microsoft recommends always
+> calling `dsc resource test` against an instance to see whether it's in the desired state _before_
+> invoking `dsc resource set`. This can help avoid accidental errors caused by resources that don't
+> implement a fully idempotent `set` command.
 
 ## Examples
 
@@ -115,7 +129,9 @@ Mandatory: false
 
 This command returns JSON output that includes the actual state of the instance before and after
 the set operation, and the list of properties that the set operation modified. For more
-information, see [dsc resource set result schema][02].
+information, see [dsc resource set result schema][04].
 
 [01]: ../config/set.md
-[02]: ../../schemas/outputs/resource/set.md
+[02]: ../config/set.md
+[03]: ../../schemas/resource/manifest/set.md#implementspretest
+[04]: ../../schemas/outputs/resource/set.md

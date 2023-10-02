@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'test' property in a DSC Resource manifest
-ms.date:     08/04/2023
+ms.date:     09/27/2023
 ms.topic:    reference
 title:       DSC Resource manifest test property schema reference
 ---
@@ -108,19 +108,38 @@ Default:  []
 
 ### input
 
-The `input` property defines how to pass input to the resource. The value of this property must
-be one of the following strings:
+The `input` property defines how to pass input to the resource. If this property isn't defined, DSC
+doesn't send any input to the resource when invoking the `test` operation.
 
-- `args` - Indicates that the resource expects the properties of an instance to be specified
-  with command line arguments. This option isn't implemented yet.
-- `stdin` - Indicates that the resource expects a JSON blob representing an instance from
-  `stdin`.
+The value of this property must be one of the following strings:
+
+- `env` - Indicates that the resource expects the properties of an instance to be specified as
+  environment variables with the same names and casing.
+
+  This option only supports the following data types for instance properties:
+
+  - `boolean`
+  - `integer`
+  - `number`
+  - `string`
+  - `array` of `integer` values
+  - `array` of `number` values
+  - `array` of `string` values
+
+  For non-array values, DSC sets the environment variable to the specified value as-is. When the
+  data type is an array of values, DSC sets the environment variable as a comma-delimited string.
+  For example, the property `foo` with a value of `[1, 2, 3]` is saved in the `foo` environment
+  variable as `"1,2,3"`.
+
+  If the resource needs to support complex properties with an `object` value or multi-type arrays,
+  set this to `stdin` instead.
+- `stdin` - Indicates that the resource expects a JSON blob representing an instance from `stdin`.
+  The JSON must adhere to the instance schema for the resource.
 
 ```yaml
 Type:        string
 Required:    false
-Default:     stdin
-ValidValues: [args, stdin]
+ValidValues: [env, stdin]
 ```
 
 ### return

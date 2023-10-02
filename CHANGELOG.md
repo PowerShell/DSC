@@ -2,7 +2,7 @@
 title: "Desired State Configuration changelog"
 description: >-
   A log of the changes for releases of DSCv3.
-ms.date: 09/06/2023
+ms.date: 09/27/2023
 ---
 
 # Changelog
@@ -20,9 +20,73 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link -->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.2...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.3...main
 
 <!-- Add entries between releases under the appropriate section heading here  -->
+
+## [v3.0.0-alpha.3][release-v3.0.0-alpha.3] - 2023-09-26
+
+This section includes a summary of changes for the `alpha.3` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-alpha.3].
+
+<!-- Release links -->
+[release-v3.0.0-alpha.3]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-alpha.3 "Link to the DSC v3.0.0-alpha.3 release on GitHub"
+[compare-v3.0.0-alpha.3]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.2...v3.0.0-alpha.3
+
+### Changed
+
+- Replaced the `manifestVersion` property for resource manifests with [$schema][15]. Instead of
+  specifying a semantic version, resources need to indicate which canonical schema DSC should use
+  to validate and process the manifest.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#127][#127]
+  - PRs: [#199][#199]
+
+  </details>
+
+- Updated the `preTest` property for the `set` command in resource manifests to
+  [implementsPretest][16] to more make the manifest easier to read and understand.
+
+  <details><summary>Related work items</summary>
+
+  - PRs: [#197][#197]
+
+  </details>
+
+- The [dsc resource set][17] command no longer tests the resource instance before invoking the
+  `set` operation. This simplifies the behavior for the command and adheres more accurately to the
+  implied contract for directly invoking a resource with DSC.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#98][#98]
+  - PRs: [#197][#197]
+
+  </details>
+
+- Replaced the `args` option with `env` for defining how a command-based resource expects to
+  receive input for the [get][18], [set][19], and [test][20] commands in the resource manifest.
+
+  The `args` option was never implemented. Instead, resource authors can set the `input` property
+  to `env` to indicate that the resource expects input as environmental variables.
+
+  <details><summary>Related work items</summary>
+
+  - PRs: [#198][#198]
+
+  </details>
+
+- The `input` property for the [get][18] command in a resource manifest no longer has a default
+  value. Instead, when a resource doesn't define `input` for the `get` command, DSC doesn't send
+  any input to the resource for that command.
+
+  <details><summary>Related work items</summary>
+
+  - PRs: [#198][#198]
+
+  </details>
 
 ## [v3.0.0-alpha.2][release-v3.0.0-alpha.2] - 2023-09-05
 
@@ -219,19 +283,32 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [13]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource?view=dsc-3.0&preserve-view=true
 [14]: docs/reference/schemas/config/document.md#schema
 
+<!-- alpha.3 links -->
+[15]: docs/reference/schemas/resource/manifest/root.md#schema
+[16]: docs/reference/schemas/resource/manifest/set.md#implementspretest
+[17]: docs/reference/cli/resource/set.md
+[18]: docs/reference/schemas/resource/manifest/get.md#input
+[19]: docs/reference/schemas/resource/manifest/set.md#input
+[20]: docs/reference/schemas/resource/manifest/test.md#input
+
 <!-- Issue and PR links -->
-[#163]: https://github.com/PowerShell/DSC/163
-[#156]: https://github.com/PowerShell/DSC/156
-[#168]: https://github.com/PowerShell/DSC/168
-[#172]: https://github.com/PowerShell/DSC/172
-[#182]: https://github.com/PowerShell/DSC/182
-[#181]: https://github.com/PowerShell/DSC/181
-[#177]: https://github.com/PowerShell/DSC/177
-[#150]: https://github.com/PowerShell/DSC/150
-[#176]: https://github.com/PowerShell/DSC/176
-[#133]: https://github.com/PowerShell/DSC/133
-[#73]:  https://github.com/PowerShell/DSC/73
-[#174]: https://github.com/PowerShell/DSC/174
-[#171]: https://github.com/PowerShell/DSC/171
-[#45]:  https://github.com/PowerShell/DSC/45
-[#175]: https://github.com/PowerShell/DSC/175
+[#127]: https://github.com/PowerShell/DSC/issues/127
+[#133]: https://github.com/PowerShell/DSC/issues/133
+[#150]: https://github.com/PowerShell/DSC/issues/150
+[#156]: https://github.com/PowerShell/DSC/issues/156
+[#163]: https://github.com/PowerShell/DSC/issues/163
+[#168]: https://github.com/PowerShell/DSC/issues/168
+[#171]: https://github.com/PowerShell/DSC/issues/171
+[#172]: https://github.com/PowerShell/DSC/issues/172
+[#174]: https://github.com/PowerShell/DSC/issues/174
+[#175]: https://github.com/PowerShell/DSC/issues/175
+[#176]: https://github.com/PowerShell/DSC/issues/176
+[#177]: https://github.com/PowerShell/DSC/issues/177
+[#181]: https://github.com/PowerShell/DSC/issues/181
+[#182]: https://github.com/PowerShell/DSC/issues/182
+[#197]: https://github.com/PowerShell/DSC/issues/197
+[#198]: https://github.com/PowerShell/DSC/issues/198
+[#199]: https://github.com/PowerShell/DSC/issues/199
+[#45]:  https://github.com/PowerShell/DSC/issues/45
+[#73]:  https://github.com/PowerShell/DSC/issues/73
+[#98]:  https://github.com/PowerShell/DSC/issues/98
