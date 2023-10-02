@@ -405,7 +405,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
     }
 }
 
-pub fn new(type_name: NewType, format: &Option<OutputFormat>) {
+pub fn new(type_name: &NewType, format: &Option<OutputFormat>) {
     let mut output_format = format.clone();
     let json = match type_name {
         NewType::Configuration => {

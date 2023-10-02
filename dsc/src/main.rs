@@ -53,7 +53,7 @@ fn main() {
             subcommand::config(&subcommand, &args.format, &stdin);
         },
         SubCommand::New { type_name } => {
-            subcommand::new(type_name, &args.format);
+            subcommand::new(&type_name, &args.format);
         },
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, &args.format, &stdin);
