@@ -13,11 +13,12 @@ lto = true
 [dependencies]
 atty = { version = "0.2" }
 clap = { version = "4.1", features = ["derive"] }
-crossterm = { version = "0.26.1" }
+crossterm = { version = "0.27" }
 ctrlc = { version = "3.4.0" }
 dsc_lib = { path = "../dsc_lib" }
-jsonschema = "0.17"
-schemars = { version = "0.8.12" }
+jsonschema = { version = "0.17", features = ["draft202012"]}
+schemars = { version = "0.8", features = ["semver"]}
+semver = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = { version = "0.9" }

@@ -10,6 +10,12 @@ pub enum OutputFormat {
     Yaml,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum NewType {
+    Configuration,
+    ResourceManifest,
+}
+
 #[derive(Debug, Parser)]
 #[clap(name = "dsc", version = "3.0.0-alpha.4", about = "Apply configuration or invoke specific DSC resources", long_about = None)]
 pub struct Args {
@@ -27,6 +33,11 @@ pub enum SubCommand {
     Config {
         #[clap(subcommand)]
         subcommand: ConfigSubCommand,
+    },
+    #[clap(name = "new", about = "Create an empty document")]
+    New {
+        #[clap(name = "type", short, long, help = "The type of document to create")]
+        type_name: NewType,
     },
     #[clap(name = "resource", about = "Invoke a specific DSC resource")]
     Resource {

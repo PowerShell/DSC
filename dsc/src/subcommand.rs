@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, DscType, NewType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, serde_json_value_to_string, write_output};
@@ -9,13 +9,14 @@ use tracing::error;
 
 use atty::Stream;
 use dsc_lib::{
-    configure::{Configurator, ErrorAction},
+    configure::{Configurator, ErrorAction, config_doc::{Configuration, Resource}},
     DscManager,
     dscresources::dscresource::{ImplementedAs, Invoke},
-    dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    dscresources::resource_manifest::{GetMethod, SetMethod, TestMethod, InputKind, ReturnKind, SchemaKind, import_manifest, ResourceManifest},
 };
 use jsonschema::{JSONSchema, ValidationError};
-use serde_yaml::Value;
+use serde_json::{Value, json};
+use std::collections::HashMap;
 use std::process::exit;
 
 pub fn config_get(configurator: &Configurator, format: &Option<OutputFormat>)
@@ -125,7 +126,7 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
     let json: serde_json::Value = match serde_json::from_str(stdin.as_ref()) {
         Ok(json) => json,
         Err(_) => {
-            match serde_yaml::from_str::<Value>(stdin.as_ref()) {
+            match serde_yaml::from_str::<serde_yaml::Value>(stdin.as_ref()) {
                 Ok(yaml) => {
                     match serde_json::to_value(yaml) {
                         Ok(json) => json,
@@ -402,4 +403,107 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
             resource_command::export(&mut dsc, resource, format);
         },
     }
+}
+
+pub fn new(type_name: NewType, format: &Option<OutputFormat>) {
+    let mut output_format = format.clone();
+    let json = match type_name {
+        NewType::Configuration => {
+            let config = Configuration {
+                schema: "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json".to_string(),
+                resources: vec![
+                    Resource {
+                        name: "Dependency Resource".to_string(),
+                        resource_type: "Company/Dependency".to_string(),
+                        properties: Some(HashMap::from([
+                            ("Property1".to_string(), Value::String("Value1".to_string())),
+                            ("Property2".to_string(), Value::String("Value2".to_string())),
+                        ]
+                        )),
+                        depends_on: None,
+                    },
+                    Resource {
+                        name: "My Resource Instance".to_string(),
+                        resource_type: "Company/Resource".to_string(),
+                        properties: Some(HashMap::from([
+                            ("Property1".to_string(), Value::String("Value1".to_string())),
+                            ("Property2".to_string(), Value::String("Value2".to_string())),
+                        ]
+                        )),
+                        depends_on: Some(vec!["[resourceId(\"Company/Dependency\",\"Dependency Resource\")]".to_string()]),
+                    },
+                ],
+                metadata: None,
+                parameters: None,
+                variables: None,
+            };
+
+            // default config output to yaml unless specified
+            if output_format.is_none() {
+                output_format = Some(OutputFormat::Yaml);
+            }
+
+            match serde_json::to_string(&config) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            }
+        },
+        NewType::ResourceManifest => {
+            let manifest = ResourceManifest {
+                schema_version: "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json".to_string(),
+                resource_type: "Company/Resource".to_string(),
+                description: Some("My Resource".to_string()),
+                tags: Some(vec!["Windows".to_string(), "Linux".to_string()]),
+                version: "1.0.0".to_string(),
+                get: GetMethod {
+                    executable: "myexe".to_string(),
+                    args: Some(vec!["get".to_string()]),
+                    input: Some(InputKind::Stdin),
+                },
+                set: Some(SetMethod {
+                    executable: "myexe".to_string(),
+                    args: Some(vec!["set".to_string()]),
+                    input: InputKind::Stdin,
+                    pre_test: Some(false),
+                    returns: Some(ReturnKind::State),
+                }),
+                test: Some(TestMethod {
+                    executable: "myexe".to_string(),
+                    args: Some(vec!["test".to_string()]),
+                    input: InputKind::Stdin,
+                    returns: Some(ReturnKind::State),
+                }),
+                export: None,
+                validate: None,
+                provider: None,
+                schema: Some(SchemaKind::Embedded(
+                    json!({
+                        "$schema": "http://json-schema.org/draft-07/schema#".to_string()
+                    })
+                )),
+                exit_codes: Some(HashMap::from([
+                    (0, "Success".to_string()),
+                    (1, "Failure".to_string()),
+                ]))
+            };
+
+            // default config output to pretty-json unless specified
+            if output_format.is_none() {
+                output_format = Some(OutputFormat::PrettyJson);
+            }
+
+            match serde_json::to_string(&manifest) {
+                Ok(json) => json,
+                Err(err) => {
+                    eprintln!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            }
+        }
+    };
+
+    write_output(&json, &output_format);
 }
