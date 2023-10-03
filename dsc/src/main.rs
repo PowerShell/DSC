@@ -3,10 +3,11 @@
 
 use args::{Args, SubCommand};
 use atty::Stream;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
-use tracing::error;
+use tracing::{error, info};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -49,6 +50,11 @@ fn main() {
     };
 
     match args.subcommand {
+        SubCommand::Completer { shell } => {
+            info!("Generating completion script for {:?}", shell);
+            let mut cmd = Args::command();
+            generate(shell, &mut cmd, "dsc", &mut io::stdout());
+        },
         SubCommand::Config { subcommand } => {
             subcommand::config(&subcommand, &args.format, &stdin);
         },

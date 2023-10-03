@@ -89,4 +89,13 @@ actualState:
         $LASTEXITCODE | Should -Be 0
         $out.Trim() | Should -BeExactly $expected
     }
+
+    It 'can generate PowerShell completer' {
+        $out = dsc completer powershell | Out-String
+        Invoke-Expression $out
+        $completions = TabExpansion2 -inputScript 'dsc c'
+        $completions.CompletionMatches.Count | Should -Be 2
+        $completions.CompletionMatches[0].CompletionText | Should -Be 'completer'
+        $completions.CompletionMatches[1].CompletionText | Should -Be 'config'
+    }
 }

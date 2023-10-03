@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -23,6 +24,11 @@ pub struct Args {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "completer", about = "Generate a shell completion script")]
+    Completer {
+        /// The shell to generate a completion script for
+        shell: Shell,
+    },
     #[clap(name = "config", about = "Apply a configuration document")]
     Config {
         #[clap(subcommand)]

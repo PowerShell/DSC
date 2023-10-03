@@ -13,6 +13,7 @@ lto = true
 [dependencies]
 atty = { version = "0.2" }
 clap = { version = "4.1", features = ["derive"] }
+clap_complete = { version = "4.4" }
 crossterm = { version = "0.26.1" }
 ctrlc = { version = "3.4.0" }
 dsc_lib = { path = "../dsc_lib" }
