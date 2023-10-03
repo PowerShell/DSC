@@ -40,7 +40,8 @@ Describe 'config argument tests' {
 
         Set-Content -Path "$TestDrive/Hello.dsc.resource.json" -Value $manifest
         $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = $TestDrive
+        $sep = [System.IO.Path]::PathSeparator
+        $env:DSC_RESOURCE_PATH = $env:PATH + $sep + $TestDrive
     }
 
     AfterAll {
