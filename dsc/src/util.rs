@@ -36,13 +36,13 @@ pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
 
 /// Get string representation of JSON value.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `json` - The JSON to convert
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `String` - The JSON as a string
 #[must_use]
 pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
@@ -57,18 +57,18 @@ pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
 }
 
 /// Add fields to the JSON.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `json` - The JSON to add the fields to
 /// * `fields_to_add` - The fields to add
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `String` - The JSON with the fields added
-/// 
+///
 /// # Errors
-/// 
+///
 /// * `DscError` - The JSON is invalid
 #[allow(clippy::implicit_hasher)]
 pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -> Result<String, DscError>
@@ -86,14 +86,14 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 }
 
 /// Add the type property value to the JSON.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `json` - The JSON to add the type property to
 /// * `type_name` - The type name to add
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `String` - The JSON with the type property added
 #[must_use]
 pub fn add_type_name_to_json(json: String, type_name: String) -> String
@@ -117,13 +117,13 @@ pub fn add_type_name_to_json(json: String, type_name: String) -> String
 }
 
 /// Get the JSON schema for requested type.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `dsc_type` - The type of schema to get
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `RootSchema` - The schema
 #[must_use]
 pub fn get_schema(dsc_type: DscType) -> RootSchema {
@@ -159,51 +159,63 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
 }
 
 /// Write the output to the console
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `json` - The JSON to write
 /// * `format` - The format to use
 pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     let mut is_json = true;
+    let mut output_format = format.clone();
+    let mut syntax_color = false;
     if atty::is(Stream::Stdout) {
-        let output = match format {
-            Some(OutputFormat::Json) => json.to_string(),
-            Some(OutputFormat::PrettyJson) => {
-                let value: serde_json::Value = match serde_json::from_str(json) {
-                    Ok(value) => value,
-                    Err(err) => {
-                        error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
-                    }
-                };
-                match serde_json::to_string_pretty(&value) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
-                    }
+        syntax_color = true;
+        if output_format.is_none() {
+            output_format = Some(OutputFormat::Yaml);
+        }
+    }
+    else if output_format.is_none() {
+        output_format = Some(OutputFormat::Json);
+    }
+
+    let output = match output_format {
+        Some(OutputFormat::Json) => json.to_string(),
+        Some(OutputFormat::PrettyJson) => {
+            let value: serde_json::Value = match serde_json::from_str(json) {
+                Ok(value) => value,
+                Err(err) => {
+                    error!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
                 }
-            },
-            Some(OutputFormat::Yaml) | None => {
-                is_json = false;
-                let value: serde_json::Value = match serde_json::from_str(json) {
-                    Ok(value) => value,
-                    Err(err) => {
-                        error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
-                    }
-                };
-                match serde_yaml::to_string(&value) {
-                    Ok(yaml) => yaml,
-                    Err(err) => {
-                        error!("YAML Error: {err}");
-                        exit(EXIT_JSON_ERROR);
-                    }
+            };
+            match serde_json::to_string_pretty(&value) {
+                Ok(json) => json,
+                Err(err) => {
+                    error!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
                 }
             }
-        };
+        },
+        Some(OutputFormat::Yaml) | None => {
+            is_json = false;
+            let value: serde_json::Value = match serde_json::from_str(json) {
+                Ok(value) => value,
+                Err(err) => {
+                    error!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            match serde_yaml::to_string(&value) {
+                Ok(yaml) => yaml,
+                Err(err) => {
+                    error!("YAML Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            }
+        }
+    };
 
+    if syntax_color {
         let ps = SyntaxSet::load_defaults_newlines();
         let ts = ThemeSet::load_defaults();
         let Some(syntax) = (if is_json {
@@ -224,7 +236,8 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
             let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
             print!("{escaped}");
         }
-    } else {
-        println!("{json}");
+    }
+    else {
+        println!("{output}");
     }
 }
