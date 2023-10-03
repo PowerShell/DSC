@@ -430,7 +430,7 @@ pub fn new(type_name: &NewType, format: &Option<OutputFormat>) {
                             ("Property2".to_string(), Value::String("Value2".to_string())),
                         ]
                         )),
-                        depends_on: Some(vec!["[resourceId(\"Company/Dependency\",\"Dependency Resource\")]".to_string()]),
+                        depends_on: Some(vec!["[resourceId('Company/Dependency','Dependency Resource')]".to_string()]),
                     },
                 ],
                 metadata: None,
