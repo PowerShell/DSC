@@ -20,6 +20,10 @@ pub struct Args {
     /// The output format to use
     #[clap(short = 'f', long)]
     pub format: Option<OutputFormat>,
+    #[clap(short = 'i', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+    pub input: Option<String>,
+    #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+    pub input_file: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]

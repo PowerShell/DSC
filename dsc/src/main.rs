@@ -37,9 +37,22 @@ fn main() {
 
     let args = Args::parse();
 
-    let stdin: Option<String> = if atty::is(Stream::Stdin) {
+    let input = if args.input.is_some() {
+        args.input
+    } else if args.input_file.is_some() {
+        info!("Reading input from file {}", args.input_file.as_ref().unwrap());
+        let input_file = args.input_file.unwrap();
+        match std::fs::read_to_string(input_file) {
+            Ok(input) => Some(input),
+            Err(err) => {
+                error!("Error: Failed to read input file: {err}");
+                exit(util::EXIT_INVALID_INPUT);
+            }
+        }
+    } else if atty::is(Stream::Stdin) {
         None
     } else {
+        info!("Reading input from STDIN");
         let mut buffer: Vec<u8> = Vec::new();
         io::stdin().read_to_end(&mut buffer).unwrap();
         let input = match String::from_utf8(buffer) {
@@ -59,10 +72,10 @@ fn main() {
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand } => {
-            subcommand::config(&subcommand, &args.format, &stdin);
+            subcommand::config(&subcommand, &args.format, &input);
         },
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand, &args.format, &stdin);
+            subcommand::resource(&subcommand, &args.format, &input);
         },
         SubCommand::Schema { dsc_type } => {
             let schema = util::get_schema(dsc_type);
