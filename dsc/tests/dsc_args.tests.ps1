@@ -90,7 +90,6 @@ actualState:
         $out.Trim() | Should -BeExactly $expected
     }
 
-<<<<<<< HEAD
     It 'can generate PowerShell completer' {
         $out = dsc completer powershell | Out-String
         Invoke-Expression $out
@@ -99,7 +98,7 @@ actualState:
         $completions.CompletionMatches[0].CompletionText | Should -Be 'completer'
         $completions.CompletionMatches[1].CompletionText | Should -Be 'config'
     }
-=======
+
     It 'input can be passed using <parameter>' -TestCases @(
         @{ parameter = '-i' }
         @{ parameter = '--input' }
@@ -148,5 +147,4 @@ resources:
         $LASTEXITCODE | Should -Be 2
     }
 
->>>>>>> 2332df9 (Add `--input` and `--input-file` to `dsc`)
 }
