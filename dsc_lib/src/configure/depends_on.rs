@@ -22,7 +22,7 @@ use crate::DscError;
 /// * `DscError::Validation` - The configuration is invalid
 pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resource>, DscError> {
     let mut order: Vec<Resource> = Vec::new();
-    let depends_on_regex = Regex::new(r"^\[resourceId\(\s*'(?<type>[a-zA-Z0-9\.]+/[a-zA-Z0-9]+)'\s*,\s*'(?<name>[a-zA-Z0-9 ]+)'\s*\)]$")?;
+    let depends_on_regex = Regex::new(r"^\[resourceId\(\s*'(<type>[a-zA-Z0-9\.]+/[a-zA-Z0-9]+)'\s*,\s*'(<name>[a-zA-Z0-9 ]+)'\s*\)]$")?;
     for resource in &config.resources {
         // validate that the resource isn't specified more than once in the config
         if config.resources.iter().filter(|r| r.name == resource.name && r.resource_type == resource.resource_type).count() > 1 {
