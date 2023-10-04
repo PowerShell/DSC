@@ -98,4 +98,53 @@ actualState:
         $completions.CompletionMatches[0].CompletionText | Should -Be 'completer'
         $completions.CompletionMatches[1].CompletionText | Should -Be 'config'
     }
+
+    It 'input can be passed using <parameter>' -TestCases @(
+        @{ parameter = '-i' }
+        @{ parameter = '--input' }
+    ) {
+        param($parameter)
+
+        $yaml = @'
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+- name: os
+  type: Microsoft/OSInfo
+  properties:
+    family: Windows
+'@
+
+        $out = dsc $parameter "$yaml" config get | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
+    }
+
+    It 'input can be passed using <parameter>' -TestCases @(
+        @{ parameter = '-p' }
+        @{ parameter = '--input-file' }
+    ) {
+        param($parameter)
+
+        $yaml = @'
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+- name: os
+  type: Microsoft/OSInfo
+  properties:
+    family: Windows
+'@
+
+        Set-Content -Path $TestDrive/foo.yaml -Value $yaml
+        $out = dsc $parameter "$TestDrive/foo.yaml" config get | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
+    }
+
+    It '--input and --input-file cannot be used together' {
+        dsc --input 1 --input-file foo.json config get 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 2
+    }
+
 }
