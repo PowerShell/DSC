@@ -7,7 +7,6 @@ use clap::{CommandFactory, Parser};
 use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
-use tracing::{error, info};
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn};
 
