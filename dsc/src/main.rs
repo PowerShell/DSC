@@ -109,7 +109,7 @@ fn terminate_subprocesses(sys: &System, process: &Process) {
 
     info!("Terminating process {} {}", process.name(), process.pid());
     if !process.kill() {
-        info!("Failed to terminate process {} {}", process.name(), process.pid());
+        error!("Failed to terminate process {} {}", process.name(), process.pid());
     }
 }
 
