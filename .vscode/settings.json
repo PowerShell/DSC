@@ -8,7 +8,8 @@
         "./osinfo/Cargo.toml",
         "./pal/Cargo.toml",
         "./registry/Cargo.toml",
-        "./test_group_resource/Cargo.toml",
+        "./tools/test_group_resource/Cargo.toml",
+        "./tools/dsctest/Cargo.toml",
         "./y2j/Cargo.toml"
     ],
     "rust-analyzer.showUnlinkedFileNotification": true,
