@@ -10,3 +10,8 @@ if ($paths -notcontains $PSScriptRoot) {
     $env:PATH = "$PSScriptRoot" + $pathSeparator + $env:PATH
     Write-Host -ForegroundColor Green "Added $PSScriptRoot to `$env:PATH"
 }
+
+# Invoke completer script for PowerShell
+$completer = dsc completer powershell | Out-String
+Invoke-Expression $completer
+Write-Host -ForegroundColor Green "Added PowerShell completer"
