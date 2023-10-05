@@ -329,27 +329,34 @@ properties:
                 const:       ^${3:"constant value"}
 
         properties:
-          _ensure:
-            title: 'Standard Property: _ensure'
+          _exist:
+            title: 'Standard Property: _exist'
             description: >-
-              Indicates that the DSC Resource uses the standard `_ensure` property to specify
-              whether an instance should exist with the `Present` and `Absent` enums.
+              Indicates that the DSC Resource uses the standard `_exist` property to specify
+              whether an instance should exist as a boolean value that defaults to `true`.
             const:
-              $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/ensure.yaml
+              $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/exist.yaml
             # VS Code only
             markdownDescription: |
               ***
               [_Online Documentation_][01]
               ***
 
-              Indicates that the resource can enforce whether instances exist using the shared
-              `present` and `absent` semantics. If a resource must distinguish between states
-              beyond whether an instance is `present` or `absent`, the resource should define its
-              own `ensure` property without the leading underscore. This property provides shared
-              semantics for DSC Resources and integrating tools, but doesn't enable any additional
-              built-in processing with DSC.
+              Indicates that the resource can enforce whether instances exist, handling whether an
+              instance should be added, updated, or removed during a set operation. The default
+              value is `true`.
 
-              [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/ensure?<DOCS_VERSION_PIN>
+              Resources that define this property declare that the implementation adheres to the
+              following behavior contract:
+
+              1. When the desired state for `_exist` is `true`, the resource expects the instance
+                 to exist. If it doesn't exist, the resource creates or adds the instance during
+                 the set operation.
+              1. When the desired state for `_exist` is `false`, the resource expects the instance
+                 to not exist. If it does exist, the resource deletes or removes the instance
+                 during the set operation.
+
+              [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
           _inDesiredState:
             title: 'Standard Property: _inDesiredState'
             description: >-
