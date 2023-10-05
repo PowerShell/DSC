@@ -66,9 +66,7 @@ impl Configurator {
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
     pub fn new(config: &str) -> Result<Configurator, DscError> {
-        let mut discovery = Discovery::new()?;
-        discovery.initialize()?;
-
+        let discovery = Discovery::new()?;
         Ok(Configurator {
             config: config.to_owned(),
             discovery,
@@ -94,7 +92,7 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config)? {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -130,7 +128,7 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config)? {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -166,7 +164,7 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config)? {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -240,7 +238,7 @@ impl Configurator {
         let mut conf = config_doc::Configuration::new();
 
         for resource in &config.resources {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             add_resource_export_results_to_configuration(&dsc_resource, &mut conf)?;
@@ -256,7 +254,7 @@ impl Configurator {
         let mut messages: Vec<ResourceMessage> = Vec::new();
         let mut has_errors = false;
         for resource in &config.resources {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type).next() else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
 

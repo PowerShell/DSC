@@ -14,11 +14,11 @@ use dsc_lib::{
     dscresources::dscresource::{ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
-use jsonschema::JSONSchema;
+use jsonschema::{JSONSchema, ValidationError};
 use serde_yaml::Value;
 use std::process::exit;
 
-pub fn config_get(configurator: &Configurator, format: &Option<OutputFormat>)
+pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -41,7 +41,7 @@ pub fn config_get(configurator: &Configurator, format: &Option<OutputFormat>)
     }
 }
 
-pub fn config_set(configurator: &Configurator, format: &Option<OutputFormat>)
+pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_set(false, ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -64,7 +64,7 @@ pub fn config_set(configurator: &Configurator, format: &Option<OutputFormat>)
     }
 }
 
-pub fn config_test(configurator: &Configurator, format: &Option<OutputFormat>)
+pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -87,7 +87,7 @@ pub fn config_test(configurator: &Configurator, format: &Option<OutputFormat>)
     }
 }
 
-pub fn config_export(configurator: &Configurator, format: &Option<OutputFormat>)
+pub fn config_export(configurator: &mut Configurator, format: &Option<OutputFormat>)
 {
     match configurator.invoke_export(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
@@ -144,7 +144,7 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
     };
 
     let json_string = serde_json_value_to_string(&json);
-    let configurator = match Configurator::new(&json_string) {
+    let mut configurator = match Configurator::new(&json_string) {
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
@@ -154,23 +154,29 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
 
     match subcommand {
         ConfigSubCommand::Get => {
-            config_get(&configurator, format);
+            config_get(&mut configurator, format);
         },
         ConfigSubCommand::Set => {
-            config_set(&configurator, format);
+            config_set(&mut configurator, format);
         },
         ConfigSubCommand::Test => {
-            config_test(&configurator, format);
+            config_test(&mut configurator, format);
         },
         ConfigSubCommand::Validate => {
             validate_config(&json_string);
         },
         ConfigSubCommand::Export => {
-            config_export(&configurator, format);
+            config_export(&mut configurator, format);
         }
     }
 }
 
+/// Validate configuration.
+///
+/// # Panics
+///
+/// Will panic if resource is not found.
+///
 #[allow(clippy::too_many_lines)]
 pub fn validate_config(config: &str) {
     // first validate against the config schema
@@ -204,7 +210,7 @@ pub fn validate_config(config: &str) {
         exit(EXIT_INVALID_INPUT);
     };
 
-    let mut dsc = match DscManager::new() {
+    let dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
             error!("Error: {err}");
@@ -223,7 +229,7 @@ pub fn validate_config(config: &str) {
             exit(EXIT_INVALID_INPUT);
         });
         // get the actual resource
-        let resource = get_resource(&mut dsc, type_name);
+        let resource = get_resource(&dsc, type_name).unwrap();
         // see if the resource is command based
         if resource.implemented_as == ImplementedAs::Command {
             // if so, see if it implements validate via the resource manifest
@@ -246,7 +252,7 @@ pub fn validate_config(config: &str) {
                     };
                     if !result.valid {
                         let reason = result.reason.unwrap_or("No reason provided".to_string());
-                        let type_name = resource.type_name;
+                        let type_name = resource.type_name.clone();
                         error!("Resource {type_name} failed validation: {reason}");
                         exit(EXIT_VALIDATION_FAILED);
                     }
@@ -272,15 +278,18 @@ pub fn validate_config(config: &str) {
                         },
                     };
                     let properties = resource_block["properties"].clone();
-                    let validation = compiled_schema.validate(&properties);
-                    if let Err(err) = validation {
-                        let mut error = String::new();
-                        for e in err {
-                            error.push_str(&format!("{e} "));
-                        }
-                        error!("Error: Resource {type_name} failed validation: {error}");
-                        exit(EXIT_VALIDATION_FAILED);
-                    }
+                    let _result: Result<(), ValidationError> = match compiled_schema.validate(&properties) {
+                        Ok(()) => Ok(()),
+                        Err(err) => {
+                            let mut error = String::new();
+                            for e in err {
+                                error.push_str(&format!("{e} "));
+                            }
+
+                            error!("Error: Resource {type_name} failed validation: {error}");
+                            exit(EXIT_VALIDATION_FAILED);
+                        },
+                    };
                 }
             }
         }
@@ -300,17 +309,14 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
 
     match subcommand {
         ResourceSubCommand::List { resource_name, description, tags } => {
-            if let Err(err) = dsc.initialize_discovery() {
-                error!("Error: {err}");
-                exit(EXIT_DSC_ERROR);
-            }
+
             let mut write_table = false;
             let mut table = Table::new(&["Type", "Version", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if fornat is not specified and interactive
                 write_table = true;
             }
-            for resource in dsc.find_resource(&resource_name.clone().unwrap_or_default()) {
+            for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
                 // if description is specified, skip if resource description does not contain it
                 if description.is_some() || tags.is_some() {
                     let Some(ref resource_manifest) = resource.manifest else {
@@ -380,19 +386,26 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
             }
         },
         ResourceSubCommand::Get { resource, input, all } => {
-            if *all { resource_command::get_all(&mut dsc, resource, input, stdin, format); }
-            else { resource_command::get(&mut dsc, resource, input, stdin, format); };
+            dsc.discover_resources(&[resource.to_string()]);
+            if *all { resource_command::get_all(&dsc, resource, input, stdin, format); }
+            else { 
+                resource_command::get(&dsc, resource, input, stdin, format);
+            };
         },
         ResourceSubCommand::Set { resource, input } => {
-            resource_command::set(&mut dsc, resource, input, stdin, format);
+            dsc.discover_resources(&[resource.to_string()]);
+            resource_command::set(&dsc, resource, input, stdin, format);
         },
         ResourceSubCommand::Test { resource, input } => {
-            resource_command::test(&mut dsc, resource, input, stdin, format);
+            dsc.discover_resources(&[resource.to_string()]);
+            resource_command::test(&dsc, resource, input, stdin, format);
         },
         ResourceSubCommand::Schema { resource } => {
-            resource_command::schema(&mut dsc, resource, format);
+            dsc.discover_resources(&[resource.to_string()]);
+            resource_command::schema(&dsc, resource, format);
         },
         ResourceSubCommand::Export { resource} => {
+            dsc.discover_resources(&[resource.to_string()]);
             resource_command::export(&mut dsc, resource, format);
         },
     }

@@ -14,14 +14,14 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
+pub fn get(dsc: &DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     // TODO: support streaming stdin which includes resource and input
     let mut input = get_input(input, stdin);
-    let mut resource = get_resource(dsc, resource);
+    let mut resource = get_resource(dsc, resource).unwrap();
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if let Some(requires) = resource.requires {
-        input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &requires);
+    if let Some(requires) = &resource.requires {
+        input = add_type_name_to_json(input, resource.type_name.clone());
+        resource = get_resource(dsc, &requires).unwrap();
     }
 
     match resource.get(input.as_str()) {
@@ -43,8 +43,8 @@ pub fn get(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
     }
 }
 
-pub fn get_all(dsc: &mut DscManager, resource: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let resource = get_resource(dsc, resource);
+pub fn get_all(dsc: &DscManager, resource: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
+    let resource = get_resource(dsc, resource).unwrap();
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
     let export_result = match resource.export() {
         Ok(export) => { export }
@@ -71,20 +71,20 @@ pub fn get_all(dsc: &mut DscManager, resource: &str, _input: &Option<String>, _s
     }
 }
 
-pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
+pub fn set(dsc: &DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
     if input.is_empty() {
         error!("Error: Input is empty");
         exit(EXIT_INVALID_ARGS);
     }
 
-    let mut resource = get_resource(dsc, resource);
+    let mut resource = get_resource(dsc, resource).unwrap();
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
-    if let Some(requires) = resource.requires {
-        input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &requires);
+    if let Some(requires) = &resource.requires {
+        input = add_type_name_to_json(input, resource.type_name.clone());
+        resource = get_resource(dsc, &requires).unwrap();
     }
 
     match resource.set(input.as_str(), true) {
@@ -106,15 +106,15 @@ pub fn set(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: 
     }
 }
 
-pub fn test(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
+pub fn test(dsc: &DscManager, resource: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
-    let mut resource = get_resource(dsc, resource);
+    let mut resource = get_resource(dsc, resource).unwrap();
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
-    if let Some(requires) = resource.requires {
-        input = add_type_name_to_json(input, resource.type_name);
-        resource = get_resource(dsc, &requires);
+    if let Some(requires) = &resource.requires {
+        input = add_type_name_to_json(input, resource.type_name.clone());
+        resource = get_resource(dsc, &requires).unwrap();
     }
 
     match resource.test(input.as_str()) {
@@ -136,8 +136,8 @@ pub fn test(dsc: &mut DscManager, resource: &str, input: &Option<String>, stdin:
     }
 }
 
-pub fn schema(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat>) {
-    let resource = get_resource(dsc, resource);
+pub fn schema(dsc: &DscManager, resource: &str, format: &Option<OutputFormat>) {
+    let resource = get_resource(dsc, resource).unwrap();
     match resource.schema() {
         Ok(json) => {
             // verify is json
@@ -158,7 +158,7 @@ pub fn schema(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
 }
 
 pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat>) {
-    let dsc_resource = get_resource(dsc, resource);
+    let dsc_resource = get_resource(dsc, resource).unwrap();
 
     let mut conf = Configuration::new();
 
@@ -177,34 +177,24 @@ pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
     write_output(&json, format);
 }
 
-pub fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
+pub fn get_resource<'a>(dsc: &'a DscManager, resource: &str) -> Option<&'a DscResource> {
+    //TODO: add dinamically generated resource to dsc
     // check if resource is JSON or just a name
-    match serde_json::from_str(resource) {
-        Ok(resource) => resource,
+    /*match serde_json::from_str(resource) {
+        Ok(resource) => 
+            {
+                
+                resource
+            },
         Err(err) => {
             if resource.contains('{') {
                 error!("Not valid resource JSON: {err}\nInput was: {resource}");
                 exit(EXIT_INVALID_ARGS);
             }
-
-            if let Err(err) = dsc.initialize_discovery() {
-                error!("Error: {err}");
-                exit(EXIT_DSC_ERROR);
-            }
-            let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
-            match resources.len() {
-                0 => {
-                    error!("Error: Resource not found: '{resource}'");
-                    exit(EXIT_INVALID_ARGS);
-                }
-                1 => resources[0].clone(),
-                _ => {
-                    error!("Error: Multiple resources found");
-                    exit(EXIT_INVALID_ARGS);
-                }
-            }
         }
-    }
+    }*/
+
+    dsc.find_resource(resource)
 }
 
 fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {

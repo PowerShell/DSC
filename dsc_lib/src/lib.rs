@@ -29,16 +29,6 @@ impl DscManager {
         })
     }
 
-    /// Initialize the discovery process.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying discovery fails.
-    ///
-    pub fn initialize_discovery(&mut self) -> Result<(), DscError> {
-        self.discovery.initialize()
-    }
-
     /// Find a resource by name.
     ///
     /// # Arguments
@@ -46,10 +36,13 @@ impl DscManager {
     /// * `name` - The name of the resource to find, can have wildcards.
     ///
     #[must_use]
-    pub fn find_resource(&self, name: &str) -> ResourceIterator {
+    pub fn find_resource(&self, name: &str) -> Option<&DscResource> {
         self.discovery.find_resource(name)
     }
 
+    pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
+        self.discovery.list_available_resources(type_name_filter)
+    }
     /// Invoke the get operation on a resource.
     ///
     /// # Arguments
