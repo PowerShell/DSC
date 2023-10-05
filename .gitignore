@@ -2,3 +2,5 @@ Cargo.lock
 target
 bin/
 .DS_Store
+
+specs/*.pdf
