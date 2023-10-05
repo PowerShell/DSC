@@ -36,7 +36,7 @@ actualState:
 
 This snippet will create a file with at the given path, with the given content. The source content
 in this example is using YAML [**folded** style](https://yaml.org/spec/1.2.2/#81-block-scalar-styles)
-multiline syntax. Since the content is under 80 characters, the output will not use block style for
+(`>`) multiline syntax. Since the content is under 80 characters, the output will not use block style for
 the, but it does use it for the checksum.
 
 ```bash
@@ -161,21 +161,23 @@ afterState:
 
 ### Example 5
 
-When using YAML, hard line breaks are always preserved using a single **linefeed** (`/n`) character.
+When using YAML, hard line breaks are always preserved using a single **linefeed** (`\n`) character.
 In order to use a specific line break sequence, use the escape codes. For example, for CR+LF, use
-the escape sequence for Carriage Return (`\r`) + **linefeed** (`\n`). When doing this for multiline
-content, it is best to use the **folded** style multiline syntax with the **clip** indicator.
+the escape sequence for **Carriage Return** (`\r`) + **linefeed** (`\n`). When doing this for multiline
+content, use [**double-quoted** flow syntax](https://yaml.org/spec/1.2.2/#731-double-quoted-style),
+not **folded** or **literal** block syntax. When you do, actual linefeed characters are converted
+to a single space while escaped characters, like `\r\n` are preserved.
 
 This example also shows the default hash algorithm is SHA-512, and uses the JSON pretty-print format.
 
 ```bash
 $ cat << END | dsc resource set -r file-content --format jsonPretty
 path: /path/to/file
-content: >-
-  In this content,/r/nhard-breaks have been
-  embedded/r/nwith escape sequences, and
-  folding is used to/r/nlimit code line
-  length,/r/nnot the embedded content.
+content: "In this content,/r/nhard-breaks have been
+  embedded/r/nwith escape sequences, but
+  double-quoted flow allows breaks/r/nin the
+  code to limit code line length,/r/nnot the
+  embedded content."
 END
 ```
 
@@ -186,9 +188,9 @@ END
   "path": "/path/to/file",
   "hash": {
     "algorithm": "SHA512",
-    "checksum": "61ac34d5f3f00137c57f41f616b1e96036dc011dbe81050e3d7c6dc2332ffe99330a7a4eadc60787e96401bf60ae8894fcf3a71330ae72f289481c277deb8378"
+    "checksum": "a90ee5ca33b8a94fea8ebc4587d12f17e699a77cf7a4414833a6b634db99b5fc7c4498ac00099361cd059993bd8773a48add03483298791fe03b0cdaddace33d"
   },
-  "content": "In this content,/r/nhard-breaks have been embedded/r/nwith escape sequences, and folding is used to/r/nlimit code line length,/r/nnot the embedded content."
+  "content": "In this content,/r/nhard-breaks have been embedded/r/nwith escape sequences, but double-quoted flow allows breaks/r/nin the code to limit code line length,/r/nnot the embedded content."
 }
 ```
 
@@ -245,7 +247,7 @@ actualState:
 _exist: true
   path: /path/to/file
   hash:
-        algorithm: SHA256
+    algorithm: SHA256
     checksum: dfae581667dc3e3fda151b088557e96fe7331d0a8d3b927f8cd72bcd26487060
 ```
 
