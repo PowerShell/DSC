@@ -1,0 +1,75 @@
+=====
+String literal looking like function
+=====
+
+functionOne(1,2)
+
+---
+
+    (statement
+      (stringLiteral))
+
+=====
+String parameter not in quotes
+=====
+
+[functionOne(alpha, beta)]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR
+            (functionName)
+            (functionName)))))
+
+=====
+Missing parenthesis
+=====
+
+[functionOne]
+
+---
+
+    (ERROR
+      (functionName))
+
+=====
+Missing parameter
+=====
+
+[functionOne(1, ,2)]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (number)
+          (ERROR)
+          (number))))
+
+=====
+Escaped bracket
+=====
+
+[[notFunction()]
+
+---
+
+    (statement
+      (escapedStringLiteral))
+
+=====
+String literal
+=====
+
+This is a string
+
+---
+
+    (statement
+      (stringLiteral))
