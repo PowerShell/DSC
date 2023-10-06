@@ -1,0 +1,96 @@
+=====
+Function no args
+=====
+
+[functionOne()]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName))))
+
+=====
+Simple expression
+=====
+
+[myFunction('argString')]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (string))))
+
+=====
+Whitespace
+=====
+
+  [  functionOne   ( 'arg'  , 2 )  ]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (string)
+          (number))))
+
+=====
+Multiple arguments
+=====
+
+[myFunction('argString', 1, true)]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (string)
+          (number)
+          (boolean))))
+
+=====
+Nested functions
+=====
+
+[functionOne('argString', functionTwo(1, functionThree('threeString', 3), 2), 'oneString')]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (string)
+          (function
+            (functionName)
+            (number)
+            (function
+              (functionName)
+              (string)
+              (number))
+            (number))
+          (string))))
+
+=====
+Function with dot-notation
+=====
+
+[functionOne('argString').prop1.prop2]
+
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (string))
+        (memberName)
+        (memberName)))
