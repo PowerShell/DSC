@@ -208,13 +208,10 @@ if ($Test) {
             Push-Location "$PSScriptRoot/$project"
             if (Test-Path "./Cargo.toml")
             {
-                if (Test-Path "./Cargo.toml")
-                {
-                    cargo test
+                cargo test
 
-                    if ($LASTEXITCODE -ne 0) {
-                        $failed = $true
-                    }
+                if ($LASTEXITCODE -ne 0) {
+                    $failed = $true
                 }
             }
         } finally {

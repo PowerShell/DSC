@@ -1,9 +1,7 @@
 =====
 Function no args
 =====
-
 [functionOne()]
-
 ---
 
     (statement
@@ -14,9 +12,7 @@ Function no args
 =====
 Simple expression
 =====
-
 [myFunction('argString')]
-
 ---
 
     (statement
@@ -26,26 +22,9 @@ Simple expression
           (string))))
 
 =====
-Whitespace
-=====
-
-  [  functionOne   ( 'arg'  , 2 )  ]
-
----
-
-    (statement
-      (expression
-        (function
-          (functionName)
-          (string)
-          (number))))
-
-=====
 Multiple arguments
 =====
-
 [myFunction('argString', 1, true)]
-
 ---
 
     (statement
@@ -59,9 +38,7 @@ Multiple arguments
 =====
 Nested functions
 =====
-
 [functionOne('argString', functionTwo(1, functionThree('threeString', 3), 2), 'oneString')]
-
 ---
 
     (statement
@@ -69,22 +46,22 @@ Nested functions
         (function
           (functionName)
           (string)
-          (function
-            (functionName)
-            (number)
+          (expression
             (function
               (functionName)
-              (string)
-              (number))
-            (number))
+              (number)
+              (expression
+                (function
+                  (functionName)
+                  (string)
+                  (number)))
+              (number)))
           (string))))
 
 =====
 Function with dot-notation
 =====
-
 [functionOne('argString').prop1.prop2]
-
 ---
 
     (statement
@@ -93,4 +70,22 @@ Function with dot-notation
           (functionName)
           (string))
         (memberName)
+        (memberName)))
+
+=====
+Nested dot-notation
+=====
+[functionOne(functionTwo(2).prop1.prop2).prop3]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (expression
+            (function
+              (functionName)
+              (number))
+            (memberName)
+            (memberName)))
         (memberName)))

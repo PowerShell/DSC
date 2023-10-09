@@ -36,7 +36,7 @@
           "named": true
         },
         {
-          "type": "function",
+          "type": "expression",
           "named": true
         },
         {
@@ -62,6 +62,10 @@
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "bracketInStringLiteral",
+          "named": true
+        },
         {
           "type": "escapedStringLiteral",
           "named": true
@@ -109,6 +113,10 @@
   {
     "type": "]",
     "named": false
+  },
+  {
+    "type": "bracketInStringLiteral",
+    "named": true
   },
   {
     "type": "escapedStringLiteral",

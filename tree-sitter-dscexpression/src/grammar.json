@@ -10,7 +10,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "expression"
+          "name": "bracketInStringLiteral"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_expressionString"
         },
         {
           "type": "SYMBOL",
@@ -21,15 +25,68 @@
     "escapedStringLiteral": {
       "type": "TOKEN",
       "content": {
+        "type": "PREC",
+        "value": 3,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "[["
+            },
+            {
+              "type": "PATTERN",
+              "value": ".*?"
+            }
+          ]
+        }
+      }
+    },
+    "bracketInStringLiteral": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "["
+            },
+            {
+              "type": "PATTERN",
+              "value": ".*?"
+            },
+            {
+              "type": "STRING",
+              "value": "]"
+            },
+            {
+              "type": "PATTERN",
+              "value": ".+?"
+            }
+          ]
+        }
+      }
+    },
+    "_expressionString": {
+      "type": "PREC",
+      "value": 1,
+      "content": {
         "type": "SEQ",
         "members": [
           {
             "type": "STRING",
-            "value": "[["
+            "value": "["
           },
           {
-            "type": "PATTERN",
-            "value": ".*"
+            "type": "SYMBOL",
+            "name": "expression"
+          },
+          {
+            "type": "STRING",
+            "value": "]"
           }
         ]
       }
@@ -37,10 +94,6 @@
     "expression": {
       "type": "SEQ",
       "members": [
-        {
-          "type": "STRING",
-          "value": "["
-        },
         {
           "type": "SYMBOL",
           "name": "function"
@@ -56,10 +109,6 @@
               "type": "BLANK"
             }
           ]
-        },
-        {
-          "type": "STRING",
-          "value": "]"
         }
       ]
     },
@@ -70,7 +119,7 @@
         "value": -11,
         "content": {
           "type": "PATTERN",
-          "value": ".*"
+          "value": "[^\\[].*?"
         }
       }
     },
@@ -137,7 +186,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "function"
+          "name": "expression"
         },
         {
           "type": "SYMBOL",
