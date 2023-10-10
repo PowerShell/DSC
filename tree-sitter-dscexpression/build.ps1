@@ -25,6 +25,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Invoke-NativeCommand 'npx tree-sitter generate'
-Invoke-NativeCommand 'node-gyp configure'
-Invoke-NativeCommand 'node-gyp build'
+Invoke-NativeCommand 'npx node-gyp configure'
+Invoke-NativeCommand 'npx node-gyp build'
 Invoke-NativeCommand 'npx tree-sitter test'
