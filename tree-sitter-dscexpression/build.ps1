@@ -1,14 +1,16 @@
-#requires -version 7.4
-
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
 # check if tools are installed
 
-$PSNativeCommandUseErrorActionPreference = $true
-$ErrorActionPreference = 'Stop'
+function Invoke-NativeCommand($cmd) {
+    Invoke-Expression $cmd
+    if ($LASTEXITCODE -ne 0) {
+        throw "Command $cmd failed with exit code $LASTEXITCODE"
+    }
+}
 
-npx tree-sitter generate
-node-gyp configure
-node-gyp build
-npx tree-sitter test
+Invoke-NativeCommand 'npx tree-sitter generate'
+Invoke-NativeCommand 'node-gyp configure'
+Invoke-NativeCommand 'node-gyp build'
+Invoke-NativeCommand 'npx tree-sitter test'
