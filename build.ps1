@@ -190,6 +190,14 @@ if (!$found) {
     $env:PATH += [System.IO.Path]::PathSeparator + $target
 }
 
+# add rustup toolchain to PATH
+$toolchainPath = rustc --print sysroot
+$toolchainBinPath = Join-Path $toolchainPath 'bin'
+if ($env:PATH -notlike "*$toolchainBinPath*") {
+    Write-Host -ForegroundColor Yellow "Adding $toolchainBinPath to `$env:PATH"
+    $env:PATH += [System.IO.Path]::PathSeparator + $toolchainBinPath
+}
+
 if ($Test) {
     $failed = $false
 
@@ -207,7 +215,6 @@ if ($Test) {
     }
 
     foreach ($project in $projects) {
-        ## Build format_json
         Write-Host -ForegroundColor Cyan "Testing $project ..."
         try {
             Push-Location "$PSScriptRoot/$project"

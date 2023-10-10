@@ -11,7 +11,18 @@ function Invoke-NativeCommand($cmd) {
 }
 
 if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
-    throw "npm is not installed"
+    Write-Host 'Installing Node'
+
+    if ($IsWindows) {
+        winget install OpenJS.NodeJS.LTS
+    }
+    elseif ($IsMacOS) {
+        brew install node
+    }
+    else {
+        sudo apt-get install nodejs
+        sudo apt-get install npm
+    }
 }
 
 npm list tree-sitter-cli
