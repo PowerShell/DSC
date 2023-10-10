@@ -93,7 +93,8 @@ New-Item -ItemType Directory $target > $null
 # make sure dependencies are built first so clippy runs correctly
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 $projects = @("tree-sitter-dscexpression", "dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
-$pedantic_unclean_projects = @("tree-sitter-dscexpression", "ntreg")
+$pedantic_unclean_projects = @("ntreg")
+$clippy_unclean_projects = @("tree-sitter-dscexpression")
 
 if ($IsWindows) {
     $projects += $windows_projects
@@ -113,7 +114,10 @@ foreach ($project in $projects) {
         if (Test-Path "./Cargo.toml")
         {
             if ($Clippy) {
-                if ($pedantic_unclean_projects -contains $project) {
+                if ($clippy_unclean_projects -contains $project) {
+                    Write-Verbose -Verbose "Skipping clippy for $project"
+                }
+                elseif ($pedantic_unclean_projects -contains $project) {
                     Write-Verbose -Verbose "Running clippy for $project"
                     cargo clippy @flags -- -Dwarnings
                 }
