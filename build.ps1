@@ -92,7 +92,7 @@ New-Item -ItemType Directory $target > $null
 
 # make sure dependencies are built first so clippy runs correctly
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
+$projects = @("tree-sitter-dscexpression", "dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
 $pedantic_unclean_projects = @("tree-sitter-dscexpression", "ntreg")
 
 if ($IsWindows) {
@@ -105,6 +105,10 @@ foreach ($project in $projects) {
     Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
+
+        if ($project -eq 'tree-sitter-dscexpression') {
+            ./build.ps1
+        }
 
         if (Test-Path "./Cargo.toml")
         {
