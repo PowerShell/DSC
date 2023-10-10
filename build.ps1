@@ -206,9 +206,6 @@ if ($Test) {
         Install-Module Pester -WarningAction Ignore
     }
 
-    "For debug - env:PATH is:"
-    $env:PATH
-
     foreach ($project in $projects) {
         ## Build format_json
         Write-Host -ForegroundColor Cyan "Testing $project ..."
