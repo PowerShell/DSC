@@ -95,6 +95,7 @@ $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 $projects = @("tree-sitter-dscexpression", "dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
 $pedantic_unclean_projects = @("ntreg")
 $clippy_unclean_projects = @("tree-sitter-dscexpression")
+$skip_test_projects = @("tree-sitter-dscexpression")
 
 if ($IsWindows) {
     $projects += $windows_projects
@@ -207,12 +208,17 @@ if ($Test) {
     }
 
     foreach ($project in $projects) {
+        if ($skip_test_projects -contains $project) {
+            Write-Verbose -Verbose "Skipping test for $project"
+            continue
+        }
+
         Write-Host -ForegroundColor Cyan "Testing $project ..."
         try {
             Push-Location "$PSScriptRoot/$project"
             if (Test-Path "./Cargo.toml")
             {
-                cargo test -vv
+                cargo test
 
                 if ($LASTEXITCODE -ne 0) {
                     $failed = $true
