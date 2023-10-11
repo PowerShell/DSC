@@ -190,14 +190,6 @@ if (!$found) {
     $env:PATH += [System.IO.Path]::PathSeparator + $target
 }
 
-# add rustup toolchain to PATH
-$toolchainPath = rustc --print sysroot
-$toolchainBinPath = Join-Path $toolchainPath 'bin'
-if ($env:PATH -notlike "*$toolchainBinPath*") {
-    Write-Host -ForegroundColor Yellow "Adding $toolchainBinPath to `$env:PATH"
-    $env:PATH += [System.IO.Path]::PathSeparator + $toolchainBinPath
-}
-
 if ($Test) {
     $failed = $false
 
@@ -220,7 +212,7 @@ if ($Test) {
             Push-Location "$PSScriptRoot/$project"
             if (Test-Path "./Cargo.toml")
             {
-                cargo test
+                cargo test -vv
 
                 if ($LASTEXITCODE -ne 0) {
                     $failed = $true
