@@ -8,7 +8,8 @@
     "incremental"
   ],
   "dependencies": {
-    "nan": "^2.12.1"
+    "nan": "^2.12.1",
+    "node-gyp": "^9.4.0"
   },
   "devDependencies": {
     "tree-sitter-cli": "^0.20.8"
