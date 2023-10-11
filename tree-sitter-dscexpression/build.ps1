@@ -30,12 +30,5 @@ if ($LASTEXITCODE -ne 0) {
     npm install tree-sitter-cli
 }
 
-npm list node-gyp
-if ($LASTEXITCODE -ne 0) {
-    npm install node-gyp
-}
-
 Invoke-NativeCommand 'npx tree-sitter generate'
-Invoke-NativeCommand 'npx node-gyp configure'
-Invoke-NativeCommand 'npx node-gyp build'
 Invoke-NativeCommand 'npx tree-sitter test'
