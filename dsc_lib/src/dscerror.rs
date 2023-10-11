@@ -5,6 +5,7 @@ use reqwest::StatusCode;
 use thiserror::Error;
 use chrono::{Local, DateTime};
 use tracing::{error, warn};
+use tree_sitter::LanguageError;
 
 #[derive(Error, Debug)]
 pub enum DscError {
@@ -35,6 +36,9 @@ pub enum DscError {
     #[error("JSON: {0}")]
     Json(#[from] serde_json::Error),
 
+    #[error("Language: {0}")]
+    Language(#[from] LanguageError),
+
     #[error("Manifest: {0}\nJSON: {1}")]
     Manifest(String, serde_json::Error),
 
@@ -52,6 +56,9 @@ pub enum DscError {
 
     #[error("Operation: {0}")]
     Operation(String),
+
+    #[error("Parser: {0}")]
+    Parser(String),
 
     #[error("Resource not found: {0}")]
     ResourceNotFound(String),

@@ -12,6 +12,7 @@ use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
+use tree_sitter::Parser;
 
 pub mod config_doc;
 pub mod config_result;
@@ -20,6 +21,7 @@ pub mod depends_on;
 pub struct Configurator {
     config: String,
     discovery: Discovery,
+    parser: Parser,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -68,9 +70,13 @@ impl Configurator {
     pub fn new(config: &str) -> Result<Configurator, DscError> {
         let mut discovery = Discovery::new()?;
         discovery.initialize()?;
+        let mut parser = Parser::new();
+        parser.set_language(tree_sitter_dscexpression::language())?;
+
         Ok(Configurator {
             config: config.to_owned(),
             discovery,
+            parser,
         })
     }
 
@@ -311,5 +317,16 @@ impl Configurator {
         }
 
         Ok((config, messages, has_errors))
+    }
+
+    fn try_parse_expression(&self, expression: &str) -> Result<String, DscError> {
+        let tree = self.parser.parse(expression, None).unwrap();
+        let root_node = tree.root_node();
+        let child_node = root_node.child(0).unwrap_or_else(Error(DscError::Parser("Child node not found".to_string())));
+        match child_node.kind() {
+            "stringLiteral" => {
+
+            }
+        }
     }
 }
