@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use digest::Digest;
 use sha1::Sha1;
 use sha2::{Sha256, Sha512};
 use hex_string::HexString;
