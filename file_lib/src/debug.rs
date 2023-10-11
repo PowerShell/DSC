@@ -4,8 +4,6 @@
 use crossterm::event;
 use std::env;
 
-
-
 pub const DEBUG_ENV_VAR: &str = "DEBUG_DSC";
 
 /// If the `DEBUG_DSC` environment variable is set, and it contains the given command,
