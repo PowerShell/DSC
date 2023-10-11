@@ -6,10 +6,10 @@
         "./ntstatuserror/Cargo.toml",
         "./ntuserinfo/Cargo.toml",
         "./osinfo/Cargo.toml",
-        "./pal/Cargo.toml",
         "./registry/Cargo.toml",
         "./tools/test_group_resource/Cargo.toml",
         "./tools/dsctest/Cargo.toml",
+        "./tree-sitter-dscexpression/Cargo.toml",
         "./y2j/Cargo.toml"
     ],
     "rust-analyzer.showUnlinkedFileNotification": true,

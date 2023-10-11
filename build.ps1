@@ -92,8 +92,10 @@ New-Item -ItemType Directory $target > $null
 
 # make sure dependencies are built first so clippy runs correctly
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
-$pedantic_unclean_projects = @("tree-sitter-dscexpression", "ntreg")
+$projects = @("tree-sitter-dscexpression", "dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
+$pedantic_unclean_projects = @("ntreg")
+$clippy_unclean_projects = @("tree-sitter-dscexpression")
+$skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
 if ($IsWindows) {
     $projects += $windows_projects
@@ -106,10 +108,17 @@ foreach ($project in $projects) {
     try {
         Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
+        if ($project -eq 'tree-sitter-dscexpression') {
+            ./build.ps1
+        }
+
         if (Test-Path "./Cargo.toml")
         {
             if ($Clippy) {
-                if ($pedantic_unclean_projects -contains $project) {
+                if ($clippy_unclean_projects -contains $project) {
+                    Write-Verbose -Verbose "Skipping clippy for $project"
+                }
+                elseif ($pedantic_unclean_projects -contains $project) {
                     Write-Verbose -Verbose "Running clippy for $project"
                     cargo clippy @flags -- -Dwarnings
                 }
@@ -198,23 +207,21 @@ if ($Test) {
         Install-Module Pester -WarningAction Ignore
     }
 
-    "For debug - env:PATH is:"
-    $env:PATH
-
     foreach ($project in $projects) {
-        ## Build format_json
+        if ($IsWindows -and $skip_test_projects_on_windows -contains $project) {
+            Write-Verbose -Verbose "Skipping test for $project on Windows"
+            continue
+        }
+
         Write-Host -ForegroundColor Cyan "Testing $project ..."
         try {
             Push-Location "$PSScriptRoot/$project"
             if (Test-Path "./Cargo.toml")
             {
-                if (Test-Path "./Cargo.toml")
-                {
-                    cargo test
+                cargo test
 
-                    if ($LASTEXITCODE -ne 0) {
-                        $failed = $true
-                    }
+                if ($LASTEXITCODE -ne 0) {
+                    $failed = $true
                 }
             }
         } finally {

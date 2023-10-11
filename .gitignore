@@ -6,3 +6,7 @@ bin/
 # Node.js generated files for tree-sitter
 build/
 node_modules/
+tree-sitter-dscexpression/bindings/
+tree-sitter-dscexpression/src/
+tree-sitter-dscexpression/parser.*
+tree-sitter-dscexpression/binding.gyp

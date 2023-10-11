@@ -1,9 +1,7 @@
 =====
 String literal looking like function
 =====
-
 functionOne(1,2)
-
 ---
 
     (statement
@@ -12,9 +10,7 @@ functionOne(1,2)
 =====
 String parameter not in quotes
 =====
-
 [functionOne(alpha, beta)]
-
 ---
 
     (statement
@@ -28,9 +24,7 @@ String parameter not in quotes
 =====
 Missing parenthesis
 =====
-
 [functionOne]
-
 ---
 
     (ERROR
@@ -39,9 +33,7 @@ Missing parenthesis
 =====
 Missing parameter
 =====
-
 [functionOne(1, ,2)]
-
 ---
 
     (statement
@@ -55,9 +47,16 @@ Missing parameter
 =====
 Escaped bracket
 =====
-
 [[notFunction()]
+---
 
+    (statement
+      (escapedStringLiteral))
+
+=====
+String literal starting with two brackets
+=====
+[[This is a string
 ---
 
     (statement
@@ -66,10 +65,47 @@ Escaped bracket
 =====
 String literal
 =====
-
 This is a string
-
 ---
 
     (statement
       (stringLiteral))
+
+=====
+String starting with bracket
+=====
+[Test] string
+---
+
+    (statement
+      (bracketInStringLiteral))
+
+=====
+Multiple expressions
+=====
+[functionOne()][functionTwo()]
+---
+
+    (statement
+      (bracketInStringLiteral))
+
+=====
+Whitespace
+=====
+  [  functionOne   ( 'arg'  , 2 )  ]
+---
+
+    (statement
+      (stringLiteral))
+
+=====
+Incomplete expression
+=====
+[functionOne()
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)))
+      (MISSING "]"))
