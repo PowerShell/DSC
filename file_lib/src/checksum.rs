@@ -63,27 +63,22 @@ pub enum Algorithm {
 pub fn compute_checksum(bytes: &[u8], algorithm: Algorithm) -> String {
     match algorithm {
         Algorithm::Sha1 => {
-            let mut hasher = Sha1::new();
-            hasher.update(bytes);
-            let result = hasher.finalize();
-
-            HexString::from_bytes(&result.to_vec()).as_string().to_lowercase()
+            get_checksum(bytes, Sha1::default())
         },
         Algorithm::Sha256 => {
-            let mut hasher = Sha256::new();
-            hasher.update(bytes);
-            let result = hasher.finalize();
-
-            HexString::from_bytes(&result.to_vec()).as_string().to_lowercase()
+            get_checksum(bytes, Sha256::default())
         },
         Algorithm::Sha512 => {
-            let mut hasher = Sha512::new();
-            hasher.update(bytes);
-            let result = hasher.finalize();
-
-            HexString::from_bytes(&result.to_vec()).as_string().to_lowercase()
+            get_checksum(bytes, Sha512::default())
         }
     }
+}
+
+fn get_checksum<D>(bytes: &[u8], mut hasher: D) -> String
+where D: digest::Digest {
+    hasher.update(bytes);
+    let result = hasher.finalize();
+    HexString::from_bytes(&result.to_vec()).as_string().to_lowercase()
 }
 
 #[cfg(test)]
