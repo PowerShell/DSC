@@ -12,6 +12,9 @@ pub mod dscresources;
 pub mod functions;
 pub mod parser;
 
+use dscerror::DscError;
+use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
+
 pub struct DscManager {
     discovery: discovery::Discovery,
 }
@@ -42,6 +45,10 @@ impl DscManager {
 
     pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
         self.discovery.list_available_resources(type_name_filter)
+    }
+
+    pub fn discover_resources(&mut self, required_resource_types: Vec<String>) {
+        self.discovery.discover_resources(required_resource_types)
     }
     /// Invoke the get operation on a resource.
     ///

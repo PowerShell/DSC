@@ -5,7 +5,7 @@ use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{ResourceManifest, import_manifest};
 use crate::dscresources::command_resource::invoke_command;
-use crate::dscerror::{DscError, StreamMessage, StreamMessageType};
+use crate::dscerror::DscError;
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::File;
@@ -21,20 +21,14 @@ impl CommandDiscovery {
         CommandDiscovery {
         }
     }
-}
 
-impl Default for CommandDiscovery {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ResourceDiscovery for CommandDiscovery {
-
-    fn list_available_resources(&mut self) -> Result<BTreeMap<String, DscResource>, DscError> {
+    fn search_for_resources(&mut self, required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
+    {
+        let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut provider_resources: Vec<String> = Vec::new();
+        let mut remaining_required_resource_types = required_resource_types.clone();
         // try DSC_RESOURCE_PATH env var first otherwise use PATH
         let path_env = match env::var_os("DSC_RESOURCE_PATH") {
             Some(value) => value,
@@ -61,22 +55,38 @@ impl ResourceDiscovery for CommandDiscovery {
                                 let manifest = import_manifest(resource.manifest.clone().unwrap())?;
                                 if manifest.provider.is_some() {
                                     provider_resources.push(resource.type_name.clone());
+                                    resources.insert(resource.type_name.clone(), resource.clone());
                                 }
                             }
-                            resources.insert(resource.type_name.clone(), resource);
+                            if return_all_resources
+                            {
+                                resources.insert(resource.type_name.clone(), resource);
+                            }
+                            else {
+                                if remaining_required_resource_types.contains(&resource.type_name)
+                                {
+                                    remaining_required_resource_types.retain(|x| *x != resource.type_name);
+                                    debug!("Found {} in {}", &resource.type_name, path.display());
+                                    resources.insert(resource.type_name.clone(), resource);
+                                    if remaining_required_resource_types.len() == 0
+                                    {
+                                        return Ok(resources);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
 
-        debug!("Found {} non-provider resources", resources.len());
+        debug!("Found {} non-provider resources", resources.len() - provider_resources.len());
 
         // now go through the provider resources and add them to the list of resources
         for provider in provider_resources {
+            debug!("Enumerating resources for provider {}", provider);
             let provider_resource = resources.get(&provider).unwrap();
             let provider_type_name = provider_resource.type_name.clone();
-            let provider_path = provider_resource.path.clone();
             let manifest = import_manifest(provider_resource.manifest.clone().unwrap())?;
             let mut provider_resources_count = 0;
             // invoke the list command
@@ -101,8 +111,23 @@ impl ResourceDiscovery for CommandDiscovery {
                             error!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string());
                             continue;
                         }
-                        resources.insert(resource.type_name.clone(), resource);
-                        provider_resources_count += 1;
+                        if return_all_resources
+                        {
+                            resources.insert(resource.type_name.clone(), resource);
+                            provider_resources_count += 1;
+                        }
+                        else {
+                            if remaining_required_resource_types.contains(&resource.type_name)
+                            {
+                                remaining_required_resource_types.retain(|x| *x != resource.type_name);
+                                debug!("Found {} in {}", &resource.type_name, &resource.path);
+                                resources.insert(resource.type_name.clone(), resource);
+                                if remaining_required_resource_types.len() == 0
+                                {
+                                    return Ok(resources);
+                                }
+                            }
+                        }
                     },
                     Result::Err(err) => {
                         error!("Failed to parse resource: {line} -> {err}");
@@ -115,6 +140,27 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         Ok(resources)
+    }
+}
+
+impl Default for CommandDiscovery {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ResourceDiscovery for CommandDiscovery {
+
+    fn list_available_resources(&mut self) -> Result<BTreeMap<String, DscResource>, DscError> {
+
+        let required_resource_types = vec!["*".to_string()];
+        self.search_for_resources(&required_resource_types)
+    }
+
+
+    fn discover_resources(&mut self, required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
+    {
+        self.search_for_resources(required_resource_types)
     }
 }
 

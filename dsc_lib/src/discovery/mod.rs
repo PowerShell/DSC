@@ -5,13 +5,13 @@ mod command_discovery;
 mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::{dscresources::dscresource::DscResource, dscerror::DscError, dscerror::StreamMessageType};
-use regex::RegexBuilder;
+use crate::{dscresources::dscresource::DscResource, dscerror::DscError};
+use regex::{RegexBuilder, Regex};
 use std::collections::BTreeMap;
 use tracing::{debug, error};
 
 pub struct Discovery {
-    resources: BTreeMap<String, DscResource>,
+    pub resources: BTreeMap<String, DscResource>,
 }
 
 impl Discovery {
@@ -27,13 +27,16 @@ impl Discovery {
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
 
-        let regex_str = convert_wildcard_to_regex(type_name_filter);
-        let mut regex_builder = RegexBuilder::new(regex_str.as_str());
-        debug!("Using regex {regex_str} as filter for resource type");
-        regex_builder.case_insensitive(true);
-        let Ok(regex) = regex_builder.build() else {
-            return vec![];
-        };
+        let mut regex: Option<Box<Regex>> = None;
+        if !type_name_filter.is_empty() 
+        {
+            let regex_str = convert_wildcard_to_regex(type_name_filter);
+            let mut regex_builder = RegexBuilder::new(regex_str.as_str());
+            debug!("Using regex {regex_str} as filter for resource type");
+            regex_builder.case_insensitive(true);
+            let reg_v = regex_builder.build().unwrap();
+            regex = Some(Box::new(reg_v));
+        }
 
         let mut resources: Vec<DscResource> = Vec::new();
 
@@ -45,11 +48,15 @@ impl Discovery {
                         error!("{err}");
                         continue;
                     }
-                };
+            };
 
             for resource in discovered_resources {
-                if type_name_filter.is_empty() | regex.is_match(resource.0.as_str()) {
+                if type_name_filter.is_empty() {
                     resources.push(resource.1);
+                } else {
+                    if regex.as_ref().unwrap().is_match(resource.0.as_str()) {
+                        resources.push(resource.1);
+                    }
                 }
             };
         }
@@ -59,6 +66,30 @@ impl Discovery {
 
     pub fn find_resource(&self, type_name: &str) -> Option<&DscResource> {
         self.resources.get(type_name)
+    }
+
+    pub fn discover_resources(&mut self, required_resource_types: Vec<String>) {
+
+        let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
+            Box::new(command_discovery::CommandDiscovery::new()),
+        ];
+
+        let mut remaining_required_resource_types = required_resource_types.clone();
+        for mut discovery_type in discovery_types {
+
+            let discovered_resources = match discovery_type.discover_resources(&remaining_required_resource_types) {
+                Ok(value) => value,
+                Err(err) => {
+                        error!("{err}");
+                        continue;
+                    }
+                };
+
+            for resource in discovered_resources {
+                self.resources.insert(resource.0.clone(), resource.1);
+                remaining_required_resource_types.retain(|x| *x != resource.0);
+            };
+        }
     }
 }
 
