@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 pub use self::checksum::Algorithm;
-pub use self::checksum::compute_checksum;
-pub use self::debug::check_debug;
+pub use self::checksum::compute;
+pub use self::debug::check_debugger_prompt;
 
 pub mod checksum;
 pub mod debug;

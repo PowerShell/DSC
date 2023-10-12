@@ -6,6 +6,7 @@ use sha2::{Sha256, Sha512};
 use hex_string::HexString;
 
 /// The supported checksum hash algorithms.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Algorithm {
     /// The SHA-1 algorithm. (Considered insecure.)
     Sha1,
@@ -31,35 +32,36 @@ pub enum Algorithm {
 /// ## Can compute SHA-1 checksum
 /// 
 /// ```
-/// # use file_lib::checksum::{compute_checksum, Algorithm};
-/// let checksum = compute_checksum(b"hello world", Algorithm::Sha1);
+/// # use file_lib::checksum::{compute, Algorithm};
+/// let checksum = compute(b"hello world", Algorithm::Sha1);
 /// assert_eq!(checksum, "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed");
 /// ```
 /// 
 /// ## Can compute SHA-256 checksum
 /// 
 /// ```
-/// # use file_lib::checksum::{compute_checksum, Algorithm};
-/// let checksum = compute_checksum(b"hello world", Algorithm::Sha256);
+/// # use file_lib::checksum::{compute, Algorithm};
+/// let checksum = compute(b"hello world", Algorithm::Sha256);
 /// assert_eq!(checksum, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
 /// ```
 /// 
 /// ## Can compute SHA-512 checksum
 /// 
 /// ```
-/// # use file_lib::checksum::{compute_checksum, Algorithm};
-/// let checksum = compute_checksum(b"hello world", Algorithm::Sha512);
+/// # use file_lib::checksum::{compute, Algorithm};
+/// let checksum = compute(b"hello world", Algorithm::Sha512);
 /// assert_eq!(checksum, "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f");
 /// ```
 /// 
 /// ## Checksum is lowercase string
 /// 
 /// ```
-/// # use file_lib::checksum::{compute_checksum, Algorithm};
-/// let checksum = compute_checksum(b"hello world", Algorithm::Sha512);
+/// # use file_lib::checksum::{compute, Algorithm};
+/// let checksum = compute(b"hello world", Algorithm::Sha512);
 /// assert_eq!(checksum, checksum.to_lowercase());
 /// ```
-pub fn compute_checksum(bytes: &[u8], algorithm: Algorithm) -> String {
+#[must_use]
+pub fn compute(bytes: &[u8], algorithm: &Algorithm) -> String {
     match algorithm {
         Algorithm::Sha1 => {
             get_checksum(bytes, Sha1::default())
@@ -86,7 +88,7 @@ mod tests {
 
     #[test]
     fn can_compute_sha1_checksum() {
-        let checksum = checksum::compute_checksum(b"hello world", checksum::Algorithm::Sha1);
+        let checksum = checksum::compute(b"hello world", checksum::Algorithm::Sha1);
         assert_eq!(checksum, "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed");
     }
 }

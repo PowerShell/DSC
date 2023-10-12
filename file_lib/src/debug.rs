@@ -2,40 +2,60 @@
 // Licensed under the MIT License.
 
 use crossterm::event;
-use std::env;
+use std::{env, io};
 
-pub const DEBUG_ENV_VAR: &str = "DEBUG_DSC";
+pub const DEBUG_ENV_VAR: &str = "DSC_DEBUG";
 
-/// If the `DEBUG_DSC` environment variable is set, and it contains the given command,
+/// If the `DSC_DEBUG` environment variable is set, and it contains the given command,
 /// then prompt the user to attach a debugger.
-/// 
+///
 /// The environment variable is a comma-separated list of case-insensitive commands to enable for
 /// prompting to attach the debugger.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `command` - The command to check for in the `DEBUG_DSC` environment variable.
-/// 
-pub fn check_debug(command: &String) {
-    if env::var("DEBUG_DSC").is_ok() {
-        let debug_args: Vec<String> = env::var(DEBUG_ENV_VAR)
-            .unwrap()
-            .split(',')
-            .map(|s| s.to_lowercase())
-            .collect();
+///
+/// # Errors
+///
+/// Will return `Err` if there is an error reading the keyboard.
+pub fn check_debugger_prompt(command: &str) -> io::Result<()> {
+    let dsc_debug = env::var(DEBUG_ENV_VAR).unwrap_or_default().to_lowercase();
+    let debug_args: Vec<&str> = dsc_debug.split(',').collect();
 
-        if debug_args.contains(command) {
+    for arg in &debug_args {
+        if arg.trim() == command.to_lowercase() {
             eprintln!(
                 "attach debugger to pid {} and press any key to continue",
                 std::process::id()
             );
-            loop {
-                let event = event::read().unwrap();
-                if let event::Event::Key(_key) = event {
-                    break;
-                }
-                eprintln!("Unexpected event: {event:?}");
-            }
+
+            wait_for_keypress()?;
         }
     }
+
+    Ok(())
+}
+
+fn wait_for_keypress() -> io::Result<()> {
+    // there will be a latent `Release` on the `Enter` key sitting in the buffer; ignore it
+    let mut ignore_first_release = true;
+    loop {
+        let event = event::read()?;
+        if let event::Event::Key(key) = event {
+            if key.code == event::KeyCode::Enter
+                && key.kind == event::KeyEventKind::Release
+                && ignore_first_release
+            {
+                ignore_first_release = false;
+                continue;
+            }
+
+            break;
+        }
+
+        eprintln!("Unexpected event: {event:?}");
+    }
+
+    Ok(())
 }
