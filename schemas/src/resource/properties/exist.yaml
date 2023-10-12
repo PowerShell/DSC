@@ -1,15 +1,14 @@
 # yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
 $schema: https://json-schema.org/draft/2020-12/schema
-$id:     <HOST>/<PREFIX>/<VERSION>/resource/properties/ensure.yaml
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/properties/exist.yaml
 
-title: Ensure Existence
+title: Instance should exist
 description: >-
   Indicates whether the DSC Resource instance should exist.
 
-type: string
-enum:
-  - Absent
-  - Present
+type:    boolean
+default: true
+enum:    [false, true]
 
 # VS Code Only
 markdownDescription: |
@@ -19,15 +18,15 @@ markdownDescription: |
 
   Indicates whether the DSC Resource instance should exist.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/ensure?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
 markdownEnumDescriptions:
-  - | # Absent
+  - | # false
     _Instance shouldn't exist._
 
-    > If the desired state for `_ensure` is `absent` and the instance exists, the resource removes
+    > If the desired state for `_exist` is `false` and the instance exists, the resource removes
     > the instance during the `set` operation.
-  - | # Present
+  - | # true
     _Instance should exist._
 
-    > If the desired state for `_ensure` is `present` and the instance doesn't exist, the resource
+    > If the desired state for `_exist` is `true` and the instance doesn't exist, the resource
     > adds or creates the instance during the `set` operation.

@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc config test' command
-ms.date:     08/04/2023
+ms.date:     10/05/2023
 ms.topic:    reference
 title:       dsc config test
 ---
@@ -58,6 +58,24 @@ resources:
 cat ./example.dsc.config.yaml | dsc config test
 ```
 
+### Example 2 - Passing a file to read as the configuration document
+
+The command uses the [--input-file][01] global option to validate the configuration defined in
+the `example.dsc.config.yaml` file.
+
+```sh
+dsc --input-file ./example.dsc.config.yaml config test
+```
+
+### Example 3 - Passing a configuration document as a variable
+
+The command uses the [--input][02] global option to validate the configuration stored in the
+`$desired` variable.
+
+```sh
+dsc --input $desired config test
+```
+
 ## Options
 
 ### -h, --help
@@ -74,6 +92,8 @@ Mandatory: false
 
 This command returns JSON output that includes whether the operation or any resources raised any
 errors, the collection of messages emitted during the operation, and the test operation results for
-every instance. For more information, see [dsc config test result schema][01].
+every instance. For more information, see [dsc config test result schema][03].
 
-[01]: ../../schemas/outputs/config/test.md
+[01]: ../dsc.md#-p---input-file
+[02]: ../dsc.md#-i---input
+[03]: ../../schemas/outputs/config/test.md
