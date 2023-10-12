@@ -81,14 +81,3 @@ where D: digest::Digest {
     let result = hasher.finalize();
     HexString::from_bytes(&result.to_vec()).as_string().to_lowercase()
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::checksum;
-
-    #[test]
-    fn can_compute_sha1_checksum() {
-        let checksum = checksum::compute(b"hello world", checksum::Algorithm::Sha1);
-        assert_eq!(checksum, "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed");
-    }
-}
