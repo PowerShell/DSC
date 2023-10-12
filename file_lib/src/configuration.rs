@@ -13,6 +13,7 @@ use crate::Algorithm;
 /// * `content` - The content to use when asserting or setting the desired state.
 /// * `exist` - The well-known flag indicating whether or not the file exists or should exist.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[schemars(title = "DSC.FileConfiguration", description = "File resource configuration.")]
 pub struct File {
     pub path: String,
     #[serde(rename = "hash", skip_serializing_if = "Option::is_none")]
@@ -90,7 +91,7 @@ impl File {
     /// let file = File::from_json(&JSON).unwrap();
     /// assert_eq!(file.path, EXPECTED_PATH);
     /// assert_eq!(&file.content.unwrap(), EXPECTED_CONTENT);
-    /// 
+    ///
     /// let hash = file.hash.unwrap();
     /// assert_eq!(hash.algorithm, EXPECTED_ALGORITHM);
     /// assert_eq!(hash.checksum.unwrap(), EXPECTED_CHECKSUM);
@@ -113,7 +114,7 @@ impl File {
     /// # Return value
     ///
     /// The JSON schema as a string.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -121,9 +122,9 @@ impl File {
     /// let schema = File::get_schema(false);
     /// assert!(schema.unwrap().contains(r#""$schema":"http://json-schema.org/draft-07/schema#""#));
     /// ```
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Serialization fails if the schema cannot be generated.
     pub fn get_schema(pretty: bool) -> Result<String, serde_json::Error> {
         let schema = schemars::schema_for!(File);
@@ -152,6 +153,7 @@ impl Default for File {
 /// * `algorithm` - The algorithm to use when comparing or computing the checksum.
 /// * `checksum` - The checksum to compare against or the computed result.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[schemars(title = "DSC.HashConfiguration", description = "Hash configuration.")]
 pub struct Hash {
     pub algorithm: Algorithm,
     #[serde(skip_serializing_if = "Option::is_none")]
