@@ -1,12 +1,15 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use hex_string::HexString;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use sha1::Sha1;
 use sha2::{Sha256, Sha512};
-use hex_string::HexString;
+use strum_macros::Display;
 
 /// The supported checksum hash algorithms.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Display)]
 pub enum Algorithm {
     /// The SHA-1 algorithm. (Considered insecure.)
     Sha1,
