@@ -92,7 +92,18 @@ New-Item -ItemType Directory $target > $null
 
 # make sure dependencies are built first so clippy runs correctly
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
-$projects = @("tree-sitter-dscexpression", "dsc_lib", "dsc", "osinfo", "process", "tools/test_group_resource", "y2j", "powershellgroup", "tools/dsctest")
+$projects = @(
+    "dsc",
+    "dsc_lib",
+    "file_lib",
+    "osinfo",
+    "powershellgroup",
+    "process",
+    "tools/dsctest",
+    "tools/test_group_resource",
+    "tree-sitter-dscexpression",
+    "y2j"
+)
 $pedantic_unclean_projects = @("ntreg")
 $clippy_unclean_projects = @("tree-sitter-dscexpression")
 $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
