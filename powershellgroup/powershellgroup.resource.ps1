@@ -126,6 +126,18 @@ elseif ($Operation -eq 'Get')
                 $typeparts = $r.type -split "/"
                 $ModuleName = $typeparts[0]
                 $ResourceTypeName = $typeparts[1]
+
+                $dscResourceDetails = Get-DscResource -Module $ModuleName -Name $ResourceTypeName
+                if ($dscResourceDetails.ImplementationDetail -eq 'ScriptBased') {
+                    Import-Module -Scope Local -Name $dscResourceDetails.path -Force -ErrorAction stop
+                    $validParams = (Get-Command -Module $dscResourceDetails.ResourceType -Name 'Get-TargetResource').Parameters.Keys
+                    $r.properties.psobject.properties | ForEach-Object {
+                        if ($validParams -notcontains $_.Name) {
+                            $r.properties.psobject.properties.Remove($_.Name)
+                        }
+                    }
+                }
+                
                 $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
                 $e = $null
                 $op_result = Invoke-DscResource -Method Get -ModuleName $ModuleName -Name $ResourceTypeName -Property $inputht -ErrorVariable e
@@ -152,6 +164,18 @@ elseif ($Operation -eq 'Get')
         {
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
+
+            $dscResourceDetails = Get-DscResource -Module ($inputobj_pscustomobj.type -split '/')[0] -Name $ResourceTypeName
+            if ($dscResourceDetails.ImplementationDetail -eq 'ScriptBased') {
+                Import-Module -Scope Local -Name $dscResourceDetails.path -Force -ErrorAction stop
+                $validParams = (Get-Command -Module $dscResourceDetails.ResourceType -Name 'Get-TargetResource').Parameters.Keys
+                $inputobj_pscustomobj.psobject.properties | ForEach-Object {
+                    if ($validParams -notcontains $_.Name) {
+                        $inputobj_pscustomobj.psobject.properties.Remove($_.Name)
+                    }
+                }
+            }
+            
             $inputobj_pscustomobj.psobject.properties | %{ 
                 if ($_.Name -ne "type")
                 {
