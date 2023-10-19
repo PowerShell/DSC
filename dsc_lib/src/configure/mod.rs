@@ -255,8 +255,8 @@ impl Configurator {
         let mut has_errors = false;
         
         // Perform discovery of resources used in config
-        let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect();
-        self.discovery.discover_resources(required_resources);
+        let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
+        self.discovery.discover_resources(&required_resources);
 
         // Now perform the validation
         for resource in &config.resources {

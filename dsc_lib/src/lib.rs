@@ -48,7 +48,7 @@ impl DscManager {
     }
 
     pub fn discover_resources(&mut self, required_resource_types: Vec<String>) {
-        self.discovery.discover_resources(required_resource_types);
+        self.discovery.discover_resources(&required_resource_types);
     }
     /// Invoke the get operation on a resource.
     ///

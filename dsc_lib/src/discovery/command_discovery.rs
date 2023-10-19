@@ -23,13 +23,13 @@ impl CommandDiscovery {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn search_for_resources(required_resource_types: Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
+    fn search_for_resources(required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut provider_resources: Vec<String> = Vec::new();
-        let mut remaining_required_resource_types = required_resource_types.clone();
+        let mut remaining_required_resource_types = required_resource_types.to_owned();
         // try DSC_RESOURCE_PATH env var first otherwise use PATH
         let path_env = match env::var_os("DSC_RESOURCE_PATH") {
             Some(value) => value,
@@ -174,13 +174,13 @@ impl ResourceDiscovery for CommandDiscovery {
     fn list_available_resources(&mut self) -> Result<BTreeMap<String, DscResource>, DscError> {
 
         let required_resource_types = vec!["*".to_string()];
-        CommandDiscovery::search_for_resources(required_resource_types)
+        CommandDiscovery::search_for_resources(&required_resource_types)
     }
 
 
     fn discover_resources(&mut self, required_resource_types: Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
     {
-        CommandDiscovery::search_for_resources(required_resource_types)
+        CommandDiscovery::search_for_resources(&required_resource_types)
     }
 }
 

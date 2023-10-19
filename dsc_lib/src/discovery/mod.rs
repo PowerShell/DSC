@@ -31,7 +31,7 @@ impl Discovery {
     ///
     /// # Panics
     ///
-    /// Will panic if RegEx creation fails.
+    /// Will panic if `RegEx` creation fails.
     ///
     pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
@@ -76,13 +76,13 @@ impl Discovery {
         self.resources.get(type_name)
     }
 
-    pub fn discover_resources(&mut self, required_resource_types: Vec<String>) {
+    pub fn discover_resources(&mut self, required_resource_types: &[String]) {
 
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
 
-        let mut remaining_required_resource_types = required_resource_types.clone();
+        let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
 
             let discovered_resources = match discovery_type.discover_resources(remaining_required_resource_types.clone()) {
