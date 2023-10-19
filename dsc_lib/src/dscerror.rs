@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use std::str::Utf8Error;
+
 use reqwest::StatusCode;
 use thiserror::Error;
 use chrono::{Local, DateTime};
@@ -9,6 +11,9 @@ use tree_sitter::LanguageError;
 
 #[derive(Error, Debug)]
 pub enum DscError {
+    #[error("Function boolean argument conversion error: {0}")]
+    BooleanConversion(#[from] std::str::ParseBoolError),
+
     #[error("Command: Resource '{0}' [Exit code {1}] {2}")]
     Command(String, i32, String),
 
@@ -21,6 +26,9 @@ pub enum DscError {
     #[error("HTTP status: {0}")]
     HttpStatus(StatusCode),
 
+    #[error("Function integer argument conversion error: {0}")]
+    IntegerConversion(#[from] std::num::ParseIntError),
+
     #[error("Regex: {0}")]
     Regex(#[from] regex::Error),
 
@@ -29,6 +37,9 @@ pub enum DscError {
 
     #[error("Unsupported manifest version: {0}.  Must be: {1}")]
     InvalidManifestSchemaVersion(String, String),
+
+    #[error("Invalid function parameter count for '{0}', expected {1}, got {2}")]
+    InvalidFunctionParameterCount(String, usize, usize),
 
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
@@ -68,6 +79,9 @@ pub enum DscError {
 
     #[error("No Schema: {0}")]
     SchemaNotAvailable(String),
+
+    #[error("Utf-8 conversion error: {0}")]
+    Utf8Conversion(#[from] Utf8Error),
 
     #[error("Unknown: {code:?} {message:?}")]
     Unknown {

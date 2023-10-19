@@ -4,6 +4,7 @@ version = "3.0.0-alpha.4"
 edition = "2021"
 
 [dependencies]
+base64 = "0.21"
 derive_builder ="0.12"
 jsonschema = "0.17"
 regex = "1.7"

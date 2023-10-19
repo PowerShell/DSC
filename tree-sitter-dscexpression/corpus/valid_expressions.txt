@@ -24,7 +24,7 @@ Simple expression
 =====
 Multiple arguments
 =====
-[myFunction('argString', 1, true)]
+[myFunction('argString', 1, -1, true)]
 ---
 
     (statement
@@ -32,6 +32,7 @@ Multiple arguments
         (function
           (functionName)
           (string)
+          (number)
           (number)
           (boolean))))
 

@@ -5,6 +5,8 @@ pub mod configure;
 pub mod discovery;
 pub mod dscresources;
 pub mod dscerror;
+pub mod functions;
+pub mod parser;
 
 use dscerror::DscError;
 use discovery::ResourceIterator;
