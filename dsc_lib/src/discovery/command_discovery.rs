@@ -11,7 +11,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 pub struct CommandDiscovery {
 }
@@ -50,7 +50,24 @@ impl CommandDiscovery {
                     if path.is_file() {
                         let file_name = path.file_name().unwrap().to_str().unwrap();
                         if file_name.to_lowercase().ends_with(".dsc.resource.json") {
-                            let resource = load_manifest(&path)?;
+                            let resource = match load_manifest(&path)
+                            {
+                                Ok(r) => r,
+                                Err(e) => {
+                                    if return_all_resources {
+                                        // In case of "resource list" operation - print all failures to read manifests as warnings
+                                        warn!("{}", e);
+                                    } else {
+                                        // In case of other resource/config operations:
+                                        // At this point we can't determine whether or not the bad manifest contains resource that is requested by resource/config operation
+                                        // if it is, then "ResouceNotFound" error will be issued later
+                                        // and here we just record the error into debug stream.
+                                        debug!("{}", e);
+                                    }
+                                    continue;
+                                },
+                            };
+
                             if resource.manifest.is_some() {
                                 let manifest = import_manifest(resource.manifest.clone().unwrap())?;
                                 if manifest.provider.is_some() {
@@ -80,7 +97,7 @@ impl CommandDiscovery {
             }
         }
 
-        debug!("Found {} non-provider resources", resources.len() - provider_resources.len());
+        debug!("Found {} matching non-provider resources", resources.len() - provider_resources.len());
 
         // now go through the provider resources and add them to the list of resources
         for provider in provider_resources {
@@ -95,20 +112,26 @@ impl CommandDiscovery {
             {
                 Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
                 Err(e) => {
-                    error!("Could not start {}: {}", list_command.executable, e);
+                    // In case of "resource list" operation - print failure from provider as warning
+                    // In case of other resource/config operations:
+                    // print failure from provider as error because this provider was specifically requested by current resource/config operation
+                    if return_all_resources { warn!("Could not start {}: {}", list_command.executable, e); } else { error!("Could not start {}: {}", list_command.executable, e); }
                     continue;
                 },
             };
 
             if exit_code != 0 {
-                    error!("Provider failed to list resources with exit code {exit_code}: {stderr}");
+                    // In case of "resource list" operation - print failure from provider as warning
+                    // In case of other resource/config operations:
+                    // print failure from provider as error because this provider was specifically requested by current resource/config operation
+                    if return_all_resources { warn!("Provider failed to list resources with exit code {exit_code}: {stderr}"); } else { error!("Provider failed to list resources with exit code {exit_code}: {stderr}"); }
             }
 
             for line in stdout.lines() {
                 match serde_json::from_str::<DscResource>(line){
                     Result::Ok(resource) => {
                         if resource.requires.is_none() {
-                            error!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string());
+                            if return_all_resources { warn!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string()); } else { error!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string()); }
                             continue;
                         }
                         if return_all_resources
@@ -130,13 +153,13 @@ impl CommandDiscovery {
                         }
                     },
                     Result::Err(err) => {
-                        error!("Failed to parse resource: {line} -> {err}");
+                        if return_all_resources { warn!("Failed to parse resource: {line} -> {err}"); } else { error!("Failed to parse resource: {line} -> {err}"); }
                         continue;
                     }
                 };
             }
 
-            debug!("Provider {} listed {} resources", provider_type_name, provider_resources_count);
+            debug!("Provider {} listed {} matching resources", provider_type_name, provider_resources_count);
         }
 
         Ok(resources)

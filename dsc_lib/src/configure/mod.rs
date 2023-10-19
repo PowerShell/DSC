@@ -83,7 +83,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_get(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationGetResult, DscError> {
+    pub fn invoke_get(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationGetResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
         result.messages = messages;
@@ -119,7 +119,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_set(&self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
+    pub fn invoke_set(&mut self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
         result.messages = messages;
@@ -155,7 +155,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_test(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationTestResult, DscError> {
+    pub fn invoke_test(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationTestResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
         let mut result = ConfigurationTestResult::new();
         result.messages = messages;
@@ -216,7 +216,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_export(&self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
+    pub fn invoke_export(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
         let (config, messages, had_errors) = self.validate_config()?;
 
         let duplicates = Self::find_duplicate_resource_types(&config);
@@ -249,10 +249,16 @@ impl Configurator {
         Ok(result)
     }
 
-    fn validate_config(&self) -> Result<(Configuration, Vec<ResourceMessage>, bool), DscError> {
+    fn validate_config(&mut self) -> Result<(Configuration, Vec<ResourceMessage>, bool), DscError> {
         let config: Configuration = serde_json::from_str(self.config.as_str())?;
         let mut messages: Vec<ResourceMessage> = Vec::new();
         let mut has_errors = false;
+        
+        // Perform discovery of resources used in config
+        let required_resources = (&config.resources).into_iter().map(|p| p.resource_type.clone()).collect();
+        self.discovery.discover_resources(required_resources);
+
+        // Now perform the validation
         for resource in &config.resources {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
