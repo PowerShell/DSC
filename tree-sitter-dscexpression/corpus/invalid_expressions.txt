@@ -40,9 +40,10 @@ Missing parameter
       (expression
         (function
           (functionName)
-          (number)
-          (ERROR)
-          (number))))
+          (arguments
+            (number)
+            (ERROR)
+            (number)))))
 
 =====
 Escaped bracket

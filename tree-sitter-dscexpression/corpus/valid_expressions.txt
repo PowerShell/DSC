@@ -19,7 +19,8 @@ Simple expression
       (expression
         (function
           (functionName)
-          (string))))
+          (arguments
+            (string)))))
 
 =====
 Multiple arguments
@@ -31,10 +32,11 @@ Multiple arguments
       (expression
         (function
           (functionName)
-          (string)
-          (number)
-          (number)
-          (boolean))))
+          (arguments
+            (string)
+            (number)
+            (number)
+            (boolean)))))
 
 =====
 Nested functions
@@ -46,18 +48,21 @@ Nested functions
       (expression
         (function
           (functionName)
-          (string)
-          (expression
-            (function
-              (functionName)
-              (number)
-              (expression
-                (function
-                  (functionName)
-                  (string)
-                  (number)))
-              (number)))
-          (string))))
+          (arguments
+            (string)
+            (expression
+              (function
+                (functionName)
+                (arguments
+                  (number)
+                  (expression
+                    (function
+                      (functionName)
+                      (arguments
+                        (string)
+                        (number))))
+                  (number))))
+            (string)))))
 
 =====
 Function with dot-notation
@@ -69,9 +74,11 @@ Function with dot-notation
       (expression
         (function
           (functionName)
-          (string))
-        (memberName)
-        (memberName)))
+          (arguments
+            (string)))
+        (memberAccess
+          (memberName)
+          (memberName))))
 
 =====
 Nested dot-notation
@@ -83,10 +90,14 @@ Nested dot-notation
       (expression
         (function
           (functionName)
-          (expression
-            (function
-              (functionName)
-              (number))
-            (memberName)
-            (memberName)))
-        (memberName)))
+          (arguments
+            (expression
+              (function
+                (functionName)
+                (arguments
+                  (number)))
+              (memberAccess
+                (memberName)
+                (memberName)))))
+        (memberAccess
+          (memberName))))

@@ -18,19 +18,19 @@ module.exports = grammar({
     escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /.*?/))),
     bracketInStringLiteral: $ => token(prec(PREC.BRACKETINSTRING, seq('[', /.*?/, ']', /.+?/))),
     _expressionString: $ => prec(PREC.EXPRESSIONSTRING, seq('[', $.expression, ']')),
-    expression: $ => seq(field('function', $.function), field('members', optional($._members))),
+    expression: $ => seq(field('function', $.function), field('members', optional($.memberAccess))),
     stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[].*?/)),
 
-    function: $ => seq(field('name', $.functionName), '(', field('args', optional($._arguments)), ')'),
+    function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
     functionName: $ => /[a-zA-Z]+/,
-    _arguments: $ => seq($._argument, repeat(seq(',', $._argument))),
+    arguments: $ => seq($._argument, repeat(seq(',', $._argument))),
     _argument: $ => choice($.expression, $.string, $.number, $.boolean),
 
     string: $ => seq("'", /[^']*/, "'"),
     number: $ => /-?\d+/,
     boolean: $ => choice('true', 'false'),
 
-    _members: $ => repeat1($._member),
+    memberAccess: $ => repeat1($._member),
     _member: $ => seq('.', $.memberName),
     memberName: $ => /[a-zA-Z0-9_-]+/,
   }
