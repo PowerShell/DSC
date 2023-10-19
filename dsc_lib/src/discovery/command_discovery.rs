@@ -23,7 +23,7 @@ impl CommandDiscovery {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn search_for_resources(required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
+    fn search_for_resources(required_resource_types: Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
@@ -174,11 +174,11 @@ impl ResourceDiscovery for CommandDiscovery {
     fn list_available_resources(&mut self) -> Result<BTreeMap<String, DscResource>, DscError> {
 
         let required_resource_types = vec!["*".to_string()];
-        CommandDiscovery::search_for_resources(&required_resource_types)
+        CommandDiscovery::search_for_resources(required_resource_types)
     }
 
 
-    fn discover_resources(&mut self, required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
+    fn discover_resources(&mut self, required_resource_types: Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         CommandDiscovery::search_for_resources(required_resource_types)
     }

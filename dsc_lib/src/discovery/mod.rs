@@ -15,13 +15,24 @@ pub struct Discovery {
 }
 
 impl Discovery {
-
+    /// Create a new `Discovery` instance.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying instance creation fails.
+    ///
     pub fn new() -> Result<Self, DscError> {
         Ok(Self {
             resources: BTreeMap::new(),
         })
     }
 
+    /// List operation.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if RegEx creation fails.
+    ///
     pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
@@ -51,9 +62,7 @@ impl Discovery {
             };
 
             for resource in discovered_resources {
-                if type_name_filter.is_empty() {
-                    resources.push(resource.1);
-                } else if regex.as_ref().unwrap().is_match(resource.0.as_str()) {
+                if type_name_filter.is_empty() || regex.as_ref().unwrap().is_match(resource.0.as_str()) {
                     resources.push(resource.1);
                 }
             };
@@ -62,6 +71,7 @@ impl Discovery {
         resources
     }
 
+    #[must_use]
     pub fn find_resource(&self, type_name: &str) -> Option<&DscResource> {
         self.resources.get(type_name)
     }
@@ -75,7 +85,7 @@ impl Discovery {
         let mut remaining_required_resource_types = required_resource_types.clone();
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.discover_resources(&remaining_required_resource_types) {
+            let discovered_resources = match discovery_type.discover_resources(remaining_required_resource_types.clone()) {
                 Ok(value) => value,
                 Err(err) => {
                         error!("{err}");
