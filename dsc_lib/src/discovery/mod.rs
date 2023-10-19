@@ -53,10 +53,8 @@ impl Discovery {
             for resource in discovered_resources {
                 if type_name_filter.is_empty() {
                     resources.push(resource.1);
-                } else {
-                    if regex.as_ref().unwrap().is_match(resource.0.as_str()) {
-                        resources.push(resource.1);
-                    }
+                } else if regex.as_ref().unwrap().is_match(resource.0.as_str()) {
+                    resources.push(resource.1);
                 }
             };
         }

@@ -22,7 +22,8 @@ impl CommandDiscovery {
         }
     }
 
-    fn search_for_resources(&mut self, required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
+    #[allow(clippy::too_many_lines)]
+    fn search_for_resources(required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
@@ -79,16 +80,14 @@ impl CommandDiscovery {
                             {
                                 resources.insert(resource.type_name.clone(), resource);
                             }
-                            else {
-                                if remaining_required_resource_types.contains(&resource.type_name)
+                            else if remaining_required_resource_types.contains(&resource.type_name)
+                            {
+                                remaining_required_resource_types.retain(|x| *x != resource.type_name);
+                                debug!("Found {} in {}", &resource.type_name, path.display());
+                                resources.insert(resource.type_name.clone(), resource);
+                                if remaining_required_resource_types.is_empty()
                                 {
-                                    remaining_required_resource_types.retain(|x| *x != resource.type_name);
-                                    debug!("Found {} in {}", &resource.type_name, path.display());
-                                    resources.insert(resource.type_name.clone(), resource);
-                                    if remaining_required_resource_types.len() == 0
-                                    {
-                                        return Ok(resources);
-                                    }
+                                    return Ok(resources);
                                 }
                             }
                         }
@@ -139,16 +138,14 @@ impl CommandDiscovery {
                             resources.insert(resource.type_name.clone(), resource);
                             provider_resources_count += 1;
                         }
-                        else {
-                            if remaining_required_resource_types.contains(&resource.type_name)
+                        else if remaining_required_resource_types.contains(&resource.type_name)
+                        {
+                            remaining_required_resource_types.retain(|x| *x != resource.type_name);
+                            debug!("Found {} in {}", &resource.type_name, &resource.path);
+                            resources.insert(resource.type_name.clone(), resource);
+                            if remaining_required_resource_types.is_empty()
                             {
-                                remaining_required_resource_types.retain(|x| *x != resource.type_name);
-                                debug!("Found {} in {}", &resource.type_name, &resource.path);
-                                resources.insert(resource.type_name.clone(), resource);
-                                if remaining_required_resource_types.len() == 0
-                                {
-                                    return Ok(resources);
-                                }
+                                return Ok(resources);
                             }
                         }
                     },
@@ -177,13 +174,13 @@ impl ResourceDiscovery for CommandDiscovery {
     fn list_available_resources(&mut self) -> Result<BTreeMap<String, DscResource>, DscError> {
 
         let required_resource_types = vec!["*".to_string()];
-        self.search_for_resources(&required_resource_types)
+        CommandDiscovery::search_for_resources(&required_resource_types)
     }
 
 
     fn discover_resources(&mut self, required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
     {
-        self.search_for_resources(required_resource_types)
+        CommandDiscovery::search_for_resources(required_resource_types)
     }
 }
 
