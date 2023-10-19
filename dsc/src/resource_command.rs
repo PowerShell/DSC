@@ -15,6 +15,12 @@ use dsc_lib::{
 };
 use std::process::exit;
 
+/// Get operation.
+///
+/// # Panics
+///
+/// Will panic if provider-based resource is not found.
+///
 pub fn get(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     // TODO: support streaming stdin which includes resource and input
     let mut input = get_input(input, stdin);
@@ -27,7 +33,7 @@ pub fn get(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        resource = get_resource(dsc, &requires).unwrap();
+        resource = get_resource(dsc, requires).unwrap();
     }
 
     match resource.get(input.as_str()) {
@@ -80,6 +86,12 @@ pub fn get_all(dsc: &DscManager, resource_str: &str, _input: &Option<String>, _s
     }
 }
 
+/// Set operation.
+///
+/// # Panics
+///
+/// Will panic if provider-based resource is not found.
+///
 pub fn set(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
     if input.is_empty() {
@@ -96,7 +108,7 @@ pub fn set(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
 
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        resource = get_resource(dsc, &requires).unwrap();
+        resource = get_resource(dsc, requires).unwrap();
     }
 
     match resource.set(input.as_str(), true) {
@@ -118,6 +130,12 @@ pub fn set(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
     }
 }
 
+/// Test operation.
+///
+/// # Panics
+///
+/// Will panic if provider-based resource is not found.
+///
 pub fn test(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
     let Some(mut resource) = get_resource(dsc, resource_str) else {
@@ -129,7 +147,7 @@ pub fn test(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin:
 
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        resource = get_resource(dsc, &requires).unwrap();
+        resource = get_resource(dsc, requires).unwrap();
     }
 
     match resource.test(input.as_str()) {
@@ -198,6 +216,7 @@ pub fn export(dsc: &mut DscManager, resource_str: &str, format: &Option<OutputFo
     write_output(&json, format);
 }
 
+#[must_use]
 pub fn get_resource<'a>(dsc: &'a DscManager, resource: &str) -> Option<&'a DscResource> {
     //TODO: add dinamically generated resource to dsc
     // check if resource is JSON or just a name
