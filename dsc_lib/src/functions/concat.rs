@@ -77,4 +77,11 @@ mod tests {
         let result = parser.parse_and_execute("[concat('a', concat('b', 'c'), 'd')]").unwrap();
         assert_eq!(result, "abcd");
     }
+
+    #[test]
+    fn invalid_one_parameter() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("[concat('a')]");
+        assert!(result.is_err());
+    }
 }

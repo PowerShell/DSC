@@ -1,7 +1,7 @@
 =====
 Function no args
 =====
-[functionOne()]
+[function1()]
 ---
 
     (statement
@@ -41,7 +41,7 @@ Multiple arguments
 =====
 Nested functions
 =====
-[functionOne('argString', functionTwo(1, functionThree('threeString', 3), 2), 'oneString')]
+[function1('argString', function2(1, functionThree('threeString', 3), 2), 'oneString')]
 ---
 
     (statement

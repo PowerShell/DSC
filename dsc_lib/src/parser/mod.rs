@@ -28,6 +28,9 @@ impl StatementParser {
     pub fn parse_and_execute(&mut self, statement: &str) -> Result<String, DscError> {
         let tree = &mut self.parser.parse(statement, None).unwrap();
         let root_node = tree.root_node();
+        if root_node.is_error() {
+            return Err(DscError::Parser("Error parsing statement root".to_string()));
+        }
         let root_node_kind = root_node.kind();
         if root_node_kind != "statement" {
             return Err(DscError::Parser("Invalid statement".to_string()));
@@ -35,6 +38,9 @@ impl StatementParser {
         let Some(child_node) = root_node.named_child(0) else {
             return Err(DscError::Parser("Child node not found".to_string()));
         };
+        if child_node.is_error() {
+            return Err(DscError::Parser("Error parsing statement".to_string()));
+        }
         let kind = child_node.kind();
         match kind {
             "stringLiteral" | "bracketInStringLiteral" => {
@@ -54,5 +60,59 @@ impl StatementParser {
                 Err(DscError::Parser(format!("Unknown expression type {0}", child_node.kind())))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn string_literal() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("this is a string").unwrap();
+        assert_eq!(result, "this is a string");
+    }
+
+    #[test]
+    fn bracket_string() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("[[this is a string]").unwrap();
+        assert_eq!(result, "[this is a string]");
+    }
+
+    #[test]
+    fn bracket_in_string() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("[this] is a string").unwrap();
+        assert_eq!(result, "[this] is a string");
+    }
+
+    #[test]
+    fn invalid_function() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("[invalid()]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn nonquoted_string_parameter() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("[concat(abc)]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn missing_endquote_string_parameter() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("[concat('abc)]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn empty_parameter() {
+        let mut parser = StatementParser::new().unwrap();
+        let result = parser.parse_and_execute("[concat('abc', , 'def')]");
+        assert!(result.is_err());
     }
 }

@@ -22,11 +22,12 @@ module.exports = grammar({
     stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[].*?/)),
 
     function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
-    functionName: $ => /[a-zA-Z]+/,
+    functionName: $ => /[a-z][a-zA-Z0-9]*/,
     arguments: $ => seq($._argument, repeat(seq(',', $._argument))),
-    _argument: $ => choice($.expression, $.string, $.number, $.boolean),
+    _argument: $ => choice($.expression, seq('\'', $.string, '\''), $.number, $.boolean),
 
-    string: $ => seq("'", /[^']*/, "'"),
+    // ARM strings do not allow to contain single-quote characters
+    string: $ => /[^']*/,
     number: $ => /-?\d+/,
     boolean: $ => choice('true', 'false'),
 

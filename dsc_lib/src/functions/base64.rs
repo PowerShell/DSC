@@ -29,7 +29,7 @@ impl Function for Base64 {
                 return Err(DscError::Parser("Invalid argument type".to_string()));
             }
         };
-        Ok(FunctionResult::String(general_purpose::STANDARD_NO_PAD.encode(arg)))
+        Ok(FunctionResult::String(general_purpose::STANDARD.encode(arg)))
     }
 }
 
@@ -55,6 +55,6 @@ mod tests {
     fn nested() {
         let mut parser = StatementParser::new().unwrap();
         let result = parser.parse_and_execute("[base64(base64('hello world'))]").unwrap();
-        assert_eq!(result, "YUdWc2JHOHRZbUZ3YVdOc2JHbGhibVFnWm1Gd2FXVnVkR2x2Ym5SbGNuQnZjMlZ5ZEdsbGJuUmxjaUJqYjIwPQ==");
+        assert_eq!(result, "YUdWc2JHOGdkMjl5YkdRPQ==");
     }
 }
