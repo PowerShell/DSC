@@ -34,12 +34,12 @@ document saved as `example.dsc.config.yaml`.
 
 ```yaml
 # example.dsc.config.yaml
-$schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
 resources:
 - name: Windows only
   type: DSC/AssertionGroup
   properties:
-    $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
     resources:
     - name: os
       type: Microsoft/OSInfo
