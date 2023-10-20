@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use tree_sitter::Node;
+
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 use crate::parser::functions::{Function, FunctionResult};
-use tree_sitter::Node;
 
 #[derive(Clone)]
 pub struct Expression<'a> {

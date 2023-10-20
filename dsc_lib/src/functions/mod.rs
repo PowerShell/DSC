@@ -2,9 +2,10 @@
 // Licensed under the MIT License.
 
 use std::collections::HashMap;
+use tracing::debug;
+
 use crate::DscError;
 use crate::parser::functions::{FunctionArg, FunctionResult};
-use tracing::debug;
 
 pub mod base64;
 pub mod concat;
@@ -12,9 +13,9 @@ pub mod concat;
 /// The kind of argument that a function accepts.
 #[derive(Debug, PartialEq)]
 pub enum AcceptedArgKind {
-    String,
-    Integer,
     Boolean,
+    Integer,
+    String,
 }
 
 /// A function that can be invoked.
@@ -73,7 +74,7 @@ impl FunctionDispatcher {
                     return Err(DscError::Parser(format!("Function '{name}' requires at least {0} arguments", function.min_args())));
                 }
                 if args.len() > function.max_args() {
-                    return Err(DscError::Parser(format!("Function '{name}' requires at most {0} arguments", function.max_args())));
+                    return Err(DscError::Parser(format!("Function '{name}' supports at most {0} arguments", function.max_args())));
                 }
                 // check if arg types are valid
                 for arg in args {
@@ -99,7 +100,6 @@ impl FunctionDispatcher {
                         }
                     }
                 }
-
 
                 function.invoke(args)
             },

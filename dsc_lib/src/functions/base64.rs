@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use base64::{Engine as _, engine::general_purpose};
+
 use crate::DscError;
 use crate::parser::functions::{FunctionArg, FunctionResult};
 use super::{Function, AcceptedArgKind};

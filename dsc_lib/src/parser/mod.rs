@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use expressions::Expression;
+use tree_sitter::Parser;
+
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
-use tree_sitter::Parser;
-use expressions::Expression;
 
 pub mod expressions;
 pub mod functions;

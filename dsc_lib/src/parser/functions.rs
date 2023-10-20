@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use serde_json::Value;
 use tree_sitter::Node;
 
 use crate::DscError;
@@ -8,7 +9,6 @@ use crate::parser::{
     expressions::Expression,
     FunctionDispatcher,
 };
-use serde_json::Value;
 
 #[derive(Clone)]
 pub struct Function<'a> {
