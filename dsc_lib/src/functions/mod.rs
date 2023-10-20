@@ -9,6 +9,7 @@ use tracing::debug;
 pub mod base64;
 pub mod concat;
 
+/// The kind of argument that a function accepts.
 #[derive(Debug, PartialEq)]
 pub enum AcceptedArgKind {
     String,
@@ -16,18 +17,34 @@ pub enum AcceptedArgKind {
     Boolean,
 }
 
+/// A function that can be invoked.
 pub trait Function {
+    /// The minimum number of arguments that the function accepts.
     fn min_args(&self) -> usize;
+    /// The maximum number of arguments that the function accepts.
     fn max_args(&self) -> usize;
+    /// The types of arguments that the function accepts.
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind>;
-    fn invoke(&self, args: &Vec<FunctionArg>) -> Result<FunctionResult, DscError>;
+    /// Invoke the function.
+    ///
+    /// # Arguments
+    ///
+    /// * `args` - The arguments to the function.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the function fails to execute.
+    fn invoke(&self, args: &[FunctionArg]) -> Result<FunctionResult, DscError>;
 }
 
+/// A dispatcher for functions.
 pub struct FunctionDispatcher {
     functions: HashMap<String, Box<dyn Function>>,
 }
 
 impl FunctionDispatcher {
+    /// Create a new `FunctionDispatcher` instance.
+    #[must_use]
     pub fn new() -> Self {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
         functions.insert("base64".to_string(), Box::new(base64::Base64{}));
@@ -37,33 +54,43 @@ impl FunctionDispatcher {
         }
     }
 
+    /// Invoke a function.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the function to invoke.
+    /// * `args` - The arguments to the function.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the function fails to execute.
     pub fn invoke(&self, name: &str, args: &Vec<FunctionArg>) -> Result<FunctionResult, DscError> {
         let function = self.functions.get(name);
         match function {
             Some(function) => {
                 // check if arg number are valid
                 if args.len() < function.min_args() {
-                    return Err(DscError::Parser(format!("Function {0} requires at least {1} arguments", name, function.min_args())));
+                    return Err(DscError::Parser(format!("Function '{name}' requires at least {0} arguments", function.min_args())));
                 }
                 if args.len() > function.max_args() {
-                    return Err(DscError::Parser(format!("Function {0} requires at most {1} arguments", name, function.max_args())));
+                    return Err(DscError::Parser(format!("Function '{name}' requires at most {0} arguments", function.max_args())));
                 }
                 // check if arg types are valid
                 for arg in args {
                     match arg {
                         FunctionArg::String(_) => {
                             if !function.accepted_arg_types().contains(&AcceptedArgKind::String) {
-                                return Err(DscError::Parser(format!("Function {0} does not accept string arguments", name)));
+                                return Err(DscError::Parser(format!("Function '{name}' does not accept string arguments")));
                             }
                         },
                         FunctionArg::Integer(_) => {
                             if !function.accepted_arg_types().contains(&AcceptedArgKind::Integer) {
-                                return Err(DscError::Parser(format!("Function {0} does not accept integer arguments", name)));
+                                return Err(DscError::Parser(format!("Function '{name}' does not accept integer arguments")));
                             }
                         },
                         FunctionArg::Boolean(_) => {
                             if !function.accepted_arg_types().contains(&AcceptedArgKind::Boolean) {
-                                return Err(DscError::Parser(format!("Function {0} does not accept boolean arguments", name)));
+                                return Err(DscError::Parser(format!("Function '{name}' does not accept boolean arguments")));
                             }
                         },
                         FunctionArg::Expression(_) => {
@@ -76,7 +103,13 @@ impl FunctionDispatcher {
 
                 function.invoke(args)
             },
-            None => Err(DscError::Parser(format!("Unknown function {0}", name))),
+            None => Err(DscError::Parser(format!("Unknown function '{name}'"))),
         }
+    }
+}
+
+impl Default for FunctionDispatcher {
+    fn default() -> Self {
+        Self::new()
     }
 }

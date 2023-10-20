@@ -20,7 +20,7 @@ impl Function for Concat {
         vec![AcceptedArgKind::String, AcceptedArgKind::Integer]
     }
 
-    fn invoke(&self, args: &Vec<FunctionArg>) -> Result<FunctionResult, DscError> {
+    fn invoke(&self, args: &[FunctionArg]) -> Result<FunctionResult, DscError> {
         let mut result = String::new();
         for arg in args {
             match arg {
@@ -41,46 +41,46 @@ impl Function for Concat {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::StatementParser;
+    use crate::parser::Statement;
 
     #[test]
     fn strings() {
-        let mut parser = StatementParser::new().unwrap();
+        let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[concat('a', 'b')]").unwrap();
         assert_eq!(result, "ab");
     }
 
     #[test]
     fn strings_with_spaces() {
-        let mut parser = StatementParser::new().unwrap();
+        let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[concat('a ', ' ', ' b')]").unwrap();
         assert_eq!(result, "a   b");
     }
 
     #[test]
     fn numbers() {
-        let mut parser = StatementParser::new().unwrap();
+        let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[concat(1, 2)]").unwrap();
         assert_eq!(result, "12");
     }
 
     #[test]
     fn string_and_numbers() {
-        let mut parser = StatementParser::new().unwrap();
+        let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[concat('a', 1, 'b', 2)]").unwrap();
         assert_eq!(result, "a1b2");
     }
 
     #[test]
     fn nested() {
-        let mut parser = StatementParser::new().unwrap();
+        let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[concat('a', concat('b', 'c'), 'd')]").unwrap();
         assert_eq!(result, "abcd");
     }
 
     #[test]
     fn invalid_one_parameter() {
-        let mut parser = StatementParser::new().unwrap();
+        let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[concat('a')]");
         assert!(result.is_err());
     }

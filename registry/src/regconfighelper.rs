@@ -99,7 +99,7 @@ pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
                         None => {
                             // just verify that the value exists
                             match reg_key.get_value(value_name) {
-                                Ok(_) => {},
+                                Ok(()) => {},
                                 Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, .. }) => {
                                     reg_key.set_value(value_name, &NtRegistryValueData::None)?;
                                 },

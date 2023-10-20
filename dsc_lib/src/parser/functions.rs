@@ -32,6 +32,17 @@ pub enum FunctionResult {
 }
 
 impl<'a> Function<'a> {
+    /// Create a new `Function` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `function_dispatcher` - The function dispatcher to use.
+    /// * `statement` - The statement that the function is part of.
+    /// * `function` - The function node.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the function node is not valid.
     pub fn new(function_dispatcher: &'a FunctionDispatcher, statement: &str, function: &Node) -> Result<Self, DscError> {
         let Some(function_name) = function.child_by_field_name("name") else {
             return Err(DscError::Parser("Function name node not found".to_string()));
@@ -44,30 +55,29 @@ impl<'a> Function<'a> {
             args})
     }
 
+    /// Invoke the function.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the function fails to execute.
     pub fn invoke(&self) -> Result<FunctionResult, DscError> {
         // if any args are expressions, we need to invoke those first
-        let mut resolved_args: Option<Vec<FunctionArg>> = None;
+        let mut resolved_args: Vec<FunctionArg> = vec![];
         if let Some(args) = &self.args {
-            resolved_args = Some(vec![]);
             for arg in args {
                 match arg {
                     FunctionArg::Expression(expression) => {
                         let value = expression.invoke()?;
-                        resolved_args.as_mut().unwrap().push(FunctionArg::String(value));
+                        resolved_args.push(FunctionArg::String(value));
                     },
                     _ => {
-                        resolved_args.as_mut().unwrap().push(arg.clone());
+                        resolved_args.push(arg.clone());
                     }
                 }
             }
         }
 
-        let args = match resolved_args {
-            Some(args) => args,
-            None => vec![],
-        };
-
-        self.function_dispatcher.invoke(&self.name, &args)
+        self.function_dispatcher.invoke(&self.name, &resolved_args)
     }
 }
 

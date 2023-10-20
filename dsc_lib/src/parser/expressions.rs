@@ -13,6 +13,17 @@ pub struct Expression<'a> {
 }
 
 impl<'a> Expression<'a> {
+    /// Create a new `Expression` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `function_dispatcher` - The function dispatcher to use.
+    /// * `statement` - The statement that the expression is part of.
+    /// * `expression` - The expression node.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the expression node is not valid.
     pub fn new(function_dispatcher: &'a FunctionDispatcher, statement: &str, expression: &Node) -> Result<Self, DscError> {
         let Some(function) = expression.child_by_field_name("function") else {
             return Err(DscError::Parser("Function node not found".to_string()));
@@ -42,6 +53,11 @@ impl<'a> Expression<'a> {
         })
     }
 
+    /// Invoke the expression.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the expression fails to execute.
     pub fn invoke(&self) -> Result<String, DscError> {
         let result = self.function.invoke()?;
         if let Some(member_access) = &self.member_access {
@@ -52,7 +68,7 @@ impl<'a> Expression<'a> {
                 FunctionResult::Object(object) => {
                     let mut value = object;
                     if !value.is_object() {
-                        return Err(DscError::Parser(format!("Member access on non-object value {0}", value.to_string())));
+                        return Err(DscError::Parser(format!("Member access on non-object value '{value}'")));
                     }
                     for member in member_access {
                         value = value[member].clone();
