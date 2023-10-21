@@ -162,12 +162,9 @@ pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
 
     let mut conf = Configuration::new();
 
-    match add_resource_export_results_to_configuration(&dsc_resource, &mut conf) {
-        Ok(()) => (),
-        Err(err) => {
-            error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
+    if let Err(err) = add_resource_export_results_to_configuration(&dsc_resource, &mut conf) {
+        error!("Error: {err}");
+        exit(EXIT_DSC_ERROR);
     }
 
     let json = match serde_json::to_string(&conf) {
@@ -190,13 +187,10 @@ pub fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
                 exit(EXIT_INVALID_ARGS);
             }
 
-            match dsc.initialize_discovery() {
-                Ok(()) => (),
-                Err(err) => {
-                    error!("Error: {err}");
-                    exit(EXIT_DSC_ERROR);
-                }
-            };
+            if let Err(err) = dsc.initialize_discovery() {
+                error!("Error: {err}");
+                exit(EXIT_DSC_ERROR);
+            }
             let resources: Vec<DscResource> = dsc.find_resource(resource).collect();
             match resources.len() {
                 0 => {

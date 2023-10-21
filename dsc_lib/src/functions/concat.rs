@@ -4,7 +4,7 @@
 use crate::DscError;
 use crate::functions::{Function, FunctionArg, FunctionResult, AcceptedArgKind};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Concat {}
 
 impl Function for Concat {

@@ -30,23 +30,23 @@ impl<'a> Expression<'a> {
             return Err(DscError::Parser("Function node not found".to_string()));
         };
         let function = Function::new(function_dispatcher, statement, &function)?;
-        let member_access = match expression.child_by_field_name("members") {
-            Some(member_access) => {
-                if member_access.is_error() {
-                    return Err(DscError::Parser("Error parsing dot-notation".to_string()));
+        let member_access = if let Some(member_access) = expression.child_by_field_name("members") {
+            if member_access.is_error() {
+                return Err(DscError::Parser("Error parsing dot-notation".to_string()));
+            }
+            let mut result = vec![];
+            let mut cursor = member_access.walk();
+            for member in member_access.children(&mut cursor) {
+                if member.is_error() {
+                    return Err(DscError::Parser("Error parsing dot-notation member".to_string()));
                 }
-                let mut result = vec![];
-                let mut cursor = member_access.walk();
-                for member in member_access.children(&mut cursor) {
-                    if member.is_error() {
-                        return Err(DscError::Parser("Error parsing dot-notation member".to_string()));
-                    }
-                    let value = member.utf8_text(statement.as_bytes())?;
-                    result.push(value.to_string());
-                }
-                Some(result)
-            },
-            None => None,
+                let value = member.utf8_text(statement.as_bytes())?;
+                result.push(value.to_string());
+            }
+            Some(result)
+        }
+        else {
+            None
         };
         Ok(Expression {
             function,

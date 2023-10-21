@@ -66,45 +66,54 @@ impl FunctionDispatcher {
     ///
     /// This function will return an error if the function fails to execute.
     pub fn invoke(&self, name: &str, args: &Vec<FunctionArg>) -> Result<FunctionResult, DscError> {
-        let function = self.functions.get(name);
-        match function {
-            Some(function) => {
-                // check if arg number are valid
-                if args.len() < function.min_args() {
-                    return Err(DscError::Parser(format!("Function '{name}' requires at least {0} arguments", function.min_args())));
-                }
-                if args.len() > function.max_args() {
-                    return Err(DscError::Parser(format!("Function '{name}' supports at most {0} arguments", function.max_args())));
-                }
-                // check if arg types are valid
-                for arg in args {
-                    match arg {
-                        FunctionArg::String(_) => {
-                            if !function.accepted_arg_types().contains(&AcceptedArgKind::String) {
-                                return Err(DscError::Parser(format!("Function '{name}' does not accept string arguments")));
-                            }
-                        },
-                        FunctionArg::Integer(_) => {
-                            if !function.accepted_arg_types().contains(&AcceptedArgKind::Integer) {
-                                return Err(DscError::Parser(format!("Function '{name}' does not accept integer arguments")));
-                            }
-                        },
-                        FunctionArg::Boolean(_) => {
-                            if !function.accepted_arg_types().contains(&AcceptedArgKind::Boolean) {
-                                return Err(DscError::Parser(format!("Function '{name}' does not accept boolean arguments")));
-                            }
-                        },
-                        FunctionArg::Expression(_) => {
-                            debug!("An expression was not resolved before invoking a function");
-                            return Err(DscError::Parser("Error in parsing".to_string()));
-                        }
-                    }
-                }
+        let Some(function) = self.functions.get(name) else {
+            return Err(DscError::Parser(format!("Unknown function '{name}'")));
+        };
 
-                function.invoke(args)
-            },
-            None => Err(DscError::Parser(format!("Unknown function '{name}'"))),
+        // check if arg number are valid
+        let min_args = function.min_args();
+        let max_args = function.max_args();
+        if args.len() < min_args || args.len() > max_args {
+            if max_args == 0 {
+                return Err(DscError::Parser(format!("Function '{name}' does not accept arguments")));
+            }
+            else if min_args == max_args {
+                return Err(DscError::Parser(format!("Function '{name}' requires exactly {min_args} arguments")));
+            }
+            else if max_args == usize::MAX {
+                return Err(DscError::Parser(format!("Function '{name}' requires at least {min_args} arguments")));
+            }
+
+            return Err(DscError::Parser(format!("Function '{name}' requires between {min_args} and {max_args} arguments")));
         }
+        // check if arg types are valid
+        let accepted_arg_types = function.accepted_arg_types();
+        let accepted_args_string = accepted_arg_types.iter().map(|x| format!("{x:?}")).collect::<Vec<String>>().join(", ");
+        for arg in args {
+            match arg {
+                FunctionArg::String(_) => {
+                    if !accepted_arg_types.contains(&AcceptedArgKind::String) {
+                        return Err(DscError::Parser(format!("Function '{name}' does not accept string argument, accepted types are: {accepted_args_string}")));
+                    }
+                },
+                FunctionArg::Integer(_) => {
+                    if !accepted_arg_types.contains(&AcceptedArgKind::Integer) {
+                        return Err(DscError::Parser(format!("Function '{name}' does not accept integer arguments, accepted types are: {accepted_args_string}")));
+                    }
+                },
+                FunctionArg::Boolean(_) => {
+                    if !accepted_arg_types.contains(&AcceptedArgKind::Boolean) {
+                        return Err(DscError::Parser(format!("Function '{name}' does not accept boolean arguments, accepted types are: {accepted_args_string}")));
+                    }
+                },
+                FunctionArg::Expression(_) => {
+                    debug!("An expression was not resolved before invoking a function");
+                    return Err(DscError::Parser("Error in parsing".to_string()));
+                }
+            }
+        }
+
+        function.invoke(args)
     }
 }
 

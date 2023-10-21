@@ -7,7 +7,7 @@ use crate::DscError;
 use crate::parser::functions::{FunctionArg, FunctionResult};
 use super::{Function, AcceptedArgKind};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Base64 {}
 
 impl Function for Base64 {
