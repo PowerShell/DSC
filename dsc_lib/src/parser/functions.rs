@@ -43,15 +43,15 @@ impl<'a> Function<'a> {
     /// # Errors
     ///
     /// This function will return an error if the function node is not valid.
-    pub fn new(function_dispatcher: &'a FunctionDispatcher, statement: &str, function: &Node) -> Result<Self, DscError> {
+    pub fn new(function_dispatcher: &'a FunctionDispatcher, statement_bytes: &[u8], function: &Node) -> Result<Self, DscError> {
         let Some(function_name) = function.child_by_field_name("name") else {
             return Err(DscError::Parser("Function name node not found".to_string()));
         };
         let function_args = function.child_by_field_name("args");
-        let args = convert_args_node(function_dispatcher, statement, &function_args)?;
+        let args = convert_args_node(function_dispatcher, statement_bytes, &function_args)?;
         Ok(Function{
             function_dispatcher,
-            name: function_name.utf8_text(statement.as_bytes())?.to_string(),
+            name: function_name.utf8_text(statement_bytes)?.to_string(),
             args})
     }
 
@@ -81,7 +81,7 @@ impl<'a> Function<'a> {
     }
 }
 
-fn convert_args_node<'a>(function_dispatcher: &'a FunctionDispatcher, statement: &str, args: &Option<Node>) -> Result<Option<Vec<FunctionArg<'a>>>, DscError> {
+fn convert_args_node<'a>(function_dispatcher: &'a FunctionDispatcher, statement_bytes: &[u8], args: &Option<Node>) -> Result<Option<Vec<FunctionArg<'a>>>, DscError> {
     let Some(args) = args else {
         return Ok(None);
     };
@@ -90,20 +90,20 @@ fn convert_args_node<'a>(function_dispatcher: &'a FunctionDispatcher, statement:
     for arg in args.named_children(&mut cursor) {
         match arg.kind() {
             "string" => {
-                let value = arg.utf8_text(statement.as_bytes())?;
+                let value = arg.utf8_text(statement_bytes)?;
                 result.push(FunctionArg::String(value.to_string()));
             },
             "number" => {
-                let value = arg.utf8_text(statement.as_bytes())?;
+                let value = arg.utf8_text(statement_bytes)?;
                 result.push(FunctionArg::Integer(value.parse::<i32>()?));
             },
             "boolean" => {
-                let value = arg.utf8_text(statement.as_bytes())?;
+                let value = arg.utf8_text(statement_bytes)?;
                 result.push(FunctionArg::Boolean(value.parse::<bool>()?));
             },
             "expression" => {
                 // TODO: this is recursive, we may want to stop at a specific depth
-                let expression = Expression::new(function_dispatcher, statement, &arg)?;
+                let expression = Expression::new(function_dispatcher, statement_bytes, &arg)?;
                 result.push(FunctionArg::Expression(expression));
             },
             _ => {

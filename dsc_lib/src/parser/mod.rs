@@ -59,22 +59,23 @@ impl Statement {
             return Err(DscError::Parser("Error parsing statement child".to_string()));
         }
         let kind = child_node.kind();
+        let statement_bytes = statement.as_bytes();
         match kind {
             "stringLiteral" | "bracketInStringLiteral" => {
-                let Ok(value) = child_node.utf8_text(statement.as_bytes()) else {
+                let Ok(value) = child_node.utf8_text(statement_bytes) else {
                     return Err(DscError::Parser("Error parsing string literal".to_string()));
                 };
                 Ok(value.to_string())
             },
             "escapedStringLiteral" => {
                 // need to remove the first character: [[ => [
-                let Ok(value) = child_node.utf8_text(statement.as_bytes()) else {
+                let Ok(value) = child_node.utf8_text(statement_bytes) else {
                     return Err(DscError::Parser("Error parsing escaped string literal".to_string()));
                 };
                 Ok(value[1..].to_string())
             },
             "expression" => {
-                let expression = Expression::new(&self.function_dispatcher, statement, &child_node)?;
+                let expression = Expression::new(&self.function_dispatcher, statement_bytes, &child_node)?;
                 Ok(expression.invoke()?)
             },
             _ => {
