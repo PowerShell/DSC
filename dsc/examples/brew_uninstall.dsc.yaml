@@ -14,6 +14,6 @@ resources:
   type: DSC.PackageManagement/Brew
   properties:
     packageName: gitui
-    _exist: true
+    _exist: false
   dependsOn:
   - "[resourceId('DSC/AssertionGroup','assertions')]"

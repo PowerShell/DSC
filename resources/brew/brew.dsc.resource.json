@@ -20,7 +20,8 @@
         "args": [
             "set"
         ],
-        "input": "env"
+        "input": "env",
+        "implementsPretest": true
     },
     "export": {
         "executable": "brew.dsc.resource.sh",

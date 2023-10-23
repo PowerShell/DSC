@@ -4,6 +4,7 @@
 # Licensed under the MIT License.
 
 export exist=true
+export NONINTERACTIVE=1
 
 check_args() {
     if [[ -z $packageName ]]; then
