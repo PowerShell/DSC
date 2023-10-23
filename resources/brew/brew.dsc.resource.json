@@ -1,0 +1,66 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+    "type": "DSC.PackageManagement/Brew",
+    "description": "DSC resource to manage Homebrew packages",
+    "tags": [
+        "macOS",
+        "brew",
+        "PackageManagement"
+    ],
+    "version": "0.1.0",
+    "get": {
+        "executable": "brew.dsc.resource.sh",
+        "args": [
+            "get"
+        ],
+        "input": "env"
+    },
+    "set": {
+        "executable": "brew.dsc.resource.sh",
+        "args": [
+            "set"
+        ],
+        "input": "env"
+    },
+    "export": {
+        "executable": "brew.dsc.resource.sh",
+        "args": [
+            "export"
+        ],
+        "input": "env"
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid parameter"
+    },
+    "schema": {
+        "embedded": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/DSC/PackageManagement/Brew/v0.1.0/schema.json",
+            "title": "Brew",
+            "description": "Managed packages using Homebrew",
+            "type": "object",
+            "required": [
+                "packageName"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "packageName": {
+                    "type": "string",
+                    "title": "Package Name",
+                    "description": "Defines the name of the package to query or install"
+                },
+                "version": {
+                    "type": "string",
+                    "title": "Version",
+                    "description": "Defines the version of the package to install"
+                },
+                "_exist": {
+                    "type": "boolean",
+                    "title": "Exist",
+                    "description": "Defines if the package should exist or not"
+                }
+            }
+        }
+    }
+}
