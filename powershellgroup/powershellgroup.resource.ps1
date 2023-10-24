@@ -61,23 +61,23 @@ if ($Operation -eq 'List')
     #$m = gmo PSDesiredStateConfiguration
     #$r += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
     #$r[0] | ConvertTo-Json -Compress -Depth 3
-    foreach ($r in $script:ResourceCache)
+    foreach ($r in $script:ResourceCache.keys)
     {
-        if ($r.ImplementedAs -eq "Binary")
+        if ($script:ResourceCache[$r].ImplementedAs -eq "Binary")
         {
             continue
         }
 
         $version_string = "";
-        if ($r.Version) { $version_string = $r.Version.ToString() }
+        if ($script:ResourceCache[$r].Version) { $version_string = $script:ResourceCache[$r].Version.ToString() }
         $author_string = "";
-        if ($r.author) { $author_string = $r.CompanyName.ToString() }
+        if ($script:ResourceCache[$r].author) { $author_string = $script:ResourceCache[$r].CompanyName.ToString() }
         $moduleName = "";
-        if ($r.ModuleName) { $moduleName = $r.ModuleName }
-        elseif ($r.ParentPath) { $moduleName = Split-Path $r.ParentPath | Split-Path | Split-Path -Leaf }
+        if ($script:ResourceCache[$r].ModuleName) { $moduleName = $script:ResourceCache[$r].ModuleName }
+        elseif ($script:ResourceCache[$r].ParentPath) { $moduleName = Split-Path $script:ResourceCache[$r].ParentPath | Split-Path | Split-Path -Leaf }
 
         $propertyList = @()
-        foreach ($p in $r.Properties)
+        foreach ($p in $script:ResourceCache[$r].Properties)
         {
             if ($p.Name)
             {
@@ -85,16 +85,15 @@ if ($Operation -eq 'List')
             }
         }
 
-        $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
-        $script:ResourceCache[$fullResourceTypeName] = $r
+        $fullResourceTypeName = "$moduleName/$($script:ResourceCache[$r].ResourceType)"
        if ($WinPS) {$requiresString = "DSC/WindowsPowerShellGroup"} else {$requiresString = "DSC/PowerShellGroup"}
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
             version = $version_string;
-            path = $r.Path;
-            directory = $r.ParentPath;
-            implementedAs = $r.ImplementationDetail;
+            path = $script:ResourceCache[$r].Path;
+            directory = $script:ResourceCache[$r].ParentPath;
+            implementedAs = $script:ResourceCache[$r].ImplementationDetail;
             author = $author_string;
             properties = $propertyList;
             requires = $requiresString
@@ -330,7 +329,7 @@ elseif ($Operation -eq 'Test')
                 }
             }
             $e = $null
-            $op_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
             if ($e)
             {
                 # By this point Invoke-DscResource already wrote error message to stderr stream,
