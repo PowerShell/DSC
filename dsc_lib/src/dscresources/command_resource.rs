@@ -493,7 +493,7 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
     };
     let json: Value = serde_json::from_str(json)?;
     let result = match compiled_schema.validate(&json) {
-        Ok(_) => Ok(()),
+        Ok(()) => Ok(()),
         Err(err) => {
             let mut error = String::new();
             for e in err {
