@@ -329,7 +329,7 @@ elseif ($Operation -eq 'Test')
                 }
             }
             $e = $null
-            $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            $op_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
             if ($e)
             {
                 # By this point Invoke-DscResource already wrote error message to stderr stream,
