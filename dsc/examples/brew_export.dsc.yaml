@@ -1,0 +1,7 @@
+# Example to see if PowerShell 7 is installed, install it, or get all installed packages
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+- name: brew
+  type: DSC.PackageManagement/Brew
+  properties:
+    packageName: none
