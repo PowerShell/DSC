@@ -55,12 +55,13 @@ Import-Module $DscModule
 
 if ($Operation -eq 'List')
 {
-    $DscResources= Get-DscResource
+
+    RefreshCache
     #TODO: following should be added to debug stream of every operation
     #$m = gmo PSDesiredStateConfiguration
     #$r += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
     #$r[0] | ConvertTo-Json -Compress -Depth 3
-    foreach ($r in $DscResources)
+    foreach ($r in $script:ResourceCache)
     {
         if ($r.ImplementedAs -eq "Binary")
         {
@@ -109,7 +110,7 @@ elseif ($Operation -eq 'Get')
     {
         $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
     }
-
+    
     $result = @()
 
     RefreshCache
@@ -127,10 +128,9 @@ elseif ($Operation -eq 'Get')
                 $ModuleName = $typeparts[0]
                 $ResourceTypeName = $typeparts[1]
 
-                $dscResourceDetails = Get-DscResource -Module $ModuleName -Name $ResourceTypeName
-                if ($dscResourceDetails.ImplementationDetail -eq 'ScriptBased') {
-                    Import-Module -Scope Local -Name $dscResourceDetails.path -Force -ErrorAction stop
-                    $validParams = (Get-Command -Module $dscResourceDetails.ResourceType -Name 'Get-TargetResource').Parameters.Keys
+                if ($r.ImplementationDetail -eq 'ScriptBased') {
+                    Import-Module -Scope Local -Name $r.path -Force -ErrorAction stop
+                    $validParams = (Get-Command -Module $r.ResourceType -Name 'Get-TargetResource').Parameters.Keys
                     $r.properties.psobject.properties | ForEach-Object {
                         if ($validParams -notcontains $_.Name) {
                             $r.properties.psobject.properties.Remove($_.Name)
@@ -165,10 +165,9 @@ elseif ($Operation -eq 'Get')
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
 
-            $dscResourceDetails = Get-DscResource -Module ($inputobj_pscustomobj.type -split '/')[0] -Name $ResourceTypeName
-            if ($dscResourceDetails.ImplementationDetail -eq 'ScriptBased') {
-                Import-Module -Scope Local -Name $dscResourceDetails.path -Force -ErrorAction stop
-                $validParams = (Get-Command -Module $dscResourceDetails.ResourceType -Name 'Get-TargetResource').Parameters.Keys
+            if ($r.ImplementationDetail -eq 'ScriptBased') {
+                Import-Module -Scope Local -Name $r.path -Force -ErrorAction stop
+                $validParams = (Get-Command -Module $r.ResourceType -Name 'Get-TargetResource').Parameters.Keys
                 $inputobj_pscustomobj.psobject.properties | ForEach-Object {
                     if ($validParams -notcontains $_.Name) {
                         $inputobj_pscustomobj.psobject.properties.Remove($_.Name)
