@@ -299,22 +299,26 @@ elseif ($Operation -eq 'Test')
         if ($cachedResourceInfo)
         {
             $inputht = @{}
-            $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
-                if ($_.Name -ne "type")
-                {
-                    $inputht[$_.Name] = $_.Value
+            $ResourceTypeName = ($r.type -split "/")[1]
+            $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
+            $e = $null
+            $add_result = [ordered]@{}
+            $test_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            $get_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            foreach ($dscProperty in $($get_result | Get-Member -MemberType Properties | ForEach-Object {$_.Name})) {
+                if ($inputht.keys -contains $dscProperty) {
+                    $add_result[$dscProperty] = $get_result.$dscProperty
                 }
             }
-            $e = $null
-            $op_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            $add_result['type'] = $inputobj_pscustomobj.type
+            $add_result['InDesiredState'] = $test_result.InDesiredState
             if ($e)
             {
                 # By this point Invoke-DscResource already wrote error message to stderr stream,
                 # so we just need to signal error to the caller by non-zero exit code.
                 exit 1
             }
-            $result = $op_result
+            $result += $add_result
         }
         else
         {
