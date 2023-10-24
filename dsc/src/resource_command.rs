@@ -163,7 +163,7 @@ pub fn export(dsc: &mut DscManager, resource: &str, format: &Option<OutputFormat
     let mut conf = Configuration::new();
 
     match add_resource_export_results_to_configuration(&dsc_resource, &mut conf) {
-        Ok(_) => (),
+        Ok(()) => (),
         Err(err) => {
             error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
@@ -191,7 +191,7 @@ pub fn get_resource(dsc: &mut DscManager, resource: &str) -> DscResource {
             }
 
             match dsc.initialize_discovery() {
-                Ok(_) => (),
+                Ok(()) => (),
                 Err(err) => {
                     error!("Error: {err}");
                     exit(EXIT_DSC_ERROR);

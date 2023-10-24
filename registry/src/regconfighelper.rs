@@ -114,7 +114,7 @@ pub fn config_set(config: &Registry) -> Result<String, RegistryError> {
                     reg_key = open_or_create_key(&config.key_path)?;
                     reg_result.exist = Some(false);
                     match reg_key.delete_value(value_name) {
-                        Ok(_) | Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {},
+                        Ok(()) | Err(NtStatusError { status: NtStatusErrorKind::ObjectNameNotFound, ..}) => {},
                         Err(err) => {
                             return Err(RegistryError::NtStatus(err));
                         }

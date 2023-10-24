@@ -91,7 +91,7 @@ fn main() {
         args::SubCommand::Config { subcommand } => {
             let json: String;
             match regconfighelper::validate_config(&config) {
-                Ok(_) => {},
+                Ok(()) => {},
                 Err(err) => {
                     eprintln!("Error validating config: {err}");
                     exit(EXIT_INVALID_INPUT);
