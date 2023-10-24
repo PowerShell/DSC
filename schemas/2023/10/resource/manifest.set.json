@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.set.json",
+  "title": "Set Method",
+  "description": "Defines how DSC must call the DSC Resource to set the desired state of an instance and how to process the output from the DSC Resource.",
+  "type": "object",
+  "required": [
+    "executable",
+    "input"
+  ],
+  "properties": {
+    "executable": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/commandExecutable.json"
+    },
+    "args": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/commandArgs.json"
+    },
+    "input": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/inputKind.json"
+    },
+    "implementsPretest": {
+      "title": "Resource Performs Pre-Test",
+      "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
+      "type": "boolean",
+      "default": false
+    },
+    "return": {
+      "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/returnKind.json"
+    }
+  },
+  "examples": [
+    {
+      "executable": "registry",
+      "args": [
+        "config",
+        "set"
+      ],
+      "input": "stdin",
+      "implementsPretest": true,
+      "return": "state"
+    }
+  ]
+}

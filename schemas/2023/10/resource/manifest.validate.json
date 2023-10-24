@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.validate.json",
+  "title": "Validate Method",
+  "description": "Defines how DSC must call the DSC Resource to validate the state of an instance. This method is mandatory for DSC Group Resources. It's ignored for all other DSC Resources.",
+  "type": "object",
+  "required": [
+    "executable"
+  ],
+  "properties": {
+    "executable": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/commandExecutable.json"
+    },
+    "args": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/commandArgs.json"
+    }
+  },
+  "examples": [
+    {
+      "executable": "dsc",
+      "args": [
+        "config",
+        "validate"
+      ]
+    }
+  ]
+}

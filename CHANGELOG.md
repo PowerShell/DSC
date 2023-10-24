@@ -28,7 +28,15 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Changed
 
-- Replaced the `_ensure` well-known property with the boolean [_exist][21] property. This improves
+- Updated the canonical version of the schema URIs from `2023/08` to `2023/10`, as this release
+  includes breaking changes for the schemas.
+
+  As part of this change, the `$schema` keyword for both [configuration documents][21] and
+  [resource manifests][22] accepts any valid URI for the schemas, instead of only one. Now, you
+  can set the value for the keyword to the unbundled schema, the bundled schema, or the enhanced
+  authoring schema for any supported version.
+
+- Replaced the `_ensure` well-known property with the boolean [_exist][23] property. This improves
   the semantics for users and simplifies implementation for resources, replacing the string enum
   values `Present` and `Absent` with `true` and `false` respectively.
 
@@ -61,7 +69,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
-- Added the [--input][22] and [--input-file][23] global options to the root `dsc` command. Now, you
+- Added the [--input][24] and [--input-file][25] global options to the root `dsc` command. Now, you
   can pass input to DSC from a variable or file instead of piping from stdin.
 
   <details><summary>Related work items</summary>
@@ -81,7 +89,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- Added the new [completer][24] command enables users to add shell completions for DSC to their
+- Added the new [completer][26] command enables users to add shell completions for DSC to their
   shell. The command supports completions for Bash, Elvish, fish, PowerShell, and ZSH.
 
   <details><summary>Related work items</summary>
@@ -394,10 +402,12 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [20]: docs/reference/schemas/resource/manifest/test.md#input
 
 <!-- alpha.4 links -->
-[21]: docs/reference/schemas/resource/properties/exist.md
-[22]: docs/reference/cli/dsc.md#-i---input
-[23]: docs/reference/cli/dsc.md#-p---input-file
-[24]: docs/reference/cli/completer/command.md
+[21]: docs/reference/schemas/config/document.md#schema
+[22]: docs/reference/schemas/resource/manifest/root.md#schema
+[23]: docs/reference/schemas/resource/properties/exist.md
+[24]: docs/reference/cli/dsc.md#-i---input
+[25]: docs/reference/cli/dsc.md#-p---input-file
+[26]: docs/reference/cli/completer/command.md
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107

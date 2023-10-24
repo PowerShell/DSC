@@ -24,7 +24,7 @@ fn main() {
                 requires: Some("Test/TestGroup".to_string()),
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
-                    schema_version: "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json".to_string(),
+                    schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
                     resource_type: "Test/TestResource1".to_string(),
                     version: "1.0.0".to_string(),
                     tags: None,
@@ -54,7 +54,7 @@ fn main() {
                 requires: Some("Test/TestGroup".to_string()),
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
-                    schema_version: "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json".to_string(),
+                    schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
                     resource_type: "Test/TestResource2".to_string(),
                     version: "1.0.1".to_string(),
                     tags: None,

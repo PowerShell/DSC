@@ -273,7 +273,7 @@ pub fn validate_config(config: &str) {
                     };
                     let properties = resource_block["properties"].clone();
                     let _result: Result<(), ValidationError> = match compiled_schema.validate(&properties) {
-                        Ok(_) => Ok(()),
+                        Ok(()) => Ok(()),
                         Err(err) => {
                             let mut error = String::new();
                             for e in err {
@@ -304,7 +304,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
     match subcommand {
         ResourceSubCommand::List { resource_name, description, tags } => {
             match dsc.initialize_discovery() {
-                Ok(_) => (),
+                Ok(()) => (),
                 Err(err) => {
                     error!("Error: {err}");
                     exit(EXIT_DSC_ERROR);

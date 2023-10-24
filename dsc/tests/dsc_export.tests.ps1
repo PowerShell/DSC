@@ -25,7 +25,7 @@ Describe 'resource export tests' {
     It 'Export can be called on a configuration' {
 
         $yaml = @'
-            $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
             - name: Processes
               type: Microsoft/Process
@@ -43,7 +43,7 @@ Describe 'resource export tests' {
     It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {
 
         $yaml = @'
-            $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
             - name: Processes
               type: Microsoft/Process
@@ -59,7 +59,7 @@ Describe 'resource export tests' {
     It 'Duplicate resource types in Configuration Export should result in error' {
 
         $yaml = @'
-            $schema: https://schemas.microsoft.com/dsc/2023/03/configuration.schema.json
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
             - name: Processes
               type: Microsoft/Process
