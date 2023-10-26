@@ -9,6 +9,7 @@ use crate::parser::functions::{FunctionArg, FunctionResult};
 
 pub mod base64;
 pub mod concat;
+pub mod resourceId;
 
 /// The kind of argument that a function accepts.
 #[derive(Debug, PartialEq)]

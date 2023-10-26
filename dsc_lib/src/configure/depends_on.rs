@@ -1,28 +1,25 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use regex::Regex;
-
 use crate::configure::config_doc::Resource;
 use crate::configure::Configuration;
 use crate::DscError;
 
 /// Gets the invocation order of resources based on their dependencies
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `config` - The configuration to get the invocation order for
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `Result<Vec<Resource>, DscError>` - The invocation order of resources
-/// 
+///
 /// # Errors
-/// 
+///
 /// * `DscError::Validation` - The configuration is invalid
 pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resource>, DscError> {
     let mut order: Vec<Resource> = Vec::new();
-    let depends_on_regex = Regex::new(r"^\[resourceId\(\s*'(?<type>[a-zA-Z0-9\.]+/[a-zA-Z0-9]+)'\s*,\s*'(?<name>[a-zA-Z0-9 ]+)'\s*\)]$")?;
     for resource in &config.resources {
         // validate that the resource isn't specified more than once in the config
         if config.resources.iter().filter(|r| r.name == resource.name && r.resource_type == resource.resource_type).count() > 1 {
@@ -32,6 +29,7 @@ pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resou
         let mut dependency_already_in_order = true;
         if let Some(depends_on) = resource.depends_on.clone() {
             for dependency in depends_on {
+                let
                 // validate dependency exists
                 let Some(captures) = depends_on_regex.captures(&dependency) else {
                   return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect for resource name '{0}': {dependency}", resource.name)));
