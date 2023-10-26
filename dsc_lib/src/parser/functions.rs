@@ -11,18 +11,17 @@ use crate::parser::{
 };
 
 #[derive(Clone)]
-pub struct Function<'a> {
+pub struct Function {
     name: String,
-    args: Option<Vec<FunctionArg<'a>>>,
-    function_dispatcher: &'a FunctionDispatcher,
+    args: Option<Vec<FunctionArg>>,
 }
 
 #[derive(Clone)]
-pub enum FunctionArg<'a> {
+pub enum FunctionArg {
     String(String),
     Integer(i32),
     Boolean(bool),
-    Expression(Expression<'a>),
+    Expression(Expression),
 }
 
 #[derive(Debug, PartialEq)]
@@ -31,7 +30,7 @@ pub enum FunctionResult {
     Object(Value),
 }
 
-impl<'a> Function<'a> {
+impl Function {
     /// Create a new `Function` instance.
     ///
     /// # Arguments
@@ -43,14 +42,13 @@ impl<'a> Function<'a> {
     /// # Errors
     ///
     /// This function will return an error if the function node is not valid.
-    pub fn new(function_dispatcher: &'a FunctionDispatcher, statement_bytes: &[u8], function: &Node) -> Result<Self, DscError> {
+    pub fn new(function_dispatcher: &FunctionDispatcher, statement_bytes: &[u8], function: &Node) -> Result<Self, DscError> {
         let Some(function_name) = function.child_by_field_name("name") else {
             return Err(DscError::Parser("Function name node not found".to_string()));
         };
         let function_args = function.child_by_field_name("args");
         let args = convert_args_node(function_dispatcher, statement_bytes, &function_args)?;
         Ok(Function{
-            function_dispatcher,
             name: function_name.utf8_text(statement_bytes)?.to_string(),
             args})
     }
@@ -60,14 +58,14 @@ impl<'a> Function<'a> {
     /// # Errors
     ///
     /// This function will return an error if the function fails to execute.
-    pub fn invoke(&self) -> Result<FunctionResult, DscError> {
+    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher) -> Result<FunctionResult, DscError> {
         // if any args are expressions, we need to invoke those first
         let mut resolved_args: Vec<FunctionArg> = vec![];
         if let Some(args) = &self.args {
             for arg in args {
                 match arg {
                     FunctionArg::Expression(expression) => {
-                        let value = expression.invoke()?;
+                        let value = expression.invoke(function_dispatcher)?;
                         resolved_args.push(FunctionArg::String(value));
                     },
                     _ => {
@@ -77,11 +75,11 @@ impl<'a> Function<'a> {
             }
         }
 
-        self.function_dispatcher.invoke(&self.name, &resolved_args)
+        function_dispatcher.invoke(&self.name, &resolved_args)
     }
 }
 
-fn convert_args_node<'a>(function_dispatcher: &'a FunctionDispatcher, statement_bytes: &[u8], args: &Option<Node>) -> Result<Option<Vec<FunctionArg<'a>>>, DscError> {
+fn convert_args_node(function_dispatcher: &FunctionDispatcher, statement_bytes: &[u8], args: &Option<Node>) -> Result<Option<Vec<FunctionArg>>, DscError> {
     let Some(args) = args else {
         return Ok(None);
     };

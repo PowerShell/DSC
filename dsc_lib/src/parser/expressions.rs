@@ -8,12 +8,12 @@ use crate::functions::FunctionDispatcher;
 use crate::parser::functions::{Function, FunctionResult};
 
 #[derive(Clone)]
-pub struct Expression<'a> {
-    function: Function<'a>,
+pub struct Expression {
+    function: Function,
     member_access: Option<Vec<String>>,
 }
 
-impl<'a> Expression<'a> {
+impl Expression {
     /// Create a new `Expression` instance.
     ///
     /// # Arguments
@@ -25,7 +25,7 @@ impl<'a> Expression<'a> {
     /// # Errors
     ///
     /// This function will return an error if the expression node is not valid.
-    pub fn new(function_dispatcher: &'a FunctionDispatcher, statement_bytes: &[u8], expression: &Node) -> Result<Self, DscError> {
+    pub fn new(function_dispatcher: &FunctionDispatcher, statement_bytes: &[u8], expression: &Node) -> Result<Self, DscError> {
         let Some(function) = expression.child_by_field_name("function") else {
             return Err(DscError::Parser("Function node not found".to_string()));
         };
@@ -59,8 +59,8 @@ impl<'a> Expression<'a> {
     /// # Errors
     ///
     /// This function will return an error if the expression fails to execute.
-    pub fn invoke(&self) -> Result<String, DscError> {
-        let result = self.function.invoke()?;
+    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher) -> Result<String, DscError> {
+        let result = self.function.invoke(function_dispatcher)?;
         if let Some(member_access) = &self.member_access {
             match result {
                 FunctionResult::String(_) => {

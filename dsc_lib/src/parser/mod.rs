@@ -76,7 +76,7 @@ impl Statement {
             },
             "expression" => {
                 let expression = Expression::new(&self.function_dispatcher, statement_bytes, &child_node)?;
-                Ok(expression.invoke()?)
+                Ok(expression.invoke(&self.function_dispatcher)?)
             },
             _ => {
                 Err(DscError::Parser(format!("Unknown expression type {0}", child_node.kind())))

@@ -24,8 +24,9 @@ module.exports = grammar({
     function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
     functionName: $ => /[a-z][a-zA-Z0-9]*/,
     arguments: $ => seq($._argument, repeat(seq(',', $._argument))),
-    _argument: $ => choice($.expression, seq('\'', $.string, '\''), $.number, $.boolean),
+    _argument: $ => choice($.expression, $._quotedString, $.number, $.boolean),
 
+    _quotedString: $ => seq('\'', $.string, '\''),
     // ARM strings do not allow to contain single-quote characters
     string: $ => /[^']*/,
     number: $ => /-?\d+/,
