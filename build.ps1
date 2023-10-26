@@ -92,14 +92,18 @@ New-Item -ItemType Directory $target > $null
 
 # make sure dependencies are built first so clippy runs correctly
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
+
+# projects are in dependency order
 $projects = @(
-    "tree-sitter-dscexpression"
-    "dsc_lib"
-    "file_lib"
-    "dsc"
-    "osinfo"
-    "process"
-    "tools/test_group_resource"
+    "tree-sitter-dscexpression",
+    "dsc_lib",
+    "file_lib",
+    "dsc",
+    "osinfo",
+    "powershellgroup",
+    "process",
+    "tools/dsctest",
+    "tools/test_group_resource",
     "y2j"
     "powershellgroup"
     "resources/brew"

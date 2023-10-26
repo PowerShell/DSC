@@ -68,6 +68,7 @@ impl Configurator {
     pub fn new(config: &str) -> Result<Configurator, DscError> {
         let mut discovery = Discovery::new()?;
         discovery.initialize()?;
+
         Ok(Configurator {
             config: config.to_owned(),
             discovery,
