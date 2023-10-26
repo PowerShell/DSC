@@ -42,12 +42,12 @@ impl Function {
     /// # Errors
     ///
     /// This function will return an error if the function node is not valid.
-    pub fn new(function_dispatcher: &FunctionDispatcher, statement_bytes: &[u8], function: &Node) -> Result<Self, DscError> {
+    pub fn new(statement_bytes: &[u8], function: &Node) -> Result<Self, DscError> {
         let Some(function_name) = function.child_by_field_name("name") else {
             return Err(DscError::Parser("Function name node not found".to_string()));
         };
         let function_args = function.child_by_field_name("args");
-        let args = convert_args_node(function_dispatcher, statement_bytes, &function_args)?;
+        let args = convert_args_node(statement_bytes, &function_args)?;
         Ok(Function{
             name: function_name.utf8_text(statement_bytes)?.to_string(),
             args})
@@ -79,7 +79,7 @@ impl Function {
     }
 }
 
-fn convert_args_node(function_dispatcher: &FunctionDispatcher, statement_bytes: &[u8], args: &Option<Node>) -> Result<Option<Vec<FunctionArg>>, DscError> {
+fn convert_args_node(statement_bytes: &[u8], args: &Option<Node>) -> Result<Option<Vec<FunctionArg>>, DscError> {
     let Some(args) = args else {
         return Ok(None);
     };
@@ -101,7 +101,7 @@ fn convert_args_node(function_dispatcher: &FunctionDispatcher, statement_bytes: 
             },
             "expression" => {
                 // TODO: this is recursive, we may want to stop at a specific depth
-                let expression = Expression::new(function_dispatcher, statement_bytes, &arg)?;
+                let expression = Expression::new(statement_bytes, &arg)?;
                 result.push(FunctionArg::Expression(expression));
             },
             _ => {

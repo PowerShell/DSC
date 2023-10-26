@@ -75,7 +75,7 @@ impl Statement {
                 Ok(value[1..].to_string())
             },
             "expression" => {
-                let expression = Expression::new(&self.function_dispatcher, statement_bytes, &child_node)?;
+                let expression = Expression::new(statement_bytes, &child_node)?;
                 Ok(expression.invoke(&self.function_dispatcher)?)
             },
             _ => {

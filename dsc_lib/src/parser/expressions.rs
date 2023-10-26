@@ -25,11 +25,11 @@ impl Expression {
     /// # Errors
     ///
     /// This function will return an error if the expression node is not valid.
-    pub fn new(function_dispatcher: &FunctionDispatcher, statement_bytes: &[u8], expression: &Node) -> Result<Self, DscError> {
+    pub fn new(statement_bytes: &[u8], expression: &Node) -> Result<Self, DscError> {
         let Some(function) = expression.child_by_field_name("function") else {
             return Err(DscError::Parser("Function node not found".to_string()));
         };
-        let function = Function::new(function_dispatcher, statement_bytes, &function)?;
+        let function = Function::new(statement_bytes, &function)?;
         let member_access = if let Some(member_access) = expression.child_by_field_name("members") {
             if member_access.is_error() {
                 return Err(DscError::Parser("Error parsing dot-notation".to_string()));
