@@ -39,7 +39,7 @@ stages:
     - checkout: self
     - pwsh: |
         Set-Location "$(Build.SourcesDirectory)/DSC"
-        ./build.ps1 -Release -Architecture $(buildName)
+        ./build.ps1 -Release -Architecture $(buildName) -SkipLinkTest
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
@@ -121,7 +121,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
-        tar czf $(System.ArtifactsDirectory)/Packages/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
+        tar czf $(System.ArtifactsDirectory)/Packages/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -142,7 +142,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
-        tar czf $(System.ArtifactsDirectory)/Packages/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
+        tar czf $(System.ArtifactsDirectory)/Packages/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -168,7 +168,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
-        tar czf $(System.ArtifactsDirectory)/Packages/$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/$(buildName) .
+        tar czf $(System.ArtifactsDirectory)/Packages/$(buildName).tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/$(buildName) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |

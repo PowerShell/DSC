@@ -7,7 +7,8 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$Test,
-    [switch]$GetPackageVersion
+    [switch]$GetPackageVersion,
+    [switch]$SkipLinkCheck
 )
 
 if ($GetPackageVersion) {
@@ -51,7 +52,7 @@ function Find-LinkExe {
     }
 }
 
-if ($IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
+if (!$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
     if (!(Test-Path $BuildToolsPath)) {
         Write-Verbose -Verbose "link.exe not found, installing C++ build tools"
         Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
