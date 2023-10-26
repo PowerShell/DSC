@@ -36,7 +36,9 @@ stages:
           buildName: aarch64-pc-windows-msvc
 
     steps:
+    - checkout: self
     - pwsh: |
+        Set-Location "$(Build.SourcesDirectory)/DSC"
         ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
       condition: succeeded()
