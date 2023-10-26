@@ -13,14 +13,16 @@ resources:
     type: github
     endpoint: ComplianceGHRepo
     name: PowerShell/compliance
-    ref: fixApiScanNet6
+    ref: master
 
 stages:
-- stage: Build
+- stage: BuildAndSign
   displayName: Build Native Binaries
   dependsOn: []
   jobs:
   - job: BuildWin
+    variables:
+    - group: ESRP
     pool:
       name: PowerShell1ES
       demands:
@@ -41,7 +43,64 @@ stages:
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
-        compress-archive -Path "$(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)" -DestinationPath "$(System.ArtifactsDirectory)\Packages\$(buildName).zip"
+        Set-Location "$(Build.SourcesDirectory)/Package"
+        $signSrcPath = "$(Build.SourcesDirectory)/Package/out"
+        # Set signing src path variable
+        $vstsCommandString = "vso[task.setvariable variable=signSrcPath]${signSrcPath}"
+        Write-Host ("sending " + $vstsCommandString)
+        Write-Host "##$vstsCommandString"
+
+        $signOutPath = "$(Build.SourcesDirectory)/Package/signed"
+        $null = New-Item -ItemType Directory -Path $signOutPath
+        # Set signing out path variable
+        $vstsCommandString = "vso[task.setvariable variable=signOutPath]${signOutPath}"
+        Write-Host "sending " + $vstsCommandString
+        Write-Host "##$vstsCommandString"
+
+        # Set path variable for guardian codesign validation
+        $vstsCommandString = "vso[task.setvariable variable=GDN_CODESIGN_TARGETDIRECTORY]${signOutPath}"
+        Write-Host "sending " + $vstsCommandString
+        Write-Host "##$vstsCommandString"
+
+        $packageVersion = ./build.ps1 -GetPackageVersion
+        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
+        Write-Host ("sending " + $vstsCommandString)
+        Write-Host "##$vstsCommandString"
+      displayName: Setup variables for signing
+
+    - publish: "$(Build.SourcesDirectory)/Package/out/"
+      artifact: out
+
+      displayName: Publish unsigned files
+
+    - checkout: ComplianceRepo
+
+    - template: EsrpSign.yml@ComplianceRepo
+      parameters:
+        # the folder which contains the binaries to sign
+        buildOutputPath: $(signSrcPath)
+        # the location to put the signed output
+        signOutputPath: $(signOutPath)
+        # the certificate ID to use
+        certificateId: "CP-230012"
+        # The file pattern to use
+        # If not using minimatch: comma separated, with * supported
+        # If using minimatch: newline separated, with !, **, and * supported.
+        # See link in the useMinimatch comments.
+        pattern: '*.exe'
+        # decides if the task should use minimatch for the pattern matching.
+        # https://github.com/isaacs/minimatch#features
+        useMinimatch: false
+
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)/package/signed
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
+
+    - pwsh: |
+        compress-archive -Path "$(Build.SourcesDirectory)/package/signed" -DestinationPath "$(System.ArtifactsDirectory)\Packages\$(buildName).zip"
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
@@ -62,7 +121,7 @@ stages:
       displayName: 'Build x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        tar -czvf $(System.ArtifactsDirectory)/Packages/x86_64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
+        tar czf $(System.ArtifactsDirectory)/Packages/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -83,7 +142,7 @@ stages:
       displayName: 'Build aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        tar -czvf $(System.ArtifactsDirectory)/Packages/aarch64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
+        tar czf $(System.ArtifactsDirectory)/Packages/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -110,7 +169,7 @@ stages:
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
-        tar -czvf $(System.ArtifactsDirectory)/Packages/$(buildName).tar.gz -C $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/$(buildName) .
+        tar czf $(System.ArtifactsDirectory)/Packages/$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/$(buildName) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
@@ -146,7 +205,7 @@ stages:
     - template: assembly-module-compliance.yml@ComplianceRepo
       parameters:
         # binskim
-        AnalyzeTarget: '$(Pipeline.Workspace)/uncompressed/*.dll'
+        AnalyzeTarget: '$(Pipeline.Workspace)/uncompressed/*.exe'
         AnalyzeSymPath: 'SRV*'
         # component-governance
         sourceScanPath: '$(Build.SourcesDirectory)/DSC'
