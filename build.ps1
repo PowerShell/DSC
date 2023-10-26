@@ -33,6 +33,7 @@ if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
     }
 }
 
+rustup default stable
 $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
 function Find-LinkExe {
@@ -89,6 +90,7 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
+    rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
