@@ -2,7 +2,7 @@ trigger: none
 
 variables:
   - name: BuildConfiguration
-    value: 'Release'
+    value: 'release'
   - name: PackageRoot
     value: '$(System.ArtifactsDirectory)/Packages'
   - group: DSCAPIScan
@@ -40,7 +40,8 @@ stages:
         rustup default stable
         rustup target add $(buildName)
         Set-Location "$(Build.SourcesDirectory)"
-        ./build.ps1 -Release -Architecture $(buildName)
+        write-verbose -verbose (dir | out-string)
+        .\build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
