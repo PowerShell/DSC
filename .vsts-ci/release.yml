@@ -179,7 +179,7 @@ stages:
 
 - stage: compliance
   displayName: Compliance
-  dependsOn: Build
+  dependsOn: BuildAndSign
   jobs:
   - job: Compliance_Job
     pool:
