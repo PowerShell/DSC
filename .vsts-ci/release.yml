@@ -39,6 +39,7 @@ stages:
     - pwsh: |
         rustup default stable
         rustup target add $(buildName)
+        Set-Location "$(Build.SourcesDirectory)"
         ./build.ps1 -Release -Architecture $(buildName)
       displayName: 'Build $(buildName)'
       condition: succeeded()
@@ -121,6 +122,7 @@ stages:
       displayName: 'Build x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
+        new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
         tar czf $(System.ArtifactsDirectory)/Packages/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
@@ -142,6 +144,7 @@ stages:
       displayName: 'Build aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
+        new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
         tar czf $(System.ArtifactsDirectory)/Packages/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
@@ -169,6 +172,7 @@ stages:
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
+        new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
         tar czf $(System.ArtifactsDirectory)/Packages/$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(BuildConfiguration)/$(buildName) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
