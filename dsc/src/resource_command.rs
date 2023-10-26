@@ -194,7 +194,7 @@ pub fn schema(dsc: &DscManager, resource_str: &str, format: &Option<OutputFormat
 }
 
 pub fn export(dsc: &mut DscManager, resource_str: &str, format: &Option<OutputFormat>) {
-    let Some(resource) = get_resource(dsc, resource_str) else {
+    let Some(dsc_resource) = get_resource(dsc, resource_str) else {
         error!("{}", DscError::ResourceNotFound(resource_str.to_string()).to_string());
         return
     };

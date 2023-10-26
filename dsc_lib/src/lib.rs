@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use discovery::ResourceIterator;
 use dscerror::DscError;
 use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
 
@@ -11,9 +10,6 @@ pub mod dscerror;
 pub mod dscresources;
 pub mod functions;
 pub mod parser;
-
-use dscerror::DscError;
-use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
 
 pub struct DscManager {
     discovery: discovery::Discovery,

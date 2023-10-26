@@ -5,8 +5,7 @@ use std::str::Utf8Error;
 
 use reqwest::StatusCode;
 use thiserror::Error;
-use chrono::{Local, DateTime};
-use tracing::{error, warn};
+use tracing::error;
 use tree_sitter::LanguageError;
 
 #[derive(Error, Debug)]
