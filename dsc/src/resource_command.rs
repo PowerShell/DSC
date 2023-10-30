@@ -15,12 +15,6 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-/// Get operation.
-///
-/// # Panics
-///
-/// Will panic if provider-based resource is not found.
-///
 pub fn get(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     // TODO: support streaming stdin which includes resource and input
     let mut input = get_input(input, stdin);
@@ -33,7 +27,13 @@ pub fn get(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        resource = get_resource(dsc, requires).unwrap();
+        let provider_resource = get_resource(dsc, requires);
+        if provider_resource.is_none() {
+            error!("Provider {} not found", requires);
+            return;
+        } else {
+            resource = provider_resource.unwrap();
+        }
     }
 
     match resource.get(input.as_str()) {
@@ -108,7 +108,13 @@ pub fn set(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
 
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        resource = get_resource(dsc, requires).unwrap();
+        let provider_resource = get_resource(dsc, requires);
+        if provider_resource.is_none() {
+            error!("Provider {} not found", requires);
+            return;
+        } else {
+            resource = provider_resource.unwrap();
+        }
     }
 
     match resource.set(input.as_str(), true) {
@@ -147,7 +153,13 @@ pub fn test(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin:
 
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        resource = get_resource(dsc, requires).unwrap();
+        let provider_resource = get_resource(dsc, requires);
+        if provider_resource.is_none() {
+            error!("Provider {} not found", requires);
+            return;
+        } else {
+            resource = provider_resource.unwrap();
+        }
     }
 
     match resource.test(input.as_str()) {
@@ -219,21 +231,6 @@ pub fn export(dsc: &mut DscManager, resource_str: &str, format: &Option<OutputFo
 #[must_use]
 pub fn get_resource<'a>(dsc: &'a DscManager, resource: &str) -> Option<&'a DscResource> {
     //TODO: add dinamically generated resource to dsc
-    // check if resource is JSON or just a name
-    /*match serde_json::from_str(resource) {
-        Ok(resource) => 
-            {
-                
-                resource
-            },
-        Err(err) => {
-            if resource.contains('{') {
-                error!("Not valid resource JSON: {err}\nInput was: {resource}");
-                exit(EXIT_INVALID_ARGS);
-            }
-        }
-    }*/
-
     dsc.find_resource(resource)
 }
 

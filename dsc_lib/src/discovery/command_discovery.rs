@@ -59,10 +59,10 @@ impl CommandDiscovery {
                                         // In case of "resource list" operation - print all failures to read manifests as warnings
                                         warn!("{}", e);
                                     } else {
-                                        // In case of other resource/config operations:
-                                        // At this point we can't determine whether or not the bad manifest contains resource that is requested by resource/config operation
-                                        // if it is, then "ResouceNotFound" error will be issued later
-                                        // and here we just record the error into debug stream.
+                                        /* In case of other resource/config operations:
+                                           At this point we can't determine whether or not the bad manifest contains resource that is requested by resource/config operation
+                                           if it is, then "ResouceNotFound" error will be issued later
+                                           and here we just record the error into debug stream.*/
                                         debug!("{}", e);
                                     }
                                     continue;
@@ -111,26 +111,38 @@ impl CommandDiscovery {
             {
                 Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
                 Err(e) => {
-                    // In case of "resource list" operation - print failure from provider as warning
-                    // In case of other resource/config operations:
-                    // print failure from provider as error because this provider was specifically requested by current resource/config operation
-                    if return_all_resources { warn!("Could not start {}: {}", list_command.executable, e); } else { error!("Could not start {}: {}", list_command.executable, e); }
+                    /* In case of "resource list" operation - print failure from provider as warning
+                       In case of other resource/config operations:
+                       print failure from provider as error because this provider was specifically requested by current resource/config operation*/
+                    if return_all_resources {
+                        warn!("Could not start {}: {}", list_command.executable, e);
+                    } else {
+                        error!("Could not start {}: {}", list_command.executable, e);
+                    }
                     continue;
                 },
             };
 
             if exit_code != 0 {
-                    // In case of "resource list" operation - print failure from provider as warning
-                    // In case of other resource/config operations:
-                    // print failure from provider as error because this provider was specifically requested by current resource/config operation
-                    if return_all_resources { warn!("Provider failed to list resources with exit code {exit_code}: {stderr}"); } else { error!("Provider failed to list resources with exit code {exit_code}: {stderr}"); }
+                /* In case of "resource list" operation - print failure from provider as warning
+                    In case of other resource/config operations:
+                    print failure from provider as error because this provider was specifically requested by current resource/config operation*/
+                if return_all_resources {
+                    warn!("Provider failed to list resources with exit code {exit_code}: {stderr}");
+                } else {
+                    error!("Provider failed to list resources with exit code {exit_code}: {stderr}");
+                }
             }
 
             for line in stdout.lines() {
                 match serde_json::from_str::<DscResource>(line){
                     Result::Ok(resource) => {
                         if resource.requires.is_none() {
-                            if return_all_resources { warn!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string()); } else { error!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string()); }
+                            if return_all_resources {
+                                warn!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string());
+                            } else {
+                                error!("{}", DscError::MissingRequires(provider.clone(), resource.type_name.clone()).to_string());
+                            }
                             continue;
                         }
                         if return_all_resources
@@ -150,7 +162,11 @@ impl CommandDiscovery {
                         }
                     },
                     Result::Err(err) => {
-                        if return_all_resources { warn!("Failed to parse resource: {line} -> {err}"); } else { error!("Failed to parse resource: {line} -> {err}"); }
+                        if return_all_resources {
+                            warn!("Failed to parse resource: {line} -> {err}");
+                        } else {
+                            error!("Failed to parse resource: {line} -> {err}");
+                        }
                         continue;
                     }
                 };

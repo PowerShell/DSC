@@ -14,7 +14,7 @@ use dsc_lib::{
     dscresources::dscresource::{ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
-use jsonschema::{JSONSchema, ValidationError};
+use jsonschema::JSONSchema;
 use serde_yaml::Value;
 use std::process::exit;
 
@@ -172,11 +172,6 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
 }
 
 /// Validate configuration.
-///
-/// # Panics
-///
-/// Will panic if resource is not found.
-///
 #[allow(clippy::too_many_lines)]
 pub fn validate_config(config: &str) {
     // first validate against the config schema
@@ -229,7 +224,10 @@ pub fn validate_config(config: &str) {
             exit(EXIT_INVALID_INPUT);
         });
         // get the actual resource
-        let resource = get_resource(&dsc, type_name).unwrap();
+        let Some(resource) = get_resource(&dsc, type_name) else {
+            error!("Error: Resource type not found");
+            exit(EXIT_DSC_ERROR);
+        };
         // see if the resource is command based
         if resource.implemented_as == ImplementedAs::Command {
             // if so, see if it implements validate via the resource manifest
@@ -278,17 +276,14 @@ pub fn validate_config(config: &str) {
                         },
                     };
                     let properties = resource_block["properties"].clone();
-                    let _result: Result<(), ValidationError> = match compiled_schema.validate(&properties) {
-                        Ok(()) => Ok(()),
-                        Err(err) => {
-                            let mut error = String::new();
-                            for e in err {
-                                error.push_str(&format!("{e} "));
-                            }
-
-                            error!("Error: Resource {type_name} failed validation: {error}");
-                            exit(EXIT_VALIDATION_FAILED);
-                        },
+                    let validation = compiled_schema.validate(&properties);
+                    if let Err(err) = validation {
+                        let mut error = String::new();
+                        for e in err {
+                            error.push_str(&format!("{e} "));
+                        }
+                        error!("Error: Resource {type_name} failed validation: {error}");
+                        exit(EXIT_VALIDATION_FAILED);
                     };
                 }
             }
