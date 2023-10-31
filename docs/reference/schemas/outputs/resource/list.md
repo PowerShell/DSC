@@ -15,7 +15,7 @@ The result output from the `dsc resource list` command.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/outputs/resource/list.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/list.json
 Type:          object
 ```
 

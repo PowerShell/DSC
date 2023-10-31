@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/schema.json",
+  "title": "DSC Resource schema result",
+  "description": "Describes the return data for a DSC Resource from the `dsc resource schema` command. This command always returns the DSC Resource's JSON schema document.",
+  "type": "object",
+  "$defs": {}
+}

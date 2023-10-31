@@ -92,17 +92,22 @@ New-Item -ItemType Directory $target > $null
 
 # make sure dependencies are built first so clippy runs correctly
 $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
+
+# projects are in dependency order
 $projects = @(
-    "dsc",
+    "tree-sitter-dscexpression",
     "dsc_lib",
     "file_lib",
+    "dsc",
     "osinfo",
     "powershellgroup",
     "process",
     "tools/dsctest",
     "tools/test_group_resource",
-    "tree-sitter-dscexpression",
     "y2j"
+    "powershellgroup"
+    "resources/brew"
+    "tools/dsctest"
 )
 $pedantic_unclean_projects = @("ntreg")
 $clippy_unclean_projects = @("tree-sitter-dscexpression")
@@ -156,9 +161,13 @@ foreach ($project in $projects) {
             Copy-Item "$path/$binary" $target -ErrorAction Ignore
         }
 
+        if (Test-Path "./copy_files.txt") {
+            Get-Content "./copy_files.txt" | ForEach-Object {
+                Copy-Item $_ $target -Force -ErrorAction Ignore
+            }
+        }
+
         Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
-        Copy-Item "*.resource.ps1" $target -Force -ErrorAction Ignore
-        Copy-Item "*.command.json" $target -Force -ErrorAction Ignore
 
     } finally {
         Pop-Location

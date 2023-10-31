@@ -15,7 +15,7 @@ Defines how to enforce state for a DSC Resource instance.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.set.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.set.json
 Type:          object
 ```
 

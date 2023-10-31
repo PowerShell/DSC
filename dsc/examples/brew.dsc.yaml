@@ -1,0 +1,19 @@
+# Example to see if PowerShell 7 is installed, install it, or get all installed packages
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+- name: assertions
+  type: DSC/AssertionGroup
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+    resources:
+    - name: os_check
+      type: Microsoft/OSInfo
+      properties:
+        family: MacOS
+- name: brew
+  type: DSC.PackageManagement/Brew
+  properties:
+    packageName: gitui
+    _exist: true
+  dependsOn:
+  - "[resourceId('DSC/AssertionGroup','assertions')]"

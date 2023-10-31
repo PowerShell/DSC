@@ -492,18 +492,16 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
         },
     };
     let json: Value = serde_json::from_str(json)?;
-    let result = match compiled_schema.validate(&json) {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            let mut error = String::new();
-            for e in err {
-                error.push_str(&format!("{e} "));
-            }
+    if let Err(err) = compiled_schema.validate(&json) {
+        let mut error = String::new();
+        for e in err {
+            error.push_str(&format!("{e} "));
+        }
 
-            Err(DscError::Schema(error))
-        },
-    };
-    result
+        return Err(DscError::Schema(error));
+    }
+
+    Ok(())
 }
 
 fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
