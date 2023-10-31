@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.get.json",
+  "title": "Get Method",
+  "description": "Defines how DSC must call the DSC Resource to get the current state of an instance.",
+  "type": "object",
+  "required": [
+    "executable"
+  ],
+  "properties": {
+    "executable": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/commandExecutable.json"
+    },
+    "args": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/commandArgs.json"
+    },
+    "input": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/inputKind.json"
+    }
+  },
+  "examples": [
+    {
+      "executable": "registry",
+      "args": [
+        "config",
+        "get"
+      ],
+      "input": "stdin"
+    },
+    {
+      "executable": "osinfo"
+    }
+  ]
+}

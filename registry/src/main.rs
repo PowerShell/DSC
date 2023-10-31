@@ -90,12 +90,9 @@ fn main() {
         },
         args::SubCommand::Config { subcommand } => {
             let json: String;
-            match regconfighelper::validate_config(&config) {
-                Ok(_) => {},
-                Err(err) => {
-                    eprintln!("Error validating config: {err}");
-                    exit(EXIT_INVALID_INPUT);
-                }
+            if let Err(err) = regconfighelper::validate_config(&config) {
+                eprintln!("Error validating config: {err}");
+                exit(EXIT_INVALID_INPUT);
             }
 
             if config.exist.is_none() {

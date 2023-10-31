@@ -13,7 +13,7 @@ use crate::dscerror::DscError;
 pub struct ResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "$schema")]
-    pub schema_version: String,
+    pub schema_version: ManifestSchemaUri,
     /// The namespaced name of the resource.
     #[serde(rename = "type")]
     pub resource_type: String,
@@ -46,6 +46,24 @@ pub struct ResourceManifest {
     /// Details how to get the schema of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schema: Option<SchemaKind>,
+}
+
+// Defines the valid and recognized canonical URIs for the manifest schema
+#[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum ManifestSchemaUri {
+    #[default]
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.json")]
+    Version2023_10,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.json")]
+    Bundled2023_10,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.vscode.json")]
+    VSCode2023_10,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json")]
+    Version2023_08,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json")]
+    Bundled2023_08,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.vscode.json")]
+    VSCode2023_08,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -188,11 +206,11 @@ pub struct ListMethod {
 ///
 /// * `DscError` - The JSON value is invalid or the schema version is not supported.
 pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
-    const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json";
+    // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json";
     let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
-    if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
-        return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
-    }
+    // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
+    //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
+    // }
 
     Ok(manifest)
 }
