@@ -10,7 +10,7 @@ use std::collections::HashMap;
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
-    pub schema: String,
+    pub schema: DocumentSchemaUri,
     // `contentVersion` is required by ARM, but doesn't serve a purpose here
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<HashMap<String, Parameter>>,
@@ -78,12 +78,28 @@ pub struct Resource {
     pub properties: Option<HashMap<String, Value>>,
 }
 
-const SCHEMA: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json";
+// Defines the valid and recognized canonical URIs for the configuration schema
+#[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum DocumentSchemaUri {
+    #[default]
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json")]
+    Version2023_10,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.json")]
+    Bundled2023_10,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.vscode.json")]
+    VSCode2023_10,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json")]
+    Version2023_08,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/config/document.json")]
+    Bundled2023_08,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/config/document.vscode.json")]
+    VSCode2023_08,
+}
 
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            schema: SCHEMA.to_string(),
+            schema: DocumentSchemaUri::Version2023_08,
             parameters: None,
             variables: None,
             resources: Vec::new(),
@@ -96,7 +112,7 @@ impl Configuration {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: SCHEMA.to_string(),
+            schema: DocumentSchemaUri::Version2023_08,
             parameters: None,
             variables: None,
             resources: Vec::new(),

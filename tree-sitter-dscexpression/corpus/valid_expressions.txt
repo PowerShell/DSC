@@ -1,7 +1,7 @@
 =====
 Function no args
 =====
-[functionOne()]
+[function1()]
 ---
 
     (statement
@@ -19,44 +19,50 @@ Simple expression
       (expression
         (function
           (functionName)
-          (string))))
+          (arguments
+            (string)))))
 
 =====
 Multiple arguments
 =====
-[myFunction('argString', 1, true)]
+[myFunction('argString', 1, -1, true)]
 ---
 
     (statement
       (expression
         (function
           (functionName)
-          (string)
-          (number)
-          (boolean))))
+          (arguments
+            (string)
+            (number)
+            (number)
+            (boolean)))))
 
 =====
 Nested functions
 =====
-[functionOne('argString', functionTwo(1, functionThree('threeString', 3), 2), 'oneString')]
+[function1('argString', function2(1, functionThree('threeString', 3), 2), 'oneString')]
 ---
 
     (statement
       (expression
         (function
           (functionName)
-          (string)
-          (expression
-            (function
-              (functionName)
-              (number)
-              (expression
-                (function
-                  (functionName)
-                  (string)
-                  (number)))
-              (number)))
-          (string))))
+          (arguments
+            (string)
+            (expression
+              (function
+                (functionName)
+                (arguments
+                  (number)
+                  (expression
+                    (function
+                      (functionName)
+                      (arguments
+                        (string)
+                        (number))))
+                  (number))))
+            (string)))))
 
 =====
 Function with dot-notation
@@ -68,9 +74,11 @@ Function with dot-notation
       (expression
         (function
           (functionName)
-          (string))
-        (memberName)
-        (memberName)))
+          (arguments
+            (string)))
+        (memberAccess
+          (memberName)
+          (memberName))))
 
 =====
 Nested dot-notation
@@ -82,10 +90,14 @@ Nested dot-notation
       (expression
         (function
           (functionName)
-          (expression
-            (function
-              (functionName)
-              (number))
-            (memberName)
-            (memberName)))
-        (memberName)))
+          (arguments
+            (expression
+              (function
+                (functionName)
+                (arguments
+                  (number)))
+              (memberAccess
+                (memberName)
+                (memberName)))))
+        (memberAccess
+          (memberName))))

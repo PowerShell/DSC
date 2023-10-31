@@ -1,4 +1,4 @@
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
 # Try adding the variables, metadata, and parameters properties,
 # then use IntelliSense to define a few entries.
 

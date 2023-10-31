@@ -15,7 +15,7 @@ Defines a JSON Schema that validates a DSC Resource instance.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.schema.json#/properties/embedded
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.schema.json#/properties/embedded
 Type:          object
 ```
 
@@ -91,24 +91,23 @@ processing. The well-known properties always start with an underscore (`_`) and 
 use these properties may not override or extend them. If a resource specifies a well-known property
 in the embedded schema, the schema _must_ define the property as a reference.
 
-- [_ensure](#_ensure)
+- [_exist](#_exist)
 - [_inDesiredState](#_indesiredstate)
 - [_purge](#_purge)
 - [_rebootRequested](#_rebootrequested)
 
-#### _ensure
+#### _exist
 
-The `_ensure` property indicates that the resource can enforce whether instances exist using the
-shared present and absent semantics. If a resource must distinguish between states beyond whether
-an instance is present or absent, the resource should define its own `ensure` property without the
-leading underscore. This property provides shared semantics for DSC Resources and integrating
-tools, but doesn't enable any additional built-in processing with DSC.
+The `_exist` property indicates that the resource can enforce whether instances exist, handling
+whether an instance should be added, updated, or removed during a set operation. This property
+provides shared semantics for DSC Resources and integrating tools, but doesn't enable any
+additional built-in processing with DSC.
 
 If defined, this property must be a reference to the schema for the well-known property:
 
 ```json
-"_ensure": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/ensure.json"
+"_exist": {
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/exist.json"
 }
 ```
 
@@ -124,7 +123,7 @@ If defined, this property must be a reference to the schema for the well-known p
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/inDesiredState.json"
 }
 ```
 
@@ -140,7 +139,7 @@ If defined, this property must be a reference to the schema for the well-known p
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/purge.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/purge.json"
 }
 ```
 
@@ -156,7 +155,7 @@ If defined, this property must be a reference to the schema for the well-known p
 
 ```json
 "_rebootRequested": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/rebootRequested.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/rebootRequested.json"
 }
 ```
 

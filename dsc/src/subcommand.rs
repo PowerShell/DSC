@@ -14,7 +14,7 @@ use dsc_lib::{
     dscresources::dscresource::{ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
-use jsonschema::{JSONSchema, ValidationError};
+use jsonschema::JSONSchema;
 use serde_yaml::Value;
 use std::process::exit;
 
@@ -272,18 +272,15 @@ pub fn validate_config(config: &str) {
                         },
                     };
                     let properties = resource_block["properties"].clone();
-                    let _result: Result<(), ValidationError> = match compiled_schema.validate(&properties) {
-                        Ok(_) => Ok(()),
-                        Err(err) => {
-                            let mut error = String::new();
-                            for e in err {
-                                error.push_str(&format!("{e} "));
-                            }
-
-                            error!("Error: Resource {type_name} failed validation: {error}");
-                            exit(EXIT_VALIDATION_FAILED);
-                        },
-                    };
+                    let validation = compiled_schema.validate(&properties);
+                    if let Err(err) = validation {
+                        let mut error = String::new();
+                        for e in err {
+                            error.push_str(&format!("{e} "));
+                        }
+                        error!("Error: Resource {type_name} failed validation: {error}");
+                        exit(EXIT_VALIDATION_FAILED);
+                    }
                 }
             }
         }
@@ -303,13 +300,10 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
 
     match subcommand {
         ResourceSubCommand::List { resource_name, description, tags } => {
-            match dsc.initialize_discovery() {
-                Ok(_) => (),
-                Err(err) => {
-                    error!("Error: {err}");
-                    exit(EXIT_DSC_ERROR);
-                }
-            };
+            if let Err(err) = dsc.initialize_discovery() {
+                error!("Error: {err}");
+                exit(EXIT_DSC_ERROR);
+            }
             let mut write_table = false;
             let mut table = Table::new(&["Type", "Version", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {

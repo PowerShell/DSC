@@ -15,7 +15,7 @@ Indicates whether an instance is in the desired state.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/inDesiredState.json
 Type:          [boolean, 'null']
 ReadOnly:      true
 ```
@@ -43,7 +43,7 @@ snippet:
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/properties/inDesiredState.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/inDesiredState.json"
 }
 ```
 
