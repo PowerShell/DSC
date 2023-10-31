@@ -92,7 +92,7 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config)? {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -128,7 +128,7 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config)? {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -164,7 +164,7 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config)? {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -238,7 +238,7 @@ impl Configurator {
         let mut conf = config_doc::Configuration::new();
 
         for resource in &config.resources {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             add_resource_export_results_to_configuration(dsc_resource, &mut conf)?;
@@ -260,7 +260,7 @@ impl Configurator {
 
         // Now perform the validation
         for resource in &config.resources {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
 
