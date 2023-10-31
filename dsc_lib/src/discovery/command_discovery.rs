@@ -194,7 +194,7 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 
 
-    fn discover_resources(&mut self, required_resource_types: &Vec<String>) -> Result<BTreeMap<String, DscResource>, DscError>
+    fn discover_resources(&mut self, required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         CommandDiscovery::search_for_resources(required_resource_types)
     }

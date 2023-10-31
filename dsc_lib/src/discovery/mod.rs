@@ -28,6 +28,7 @@ impl Discovery {
     }
 
     /// List operation.
+    #[allow(clippy::missing_panics_doc)] // false positive in clippy; this function will never panic
     pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
@@ -41,14 +42,11 @@ impl Discovery {
             let mut regex_builder = RegexBuilder::new(regex_str.as_str());
             debug!("Using regex {regex_str} as filter for resource type");
             regex_builder.case_insensitive(true);
-            match regex_builder.build() {
-                Ok(reg_v) => {
-                    regex = Some(Box::new(reg_v));
-                },
-                Err(_) => {
-                    error!("Could not build Regex");
-                    return resources;
-                }
+            if let Ok(reg_v) = regex_builder.build() {
+                regex = Some(Box::new(reg_v));
+            } else {
+                error!("Could not build Regex");
+                return resources;
             }
         }
 
