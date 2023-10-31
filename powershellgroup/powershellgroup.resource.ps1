@@ -63,21 +63,22 @@ if ($Operation -eq 'List')
     #$r[0] | ConvertTo-Json -Compress -Depth 3
     foreach ($r in $script:ResourceCache.keys)
     {
-        if ($script:ResourceCache[$r].ImplementedAs -eq "Binary")
+        $cachedResource = $script:ResourceCache[$r]
+        if ($cachedResource.ImplementedAs -eq "Binary")
         {
             continue
         }
 
         $version_string = "";
-        if ($script:ResourceCache[$r].Version) { $version_string = $script:ResourceCache[$r].Version.ToString() }
+        if ($cachedResource.Version) { $version_string = $cachedResource.Version.ToString() }
         $author_string = "";
-        if ($script:ResourceCache[$r].author) { $author_string = $script:ResourceCache[$r].CompanyName.ToString() }
+        if ($cachedResource.author) { $author_string = $cachedResource.CompanyName.ToString() }
         $moduleName = "";
-        if ($script:ResourceCache[$r].ModuleName) { $moduleName = $script:ResourceCache[$r].ModuleName }
-        elseif ($script:ResourceCache[$r].ParentPath) { $moduleName = Split-Path $script:ResourceCache[$r].ParentPath | Split-Path | Split-Path -Leaf }
+        if ($cachedResource.ModuleName) { $moduleName = $cachedResource.ModuleName }
+        elseif ($cachedResource.ParentPath) { $moduleName = Split-Path $cachedResource.ParentPath | Split-Path | Split-Path -Leaf }
 
         $propertyList = @()
-        foreach ($p in $script:ResourceCache[$r].Properties)
+        foreach ($p in $cachedResource.Properties)
         {
             if ($p.Name)
             {
@@ -85,15 +86,15 @@ if ($Operation -eq 'List')
             }
         }
 
-        $fullResourceTypeName = "$moduleName/$($script:ResourceCache[$r].ResourceType)"
+        $fullResourceTypeName = "$moduleName/$($cachedResource.ResourceType)"
        if ($WinPS) {$requiresString = "DSC/WindowsPowerShellGroup"} else {$requiresString = "DSC/PowerShellGroup"}
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
             version = $version_string;
-            path = $script:ResourceCache[$r].Path;
-            directory = $script:ResourceCache[$r].ParentPath;
-            implementedAs = $script:ResourceCache[$r].ImplementationDetail;
+            path = $cachedResource.Path;
+            directory = $cachedResource.ParentPath;
+            implementedAs = $cachedResource.ImplementationDetail;
             author = $author_string;
             properties = $propertyList;
             requires = $requiresString
@@ -164,7 +165,7 @@ elseif ($Operation -eq 'Get')
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
 
-            if ($r.ImplementationDetail -eq 'ScriptBased') {
+            if ($cachedResourceInfo.ImplementationDetail -eq 'ScriptBased') {
                 Import-Module -Scope Local -Name $r.path -Force -ErrorAction stop
                 $validParams = (Get-Command -Module $r.ResourceType -Name 'Get-TargetResource').Parameters.Keys
                 $inputobj_pscustomobj.psobject.properties | ForEach-Object {
