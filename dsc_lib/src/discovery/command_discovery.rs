@@ -72,19 +72,19 @@ impl CommandDiscovery {
                             if resource.manifest.is_some() {
                                 let manifest = import_manifest(resource.manifest.clone().unwrap())?;
                                 if manifest.provider.is_some() {
-                                    provider_resources.push(resource.type_name.clone());
-                                    resources.insert(resource.type_name.clone(), resource.clone());
+                                    provider_resources.push(resource.type_name.to_lowercase());
+                                    resources.insert(resource.type_name.to_lowercase(), resource.clone());
                                 }
                             }
                             if return_all_resources
                             {
-                                resources.insert(resource.type_name.clone(), resource);
+                                resources.insert(resource.type_name.to_lowercase(), resource);
                             }
-                            else if remaining_required_resource_types.contains(&resource.type_name)
+                            else if remaining_required_resource_types.contains(&resource.type_name.to_lowercase())
                             {
-                                remaining_required_resource_types.retain(|x| *x != resource.type_name);
+                                remaining_required_resource_types.retain(|x| *x != resource.type_name.to_lowercase());
                                 debug!("Found {} in {}", &resource.type_name, path.display());
-                                resources.insert(resource.type_name.clone(), resource);
+                                resources.insert(resource.type_name.to_lowercase(), resource);
                                 if remaining_required_resource_types.is_empty()
                                 {
                                     return Ok(resources);
@@ -147,14 +147,14 @@ impl CommandDiscovery {
                         }
                         if return_all_resources
                         {
-                            resources.insert(resource.type_name.clone(), resource);
+                            resources.insert(resource.type_name.to_lowercase(), resource);
                             provider_resources_count += 1;
                         }
-                        else if remaining_required_resource_types.contains(&resource.type_name)
+                        else if remaining_required_resource_types.contains(&resource.type_name.to_lowercase())
                         {
-                            remaining_required_resource_types.retain(|x| *x != resource.type_name);
+                            remaining_required_resource_types.retain(|x| *x != resource.type_name.to_lowercase());
                             debug!("Found {} in {}", &resource.type_name, &resource.path);
-                            resources.insert(resource.type_name.clone(), resource);
+                            resources.insert(resource.type_name.to_lowercase(), resource);
                             if remaining_required_resource_types.is_empty()
                             {
                                 return Ok(resources);

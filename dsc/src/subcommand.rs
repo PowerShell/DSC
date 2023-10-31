@@ -381,26 +381,26 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
             }
         },
         ResourceSubCommand::Get { resource, input, all } => {
-            dsc.discover_resources(&[resource.to_string()]);
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             if *all { resource_command::get_all(&dsc, resource, input, stdin, format); }
             else { 
                 resource_command::get(&dsc, resource, input, stdin, format);
             };
         },
         ResourceSubCommand::Set { resource, input } => {
-            dsc.discover_resources(&[resource.to_string()]);
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::set(&dsc, resource, input, stdin, format);
         },
         ResourceSubCommand::Test { resource, input } => {
-            dsc.discover_resources(&[resource.to_string()]);
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::test(&dsc, resource, input, stdin, format);
         },
         ResourceSubCommand::Schema { resource } => {
-            dsc.discover_resources(&[resource.to_string()]);
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::schema(&dsc, resource, format);
         },
         ResourceSubCommand::Export { resource} => {
-            dsc.discover_resources(&[resource.to_string()]);
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::export(&mut dsc, resource, format);
         },
     }
