@@ -57,6 +57,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
+        write-verbose $res -verbose
         $res.actualState.InDesiredState | Should -Be $True
     }
 
