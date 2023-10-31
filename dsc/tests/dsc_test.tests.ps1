@@ -10,7 +10,7 @@ Describe 'config test tests' {
         }
 '@
         $current = $json | registry config get
-        $out = $current | dsc resource test -r *registry
+        $out = $current | dsc resource test -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.inDesiredState | Should -BeTrue
@@ -45,7 +45,7 @@ Describe 'config test tests' {
             }
         }
 '@
-        $out = $json | dsc resource test -r *registry
+        $out = $json | dsc resource test -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.inDesiredState | Should -BeFalse
