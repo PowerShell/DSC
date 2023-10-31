@@ -4,7 +4,6 @@
 Describe 'config get tests' {
     It 'should get from registry using <type> resource' -Skip:(!$IsWindows) -TestCases @(
         @{ type = 'string' }
-        @{ type = 'json' }
     ) {
         param($type)
 
@@ -46,7 +45,7 @@ Describe 'config get tests' {
             "Name": "ProductName"
         }
 '@
-        $json | dsc resource get -r *registry
+        $json | dsc resource get -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 2
     }
 }

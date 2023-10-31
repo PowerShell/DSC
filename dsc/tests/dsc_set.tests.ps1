@@ -36,7 +36,7 @@ Describe 'config set tests' {
             }
         }
 '@
-        $out = $json | dsc resource set -r *registry
+        $out = $json | dsc resource set -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.afterState.keyPath | Should -Be 'HKCU\1\2\3'
@@ -45,7 +45,7 @@ Describe 'config set tests' {
         $result.changedProperties | Should -Be @('valueName', 'valueData', '_exist')
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
 
-        $out = $json | dsc resource get -r *registry
+        $out = $json | dsc resource get -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.actualState.keyPath | Should -Be 'HKCU\1\2\3'
