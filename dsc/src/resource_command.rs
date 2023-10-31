@@ -27,13 +27,12 @@ pub fn get(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        let provider_resource = get_resource(dsc, requires);
-        if provider_resource.is_none() {
+        if let Some(pr) = get_resource(dsc, requires) {
+            resource = pr;
+        } else {
             error!("Provider {} not found", requires);
             return;
-        } else {
-            resource = provider_resource.unwrap();
-        }
+        };
     }
 
     match resource.get(input.as_str()) {
@@ -108,13 +107,12 @@ pub fn set(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
 
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        let provider_resource = get_resource(dsc, requires);
-        if provider_resource.is_none() {
+        if let Some(pr) = get_resource(dsc, requires) {
+            resource = pr;
+        } else {
             error!("Provider {} not found", requires);
             return;
-        } else {
-            resource = provider_resource.unwrap();
-        }
+        };
     }
 
     match resource.set(input.as_str(), true) {
@@ -153,13 +151,12 @@ pub fn test(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin:
 
     if let Some(requires) = &resource.requires {
         input = add_type_name_to_json(input, resource.type_name.clone());
-        let provider_resource = get_resource(dsc, requires);
-        if provider_resource.is_none() {
+        if let Some(pr) = get_resource(dsc, requires) {
+            resource = pr;
+        } else {
             error!("Provider {} not found", requires);
             return;
-        } else {
-            resource = provider_resource.unwrap();
-        }
+        };
     }
 
     match resource.test(input.as_str()) {
@@ -213,7 +210,7 @@ pub fn export(dsc: &mut DscManager, resource_str: &str, format: &Option<OutputFo
 
     let mut conf = Configuration::new();
 
-    if let Err(err) = add_resource_export_results_to_configuration(&dsc_resource, &mut conf) {
+    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, &mut conf) {
         error!("Error: {err}");
         exit(EXIT_DSC_ERROR);
     }
