@@ -28,37 +28,38 @@ impl Discovery {
     }
 
     /// List operation.
-    ///
-    /// # Panics
-    ///
-    /// Will panic if `RegEx` creation fails.
-    ///
     pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
 
         let mut regex: Option<Box<Regex>> = None;
+        let mut resources: Vec<DscResource> = Vec::new();
         if !type_name_filter.is_empty() 
         {
             let regex_str = convert_wildcard_to_regex(type_name_filter);
             let mut regex_builder = RegexBuilder::new(regex_str.as_str());
             debug!("Using regex {regex_str} as filter for resource type");
             regex_builder.case_insensitive(true);
-            let reg_v = regex_builder.build().unwrap();
-            regex = Some(Box::new(reg_v));
+            match regex_builder.build() {
+                Ok(reg_v) => {
+                    regex = Some(Box::new(reg_v));
+                },
+                Err(_) => {
+                    error!("Could not build Regex");
+                    return resources;
+                }
+            }
         }
-
-        let mut resources: Vec<DscResource> = Vec::new();
 
         for mut discovery_type in discovery_types {
 
             let discovered_resources = match discovery_type.list_available_resources() {
                 Ok(value) => value,
                 Err(err) => {
-                        error!("{err}");
-                        continue;
-                    }
+                    error!("{err}");
+                    continue;
+                }
             };
 
             for resource in discovered_resources {
@@ -85,7 +86,7 @@ impl Discovery {
         let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.discover_resources(remaining_required_resource_types.clone()) {
+            let discovered_resources = match discovery_type.discover_resources(&remaining_required_resource_types) {
                 Ok(value) => value,
                 Err(err) => {
                         error!("{err}");
