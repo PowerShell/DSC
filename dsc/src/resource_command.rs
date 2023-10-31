@@ -15,12 +15,12 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-pub fn get(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
+pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     // TODO: support streaming stdin which includes resource and input
     let mut input = get_input(input, stdin);
 
-    let Some(mut resource) = get_resource(dsc, resource_str) else {
-        error!("{}", DscError::ResourceNotFound(resource_str.to_string()).to_string());
+    let Some(mut resource) = get_resource(dsc, resource_type) else {
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
 
@@ -54,9 +54,9 @@ pub fn get(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
     }
 }
 
-pub fn get_all(dsc: &DscManager, resource_str: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let Some(resource) = get_resource(dsc, resource_str) else {
-        error!("{}", DscError::ResourceNotFound(resource_str.to_string()).to_string());
+pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
+    let Some(resource) = get_resource(dsc, resource_type) else {
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
@@ -91,15 +91,15 @@ pub fn get_all(dsc: &DscManager, resource_str: &str, _input: &Option<String>, _s
 ///
 /// Will panic if provider-based resource is not found.
 ///
-pub fn set(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
+pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
     if input.is_empty() {
         error!("Error: Input is empty");
         exit(EXIT_INVALID_ARGS);
     }
 
-    let Some(mut resource) = get_resource(dsc, resource_str) else {
-        error!("{}", DscError::ResourceNotFound(resource_str.to_string()).to_string());
+    let Some(mut resource) = get_resource(dsc, resource_type) else {
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
 
@@ -140,10 +140,10 @@ pub fn set(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: 
 ///
 /// Will panic if provider-based resource is not found.
 ///
-pub fn test(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
+pub fn test(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
     let mut input = get_input(input, stdin);
-    let Some(mut resource) = get_resource(dsc, resource_str) else {
-        error!("{}", DscError::ResourceNotFound(resource_str.to_string()).to_string());
+    let Some(mut resource) = get_resource(dsc, resource_type) else {
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
 
@@ -178,9 +178,9 @@ pub fn test(dsc: &DscManager, resource_str: &str, input: &Option<String>, stdin:
     }
 }
 
-pub fn schema(dsc: &DscManager, resource_str: &str, format: &Option<OutputFormat>) {
-    let Some(resource) = get_resource(dsc, resource_str) else {
-        error!("{}", DscError::ResourceNotFound(resource_str.to_string()).to_string());
+pub fn schema(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+    let Some(resource) = get_resource(dsc, resource_type) else {
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
     match resource.schema() {
@@ -202,9 +202,9 @@ pub fn schema(dsc: &DscManager, resource_str: &str, format: &Option<OutputFormat
     }
 }
 
-pub fn export(dsc: &mut DscManager, resource_str: &str, format: &Option<OutputFormat>) {
-    let Some(dsc_resource) = get_resource(dsc, resource_str) else {
-        error!("{}", DscError::ResourceNotFound(resource_str.to_string()).to_string());
+pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+    let Some(dsc_resource) = get_resource(dsc, resource_type) else {
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
 
