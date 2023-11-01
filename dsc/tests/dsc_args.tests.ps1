@@ -147,4 +147,9 @@ resources:
         $LASTEXITCODE | Should -Be 2
     }
 
+    It '--logging-level has effect' {
+        dsc -l debug resource get -r Microsoft/OSInfo 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'DEBUG'
+        $LASTEXITCODE | Should -Be 0
+    }
 }
