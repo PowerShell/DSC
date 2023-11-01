@@ -24,6 +24,8 @@ pub struct Args {
     pub input: Option<String>,
     #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
     pub input_file: Option<String>,
+    #[clap(short = 'd', long, help = "Use detailed tracing", action=clap::ArgAction::SetTrue)]
+    pub debug: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
