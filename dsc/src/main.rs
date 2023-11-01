@@ -31,7 +31,14 @@ fn main() {
 
     let args = Args::parse();
 
-    let tracing_level = if args.debug {Level::DEBUG} else {Level::WARN};
+    let tracing_level = match args.logging_level {
+        util::LogLevel::Error => Level::ERROR,
+        util::LogLevel::Warning => Level::WARN,
+        util::LogLevel::Info => Level::INFO,
+        util::LogLevel::Debug => Level::DEBUG,
+        util::LogLevel::Trace => Level::TRACE,
+    };
+
     // create subscriber that writes all events to stderr
     let subscriber = tracing_subscriber::fmt().pretty().with_max_level(tracing_level).with_writer(std::io::stderr).finish();
     if tracing::subscriber::set_global_default(subscriber).is_err() {
