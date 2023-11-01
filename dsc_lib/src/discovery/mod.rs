@@ -5,12 +5,13 @@ mod command_discovery;
 mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::{dscresources::dscresource::DscResource, dscerror::DscError, dscerror::StreamMessageType};
-use regex::RegexBuilder;
+use crate::{dscresources::dscresource::DscResource, dscerror::DscError};
+use regex::{RegexBuilder, Regex};
+use std::collections::BTreeMap;
+use tracing::{debug, error};
 
 pub struct Discovery {
-    resources: Vec<DscResource>,
-    initialized: bool,
+    pub resources: BTreeMap<String, DscResource>,
 }
 
 impl Discovery {
@@ -18,69 +19,84 @@ impl Discovery {
     ///
     /// # Errors
     ///
-    /// This function will return an error if the underlying discovery fails.
+    /// This function will return an error if the underlying instance creation fails.
+    ///
     pub fn new() -> Result<Self, DscError> {
         Ok(Self {
-            resources: Vec::new(),
-            initialized: false,
+            resources: BTreeMap::new(),
         })
     }
 
-    /// Initialize the discovery process.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the underlying discovery fails.
-    pub fn initialize(&mut self) -> Result<(), DscError> {
-        // TODO: this vec is leftover when we had multiple discovery types, we should
-        //       probably just have a single command discovery type
+    /// List operation.
+    #[allow(clippy::missing_panics_doc)] // false positive in clippy; this function will never panic
+    pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
 
+        let mut regex: Option<Box<Regex>> = None;
         let mut resources: Vec<DscResource> = Vec::new();
+        if !type_name_filter.is_empty() 
+        {
+            let regex_str = convert_wildcard_to_regex(type_name_filter);
+            let mut regex_builder = RegexBuilder::new(regex_str.as_str());
+            debug!("Using regex {regex_str} as filter for resource type");
+            regex_builder.case_insensitive(true);
+            if let Ok(reg_v) = regex_builder.build() {
+                regex = Some(Box::new(reg_v));
+            } else {
+                error!("Could not build Regex");
+                return resources;
+            }
+        }
 
         for mut discovery_type in discovery_types {
-            discovery_type.initialize()?;
-            discovery_type.print_initialization_messages(StreamMessageType::Warning, StreamMessageType::Warning)?;
-            
-            let discovered_resources = discovery_type.discover();
+
+            let discovered_resources = match discovery_type.list_available_resources() {
+                Ok(value) => value,
+                Err(err) => {
+                    error!("{err}");
+                    continue;
+                }
+            };
+
             for resource in discovered_resources {
-                resources.push(resource.clone());
-            }
+                if type_name_filter.is_empty() || regex.as_ref().unwrap().is_match(resource.0.as_str()) {
+                    resources.push(resource.1);
+                }
+            };
         }
 
-        self.resources = resources;
-        self.initialized = true;
-        Ok(())
+        resources
     }
 
-    // TODO: Need to support version?
-    /// Find a resource by name.
-    ///
-    /// # Arguments
-    ///
-    /// * `type_name` - The name of the resource to find, can have wildcards.
     #[must_use]
-    pub fn find_resource(&self, type_name: &str) -> ResourceIterator {
-        if !self.initialized {
-            return ResourceIterator::new(vec![]);
+    pub fn find_resource(&self, type_name: &str) -> Option<&DscResource> {
+        self.resources.get(type_name)
+    }
+
+    pub fn discover_resources(&mut self, required_resource_types: &[String]) {
+
+        let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
+            Box::new(command_discovery::CommandDiscovery::new()),
+        ];
+
+        let mut remaining_required_resource_types = required_resource_types.to_owned();
+        for mut discovery_type in discovery_types {
+
+            let discovered_resources = match discovery_type.discover_resources(&remaining_required_resource_types) {
+                Ok(value) => value,
+                Err(err) => {
+                        error!("{err}");
+                        continue;
+                    }
+                };
+
+            for resource in discovered_resources {
+                self.resources.insert(resource.0.clone(), resource.1);
+                remaining_required_resource_types.retain(|x| *x != resource.0);
+            };
         }
-
-        let mut regex_builder = RegexBuilder::new(convert_wildcard_to_regex(type_name).as_str());
-        regex_builder.case_insensitive(true);
-        let Ok(regex) = regex_builder.build() else {
-            return ResourceIterator::new(vec![]);
-        };
-
-        let mut resources: Vec<DscResource> = Vec::new();
-        for resource in &self.resources {
-            if type_name.is_empty() | regex.is_match(resource.type_name.as_str()) {
-                resources.push(resource.clone());
-            }
-        }
-
-        ResourceIterator::new(resources)
     }
 }
 

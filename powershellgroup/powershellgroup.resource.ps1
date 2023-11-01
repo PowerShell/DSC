@@ -51,7 +51,7 @@ if ($null -eq $DscModule)
     exit 1
 }
 
-Import-Module $DscModule
+Import-Module $DscModule -DisableNameChecking
 
 if ($Operation -eq 'List')
 {
@@ -182,7 +182,7 @@ elseif ($Operation -eq 'Get')
                 }
             }
             $e = $null
-            $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
+            $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e -WarningAction SilentlyContinue
             if ($e)
             {
                 # By this point Invoke-DscResource already wrote error message to stderr stream,
