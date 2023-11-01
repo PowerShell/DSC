@@ -25,7 +25,7 @@ pub struct Args {
     pub input: Option<String>,
     #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
     pub input_file: Option<String>,
-    #[clap(short = 'l', long = "logging-level", help = "Log level to display", value_enum, default_value = "Info")]
+    #[clap(short = 'l', long = "logging-level", help = "Log level to display", value_enum, default_value = "info")]
     pub logging_level: LogLevel,
 }
 
