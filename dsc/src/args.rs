@@ -13,7 +13,7 @@ pub enum OutputFormat {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "dsc", version = "3.0.0-alpha.4", about = "Apply configuration or invoke specific DSC resources", long_about = None)]
+#[clap(name = "dsc", version = env!("CARGO_PKG_VERSION"), about = "Apply configuration or invoke specific DSC resources", long_about = None)]
 pub struct Args {
     /// The subcommand to run
     #[clap(subcommand)]
