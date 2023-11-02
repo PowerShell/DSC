@@ -27,7 +27,7 @@ stages:
       name: PowerShell1ES
       demands:
       - ImageOverride -equals PSMMS2019-Rust-Secure
-    displayName: Windows
+    displayName: Build
     strategy:
       matrix:
         Windows x64:
@@ -68,7 +68,7 @@ stages:
         Write-Host "sending " + $vstsCommandString
         Write-Host "##$vstsCommandString"
 
-        $packageVersion = ./build.ps1 -GetPackageVersion
+        $packageVersion = $(Build.SourcesDirectory)/DSC/build.ps1 -GetPackageVersion
         $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
         Write-Host ("sending " + $vstsCommandString)
         Write-Host "##$vstsCommandString"
@@ -115,7 +115,7 @@ stages:
       condition: succeeded()
 
   - job: BuildLinux
-    displayName: Linux
+    displayName: Linux-gnu
     pool:
       name: PowerShell1ES
       demands:
@@ -127,7 +127,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
+        tar czf $(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -136,7 +136,7 @@ stages:
       condition: succeeded()
 
   - job: BuildLinuxArm64
-    displayName: Linux ARM64
+    displayName: Linux-ARM64-gnu
     pool:
       name: ps-powershell-rel-arm
       demands:
@@ -148,7 +148,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
+        tar czf $(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -158,7 +158,7 @@ stages:
 
 
   - job: BuildMac
-    displayName: Build Native Binaries on macOS
+    displayName: Build
     pool:
       vmImage: macOS-Latest
     strategy:
@@ -174,7 +174,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/ .
+        tar czf $(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)/   .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
