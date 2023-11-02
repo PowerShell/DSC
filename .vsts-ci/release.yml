@@ -115,7 +115,7 @@ stages:
       condition: succeeded()
 
   - job: BuildLinux
-    displayName: Linux-gnu
+    displayName: Linux-x64-gnu
     pool:
       name: PowerShell1ES
       demands:
