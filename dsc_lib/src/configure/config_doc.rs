@@ -66,8 +66,6 @@ pub struct Resource {
     /// The fully qualified name of the resource type
     #[serde(rename = "type")]
     pub resource_type: String,
-    // TODO: `apiVersion` is required by ARM but doesn't make sense here
-
     /// A friendly name for the resource instance
     pub name: String, // friendly unique instance name
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]

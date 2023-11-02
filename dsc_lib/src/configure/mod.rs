@@ -7,9 +7,11 @@ use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
 use crate::DscResource;
 use crate::discovery::Discovery;
+use crate::parser::Statement;
 use self::config_doc::Configuration;
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
 
@@ -20,6 +22,7 @@ pub mod depends_on;
 pub struct Configurator {
     config: String,
     discovery: Discovery,
+    statement_parser: Statement,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -70,6 +73,7 @@ impl Configurator {
         Ok(Configurator {
             config: config.to_owned(),
             discovery,
+            statement_parser: Statement::new()?,
         })
     }
 
@@ -91,12 +95,13 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in get_resource_invocation_order(&config)? {
+        for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-            let filter = serde_json::to_string(&resource.properties)?;
+
+            let filter = serde_json::to_string(self.invoke_property_expressions(&resource.properties))?;
             let get_result = dsc_resource.get(&filter)?;
             let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
@@ -127,7 +132,7 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in get_resource_invocation_order(&config)? {
+        for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -163,7 +168,7 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in get_resource_invocation_order(&config)? {
+        for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -253,7 +258,7 @@ impl Configurator {
         let config: Configuration = serde_json::from_str(self.config.as_str())?;
         let mut messages: Vec<ResourceMessage> = Vec::new();
         let mut has_errors = false;
-        
+
         // Perform discovery of resources used in config
         let mut required_resources = config.resources.iter().map(|p| p.resource_type.to_lowercase()).collect::<Vec<String>>();
         required_resources.sort_unstable();
@@ -318,5 +323,28 @@ impl Configurator {
         }
 
         Ok((config, messages, has_errors))
+    }
+
+    fn invoke_property_expressions(&mut self, properties: &Option<HashMap<String, Value>>) -> Result<Option<HashMap<String, Value>>, DscError> {
+        if properties.is_none() {
+            return Ok(None);
+        }
+
+        let mut result: HashMap<String, Value> = HashMap::new();
+        if let Some(properties) = properties {
+            for (name, value) in properties {
+                // if value is an object, we have to do it recursively
+                if let Value::Object(object) = value {
+                    // convert serde map to hashmap
+                    let object: HashMap<String, Value> = object.into_iter().collect();
+                    let value = self.invoke_property_expressions(Some(object))?;
+                    result.insert(name, serde_json::to_value(value)?);
+                    continue;
+                }
+                let value = self.statement_parser.parse_and_execute(&value.to_string())?;
+                result.insert(name, serde_json::from_str(&value)?);
+            }
+        }
+        Ok(Some(result))
     }
 }

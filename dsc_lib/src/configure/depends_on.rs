@@ -4,6 +4,7 @@
 use crate::configure::config_doc::Resource;
 use crate::configure::Configuration;
 use crate::DscError;
+use crate::parser::Statement;
 
 /// Gets the invocation order of resources based on their dependencies
 ///
@@ -18,7 +19,7 @@ use crate::DscError;
 /// # Errors
 ///
 /// * `DscError::Validation` - The configuration is invalid
-pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resource>, DscError> {
+pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statement) -> Result<Vec<Resource>, DscError> {
     let mut order: Vec<Resource> = Vec::new();
     for resource in &config.resources {
         // validate that the resource isn't specified more than once in the config
@@ -29,13 +30,9 @@ pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resou
         let mut dependency_already_in_order = true;
         if let Some(depends_on) = resource.depends_on.clone() {
             for dependency in depends_on {
-                let
-                // validate dependency exists
-                let Some(captures) = depends_on_regex.captures(&dependency) else {
-                  return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect for resource name '{0}': {dependency}", resource.name)));
-                };
-                let resource_type = captures.name("type").ok_or(DscError::Validation("Resource type missing".to_string()))?.as_str();
-                let resource_name = captures.name("name").ok_or(DscError::Validation("Resource name missing".to_string()))?.as_str();
+                let statement = parser.parse_and_execute(&dependency)?;
+                let (resource_type, resource_name) = get_type_and_name(&statement)?;
+
                 // find the resource by name
                 let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(resource_name)) else {
                     return Err(DscError::Validation(format!("'dependsOn' resource name '{resource_name}' does not exist for resource named '{0}'", resource.name)));
@@ -64,15 +61,12 @@ pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resou
                 // check if the order has resource before its dependencies
                 let resource_index = order.iter().position(|r| r.name == resource.name && r.resource_type == resource.resource_type).ok_or(DscError::Validation("Resource not found in order".to_string()))?;
                 for dependency in depends_on {
-                    let Some(captures) = depends_on_regex.captures(dependency) else {
-                      return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect for resource name '{0}': {dependency}", resource.name)));
-                    };
-                    let resource_type = captures.name("type").ok_or(DscError::Validation("Resource type not found in dependency".to_string()))?.as_str();
-                    let resource_name = captures.name("name").ok_or(DscError::Validation("Resource name not found in dependency".to_string()))?.as_str();
-                    let dependency_index = order.iter().position(|r| r.name == resource_name && r.resource_type == resource_type).ok_or(DscError::Validation("Dependency not found in order".to_string()))?;
-                    if resource_index < dependency_index {
-                        return Err(DscError::Validation(format!("Circular dependency detected for resource named '{0}'", resource.name)));
-                    }
+                  let statement = parser.parse_and_execute(dependency)?;
+                  let (resource_type, resource_name) = get_type_and_name(&statement)?;
+                  let dependency_index = order.iter().position(|r| r.name == resource_name && r.resource_type == resource_type).ok_or(DscError::Validation("Dependency not found in order".to_string()))?;
+                  if resource_index < dependency_index {
+                      return Err(DscError::Validation(format!("Circular dependency detected for resource named '{0}'", resource.name)));
+                  }
                 }
             }
 
@@ -85,8 +79,18 @@ pub fn get_resource_invocation_order(config: &Configuration) -> Result<Vec<Resou
     Ok(order)
 }
 
+fn get_type_and_name(statement: &str) -> Result<(&str, &str), DscError> {
+    let parts: Vec<&str> = statement.split(':').collect();
+    if parts.len() != 2 {
+        return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect: {statement}")));
+    }
+    Ok((parts[0], parts[1]))
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::parser;
+
     use super::*;
 
     #[test]
@@ -103,7 +107,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config).unwrap();
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
     }
@@ -124,7 +129,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config);
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser);
         assert!(order.is_err());
     }
 
@@ -140,7 +146,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config);
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser);
         assert!(order.is_err());
     }
 
@@ -162,7 +169,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config).unwrap();
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
@@ -184,7 +192,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config);
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser);
         assert!(order.is_err());
     }
 
@@ -205,7 +214,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config).unwrap();
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
@@ -232,7 +242,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config);
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser);
         assert!(order.is_err());
     }
 
@@ -259,7 +270,8 @@ mod tests {
         "#;
 
         let config: Configuration = serde_yaml::from_str(config_yaml).unwrap();
-        let order = get_resource_invocation_order(&config).unwrap();
+        let mut parser = parser::Statement::new().unwrap();
+        let order = get_resource_invocation_order(&config, &mut parser).unwrap();
         assert_eq!(order[0].name, "First");
         assert_eq!(order[1].name, "Second");
         assert_eq!(order[2].name, "Third");
