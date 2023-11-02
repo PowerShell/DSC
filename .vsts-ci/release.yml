@@ -45,7 +45,7 @@ stages:
     - pwsh: |
         New-Item -ItemType Directory -Path "$(PackageRoot)"
         New-Item -ItemType Directory -Path "$(PackageRoot)/out"
-        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/$(buildName)" -Destination "$(PackageRoot)" -Force
+        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)" -Destination "$(PackageRoot)" -Force
       displayName: Copy binaries
       condition: succeeded()
     - pwsh: |
@@ -127,7 +127,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
+        tar czf $(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -148,7 +148,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
+        tar czf $(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -174,7 +174,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/$(buildName) .
+        tar czf $(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/ .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
