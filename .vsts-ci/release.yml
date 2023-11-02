@@ -131,7 +131,7 @@ stages:
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\x86_64-unknown-linux-gnu.zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -152,7 +152,7 @@ stages:
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\aarch64-unknown-linux-gnu.zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -178,7 +178,7 @@ stages:
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\$(buildName).zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 

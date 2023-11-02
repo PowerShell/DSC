@@ -12,7 +12,7 @@ param(
 )
 
 if ($GetPackageVersion) {
-    $match = Select-String -Path ./dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
+    $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
     if ($null -eq $match) {
         throw 'Unable to find version in Cargo.toml'
     }
