@@ -96,12 +96,11 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
+            let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-
-            let properties = self.invoke_property_expressions(&resource.properties)?;
             let filter = serde_json::to_string(&properties)?;
             let get_result = dsc_resource.get(&filter)?;
             let resource_result = config_result::ResourceGetResult {
@@ -134,11 +133,12 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
+            let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-            let desired = serde_json::to_string(&resource.properties)?;
+            let desired = serde_json::to_string(&properties)?;
             let set_result = dsc_resource.set(&desired, skip_test)?;
             let resource_result = config_result::ResourceSetResult {
                 name: resource.name.clone(),
@@ -170,11 +170,12 @@ impl Configurator {
             return Ok(result);
         }
         for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
+            let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-            let expected = serde_json::to_string(&resource.properties)?;
+            let expected = serde_json::to_string(&properties)?;
             let test_result = dsc_resource.test(&expected)?;
             let resource_result = config_result::ResourceTestResult {
                 name: resource.name.clone(),
