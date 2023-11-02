@@ -8,7 +8,7 @@ use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
-use tracing::{Level, error, info, warn};
+use tracing::{Level, error, info, warn, debug};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -44,6 +44,8 @@ fn main() {
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default subscriber");
     }
+
+    debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
     let input = if args.input.is_some() {
         args.input
