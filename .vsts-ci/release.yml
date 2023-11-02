@@ -43,14 +43,20 @@ stages:
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Set-Location "$(Build.SourcesDirectory)/Package"
-        $signSrcPath = "$(Build.SourcesDirectory)/Package/out"
+        New-Item -ItemType Directory -Path "$(PackageRoot)"
+        New-Item -ItemType Directory -Path "$(PackageRoot)/out"
+        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/$(buildName)" -Destination "$(PackageRoot)" -Force
+      displayName: Copy binaries
+      condition: succeeded()
+    - pwsh: |
+        Set-Location "$(PackageRoot)"
+        $signSrcPath = "$(PackageRoot)/out"
         # Set signing src path variable
         $vstsCommandString = "vso[task.setvariable variable=signSrcPath]${signSrcPath}"
         Write-Host ("sending " + $vstsCommandString)
         Write-Host "##$vstsCommandString"
 
-        $signOutPath = "$(Build.SourcesDirectory)/Package/signed"
+        $signOutPath = "$(PackageRoot)/signed"
         $null = New-Item -ItemType Directory -Path $signOutPath
         # Set signing out path variable
         $vstsCommandString = "vso[task.setvariable variable=signOutPath]${signOutPath}"
@@ -100,11 +106,11 @@ stages:
         PackageVersion: $(PackageVersion)
 
     - pwsh: |
-        compress-archive -Path "$(Build.SourcesDirectory)/package/signed" -DestinationPath "$(System.ArtifactsDirectory)\Packages\$(buildName).zip"
+        compress-archive -Path "$(PackageRoot)/signed" -DestinationPath "$(PackageRoot)/$(buildName).zip"
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(System.ArtifactsDirectory)\Packages\$(buildName).zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\$(buildName).zip"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -120,12 +126,12 @@ stages:
       displayName: 'Build x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
-        tar czf $(System.ArtifactsDirectory)/Packages/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
+        new-item -itemType Directory $(PackageRoot) -Force
+        tar czf $(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/x86_64-unknown-linux-gnu .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(System.ArtifactsDirectory)\Packages\x86_64-unknown-linux-gnu.zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\x86_64-unknown-linux-gnu.zip"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -141,12 +147,12 @@ stages:
       displayName: 'Build aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
-        tar czf $(System.ArtifactsDirectory)/Packages/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
+        new-item -itemType Directory $(PackageRoot) -Force
+        tar czf $(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/aarch64-unknown-linux-gnu .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(System.ArtifactsDirectory)\Packages\aarch64-unknown-linux-gnu.zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\aarch64-unknown-linux-gnu.zip"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -167,12 +173,12 @@ stages:
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
-        new-item -itemType Directory -$(System.ArtifactsDirectory)/Packages -Force
-        tar czf $(System.ArtifactsDirectory)/Packages/$(buildName).tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/$(buildName) .
+        new-item -itemType Directory $(PackageRoot) -Force
+        tar czf $(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/DSC/bin/$(BuildConfiguration)/$(buildName) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(System.ArtifactsDirectory)\Packages\$(buildName).zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\$(buildName).zip"
       displayName: Upload artifacts
       condition: succeeded()
 
