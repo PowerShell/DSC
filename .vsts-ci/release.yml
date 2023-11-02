@@ -100,7 +100,7 @@ stages:
 
     - template: Sbom.yml@ComplianceRepo
       parameters:
-        BuildDropPath: $(Build.SourcesDirectory)/package/signed
+        BuildDropPath: $(PackageRoot)/signed
         Build_Repository_Uri: 'https://github.com/powershell/DSC'
         PackageName: 'DSC'
         PackageVersion: $(PackageVersion)
