@@ -11,7 +11,7 @@ use crate::parser::Statement;
 use self::config_doc::Configuration;
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
 
@@ -49,7 +49,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
         let mut r = config_doc::Resource::new();
         r.resource_type = resource.type_name.clone();
         r.name = format!("{}-{i}", r.resource_type);
-        let props: HashMap<String, serde_json::Value> = serde_json::from_value(instance.clone())?;
+        let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
         r.properties = Some(props);
 
         conf.resources.push(r);
@@ -101,7 +101,8 @@ impl Configurator {
             };
             debug!("resource_type {}", &resource.resource_type);
 
-            let filter = serde_json::to_string(self.invoke_property_expressions(&resource.properties))?;
+            let properties = self.invoke_property_expressions(&resource.properties)?;
+            let filter = serde_json::to_string(&properties)?;
             let get_result = dsc_resource.get(&filter)?;
             let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
@@ -325,24 +326,22 @@ impl Configurator {
         Ok((config, messages, has_errors))
     }
 
-    fn invoke_property_expressions(&mut self, properties: &Option<HashMap<String, Value>>) -> Result<Option<HashMap<String, Value>>, DscError> {
+    fn invoke_property_expressions(&mut self, properties: &Option<Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
         if properties.is_none() {
             return Ok(None);
         }
 
-        let mut result: HashMap<String, Value> = HashMap::new();
+        let mut result: Map<String, Value> = Map::new();
         if let Some(properties) = properties {
             for (name, value) in properties {
                 // if value is an object, we have to do it recursively
                 if let Value::Object(object) = value {
-                    // convert serde map to hashmap
-                    let object: HashMap<String, Value> = object.into_iter().collect();
-                    let value = self.invoke_property_expressions(Some(object))?;
-                    result.insert(name, serde_json::to_value(value)?);
+                    let value = self.invoke_property_expressions(&Some(object.clone()))?;
+                    result.insert(name.clone(), serde_json::to_value(value)?);
                     continue;
                 }
                 let value = self.statement_parser.parse_and_execute(&value.to_string())?;
-                result.insert(name, serde_json::from_str(&value)?);
+                result.insert(name.clone(), serde_json::from_str(&value)?);
             }
         }
         Ok(Some(result))

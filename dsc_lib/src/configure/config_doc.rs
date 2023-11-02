@@ -3,7 +3,7 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -73,7 +73,7 @@ pub struct Resource {
     pub depends_on: Option<Vec<String>>,
     // `identity` can be used for run-as
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub properties: Option<HashMap<String, Value>>,
+    pub properties: Option<Map<String, Value>>,
 }
 
 // Defines the valid and recognized canonical URIs for the configuration schema
