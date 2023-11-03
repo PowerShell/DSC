@@ -75,7 +75,7 @@ stages:
         Write-Host "##$vstsCommandString"
       displayName: Setup variables for signing
 
-    - publish: "$(PackageRoot)/out"
+    - publish: "$(PackageRoot)/out/$(buildName)"
       artifact: out
 
       displayName: Publish unsigned files
