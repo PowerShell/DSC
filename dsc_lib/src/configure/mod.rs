@@ -353,22 +353,32 @@ impl Configurator {
                                 Value::Array(_) => {
                                     return Err(DscError::Parser("Nested arrays not supported".to_string()));
                                 },
-                                _ => {
+                                Value::String(_) => {
+                                    // use as_str() so that the enclosing quotes are not included for strings
                                     let Some(statement) = element.as_str() else {
                                         return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
                                     };
                                     let statement_result = self.statement_parser.parse_and_execute(statement)?;
                                     result_array.push(Value::String(statement_result));
                                 }
+                                _ => {
+                                    let statement_result = self.statement_parser.parse_and_execute(&value.to_string())?;
+                                    result_array.push(Value::String(statement_result));
+                                }
                             }
                         }
                         result.insert(name.clone(), serde_json::to_value(result_array)?);
                     },
-                    _ => {
+                    Value::String(_) => {
+                        // use as_str() so that the enclosing quotes are not included for strings
                         let Some(statement) = value.as_str() else {
                             return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
                         };
                         let statement_result = self.statement_parser.parse_and_execute(statement)?;
+                        result.insert(name.clone(), Value::String(statement_result));
+                    },
+                    _ => {
+                        let statement_result = self.statement_parser.parse_and_execute(&value.to_string())?;
                         result.insert(name.clone(), Value::String(statement_result));
                     },
                 }
