@@ -13,8 +13,8 @@
             "name": "windows product name",
             "type": "Microsoft.Windows/Registry",
             "properties": {
-                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
-                "valueName": "ProductName"                
+                "keyPath": "[concat('HKLM\\','Software\\Microsoft\\Windows NT\\','CurrentVersion')]",
+                "valueName": "ProductName"
             }
         },
         {
@@ -22,7 +22,7 @@
             "type": "Microsoft.Windows/Registry",
             "properties": {
                 "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
-                "valueName": "SystemRoot"                
+                "valueName": "SystemRoot"
             }
         }
     ]
