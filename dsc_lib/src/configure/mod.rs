@@ -366,7 +366,7 @@ impl Configurator {
                     },
                     _ => {
                         let Some(statement) = value.as_str() else {
-                            return Err(DscError::Parser(format!("Property value '{}' could not be transformed as string", value.to_string())));
+                            return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
                         };
                         let statement_result = self.statement_parser.parse_and_execute(statement)?;
                         result.insert(name.clone(), Value::String(statement_result));
