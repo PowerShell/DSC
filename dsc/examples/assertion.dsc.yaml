@@ -20,7 +20,7 @@ resources:
     - name: system root
       type: Microsoft.Windows/Registry
       properties:
-        keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
+        keyPath: "[concat('HKLM\','Software\Microsoft\Windows NT\','CurrentVersion')]"
         valueName: SystemRoot
         valueData:
           # this is deliberately set to z: drive so that the assertion fails

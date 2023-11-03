@@ -335,14 +335,37 @@ impl Configurator {
         let mut result: Map<String, Value> = Map::new();
         if let Some(properties) = properties {
             for (name, value) in properties {
-                // if value is an object, we have to do it recursively
-                if let Value::Object(object) = value {
-                    let value = self.invoke_property_expressions(&Some(object.clone()))?;
-                    result.insert(name.clone(), serde_json::to_value(value)?);
-                    continue;
+                match value {
+                    Value::Object(object) => {
+                        let value = self.invoke_property_expressions(&Some(object.clone()))?;
+                        result.insert(name.clone(), serde_json::to_value(value)?);
+                        continue;
+                    },
+                    Value::Array(array) => {
+                        let mut result_array: Vec<Value> = Vec::new();
+                        for element in array {
+                            match element {
+                                Value::Object(object) => {
+                                    let value = self.invoke_property_expressions(&Some(object.clone()))?;
+                                    result_array.push(serde_json::to_value(value)?);
+                                    continue;
+                                },
+                                Value::Array(_) => {
+                                    return Err(DscError::Parser("Nested arrays not supported".to_string()));
+                                },
+                                _ => {
+                                    let value = self.statement_parser.parse_and_execute(&element.to_string())?;
+                                    result_array.push(serde_json::from_str(&value)?);
+                                }
+                            }
+                        }
+                        result.insert(name.clone(), serde_json::to_value(result_array)?);
+                    },
+                    _ => {
+                        let value = self.statement_parser.parse_and_execute(&value.to_string())?;
+                        result.insert(name.clone(), serde_json::from_str(&value)?);
+                    },
                 }
-                let value = self.statement_parser.parse_and_execute(&value.to_string())?;
-                result.insert(name.clone(), serde_json::from_str(&value)?);
             }
         }
         Ok(Some(result))
