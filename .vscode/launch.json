@@ -16,6 +16,12 @@
             "cwd": "${workspaceFolder}"
         },
         {
+            "name": "(macOS) Attach",
+            "type": "lldb",
+            "request": "attach",
+            "pid": "${command:pickMyProcess}",
+        },
+        {
             "name": "(Windows) Attach",
             "type": "cppvsdbg",
             "request": "attach",

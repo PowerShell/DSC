@@ -354,16 +354,22 @@ impl Configurator {
                                     return Err(DscError::Parser("Nested arrays not supported".to_string()));
                                 },
                                 _ => {
-                                    let value = self.statement_parser.parse_and_execute(&element.to_string())?;
-                                    result_array.push(serde_json::from_str(&value)?);
+                                    let Some(statement) = element.as_str() else {
+                                        return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                    };
+                                    let statement_result = self.statement_parser.parse_and_execute(statement)?;
+                                    result_array.push(Value::String(statement_result));
                                 }
                             }
                         }
                         result.insert(name.clone(), serde_json::to_value(result_array)?);
                     },
                     _ => {
-                        let value = self.statement_parser.parse_and_execute(&value.to_string())?;
-                        result.insert(name.clone(), serde_json::from_str(&value)?);
+                        let Some(statement) = value.as_str() else {
+                            return Err(DscError::Parser("Property value could not be transformed as string".to_string()));
+                        };
+                        let statement_result = self.statement_parser.parse_and_execute(statement)?;
+                        result.insert(name.clone(), Value::String(statement_result));
                     },
                 }
             }
