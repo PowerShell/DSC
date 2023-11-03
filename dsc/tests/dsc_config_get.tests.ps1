@@ -9,7 +9,7 @@ Describe 'dsc config get tests' {
         param($config)
         $jsonPath = Join-Path $PSScriptRoot '../examples' $config
         $config = Get-Content $jsonPath -Raw
-        $out = $config | dsc config get | ConvertFrom-Json
+        $out = $config | dsc -l debug config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 3
