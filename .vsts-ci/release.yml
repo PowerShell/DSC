@@ -43,9 +43,9 @@ stages:
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
-        New-Item -ItemType Directory -Path "$(PackageRoot)"
-        New-Item -ItemType Directory -Path "$(PackageRoot)/out"
-        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)" -Destination "$(PackageRoot)" -Force
+        $null = New-Item -ItemType Directory -Path "$(PackageRoot)"
+        $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out"
+        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination "$(PackageRoot)/out" -Verbose -Force
       displayName: Copy binaries
       condition: succeeded()
     - pwsh: |
@@ -106,7 +106,7 @@ stages:
         PackageVersion: $(PackageVersion)
 
     - pwsh: |
-        compress-archive -Path "$(PackageRoot)/signed" -DestinationPath "$(PackageRoot)/$(buildName).zip"
+        compress-archive -Path "$(PackageRoot)/signed/*" -DestinationPath "$(PackageRoot)/$(buildName).zip"
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
