@@ -7,7 +7,7 @@ resources:
 - name: windows product name
   type: Microsoft.Windows/Registry
   properties:
-    keyPath: '[concat(''HKLM\'',''Software\Microsoft\Windows NT\'',''CurrentVersion'')]'
+    keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
     valueName: ProductName
 - name: system root
   type: Microsoft.Windows/Registry
