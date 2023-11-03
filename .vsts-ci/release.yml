@@ -43,14 +43,15 @@ stages:
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - pwsh: |
-        $null = New-Item -ItemType Directory -Path "$(PackageRoot)"
-        $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out"
-        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination "$(PackageRoot)/out" -Verbose -Force
+        $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
+        $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
+        $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)"
+        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination "$(PackageRoot)/out/$(buildName)" -Verbose -Force
       displayName: Copy binaries
       condition: succeeded()
     - pwsh: |
         Set-Location "$(PackageRoot)"
-        $signSrcPath = "$(PackageRoot)/out"
+        $signSrcPath = "$(PackageRoot)/out/$(buildName)"
         # Set signing src path variable
         $vstsCommandString = "vso[task.setvariable variable=signSrcPath]${signSrcPath}"
         Write-Host ("sending " + $vstsCommandString)
