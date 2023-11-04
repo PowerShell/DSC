@@ -42,7 +42,7 @@ impl Statement {
     /// This function will return an error if the statement fails to parse or execute.
     pub fn parse_and_execute(&mut self, statement: &str) -> Result<String, DscError> {
         let Some(tree) = &mut self.parser.parse(statement, None) else {
-            return Err(DscError::Parser(format!("Error parsing statement: {statement}"));
+            return Err(DscError::Parser(format!("Error parsing statement: {statement}")));
         };
         let root_node = tree.root_node();
         if root_node.is_error() {
