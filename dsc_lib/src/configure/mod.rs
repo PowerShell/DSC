@@ -44,18 +44,77 @@ pub enum ErrorAction {
 pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration) -> Result<(), DscError> {
     let export_result = resource.export()?;
 
-    for (i, instance) in export_result.actual_state.iter().enumerate()
-    {
+    for (i, instance) in export_result.actual_state.iter().enumerate() {
         let mut r = config_doc::Resource::new();
         r.resource_type = resource.type_name.clone();
         r.name = format!("{}-{i}", r.resource_type);
         let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
-        r.properties = Some(props);
+        r.properties = escape_property_values(&props)?;
 
         conf.resources.push(r);
     }
 
     Ok(())
+}
+
+// for values returned by resources, they may look like expressions, so we make sure to escape them in case
+// they are re-used to apply configuration
+fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<String, Value>>, DscError> {
+    let mut result: Map<String, Value> = Map::new();
+    for (name, value) in properties {
+        match value {
+            Value::Object(object) => {
+                let value = escape_property_values(&object.clone())?;
+                result.insert(name.clone(), serde_json::to_value(value)?);
+                continue;
+            },
+            Value::Array(array) => {
+                let mut result_array: Vec<Value> = Vec::new();
+                for element in array {
+                    match element {
+                        Value::Object(object) => {
+                            let value = escape_property_values(&object.clone())?;
+                            result_array.push(serde_json::to_value(value)?);
+                            continue;
+                        },
+                        Value::Array(_) => {
+                            return Err(DscError::Parser("Nested arrays not supported".to_string()));
+                        },
+                        Value::String(_) => {
+                            // use as_str() so that the enclosing quotes are not included for strings
+                            let Some(statement) = element.as_str() else {
+                                return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                            };
+                            if statement.starts_with('[') && statement.ends_with(']') {
+                                result_array.push(Value::String(format!("[{statement}")));
+                            } else {
+                                result_array.push(element.clone());
+                            }
+                        }
+                        _ => {
+                            result_array.push(element.clone());
+                        }
+                    }
+                }
+                result.insert(name.clone(), serde_json::to_value(result_array)?);
+            },
+            Value::String(_) => {
+                // use as_str() so that the enclosing quotes are not included for strings
+                let Some(statement) = value.as_str() else {
+                    return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
+                };
+                if statement.starts_with('[') && statement.ends_with(']') {
+                    result.insert(name.clone(), Value::String(format!("[{statement}")));
+                } else {
+                    result.insert(name.clone(), value.clone());
+                }
+            },
+            _ => {
+                result.insert(name.clone(), value.clone());
+            },
+        }
+    }
+    Ok(Some(result))
 }
 
 impl Configurator {
@@ -188,27 +247,6 @@ impl Configurator {
         Ok(result)
     }
 
-    fn find_duplicate_resource_types(config: &Configuration) -> Vec<String>
-    {
-        let mut map: HashMap<&String, i32> = HashMap::new();
-        let mut result: HashSet<String> = HashSet::new();
-        let resource_list = &config.resources;
-        if resource_list.is_empty() {
-            return Vec::new();
-        }
-
-        for r in resource_list
-        {
-            let v = map.entry(&r.resource_type).or_insert(0);
-            *v += 1;
-            if *v > 1 {
-                result.insert(r.resource_type.clone());
-            }
-        }
-
-        result.into_iter().collect()
-    }
-
     /// Invoke the export operation on a configuration.
     ///
     /// # Arguments
@@ -254,6 +292,27 @@ impl Configurator {
         result.result = Some(conf);
 
         Ok(result)
+    }
+
+    fn find_duplicate_resource_types(config: &Configuration) -> Vec<String>
+    {
+        let mut map: HashMap<&String, i32> = HashMap::new();
+        let mut result: HashSet<String> = HashSet::new();
+        let resource_list = &config.resources;
+        if resource_list.is_empty() {
+            return Vec::new();
+        }
+
+        for r in resource_list
+        {
+            let v = map.entry(&r.resource_type).or_insert(0);
+            *v += 1;
+            if *v > 1 {
+                result.insert(r.resource_type.clone());
+            }
+        }
+
+        result.into_iter().collect()
     }
 
     fn validate_config(&mut self) -> Result<(Configuration, Vec<ResourceMessage>, bool), DscError> {
@@ -362,8 +421,7 @@ impl Configurator {
                                     result_array.push(Value::String(statement_result));
                                 }
                                 _ => {
-                                    let statement_result = self.statement_parser.parse_and_execute(&value.to_string())?;
-                                    result_array.push(Value::String(statement_result));
+                                    result_array.push(element.clone());
                                 }
                             }
                         }
@@ -378,8 +436,7 @@ impl Configurator {
                         result.insert(name.clone(), Value::String(statement_result));
                     },
                     _ => {
-                        let statement_result = self.statement_parser.parse_and_execute(&value.to_string())?;
-                        result.insert(name.clone(), Value::String(statement_result));
+                        result.insert(name.clone(), value.clone());
                     },
                 }
             }
