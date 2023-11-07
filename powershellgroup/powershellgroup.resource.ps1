@@ -33,9 +33,10 @@ function RefreshCache
     }
 }
 
-if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -ge 4))
+if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -ge 4) `
+   -and ($PSVersionTable.PSVersion.PreReleaseLabel.StartsWith("preview")))
 {
-    throw "PowerShell 7.4 is not currently supported by PowerShellGroup resource; please use PS 7.3.  Tracking issue: https://github.com/PowerShell/DSC/issues/128"
+    throw "PowerShell 7.4-previews are not supported by PowerShellGroup resource; please use PS 7.4.0-rc.1 or newer."
 }
 
 $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable |
