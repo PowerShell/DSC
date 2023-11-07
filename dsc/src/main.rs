@@ -138,7 +138,7 @@ fn terminate_subprocesses(sys: &System, process: &Process) {
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_DSC").is_ok() {
-        error!("attach debugger to pid {} and press a key to continue", std::process::id());
+        eprintln!("attach debugger to pid {} and press a key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
             if let event::Event::Key(key) = event {
@@ -147,7 +147,7 @@ fn check_debug() {
                     break;
                 }
             } else {
-                error!("Unexpected event: {event:?}");
+                eprintln!("Unexpected event: {event:?}");
                 continue;
             }
         }

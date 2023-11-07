@@ -3,6 +3,7 @@
 
 use crate::DscError;
 use crate::functions::{Function, FunctionArg, FunctionResult, AcceptedArgKind};
+use tracing::debug;
 
 #[derive(Debug, Default)]
 pub struct Concat {}
@@ -35,6 +36,7 @@ impl Function for Concat {
                 }
             }
         }
+        debug!("concat result: {result}");
         Ok(FunctionResult::String(result))
     }
 }
