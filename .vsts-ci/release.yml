@@ -45,8 +45,8 @@ stages:
     - pwsh: |
         $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
         $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
-        $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)"
-        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination "$(PackageRoot)/out/$(buildName)" -Verbose -Force
+        $outPath = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)" -ErrorAction Ignore
+        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination $outPath -Verbose -Force
       displayName: Copy binaries
       condition: succeeded()
     - pwsh: |
@@ -75,7 +75,7 @@ stages:
         Write-Host "##$vstsCommandString"
       displayName: Setup variables for signing
 
-    - publish: "$(PackageRoot)/out/$(buildName)"
+    - publish: "$(PackageRoot)/out"
       artifact: out
 
       displayName: Publish unsigned files
