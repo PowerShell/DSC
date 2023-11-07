@@ -42,15 +42,15 @@ impl Statement {
     /// This function will return an error if the statement fails to parse or execute.
     pub fn parse_and_execute(&mut self, statement: &str) -> Result<String, DscError> {
         let Some(tree) = &mut self.parser.parse(statement, None) else {
-            return Err(DscError::Parser("Error parsing statement".to_string()));
+            return Err(DscError::Parser(format!("Error parsing statement: {statement}")));
         };
         let root_node = tree.root_node();
         if root_node.is_error() {
-            return Err(DscError::Parser("Error parsing statement root".to_string()));
+            return Err(DscError::Parser(format!("Error parsing statement root: {statement}")));
         }
         let root_node_kind = root_node.kind();
         if root_node_kind != "statement" {
-            return Err(DscError::Parser("Invalid statement".to_string()));
+            return Err(DscError::Parser(format!("Invalid statement: {statement}")));
         }
         let Some(child_node) = root_node.named_child(0) else {
             return Err(DscError::Parser("Child node not found".to_string()));

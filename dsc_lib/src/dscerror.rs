@@ -19,6 +19,9 @@ pub enum DscError {
     #[error("CommandOperation: {0} for executable '{1}'")]
     CommandOperation(String, String),
 
+    #[error("Function '{0}' error: {1}")]
+    Function(String, String),
+
     #[error("HTTP: {0}")]
     Http(#[from] reqwest::Error),
 
@@ -27,9 +30,6 @@ pub enum DscError {
 
     #[error("Function integer argument conversion error: {0}")]
     IntegerConversion(#[from] std::num::ParseIntError),
-
-    #[error("Regex: {0}")]
-    Regex(#[from] regex::Error),
 
     #[error("Invalid configuration:\n{0}")]
     InvalidConfiguration(String),
