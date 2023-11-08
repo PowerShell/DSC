@@ -99,16 +99,19 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- DSC now emits tace logging to the stderr stream. This can make it easier to understand what DSC
-  is doing. This doesn't affect the data output. In this release, there's no way to opt out of the
-  logging.
+- DSC now emits log messages to the stderr stream. This can make it easier to understand what DSC
+  is doing. This doesn't affect the data output. By default, DSC emits errors, warnings, and
+  informational messages, but not debug or trace messaging. You can control the level of the
+  logging with the new [--logging-level][27] option on the root `dsc` command.
 
   <details><summary>Related work items</summary>
 
   - Issues:
     - [#107][#107]
     - [#158][#158]
-  - PRs: [#211][#211]
+  - PRs:
+    - [#211][#211]
+    - [#248][#248]
 
   </details>
 
@@ -438,6 +441,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [24]: docs/reference/cli/dsc.md#-i---input
 [25]: docs/reference/cli/dsc.md#-p---input-file
 [26]: docs/reference/cli/completer/command.md
+[27]: docs/reference/cli/dsc.md#-l---logging-level
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
@@ -474,6 +478,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#216]: https://github.com/PowerShell/DSC/issues/216
 [#217]: https://github.com/PowerShell/DSC/issues/217
 [#240]: https://github.com/PowerShell/DSC/issues/240
+[#248]: https://github.com/PowerShell/DSC/issues/248
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#98]:  https://github.com/PowerShell/DSC/issues/98
