@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
+    Echo,
     Sleep,
 }
 
@@ -18,6 +19,12 @@ pub struct Args {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "echo", about = "Return the input")]
+    Echo {
+        #[clap(name = "input", short, long, help = "The input to the echo command")]
+        input: String,
+    },
+
     #[clap(name = "schema", about = "Get the JSON schema for a subcommand")]
     Schema {
         #[clap(name = "subcommand", short, long, help = "The subcommand to get the schema for")]

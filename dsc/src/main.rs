@@ -8,7 +8,7 @@ use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
-use tracing::{error, info, warn};
+use tracing::{Level, error, info, warn, debug};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -25,17 +25,27 @@ fn main() {
     #[cfg(debug_assertions)]
     check_debug();
 
-    // create subscriber that writes all events to stderr
-    let subscriber = tracing_subscriber::fmt().pretty().with_writer(std::io::stderr).finish();
-    if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default subscriber");
-    }
-
     if ctrlc::set_handler(ctrlc_handler).is_err() {
         error!("Error: Failed to set Ctrl-C handler");
     }
 
     let args = Args::parse();
+
+    let tracing_level = match args.logging_level {
+        util::LogLevel::Error => Level::ERROR,
+        util::LogLevel::Warning => Level::WARN,
+        util::LogLevel::Info => Level::INFO,
+        util::LogLevel::Debug => Level::DEBUG,
+        util::LogLevel::Trace => Level::TRACE,
+    };
+
+    // create subscriber that writes all events to stderr
+    let subscriber = tracing_subscriber::fmt().pretty().with_max_level(tracing_level).with_writer(std::io::stderr).finish();
+    if tracing::subscriber::set_global_default(subscriber).is_err() {
+        eprintln!("Unable to set global default subscriber");
+    }
+
+    debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
     let input = if args.input.is_some() {
         args.input
@@ -128,7 +138,7 @@ fn terminate_subprocesses(sys: &System, process: &Process) {
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_DSC").is_ok() {
-        error!("attach debugger to pid {} and press a key to continue", std::process::id());
+        eprintln!("attach debugger to pid {} and press a key to continue", std::process::id());
         loop {
             let event = event::read().unwrap();
             if let event::Event::Key(key) = event {
@@ -137,7 +147,7 @@ fn check_debug() {
                     break;
                 }
             } else {
-                error!("Unexpected event: {event:?}");
+                eprintln!("Unexpected event: {event:?}");
                 continue;
             }
         }

@@ -9,6 +9,7 @@ use crate::parser::functions::{FunctionArg, FunctionResult};
 
 pub mod base64;
 pub mod concat;
+pub mod resource_id;
 
 /// The kind of argument that a function accepts.
 #[derive(Debug, PartialEq)]
@@ -50,6 +51,7 @@ impl FunctionDispatcher {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
         functions.insert("base64".to_string(), Box::new(base64::Base64{}));
         functions.insert("concat".to_string(), Box::new(concat::Concat{}));
+        functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
         Self {
             functions,
         }

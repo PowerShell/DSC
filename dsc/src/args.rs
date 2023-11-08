@@ -3,6 +3,7 @@
 
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use crate::util::LogLevel;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -12,7 +13,7 @@ pub enum OutputFormat {
 }
 
 #[derive(Debug, Parser)]
-#[clap(name = "dsc", version = "3.0.0-alpha.4", about = "Apply configuration or invoke specific DSC resources", long_about = None)]
+#[clap(name = "dsc", version = env!("CARGO_PKG_VERSION"), about = "Apply configuration or invoke specific DSC resources", long_about = None)]
 pub struct Args {
     /// The subcommand to run
     #[clap(subcommand)]
@@ -24,6 +25,8 @@ pub struct Args {
     pub input: Option<String>,
     #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
     pub input_file: Option<String>,
+    #[clap(short = 'l', long = "logging-level", help = "Log level to display", value_enum, default_value = "info")]
+    pub logging_level: LogLevel,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
