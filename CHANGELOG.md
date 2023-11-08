@@ -112,6 +112,17 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
+- Added optimizations for the resource discovery process that runs before most `dsc` commands.
+  These optimizations significantly reduce the command execution duration, especially for the
+  `dsc resource *` commands, which rarely need to run a full discovery for resources.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#173][#173]
+  - PRs: [#240][#240]
+
+  </details>
+
 ### Fixed
 
 - The `--format` option now works as users expect when the output is redirected or saved to a
@@ -131,6 +142,25 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   - Issues: [#159][#159]
   - PRs: [#208][#208]
+
+  </details>
+
+- DSC no longer terminates during discovery when a resource errors unless the erroring resource is
+  being used for the command. DSC still terminates on a resource error during discovery under the
+  following conditions:
+
+  - When the erroring resource type is the same as the value of the `--resource` option for a
+    `dsc resource *` command.
+  - When an instance in the configuration document uses the erroring resource type for a
+    `dsc config *` command.
+
+  DSC emits the resource errors during discovery as warning messages for the `dsc resource list`
+  command. In all other cases, DSC emits the errors as debug messages.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#121][#121]
+  - PRs: [#240][#240]
 
   </details>
 
@@ -411,6 +441,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
+[#121]: https://github.com/PowerShell/DSC/issues/121
 [#127]: https://github.com/PowerShell/DSC/issues/127
 [#130]: https://github.com/PowerShell/DSC/issues/130
 [#133]: https://github.com/PowerShell/DSC/issues/133
@@ -423,6 +454,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#168]: https://github.com/PowerShell/DSC/issues/168
 [#171]: https://github.com/PowerShell/DSC/issues/171
 [#172]: https://github.com/PowerShell/DSC/issues/172
+[#173]: https://github.com/PowerShell/DSC/issues/173
 [#174]: https://github.com/PowerShell/DSC/issues/174
 [#175]: https://github.com/PowerShell/DSC/issues/175
 [#176]: https://github.com/PowerShell/DSC/issues/176
@@ -441,6 +473,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#215]: https://github.com/PowerShell/DSC/issues/215
 [#216]: https://github.com/PowerShell/DSC/issues/216
 [#217]: https://github.com/PowerShell/DSC/issues/217
+[#240]: https://github.com/PowerShell/DSC/issues/240
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#98]:  https://github.com/PowerShell/DSC/issues/98
