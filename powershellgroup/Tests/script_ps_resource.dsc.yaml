@@ -1,0 +1,17 @@
+# Example configuration mixing native app resources with classic PS resources
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+resources:
+- name: Script based DSC resource
+  type: DSC/PowerShellGroup
+  properties:
+    resources:
+    - name: Bits should be running
+      type: PSDscResources/MSFT_ServiceResource
+      properties:
+        Name: bits
+        #State: Running
+    - name: Spooler should be running
+      type: PSDscResources/MSFT_ServiceResource
+      properties:
+        Name: Spooler
+        #State: Running

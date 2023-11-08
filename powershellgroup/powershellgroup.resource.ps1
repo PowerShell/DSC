@@ -1,336 +1,302 @@
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT License.
-
 [CmdletBinding()]
 param(
-    [ValidateSet('List','Get','Set','Test')]
+    [ValidateSet('List', 'Get', 'Set', 'Test')]
     $Operation = 'List',
     [Switch]
     $WinPS = $false,
     [Parameter(ValueFromPipeline)]
-    $stdinput
+    $stdin
 )
 
 $ProgressPreference = 'Ignore'
 $WarningPreference = 'Ignore'
 $VerbosePreference = 'Ignore'
-$script:ResourceCache = @{}
-
-function RefreshCache
-{
-    $script:ResourceCache = @{}
-
-    $DscResources = Get-DscResource
-    
-    foreach ($r in $DscResources)
-    {
-        $moduleName = "";
-        if ($r.ModuleName) { $moduleName = $r.ModuleName }
-        elseif ($r.ParentPath) { $moduleName = Split-Path $r.ParentPath | Split-Path | Split-Path -Leaf }
-
-        $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
-        $script:ResourceCache[$fullResourceTypeName] = $r
-    }
-}
-
-if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -ge 4))
-{
-    throw "PowerShell 7.4 is not currently supported by PowerShellGroup resource; please use PS 7.3.  Tracking issue: https://github.com/PowerShell/DSC/issues/128"
-}
 
 $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable |
-    Sort-Object -Property Version -Descending |
-    Select-Object -First 1
+Sort-Object -Property Version -Descending |
+Select-Object -First 1
 
-if ($null -eq $DscModule)
-{
-    Write-Error "Could not find and import the PSDesiredStateConfiguration module."
+if ($null -EQ $DscModule) {
+    Write-Error 'Could not find and import the PSDesiredStateConfiguration module.'
     # Missing module is okay for listing resources
-    if ($Operation -eq 'List') { exit 0 }
+    if ($Operation -EQ 'List') { exit 0 }
 
     exit 1
 }
+Import-Module $DscModule
 
-Import-Module $DscModule -DisableNameChecking
+# cache the results of Get-DscResource
+[resourceCache[]]$resourceCache = @()
+$DscResources = Get-DscResource
+foreach ($ds in $DscResources) {
+    $moduleName = ''
+    if ($ds.ModuleName) { $moduleName = $ds.ModuleName }
+    elseif ($ds.ParentPath) { $moduleName = Split-Path $ds.ParentPath | Split-Path | Split-Path -Leaf }
 
-if ($Operation -eq 'List')
-{
-    $DscResources= Get-DscResource
+    $resourceCache += [resourceCache]@{
+        Type            = "$moduleName/$($ds.ResourceType)"
+        DscResourceInfo = $ds
+    }
+}
+
+# normalize the INPUT object to an array of configFormat objects
+$inputObj = $stdIn | ConvertFrom-Json
+$desiredState = @()
+if ($inputObj.resources) {
+    $context = 'config'
+    # change the type from pscustomobject to configFormat
+    $inputObj.resources | ForEach-Object -Process {
+        $desiredState += [configFormat]@{
+            name       = $_.name
+            type       = $_.type
+            properties = $_.properties
+        }
+    }
+}
+else {
+    $context = 'resource'
+    # mimic a config object with a single resource
+    $type = $inputObj.type
+    $inputObj.psobject.properties.Remove('type')
+    $desiredState += [configFormat]@{
+        name       = 'dsc resource'
+        type       = $type
+        properties = $inputObj
+    }
+}
+
+function Get-Resource {
+    param(
+        [Alias('ds')]
+        [Parameter(Mandatory)]
+        [configFormat]$DesiredState,
+        [Parameter(Mandatory)]
+        [resourceCache[]]$ResourceCache
+    )
+    # get details from cache about the DSC resource, if it exists
+    $cachedResourceInfo = $ResourceCache | Where-Object Type -EQ $ds.type | ForEach-Object DscResourceInfo
+
+    if ($cachedResourceInfo) {
+        # if the resource is found in the cache from Get-DscResource
+
+        # since we need to workaround script based resources, save an unmodified INPUT object
+        $savedInput = $ds.psobject.copy()
+
+        # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
+        if ($cachedResourceInfo.ImplementationDetail -EQ 'ScriptBased') {
+            # imports the .psm1 file for the DSC resource as a PowerShell module and stores the list of parameters
+            Import-Module -Scope Local -Name $cachedResourceInfo.path -Force -ErrorAction stop
+            $validParams = (Get-Command -Module $cachedResourceInfo.ResourceType -Name 'Get-TargetResource').Parameters.Keys
+            # prune any properties that are not valid parameters of Get-TargetResource
+            $ds.properties.psobject.properties | ForEach-Object -Process {
+                if ($validParams -notcontains $_.Name) {
+                    $ds.properties.psobject.properties.Remove($_.Name)
+                }
+            }
+        }
+
+        # morph the INPUT object into a hashtable
+        $ds.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+
+        # using the cmdlet from PSDesiredStateConfiguration module, and handle errors
+        try {
+            $getResult = Invoke-DscResource -Method Get -ModuleName $cachedResourceInfo.ModuleName -Name $cachedResourceInfo.Name -Property $property
+        }
+        catch {
+            Write-Error $_.Exception.Message
+            exit 1
+        }
+
+        # formated OUTPUT of each resource
+        $addToActualState = [configFormat]@{}
+
+        # set top level properties of the OUTPUT object from saved INPUT object
+        $savedInput.psobject.properties | ForEach-Object -Process {
+            if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $savedInput.($_.Name) }
+        }
+
+        # set the properties of the OUTPUT object from the result of Get-TargetResource
+        $addToActualState.properties = $getResult
+        return $addToActualState
+    }
+    else {
+        $errmsg = 'Can not find type ' + $ds.type + '; please ensure that Get-DscResource returns this resource type'
+        Write-Error $errmsg
+        exit 1
+    }
+}
+
+if ($Operation -EQ 'List') {
     #TODO: following should be added to debug stream of every operation
     #$m = gmo PSDesiredStateConfiguration
-    #$r += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
-    #$r[0] | ConvertTo-Json -Compress -Depth 3
-    foreach ($r in $DscResources)
-    {
-        if ($r.ImplementedAs -eq "Binary")
-        {
+    #$ds += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
+    #$ds[0] | ConvertTo-Json -Compress -Depth 3
+
+    # Type is a property representing each known DSC Resource as modulename/resourcename
+    foreach ($Type in $resourceCache.Type) {
+
+        # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
+        $r = $resourceCache | Where-Object Type -EQ $Type | ForEach-Object DscResourceInfo
+
+        # Binary resources are not supported in PowerShell 7
+        if ($r.ImplementedAs -EQ 'Binary') {
             continue
         }
 
-        $version_string = "";
-        if ($r.Version) { $version_string = $r.Version.ToString() }
-        $author_string = "";
-        if ($r.author) { $author_string = $r.CompanyName.ToString() }
-        $moduleName = "";
-        if ($r.ModuleName) { $moduleName = $r.ModuleName }
-        elseif ($r.ParentPath) { $moduleName = Split-Path $r.ParentPath | Split-Path | Split-Path -Leaf }
+        if ($null -ne $r.moduleName) {
+            if ($WinPS) { $requiresString = 'DSC/WindowsPowerShellGroup' } else { $requiresString = 'DSC/PowerShellGroup' }
 
-        $propertyList = @()
-        foreach ($p in $r.Properties)
-        {
-            if ($p.Name)
-            {
-                $propertyList += $p.Name
+            # dsc is expecting a json object with the following properties
+            $resourceOutput = [resourceOutput]@{
+                type          = $Type
+                version       = $r.version.ToString()
+                path          = $r.Path
+                directory     = $r.ParentPath
+                implementedAs = $r.ImplementationDetail
+                author        = $r.CompanyName
+                properties    = $r.Properties.Name
+                requires      = $requiresString
             }
+            $resourceOutput | ConvertTo-Json -Compress
         }
-
-        $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
-        $script:ResourceCache[$fullResourceTypeName] = $r
-       if ($WinPS) {$requiresString = "DSC/WindowsPowerShellGroup"} else {$requiresString = "DSC/PowerShellGroup"}
-
-        $z = [pscustomobject]@{
-            type = $fullResourceTypeName;
-            version = $version_string;
-            path = $r.Path;
-            directory = $r.ParentPath;
-            implementedAs = $r.ImplementationDetail;
-            author = $author_string;
-            properties = $propertyList;
-            requires = $requiresString
-        }
-
-        $z | ConvertTo-Json -Compress
     }
 }
-elseif ($Operation -eq 'Get')
-{
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+elseif ($Operation -EQ 'Get') {
+    # initialize OUTPUT as array
+    $actualState = @()
+
+    foreach ($ds in $desiredState) {
+        # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
+        $addToActualState = Get-Resource -DesiredState $ds -ResourceCache $resourceCache
+        # add resource actual state to the OUTPUT object
+        $actualState += $addToActualState
     }
 
-    $result = @()
+    # OUTPUT
+    @{resources = $actualState} | ConvertTo-Json -Depth 5
+}
+elseif ($Operation -EQ 'Set') {
+    # in version 3, the output of Set includes information from Get
 
-    RefreshCache
+    # initialize OUTPUT as array
+    $actualState = @()
 
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
-    {
-        foreach($r in $inputobj_pscustomobj.resources)
-        {
-            #Write-Output $r.type
-            $cachedResourceInfo = $script:ResourceCache[$r.type]
-            if ($cachedResourceInfo)
-            {
-                $inputht = @{}
-                $typeparts = $r.type -split "/"
-                $ModuleName = $typeparts[0]
-                $ResourceTypeName = $typeparts[1]
-                $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
-                $e = $null
-                $op_result = Invoke-DscResource -Method Get -ModuleName $ModuleName -Name $ResourceTypeName -Property $inputht -ErrorVariable e
-                if ($e)
-                {
-                    # By this point Invoke-DscResource already wrote error message to stderr stream,
-                    # so we just need to signal error to the caller by non-zero exit code.
-                    exit 1
-                }
-                $result += $op_result
+    foreach ($ds in $desiredState) {
+        # store the INPUT to each resource as resourceInfo and the OUTPUT as result
+
+        # get details from cache about the DSC resource, if it exists
+        $cachedResourceInfo = $resourceCache | Where-Object Type -EQ $ds.type | ForEach-Object DscResourceInfo
+
+        if ($cachedResourceInfo) {
+            # if the resource is found in the cache from Get-DscResource
+
+            # morph the INPUT object into a hashtable
+            $ds.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+
+            # using the cmdlet from PSDesiredStateConfiguration module, and handle errors
+            try {
+                $setResult = Invoke-DscResource -Method Set -ModuleName $cachedResourceInfo.ModuleName -Name $cachedResourceInfo.Name -Property $property
             }
-            else
-            {
-                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
-                Write-Error $errmsg
+            catch {
+                Write-Error $_.Exception.Message
                 exit 1
             }
-        }
-    }
-    else # we are processing an individual resource call
-    {
-        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
-        if ($cachedResourceInfo)
-        {
-            $inputht = @{}
-            $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
-                if ($_.Name -ne "type")
-                {
-                    $inputht[$_.Name] = $_.Value
-                }
+
+            # set the properties of the OUTPUT object from the result of Get-TargetResource
+            $addToActualState = Get-Resource -DesiredState $ds -ResourceCache $resourceCache
+
+            # add the properties of the OUTPUT object from the result of Set-TargetResource
+            $setResult.psobject.Properties | ForEach-Object -Process {
+                $addToActualState.properties | Add-Member -Type NoteProperty -Name $_.Name -Value $_.Value
             }
-            $e = $null
-            $op_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e -WarningAction SilentlyContinue
-            if ($e)
-            {
-                # By this point Invoke-DscResource already wrote error message to stderr stream,
-                # so we just need to signal error to the caller by non-zero exit code.
-                exit 1
-            }
-            $result = $op_result
+
+            # add resource actual state to the OUTPUT object
+            $actualState += $addToActualState
         }
-        else
-        {
-            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
+        else {
+            $errmsg = 'Can not find type ' + $ds.type + '; please ensure that Get-DscResource returns this resource type'
             Write-Error $errmsg
             exit 1
         }
     }
 
-    $result | ConvertTo-Json -EnumsAsStrings
+    # OUTPUT
+    @{resources = $actualState} | ConvertTo-Json -Depth 5
 }
-elseif ($Operation -eq 'Set')
-{
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
+elseif ($Operation -EQ 'Test') {
+    # in version 3, the output of Test includes information from Get
 
-    $result = @()
+    # initialize OUTPUT as array
+    $actualState = @()
 
-    RefreshCache
+    foreach ($ds in $desiredState) {
+        # store the INPUT to each resource as resourceInfo and the OUTPUT as result
 
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
-    {
-        foreach($r in $inputobj_pscustomobj.resources)
-        {
-            #Write-Output $r.type
-            $cachedResourceInfo = $script:ResourceCache[$r.type]
-            if ($cachedResourceInfo)
-            {
-                $inputht = @{}
-                $ResourceTypeName = ($r.type -split "/")[1]
-                $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
-                $e = $null
-                $op_result = Invoke-DscResource -Method Set -Name $ResourceTypeName -Property $inputht -ErrorVariable e
-                if ($e)
-                {
-                    # By this point Invoke-DscResource already wrote error message to stderr stream,
-                    # so we just need to signal error to the caller by non-zero exit code.
-                    exit 1
-                }
-                $result += $op_result
+        # get details from cache about the DSC resource, if it exists
+        $cachedResourceInfo = $resourceCache | Where-Object Type -EQ $ds.type | ForEach-Object DscResourceInfo
+
+        if ($cachedResourceInfo) {
+            # if the resource is found in the cache from Get-DscResource
+
+            # morph the INPUT object into a hashtable
+            $ds.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+
+            # using the cmdlet from PSDesiredStateConfiguration module, and handle errors
+            try {
+                $testResult = Invoke-DscResource -Method Test -ModuleName $cachedResourceInfo.ModuleName -Name $cachedResourceInfo.Name -Property $property
             }
-            else
-            {
-                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
-                Write-Error $errmsg
+            catch {
+                Write-Error $_.Exception.Message
                 exit 1
             }
-        }
-    }
-    else # we are processing an individual resource call
-    {
-        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
-        if ($cachedResourceInfo)
-        {
-            $inputht = @{}
-            $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
-                if ($_.Name -ne "type")
-                {
-                    $inputht[$_.Name] = $_.Value
-                }
+
+            # set the properties of the OUTPUT object from the result of Get-TargetResource
+            $addToActualState = Get-Resource -DesiredState $ds -ResourceCache $resourceCache
+
+            # add the properties of the OUTPUT object from the result of Set-TargetResource
+            $testResult.psobject.Properties | ForEach-Object -Process {
+                $addToActualState.properties | Add-Member -Type NoteProperty -Name $_.Name -Value $_.Value
             }
-            $e = $null
-            $op_result = Invoke-DscResource -Method Set -Name $ResourceTypeName -Property $inputht -ErrorVariable e
-            if ($e)
-            {
-                # By this point Invoke-DscResource already wrote error message to stderr stream,
-                # so we just need to signal error to the caller by non-zero exit code.
-                exit 1
-            }
-            $result = $op_result
+
+            # add resource actual state to the OUTPUT object
+            $actualState += $addToActualState
         }
-        else
-        {
-            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
+        else {
+            # if the resource is not found in the cache from Get-DscResource
+            $errmsg = 'Can not find type ' + $inputObj.type + '; please ensure that Get-DscResource returns this resource type'
             Write-Error $errmsg
             exit 1
         }
     }
 
-    $result | ConvertTo-Json
+    # OUTPUT
+    @{resources = $actualState} | ConvertTo-Json -Depth 5
 }
-elseif ($Operation -eq 'Test')
-{
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
-    $result = @()
-
-    RefreshCache
-
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
-    {
-        foreach($r in $inputobj_pscustomobj.resources)
-        {
-            #Write-Output $r.type
-            $cachedResourceInfo = $script:ResourceCache[$r.type]
-            if ($cachedResourceInfo)
-            {
-                $inputht = @{}
-                $ResourceTypeName = ($r.type -split "/")[1]
-                $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
-                $e = $null
-                $op_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
-                if ($e)
-                {
-                    # By this point Invoke-DscResource already wrote error message to stderr stream,
-                    # so we just need to signal error to the caller by non-zero exit code.
-                    exit 1
-                }
-                $result += $op_result
-            }
-            else
-            {
-                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
-                Write-Error $errmsg
-                exit 1
-            }
-        }
-    }
-    else # we are processing an individual resource call
-    {
-        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
-        if ($cachedResourceInfo)
-        {
-            $inputht = @{}
-            $ResourceTypeName = ($r.type -split "/")[1]
-            $r.properties.psobject.properties | %{ $inputht[$_.Name] = $_.Value }
-            $e = $null
-            $add_result = [ordered]@{}
-            $test_result = Invoke-DscResource -Method Test -Name $ResourceTypeName -Property $inputht -ErrorVariable e
-            $get_result = Invoke-DscResource -Method Get -Name $ResourceTypeName -Property $inputht -ErrorVariable e
-            foreach ($dscProperty in $($get_result | Get-Member -MemberType Properties | ForEach-Object {$_.Name})) {
-                if ($inputht.keys -contains $dscProperty) {
-                    $add_result[$dscProperty] = $get_result.$dscProperty
-                }
-            }
-            $add_result['type'] = $inputobj_pscustomobj.type
-            $add_result['InDesiredState'] = $test_result.InDesiredState
-            if ($e)
-            {
-                # By this point Invoke-DscResource already wrote error message to stderr stream,
-                # so we just need to signal error to the caller by non-zero exit code.
-                exit 1
-            }
-            $result += $add_result
-        }
-        else
-        {
-            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
-            Write-Error $errmsg
-            exit 1
-        }
-    }
-
-    $result | ConvertTo-Json
+else {
+    'ERROR: Unsupported operation requested from powershellgroup.resource.ps1'
 }
-else
-{
-    "ERROR: Unsupported operation requested from powershellgroup.resource.ps1"
+
+# cached resource standard
+class resourceCache {
+    [string] $Type
+    [PSObject] $DscResourceInfo
+}
+
+# format expected for config input and output
+class configFormat {
+    [string] $name
+    [string] $type
+    [PSObject] $properties
+}
+
+# output standard
+class resourceOutput {
+    [string] $type
+    [string] $version
+    [string] $path
+    [string] $directory
+    [string] $implementedAs
+    [string] $author
+    [string[]] $properties
+    [string] $requires
 }
