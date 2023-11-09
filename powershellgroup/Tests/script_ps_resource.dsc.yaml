@@ -8,13 +8,13 @@ resources:
   type: DSC/PowerShellGroup
   properties:
     resources:
-    - name: Bits should be running
+    - name: Winmgmt should be running
       type: PSDscResources/MSFT_ServiceResource
       properties:
-        Name: bits
-        #State: Running
+        Name: Winmgmt
+        State: Running
     - name: Spooler should be running
       type: PSDscResources/MSFT_ServiceResource
       properties:
         Name: Spooler
-        #State: Running
+        State: Running

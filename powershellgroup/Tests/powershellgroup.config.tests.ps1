@@ -53,7 +53,6 @@ Describe 'PowerShellGroup resource tests' {
     }
 
     It 'Test works on config with multiple script-based resources' -Skip:(!$IsWindows){
-
         $r = Get-Content -Raw $multiScriptResourceConfigPath | dsc config test
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
