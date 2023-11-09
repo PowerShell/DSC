@@ -46,7 +46,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = Get-Content -Raw $multiScriptResourceConfigPath | dsc config get
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results[0].result.actualState.resources[0].properties.Name | Should -BeExactly 'bits'
+        $res.results[0].result.actualState.resources[0].properties.Name | Should -BeExactly 'winmgmt'
         $res.results[0].result.actualState.resources[0].properties.State | Should -BeExactly 'running'
         $res.results[0].result.actualState.resources[1].properties.Name | Should -BeExactly 'spooler'
         $res.results[0].result.actualState.resources[1].properties.State | Should -BeExactly 'running'
