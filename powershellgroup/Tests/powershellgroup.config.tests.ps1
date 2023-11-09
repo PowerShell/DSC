@@ -18,8 +18,8 @@ Describe 'PowerShellGroup resource tests' {
         $r = Get-Content -Raw $configPath | dsc config get
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results[0].result.actualState[0].PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
-        $res.results[0].result.actualState[1].Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.results[0].result.actualState.resources[0].properties.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
+        $res.results[0].result.actualState.resources[1].properties.Prop1 | Should -BeExactly 'ValueForProp1'
     }
 
     It 'Test works on config with class-based and script-based resources' -Skip:(!$IsWindows){
@@ -27,8 +27,8 @@ Describe 'PowerShellGroup resource tests' {
         $r = Get-Content -Raw $configPath | dsc config test
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results[0].result.actualState[0] | Should -Not -BeNull
-        $res.results[0].result.actualState[1] | Should -Not -BeNull
+        $res.results[0].result.actualState.resources[0] | Should -Not -BeNull
+        $res.results[0].result.actualState.resources[1] | Should -Not -BeNull
     }
 
     It 'Set works on config with class-based and script-based resources' -Skip:(!$IsWindows){
@@ -36,7 +36,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = Get-Content -Raw $configPath | dsc config set
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results.result.afterState[0].RebootRequired | Should -Not -BeNull
-        $res.results.result.afterState[1].RebootRequired | Should -Not -BeNull
+        $res.results.result.afterState.resources[0].properties.RebootRequired | Should -Not -BeNull
+        $res.results.result.afterState.resources[1].properties.RebootRequired | Should -Not -BeNull
     }
 }

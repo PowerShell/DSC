@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 [CmdletBinding()]
 param(
     [ValidateSet('List', 'Get', 'Set', 'Test')]

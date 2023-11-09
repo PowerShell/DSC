@@ -22,5 +22,6 @@
     "yaml.schemas": {
         "schemas/2023/10/bundled/config/document.vscode.json": "**.dsc.{yaml,yml,config.yaml,config.yml}",
         "schemas/2023/10/bundled/resource/manifest.vscode.json": "**.dsc.resource.{yaml,yml}"
-    }
+    },
+    "pester.autoRunOnSave": false
 }

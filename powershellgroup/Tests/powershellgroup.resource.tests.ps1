@@ -25,7 +25,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.actualState.resources[0].properties.Prop1 | Should -BeExactly 'ValueForProp1'
     }
 
     It 'Get works on script-based resource' -Skip:(!$IsWindows){
@@ -33,7 +33,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestPSRepository1'}" | dsc resource get -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
+        $res.actualState.resources[0].properties.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
     }
 
     It 'Get uses enum names on class-based resource' -Skip:(!$IsWindows){
@@ -41,7 +41,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.EnumProp | Should -BeExactly 'Expected'
+        $res.actualState.resources[0].properties.EnumProp | Should -BeExactly 1
     }
 
     It 'Get uses enum names on script-based resource' -Skip:(!$IsWindows){
@@ -49,7 +49,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestPSRepository1'}" | dsc resource get -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.Ensure | Should -BeExactly 'Present'
+        $res.actualState.resources[0].properties.Ensure | Should -BeExactly 1
     }
 
     It 'Test works on class-based resource' -Skip:(!$IsWindows){
@@ -58,7 +58,7 @@ Describe 'PowerShellGroup resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         write-verbose $res -verbose
-        $res.actualState.InDesiredState | Should -Be $True
+        $res.actualState.resources[0].properties.InDesiredState | Should -Be $True
     }
 
     It 'Test works on script-based resource' -Skip:(!$IsWindows){
@@ -66,7 +66,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestPSRepository1','PackageManagementProvider':'NuGet'}" | dsc resource test -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.InDesiredState | Should -Be $True
+        $res.actualState.resources[0].properties.InDesiredState | Should -Be $True
     }
 
     It 'Set works on class-based resource' -Skip:(!$IsWindows){
@@ -74,7 +74,7 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r PSTestModule/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.afterState.RebootRequired | Should -Not -BeNull
+        $res.afterState.resources[0].properties.RebootRequired | Should -Not -BeNull
     }
 
     It 'Set works on script-based resource' -Skip:(!$IsWindows){
@@ -82,6 +82,6 @@ Describe 'PowerShellGroup resource tests' {
         $r = "{'Name':'TestPSRepository1'}" | dsc resource set -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.afterState.RebootRequired | Should -Not -BeNull
+        $res.afterState.resources[0].properties.RebootRequired | Should -Not -BeNull
     }
 }
