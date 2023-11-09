@@ -125,7 +125,7 @@ stages:
         new-item -itemType Directory $(PackageRoot) -Force
         $packageVersion = ./build.ps1 -GetPackageVersion
         Write-Verbose -Verbose $packageVersion
-        tar czf $(PackageRoot)/DSC-$packageVersion-x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration)/*
+        tar czf $(PackageRoot)/DSC-$packageVersion-x86_64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -148,7 +148,7 @@ stages:
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
         $packageVersion = ./build.ps1 -GetPackageVersion
-        tar czf $(PackageRoot)/DSC-$packageVersion-aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)*
+        tar czf $(PackageRoot)/DSC-$packageVersion-aarch64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -176,7 +176,7 @@ stages:
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
         $packageVersion = ./build.ps1 -GetPackageVersion
-        tar czf $(PackageRoot)/DSC-$packageVersion-$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)/*
+        tar czf $(PackageRoot)/DSC-$packageVersion-$(buildName).tar.gz -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
