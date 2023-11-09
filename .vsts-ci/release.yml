@@ -176,12 +176,12 @@ stages:
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
         $packageVersion = ./build.ps1 -GetPackageVersion
-        tar czf DSC-${packageVersion}-$(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)/*
+        tar czf $(PackageRoot)/DSC-$packageVersion-$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)/*
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
         $packageVersion = ./build.ps1 -GetPackageVersion
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-${packageVersion}-$(buildName).tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$packageVersion-$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
