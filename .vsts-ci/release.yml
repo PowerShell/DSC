@@ -119,18 +119,23 @@ stages:
     steps:
     - pwsh: |
         ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
+        $packageVersion = ./build.ps1 -GetPackageVersion
+        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
       displayName: 'Build x86_64-unknown-linux-gnu'
       condition: succeeded()
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration)
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        Write-Verbose -Verbose $packageVersion
-        tar czf $(PackageRoot)/DSC-$packageVersion-x86_64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
+        tar czf $(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$packageVersion-x86_64-unknown-linux-gnu.tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -143,17 +148,23 @@ stages:
     steps:
     - pwsh: |
         ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
+        $packageVersion = ./build.ps1 -GetPackageVersion
+        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
       displayName: 'Build aarch64-unknown-linux-gnu'
       condition: succeeded()
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        tar czf $(PackageRoot)/DSC-$packageVersion-aarch64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
+        tar czf $(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$packageVersion-aarch64-unknown-linux-gnu.tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -171,17 +182,23 @@ stages:
     steps:
     - pwsh: |
         ./build.ps1 -Release -Architecture $(buildName)
+        $packageVersion = ./build.ps1 -GetPackageVersion
+        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
       displayName: 'Build $(buildName)'
       condition: succeeded()
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        tar czf $(PackageRoot)/DSC-$packageVersion-$(buildName).tar.gz -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+        tar czf $(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$packageVersion-$(buildName).tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
