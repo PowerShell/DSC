@@ -131,7 +131,7 @@ stages:
         PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
+        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -160,7 +160,7 @@ stages:
         PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
+        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
@@ -188,13 +188,13 @@ stages:
       condition: succeeded()
     - template: Sbom.yml@ComplianceRepo
       parameters:
-        BuildDropPath: $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)
+        BuildDropPath: $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)
         Build_Repository_Uri: 'https://github.com/powershell/DSC'
         PackageName: 'DSC'
         PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
