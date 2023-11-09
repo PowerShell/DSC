@@ -75,10 +75,6 @@ stages:
         Write-Host "##$vstsCommandString"
       displayName: Setup variables for signing
 
-#    - publish: "$(PackageRoot)/out"
-#      artifact: out
-#      displayName: Publish unsigned files
-
     - checkout: ComplianceRepo
 
     - template: EsrpSign.yml@ComplianceRepo
@@ -106,11 +102,11 @@ stages:
         PackageVersion: $(PackageVersion)
 
     - pwsh: |
-        compress-archive -Path "$(PackageRoot)/signed/*" -DestinationPath "$(PackageRoot)/$(buildName).zip"
+        compress-archive -Path "$(PackageRoot)/signed/*" -DestinationPath "$(PackageRoot)/DSC-${packageVersion}-$(buildName).zip"
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\$(buildName).zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\DSC-${packageVersion}-$(buildName).zip"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -127,11 +123,12 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
+        $packageVersion = $(Build.SourcesDirectory)/DSC/build.ps1 -GetPackageVersion
+        tar czf $(PackageRoot)/DSC-${packageVersion}-x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/x86_64-unknown-linux-gnu.tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-${packageVersion}-x86_64-unknown-linux-gnu.tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -148,6 +145,7 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
+        $packageVersion = $(Build.SourcesDirectory)/DSC/build.ps1 -GetPackageVersion
         tar czf $(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
@@ -174,11 +172,12 @@ stages:
       condition: succeeded()
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf $(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)/   .
+        $packageVersion = $(Build.SourcesDirectory)/DSC/build.ps1 -GetPackageVersion
+        tar czf DSC-${packageVersion}-$(PackageRoot)/$(buildName).tar.gz $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)/   .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/$(buildName).tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-${packageVersion}-$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -210,7 +209,7 @@ stages:
     - template: assembly-module-compliance.yml@ComplianceRepo
       parameters:
         # binskim
-        AnalyzeTarget: '$(Pipeline.Workspace)/uncompressed/*.exe'
+        AnalyzeTarget: '$(Build.SourcesDirectory)/DSC/bin/x86_64-pc-windows-msvc/release/*.exe' #'$(Pipeline.Workspace)/uncompressed/*.exe'
         AnalyzeSymPath: 'SRV*'
         # component-governance
         sourceScanPath: '$(Build.SourcesDirectory)/DSC'
@@ -223,7 +222,7 @@ stages:
         codeBaseName: 'DSC'
         # selections
         softwareName: 'DSC'
-        softwareNameFolder: '$(Pipeline.Workspace)/uncompressed'
+        softwareNameFolder: '$(Build.SourcesDirectory)/DSC/bin/x86_64-pc-windows-msvc/release' #'$(Pipeline.Workspace)/uncompressed'
         softwareVersion: '$(PackageVersion)'
         connectionString: RunAs=App;AppId=$(APIScanClient);TenantId=$(APIScanTenant);AppKey=$(APIScanSecret)
         APIScan: true # set to false when not using Windows APIs.
