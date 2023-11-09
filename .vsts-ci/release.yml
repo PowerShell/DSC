@@ -124,11 +124,13 @@ stages:
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
         $packageVersion = ./build.ps1 -GetPackageVersion
-        tar czf $(PackageRoot)/DSC-${packageVersion}-x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration)/*
+        Write-Verbose -Verbose $packageVersion
+        tar czf $(PackageRoot)/DSC-$packageVersion-x86_64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration)/*
       displayName: 'Compress x86_64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-${packageVersion}-x86_64-unknown-linux-gnu.tar.gz"
+        $packageVersion = ./build.ps1 -GetPackageVersion
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$packageVersion-x86_64-unknown-linux-gnu.tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -146,11 +148,12 @@ stages:
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
         $packageVersion = ./build.ps1 -GetPackageVersion
-        tar czf $(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)*
+        tar czf $(PackageRoot)/DSC-$packageVersion-aarch64-unknown-linux-gnu.tar.gz $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)*
       displayName: 'Compress aarch64-unknown-linux-gnu'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/aarch64-unknown-linux-gnu.tar.gz"
+        $packageVersion = ./build.ps1 -GetPackageVersion
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$packageVersion-aarch64-unknown-linux-gnu.tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
@@ -177,6 +180,7 @@ stages:
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
+        $packageVersion = ./build.ps1 -GetPackageVersion
         Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-${packageVersion}-$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
