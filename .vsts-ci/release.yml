@@ -120,7 +120,7 @@ stages:
       displayName: Upload artifacts
       condition: succeeded()
 
-  - job: Publish Signed
+  - job: PublishSigned
     dependsOn: BuildWin
     variables:
     - name: signOutPath
