@@ -201,7 +201,7 @@ stages:
         PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+        tar czf '$(PackageRoot)/DSC-$env:PackageVersion-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
