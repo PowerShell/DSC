@@ -26,14 +26,15 @@ stages:
     - checkout: self
     - pwsh: |
         $packageVersion = ./build.ps1 -GetPackageVersion
-        $vstsCommandString = "vso[task.setvariable variable=PackageVersion;isoutput=true]$packageVersion"
+        $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
         Write-Host ("sending " + $vstsCommandString)
         Write-Host "##$vstsCommandString"
+      name: Package
 
   - job: BuildWin
     dependsOn: SetPackageVersion
     variables:
-    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
+      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
     - group: ESRP
     pool:
       name: PowerShell1ES
@@ -125,7 +126,7 @@ stages:
   - job: BuildLinux
     dependsOn: SetPackageVersion
     variables:
-    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
+      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
     displayName: Linux-x64-gnu
     pool:
       name: PowerShell1ES
@@ -155,7 +156,7 @@ stages:
   - job: BuildLinuxArm64
     dependsOn: SetPackageVersion
     variables:
-    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
+      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
     displayName: Linux-ARM64-gnu
     pool:
       name: ps-powershell-rel-arm
@@ -185,7 +186,7 @@ stages:
   - job: BuildMac
     dependsOn: SetPackageVersion
     variables:
-    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
+      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
     displayName: Build
     pool:
       vmImage: macOS-Latest
@@ -221,6 +222,8 @@ stages:
   dependsOn: BuildAndSign
   jobs:
   - job: Compliance_Job
+    variables:
+      PackageVersion: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
     pool:
       name: PowerShell1ES
       demands:
