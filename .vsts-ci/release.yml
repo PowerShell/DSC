@@ -34,8 +34,9 @@ stages:
   - job: BuildWin
     dependsOn: SetPackageVersion
     variables:
-      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
     - group: ESRP
+    - name: PackageVersion
+      value: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
     pool:
       name: PowerShell1ES
       demands:
