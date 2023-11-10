@@ -26,7 +26,7 @@ stages:
     - checkout: self
     - pwsh: |
         $packageVersion = ./build.ps1 -GetPackageVersion
-        $vstsCommandString = "vso[task.setvariable variable=PackageVersion;]$packageVersion"
+        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
         Write-Host ("sending " + $vstsCommandString)
         Write-Host "##$vstsCommandString"
 
@@ -131,8 +131,6 @@ stages:
     steps:
     - pwsh: |
         ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
       displayName: 'Build x86_64-unknown-linux-gnu'
       condition: succeeded()
     - template: Sbom.yml@ComplianceRepo
@@ -161,8 +159,6 @@ stages:
     steps:
     - pwsh: |
         ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
       displayName: 'Build aarch64-unknown-linux-gnu'
       condition: succeeded()
     - template: Sbom.yml@ComplianceRepo
@@ -195,8 +191,6 @@ stages:
     steps:
     - pwsh: |
         ./build.ps1 -Release -Architecture $(buildName)
-        $packageVersion = ./build.ps1 -GetPackageVersion
-        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
       displayName: 'Build $(buildName)'
       condition: succeeded()
     - template: Sbom.yml@ComplianceRepo
@@ -211,8 +205,7 @@ stages:
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        $packageVersion = '$(PackageVersion)'
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$packageVersion-$(buildName).tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
