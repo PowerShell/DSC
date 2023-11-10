@@ -70,14 +70,15 @@ stages:
         $vstsCommandString = "vso[task.setvariable variable=signSrcPath]${signSrcPath}"
         Write-Host ("sending " + $vstsCommandString)
         Write-Host "##$vstsCommandString"
-
+    - pwsh: |
         $signOutPath = "$(PackageRoot)/signed"
         $null = New-Item -ItemType Directory -Path $signOutPath
         # Set signing out path variable
-        $vstsCommandString = "vso[task.setvariable variable=signOutPath]${signOutPath}"
+        $vstsCommandString = "vso[task.setvariable variable=signOutPath;isoutput=true]${signOutPath}"
         Write-Host "sending " + $vstsCommandString
         Write-Host "##$vstsCommandString"
-
+      name: signOutPath
+    - pwsh: |
         # Set path variable for guardian codesign validation
         $vstsCommandString = "vso[task.setvariable variable=GDN_CODESIGN_TARGETDIRECTORY]${signOutPath}"
         Write-Host "sending " + $vstsCommandString
@@ -119,6 +120,12 @@ stages:
       displayName: Upload artifacts
       condition: succeeded()
 
+  - job: Publish Signed
+    dependsOn: BuildWin
+    variables:
+    - name: signOutPath
+      value: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
+    steps:
     - task: PublishPipelineArtifact@1
       inputs:
         targetpath: $(signOutPath)
@@ -210,7 +217,7 @@ stages:
         PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
