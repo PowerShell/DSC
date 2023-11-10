@@ -20,7 +20,18 @@ stages:
   displayName: Build Native Binaries
   dependsOn: []
   jobs:
+  - job: SetPackageVersion
+    displayName: Set PackageVersion
+    steps:
+    - checkout: self
+    - pwsh: |
+      $packageVersion = $(Build.SourcesDirectory)/DSC/build.ps1 -GetPackageVersion
+      $vstsCommandString = "vso[task.setvariable variable=PackageVersion;]$packageVersion"
+      Write-Host ("sending " + $vstsCommandString)
+      Write-Host "##$vstsCommandString"
+
   - job: BuildWin
+    dependsOn: SetPackageVersion
     variables:
     - group: ESRP
     pool:
@@ -68,11 +79,6 @@ stages:
         $vstsCommandString = "vso[task.setvariable variable=GDN_CODESIGN_TARGETDIRECTORY]${signOutPath}"
         Write-Host "sending " + $vstsCommandString
         Write-Host "##$vstsCommandString"
-
-        $packageVersion = $(Build.SourcesDirectory)/DSC/build.ps1 -GetPackageVersion
-        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
-        Write-Host ("sending " + $vstsCommandString)
-        Write-Host "##$vstsCommandString"
       displayName: Setup variables for signing
 
     - checkout: ComplianceRepo
@@ -102,15 +108,21 @@ stages:
         PackageVersion: $(PackageVersion)
 
     - pwsh: |
-        compress-archive -Path "$(PackageRoot)/signed/*" -DestinationPath "$(PackageRoot)/DSC-${packageVersion}-$(buildName).zip"
+        compress-archive -Path "$(PackageRoot)/signed/*" -DestinationPath "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).zip"
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\DSC-${packageVersion}-$(buildName).zip"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\DSC-$(PackageVersion)-$(buildName).zip"
       displayName: Upload artifacts
       condition: succeeded()
 
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetpath: $(signOutPath)
+        artifactName: signed
+
   - job: BuildLinux
+    dependsOn: SetPackageVersion
     displayName: Linux-x64-gnu
     pool:
       name: PowerShell1ES
@@ -140,6 +152,7 @@ stages:
       condition: succeeded()
 
   - job: BuildLinuxArm64
+    dependsOn: SetPackageVersion
     displayName: Linux-ARM64-gnu
     pool:
       name: ps-powershell-rel-arm
@@ -168,8 +181,8 @@ stages:
       displayName: Upload artifacts
       condition: succeeded()
 
-
   - job: BuildMac
+    dependsOn: SetPackageVersion
     displayName: Build
     pool:
       vmImage: macOS-Latest
