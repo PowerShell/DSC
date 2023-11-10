@@ -25,7 +25,7 @@ stages:
     steps:
     - checkout: self
     - pwsh: |
-        $packageVersion = $(Build.SourcesDirectory)/DSC/build.ps1 -GetPackageVersion
+        $packageVersion = ./build.ps1 -GetPackageVersion
         $vstsCommandString = "vso[task.setvariable variable=PackageVersion;]$packageVersion"
         Write-Host ("sending " + $vstsCommandString)
         Write-Host "##$vstsCommandString"
