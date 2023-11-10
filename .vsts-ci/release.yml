@@ -26,13 +26,14 @@ stages:
     - checkout: self
     - pwsh: |
         $packageVersion = ./build.ps1 -GetPackageVersion
-        $vstsCommandString = "vso[task.setvariable variable=PackageVersion]$packageVersion"
+        $vstsCommandString = "vso[task.setvariable variable=PackageVersion;isoutput=true]$packageVersion"
         Write-Host ("sending " + $vstsCommandString)
         Write-Host "##$vstsCommandString"
 
   - job: BuildWin
     dependsOn: SetPackageVersion
     variables:
+    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
     - group: ESRP
     pool:
       name: PowerShell1ES
@@ -123,6 +124,8 @@ stages:
 
   - job: BuildLinux
     dependsOn: SetPackageVersion
+    variables:
+    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
     displayName: Linux-x64-gnu
     pool:
       name: PowerShell1ES
@@ -151,6 +154,8 @@ stages:
 
   - job: BuildLinuxArm64
     dependsOn: SetPackageVersion
+    variables:
+    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
     displayName: Linux-ARM64-gnu
     pool:
       name: ps-powershell-rel-arm
@@ -179,6 +184,8 @@ stages:
 
   - job: BuildMac
     dependsOn: SetPackageVersion
+    variables:
+    - PackageVersion: $[ dependencies.SetPackageVersion.outputs['passOutput.PackageVersion'] ]
     displayName: Build
     pool:
       vmImage: macOS-Latest
@@ -201,11 +208,11 @@ stages:
         PackageVersion: $(PackageVersion)
     - pwsh: |
         new-item -itemType Directory $(PackageRoot) -Force
-        tar czf '$(PackageRoot)/DSC-$env:PackageVersion-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+        tar czf "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$env:PackageVersion)-$(buildName).tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
