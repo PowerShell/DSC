@@ -205,7 +205,7 @@ stages:
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
-        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz"
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$env:PackageVersion)-$(buildName).tar.gz"
       displayName: Upload artifacts
       condition: succeeded()
 
