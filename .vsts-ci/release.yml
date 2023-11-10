@@ -90,7 +90,7 @@ stages:
     - template: EsrpSign.yml@ComplianceRepo
       parameters:
         # the folder which contains the binaries to sign
-        buildOutputPath: $(signSrcPath)
+        buildOutputPath: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
         # the location to put the signed output
         signOutputPath: $(signOutPath.signOutPath)
         # the certificate ID to use
@@ -120,16 +120,16 @@ stages:
       displayName: Upload artifacts
       condition: succeeded()
 
-  - job: PublishSigned
-    dependsOn: BuildWin
-    variables:
-    - name: signOutPath
-      value: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
-    steps:
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetpath: $(signOutPath)
-        artifactName: signed
+#  - job: PublishSigned
+#    dependsOn: BuildWin
+#    variables:
+#    - name: signOutPath
+#      value: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
+#    steps:
+#    - task: PublishPipelineArtifact@1
+#      inputs:
+#        targetpath: $(signOutPath)
+#        artifactName: signed
 
   - job: BuildLinux
     dependsOn: SetPackageVersion
