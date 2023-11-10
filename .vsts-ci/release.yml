@@ -92,7 +92,7 @@ stages:
         # the folder which contains the binaries to sign
         buildOutputPath: $(signSrcPath)
         # the location to put the signed output
-        signOutputPath: $(signOutPath)
+        signOutputPath: $(signOutPath.signOutPath)
         # the certificate ID to use
         certificateId: "CP-230012"
         # The file pattern to use
