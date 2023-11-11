@@ -80,7 +80,7 @@ stages:
       name: signOutPath
     - pwsh: |
         # Set path variable for guardian codesign validation
-        $vstsCommandString = "vso[task.setvariable variable=GDN_CODESIGN_TARGETDIRECTORY]${signOutPath}"
+        $vstsCommandString = "vso[task.setvariable variable=GDN_CODESIGN_TARGETDIRECTORY]$(signOutPath.signOutPath)"
         Write-Host "sending " + $vstsCommandString
         Write-Host "##$vstsCommandString"
       displayName: Setup variables for signing
@@ -106,13 +106,13 @@ stages:
 
     - template: Sbom.yml@ComplianceRepo
       parameters:
-        BuildDropPath: $(PackageRoot)/signed
+        BuildDropPath: $(signOutPath.signOutPath)
         Build_Repository_Uri: 'https://github.com/powershell/DSC'
         PackageName: 'DSC'
         PackageVersion: $(PackageVersion)
 
     - pwsh: |
-        compress-archive -Path "$(PackageRoot)/signed/*" -DestinationPath "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).zip"
+        compress-archive -Path "$(signOutPath.signOutPath)/*" -DestinationPath "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).zip"
       displayName: 'Compress $(buildName)'
       condition: succeeded()
     - pwsh: |
