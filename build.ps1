@@ -106,6 +106,7 @@ $projects = @(
     "tools/test_group_resource",
     "y2j"
     "powershellgroup"
+    "wmigroup"
     "resources/brew"
     "tools/dsctest"
 )

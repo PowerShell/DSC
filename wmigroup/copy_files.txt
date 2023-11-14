@@ -1,0 +1,1 @@
+wmigroup.resource.ps1
