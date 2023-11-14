@@ -99,7 +99,7 @@ stages:
         # If not using minimatch: comma separated, with * supported
         # If using minimatch: newline separated, with !, **, and * supported.
         # See link in the useMinimatch comments.
-        pattern: '*.exe'
+        pattern: '*.exe','*.ps1'
         # decides if the task should use minimatch for the pattern matching.
         # https://github.com/isaacs/minimatch#features
         useMinimatch: false
