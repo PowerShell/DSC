@@ -108,6 +108,31 @@ Type:      String
 Mandatory: false
 ```
 
+### -l, --logging-level
+
+Defines the minimum log level DSC should emit during an operation. Messages in DSC are categorized
+by their log level.
+
+The following list shows the valid log levels from highest to lowest level. When this option is
+set to any value in the list, DSC emits messages at that level and above.
+
+- `Error`
+- `Warning`
+- `Info` (default)
+- `Debug`
+- `Trace`
+
+For example, when the log level is `Debug`, DSC emits messages for every log level except `Trace`.
+Dsc emits only error messages when the log level is `Error`. DSC ignores every message with a lower
+log level.
+
+```yaml
+Type: String
+Mandatory: false
+DefaultValue: Info
+ValidValues:  [Error, Warning, Info, Debug, Trace]
+```
+
 ### -p, --input-file
 
 Defines the path to a text file to read as input for the command instead of piping input from
