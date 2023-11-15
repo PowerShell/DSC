@@ -2,7 +2,7 @@
 title: "Desired State Configuration changelog"
 description: >-
   A log of the changes for releases of DSCv3.
-ms.date: 10/05/2023
+ms.date: 11/15/2023
 ---
 
 # Changelog
@@ -123,6 +123,22 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   - Issues: [#173][#173]
   - PRs: [#240][#240]
+
+  </details>
+
+- Added initial [configuration document functions][28] to DSC. You can now use the [base64()][29],
+  [concat()][30], and [resourceId()][31] functions in the configuration document.
+
+  > [!NOTE]
+  > The `resourceId` function has been reimplemented as a document function instead of a special
+  > case, but it has the same functionality and parameters.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#57][#57]
+  - PRs:
+    - [#241][#241]
+    - [#252][#252]
 
   </details>
 
@@ -442,6 +458,10 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [25]: docs/reference/cli/dsc.md#-p---input-file
 [26]: docs/reference/cli/completer/command.md
 [27]: docs/reference/cli/dsc.md#-l---logging-level
+[28]: docs/reference/schemas/config/functions/overview.md
+[29]: docs/reference/schemas/config/functions/base64.md
+[30]: docs/reference/schemas/config/functions/concat.md
+[31]: docs/reference/schemas/config/functions/resourceId.md
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
@@ -478,7 +498,10 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#216]: https://github.com/PowerShell/DSC/issues/216
 [#217]: https://github.com/PowerShell/DSC/issues/217
 [#240]: https://github.com/PowerShell/DSC/issues/240
+[#241]: https://github.com/PowerShell/DSC/issues/241
 [#248]: https://github.com/PowerShell/DSC/issues/248
+[#252]: https://github.com/PowerShell/DSC/issues/252
 [#45]:  https://github.com/PowerShell/DSC/issues/45
+[#57]:  https://github.com/PowerShell/DSC/issues/57
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#98]:  https://github.com/PowerShell/DSC/issues/98

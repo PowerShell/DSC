@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a Desired State Configuration document.
-ms.date:     08/04/2023
+ms.date:     11/15/2023
 ms.topic:    reference
 title:       DSC Configuration document schema reference
 ---
@@ -30,6 +30,9 @@ recommends drafting configuration documents in YAML.
 
 For DSC's authoring tools to recognize a file as a DSC Configuration document, the filename must
 end with `.dsc.config.json` or `.dsc.config.yaml`.
+
+You can use configuration document functions to dynamically determine values in the document at
+runtime. For more information, see [DSC Configuration document functions reference][01]
 
 <!-- For more information, see [DSC Configurations overview][01]. -->
 
@@ -162,6 +165,8 @@ MinimumItemCount: 1
 ValidItemSchema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.resource.json
 ```
 
+<!-- Link reference definitions -->
+[01]: functions/resourceId.md
 <!-- [01]: ../../../configurations/overview.md -->
 [02]: parameter.md
 <!-- [03]: ../../../configurations/parameters.md -->
