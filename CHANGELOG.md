@@ -99,16 +99,30 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- DSC now emits tace logging to the stderr stream. This can make it easier to understand what DSC
-  is doing. This doesn't affect the data output. In this release, there's no way to opt out of the
-  logging.
+- DSC now emits log messages to the stderr stream. This can make it easier to understand what DSC
+  is doing. This doesn't affect the data output. By default, DSC emits errors, warnings, and
+  informational messages, but not debug or trace messaging. You can control the level of the
+  logging with the new [--logging-level][27] option on the root `dsc` command.
 
   <details><summary>Related work items</summary>
 
   - Issues:
     - [#107][#107]
     - [#158][#158]
-  - PRs: [#211][#211]
+  - PRs:
+    - [#211][#211]
+    - [#248][#248]
+
+  </details>
+
+- Added optimizations for the resource discovery process that runs before most `dsc` commands.
+  These optimizations significantly reduce the command execution duration, especially for the
+  `dsc resource *` commands, which rarely need to run a full discovery for resources.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#173][#173]
+  - PRs: [#240][#240]
 
   </details>
 
@@ -131,6 +145,25 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   - Issues: [#159][#159]
   - PRs: [#208][#208]
+
+  </details>
+
+- DSC no longer terminates during discovery when a resource errors unless the erroring resource is
+  being used for the command. DSC still terminates on a resource error during discovery under the
+  following conditions:
+
+  - When the erroring resource type is the same as the value of the `--resource` option for a
+    `dsc resource *` command.
+  - When an instance in the configuration document uses the erroring resource type for a
+    `dsc config *` command.
+
+  DSC emits the resource errors during discovery as warning messages for the `dsc resource list`
+  command. In all other cases, DSC emits the errors as debug messages.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#121][#121]
+  - PRs: [#240][#240]
 
   </details>
 
@@ -408,9 +441,11 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [24]: docs/reference/cli/dsc.md#-i---input
 [25]: docs/reference/cli/dsc.md#-p---input-file
 [26]: docs/reference/cli/completer/command.md
+[27]: docs/reference/cli/dsc.md#-l---logging-level
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
+[#121]: https://github.com/PowerShell/DSC/issues/121
 [#127]: https://github.com/PowerShell/DSC/issues/127
 [#130]: https://github.com/PowerShell/DSC/issues/130
 [#133]: https://github.com/PowerShell/DSC/issues/133
@@ -423,6 +458,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#168]: https://github.com/PowerShell/DSC/issues/168
 [#171]: https://github.com/PowerShell/DSC/issues/171
 [#172]: https://github.com/PowerShell/DSC/issues/172
+[#173]: https://github.com/PowerShell/DSC/issues/173
 [#174]: https://github.com/PowerShell/DSC/issues/174
 [#175]: https://github.com/PowerShell/DSC/issues/175
 [#176]: https://github.com/PowerShell/DSC/issues/176
@@ -441,6 +477,8 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#215]: https://github.com/PowerShell/DSC/issues/215
 [#216]: https://github.com/PowerShell/DSC/issues/216
 [#217]: https://github.com/PowerShell/DSC/issues/217
+[#240]: https://github.com/PowerShell/DSC/issues/240
+[#248]: https://github.com/PowerShell/DSC/issues/248
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#98]:  https://github.com/PowerShell/DSC/issues/98
