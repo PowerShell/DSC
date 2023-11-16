@@ -20,41 +20,16 @@
       "config": "full"
     },
     "get": {
-      "executable": "pwsh",
+      "executable": "powershell",
       "args": [
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 Get"
+        "$Input | ./wmigroup.resource.ps1 Get"
       ],
       "input": "stdin"
-      },
-    "set": {
-      "executable": "pwsh",
-      "args": [
-        "-NoLogo",
-        "-NonInteractive",
-        "-NoProfile",
-        "-Command",
-        "$Input | ./powershellgroup.resource.ps1 Set"
-      ],
-      "input": "stdin",
-      "implementsPretest": true,
-      "return": "state"
-      },
-    "test": {
-      "executable": "pwsh",
-      "args": [
-        "-NoLogo",
-        "-NonInteractive",
-        "-NoProfile",
-        "-Command",
-        "$Input | ./powershellgroup.resource.ps1 Test"
-      ],
-      "input": "stdin",
-      "return": "state"
-      },
+    },
     "exitCodes": {
       "0": "Success",
       "1": "Error"
