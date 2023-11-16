@@ -35,7 +35,7 @@ Describe 'PowerShellGroup resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState[0].LastBootUpTime | Should -Not -BeNull
-        $res.results[0].result.actualState[1].SystemBiosMajorVersion | Should -Not -BeNull
+        $res.results[0].result.actualState[1].BiosCharacteristics | Should -Not -BeNull
         $res.results[0].result.actualState[2].NumberOfLogicalProcessors | Should -Not -BeNull
     }
 }
