@@ -4,13 +4,26 @@
 Describe 'PowerShellGroup resource tests' {
 
     BeforeAll {
-        $OldPSModulePath  = $env:PSModulePath
-        $env:PSModulePath += ";" + $PSScriptRoot
+        if ($IsWindows)
+        {
+            $OldPSModulePath  = $env:PSModulePath
+            $env:PSModulePath += ";" + $PSScriptRoot
 
-        $configPath = Join-path $PSScriptRoot "test_wmi_config.dsc.yaml"
+            $configPath = Join-path $PSScriptRoot "test_wmi_config.dsc.yaml"
+
+            $dscPath = (get-command dsc -CommandType Application).Path
+            $dscFolder = Split-Path -Path $dscPath
+            $wmiGroupOptoutFile = Join-Path $dscFolder "wmigroup.dsc.resource.json.optout"
+            $wmiGroupOptinFile = Join-Path $dscFolder "wmigroup.dsc.resource.json"
+            Rename-Item -Path $wmiGroupOptoutFile -NewName $wmiGroupOptinFile
+        }
     }
     AfterAll {
-        $env:PSModulePath = $OldPSModulePath
+        if ($IsWindows)
+        {
+            $env:PSModulePath = $OldPSModulePath
+            Rename-Item -Path $wmiGroupOptinFile -NewName $wmiGroupOptoutFile
+        }
     }
 
     It 'List shows WMI resources' -Skip:(!$IsWindows){
@@ -23,7 +36,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Get works on an individual WMI resource' -Skip:(!$IsWindows){
 
-        $r = dsc resource get -r root\cimv2/Win32_OperatingSystem
+        $r = dsc resource get -r root.cimv2/Win32_OperatingSystem
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.CreationClassName | Should -Be "Win32_OperatingSystem"

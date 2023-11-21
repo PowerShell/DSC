@@ -6,8 +6,8 @@ resources:
   properties:
     resources:
     - name: Get OS Info
-      type: root\cimv2/Win32_OperatingSystem
-    - name: Get OS Info
-      type: root\cimv2/Win32_BIOS
-    - name: Get OS Info
-      type: root\cimv2/Win32_Processor
+      type: root.cimv2/Win32_OperatingSystem
+    - name: Get BIOS Info
+      type: root.cimv2/Win32_BIOS
+    - name: Get Processor Info
+      type: root.cimv2/Win32_Processor

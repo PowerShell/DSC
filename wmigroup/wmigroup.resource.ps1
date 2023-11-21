@@ -32,7 +32,7 @@ if ($Operation -eq 'List')
             }
         }
 
-        $namespace = $r.CimSystemProperties.Namespace.ToLower().Replace('/','\')
+        $namespace = $r.CimSystemProperties.Namespace.ToLower().Replace('/','.')
         $classname = $r.CimSystemProperties.ClassName
         $fullResourceTypeName = "$namespace/$classname"
         $requiresString = "DSC/WMIGroup"
@@ -66,7 +66,7 @@ elseif ($Operation -eq 'Get')
         foreach($r in $inputobj_pscustomobj.resources)
         {
             $type_fields = $r.type -split "/"
-            $wmi_namespace = $type_fields[0]
+            $wmi_namespace = $type_fields[0].Replace('.','\')
             $wmi_classname = $type_fields[1]
 
             #TODO: add filtering based on supplied properties of $r
@@ -96,7 +96,7 @@ elseif ($Operation -eq 'Get')
     else # we are processing an individual resource call
     {
         $type_fields = $inputobj_pscustomobj.type -split "/"
-        $wmi_namespace = $type_fields[0]
+        $wmi_namespace = $type_fields[0].Replace('.','\')
         $wmi_classname = $type_fields[1]
 
         #TODO: add filtering based on supplied properties of $inputobj_pscustomobj
