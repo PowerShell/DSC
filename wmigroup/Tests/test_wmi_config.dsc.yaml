@@ -1,0 +1,13 @@
+# Example configuration for reading data from Windows WMI
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+resources:
+- name: Get info from WMI
+  type: DSC/WMIGroup
+  properties:
+    resources:
+    - name: Get OS Info
+      type: root.cimv2/Win32_OperatingSystem
+    - name: Get BIOS Info
+      type: root.cimv2/Win32_BIOS
+    - name: Get Processor Info
+      type: root.cimv2/Win32_Processor

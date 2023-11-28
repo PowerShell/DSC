@@ -334,7 +334,8 @@ impl Configurator {
 
             debug!("resource_type {}", &resource.resource_type);
             //TODO: remove this after schema validation for classic PS resources is implemented
-            if resource.resource_type == "DSC/PowerShellGroup" {continue;}
+            if (resource.resource_type == "DSC/PowerShellGroup")
+            || (resource.resource_type == "DSC/WMIGroup") {continue;}
 
             let input = serde_json::to_string(&resource.properties)?;
             let schema = match dsc_resource.schema() {
