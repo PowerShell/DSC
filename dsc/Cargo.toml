@@ -1,6 +1,6 @@
 [package]
 name = "dsc"
-version = "3.0.0-alpha.4"
+version = "3.0.0-alpha.5"
 edition = "2021"
 
 [profile.release]
