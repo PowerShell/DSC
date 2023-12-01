@@ -54,13 +54,23 @@ if ($null -eq $DscModule)
 
 Import-Module $DscModule -DisableNameChecking
 
+# Adding some debug info to STDERR
+$m = gmo PSDesiredStateConfiguration
+$trace = @{"Trace"="PSVersion="+$PSVersionTable.PSVersion.ToString()} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Trace"="PSPath="+$PSHome} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Trace"="ModuleVersion="+$m.Version.ToString()} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Trace"="ModulePath="+$m.Path} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Trace"="PSModulePath="+$env:PSModulePath} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+
 if ($Operation -eq 'List')
 {
     $DscResources= Get-DscResource
-    #TODO: following should be added to debug stream of every operation
-    #$m = gmo PSDesiredStateConfiguration
-    #$r += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
-    #$r[0] | ConvertTo-Json -Compress -Depth 3
+
     foreach ($r in $DscResources)
     {
         if ($r.ImplementedAs -eq "Binary")

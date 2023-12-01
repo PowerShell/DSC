@@ -6,9 +6,29 @@ use serde_json::Value;
 use std::{collections::HashMap, process::Command, io::{Write, Read}, process::Stdio};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
+
+
+pub fn print_resource_traces(stderr: &String)
+{
+    if !stderr.is_empty()
+    {
+        for trace_line in stderr.lines() {
+            match serde_json::from_str::<Value>(trace_line){
+                Result::Ok(json_obj) => {
+                    let trace = json_obj.get("Trace");
+                    if trace.is_some()
+                    {
+                        trace!("{}", trace.unwrap().as_str().unwrap_or_default());
+                    }
+                },
+                Result::Err(_) => {}
+            };
+        }
+    }
+}
 
 /// Invoke the get operation on a resource
 ///
@@ -49,6 +69,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 
     info!("Invoking get {} using {}", &resource.resource_type, &resource.get.executable);
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, get_args, input_filter, Some(cwd), env)?;
+    print_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -131,6 +152,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &resource.get.executable);
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, get_args, get_input, Some(cwd), get_env)?;
+    print_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -144,6 +166,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     info!("Invoking set {} using {}", &resource.resource_type, &set.executable);
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), input_desired, Some(cwd), env)?;
+    print_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -231,6 +254,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 
     info!("Invoking test {} using {}", &resource.resource_type, &test.executable);
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, input_expected, Some(cwd), env)?;
+    print_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -306,6 +330,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
     };
 
     let (exit_code, stdout, stderr) = invoke_command(&validate.executable, validate.args.clone(), Some(config), Some(cwd), None)?;
+    print_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
@@ -331,6 +356,7 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
     match schema_kind {
         SchemaKind::Command(ref command) => {
             let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None)?;
+            print_resource_traces(&stderr);
             if exit_code != 0 {
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
             }
@@ -375,6 +401,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str) -> Result<ExportRes
     };
 
     let (exit_code, stdout, stderr) = invoke_command(&export.executable, export.args.clone(), None, Some(cwd), None)?;
+    print_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
