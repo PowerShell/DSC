@@ -20,6 +20,7 @@ Describe 'Parameters tests' {
                 text: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = 'hello' }} | ConvertTo-Json -Compress
+        write-verbose -verbose $params_json
         if ($inputType -eq 'file') {
             $file_path = "$TestDrive/test.parameters.json"
             Set-Content -Path $file_path -Value $params_json
