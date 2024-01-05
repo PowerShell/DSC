@@ -20,7 +20,7 @@ Describe 'Parameters tests' {
                 text: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = 'hello' }} | ConvertTo-Json
-        write-verbose -verbose $params_json
+
         if ($inputType -eq 'file') {
             $file_path = "$TestDrive/test.parameters.json"
             Set-Content -Path $file_path -Value $params_json
@@ -53,7 +53,7 @@ Describe 'Parameters tests' {
               properties:
                 text: '[parameters(''param1'')]'
 "@
-        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json -Compress
+        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $out = $config_yaml | dsc config -p $params_json get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
@@ -79,7 +79,7 @@ Describe 'Parameters tests' {
               properties:
                 text: '[parameters(''param1'')]'
 "@
-        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json -Compress
+        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $null = $config_yaml | dsc config -p $params_json get
         $LASTEXITCODE | Should -Be 4
@@ -106,7 +106,7 @@ Describe 'Parameters tests' {
               properties:
                 text: '[parameters(''param1'')]'
 "@
-        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json -Compress
+        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $null = $config_yaml | dsc config -p $params_json get
         $LASTEXITCODE | Should -Be 4
@@ -132,7 +132,7 @@ Describe 'Parameters tests' {
               properties:
                 text: '[parameters(''param1'')]'
 "@
-        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json -Compress
+        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $null = $config_yaml | dsc config -p $params_json get
         $LASTEXITCODE | Should -Be 4
@@ -156,7 +156,7 @@ Describe 'Parameters tests' {
               properties:
                 text: '[parameters(''param1'')]'
 "@
-        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json -Compress
+        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $null = $config_yaml | dsc config -p $params_json get
         $LASTEXITCODE | Should -Be 4
@@ -182,7 +182,7 @@ Describe 'Parameters tests' {
               properties:
                 text: '[parameters(''param1'')]'
 "@
-        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json -Compress
+        $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $null = $config_yaml | dsc config -p $params_json get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 4
