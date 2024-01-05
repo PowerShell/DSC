@@ -19,7 +19,7 @@ Describe 'Parameters tests' {
               properties:
                 text: '[parameters(''param1'')]'
 "@
-        $params_json = @{ parameters = @{ param1 = 'hello' }} | ConvertTo-Json -Compress
+        $params_json = @{ parameters = @{ param1 = 'hello' }} | ConvertTo-Json
         write-verbose -verbose $params_json
         if ($inputType -eq 'file') {
             $file_path = "$TestDrive/test.parameters.json"
