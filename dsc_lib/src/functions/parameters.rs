@@ -23,18 +23,15 @@ impl Function for Parameters {
     }
 
     fn invoke(&self, args: &[FunctionArg], context: &Context) -> Result<FunctionResult, DscError> {
-        let key = match &args[0] {
-            FunctionArg::String(value) => value,
-            _ => {
-                return Err(DscError::Parser("Invalid argument type".to_string()));
-            }
+        let FunctionArg::String(key) = &args[0] else {
+            return Err(DscError::Parser("Invalid argument type".to_string()));
         };
         debug!("parameters key: {key}");
         if context.parameters.contains_key(key) {
             Ok(FunctionResult::Object(context.parameters[key].clone()))
         }
         else {
-            return Err(DscError::Parser(format!("Parameter '{key}' not found in context")));
+            Err(DscError::Parser(format!("Parameter '{key}' not found in context")))
         }
     }
 }

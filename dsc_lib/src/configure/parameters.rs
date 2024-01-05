@@ -7,6 +7,6 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct ParametersInput {
+pub struct Input {
     pub parameters: HashMap<String, Value>,
 }

@@ -11,11 +11,18 @@ pub struct Context {
 }
 
 impl Context {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             parameters: HashMap::new(),
             _variables: HashMap::new(),
             _outputs: HashMap::new(),
         }
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
     }
 }

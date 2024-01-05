@@ -3,7 +3,7 @@
 
 use jsonschema::JSONSchema;
 
-use crate::configure::parameters::ParametersInput;
+use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
 use crate::DscResource;
@@ -302,6 +302,15 @@ impl Configurator {
         Ok(result)
     }
 
+    /// Set the parameters context for the configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `parameters_input` - The parameters to set.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the parameters are invalid.
     pub fn set_parameters(&mut self, parameters_input: &Option<Value>) -> Result<(), DscError> {
         // set default parameters first
         let config = serde_json::from_str::<Configuration>(self.config.as_str())?;
@@ -324,20 +333,20 @@ impl Configurator {
             return Ok(());
         };
 
-        let parameters: HashMap<String, Value> = serde_json::from_value::<ParametersInput>(parameters_input.clone())?.parameters;
+        let parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
         let Some(parameters_constraints) = &config.parameters else {
             return Err(DscError::Validation("No parameters defined in configuration".to_string()));
         };
         for (name, value) in parameters {
             if let Some(constraint) = parameters_constraints.get(&name) {
-                check_length(&name, &value, &constraint)?;
-                check_allowed_values(&name, &value, &constraint)?;
-                check_number(&name, &value, &constraint)?;
+                check_length(&name, &value, constraint)?;
+                check_allowed_values(&name, &value, constraint)?;
+                check_number(&name, &value, constraint)?;
                 // TODO: additional array constraints
                 // TODO: object constraints
 
                 match constraint.parameter_type {
-                    DataType::String => {
+                    DataType::String | DataType::SecureString => {
                         if !value.is_string() {
                             return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
                         }
@@ -357,17 +366,7 @@ impl Configurator {
                             return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
                         }
                     },
-                    DataType::Object => {
-                        if !value.is_object() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
-                        }
-                    },
-                    DataType::SecureString => {
-                        if !value.is_string() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
-                        }
-                    },
-                    DataType::SecureObject => {
+                    DataType::Object | DataType::SecureObject => {
                         if !value.is_object() {
                             return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
                         }
