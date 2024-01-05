@@ -5,7 +5,7 @@ mod process_info;
 use std::env;
 use std::process::exit;
 use std::io::{self, Read};
-use sysinfo::{ProcessExt, System, SystemExt, PidExt};
+use sysinfo::System;
 use crate::process_info::ProcessInfo;
 
 fn get_task_list() -> Vec<ProcessInfo>

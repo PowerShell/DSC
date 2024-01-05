@@ -25,7 +25,7 @@ impl Function for Base64 {
     }
 
     fn invoke(&self, args: &[FunctionArg], _context: &Context) -> Result<FunctionResult, DscError> {
-        let FunctionArg::String(arg) = args.get(0).unwrap() else {
+        let FunctionArg::String(arg) = args.first().unwrap() else {
             return Err(DscError::Parser("Invalid argument type".to_string()));
         };
         Ok(FunctionResult::String(general_purpose::STANDARD.encode(arg)))
