@@ -5,10 +5,12 @@ use std::collections::HashMap;
 use tracing::debug;
 
 use crate::DscError;
+use crate::configure::context::Context;
 use crate::parser::functions::{FunctionArg, FunctionResult};
 
 pub mod base64;
 pub mod concat;
+pub mod parameters;
 pub mod resource_id;
 
 /// The kind of argument that a function accepts.
@@ -36,7 +38,7 @@ pub trait Function {
     /// # Errors
     ///
     /// This function will return an error if the function fails to execute.
-    fn invoke(&self, args: &[FunctionArg]) -> Result<FunctionResult, DscError>;
+    fn invoke(&self, args: &[FunctionArg], context: &Context) -> Result<FunctionResult, DscError>;
 }
 
 /// A dispatcher for functions.
@@ -51,6 +53,7 @@ impl FunctionDispatcher {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
         functions.insert("base64".to_string(), Box::new(base64::Base64{}));
         functions.insert("concat".to_string(), Box::new(concat::Concat{}));
+        functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
         functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
         Self {
             functions,
@@ -67,7 +70,7 @@ impl FunctionDispatcher {
     /// # Errors
     ///
     /// This function will return an error if the function fails to execute.
-    pub fn invoke(&self, name: &str, args: &Vec<FunctionArg>) -> Result<FunctionResult, DscError> {
+    pub fn invoke(&self, name: &str, args: &Vec<FunctionArg>, context: &Context) -> Result<FunctionResult, DscError> {
         let Some(function) = self.functions.get(name) else {
             return Err(DscError::Parser(format!("Unknown function '{name}'")));
         };
@@ -115,7 +118,7 @@ impl FunctionDispatcher {
             }
         }
 
-        function.invoke(args)
+        function.invoke(args, context)
     }
 }
 
