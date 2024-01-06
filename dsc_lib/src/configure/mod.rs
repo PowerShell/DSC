@@ -13,7 +13,7 @@ use self::context::Context;
 use self::config_doc::{Configuration, DataType};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
-use self::contraints::{check_length, check_number, check_allowed_values};
+use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
@@ -341,7 +341,7 @@ impl Configurator {
             if let Some(constraint) = parameters_constraints.get(&name) {
                 check_length(&name, &value, constraint)?;
                 check_allowed_values(&name, &value, constraint)?;
-                check_number(&name, &value, constraint)?;
+                check_number_limits(&name, &value, constraint)?;
                 // TODO: additional array constraints
                 // TODO: object constraints
 

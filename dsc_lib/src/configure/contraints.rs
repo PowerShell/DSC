@@ -89,7 +89,7 @@ pub fn check_length(name: &str, value: &Value, constraint: &Parameter) -> Result
 /// # Errors
 ///
 /// * `DscError::Validation` if the value does not match the constraints.
-pub fn check_number(name: &str, value: &Value, constraint: &Parameter) -> Result<(), DscError> {
+pub fn check_number_limits(name: &str, value: &Value, constraint: &Parameter) -> Result<(), DscError> {
     if let Some(min_value) = constraint.min_value {
         if value.is_i64() && value.as_i64().is_some() {
             let Some(value) = value.as_i64() else {
