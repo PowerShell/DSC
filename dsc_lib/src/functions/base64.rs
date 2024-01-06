@@ -4,6 +4,7 @@
 use base64::{Engine as _, engine::general_purpose};
 
 use crate::DscError;
+use crate::configure::context::Context;
 use crate::parser::functions::{FunctionArg, FunctionResult};
 use super::{Function, AcceptedArgKind};
 
@@ -23,8 +24,8 @@ impl Function for Base64 {
         1
     }
 
-    fn invoke(&self, args: &[FunctionArg]) -> Result<FunctionResult, DscError> {
-        let FunctionArg::String(arg) = args.get(0).unwrap() else {
+    fn invoke(&self, args: &[FunctionArg], _context: &Context) -> Result<FunctionResult, DscError> {
+        let FunctionArg::String(arg) = args.first().unwrap() else {
             return Err(DscError::Parser("Invalid argument type".to_string()));
         };
         Ok(FunctionResult::String(general_purpose::STANDARD.encode(arg)))
@@ -33,26 +34,27 @@ impl Function for Base64 {
 
 #[cfg(test)]
 mod tests {
+    use crate::configure::context::Context;
     use crate::parser::Statement;
 
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64('hello world')]").unwrap();
+        let result = parser.parse_and_execute("[base64('hello world')]", &Context::new()).unwrap();
         assert_eq!(result, "aGVsbG8gd29ybGQ=");
     }
 
     #[test]
     fn numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64(123)]");
+        let result = parser.parse_and_execute("[base64(123)]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64(base64('hello world'))]").unwrap();
+        let result = parser.parse_and_execute("[base64(base64('hello world'))]", &Context::new()).unwrap();
         assert_eq!(result, "YUdWc2JHOGdkMjl5YkdRPQ==");
     }
 }

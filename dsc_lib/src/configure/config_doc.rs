@@ -30,13 +30,13 @@ pub struct Parameter {
     #[serde(rename = "allowedValues", skip_serializing_if = "Option::is_none")]
     pub allowed_values: Option<Vec<Value>>,
     #[serde(rename = "minValue", skip_serializing_if = "Option::is_none")]
-    pub min_value: Option<Value>,
+    pub min_value: Option<i64>,
     #[serde(rename = "maxValue", skip_serializing_if = "Option::is_none")]
-    pub max_value: Option<Value>,
+    pub max_value: Option<i64>,
     #[serde(rename = "minLength", skip_serializing_if = "Option::is_none")]
-    pub min_length: Option<Value>,
+    pub min_length: Option<i64>,
     #[serde(rename = "maxLength", skip_serializing_if = "Option::is_none")]
-    pub max_length: Option<Value>,
+    pub max_length: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

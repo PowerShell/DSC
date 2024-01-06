@@ -3,24 +3,31 @@
 
 use jsonschema::JSONSchema;
 
+use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
-use self::config_doc::Configuration;
+use self::context::Context;
+use self::config_doc::{Configuration, DataType};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
+use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 use tracing::debug;
 
+pub mod context;
 pub mod config_doc;
 pub mod config_result;
+pub mod contraints;
 pub mod depends_on;
+pub mod parameters;
 
 pub struct Configurator {
     config: String,
+    context: Context,
     discovery: Discovery,
     statement_parser: Statement,
 }
@@ -131,6 +138,7 @@ impl Configurator {
         let discovery = Discovery::new()?;
         Ok(Configurator {
             config: config.to_owned(),
+            context: Context::new(),
             discovery,
             statement_parser: Statement::new()?,
         })
@@ -154,7 +162,7 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
+        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -191,7 +199,7 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
+        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -228,7 +236,7 @@ impl Configurator {
         if had_errors {
             return Ok(result);
         }
-        for resource in get_resource_invocation_order(&config, &mut self.statement_parser)? {
+        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -292,6 +300,86 @@ impl Configurator {
         result.result = Some(conf);
 
         Ok(result)
+    }
+
+    /// Set the parameters context for the configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `parameters_input` - The parameters to set.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the parameters are invalid.
+    pub fn set_parameters(&mut self, parameters_input: &Option<Value>) -> Result<(), DscError> {
+        // set default parameters first
+        let config = serde_json::from_str::<Configuration>(self.config.as_str())?;
+        let Some(parameters) = &config.parameters else {
+            if parameters_input.is_none() {
+                return Ok(());
+            }
+            return Err(DscError::Validation("No parameters defined in configuration".to_string()));
+        };
+
+        for (name, parameter) in parameters {
+            if let Some(default_value) = &parameter.default_value {
+                // TODO: default values can be expressions
+                // TODO: validate default value matches the type
+                self.context.parameters.insert(name.clone(), default_value.clone());
+            }
+        }
+
+        let Some(parameters_input) = parameters_input else {
+            return Ok(());
+        };
+
+        let parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
+        let Some(parameters_constraints) = &config.parameters else {
+            return Err(DscError::Validation("No parameters defined in configuration".to_string()));
+        };
+        for (name, value) in parameters {
+            if let Some(constraint) = parameters_constraints.get(&name) {
+                check_length(&name, &value, constraint)?;
+                check_allowed_values(&name, &value, constraint)?;
+                check_number_limits(&name, &value, constraint)?;
+                // TODO: additional array constraints
+                // TODO: object constraints
+
+                match constraint.parameter_type {
+                    DataType::String | DataType::SecureString => {
+                        if !value.is_string() {
+                            return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
+                        }
+                    },
+                    DataType::Int => {
+                        if !value.is_i64() {
+                            return Err(DscError::Validation(format!("Parameter '{name}' is not an integer")));
+                        }
+                    },
+                    DataType::Bool => {
+                        if !value.is_boolean() {
+                            return Err(DscError::Validation(format!("Parameter '{name}' is not a boolean")));
+                        }
+                    },
+                    DataType::Array => {
+                        if !value.is_array() {
+                            return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
+                        }
+                    },
+                    DataType::Object | DataType::SecureObject => {
+                        if !value.is_object() {
+                            return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
+                        }
+                    },
+                }
+
+                self.context.parameters.insert(name.clone(), value.clone());
+            }
+            else {
+                return Err(DscError::Validation(format!("Parameter '{name}' not defined in configuration")));
+            }
+        }
+        Ok(())
     }
 
     fn find_duplicate_resource_types(config: &Configuration) -> Vec<String>
@@ -418,7 +506,7 @@ impl Configurator {
                                     let Some(statement) = element.as_str() else {
                                         return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
                                     };
-                                    let statement_result = self.statement_parser.parse_and_execute(statement)?;
+                                    let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                                     result_array.push(Value::String(statement_result));
                                 }
                                 _ => {
@@ -433,7 +521,7 @@ impl Configurator {
                         let Some(statement) = value.as_str() else {
                             return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
                         };
-                        let statement_result = self.statement_parser.parse_and_execute(statement)?;
+                        let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                         result.insert(name.clone(), Value::String(statement_result));
                     },
                     _ => {

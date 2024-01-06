@@ -116,7 +116,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format: &Option<OutputFormat>, stdin: &Option<String>) {
     let Some(stdin) = stdin else {
         error!("Configuration must be piped to STDIN");
         exit(EXIT_INVALID_ARGS);
@@ -151,6 +151,37 @@ pub fn config(subcommand: &ConfigSubCommand, format: &Option<OutputFormat>, stdi
             exit(EXIT_DSC_ERROR);
         }
     };
+
+    let parameters: Option<serde_json::Value> = match parameters {
+        None => None,
+        Some(parameters) => {
+            match serde_json::from_str(parameters) {
+                Ok(json) => Some(json),
+                Err(_) => {
+                    match serde_yaml::from_str::<Value>(parameters) {
+                        Ok(yaml) => {
+                            match serde_json::to_value(yaml) {
+                                Ok(json) => Some(json),
+                                Err(err) => {
+                                    error!("Error: Failed to convert YAML to JSON: {err}");
+                                    exit(EXIT_DSC_ERROR);
+                                }
+                            }
+                        },
+                        Err(err) => {
+                            error!("Error: Parameters are not valid JSON or YAML: {err}");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    if let Err(err) = configurator.set_parameters(&parameters) {
+        error!("Error: Paramter input failure: {err}");
+        exit(EXIT_INVALID_INPUT);
+    }
 
     match subcommand {
         ConfigSubCommand::Get => {
@@ -383,7 +414,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
         ResourceSubCommand::Get { resource, input, all } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             if *all { resource_command::get_all(&dsc, resource, input, stdin, format); }
-            else { 
+            else {
                 resource_command::get(&dsc, resource, input, stdin, format);
             };
         },

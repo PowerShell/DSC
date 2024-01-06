@@ -3,6 +3,7 @@
 
 use tree_sitter::Node;
 
+use crate::configure::context::Context;
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 use crate::parser::functions::{Function, FunctionResult};
@@ -59,8 +60,8 @@ impl Expression {
     /// # Errors
     ///
     /// This function will return an error if the expression fails to execute.
-    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher) -> Result<String, DscError> {
-        let result = self.function.invoke(function_dispatcher)?;
+    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<String, DscError> {
+        let result = self.function.invoke(function_dispatcher, context)?;
         if let Some(member_access) = &self.member_access {
             match result {
                 FunctionResult::String(_) => {

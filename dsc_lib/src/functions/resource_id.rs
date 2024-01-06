@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::DscError;
+use crate::configure::context::Context;
 use crate::functions::{Function, FunctionArg, FunctionResult, AcceptedArgKind};
 
 #[derive(Debug, Default)]
@@ -20,7 +21,7 @@ impl Function for ResourceId {
         vec![AcceptedArgKind::String]
     }
 
-    fn invoke(&self, args: &[FunctionArg]) -> Result<FunctionResult, DscError> {
+    fn invoke(&self, args: &[FunctionArg], _context: &Context) -> Result<FunctionResult, DscError> {
         let mut result = String::new();
         // first argument is the type and must contain only 1 slash
         match &args[0] {
@@ -57,40 +58,41 @@ impl Function for ResourceId {
 
 #[cfg(test)]
 mod tests {
+    use crate::configure::context::Context;
     use crate::parser::Statement;
 
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a/b', 'c')]").unwrap();
+        let result = parser.parse_and_execute("[resourceId('a/b', 'c')]", &Context::new()).unwrap();
         assert_eq!(result, "a/b:c");
     }
 
     #[test]
     fn strings_with_dots() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a.b/c', 'd')]").unwrap();
+        let result = parser.parse_and_execute("[resourceId('a.b/c', 'd')]", &Context::new()).unwrap();
         assert_eq!(result, "a.b/c:d");
     }
 
     #[test]
     fn invalid_type() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a/b/c','d')]");
+        let result = parser.parse_and_execute("[resourceId('a/b/c','d')]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn invalid_name() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a','b/c')]");
+        let result = parser.parse_and_execute("[resourceId('a','b/c')]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a')]");
+        let result = parser.parse_and_execute("[resourceId('a')]", &Context::new());
         assert!(result.is_err());
     }
 }
