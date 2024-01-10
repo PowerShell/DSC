@@ -481,7 +481,8 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
     debug!("resource_type - {}", resource.resource_type);
 
     //TODO: remove this after schema validation for classic PS resources is implemented
-    if resource.resource_type == "DSC/PowerShellGroup" {return Ok(());}
+    if (resource.resource_type == "DSC/PowerShellGroup")
+    || (resource.resource_type == "DSC/WMIGroup") {return Ok(());}
 
     let schema = get_schema(resource, cwd)?;
     let schema: Value = serde_json::from_str(&schema)?;

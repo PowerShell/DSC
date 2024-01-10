@@ -5,6 +5,7 @@ use serde_json::Value;
 use tree_sitter::Node;
 
 use crate::DscError;
+use crate::configure::context::Context;
 use crate::parser::{
     expressions::Expression,
     FunctionDispatcher,
@@ -58,14 +59,14 @@ impl Function {
     /// # Errors
     ///
     /// This function will return an error if the function fails to execute.
-    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher) -> Result<FunctionResult, DscError> {
+    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<FunctionResult, DscError> {
         // if any args are expressions, we need to invoke those first
         let mut resolved_args: Vec<FunctionArg> = vec![];
         if let Some(args) = &self.args {
             for arg in args {
                 match arg {
                     FunctionArg::Expression(expression) => {
-                        let value = expression.invoke(function_dispatcher)?;
+                        let value = expression.invoke(function_dispatcher, context)?;
                         resolved_args.push(FunctionArg::String(value));
                     },
                     _ => {
@@ -75,7 +76,7 @@ impl Function {
             }
         }
 
-        function_dispatcher.invoke(&self.name, &resolved_args)
+        function_dispatcher.invoke(&self.name, &resolved_args, context)
     }
 }
 

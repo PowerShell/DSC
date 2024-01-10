@@ -40,6 +40,10 @@ pub enum SubCommand {
     Config {
         #[clap(subcommand)]
         subcommand: ConfigSubCommand,
+        #[clap(short, long, help = "Parameters to pass to the configuration as JSON or YAML", conflicts_with = "parameters_file")]
+        parameters: Option<String>,
+        #[clap(short = 'f', long, help = "Parameters to pass to the configuration as a JSON or YAML file", conflicts_with = "parameters")]
+        parameters_file: Option<String>,
     },
     #[clap(name = "resource", about = "Invoke a specific DSC resource")]
     Resource {

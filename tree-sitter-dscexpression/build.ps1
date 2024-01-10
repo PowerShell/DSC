@@ -27,7 +27,7 @@ if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
 
 npm list tree-sitter-cli
 if ($LASTEXITCODE -ne 0) {
-    npm install tree-sitter-cli
+    npm ci tree-sitter-cli --no-optional
 }
 
 Invoke-NativeCommand 'npx tree-sitter generate'

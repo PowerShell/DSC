@@ -81,8 +81,20 @@ fn main() {
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
-        SubCommand::Config { subcommand } => {
-            subcommand::config(&subcommand, &args.format, &input);
+        SubCommand::Config { subcommand, parameters, parameters_file } => {
+            if let Some(file_name) = parameters_file {
+                info!("Reading parameters from file {}", file_name);
+                match std::fs::read_to_string(file_name) {
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &args.format, &input),
+                    Err(err) => {
+                        error!("Error: Failed to read parameters file: {err}");
+                        exit(util::EXIT_INVALID_INPUT);
+                    }
+                }
+            }
+            else {
+                subcommand::config(&subcommand, &parameters, &args.format, &input);
+            }
         },
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, &args.format, &input);

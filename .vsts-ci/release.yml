@@ -1,0 +1,274 @@
+trigger: none
+
+variables:
+  - name: BuildConfiguration
+    value: 'release'
+  - name: PackageRoot
+    value: '$(System.ArtifactsDirectory)/Packages'
+  - group: DSCAPIScan
+
+resources:
+  repositories:
+  - repository: ComplianceRepo
+    type: github
+    endpoint: ComplianceGHRepo
+    name: PowerShell/compliance
+    ref: master
+
+stages:
+- stage: BuildAndSign
+  displayName: Build Native Binaries
+  dependsOn: []
+  jobs:
+  - job: SetPackageVersion
+    displayName: Set PackageVersion
+    steps:
+    - checkout: self
+    - pwsh: |
+        $packageVersion = ./build.ps1 -GetPackageVersion
+        $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
+        Write-Host ("sending " + $vstsCommandString)
+        Write-Host "##$vstsCommandString"
+      name: Package
+
+  - job: BuildWin
+    dependsOn: SetPackageVersion
+    variables:
+    - group: ESRP
+    - name: PackageVersion
+      value: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMS2019-Rust-Secure
+    displayName: Build
+    strategy:
+      matrix:
+        Windows x64:
+          buildName: x86_64-pc-windows-msvc
+        Windows x64_arm64:
+          buildName: aarch64-pc-windows-msvc
+
+    steps:
+    - checkout: self
+    - pwsh: |
+        Set-Location "$(Build.SourcesDirectory)/DSC"
+        ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
+      displayName: 'Build $(buildName)'
+      condition: succeeded()
+    - pwsh: |
+        $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
+        $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
+        $outPath = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)" -ErrorAction Ignore
+        Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination $outPath -Verbose -Force
+      displayName: Copy binaries
+      condition: succeeded()
+    - pwsh: |
+        Set-Location "$(PackageRoot)"
+        $signSrcPath = "$(PackageRoot)/out/$(buildName)"
+        # Set signing src path variable
+        $vstsCommandString = "vso[task.setvariable variable=signSrcPath]${signSrcPath}"
+        Write-Host ("sending " + $vstsCommandString)
+        Write-Host "##$vstsCommandString"
+    - pwsh: |
+        $signOutPath = "$(PackageRoot)/signed"
+        $null = New-Item -ItemType Directory -Path $signOutPath
+        # Set signing out path variable
+        $vstsCommandString = "vso[task.setvariable variable=signOutPath;isoutput=true]${signOutPath}"
+        Write-Host "sending " + $vstsCommandString
+        Write-Host "##$vstsCommandString"
+      name: signOutPath
+    - pwsh: |
+        # Set path variable for guardian codesign validation
+        $vstsCommandString = "vso[task.setvariable variable=GDN_CODESIGN_TARGETDIRECTORY]$(signOutPath.signOutPath)"
+        Write-Host "sending " + $vstsCommandString
+        Write-Host "##$vstsCommandString"
+      displayName: Setup variables for signing
+
+    - checkout: ComplianceRepo
+
+    - template: EsrpSign.yml@ComplianceRepo
+      parameters:
+        # the folder which contains the binaries to sign
+        buildOutputPath: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
+        # the location to put the signed output
+        signOutputPath: $(signOutPath.signOutPath)
+        # the certificate ID to use
+        certificateId: "CP-230012"
+        # The file pattern to use
+        # If not using minimatch: comma separated, with * supported
+        # If using minimatch: newline separated, with !, **, and * supported.
+        # See link in the useMinimatch comments.
+        pattern: '*.exe,*.ps1'
+        # decides if the task should use minimatch for the pattern matching.
+        # https://github.com/isaacs/minimatch#features
+        useMinimatch: false
+
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(signOutPath.signOutPath)
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
+
+    - pwsh: |
+        compress-archive -Path "$(signOutPath.signOutPath)/*" -DestinationPath "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).zip"
+      displayName: 'Compress $(buildName)'
+      condition: succeeded()
+    - pwsh: |
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\DSC-$(PackageVersion)-$(buildName).zip"
+      displayName: Upload artifacts
+      condition: succeeded()
+
+  - job: PublishSigned
+    dependsOn: BuildWin
+    variables:
+    - name: signOutPath
+      value: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
+    steps:
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetpath: $(signOutPath)
+        artifactName: signed
+
+  - job: BuildLinux
+    dependsOn: SetPackageVersion
+    variables:
+      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+    displayName: Linux-x64-gnu
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMSUbuntu20.04-Secure
+    steps:
+    - pwsh: |
+        ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
+      displayName: 'Build x86_64-unknown-linux-gnu'
+      condition: succeeded()
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration)
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
+    - pwsh: |
+        new-item -itemType Directory $(PackageRoot) -Force
+        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
+      displayName: 'Compress x86_64-unknown-linux-gnu'
+      condition: succeeded()
+    - pwsh: |
+        Write-Host '##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz'
+      displayName: Upload artifacts
+      condition: succeeded()
+
+  - job: BuildLinuxArm64
+    dependsOn: SetPackageVersion
+    variables:
+      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+    displayName: Linux-ARM64-gnu
+    pool:
+      name: ps-powershell-rel-arm
+      demands:
+      - ImageOverride -equals PSMMSUbuntu20.04-ARM64-secure
+    steps:
+    - pwsh: |
+        ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
+      displayName: 'Build aarch64-unknown-linux-gnu'
+      condition: succeeded()
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
+    - pwsh: |
+        new-item -itemType Directory $(PackageRoot) -Force
+        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
+      displayName: 'Compress aarch64-unknown-linux-gnu'
+      condition: succeeded()
+    - pwsh: |
+        Write-Host '##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz'
+      displayName: Upload artifacts
+      condition: succeeded()
+
+  - job: BuildMac
+    dependsOn: SetPackageVersion
+    variables:
+      PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+    displayName: Build
+    pool:
+      vmImage: macOS-Latest
+    strategy:
+      matrix:
+        macOS x64:
+          buildName: x86_64-apple-darwin
+        macOS arm64:
+          buildName: aarch64-apple-darwin
+    steps:
+    - pwsh: |
+        ./build.ps1 -Release -Architecture $(buildName)
+      displayName: 'Build $(buildName)'
+      condition: succeeded()
+    - template: Sbom.yml@ComplianceRepo
+      parameters:
+        BuildDropPath: $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)
+        Build_Repository_Uri: 'https://github.com/powershell/DSC'
+        PackageName: 'DSC'
+        PackageVersion: $(PackageVersion)
+    - pwsh: |
+        new-item -itemType Directory $(PackageRoot) -Force
+        tar czf '$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+      displayName: 'Compress $(buildName)'
+      condition: succeeded()
+    - pwsh: |
+        Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz"
+      displayName: Upload artifacts
+      condition: succeeded()
+
+- stage: compliance
+  displayName: Compliance
+  dependsOn: BuildAndSign
+  jobs:
+  - job: Compliance_Job
+    variables:
+      PackageVersion: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
+    pool:
+      name: PowerShell1ES
+      demands:
+      - ImageOverride -equals PSMMS2019-Rust-Secure
+    steps:
+    - checkout: self
+      clean: true
+    - checkout: ComplianceRepo
+      clean: true
+
+    - download: current
+      artifact: release
+
+    - download: current
+      artifact: signed
+
+    - pwsh: |
+        Get-ChildItem -Path 'ENV:'
+      displayName: Capture environment
+
+    - template: assembly-module-compliance.yml@ComplianceRepo
+      parameters:
+        # binskim
+        AnalyzeTarget: '$(Build.SourcesDirectory)/DSC/bin/x86_64-pc-windows-msvc/release/*.exe' #'$(Pipeline.Workspace)/uncompressed/*.exe'
+        AnalyzeSymPath: 'SRV*'
+        # component-governance
+        sourceScanPath: '$(Build.SourcesDirectory)/DSC'
+        # credscan
+        suppressionsFile: ''
+        # TermCheck
+        optionsRulesDBPath: ''
+        optionsFTPath: ''
+        # tsa-upload
+        codeBaseName: 'DSC'
+        # selections
+        softwareName: 'DSC'
+        softwareNameFolder: '$(Build.SourcesDirectory)/DSC/bin/x86_64-pc-windows-msvc/release' #'$(Pipeline.Workspace)/uncompressed'
+        softwareVersion: '$(PackageVersion)'
+        connectionString: RunAs=App;AppId=$(APIScanClient);TenantId=$(APIScanTenant);AppKey=$(APIScanSecret)
+        APIScan: true # set to false when not using Windows APIs.

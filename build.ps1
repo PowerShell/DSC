@@ -6,8 +6,19 @@ param(
     [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
     $architecture = 'current',
     [switch]$Clippy,
-    [switch]$Test
+    [switch]$Test,
+    [switch]$GetPackageVersion,
+    [switch]$SkipLinkCheck
 )
+
+if ($GetPackageVersion) {
+    $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
+    if ($null -eq $match) {
+        throw 'Unable to find version in Cargo.toml'
+    }
+
+    return $match.Matches.Groups[1].Value
+}
 
 ## Test if Rust is installed
 if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
@@ -23,6 +34,7 @@ if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
     }
 }
 
+rustup default stable
 $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
 function Find-LinkExe {
@@ -40,7 +52,7 @@ function Find-LinkExe {
     }
 }
 
-if ($IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
+if (!$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
     if (!(Test-Path $BuildToolsPath)) {
         Write-Verbose -Verbose "link.exe not found, installing C++ build tools"
         Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
@@ -79,6 +91,7 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
+    rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -106,6 +119,7 @@ $projects = @(
     "tools/test_group_resource",
     "y2j"
     "powershellgroup"
+    "wmigroup"
     "resources/brew"
     "tools/dsctest"
 )
