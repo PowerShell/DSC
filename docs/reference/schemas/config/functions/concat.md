@@ -21,7 +21,7 @@ concat(<inputValue>, <inputValue>[, <inputValue>...])
 
 The `concat()` function combines multiple values and returns the concatenated values as a single
 string. Separate each value with a comma. The `concat()` function is variadic. You must pass at
-least two values to the function. The function can accept up to `18446744073709551615` arguments.
+least two values to the function. The function can accept any number of arguments.
 
 The function concatenates the input values without any joining character. It accepts only strings
 and integers as input values.
