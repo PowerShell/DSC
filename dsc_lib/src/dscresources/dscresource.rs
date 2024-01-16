@@ -62,7 +62,7 @@ impl DscResource {
     }
 
     fn validate_input(&self, input: &str) -> Result<(), DscError> {
-        if input.len() == 0 {
+        if input.is_empty() {
             return Ok(());
         }
         let Some(manifest) = &self.manifest else {
