@@ -62,6 +62,9 @@ impl DscResource {
     }
 
     fn validate_input(&self, input: &str) -> Result<(), DscError> {
+        if input.len() == 0 {
+            return Ok(());
+        }
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
