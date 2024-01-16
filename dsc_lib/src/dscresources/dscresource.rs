@@ -60,6 +60,44 @@ impl DscResource {
             manifest: None,
         }
     }
+
+    fn validate_input(&self, input: &str) -> Result<(), DscError> {
+        let Some(manifest) = &self.manifest else {
+            return Err(DscError::MissingManifest(self.type_name.clone()));
+        };
+        let resource_manifest = import_manifest(manifest.clone())?;
+
+        if resource_manifest.validate.is_some() {
+            let Ok(validation_result) = self.validate(input) else {
+                return Err(DscError::Validation("Validation invocation failed".to_string()));
+            };
+            if !validation_result.valid {
+                return Err(DscError::Validation("Validation failed".to_string()));
+            }
+        }
+        else {
+            let Ok(schema) = self.schema() else {
+                return Err(DscError::Validation("Schema not available".to_string()));
+            };
+
+            let schema = serde_json::from_str::<Value>(&schema)?;
+
+            let Ok(compiled_schema) = jsonschema::JSONSchema::compile(&schema) else {
+                return Err(DscError::Validation("Schema compilation failed".to_string()));
+            };
+
+            let input = serde_json::from_str::<Value>(input)?;
+            if let Err(err) = compiled_schema.validate(&input) {
+                let mut error = format!("Resource '{}' failed validation: ", self.type_name);
+                for e in err {
+                    error.push_str(&format!("\n{e} "));
+                }
+                return Err(DscError::Validation(error));
+            };
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for DscResource {
@@ -132,6 +170,7 @@ pub trait Invoke {
 
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
+        self.validate_input(filter)?;
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("get custom resources".to_string()))
@@ -147,6 +186,7 @@ impl Invoke for DscResource {
     }
 
     fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
+        self.validate_input(desired)?;
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -162,6 +202,7 @@ impl Invoke for DscResource {
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+        self.validate_input(expected)?;
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("test custom resources".to_string()))
