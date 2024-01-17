@@ -245,7 +245,7 @@ Describe 'Parameters tests' {
         - name: os
           type: Microsoft/OSInfo
           properties:
-            family: '[parameters(''osFamily'')]'
+            family: "[parameters('osFamily')]"
 '@
 
       $out = dsc -i $config_yaml config -p $params test | ConvertFrom-Json
