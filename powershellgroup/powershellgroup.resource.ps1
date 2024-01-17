@@ -3,7 +3,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('List','Get','Set','Test')]
+    [ValidateSet('List','Get','Set','Test','Validate')]
     $Operation = 'List',
     [Switch]
     $WinPS = $false,
@@ -326,6 +326,11 @@ elseif ($Operation -eq 'Test')
     }
 
     $result | ConvertTo-Json
+}
+elseif ($Operation -eq 'Validate')
+{
+    # TODO: this is placeholder
+    @{ valid = $true } | ConvertTo-Json
 }
 else
 {

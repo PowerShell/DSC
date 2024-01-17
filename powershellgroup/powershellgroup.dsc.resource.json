@@ -55,6 +55,16 @@
       "input": "stdin",
       "return": "state"
       },
+    "validate": {
+        "executable": "pwsh",
+        "args": [
+          "-NoLogo",
+          "-NonInteractive",
+          "-NoProfile",
+          "-Command",
+          "$Input | ./powershellgroup.resource.ps1 Validate"
+          ]
+      },  
     "exitCodes": {
       "0": "Success",
       "1": "Error"
