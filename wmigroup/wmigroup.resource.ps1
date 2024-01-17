@@ -3,7 +3,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('List','Get','Set','Test')]
+    [ValidateSet('List','Get','Set','Test','Validate')]
     $Operation = 'List',
     [Parameter(ValueFromPipeline)]
     $stdinput
@@ -122,6 +122,11 @@ elseif ($Operation -eq 'Get')
     }
 
     $result | ConvertTo-Json -Compress
+}
+elseif ($Operation -eq 'Validate')
+{
+    # TODO: this is placeholder
+    @{ valid = $true } | ConvertTo-Json
 }
 else
 {
