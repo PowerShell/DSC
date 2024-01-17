@@ -31,11 +31,11 @@ Describe 'Parameters tests' {
         }
 
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.text | Should -BeExactly '"hello"'
+        $out.results[0].result.actualState.text | Should -BeExactly 'hello'
     }
 
     It 'Input is <type>' -TestCases @(
-        @{ type = 'string'; value = 'hello'; expected = '"hello"' }
+        @{ type = 'string'; value = 'hello'; expected = 'hello' }
         @{ type = 'int'; value = 42; expected = 42 }
         @{ type = 'bool'; value = $true; expected = $true }
         @{ type = 'array'; value = @('hello', 'world'); expected = '["hello","world"]' }
@@ -213,6 +213,44 @@ Describe 'Parameters tests' {
 
         $out = $config_yaml | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.text | Should -BeExactly '"hello",7,false,["hello","world"]'
+        $out.results[0].result.actualState.text | Should -BeExactly 'hello,7,false,["hello","world"]'
+    }
+
+    It 'property value uses parameter value' {
+      $os = 'Windows'
+      if ($IsLinux) {
+        $os = 'Linux'
+      }
+      elseif ($IsMacOS) {
+        $os = 'macOS'
+      }
+
+      $params = @{
+        parameters = @{
+          osFamily = $os
+        }
+      } | ConvertTo-Json
+
+      $config_yaml = @'
+        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+        parameters:
+          osFamily:
+            type: string
+            defaultValue: Windows
+            allowedValues:
+              - Windows
+              - Linux
+              - macOS
+        resources:
+        - name: os
+          type: Microsoft/OSInfo
+          properties:
+            family: '[parameters(''osFamily'')]'
+'@
+
+      $out = dsc -i $config_yaml config -p $params test | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results[0].result.actualState.family | Should -BeExactly $os
+      $out.results[0].result.inDesiredState | Should -BeTrue
     }
 }

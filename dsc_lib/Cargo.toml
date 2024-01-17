@@ -19,7 +19,7 @@ tree-sitter = "~0.20.10"
 tree-sitter-dscexpression = { path = "../tree-sitter-dscexpression" }
 
 [dev-dependencies]
-serde_yaml = "0.9"
+serde_yaml = "0.9.3"
 
 [build-dependencies]
 cc="*"

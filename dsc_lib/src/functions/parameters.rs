@@ -28,6 +28,14 @@ impl Function for Parameters {
         };
         debug!("parameters key: {key}");
         if context.parameters.contains_key(key) {
+            let value = &context.parameters[key];
+            // we have to check if it's a string as a to_string() will put the string in quotes as part of the value
+            if value.is_string() {
+                if let Some(value) = value.as_str() {
+                    return Ok(FunctionResult::String(value.to_string()));
+                }
+            }
+
             Ok(FunctionResult::Object(context.parameters[key].clone()))
         }
         else {

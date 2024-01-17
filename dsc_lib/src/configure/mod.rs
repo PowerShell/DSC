@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use jsonschema::JSONSchema;
-
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
@@ -12,7 +10,7 @@ use crate::parser::Statement;
 use self::context::Context;
 use self::config_doc::{Configuration, DataType};
 use self::depends_on::get_resource_invocation_order;
-use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult, ResourceMessage, MessageLevel};
+use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
@@ -155,13 +153,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationGetResult, DscError> {
-        let (config, messages, had_errors) = self.validate_config()?;
+        let config = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
-        result.messages = messages;
-        result.had_errors = had_errors;
-        if had_errors {
-            return Ok(result);
-        }
         for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
@@ -192,13 +185,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_set(&mut self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
-        let (config, messages, had_errors) = self.validate_config()?;
+        let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
-        result.messages = messages;
-        result.had_errors = had_errors;
-        if had_errors {
-            return Ok(result);
-        }
         for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
@@ -229,13 +217,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationTestResult, DscError> {
-        let (config, messages, had_errors) = self.validate_config()?;
+        let config = self.validate_config()?;
         let mut result = ConfigurationTestResult::new();
-        result.messages = messages;
-        result.had_errors = had_errors;
-        if had_errors {
-            return Ok(result);
-        }
         for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
@@ -270,7 +253,7 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
-        let (config, messages, had_errors) = self.validate_config()?;
+        let config = self.validate_config()?;
 
         let duplicates = Self::find_duplicate_resource_types(&config);
         if !duplicates.is_empty()
@@ -279,15 +262,7 @@ impl Configurator {
             return Err(DscError::Validation(format!("Resource(s) {duplicates_string} specified multiple times")));
         }
 
-        let mut result = ConfigurationExportResult {
-            result: None,
-            messages,
-            had_errors
-        };
-
-        if had_errors {
-            return Ok(result);
-        };
+        let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
         for resource in &config.resources {
@@ -403,76 +378,15 @@ impl Configurator {
         result.into_iter().collect()
     }
 
-    fn validate_config(&mut self) -> Result<(Configuration, Vec<ResourceMessage>, bool), DscError> {
+    fn validate_config(&mut self) -> Result<Configuration, DscError> {
         let config: Configuration = serde_json::from_str(self.config.as_str())?;
-        let mut messages: Vec<ResourceMessage> = Vec::new();
-        let mut has_errors = false;
 
         // Perform discovery of resources used in config
         let mut required_resources = config.resources.iter().map(|p| p.resource_type.to_lowercase()).collect::<Vec<String>>();
         required_resources.sort_unstable();
         required_resources.dedup();
         self.discovery.discover_resources(&required_resources);
-
-        // Now perform the validation
-        for resource in &config.resources {
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
-            };
-
-            debug!("resource_type {}", &resource.resource_type);
-            //TODO: remove this after schema validation for classic PS resources is implemented
-            if (resource.resource_type == "DSC/PowerShellGroup")
-            || (resource.resource_type == "DSC/WMIGroup") {continue;}
-
-            let input = serde_json::to_string(&resource.properties)?;
-            let schema = match dsc_resource.schema() {
-                Ok(schema) => schema,
-                Err(DscError::SchemaNotAvailable(_) ) => {
-                    messages.push(ResourceMessage {
-                        name: resource.name.clone(),
-                        resource_type: resource.resource_type.clone(),
-                        message: "Schema not available".to_string(),
-                        level: MessageLevel::Warning,
-                    });
-                    continue;
-                },
-                Err(e) => {
-                    return Err(e);
-                },
-            };
-            let schema = serde_json::from_str(&schema)?;
-            let compiled_schema = match JSONSchema::compile(&schema) {
-                Ok(schema) => schema,
-                Err(e) => {
-                    messages.push(ResourceMessage {
-                        name: resource.name.clone(),
-                        resource_type: resource.resource_type.clone(),
-                        message: format!("Failed to compile schema: {e}"),
-                        level: MessageLevel::Error,
-                    });
-                    has_errors = true;
-                    continue;
-                },
-            };
-            let input = serde_json::from_str(&input)?;
-            if let Err(err) = compiled_schema.validate(&input) {
-                let mut error = format!("Resource '{}' failed validation: ", resource.name);
-                for e in err {
-                    error.push_str(&format!("\n{e} "));
-                }
-                messages.push(ResourceMessage {
-                    name: resource.name.clone(),
-                    resource_type: resource.resource_type.clone(),
-                    message: error,
-                    level: MessageLevel::Error,
-                });
-                has_errors = true;
-                continue;
-            };
-        }
-
-        Ok((config, messages, has_errors))
+        Ok(config)
     }
 
     fn invoke_property_expressions(&mut self, properties: &Option<Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
