@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a parameter in a Desired State Configuration document.
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Configuration document parameter schema
 ---
