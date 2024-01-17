@@ -2,7 +2,7 @@
 title: "Desired State Configuration changelog"
 description: >-
   A log of the changes for releases of DSCv3.
-ms.date: 11/15/2023
+ms.date: 01/17/2024
 ---
 
 # Changelog
@@ -22,9 +22,18 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link -->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.3...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...main
 
 <!-- Add entries between releases under the appropriate section heading here  -->
+
+## [v3.0.0-alpha.4][release-v3.0.0-alpha.4] - 2023-11-14
+
+This section includes a summary of changes for the `alpha.4` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-alpha.4].
+
+<!-- Release links -->
+[release-v3.0.0-alpha.4]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-alpha.4 "Link to the DSC v3.0.0-alpha.4 release on GitHub"
+[compare-v3.0.0-alpha.4]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.3...v3.0.0-alpha.4
 
 ### Changed
 
