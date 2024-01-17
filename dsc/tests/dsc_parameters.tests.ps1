@@ -248,7 +248,7 @@ Describe 'Parameters tests' {
             family: "[parameters('osFamily')]"
 '@
 
-      $out = dsc -i $config_yaml config -p $params test | ConvertFrom-Json
+      $out = dsc -i $config_yaml config -p "$params" test | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results[0].result.actualState.family | Should -BeExactly $os
       $out.results[0].result.inDesiredState | Should -BeTrue
