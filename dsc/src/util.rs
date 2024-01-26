@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{DscType, OutputFormat};
+use crate::args::{DscType, OutputFormat, TraceFormat, TraceLevel};
 
 use atty::Stream;
 use dsc_lib::{
@@ -25,7 +25,8 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::error;
+use tracing::{Level, error};
+use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 pub const EXIT_SUCCESS: i32 = 0;
 pub const EXIT_INVALID_ARGS: i32 = 1;
@@ -239,5 +240,51 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     }
     else {
         println!("{output}");
+    }
+}
+
+pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
+    let tracing_level = match trace_level {
+        TraceLevel::Error => Level::ERROR,
+        TraceLevel::Warning => Level::WARN,
+        TraceLevel::Info => Level::INFO,
+        TraceLevel::Debug => Level::DEBUG,
+        TraceLevel::Trace => Level::TRACE,
+    };
+
+    let filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("warning"))
+        .unwrap_or_default()
+        .add_directive(tracing_level.into());
+    let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
+    let fmt = match trace_format {
+        TraceFormat::Default => {
+            layer
+                .with_ansi(true)
+                .with_level(true)
+                .with_line_number(true)
+                .boxed()
+        },
+        TraceFormat::Plaintext => {
+            layer
+                .with_ansi(false)
+                .with_level(true)
+                .with_line_number(false)
+                .boxed()
+        },
+        TraceFormat::Json => {
+            layer
+                .with_ansi(false)
+                .with_level(true)
+                .with_line_number(true)
+                .json()
+                .boxed()
+        }
+    };
+
+    let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
+
+    if tracing::subscriber::set_global_default(subscriber).is_err() {
+        eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
     }
 }
