@@ -35,16 +35,6 @@ pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
 
-#[derive(Debug)]
-#[derive(clap::ValueEnum, Clone)]
-pub enum LogLevel {
-   Error,
-   Warning,
-   Info,
-   Debug,
-   Trace
-}
-
 /// Get string representation of JSON value.
 ///
 /// # Arguments

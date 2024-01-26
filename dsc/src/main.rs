@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use args::{Args, SubCommand};
+use args::{Args, TraceLevel, TraceFormat, SubCommand};
 use atty::Stream;
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
@@ -9,6 +9,7 @@ use std::io::{self, Read};
 use std::process::exit;
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
 use tracing::{Level, error, info, warn, debug};
+use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -31,18 +32,48 @@ fn main() {
 
     let args = Args::parse();
 
-    let tracing_level = match args.logging_level {
-        util::LogLevel::Error => Level::ERROR,
-        util::LogLevel::Warning => Level::WARN,
-        util::LogLevel::Info => Level::INFO,
-        util::LogLevel::Debug => Level::DEBUG,
-        util::LogLevel::Trace => Level::TRACE,
+    let tracing_level = match args.trace_level {
+        TraceLevel::Error => Level::ERROR,
+        TraceLevel::Warning => Level::WARN,
+        TraceLevel::Info => Level::INFO,
+        TraceLevel::Debug => Level::DEBUG,
+        TraceLevel::Trace => Level::TRACE,
     };
 
-    // create subscriber that writes all events to stderr
-    let subscriber = tracing_subscriber::fmt().pretty().with_max_level(tracing_level).with_writer(std::io::stderr).finish();
+    let filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("warning"))
+        .unwrap()
+        .add_directive(tracing_level.into());
+    let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
+    let fmt = match args.trace_format {
+        TraceFormat::Default => {
+            layer
+                .with_ansi(true)
+                .with_level(true)
+                .with_line_number(true)
+                .boxed()
+        },
+        TraceFormat::Plaintext => {
+            layer
+                .with_ansi(false)
+                .with_level(false)
+                .with_line_number(false)
+                .boxed()
+        },
+        TraceFormat::Json => {
+            layer
+                .with_ansi(true)
+                .with_level(false)
+                .with_line_number(false)
+                .json()
+                .boxed()
+        }
+    };
+
+    let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
+
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default subscriber");
+        eprintln!("Unable to set global default logging subscriber");
     }
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
