@@ -34,6 +34,27 @@ pub struct ResourceGetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct GroupResourceGetResult {
+    pub results: Vec<ResourceGetResult>,
+}
+
+impl GroupResourceGetResult {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            results: Vec::new(),
+        }
+    }
+}
+
+impl Default for GroupResourceGetResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
     pub results: Vec<ResourceGetResult>,
     pub messages: Vec<ResourceMessage>,
@@ -69,6 +90,27 @@ pub struct ResourceSetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+pub struct GroupResourceSetResult {
+    pub results: Vec<ResourceSetResult>,
+}
+
+impl GroupResourceSetResult {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            results: Vec::new(),
+        }
+    }
+}
+
+impl Default for GroupResourceSetResult {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ConfigurationSetResult {
     pub results: Vec<ResourceSetResult>,
     pub messages: Vec<ResourceMessage>,
@@ -100,6 +142,27 @@ pub struct ResourceTestResult {
     #[serde(rename="type")]
     pub resource_type: String,
     pub result: TestResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GroupResourceTestResult {
+    pub results: Vec<ResourceTestResult>,
+}
+
+impl GroupResourceTestResult {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            results: Vec::new(),
+        }
+    }
+}
+
+impl Default for GroupResourceTestResult {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

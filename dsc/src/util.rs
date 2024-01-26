@@ -7,7 +7,14 @@ use atty::Stream;
 use dsc_lib::{
     configure::{
         config_doc::Configuration,
-        config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult}
+        config_result::{
+            GroupResourceGetResult,
+            GroupResourceSetResult,
+            GroupResourceTestResult,
+            ConfigurationGetResult,
+            ConfigurationSetResult,
+            ConfigurationTestResult
+        }
     },
     dscerror::DscError,
     dscresources::{
@@ -140,6 +147,15 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
         },
         DscType::TestResult => {
             schema_for!(TestResult)
+        },
+        DscType::GroupResourceGetResult => {
+            schema_for!(GroupResourceGetResult)
+        },
+        DscType::GroupResourceSetResult => {
+            schema_for!(GroupResourceSetResult)
+        },
+        DscType::GroupResourceTestResult => {
+            schema_for!(GroupResourceTestResult)
         },
         DscType::DscResource => {
             schema_for!(DscResource)

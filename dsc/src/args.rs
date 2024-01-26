@@ -54,6 +54,8 @@ pub enum SubCommand {
         parameters: Option<String>,
         #[clap(short = 'f', long, help = "Parameters to pass to the configuration as a JSON or YAML file", conflicts_with = "parameters")]
         parameters_file: Option<String>,
+        #[clap(long, hide = true)]
+        as_group: bool,
     },
     #[clap(name = "resource", about = "Invoke a specific DSC resource")]
     Resource {
@@ -185,6 +187,9 @@ pub enum DscType {
     GetResult,
     SetResult,
     TestResult,
+    GroupResourceGetResult,
+    GroupResourceSetResult,
+    GroupResourceTestResult,
     DscResource,
     ResourceManifest,
     Configuration,

@@ -10,6 +10,11 @@ use tracing::error;
 use atty::Stream;
 use dsc_lib::{
     configure::{Configurator, ErrorAction},
+    configure::config_result::{
+        GroupResourceGetResult,
+        GroupResourceSetResult,
+        GroupResourceTestResult,
+    },
     DscManager,
     dscresources::dscresource::{ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
@@ -18,20 +23,36 @@ use jsonschema::JSONSchema;
 use serde_yaml::Value;
 use std::process::exit;
 
-pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>)
+pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: bool)
 {
     match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
-            let json = match serde_json::to_string(&result) {
-                Ok(json) => json,
-                Err(err) => {
-                    error!("JSON Error: {err}");
-                    exit(EXIT_JSON_ERROR);
+            if as_group {
+                let mut group_result = GroupResourceGetResult::new();
+                for resource_result in result.results {
+                    group_result.results.push(resource_result);
                 }
-            };
-            write_output(&json, format);
-            if result.had_errors {
-                exit(EXIT_DSC_ERROR);
+                let json = match serde_json::to_string(&group_result) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON Error: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_output(&json, format);
+            }
+            else {
+                let json = match serde_json::to_string(&result) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON Error: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_output(&json, format);
+                if result.had_errors {
+                    exit(EXIT_DSC_ERROR);
+                }
             }
         },
         Err(err) => {
@@ -41,20 +62,36 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>)
+pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: bool)
 {
     match configurator.invoke_set(false, ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
-            let json = match serde_json::to_string(&result) {
-                Ok(json) => json,
-                Err(err) => {
-                    error!("JSON Error: {err}");
-                    exit(EXIT_JSON_ERROR);
+            if as_group {
+                let mut group_result = GroupResourceSetResult::new();
+                for resource_result in result.results {
+                    group_result.results.push(resource_result);
                 }
-            };
-            write_output(&json, format);
-            if result.had_errors {
-                exit(EXIT_DSC_ERROR);
+                let json = match serde_json::to_string(&group_result) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON Error: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_output(&json, format);
+            }
+            else {
+                let json = match serde_json::to_string(&result) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON Error: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_output(&json, format);
+                if result.had_errors {
+                    exit(EXIT_DSC_ERROR);
+                }
             }
         },
         Err(err) => {
@@ -64,20 +101,36 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>)
+pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: bool)
 {
     match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
-            let json = match serde_json::to_string(&result) {
-                Ok(json) => json,
-                Err(err) => {
-                    error!("JSON Error: {err}");
-                    exit(EXIT_JSON_ERROR);
+            if as_group {
+                let mut group_result = GroupResourceTestResult::new();
+                for resource_result in result.results {
+                    group_result.results.push(resource_result);
                 }
-            };
-            write_output(&json, format);
-            if result.had_errors {
-                exit(EXIT_DSC_ERROR);
+                let json = match serde_json::to_string(&group_result) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON Error: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_output(&json, format);
+            }
+            else {
+                let json = match serde_json::to_string(&result) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON Error: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_output(&json, format);
+                if result.had_errors {
+                    exit(EXIT_DSC_ERROR);
+                }
             }
         },
         Err(err) => {
@@ -116,7 +169,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: bool) {
     let json_string = match subcommand {
         ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
@@ -170,13 +223,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
 
     match subcommand {
         ConfigSubCommand::Get { format, .. } => {
-            config_get(&mut configurator, format);
+            config_get(&mut configurator, format, as_group);
         },
         ConfigSubCommand::Set { format, .. } => {
-            config_set(&mut configurator, format);
+            config_set(&mut configurator, format, as_group);
         },
         ConfigSubCommand::Test { format, .. } => {
-            config_test(&mut configurator, format);
+            config_test(&mut configurator, format, as_group);
         },
         ConfigSubCommand::Validate { .. } => {
             validate_config(&json_string);

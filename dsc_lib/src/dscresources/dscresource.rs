@@ -71,8 +71,11 @@ impl DscResource {
         let resource_manifest = import_manifest(manifest.clone())?;
 
         if resource_manifest.validate.is_some() {
-            let Ok(validation_result) = self.validate(input) else {
-                return Err(DscError::Validation("Validation invocation failed".to_string()));
+            let validation_result = match self.validate(input) {
+                Ok(validation_result) => validation_result,
+                Err(err) => {
+                    return Err(DscError::Validation(format!("Validation failed: {err}")));
+                },
             };
             if !validation_result.valid {
                 return Err(DscError::Validation("Validation failed".to_string()));
