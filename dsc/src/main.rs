@@ -56,15 +56,15 @@ fn main() {
         TraceFormat::Plaintext => {
             layer
                 .with_ansi(false)
-                .with_level(false)
+                .with_level(true)
                 .with_line_number(false)
                 .boxed()
         },
         TraceFormat::Json => {
             layer
-                .with_ansi(true)
-                .with_level(false)
-                .with_line_number(false)
+                .with_ansi(false)
+                .with_level(true)
+                .with_line_number(true)
                 .json()
                 .boxed()
         }
