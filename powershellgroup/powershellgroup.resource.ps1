@@ -33,7 +33,7 @@ function RefreshCache
     }
 }
 
-if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -eq 4) `
+if (($PSVersionTable.PSVersion.Major -eq 7) -and ($PSVersionTable.PSVersion.Minor -eq 4) `
    -and ($PSVersionTable.PSVersion.PreReleaseLabel.StartsWith("preview")))
 {
     throw "PowerShell 7.4-previews are not supported by PowerShellGroup resource; please use PS 7.4.0-rc.1 or newer."
