@@ -21,7 +21,7 @@ function RefreshCache
     $script:ResourceCache = @{}
 
     $DscResources = Get-DscResource
-    
+
     foreach ($r in $DscResources)
     {
         $moduleName = "";
@@ -33,7 +33,7 @@ function RefreshCache
     }
 }
 
-if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -ge 4) `
+if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -eq 4) `
    -and ($PSVersionTable.PSVersion.PreReleaseLabel.StartsWith("preview")))
 {
     throw "PowerShell 7.4-previews are not supported by PowerShellGroup resource; please use PS 7.4.0-rc.1 or newer."
@@ -153,7 +153,7 @@ elseif ($Operation -eq 'Get')
         {
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
+            $inputobj_pscustomobj.psobject.properties | %{
                 if ($_.Name -ne "type")
                 {
                     $inputht[$_.Name] = $_.Value
@@ -227,7 +227,7 @@ elseif ($Operation -eq 'Set')
         {
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
+            $inputobj_pscustomobj.psobject.properties | %{
                 if ($_.Name -ne "type")
                 {
                     $inputht[$_.Name] = $_.Value
@@ -301,7 +301,7 @@ elseif ($Operation -eq 'Test')
         {
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
+            $inputobj_pscustomobj.psobject.properties | %{
                 if ($_.Name -ne "type")
                 {
                     $inputht[$_.Name] = $_.Value
