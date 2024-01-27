@@ -20,11 +20,11 @@ pub enum TraceFormat {
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum TraceLevel {
-   Error,
-   Warning,
-   Info,
-   Debug,
-   Trace
+    Error,
+    Warning,
+    Info,
+    Debug,
+    Trace
 }
 
 #[derive(Debug, Parser)]
