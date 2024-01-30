@@ -7,7 +7,7 @@ Describe 'tracing tests' {
         # @{ level = 'WARNING' } TODO: currently no warnings are emitted
         @{ level = 'info' }
         @{ level = 'debug' }
-        # @{ level = 'trace' } TODO:L currently no trace is emitted
+        # @{ level = 'trace' } TODO: currently no trace is emitted
     ) {
         param($level)
 
