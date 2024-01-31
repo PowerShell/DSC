@@ -7,7 +7,7 @@
     "executable": "dsc",
     "args": [
       "config",
-      "--as_group",
+      "--as-group",
       "get"
     ],
     "input": "stdin"
@@ -16,7 +16,7 @@
     "executable": "dsc",
     "args": [
       "config",
-      "--as_group",
+      "--as-group",
       "set"
     ],
     "input": "stdin",
@@ -27,7 +27,7 @@
     "executable": "dsc",
     "args": [
       "config",
-      "--as_group",
+      "--as-group",
       "test"
     ],
     "input": "stdin",

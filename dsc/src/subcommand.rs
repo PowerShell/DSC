@@ -274,7 +274,7 @@ pub fn validate_config(config: &str) {
         exit(EXIT_INVALID_INPUT);
     };
 
-    let dsc = match DscManager::new() {
+    let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
             error!("Error: {err}");
@@ -287,14 +287,19 @@ pub fn validate_config(config: &str) {
         error!("Error: Resources not specified");
         exit(EXIT_INVALID_INPUT);
     };
+
     for resource_block in resources {
         let type_name = resource_block["type"].as_str().unwrap_or_else(|| {
             error!("Error: Resource type not specified");
             exit(EXIT_INVALID_INPUT);
         });
+
+        // discover the resource
+        dsc.discover_resources(&[type_name.to_lowercase().to_string()]);
+
         // get the actual resource
         let Some(resource) = get_resource(&dsc, type_name) else {
-            error!("Error: Resource type not found");
+            error!("Error: Resource type '{type_name}' not found");
             exit(EXIT_DSC_ERROR);
         };
         // see if the resource is command based

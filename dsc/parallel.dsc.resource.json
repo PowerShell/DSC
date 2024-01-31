@@ -8,6 +8,7 @@
     "args": [
       "config",
       "--parallel",
+      "--as-group",
       "get"
     ],
     "input": "stdin"
@@ -17,6 +18,7 @@
     "args": [
       "config",
       "--parallel",
+      "--as-group",
       "set"
     ],
     "input": "stdin",
@@ -28,6 +30,7 @@
     "args": [
       "config",
       "--parallel",
+      "--as-group",
       "test"
     ],
     "input": "stdin",

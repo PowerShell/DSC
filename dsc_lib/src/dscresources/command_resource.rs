@@ -3,7 +3,7 @@
 
 use jsonschema::JSONSchema;
 use serde_json::Value;
-use std::{collections::HashMap, process::Command, io::{Write, Read}, process::Stdio};
+use std::{collections::HashMap, env, process::Command, io::{Write, Read}, process::Stdio};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 use tracing::{debug, info};
@@ -425,6 +425,11 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     }
     if let Some(env) = env {
         command.envs(env);
+    }
+
+    if executable == "dsc" && env::var("DEBUG_DSC").is_ok() {
+        // remove this env var from child process as it will fail reading from keyboard to allow attaching
+        command.env_remove("DEBUG_DSC");
     }
 
     let mut child = command.spawn()?;
