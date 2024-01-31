@@ -5,7 +5,6 @@ use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use crate::util::LogLevel;
 
-/// The output format to use
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
     Json,
@@ -52,7 +51,7 @@ pub enum SubCommand {
     Schema {
         #[clap(name = "type", short, long, help = "The type of DSC schema to get")]
         dsc_type: DscType,
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
 }
@@ -61,24 +60,24 @@ pub enum SubCommand {
 pub enum ConfigSubCommand {
     #[clap(name = "get", about = "Retrieve the current configuration")]
     Get {
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "set", about = "Set the current configuration")]
     Set {
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "test", about = "Test the current configuration")]
     Test {
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate,
     #[clap(name = "export", about = "Export the current configuration")]
     Export {
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     }
 }
@@ -93,7 +92,7 @@ pub enum ResourceSubCommand {
         description: Option<String>,
         #[clap(short, long, help = "Tag to search for in the resource tags")]
         tags: Option<Vec<String>>,
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "get", about = "Invoke the get operation to a resource", arg_required_else_help = true)]
@@ -104,7 +103,7 @@ pub enum ResourceSubCommand {
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]
         input: Option<String>,
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "set", about = "Invoke the set operation to a resource", arg_required_else_help = true)]
@@ -113,7 +112,7 @@ pub enum ResourceSubCommand {
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]
         input: Option<String>,
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "test", about = "Invoke the test operation to a resource", arg_required_else_help = true)]
@@ -122,21 +121,21 @@ pub enum ResourceSubCommand {
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]
         input: Option<String>,
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {
         #[clap(short, long, help = "The name of the resource to get the JSON schema")]
         resource: String,
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "export", about = "Retrieve all resource instances", arg_required_else_help = true)]
     Export {
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `export` on")]
         resource: String,
-        #[clap(short = 'f', long)]
+        #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
 }
