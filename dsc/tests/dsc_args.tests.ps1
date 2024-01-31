@@ -85,7 +85,7 @@ actualState:
     ) {
         param($format, $expected)
 
-        $out = dsc --format $format resource get -r Test/Hello | Out-String
+        $out = dsc resource get -r Test/Hello --format $format | Out-String
         $LASTEXITCODE | Should -Be 0
         $out.Trim() | Should -BeExactly $expected
     }
