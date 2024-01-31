@@ -30,4 +30,11 @@ Describe 'dsc config get tests' {
         $null = $config | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2
     }
+
+    It 'can accept the use of --format as a subcommand' -Skip:(!$IsWindows) {
+        $jsonPath = Join-Path $PSScriptRoot '../examples/osinfo_registry.dsc.json'
+        $config = Get-Content $jsonPath -Raw
+        $config | dsc config get --format pretty-json | Out-String
+        $LASTEXITCODE | Should -Be 0
+    }
 }

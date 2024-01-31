@@ -67,6 +67,49 @@ Describe 'config set tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
+    It 'can accept the use of --format <format> as a subcommand' -Skip:(!$IsWindows) -TestCases @(
+        @{ format = 'yaml'; expected = @'
+beforeState:
+  $id: https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json
+  keyPath: HKCU\1
+  _exist: false
+afterState:
+  $id: https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json
+  keyPath: HKCU\1
+  _exist: false
+changedProperties: []
+'@ }
+        @{ format = 'json'; expected = '{"beforeState":{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKCU\\1","_exist":false},"afterState":{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKCU\\1","_exist":false},"changedProperties":[]}' }
+        @{ format = 'pretty-json'; expected = @'
+{
+  "beforeState": {
+    "$id": "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json",
+    "keyPath": "HKCU\\1",
+    "_exist": false
+  },
+  "afterState": {
+    "$id": "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json",
+    "keyPath": "HKCU\\1",
+    "_exist": false
+  },
+  "changedProperties": []
+}
+'@ }
+    ) {
+        param($format, $expected)
+
+        $json = @'
+        {
+            "keyPath": "HKCU\\1",
+            "_exist": false
+        }
+'@
+
+        $out =  $json | dsc resource set -r Microsoft.Windows/registry --format $format | Out-String
+        $LASTEXITCODE | Should -Be 0
+        $out.Trim() | Should -BeExactly $expected
+    }
+
     It 'set can be used on a resource that does not implement test' {
         $manifest = @'
         {

@@ -28,4 +28,13 @@ Describe 'config schema tests' {
         $schema = $schema | ConvertFrom-Json
         $schema.'$schema' | Should -BeExactly 'http://json-schema.org/draft-07/schema#'
     }
+
+    It 'can accept the use of --format as a subcommand' -Skip:(!$IsWindows) {
+
+        $schema = dsc schema -t get-result -f pretty-json
+        $LASTEXITCODE | Should -Be 0
+        $schema | Should -Not -BeNullOrEmpty
+        $schema = $schema | ConvertFrom-Json
+        $schema.'$schema' | Should -BeExactly 'http://json-schema.org/draft-07/schema#'
+    }
 }
