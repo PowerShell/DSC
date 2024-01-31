@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use crate::util::LogLevel;
 
+/// The output format to use
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
     Json,
