@@ -116,7 +116,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format: &Option<OutputFormat>, stdin: &Option<String>) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>) {
     let Some(stdin) = stdin else {
         error!("Configuration must be piped to STDIN");
         exit(EXIT_INVALID_ARGS);
@@ -184,19 +184,19 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format
     }
 
     match subcommand {
-        ConfigSubCommand::Get => {
+        ConfigSubCommand::Get { format } => {
             config_get(&mut configurator, format);
         },
-        ConfigSubCommand::Set => {
+        ConfigSubCommand::Set { format } => {
             config_set(&mut configurator, format);
         },
-        ConfigSubCommand::Test => {
+        ConfigSubCommand::Test { format } => {
             config_test(&mut configurator, format);
         },
         ConfigSubCommand::Validate => {
             validate_config(&json_string);
         },
-        ConfigSubCommand::Export => {
+        ConfigSubCommand::Export { format } => {
             config_export(&mut configurator, format);
         }
     }

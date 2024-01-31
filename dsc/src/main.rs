@@ -85,7 +85,7 @@ fn main() {
             if let Some(file_name) = parameters_file {
                 info!("Reading parameters from file {}", file_name);
                 match std::fs::read_to_string(file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &args.format, &input),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input),
                     Err(err) => {
                         error!("Error: Failed to read parameters file: {err}");
                         exit(util::EXIT_INVALID_INPUT);
@@ -93,13 +93,13 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, &args.format, &input);
+                subcommand::config(&subcommand, &parameters, &input);
             }
         },
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, &input);
         },
-        SubCommand::Schema { dsc_type } => {
+        SubCommand::Schema { dsc_type , format } => {
             let schema = util::get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -108,7 +108,7 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, &args.format);
+            util::write_output(&json, &format);
         },
     }
 

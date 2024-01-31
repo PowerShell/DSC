@@ -18,9 +18,6 @@ pub struct Args {
     /// The subcommand to run
     #[clap(subcommand)]
     pub subcommand: SubCommand,
-    /// The output format to use
-    #[clap(short = 'f', long)]
-    pub format: Option<OutputFormat>,
     #[clap(short = 'i', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
     pub input: Option<String>,
     #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
@@ -54,21 +51,35 @@ pub enum SubCommand {
     Schema {
         #[clap(name = "type", short, long, help = "The type of DSC schema to get")]
         dsc_type: DscType,
+        #[clap(short = 'f', long)]
+        format: Option<OutputFormat>,
     },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum ConfigSubCommand {
     #[clap(name = "get", about = "Retrieve the current configuration")]
-    Get,
+    Get {
+        #[clap(short = 'f', long)]
+        format: Option<OutputFormat>,
+    },
     #[clap(name = "set", about = "Set the current configuration")]
-    Set,
+    Set {
+        #[clap(short = 'f', long)]
+        format: Option<OutputFormat>,
+    },
     #[clap(name = "test", about = "Test the current configuration")]
-    Test,
+    Test {
+        #[clap(short = 'f', long)]
+        format: Option<OutputFormat>,
+    },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate,
     #[clap(name = "export", about = "Export the current configuration")]
-    Export
+    Export {
+        #[clap(short = 'f', long)]
+        format: Option<OutputFormat>,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
