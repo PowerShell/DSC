@@ -8,7 +8,7 @@ use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
-use tracing::{Level, error, info, warn, debug};
+use tracing::{error, info, warn, debug};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -31,19 +31,7 @@ fn main() {
 
     let args = Args::parse();
 
-    let tracing_level = match args.logging_level {
-        util::LogLevel::Error => Level::ERROR,
-        util::LogLevel::Warning => Level::WARN,
-        util::LogLevel::Info => Level::INFO,
-        util::LogLevel::Debug => Level::DEBUG,
-        util::LogLevel::Trace => Level::TRACE,
-    };
-
-    // create subscriber that writes all events to stderr
-    let subscriber = tracing_subscriber::fmt().pretty().with_max_level(tracing_level).with_writer(std::io::stderr).finish();
-    if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default subscriber");
-    }
+    util::enable_tracing(&args.trace_level, &args.trace_format);
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
