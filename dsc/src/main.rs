@@ -97,7 +97,7 @@ fn main() {
             }
         },
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand, &args.format, &input);
+            subcommand::resource(&subcommand, &input);
         },
         SubCommand::Schema { dsc_type } => {
             let schema = util::get_schema(dsc_type);
