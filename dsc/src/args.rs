@@ -3,13 +3,28 @@
 
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
-use crate::util::LogLevel;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
     Json,
     PrettyJson,
     Yaml,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum TraceFormat {
+    Default,
+    Plaintext,
+    Json,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum TraceLevel {
+    Error,
+    Warning,
+    Info,
+    Debug,
+    Trace
 }
 
 #[derive(Debug, Parser)]
@@ -22,8 +37,10 @@ pub struct Args {
     pub input: Option<String>,
     #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
     pub input_file: Option<String>,
-    #[clap(short = 'l', long = "logging-level", help = "Log level to display", value_enum, default_value = "info")]
-    pub logging_level: LogLevel,
+    #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "warning")]
+    pub trace_level: TraceLevel,
+    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
+    pub trace_format: TraceFormat,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
