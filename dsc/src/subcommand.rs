@@ -4,7 +4,7 @@
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
 use tracing::error;
 
 use atty::Stream;
@@ -19,7 +19,6 @@ use dsc_lib::{
     dscresources::dscresource::{ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
-use jsonschema::JSONSchema;
 use serde_yaml::Value;
 use std::process::exit;
 
@@ -251,13 +250,6 @@ pub fn validate_config(config: &str) {
             exit(EXIT_DSC_ERROR);
         },
     };
-    let compiled_schema = match JSONSchema::compile(&schema) {
-        Ok(schema) => schema,
-        Err(e) => {
-            error!("Error: Failed to compile schema: {e}");
-            exit(EXIT_DSC_ERROR);
-        },
-    };
     let config_value = match serde_json::from_str(config) {
         Ok(config) => config,
         Err(e) => {
@@ -265,13 +257,10 @@ pub fn validate_config(config: &str) {
             exit(EXIT_INVALID_INPUT);
         },
     };
-    if let Err(err) = compiled_schema.validate(&config_value) {
-        let mut error = "Configuration failed validation: ".to_string();
-        for e in err {
-            error.push_str(&format!("\n{e} "));
-        }
-        error!("{error}");
-        exit(EXIT_INVALID_INPUT);
+
+    if let Err(err) = validate_json("Configuration", &schema, &config_value) {
+        error!("{err}");
+        exit(EXIT_VALIDATION_FAILED);
     };
 
     let mut dsc = match DscManager::new() {
@@ -342,23 +331,11 @@ pub fn validate_config(config: &str) {
                             exit(EXIT_DSC_ERROR);
                         },
                     };
-                    let compiled_schema = match JSONSchema::compile(&schema) {
-                        Ok(schema) => schema,
-                        Err(e) => {
-                            error!("Error: Failed to compile schema: {e}");
-                            exit(EXIT_DSC_ERROR);
-                        },
-                    };
-                    let properties = resource_block["properties"].clone();
-                    let validation = compiled_schema.validate(&properties);
-                    if let Err(err) = validation {
-                        let mut error = String::new();
-                        for e in err {
-                            error.push_str(&format!("{e} "));
-                        }
-                        error!("Error: Resource {type_name} failed validation: {error}");
+
+                    if let Err(err) = validate_json(&resource.type_name, &schema, &resource_block["properties"]) {
+                        error!("{err}");
                         exit(EXIT_VALIDATION_FAILED);
-                    };
+                    }
                 }
             }
         }
