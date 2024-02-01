@@ -39,7 +39,7 @@ pub struct Args {
     #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "warning")]
     pub trace_level: TraceLevel,
     #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
-    pub trace_format: TraceFormat
+    pub trace_format: TraceFormat,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
