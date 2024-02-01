@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::args::OutputFormat;
-use crate::util::{add_type_name_to_json, write_output, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, get_input};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output, get_input};
 use dsc_lib::configure::config_doc::Configuration;
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::invoke_result::GetResult;
