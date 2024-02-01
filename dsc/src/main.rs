@@ -35,19 +35,7 @@ fn main() {
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
-    let input = if args.input.is_some() {
-        args.input
-    } else if args.input_file.is_some() {
-        info!("Reading input from file {}", args.input_file.as_ref().unwrap());
-        let input_file = args.input_file.unwrap();
-        match std::fs::read_to_string(input_file) {
-            Ok(input) => Some(input),
-            Err(err) => {
-                error!("Error: Failed to read input file: {err}");
-                exit(util::EXIT_INVALID_INPUT);
-            }
-        }
-    } else if atty::is(Stream::Stdin) {
+    let input = if atty::is(Stream::Stdin) {
         None
     } else {
         info!("Reading input from STDIN");

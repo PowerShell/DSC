@@ -17,6 +17,7 @@ use dsc_lib::{
     }
 };
 use schemars::{schema_for, schema::RootSchema};
+use serde_yaml::Value;
 use std::collections::HashMap;
 use std::process::exit;
 use syntect::{
@@ -25,7 +26,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, error};
+use tracing::{Level, error, info};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 pub const EXIT_SUCCESS: i32 = 0;
@@ -287,4 +288,62 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
     }
+}
+
+pub fn parse_input_to_json(value: &str) -> serde_json::Value {
+    match serde_json::from_str(value) {
+        Ok(json) => json,
+        Err(_) => {
+            match serde_yaml::from_str::<Value>(value) {
+                Ok(yaml) => {
+                    match serde_json::to_value(yaml) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            error!("Error: Failed to convert YAML to JSON: {err}");
+                            exit(EXIT_DSC_ERROR);
+                        }
+                    }
+                },
+                Err(err) => {
+                    error!("Error: Input is not valid JSON or YAML: {err}");
+                    exit(EXIT_INVALID_INPUT);
+                }
+            }
+        }
+    }
+}
+
+pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> serde_json::Value {
+    let value = match (input, stdin, path) {
+        (None, Some(_), Some(_)) | (Some(_), Some(_), None) => {
+            error!("Error: Cannot specify both stdin and --input or --path");
+            exit(EXIT_INVALID_ARGS);
+        }
+        (Some(input), None, None) => input.clone(),
+        (None, Some(stdin), None) => stdin.clone(),
+        (None, None, Some(path)) => {
+            info!("Reading input from file {}", path);
+            match std::fs::read_to_string(path) {
+                Ok(input) => input.clone(),
+                Err(err) => {
+                    error!("Error: Failed to read input file: {err}");
+                    exit(EXIT_INVALID_INPUT);
+                }
+            }
+        },
+        (None, None, None) => {
+            return serde_json::Value::String(String::new());
+        },
+        _default => {
+            /* clap should handle these cases via conflicts_with so this should not get reached */
+            error!("Error: Invalid input");
+            exit(EXIT_INVALID_ARGS);
+        }
+    };
+
+    if value.is_empty() {
+        return serde_json::Value::String(String::new());
+    }
+
+    parse_input_to_json(&value)
 }
