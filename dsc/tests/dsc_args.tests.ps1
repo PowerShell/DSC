@@ -114,7 +114,7 @@ resources:
     family: Windows
 '@
 
-        $out = dsc $parameter "$yaml" config get | ConvertFrom-Json
+        $out = dsc config get $parameter "$yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
@@ -135,13 +135,13 @@ resources:
 '@
 
         Set-Content -Path $TestDrive/foo.yaml -Value $yaml
-        $out = dsc $parameter "$TestDrive/foo.yaml" config get | ConvertFrom-Json
+        $out = dsc config get $parameter "$TestDrive/foo.yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
 
     It '--input and --input-file cannot be used together' {
-        dsc --input 1 --input-file foo.json config get 2> $TestDrive/error.txt
+        dsc config get 2 --input 1 --input-file foo.json > $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 2

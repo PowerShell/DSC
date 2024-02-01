@@ -36,14 +36,10 @@ pub struct Args {
     /// The output format to use
     #[clap(short = 'o', long)]
     pub format: Option<OutputFormat>,
-    #[clap(short = 'i', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
-    pub input: Option<String>,
-    #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
-    pub input_file: Option<String>,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "warning")]
     pub trace_level: TraceLevel,
     #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
-    pub trace_format: TraceFormat,
+    pub trace_format: TraceFormat
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -77,15 +73,40 @@ pub enum SubCommand {
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum ConfigSubCommand {
     #[clap(name = "get", about = "Retrieve the current configuration")]
-    Get,
+    Get {
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
+    },
     #[clap(name = "set", about = "Set the current configuration")]
-    Set,
+    Set {
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
+    },
     #[clap(name = "test", about = "Test the current configuration")]
-    Test,
+    Test {
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
+    },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
-    Validate,
+    Validate {
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
+    },
     #[clap(name = "export", about = "Export the current configuration")]
-    Export
+    Export {
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -106,21 +127,33 @@ pub enum ResourceSubCommand {
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `get` on")]
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]
-        input: Option<String>,
+        json: Option<String>,
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        data: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
     },
     #[clap(name = "set", about = "Invoke the set operation to a resource", arg_required_else_help = true)]
     Set {
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `set` on")]
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]
-        input: Option<String>,
+        json: Option<String>,
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        data: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
     },
     #[clap(name = "test", about = "Invoke the test operation to a resource", arg_required_else_help = true)]
     Test {
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `test` on")]
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON")]
-        input: Option<String>,
+        json: Option<String>,
+        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
+        data: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
+        path: Option<String>,
     },
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {
