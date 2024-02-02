@@ -1,6 +1,6 @@
 ---
 description: Reference for available functions in a Desired State Configuration document.
-ms.date:     11/15/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Configuration document functions reference
 ---

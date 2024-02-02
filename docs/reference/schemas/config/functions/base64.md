@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'base64' DSC configuration document function
-ms.date:     11/15/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       base64
 ---
@@ -56,7 +56,7 @@ hadErrors: false
 
 ### Example 2 - Convert a concatenated string to base64
 
-The configuration uses the [concat()] function inside the `base64()` function to combine the
+The configuration uses the [concat()][02] function inside the `base64()` function to combine the
 strings `a`, `b`, and `c` into `abc` before returning the base64 representation.
 
 ```yaml
@@ -108,3 +108,4 @@ Type: string
 
 <!-- Link reference definitions -->
 [01]: https://en.wikipedia.org/wiki/Base64
+[02]: concat.md

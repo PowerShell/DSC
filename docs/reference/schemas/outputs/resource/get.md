@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc resource get' command.
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       dsc resource get result schema reference
 ---
