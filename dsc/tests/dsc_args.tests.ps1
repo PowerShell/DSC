@@ -114,7 +114,7 @@ resources:
     family: Windows
 '@
 
-        $out = dsc -l info config get $parameter "$yaml" | ConvertFrom-Json
+        $out = dsc config get $parameter "$yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
@@ -135,7 +135,7 @@ resources:
 '@
 
         Set-Content -Path $TestDrive/foo.yaml -Value $yaml
-        $out = dsc -l info config get $parameter "$TestDrive/foo.yaml" | ConvertFrom-Json
+        $out = dsc config get $parameter "$TestDrive/foo.yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }

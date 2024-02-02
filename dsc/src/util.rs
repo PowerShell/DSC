@@ -315,29 +315,9 @@ pub fn parse_input_to_json(value: &str) -> String {
 
 pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> String {
     let value = match (input, stdin, path) {
-        (Some(input), Some(stdin), None) => {
-            info!("value of stdin is: {}", stdin);
-            if !stdin.is_empty() {
-                error!("Error: Cannot specify both stdin and --input or --path");
-                exit(EXIT_INVALID_ARGS);
-            }
-            info!("stdin is empty");
-            input.clone()
-        },
-        (None, Some(stdin), Some(path)) => {
-            info!("value of stdin is: {}", stdin);
-            if !stdin.is_empty() {
-                error!("Error: Cannot specify both stdin and --input or --path");
-                exit(EXIT_INVALID_ARGS);
-            }
-            info!("stdin is empty");
-            match std::fs::read_to_string(path) {
-                Ok(input) => input.clone(),
-                Err(err) => {
-                    error!("Error: Failed to read input file: {err}");
-                    exit(EXIT_INVALID_INPUT);
-                }
-            }
+        (Some(_), Some(_), None) | (None, Some(_), Some(_)) => {
+            error!("Error: Cannot specify both stdin and --input or --path");
+            exit(EXIT_INVALID_ARGS);
         },
         (Some(input), None, None) => input.clone(),
         (None, Some(stdin), None) => stdin.clone(),
