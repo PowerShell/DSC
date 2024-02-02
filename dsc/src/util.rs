@@ -290,14 +290,14 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     }
 }
 
-pub fn parse_input_to_json(value: &str) -> serde_json::Value {
+pub fn parse_input_to_json(value: &str) -> String {
     match serde_json::from_str(value) {
         Ok(json) => json,
         Err(_) => {
             match serde_yaml::from_str::<Value>(value) {
                 Ok(yaml) => {
                     match serde_json::to_value(yaml) {
-                        Ok(json) => json,
+                        Ok(json) => json.to_string(),
                         Err(err) => {
                             error!("Error: Failed to convert YAML to JSON: {err}");
                             exit(EXIT_DSC_ERROR);
@@ -313,7 +313,7 @@ pub fn parse_input_to_json(value: &str) -> serde_json::Value {
     }
 }
 
-pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> serde_json::Value {
+pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> String {
     let value = match (input, stdin, path) {
         (None, Some(_), Some(_)) | (Some(_), Some(_), None) => {
             error!("Error: Cannot specify both stdin and --input or --path");
@@ -332,7 +332,8 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
             }
         },
         (None, None, None) => {
-            return serde_json::Value::String(String::new());
+            info!("returning from here in get_input");
+            return String::new();
         },
         _default => {
             /* clap should handle these cases via conflicts_with so this should not get reached */
@@ -342,7 +343,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     };
 
     if value.is_empty() {
-        return serde_json::Value::String(String::new());
+        return String::new();
     }
 
     parse_input_to_json(&value)

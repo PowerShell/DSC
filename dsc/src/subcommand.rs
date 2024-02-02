@@ -4,7 +4,7 @@
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, serde_json_value_to_string, write_output, get_input};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input};
 use tracing::error;
 
 use atty::Stream;
@@ -123,8 +123,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format
         ConfigSubCommand::Test { document, path } |
         ConfigSubCommand::Validate { document, path } |
         ConfigSubCommand::Export { document, path } => {
-            let json = get_input(document, stdin, path);
-            serde_json_value_to_string(&json)
+            get_input(document, stdin, path)
         }
     };
 

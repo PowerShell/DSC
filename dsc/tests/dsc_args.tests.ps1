@@ -85,7 +85,7 @@ actualState:
     ) {
         param($format, $expected)
 
-        $out = dsc --format $format -l debug resource get -r Test/Hello | Out-String
+        $out = dsc --format $format resource get -r Test/Hello | Out-String
         $LASTEXITCODE | Should -Be 0
         $out.Trim() | Should -BeExactly $expected
     }
@@ -141,16 +141,15 @@ resources:
     }
 
     It '--document and --path cannot be used together' {
-        dsc config get 2 --document 1 --path foo.json > $TestDrive/error.txt
+        dsc config get --document 1 --path foo.json 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 2
     }
 
     It '--trace-level has effect' {
-        # 2> $TestDrive/tracing.txt
-        dsc -l debug resource get -r Microsoft/OSInfo
-        #"$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'DEBUG'
+        dsc -l debug resource get -r Microsoft/OSInfo 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'DEBUG'
         $LASTEXITCODE | Should -Be 0
     }
 }
