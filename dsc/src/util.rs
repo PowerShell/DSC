@@ -318,7 +318,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
         (None, Some(_), Some(_)) | (Some(_), Some(_), None) => {
             error!("Error: Cannot specify both stdin and --input or --path");
             exit(EXIT_INVALID_ARGS);
-        }
+        },
         (Some(input), None, None) => input.clone(),
         (None, Some(stdin), None) => stdin.clone(),
         (None, None, Some(path)) => {
@@ -333,6 +333,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
         },
         (None, None, None) => {
             info!("returning from here in get_input");
+
             return String::new();
         },
         _default => {
