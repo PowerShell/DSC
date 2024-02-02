@@ -114,7 +114,7 @@ resources:
     family: Windows
 '@
 
-        $out = dsc config get $parameter "$yaml" | ConvertFrom-Json
+        $out = dsc -l info config get $parameter "$yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }

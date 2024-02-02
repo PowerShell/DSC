@@ -48,7 +48,12 @@ fn main() {
                 exit(util::EXIT_INVALID_ARGS);
             },
         };
-        Some(input)
+        if input.is_empty() {
+            None
+        }
+        else {
+            Some(input)
+        }
     };
 
     match args.subcommand {
