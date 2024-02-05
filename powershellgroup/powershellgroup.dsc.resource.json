@@ -55,6 +55,18 @@
       "input": "stdin",
       "return": "state"
       },
+    "export": {
+      "executable": "pwsh",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "$Input | ./powershellgroup.resource.ps1 Export"
+      ],
+      "input": "stdin",
+      "return": "state"
+      },
     "validate": {
         "executable": "pwsh",
         "args": [

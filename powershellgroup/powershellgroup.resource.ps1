@@ -3,7 +3,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('List','Get','Set','Test','Validate')]
+    [ValidateSet('List','Get','Set','Test','Export','Validate')]
     $Operation = 'List',
     [Switch]
     $WinPS = $false,
@@ -326,6 +326,51 @@ elseif ($Operation -eq 'Test')
     }
 
     $result | ConvertTo-Json
+}
+elseif ($Operation -eq 'Export')
+{
+    $inputobj_pscustomobj = $null
+    if ($stdinput)
+    {
+        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+    }
+
+    $result = @()
+
+    RefreshCache
+
+    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    {
+    }
+    else # we are processing an individual resource call
+    {
+        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
+        if ($cachedResourceInfo)
+        {
+            $path = $cachedResourceInfo.Path # for class-based resources - this is path to psd1 of their defining module
+
+            $typeparts = $inputobj_pscustomobj.type -split "/"
+            $ResourceTypeName = $typeparts[1]
+
+            $scriptBody = "using module '$path'"
+            $script = [ScriptBlock]::Create($scriptBody)
+            . $script
+
+            $t = [Type]$ResourceTypeName
+            $method = $t.GetMethod('Export')
+            $resultArray = $method.Invoke($null,$null)
+            foreach ($instance in $resultArray)
+            {
+                $instance | ConvertTo-Json -Compress | Write-Output
+            }
+        }
+        else
+        {
+            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
+            Write-Error $errmsg
+            exit 1
+        }
+    }
 }
 elseif ($Operation -eq 'Validate')
 {
