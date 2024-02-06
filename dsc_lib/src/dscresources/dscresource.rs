@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use tracing::debug;
 
-use super::{command_resource, dscerror, resource_manifest::import_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
+use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -232,13 +232,25 @@ impl Invoke for DscResource {
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
                     let desired_state = serde_json::from_str(expected)?;
-                    let diff_properties = get_diff(&desired_state, &get_result.actual_state);
-                    let test_result = TestResult {
+                    let actual_state = match get_result {
+                        GetResult::Group(group_response) => {
+                            let mut result_array: Vec<Value> = Vec::new();
+                            for result in group_response.results {
+                                result_array.push(result.actual_state);
+                            }
+                            Value::from(result_array)
+                        },
+                        GetResult::Resource(response) => {
+                            response.actual_state
+                        }
+                    };
+                    let diff_properties = get_diff( &desired_state, &actual_state);
+                    let test_result = TestResult::Resource(ResourceTestResponse {
                         desired_state: serde_json::from_str(expected)?,
-                        actual_state: get_result.actual_state,
+                        actual_state: actual_state,
                         in_desired_state: diff_properties.is_empty(),
                         diff_properties,
-                    };
+                    });
                     Ok(test_result)
                 }
                 else {

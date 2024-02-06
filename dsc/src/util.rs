@@ -10,9 +10,6 @@ use dsc_lib::{
     configure::{
         config_doc::Configuration,
         config_result::{
-            GroupResourceGetResult,
-            GroupResourceSetResult,
-            GroupResourceTestResult,
             ConfigurationGetResult,
             ConfigurationSetResult,
             ConfigurationTestResult
@@ -21,7 +18,11 @@ use dsc_lib::{
     dscerror::DscError,
     dscresources::{
         dscresource::DscResource,
-        invoke_result::{GetResult, SetResult, TestResult},
+        invoke_result::{
+            GetResult,
+            SetResult,
+            TestResult,
+        },
         resource_manifest::ResourceManifest
     }
 };
@@ -149,15 +150,6 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
         },
         DscType::TestResult => {
             schema_for!(TestResult)
-        },
-        DscType::GroupResourceGetResult => {
-            schema_for!(GroupResourceGetResult)
-        },
-        DscType::GroupResourceSetResult => {
-            schema_for!(GroupResourceSetResult)
-        },
-        DscType::GroupResourceTestResult => {
-            schema_for!(GroupResourceTestResult)
         },
         DscType::DscResource => {
             schema_for!(DscResource)
@@ -393,6 +385,9 @@ pub fn set_dscconfigroot(config_path: &str)
 }
 
 pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
+    debug!("Validating {source} against schema");
+    debug!("JSON: {json}");
+    debug!("Schema: {schema}");
     let compiled_schema = match JSONSchema::compile(&schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {

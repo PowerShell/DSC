@@ -5,17 +5,22 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use dsc_lib::dscerror::DscError;
+use dsc_lib::dscresources::invoke_result::{
+    GetResult,
+    SetResult,
+    TestResult,
+    GroupResourceGetResponse,
+    GroupResourceSetResponse,
+    GroupResourceTestResponse
+};
 use tracing::error;
 
 use atty::Stream;
 use dsc_lib::{
     configure::{Configurator, ErrorAction},
-    configure::config_result::{
-        GroupResourceGetResult,
-        GroupResourceSetResult,
-        GroupResourceTestResult,
-    },
     DscManager,
+    dscresources::invoke_result::ValidateResult,
     dscresources::dscresource::{ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
@@ -27,9 +32,16 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
     match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
             if as_group {
-                let mut group_result = GroupResourceGetResult::new();
+                let mut group_result = GroupResourceGetResponse::new();
                 for resource_result in result.results {
-                    group_result.results.push(resource_result);
+                    match resource_result.result {
+                        GetResult::Group(mut group_response) => {
+                            group_result.results.append(&mut group_response.results);
+                        },
+                        GetResult::Resource(response) => {
+                            group_result.results.push(response);
+                        }
+                    }
                 }
                 let json = match serde_json::to_string(&group_result) {
                     Ok(json) => json,
@@ -66,9 +78,16 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     match configurator.invoke_set(false, ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
             if as_group {
-                let mut group_result = GroupResourceSetResult::new();
+                let mut group_result = GroupResourceSetResponse::new();
                 for resource_result in result.results {
-                    group_result.results.push(resource_result);
+                    match resource_result.result {
+                        SetResult::Group(mut group_response) => {
+                            group_result.results.append(&mut group_response.results);
+                        },
+                        SetResult::Resource(response) => {
+                            group_result.results.push(response);
+                        }
+                    }
                 }
                 let json = match serde_json::to_string(&group_result) {
                     Ok(json) => json,
@@ -105,9 +124,16 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
     match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
             if as_group {
-                let mut group_result = GroupResourceTestResult::new();
+                let mut group_result = GroupResourceTestResponse::new();
                 for resource_result in result.results {
-                    group_result.results.push(resource_result);
+                    match resource_result.result {
+                        TestResult::Group(mut group_response) => {
+                            group_result.results.append(&mut group_response.results);
+                        },
+                        TestResult::Resource(response) => {
+                            group_result.results.push(response);
+                        }
+                    }
                 }
                 let json = match serde_json::to_string(&group_result) {
                     Ok(json) => json,
@@ -230,8 +256,27 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Test { format, .. } => {
             config_test(&mut configurator, format, as_group);
         },
-        ConfigSubCommand::Validate { .. } => {
-            validate_config(&json_string);
+        ConfigSubCommand::Validate => {
+            let mut result = ValidateResult {
+                valid: true,
+                reason: None,
+            };
+            let valid = match validate_config(&json_string) {
+                Ok(_) => {
+                    true
+                },
+                Err(err) => {
+                    error!("{err}");
+                    result.valid = false;
+                    false
+                }
+            };
+
+            let json = serde_json::to_string(&result).unwrap();
+            write_output(&json, format);
+            if !valid {
+                exit(EXIT_VALIDATION_FAILED);
+            }
         },
         ConfigSubCommand::Export { format, .. } => {
             config_export(&mut configurator, format);
@@ -241,107 +286,71 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
 
 /// Validate configuration.
 #[allow(clippy::too_many_lines)]
-pub fn validate_config(config: &str) {
+pub fn validate_config(config: &str) -> Result<(), DscError> {
     // first validate against the config schema
-    let schema = match serde_json::to_value(get_schema(DscType::Configuration)) {
-        Ok(schema) => schema,
-        Err(e) => {
-            error!("Error: Failed to convert schema to JSON: {e}");
-            exit(EXIT_DSC_ERROR);
-        },
-    };
-    let config_value = match serde_json::from_str(config) {
-        Ok(config) => config,
-        Err(e) => {
-            error!("Error: Failed to parse configuration: {e}");
-            exit(EXIT_INVALID_INPUT);
-        },
-    };
-
-    if let Err(err) = validate_json("Configuration", &schema, &config_value) {
-        error!("{err}");
-        exit(EXIT_VALIDATION_FAILED);
-    };
-
-    let mut dsc = match DscManager::new() {
-        Ok(dsc) => dsc,
-        Err(err) => {
-            error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
+    let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
+    let config_value = serde_json::from_str(config)?;
+    validate_json("Configuration", &schema, &config_value)?;
+    let mut dsc = DscManager::new()?;
 
     // then validate each resource
     let Some(resources) = config_value["resources"].as_array() else {
-        error!("Error: Resources not specified");
-        exit(EXIT_INVALID_INPUT);
+        return Err(DscError::Validation("Error: Resources not specified".to_string()));
     };
 
+    // discover the resources
+    let mut resource_types = Vec::new();
     for resource_block in resources {
-        let type_name = resource_block["type"].as_str().unwrap_or_else(|| {
-            error!("Error: Resource type not specified");
-            exit(EXIT_INVALID_INPUT);
-        });
+        let Some(type_name) = resource_block["type"].as_str() else {
+            return Err(DscError::Validation("Error: Resource type not specified".to_string()));
+        };
 
-        // discover the resource
-        dsc.discover_resources(&[type_name.to_lowercase().to_string()]);
+        if resource_types.contains(&type_name.to_lowercase()) {
+            continue;
+        }
+
+        resource_types.push(type_name.to_lowercase().to_string());
+    }
+    dsc.discover_resources(&resource_types);
+
+    for resource_block in resources {
+        let Some(type_name) = resource_block["type"].as_str() else {
+            return Err(DscError::Validation("Error: Resource type not specified".to_string()));
+        };
 
         // get the actual resource
         let Some(resource) = get_resource(&dsc, type_name) else {
-            error!("Error: Resource type '{type_name}' not found");
-            exit(EXIT_DSC_ERROR);
+            return Err(DscError::Validation(format!("Error: Resource type '{type_name}' not found")));
         };
+
         // see if the resource is command based
         if resource.implemented_as == ImplementedAs::Command {
             // if so, see if it implements validate via the resource manifest
             if let Some(manifest) = resource.manifest.clone() {
                 // convert to resource_manifest
-                let manifest: ResourceManifest = match serde_json::from_value(manifest) {
-                    Ok(manifest) => manifest,
-                    Err(e) => {
-                        error!("Error: Failed to parse resource manifest: {e}");
-                        exit(EXIT_INVALID_INPUT);
-                    },
-                };
+                let manifest: ResourceManifest = serde_json::from_value(manifest)?;
                 if manifest.validate.is_some() {
-                    let result = match resource.validate(config) {
-                        Ok(result) => result,
-                        Err(e) => {
-                            error!("Error: Failed to validate resource: {e}");
-                            exit(EXIT_VALIDATION_FAILED);
-                        },
-                    };
+                    let result = resource.validate(config)?;
                     if !result.valid {
                         let reason = result.reason.unwrap_or("No reason provided".to_string());
                         let type_name = resource.type_name.clone();
-                        error!("Resource {type_name} failed validation: {reason}");
-                        exit(EXIT_VALIDATION_FAILED);
+                        return Err(DscError::Validation(format!("Resource {type_name} failed validation: {reason}")));
                     }
                 }
                 else {
                     // use schema validation
                     let Ok(schema) = resource.schema() else {
-                        error!("Error: Resource {type_name} does not have a schema nor supports validation");
-                        exit(EXIT_VALIDATION_FAILED);
+                        return Err(DscError::Validation(format!("Error: Resource {type_name} does not have a schema nor supports validation")));
                     };
-                    let schema = match serde_json::to_value(&schema) {
-                        Ok(schema) => schema,
-                        Err(e) => {
-                            error!("Error: Failed to convert schema to JSON: {e}");
-                            exit(EXIT_DSC_ERROR);
-                        },
-                    };
+                    let schema = serde_json::from_str(&schema)?;
 
-                    if let Err(err) = validate_json(&resource.type_name, &schema, &resource_block["properties"]) {
-                        error!("{err}");
-                        exit(EXIT_VALIDATION_FAILED);
-                    }
+                    validate_json(&resource.type_name, &schema, &resource_block["properties"])?;
                 }
             }
         }
-
     }
-    exit(EXIT_SUCCESS);
+
+    Ok(())
 }
 
 pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {

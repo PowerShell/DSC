@@ -34,27 +34,6 @@ pub struct ResourceGetResult {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct GroupResourceGetResult {
-    pub results: Vec<ResourceGetResult>,
-}
-
-impl GroupResourceGetResult {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            results: Vec::new(),
-        }
-    }
-}
-
-impl Default for GroupResourceGetResult {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
     pub results: Vec<ResourceGetResult>,
     pub messages: Vec<ResourceMessage>,

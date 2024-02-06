@@ -4,7 +4,7 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, process::Command, io::{Write, Read}, process::Stdio};
-use crate::dscerror::DscError;
+use crate::{dscerror::DscError, dscresources::invoke_result::{GroupResourceGetResponse, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
 use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 use tracing::{debug, info};
 
@@ -53,16 +53,24 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
-    let result: Value = match serde_json::from_str(&stdout){
-        Result::Ok(r) => {r},
-        Result::Err(err) => {
-            return Err(DscError::Operation(format!("Failed to parse json from get {}|{}|{} -> {err}", &resource.get.executable, stdout, stderr)))
+    let result: GetResult = match serde_json::from_str::<GroupResourceGetResponse>(&stdout) {
+        Ok(group_response) => {
+            GetResult::Group(group_response)
+        },
+        Err(_) => {
+            match serde_json::from_str::<ResourceGetResponse>(&stdout) {
+                Ok(response) => {
+                    GetResult::Resource(response)
+                },
+                Err(_) => {
+                    debug!("Invalid get response: {}", &stdout);
+                    return Err(DscError::Validation(format!("Resource {} did not return a valid response", &resource.resource_type)))
+                }
+            }
         }
     };
 
-    Ok(GetResult {
-        actual_state: result,
-    })
+    Ok(result)
 }
 
 /// Invoke the set operation on a resource
@@ -101,13 +109,31 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && !set.pre_test.unwrap_or_default() {
         info!("No pretest, invoking test {}", &resource.resource_type);
-        let test_result = invoke_test(resource, cwd, desired)?;
-        if test_result.in_desired_state {
-            return Ok(SetResult {
-                before_state: test_result.desired_state,
-                after_state: test_result.actual_state,
+        let (in_desired_state, desired_state, actual_state) = match invoke_test(resource, cwd, desired)? {
+            TestResult::Group(group_response) => {
+                let mut in_desired_state = true;
+                let mut result_array: Vec<Value> = Vec::new();
+                let mut desired_state_array: Vec<Value> = Vec::new();
+                for response in group_response.results {
+                    if response.in_desired_state == false {
+                        in_desired_state = false;
+                    }
+                    result_array.push(response.actual_state);
+                    desired_state_array.push(response.desired_state);
+                }
+                (in_desired_state, Value::from(desired_state_array), Value::from(result_array))
+            },
+            TestResult::Resource(response) => {
+                (response.in_desired_state, response.desired_state, response.actual_state)
+            }
+        };
+
+        if in_desired_state {
+            return Ok(SetResult::Resource(ResourceSetResponse{
+                before_state: desired_state,
+                after_state: actual_state,
                 changed_properties: None,
-            });
+            }));
         }
     }
 
@@ -159,11 +185,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &actual_value, &pre_state);
-            Ok(SetResult {
+            Ok(SetResult::Resource(ResourceSetResponse{
                 before_state: pre_state,
                 after_state: actual_value,
                 changed_properties: Some(diff_properties),
-            })
+            }))
         },
         Some(ReturnKind::StateAndDiff) => {
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
@@ -177,22 +203,34 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, "Command did not return expected diff output".to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_line)?;
-            Ok(SetResult {
+            Ok(SetResult::Resource(ResourceSetResponse {
                 before_state: pre_state,
                 after_state: actual_value,
                 changed_properties: Some(diff_properties),
-            })
+            }))
         },
         None => {
             // perform a get and compare the result to the expected state
             let get_result = invoke_get(resource, cwd, desired)?;
             // for changed_properties, we compare post state to pre state
-            let diff_properties = get_diff( &get_result.actual_state, &pre_state);
-            Ok(SetResult {
+            let actual_state = match get_result {
+                GetResult::Group(group_response) => {
+                    let mut result_array: Vec<Value> = Vec::new();
+                    for result in group_response.results {
+                        result_array.push(result.actual_state);
+                    }
+                    Value::from(result_array)
+                },
+                GetResult::Resource(response) => {
+                    response.actual_state
+                }
+            };
+            let diff_properties = get_diff( &actual_state, &pre_state);
+            Ok(SetResult::Resource(ResourceSetResponse {
                 before_state: pre_state,
-                after_state: get_result.actual_state,
+                after_state: actual_state,
                 changed_properties: Some(diff_properties),
-            })
+            }))
         },
     }
 }
@@ -245,12 +283,12 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 }
             };
             let diff_properties = get_diff(&expected_value, &actual_value);
-            Ok(TestResult {
+            Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
                 in_desired_state: diff_properties.is_empty(),
                 diff_properties,
-            })
+            }))
         },
         Some(ReturnKind::StateAndDiff) => {
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
@@ -263,23 +301,35 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, "No diff properties returned".to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
-            Ok(TestResult {
+            Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
                 in_desired_state: diff_properties.is_empty(),
                 diff_properties,
-            })
+            }))
         },
         None => {
             // perform a get and compare the result to the expected state
             let get_result = invoke_get(resource, cwd, expected)?;
-            let diff_properties = get_diff(&expected_value, &get_result.actual_state);
-            Ok(TestResult {
+            let actual_state = match get_result {
+                GetResult::Group(group_response) => {
+                    let mut result_array: Vec<Value> = Vec::new();
+                    for result in group_response.results {
+                        result_array.push(result.actual_state);
+                    }
+                    Value::from(result_array)
+                },
+                GetResult::Resource(response) => {
+                    response.actual_state
+                }
+            };
+            let diff_properties = get_diff( &expected_value, &actual_state);
+            Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
-                actual_state: get_result.actual_state,
+                actual_state: actual_state,
                 in_desired_state: diff_properties.is_empty(),
                 diff_properties,
-            })
+            }))
         },
     }
 }
