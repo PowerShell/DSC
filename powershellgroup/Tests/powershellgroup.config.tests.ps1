@@ -39,4 +39,26 @@ Describe 'PowerShellGroup resource tests' {
         $res.results.result.afterState[0].RebootRequired | Should -Not -BeNull
         $res.results.result.afterState[1].RebootRequired | Should -Not -BeNull
     }
+
+    It 'Export works on config with class-based resources' -Skip:(!$IsWindows){
+
+        $yaml = @'
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: DSC/PowerShellGroup
+              properties:
+                resources:
+                - name: Class-resource Info
+                  type: PSTestModule/TestClassResource
+'@
+        $out = $yaml | dsc config export
+        $LASTEXITCODE | Should -Be 0
+        $res = $out | ConvertFrom-Json
+        $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
+        $res.'resources' | Should -Not -BeNullOrEmpty
+        $res.resources.count | Should -Be 5
+        $res.resources[0].properties.Name | Should -Be "Object1"
+        $res.resources[0].properties.Prop1 | Should -Be "Property of object1"
+    }
 }
