@@ -116,7 +116,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format: &Option<OutputFormat>, stdin: &Option<String>) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>) {
     let Some(stdin) = stdin else {
         error!("Configuration must be piped to STDIN");
         exit(EXIT_INVALID_ARGS);
@@ -179,24 +179,24 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format
     };
 
     if let Err(err) = configurator.set_parameters(&parameters) {
-        error!("Error: Paramter input failure: {err}");
+        error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
 
     match subcommand {
-        ConfigSubCommand::Get => {
+        ConfigSubCommand::Get { format } => {
             config_get(&mut configurator, format);
         },
-        ConfigSubCommand::Set => {
+        ConfigSubCommand::Set { format } => {
             config_set(&mut configurator, format);
         },
-        ConfigSubCommand::Test => {
+        ConfigSubCommand::Test { format } => {
             config_test(&mut configurator, format);
         },
         ConfigSubCommand::Validate => {
             validate_config(&json_string);
         },
-        ConfigSubCommand::Export => {
+        ConfigSubCommand::Export { format } => {
             config_export(&mut configurator, format);
         }
     }
@@ -324,7 +324,7 @@ pub fn validate_config(config: &str) {
     exit(EXIT_SUCCESS);
 }
 
-pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
+pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
@@ -334,7 +334,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, description, tags } => {
+        ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
             let mut table = Table::new(&["Type", "Version", "Requires", "Description"]);
@@ -411,26 +411,26 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                 table.print();
             }
         },
-        ResourceSubCommand::Get { resource, input, all } => {
+        ResourceSubCommand::Get { resource, input, all, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             if *all { resource_command::get_all(&dsc, resource, input, stdin, format); }
             else {
                 resource_command::get(&dsc, resource, input, stdin, format);
             };
         },
-        ResourceSubCommand::Set { resource, input } => {
+        ResourceSubCommand::Set { resource, input, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::set(&dsc, resource, input, stdin, format);
         },
-        ResourceSubCommand::Test { resource, input } => {
+        ResourceSubCommand::Test { resource, input, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::test(&dsc, resource, input, stdin, format);
         },
-        ResourceSubCommand::Schema { resource } => {
+        ResourceSubCommand::Schema { resource , format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::schema(&dsc, resource, format);
         },
-        ResourceSubCommand::Export { resource} => {
+        ResourceSubCommand::Export { resource, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::export(&mut dsc, resource, format);
         },
