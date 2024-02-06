@@ -2,7 +2,7 @@
 title: "Desired State Configuration changelog"
 description: >-
   A log of the changes for releases of DSCv3.
-ms.date: 01/17/2024
+ms.date: 02/05/2024
 ---
 
 # Changelog
@@ -23,6 +23,24 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link -->
 [unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...main
+
+### Added
+
+- Implemented support for referencing parameters in a configuration with the [parameters()][32]
+  configuration function. This enables you to take advantage of parameterized configurations. Until
+  this release, you could define but not reference parameters.
+
+  Now, you can use the [--parameters][33] and [--parameters-file][34] options with the
+  [dsc config][35] commands to pass values for any parameter defined in the configuration document.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#49][#49]
+  - PRs:
+    - [#291][#291]
+    - [#294][#294]
+
+  </details>
 
 <!-- Add entries between releases under the appropriate section heading here  -->
 
@@ -472,6 +490,12 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [30]: docs/reference/schemas/config/functions/concat.md
 [31]: docs/reference/schemas/config/functions/resourceId.md
 
+<!-- alpha.5 links -->
+[32]: docs/reference/schemas/config/functions/parameters.md
+[33]: docs/reference/cli/config/command.md#-p---parameters
+[34]: docs/reference/cli/config/command.md#-f---parameters_file
+[35]: docs/reference/cli/config/command.md
+
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
 [#121]: https://github.com/PowerShell/DSC/issues/121
@@ -510,7 +534,10 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#241]: https://github.com/PowerShell/DSC/issues/241
 [#248]: https://github.com/PowerShell/DSC/issues/248
 [#252]: https://github.com/PowerShell/DSC/issues/252
+[#291]: https://github.com/PowerShell/DSC/issues/291
+[#294]: https://github.com/PowerShell/DSC/issues/294
 [#45]:  https://github.com/PowerShell/DSC/issues/45
+[#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#98]:  https://github.com/PowerShell/DSC/issues/98
