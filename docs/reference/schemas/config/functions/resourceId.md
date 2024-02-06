@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'resourceId' DSC configuration document function
-ms.date:     11/15/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       resourceId
 ---
