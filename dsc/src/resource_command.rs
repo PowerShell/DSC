@@ -67,12 +67,12 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider {} not found", requires);
+            error!("Provider '{}' not found", requires);
             return;
         };
     }
 
-    let export_result = match resource.export(input.as_str()) {
+    let export_result = match resource.export(&input) {
         Ok(export) => { export }
         Err(err) => {
             error!("Error: {err}");
@@ -227,14 +227,14 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
         if let Some(pr) = get_resource(dsc, requires) {
             provider_resource = Some(pr);
         } else {
-            error!("Provider {} not found", requires);
+            error!("Provider '{}' not found", requires);
             return;
         };
     }
 
     let mut conf = Configuration::new();
 
-    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, provider_resource, &mut conf, input.as_str()) {
+    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, provider_resource, &mut conf, &input) {
         error!("Error: {err}");
         exit(EXIT_DSC_ERROR);
     }
