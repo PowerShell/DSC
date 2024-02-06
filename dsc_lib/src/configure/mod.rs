@@ -43,6 +43,10 @@ pub enum ErrorAction {
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
 ///
+/// # Panics
+///
+/// Doesn't panic because there is a match/Some check before unwrap(); false positive.
+///
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
