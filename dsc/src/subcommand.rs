@@ -116,13 +116,13 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format: &Option<OutputFormat>, stdin: &Option<String>) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>) {
     let json_string = match subcommand {
-        ConfigSubCommand::Get { document, path } |
-        ConfigSubCommand::Set { document, path } |
-        ConfigSubCommand::Test { document, path } |
-        ConfigSubCommand::Validate { document, path } |
-        ConfigSubCommand::Export { document, path } => {
+        ConfigSubCommand::Get { document, path, ..  } |
+        ConfigSubCommand::Set { document, path, .. } |
+        ConfigSubCommand::Test { document, path, .. } |
+        ConfigSubCommand::Validate { document, path, .. } |
+        ConfigSubCommand::Export { document, path, .. } => {
             get_input(document, stdin, path)
         }
     };
@@ -167,19 +167,19 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format
     }
 
     match subcommand {
-        ConfigSubCommand::Get { format } => {
+        ConfigSubCommand::Get { format, .. } => {
             config_get(&mut configurator, format);
         },
-        ConfigSubCommand::Set { format } => {
+        ConfigSubCommand::Set { format, .. } => {
             config_set(&mut configurator, format);
         },
-        ConfigSubCommand::Test { format } => {
+        ConfigSubCommand::Test { format, .. } => {
             config_test(&mut configurator, format);
         },
         ConfigSubCommand::Validate { .. } => {
             validate_config(&json_string);
         },
-        ConfigSubCommand::Export { format } => {
+        ConfigSubCommand::Export { format, .. } => {
             config_export(&mut configurator, format);
         }
     }
@@ -393,17 +393,20 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             if write_table { table.print(); }
         },
 
-        ResourceSubCommand::Get { resource, input, all, format } => {
+        ResourceSubCommand::Get { resource, input, path, all, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            let parsed_input = get_input(input, stdin, path);
-            resource_command::get(&dsc, resource, parsed_input, format);
+            if *all { resource_command::get_all(&dsc, resource, format); }
+            else {
+                let parsed_input = get_input(input, stdin, path);
+                resource_command::get(&dsc, resource, parsed_input, format);
+            }
         },
-        ResourceSubCommand::Set { resource, input, format } => {
+        ResourceSubCommand::Set { resource, input, path, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::set(&dsc, resource, parsed_input, format);
         },
-        ResourceSubCommand::Test { resource, input, format } => {
+        ResourceSubCommand::Test { resource, input, path, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::test(&dsc, resource, parsed_input, format);
