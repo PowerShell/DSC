@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for valid parameter data types in a configuration document.
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC configuration parameter data type schema reference
 ---
