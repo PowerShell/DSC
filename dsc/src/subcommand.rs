@@ -179,7 +179,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
     };
 
     if let Err(err) = configurator.set_parameters(&parameters) {
-        error!("Error: Paramter input failure: {err}");
+        error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
 
