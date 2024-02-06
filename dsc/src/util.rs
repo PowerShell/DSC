@@ -319,8 +319,14 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
             error!("Error: Cannot specify both stdin and --input or --path");
             exit(EXIT_INVALID_ARGS);
         },
-        (Some(input), None, None) => input.clone(),
-        (None, Some(stdin), None) => stdin.clone(),
+        (Some(input), None, None) => {
+            info!("Reading input from command line parameter");
+            input.clone()
+        },
+        (None, Some(stdin), None) => {
+            info!("Reading input from stdin");
+            stdin.clone()
+        },
         (None, None, Some(path)) => {
             info!("Reading input from file {}", path);
             match std::fs::read_to_string(path) {
@@ -332,6 +338,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
             }
         },
         (None, None, None) => {
+            info!("No input provided via stdin, file, or command line");
             return String::new();
         },
         _default => {
@@ -342,6 +349,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     };
 
     if value.is_empty() {
+        info!("Provided input is empty");
         return String::new();
     }
 

@@ -51,6 +51,7 @@ fn main() {
         // get_input call expects at most 1 input, so wrapping Some(empty input) would throw it off
         // have only seen this happen with dsc_args.test.ps1 running on the CI pipeline
         if input.is_empty() {
+            info!("Input from STDIN is empty");
             None
         }
         else {
