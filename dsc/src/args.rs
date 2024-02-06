@@ -74,35 +74,35 @@ pub enum SubCommand {
 pub enum ConfigSubCommand {
     #[clap(name = "get", about = "Retrieve the current configuration")]
     Get {
-        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "path")]
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
         path: Option<String>,
     },
     #[clap(name = "set", about = "Set the current configuration")]
     Set {
-        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "path")]
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
         path: Option<String>,
     },
     #[clap(name = "test", about = "Test the current configuration")]
     Test {
-        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "path")]
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
         path: Option<String>,
     },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate {
-        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "path")]
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
         path: Option<String>,
     },
     #[clap(name = "export", about = "Export the current configuration")]
     Export {
-        #[clap(short = 'd', long, help = "The input to pass to the configuration or resource", conflicts_with = "path")]
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
         path: Option<String>,
