@@ -58,15 +58,15 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
             GetResult::Group(group_response)
         },
         Err(_) => {
-            match serde_json::from_str::<ResourceGetResponse>(&stdout) {
-                Ok(response) => {
-                    GetResult::Resource(response)
-                },
-                Err(_) => {
-                    debug!("Invalid get response: {}", &stdout);
-                    return Err(DscError::Validation(format!("Resource {} did not return a valid response", &resource.resource_type)))
+            let result: Value = match serde_json::from_str(&stdout) {
+                Ok(r) => {r},
+                Err(err) => {
+                    return Err(DscError::Operation(format!("Failed to parse json from get {}|{}|{} -> {err}", &resource.get.executable, stdout, stderr)))
                 }
-            }
+            };
+            GetResult::Resource(ResourceGetResponse{
+                actual_state: result,
+            })
         }
     };
 
@@ -509,6 +509,12 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     let exit_code = exit_status.code().unwrap_or(EXIT_PROCESS_TERMINATED);
     let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
     let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
+    if !stdout.is_empty() {
+        debug!("STDOUT returned: {}", &stdout);
+    }
+    if !stderr.is_empty() {
+        debug!("STDERR returned: {}", &stderr);
+    }
     Ok((exit_code, stdout, stderr))
 }
 
