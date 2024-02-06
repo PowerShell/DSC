@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'set' property in a DSC Resource manifest
-ms.date:     09/27/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Resource manifest set property schema reference
 ---

@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'export' property in a DSC Resource manifest
-ms.date:     09/06/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Resource manifest export property schema reference
 ---
@@ -70,6 +70,6 @@ Default:  []
 [01]: ../../../cli/config/export.md
 [02]: ../../../cli/resource/export.md
 [03]: ../../../cli/resource/get.md
-[04]: ../../../cli/resource/get.md#a---all
+[04]: ../../../cli/resource/get.md#-a---all
 [05]: https://jsonlines.org/
 [06]: schema/property.md

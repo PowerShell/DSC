@@ -12,7 +12,7 @@ markdownDescription: |
   operation and can't configure the operating system.
 
   [Online documentation][01]
-  
+
   [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource
 
 type:                 object
@@ -31,7 +31,7 @@ properties:
       Returns the unique ID for the OSInfo instance data type.
 
       [Online documentation][01]
-      
+
       [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#id
   architecture:
     type:        string
@@ -44,7 +44,7 @@ properties:
       Defines the processor architecture as reported by `uname -m` on the operating system.
 
       [Online documentation][01]
-      
+
       [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#architecture
   bitness:
     type:        string
@@ -58,7 +58,7 @@ properties:
       Defines whether the operating system is a 32-bit or 64-bit operating system.
 
       [Online documentation][01]
-      
+
       [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#bitness
   codename:
     type:        string
@@ -71,7 +71,7 @@ properties:
       Defines the codename for the operating system as returned from `lsb_release --codename`.
 
       [Online documentation][01]
-      
+
       [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#codename
   edition:
     type:        string
@@ -84,11 +84,11 @@ properties:
       Defines the operating system edition, like `Windows 11` or `Windows Server 2016`.
 
       [Online documentation][01]
-      
+
       [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#edition
   family:
     type:        string
-    enum:        [Linux, MacOS, Windows]
+    enum:        [Linux, macOS, Windows]
     title:       Operating system family
     description: |
       Defines whether the operating system is Linux, macOS, or Windows.
@@ -98,7 +98,7 @@ properties:
       Defines whether the operating system is Linux, macOS, or Windows.
 
       [Online documentation][01]
-      
+
       [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#family
   version:
     type:        string
@@ -111,5 +111,5 @@ properties:
       Defines the version of the operating system as a string.
 
       [Online documentation][01]
-      
+
       [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version

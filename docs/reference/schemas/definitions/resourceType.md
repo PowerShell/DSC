@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a resource instance type name
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Resource fully qualified type name schema reference
 ---
