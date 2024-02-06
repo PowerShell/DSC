@@ -31,10 +31,16 @@ Describe 'dsc config get tests' {
         $LASTEXITCODE | Should -Be 2
     }
 
-    It 'can accept the use of --format as a subcommand' -Skip:(!$IsWindows) {
-        $jsonPath = Join-Path $PSScriptRoot '../examples/osinfo_registry.dsc.json'
-        $config = Get-Content $jsonPath -Raw
-        $config | dsc config get --format pretty-json | Out-String
+    It 'can accept the use of --format as a subcommand' {
+        $config_yaml = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            resources:
+            - name: Echo
+              type: Test/Echo
+              properties:
+                text: hello
+"@
+        $null = $config_yaml | dsc config get --format pretty-json | Out-String
         $LASTEXITCODE | Should -Be 0
     }
 }

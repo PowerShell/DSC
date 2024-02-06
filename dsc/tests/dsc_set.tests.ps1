@@ -2,6 +2,57 @@
 # Licensed under the MIT License.
 
 Describe 'config set tests' {
+    BeforeAll {
+        $manifest = @'
+        {
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+            "type": "Test/SetNoTest",
+            "version": "0.1.0",
+            "get": {
+                "executable": "pwsh",
+                "args": [
+                    "-NoLogo",
+                    "-NonInteractive",
+                    "-NoProfile",
+                    "-Command",
+                    "'{ \"test\": true }'"
+                ]
+            },
+            "set": {
+                "executable": "pwsh",
+                "input": "stdin",
+                "args": [
+                    "-NoLogo",
+                    "-NonInteractive",
+                    "-NoProfile",
+                    "-Command",
+                    "'{ \"test\": false }'"
+                ],
+                "return": "state"
+            },
+            "schema": {
+                "embedded": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "$id": "https://test",
+                    "title": "test",
+                    "description": "test",
+                    "type": "object",
+                    "required": [],
+                    "additionalProperties": false,
+                    "properties": {
+                        "test": {
+                            "type": "boolean",
+                            "description": "test"
+                        }
+                    }
+                }
+            }
+        }
+'@
+
+        Set-Content -Path "$TestDrive/SetNoTest.dsc.resource.json" -Value $manifest
+    }
+
     BeforeEach {
         if ($IsWindows) {
             $json = @'
@@ -70,95 +121,42 @@ Describe 'config set tests' {
     It 'can accept the use of --format <format> as a subcommand' -Skip:(!$IsWindows) -TestCases @(
         @{ format = 'yaml'; expected = @'
 beforeState:
-  $id: https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json
-  keyPath: HKCU\1
-  _exist: false
+  test: true
 afterState:
-  $id: https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json
-  keyPath: HKCU\1
-  _exist: false
-changedProperties: []
+  test: false
+changedProperties:
+- test
 '@ }
-        @{ format = 'json'; expected = '{"beforeState":{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKCU\\1","_exist":false},"afterState":{"$id":"https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json","keyPath":"HKCU\\1","_exist":false},"changedProperties":[]}' }
+        @{ format = 'json'; expected = '{"beforeState":{"test":true},"afterState":{"test":false},"changedProperties":["test"]}' }
         @{ format = 'pretty-json'; expected = @'
 {
   "beforeState": {
-    "$id": "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json",
-    "keyPath": "HKCU\\1",
-    "_exist": false
+    "test": true
   },
   "afterState": {
-    "$id": "https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json",
-    "keyPath": "HKCU\\1",
-    "_exist": false
+    "test": false
   },
-  "changedProperties": []
+  "changedProperties": [
+    "test"
+  ]
 }
 '@ }
     ) {
         param($format, $expected)
 
-        $json = @'
-        {
-            "keyPath": "HKCU\\1",
-            "_exist": false
+        $oldPath = $env:DSC_RESOURCE_PATH
+        try {
+            $env:DSC_RESOURCE_PATH = $TestDrive
+            $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest --format $format | Out-String
+            $LASTEXITCODE | Should -Be 0
+            $out.Trim() | Should -BeExactly $expected
         }
-'@
-
-        $out =  $json | dsc resource set -r Microsoft.Windows/registry --format $format | Out-String
-        $LASTEXITCODE | Should -Be 0
-        $out.Trim() | Should -BeExactly $expected
+        finally {
+            $env:DSC_RESOURCE_PATH = $oldPath
+        }
     }
 
     It 'set can be used on a resource that does not implement test' {
-        $manifest = @'
-        {
-            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-            "type": "Test/SetNoTest",
-            "version": "0.1.0",
-            "get": {
-                "executable": "pwsh",
-                "args": [
-                    "-NoLogo",
-                    "-NonInteractive",
-                    "-NoProfile",
-                    "-Command",
-                    "'{ \"test\": true }'"
-                ]
-            },
-            "set": {
-                "executable": "pwsh",
-                "input": "stdin",
-                "args": [
-                    "-NoLogo",
-                    "-NonInteractive",
-                    "-NoProfile",
-                    "-Command",
-                    "'{ \"test\": false }'"
-                ],
-                "return": "state"
-            },
-            "schema": {
-                "embedded": {
-                    "$schema": "http://json-schema.org/draft-07/schema#",
-                    "$id": "https://test",
-                    "title": "test",
-                    "description": "test",
-                    "type": "object",
-                    "required": [],
-                    "additionalProperties": false,
-                    "properties": {
-                        "test": {
-                            "type": "boolean",
-                            "description": "test"
-                        }
-                    }
-                }
-            }
-        }
-'@
-
-        Set-Content -Path "$TestDrive/SetNoTest.dsc.resource.json" -Value $manifest
         $oldPath = $env:DSC_RESOURCE_PATH
         try {
             $env:DSC_RESOURCE_PATH = $TestDrive
