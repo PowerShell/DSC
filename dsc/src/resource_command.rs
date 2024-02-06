@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::args::OutputFormat;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output, get_input};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
 use dsc_lib::configure::config_doc::Configuration;
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::invoke_result::GetResult;
@@ -15,10 +15,7 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, path: &Option<String>, format: &Option<OutputFormat>) {
-    // TODO: support streaming stdin which includes resource and input
-    let mut input = get_input(input, stdin, path);
-
+pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
@@ -54,7 +51,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
     }
 }
 
-pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _stdin: &Option<String>, _path: &Option<String>, format: &Option<OutputFormat>) {
+pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
     let Some(resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
@@ -91,8 +88,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _
 ///
 /// Will panic if provider-based resource is not found.
 ///
-pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, path: &Option<String>, format: &Option<OutputFormat>) {
-    let mut input = get_input(input, stdin, path);
+pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     if input.is_empty() {
         error!("Error: Input is empty");
         exit(EXIT_INVALID_ARGS);
@@ -140,8 +136,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
 ///
 /// Will panic if provider-based resource is not found.
 ///
-pub fn test(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, path: &Option<String>, format: &Option<OutputFormat>) {
-    let mut input = get_input(input, stdin, path);
+pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return

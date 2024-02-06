@@ -390,24 +390,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                 }
             }
 
-            if write_table {
-                table.print();
-            }
-        },
-        ResourceSubCommand::Get { resource, input, path, all } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            if *all { resource_command::get_all(&dsc, resource, input, stdin, path, format); }
-            else {
-                resource_command::get(&dsc, resource, input, stdin, path, format);
-            };
-        },
-        ResourceSubCommand::Set { resource, input, path } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::set(&dsc, resource, input, stdin, path, format);
-        },
-        ResourceSubCommand::Test { resource, input, path } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::test(&dsc, resource, input, stdin, path, format);
+            if write_table { table.print(); }
         },
         ResourceSubCommand::Schema { resource } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
@@ -416,6 +399,24 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
         ResourceSubCommand::Export { resource} => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::export(&mut dsc, resource, format);
+        },
+        ResourceSubCommand::Get { resource, input, path, all } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            if *all { resource_command::get_all(&dsc, resource, format); }
+            else {
+                let parsed_input = get_input(input, stdin, path);
+                resource_command::get(&dsc, resource, parsed_input, format);
+            };
+        },
+        ResourceSubCommand::Set { resource, input, path } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            let parsed_input = get_input(input, stdin, path);
+            resource_command::set(&dsc, resource, parsed_input, format);
+        },
+        ResourceSubCommand::Test { resource, input, path } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            let parsed_input = get_input(input, stdin, path);
+            resource_command::test(&dsc, resource, parsed_input, format);
         },
     }
 }
