@@ -162,24 +162,24 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format
     };
 
     if let Err(err) = configurator.set_parameters(&parameters) {
-        error!("Error: Paramter input failure: {err}");
+        error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
 
     match subcommand {
-        ConfigSubCommand::Get { .. } => {
+        ConfigSubCommand::Get { format } => {
             config_get(&mut configurator, format);
         },
-        ConfigSubCommand::Set { ..} => {
+        ConfigSubCommand::Set { format } => {
             config_set(&mut configurator, format);
         },
-        ConfigSubCommand::Test { .. } => {
+        ConfigSubCommand::Test { format } => {
             config_test(&mut configurator, format);
         },
         ConfigSubCommand::Validate { .. } => {
             validate_config(&json_string);
         },
-        ConfigSubCommand::Export { .. }=> {
+        ConfigSubCommand::Export { format } => {
             config_export(&mut configurator, format);
         }
     }
@@ -307,7 +307,7 @@ pub fn validate_config(config: &str) {
     exit(EXIT_SUCCESS);
 }
 
-pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
+pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
@@ -317,7 +317,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, description, tags } => {
+        ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
             let mut table = Table::new(&["Type", "Version", "Requires", "Description"]);
@@ -392,31 +392,29 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
 
             if write_table { table.print(); }
         },
-        ResourceSubCommand::Schema { resource } => {
+
+        ResourceSubCommand::Get { resource, input, all, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::schema(&dsc, resource, format);
+            let parsed_input = get_input(input, stdin, path);
+            resource_command::get(&dsc, resource, parsed_input, format);
         },
-        ResourceSubCommand::Export { resource} => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::export(&mut dsc, resource, format);
-        },
-        ResourceSubCommand::Get { resource, input, path, all } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            if *all { resource_command::get_all(&dsc, resource, format); }
-            else {
-                let parsed_input = get_input(input, stdin, path);
-                resource_command::get(&dsc, resource, parsed_input, format);
-            };
-        },
-        ResourceSubCommand::Set { resource, input, path } => {
+        ResourceSubCommand::Set { resource, input, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::set(&dsc, resource, parsed_input, format);
         },
-        ResourceSubCommand::Test { resource, input, path } => {
+        ResourceSubCommand::Test { resource, input, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::test(&dsc, resource, parsed_input, format);
+        },
+        ResourceSubCommand::Schema { resource , format } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            resource_command::schema(&dsc, resource, format);
+        },
+        ResourceSubCommand::Export { resource, format } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            resource_command::export(&mut dsc, resource, format);
         },
     }
 }

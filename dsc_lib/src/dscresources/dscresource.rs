@@ -164,11 +164,15 @@ pub trait Invoke {
     fn schema(&self) -> Result<String, DscError>;
 
     /// Invoke the export operation on the resource.
+    ///    
+    /// # Arguments
+    ///
+    /// * `input` - Input for export operation.
     ///
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn export(&self) -> Result<ExportResult, DscError>;
+    fn export(&self, input: &str) -> Result<ExportResult, DscError>;
 }
 
 impl Invoke for DscResource {
@@ -266,19 +270,12 @@ impl Invoke for DscResource {
         }
     }
 
-    fn export(&self) -> Result<ExportResult, DscError> {
-        match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("export custom resources".to_string()))
-            },
-            ImplementedAs::Command => {
-                let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
-                };
-                let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_export(&resource_manifest, &self.directory)
-            },
-        }
+    fn export(&self, input: &str) -> Result<ExportResult, DscError> {
+        let Some(manifest) = &self.manifest else {
+            return Err(DscError::MissingManifest(self.type_name.clone()));
+        };
+        let resource_manifest = import_manifest(manifest.clone())?;
+        command_resource::invoke_export(&resource_manifest, &self.directory, Some(input))
     }
 }
 
