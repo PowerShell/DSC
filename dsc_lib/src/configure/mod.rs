@@ -273,7 +273,9 @@ impl Configurator {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
-            add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, "")?;
+
+            let input = serde_json::to_string(&resource.properties)?;
+            add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
         result.result = Some(conf);

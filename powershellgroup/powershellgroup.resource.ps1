@@ -341,6 +341,35 @@ elseif ($Operation -eq 'Export')
 
     if ($inputobj_pscustomobj.resources) # we are processing a config batch
     {
+        foreach($r in $inputobj_pscustomobj.resources)
+        {
+            $cachedResourceInfo = $script:ResourceCache[$r.type]
+            if ($cachedResourceInfo)
+            {
+                $path = $cachedResourceInfo.Path # for class-based resources - this is path to psd1 of their defining module
+
+                $typeparts = $r.type -split "/"
+                $ResourceTypeName = $typeparts[1]
+
+                $scriptBody = "using module '$path'"
+                $script = [ScriptBlock]::Create($scriptBody)
+                . $script
+
+                $t = [Type]$ResourceTypeName
+                $method = $t.GetMethod('Export')
+                $resultArray = $method.Invoke($null,$null)
+                foreach ($instance in $resultArray)
+                {
+                    $instance | ConvertTo-Json -Compress | Write-Output
+                }
+            }
+            else
+            {
+                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
+                Write-Error $errmsg
+                exit 1
+            }
+        }
     }
     else # we are processing an individual resource call
     {

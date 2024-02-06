@@ -83,4 +83,24 @@ Describe 'PowerShellGroup resource tests' {
         $res = $r | ConvertFrom-Json
         $res.afterState.RebootRequired | Should -Not -BeNull
     }
+
+    It 'Export works on PS class-based resource' -Skip:(!$IsWindows){
+
+        $r = dsc resource export -r PSTestModule/TestClassResource
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.resources.count | Should -Be 5
+        $res.resources[0].type | Should -Be "PSTestModule/TestClassResource"
+        $res.resources[0].properties.Name | Should -Be "Object1"
+        $res.resources[0].properties.Prop1 | Should -Be "Property of object1"
+    }
+
+    It 'Get --all works on PS class-based resource' -Skip:(!$IsWindows){
+
+        $r = dsc resource get --all -r PSTestModule/TestClassResource
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.count | Should -Be 5
+        $res | % {$_.actualState | Should -Not -BeNullOrEmpty}
+    }
 }
