@@ -8,6 +8,7 @@ use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use std::collections::BTreeMap;
 use std::env;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
@@ -50,7 +51,9 @@ impl CommandDiscovery {
                     let path = entry.path();
                     if path.is_file() {
                         let file_name = path.file_name().unwrap().to_str().unwrap();
-                        if file_name.to_lowercase().ends_with(".dsc.resource.json") {
+                        if file_name.to_lowercase().ends_with(".dsc.resource.json") |
+                        file_name.to_lowercase().ends_with(".dsc.resource.yaml") |
+                        file_name.to_lowercase().ends_with(".dsc.resource.yml") {
                             let resource = match load_manifest(&path)
                             {
                                 Ok(r) => r,
@@ -203,12 +206,23 @@ impl ResourceDiscovery for CommandDiscovery {
 fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-    let manifest: ResourceManifest = match serde_json::from_reader(reader) {
-        Ok(manifest) => manifest,
-        Err(err) => {
-            return Err(DscError::Manifest(path.to_string_lossy().to_string(), err));
+    let manifest: ResourceManifest = if path.extension() == Some(OsStr::new("json")) {
+        match serde_json::from_reader(reader) {
+            Ok(manifest) => manifest,
+            Err(err) => {
+                return Err(DscError::Manifest(path.to_string_lossy().to_string(), err));
+            }
+        }
+    }
+    else {
+        match serde_yaml::from_reader(reader) {
+            Ok(manifest) => manifest,
+            Err(err) => {
+                return Err(DscError::ManifestYaml(path.to_string_lossy().to_string(), err));
+            }
         }
     };
+
     let resource = DscResource {
         type_name: manifest.resource_type.clone(),
         implemented_as: ImplementedAs::Command,

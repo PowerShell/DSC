@@ -52,6 +52,9 @@ pub enum DscError {
     #[error("Manifest: {0}\nJSON: {1}")]
     Manifest(String, serde_json::Error),
 
+    #[error("Manifest: {0}\nYAML: {1}")]
+    ManifestYaml(String, serde_yaml::Error),
+
     #[error("Missing manifest: {0}")]
     MissingManifest(String),
 
