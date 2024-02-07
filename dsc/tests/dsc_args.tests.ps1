@@ -44,6 +44,12 @@ Describe 'config argument tests' {
         $env:DSC_RESOURCE_PATH = $env:PATH + $sep + $TestDrive
     }
 
+    AfterEach {
+        if (Test-Path $TestDrive/error.txt) {
+            Remove-Item -Path $TestDrive/error.txt
+        }
+    }
+    
     AfterAll {
         $env:DSC_RESOURCE_PATH = $oldPath
     }
