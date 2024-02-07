@@ -39,6 +39,17 @@ if (($PSVersionTable.PSVersion.Major -eq 7) -and ($PSVersionTable.PSVersion.Mino
     throw "PowerShell 7.4-previews are not supported by PowerShellGroup resource; please use PS 7.4.0-rc.1 or newer."
 }
 
+$inputobj_pscustomobj = $null
+if ($stdinput)
+{
+    $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+    $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
+    if ($new_psmodulepath)
+    {
+        $env:PSModulePath = $ExecutionContext.InvokeCommand.ExpandString($new_psmodulepath)
+    }
+}
+
 $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable |
     Sort-Object -Property Version -Descending |
     Select-Object -First 1
@@ -105,12 +116,6 @@ if ($Operation -eq 'List')
 }
 elseif ($Operation -eq 'Get')
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
     $result = @()
 
     RefreshCache
@@ -181,12 +186,6 @@ elseif ($Operation -eq 'Get')
 }
 elseif ($Operation -eq 'Set')
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
     $result = @()
 
     RefreshCache
@@ -255,12 +254,6 @@ elseif ($Operation -eq 'Set')
 }
 elseif ($Operation -eq 'Test')
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
     $result = @()
 
     RefreshCache
@@ -329,12 +322,6 @@ elseif ($Operation -eq 'Test')
 }
 elseif ($Operation -eq 'Export')
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
     $result = @()
 
     RefreshCache
