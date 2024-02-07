@@ -26,7 +26,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, error, info};
+use tracing::{Level, debug, error};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 pub const EXIT_SUCCESS: i32 = 0;
@@ -320,15 +320,15 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
             exit(EXIT_INVALID_ARGS);
         },
         (Some(input), None, None) => {
-            info!("Reading input from command line parameter");
+            debug!("Reading input from command line parameter");
             input.clone()
         },
         (None, Some(stdin), None) => {
-            info!("Reading input from stdin");
+            debug!("Reading input from stdin");
             stdin.clone()
         },
         (None, None, Some(path)) => {
-            info!("Reading input from file {}", path);
+            debug!("Reading input from file {}", path);
             match std::fs::read_to_string(path) {
                 Ok(input) => {
                     input.clone()
@@ -340,7 +340,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
             }
         },
         (None, None, None) => {
-            info!("No input provided via stdin, file, or command line");
+            debug!("No input provided via stdin, file, or command line");
             return String::new();
         },
         _default => {
@@ -351,7 +351,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     };
 
     if value.trim().is_empty() {
-        info!("Provided input is empty");
+        debug!("Provided input is empty");
         return String::new();
     }
 
