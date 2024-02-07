@@ -52,7 +52,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
 }
 
 pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
-    let mut input = String::new() ;
+    let mut input = String::new();
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return

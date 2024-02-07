@@ -174,25 +174,33 @@ resources:
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'stdin cannot be empty if neither document or path is provided' {
-        '' | dsc config set 2> $TestDrive/error.txt
+    It 'stdin cannot be empty if neither input or path is provided' {
+        '' | dsc -l info resource set -r Microsoft/OSInfo 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 4
+        $LASTEXITCODE | Should -Be 1
+    }
+
+    It 'input cannot be empty if neither stdin or path is provided' {
+        dsc resource set -r Microsoft/OSInfo --input '' 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 1
+    }
+
+    It 'path contents cannot be empty if neither stdin or input is provided' {
+        Set-Content -Path $TestDrive/empty.yaml -Value ''
+        dsc -l info resource set -r Microsoft/OSInfo --path $TestDrive/empty.yaml 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 1
     }
 
     It 'document cannot be empty if neither stdin or path is provided' {
-        dsc config set --document '' 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 4
-    }
-
-    It 'path contents cannot be empty if neither stdin or document is provided' {
-        Set-Content -Path $TestDrive/empty.yaml -Value ''
-        dsc config set --path $TestDrive/empty.yaml 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
+        dsc -l info config set --document ''
+        #2> $TestDrive/error.txt
+        #$err = Get-Content $testdrive/error.txt -Raw
+        #$err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
     }
 }

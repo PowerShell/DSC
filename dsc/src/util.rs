@@ -330,7 +330,9 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
         (None, None, Some(path)) => {
             info!("Reading input from file {}", path);
             match std::fs::read_to_string(path) {
-                Ok(input) => input.clone(),
+                Ok(input) => {
+                    input.clone()
+                },
                 Err(err) => {
                     error!("Error: Failed to read input file: {err}");
                     exit(EXIT_INVALID_INPUT);
@@ -348,7 +350,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
         }
     };
 
-    if value.is_empty() {
+    if value.trim().is_empty() {
         info!("Provided input is empty");
         return String::new();
     }

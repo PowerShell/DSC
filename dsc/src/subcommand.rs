@@ -118,7 +118,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
 
 pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>) {
     let json_string = match subcommand {
-        ConfigSubCommand::Get { document, path, ..  } |
+        ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
         ConfigSubCommand::Test { document, path, .. } |
         ConfigSubCommand::Validate { document, path, .. } |
@@ -392,7 +392,14 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
 
             if write_table { table.print(); }
         },
-
+        ResourceSubCommand::Schema { resource , format } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            resource_command::schema(&dsc, resource, format);
+        },
+        ResourceSubCommand::Export { resource, format } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            resource_command::export(&mut dsc, resource, format);
+        },
         ResourceSubCommand::Get { resource, input, path, all, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             if *all { resource_command::get_all(&dsc, resource, format); }
@@ -410,14 +417,6 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::test(&dsc, resource, parsed_input, format);
-        },
-        ResourceSubCommand::Schema { resource , format } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::schema(&dsc, resource, format);
-        },
-        ResourceSubCommand::Export { resource, format } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::export(&mut dsc, resource, format);
         },
     }
 }
