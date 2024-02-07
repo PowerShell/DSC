@@ -49,7 +49,7 @@ Describe 'config argument tests' {
             Remove-Item -Path $TestDrive/error.txt
         }
     }
-    
+
     AfterAll {
         $env:DSC_RESOURCE_PATH = $oldPath
     }
@@ -188,14 +188,14 @@ resources:
     }
 
     It 'input cannot be empty if neither stdin or path is provided' {
-        dsc resource set -r Microsoft/OSInfo --input '' 2> $TestDrive/error.txt
+        dsc resource set -r Microsoft/OSInfo --input " " 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 1
     }
 
     It 'path contents cannot be empty if neither stdin or input is provided' {
-        Set-Content -Path $TestDrive/empty.yaml -Value ''
+        Set-Content -Path $TestDrive/empty.yaml -Value " "
         dsc resource set -r Microsoft/OSInfo --path $TestDrive/empty.yaml 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
@@ -203,7 +203,7 @@ resources:
     }
 
     It 'document cannot be empty if neither stdin or path is provided' {
-        dsc config set --document '' 2> $TestDrive/error.txt
+        dsc config set --document " " 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
