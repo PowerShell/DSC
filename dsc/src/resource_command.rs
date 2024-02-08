@@ -15,10 +15,7 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    // TODO: support streaming stdin which includes resource and input
-    let mut input = get_input(input, stdin);
-
+pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
@@ -54,8 +51,8 @@ pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
     }
 }
 
-pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let mut input = String::new() ;
+pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+    let mut input = String::new();
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
@@ -103,8 +100,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _
 ///
 /// Will panic if provider-based resource is not found.
 ///
-pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let mut input = get_input(input, stdin);
+pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     if input.is_empty() {
         error!("Error: Input is empty");
         exit(EXIT_INVALID_ARGS);
@@ -152,8 +148,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
 ///
 /// Will panic if provider-based resource is not found.
 ///
-pub fn test(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let mut input = get_input(input, stdin);
+pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
@@ -253,48 +248,4 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
 pub fn get_resource<'a>(dsc: &'a DscManager, resource: &str) -> Option<&'a DscResource> {
     //TODO: add dinamically generated resource to dsc
     dsc.find_resource(String::from(resource).to_lowercase().as_str())
-}
-
-fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
-    let input = match (input, stdin) {
-        (Some(_input), Some(_stdin)) => {
-            error!("Error: Cannot specify both --input and stdin");
-            exit(EXIT_INVALID_ARGS);
-        }
-        (Some(input), None) => input.clone(),
-        (None, Some(stdin)) => stdin.clone(),
-        (None, None) => {
-            return String::new();
-        },
-    };
-
-    if input.is_empty() {
-        return String::new();
-    }
-
-    match serde_json::from_str::<serde_json::Value>(&input) {
-        Ok(_) => input,
-        Err(json_err) => {
-            match serde_yaml::from_str::<serde_yaml::Value>(&input) {
-                Ok(yaml) => {
-                    match serde_json::to_string(&yaml) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            error!("Error: Cannot convert YAML to JSON: {err}");
-                            exit(EXIT_INVALID_ARGS);
-                        }
-                    }
-                },
-                Err(err) => {
-                    if input.contains('{') {
-                        error!("Error: Input is not valid JSON: {json_err}");
-                    }
-                    else {
-                        error!("Error: Input is not valid YAML: {err}");
-                    }
-                    exit(EXIT_INVALID_ARGS);
-                }
-            }
-        }
-    }
 }
