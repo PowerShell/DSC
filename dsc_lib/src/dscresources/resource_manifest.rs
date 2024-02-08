@@ -24,6 +24,7 @@ pub struct ResourceManifest {
     /// Tags for the resource.
     pub tags: Option<Vec<String>>,
     /// Details how to call the Get method of the resource.
+    // If this field becomes optional, will need to update dsc resource list table view methods column
     pub get: GetMethod,
     /// Details how to call the Set method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]

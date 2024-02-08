@@ -320,14 +320,15 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
         ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
-            let mut table = Table::new(&["Type", "Version", "Requires", "Description"]);
+            let mut methods = String::new();
+            let mut table = Table::new(&["Type", "Version", "Methods", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
-                // write as table if fornat is not specified and interactive
+                // write as table if format is not specified and interactive
                 write_table = true;
             }
             for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
                 // if description is specified, skip if resource description does not contain it
-                if description.is_some() || tags.is_some() {
+                if description.is_some() || tags.is_some() || write_table {
                     let Some(ref resource_manifest) = resource.manifest else {
                         continue;
                     };
@@ -346,9 +347,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
 
                     // if tags is specified, skip if resource tags do not contain the tags
                     if let Some(tags) = tags {
-                        let Some(manifest_tags) = manifest.tags else {
-                            continue;
-                        };
+                        let Some(manifest_tags) = manifest.tags else { continue; };
 
                         let mut found = false;
                         for tag_to_find in tags {
@@ -359,16 +358,20 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                                 }
                             }
                         }
-                        if !found {
-                            continue;
-                        }
+                        if !found { continue; }
                     }
+
+                    methods = "get".to_string();
+                    if manifest.set.is_some() { methods.push_str(", set"); }
+                    if manifest.test.is_some() { methods.push_str(", test"); }
+                    if manifest.export.is_some() { methods.push_str(", export"); }
                 }
 
                 if write_table {
                     table.add_row(vec![
                         resource.type_name,
                         resource.version,
+                        methods.clone(),
                         resource.requires.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
@@ -384,9 +387,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                     };
                     write_output(&json, format);
                     // insert newline separating instances if writing to console
-                    if atty::is(Stream::Stdout) {
-                        println!();
-                    }
+                    if atty::is(Stream::Stdout) { println!(); }
                 }
             }
 
