@@ -4,8 +4,8 @@
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input};
-use tracing::error;
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, process_macros};
+use tracing::{error, debug};
 
 use atty::Stream;
 use dsc_lib::{
@@ -117,15 +117,20 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
 }
 
 pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>) {
-    let json_string = match subcommand {
+    let config_path: String;
+    let mut json_string = match subcommand {
         ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
         ConfigSubCommand::Test { document, path, .. } |
         ConfigSubCommand::Validate { document, path, .. } |
         ConfigSubCommand::Export { document, path, .. } => {
+            config_path = path.clone().unwrap_or_default();
             get_input(document, stdin, path)
         }
     };
+
+    json_string = process_macros(&json_string, &config_path);
+    debug!("{json_string}");
 
     let mut configurator = match Configurator::new(&json_string) {
         Ok(configurator) => configurator,
@@ -161,9 +166,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         }
     };
 
-    if let Err(err) = configurator.set_parameters(&parameters) {
-        error!("Error: Parameter input failure: {err}");
-        exit(EXIT_INVALID_INPUT);
+    if parameters.is_some()
+    {
+        if let Err(err) = configurator.set_parameters(&parameters) {
+            error!("Error: Parameter input failure: {err}");
+            exit(EXIT_INVALID_INPUT);
+        }
     }
 
     match subcommand {
