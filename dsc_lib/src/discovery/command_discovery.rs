@@ -52,9 +52,9 @@ impl CommandDiscovery {
                     if path.is_file() {
                         let file_name = path.file_name().unwrap().to_str().unwrap();
                         let file_name_lowercase = file_name.to_lowercase();
-                        if file_name_lowercase.ends_with(".dsc.resource.json") |
-                        file_name_lowercase.ends_with(".dsc.resource.yaml") |
-                        file_name_lowercase.ends_with(".dsc.resource.yml") {
+                        if file_name_lowercase.ends_with(".dsc.resource.json") ||
+                           file_name_lowercase.ends_with(".dsc.resource.yaml") ||
+                           file_name_lowercase.ends_with(".dsc.resource.yml") {
                             let resource = match load_manifest(&path)
                             {
                                 Ok(r) => r,
