@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, process_macros};
-use tracing::{error, debug};
+use tracing::error;
 
 use atty::Stream;
 use dsc_lib::{
@@ -130,7 +130,6 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
     };
 
     json_string = process_macros(&json_string, &config_path);
-    debug!("{json_string}");
 
     let mut configurator = match Configurator::new(&json_string) {
         Ok(configurator) => configurator,
@@ -166,12 +165,9 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         }
     };
 
-    if parameters.is_some()
-    {
-        if let Err(err) = configurator.set_parameters(&parameters) {
-            error!("Error: Parameter input failure: {err}");
-            exit(EXIT_INVALID_INPUT);
-        }
+    if let Err(err) = configurator.set_parameters(&parameters) {
+        error!("Error: Parameter input failure: {err}");
+        exit(EXIT_INVALID_INPUT);
     }
 
     match subcommand {

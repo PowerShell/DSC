@@ -378,7 +378,7 @@ pub fn process_macros(json_string: &str, config_path: &str) -> String
     let v = json!(config_root);
     let mut json_escaped_config_root = v.to_string();
     json_escaped_config_root.pop(); // remove last double quote
-    if json_escaped_config_root.len() > 0 {
+    if !json_escaped_config_root.is_empty() {
         json_escaped_config_root.remove(0); // remove first double quote
     }
 
