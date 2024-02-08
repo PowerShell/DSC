@@ -196,33 +196,35 @@ if ($failed) {
 Copy-Item $PSScriptRoot/tools/add-path.ps1 $target -Force -ErrorAction Ignore
 
 $relative = Resolve-Path $target -Relative
-Write-Host -ForegroundColor Green "`nEXE's are copied to $target ($relative)"
+if (!$Clippy) {
+    Write-Host -ForegroundColor Green "`nEXE's are copied to $target ($relative)"
 
-# remove the other target in case switching between them
-$dirSeparator = [System.IO.Path]::DirectorySeparatorChar
-if ($Release) {
-    $oldTarget = $target.Replace($dirSeparator + 'release', $dirSeparator + 'debug')
-}
-else {
-    $oldTarget = $target.Replace($dirSeparator + 'debug', $dirSeparator + 'release')
-}
-$env:PATH = $env:PATH.Replace($oldTarget, '')
-
-$paths = $env:PATH.Split([System.IO.Path]::PathSeparator)
-$found = $false
-foreach ($path in $paths) {
-    if ($path -eq $target) {
-        $found = $true
-        break
+    # remove the other target in case switching between them
+    $dirSeparator = [System.IO.Path]::DirectorySeparatorChar
+    if ($Release) {
+        $oldTarget = $target.Replace($dirSeparator + 'release', $dirSeparator + 'debug')
     }
-}
+    else {
+        $oldTarget = $target.Replace($dirSeparator + 'debug', $dirSeparator + 'release')
+    }
+    $env:PATH = $env:PATH.Replace($oldTarget, '')
 
-# remove empty entries from path
-$env:PATH = [string]::Join([System.IO.Path]::PathSeparator, $env:PATH.Split([System.IO.Path]::PathSeparator, [StringSplitOptions]::RemoveEmptyEntries))
+    $paths = $env:PATH.Split([System.IO.Path]::PathSeparator)
+    $found = $false
+    foreach ($path in $paths) {
+        if ($path -eq $target) {
+            $found = $true
+            break
+        }
+    }
 
-if (!$found) {
-    Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
-    $env:PATH += [System.IO.Path]::PathSeparator + $target
+    # remove empty entries from path
+    $env:PATH = [string]::Join([System.IO.Path]::PathSeparator, $env:PATH.Split([System.IO.Path]::PathSeparator, [StringSplitOptions]::RemoveEmptyEntries))
+
+    if (!$found) {
+        Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
+        $env:PATH += [System.IO.Path]::PathSeparator + $target
+    }
 }
 
 if ($Test) {
