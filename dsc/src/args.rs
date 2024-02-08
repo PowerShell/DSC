@@ -33,10 +33,6 @@ pub struct Args {
     /// The subcommand to run
     #[clap(subcommand)]
     pub subcommand: SubCommand,
-    #[clap(short = 'i', long, help = "The input to pass to the configuration or resource", conflicts_with = "input_file")]
-    pub input: Option<String>,
-    #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource")]
-    pub input_file: Option<String>,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "warning")]
     pub trace_level: TraceLevel,
     #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
@@ -77,23 +73,44 @@ pub enum SubCommand {
 pub enum ConfigSubCommand {
     #[clap(name = "get", about = "Retrieve the current configuration")]
     Get {
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
+        path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "set", about = "Set the current configuration")]
     Set {
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
+        path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "test", about = "Test the current configuration")]
     Test {
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
+        path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
-    Validate,
+    Validate {
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
+        path: Option<String>,
+    },
     #[clap(name = "export", about = "Export the current configuration")]
     Export {
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
+        path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     }
@@ -118,8 +135,10 @@ pub enum ResourceSubCommand {
         all: bool,
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `get` on")]
         resource: String,
-        #[clap(short, long, help = "The input to pass to the resource as JSON")]
+        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML", conflicts_with = "path")]
         input: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a JSON or YAML file used as input to the configuration or resource", conflicts_with = "input")]
+        path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
@@ -127,8 +146,10 @@ pub enum ResourceSubCommand {
     Set {
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `set` on")]
         resource: String,
-        #[clap(short, long, help = "The input to pass to the resource as JSON")]
+        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML", conflicts_with = "path")]
         input: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a JSON or YAML file used as input to the configuration or resource", conflicts_with = "input")]
+        path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
@@ -136,8 +157,10 @@ pub enum ResourceSubCommand {
     Test {
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `test` on")]
         resource: String,
-        #[clap(short, long, help = "The input to pass to the resource as JSON")]
+        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML", conflicts_with = "path")]
         input: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a JSON or YAML file used as input to the configuration or resource", conflicts_with = "input")]
+        path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },

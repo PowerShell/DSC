@@ -35,19 +35,7 @@ fn main() {
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
-    let input = if args.input.is_some() {
-        args.input
-    } else if args.input_file.is_some() {
-        info!("Reading input from file {}", args.input_file.as_ref().unwrap());
-        let input_file = args.input_file.unwrap();
-        match std::fs::read_to_string(input_file) {
-            Ok(input) => Some(input),
-            Err(err) => {
-                error!("Error: Failed to read input file: {err}");
-                exit(util::EXIT_INVALID_INPUT);
-            }
-        }
-    } else if atty::is(Stream::Stdin) {
+    let input = if atty::is(Stream::Stdin) {
         None
     } else {
         info!("Reading input from STDIN");
@@ -60,7 +48,15 @@ fn main() {
                 exit(util::EXIT_INVALID_ARGS);
             },
         };
-        Some(input)
+        // get_input call expects at most 1 input, so wrapping Some(empty input) would throw it off
+        // have only seen this happen with dsc_args.test.ps1 running on the CI pipeline
+        if input.is_empty() {
+            debug!("Input from STDIN is empty");
+            None
+        }
+        else {
+            Some(input)
+        }
     };
 
     match args.subcommand {
