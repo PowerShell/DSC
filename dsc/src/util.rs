@@ -18,7 +18,6 @@ use dsc_lib::{
 };
 use schemars::{schema_for, schema::RootSchema};
 use serde_yaml::Value;
-use serde_json::json;
 use std::collections::HashMap;
 use std::env;
 use std::path::Path;
@@ -361,7 +360,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     parse_input_to_json(&value)
 }
 
-pub fn process_macros(json_string: &str, config_path: &str) -> String
+pub fn set_dscconfigroot(config_path: &str)
 {
     let path = Path::new(config_path);
     let config_root = match path.parent()
@@ -373,15 +372,4 @@ pub fn process_macros(json_string: &str, config_path: &str) -> String
     // Set env var so child processes (of resources) can use it
     debug!("Setting 'DSCConfigRoot' env var as '{}'", config_root);
     env::set_var("DSCConfigRoot", config_root.clone());
-
-    // we are replacing a substring in json, so the new substring must be properly escaped per json rules
-    let v = json!(config_root);
-    let mut json_escaped_config_root = v.to_string();
-    json_escaped_config_root.pop(); // remove last double quote
-    if !json_escaped_config_root.is_empty() {
-        json_escaped_config_root.remove(0); // remove first double quote
-    }
-
-    debug!("Escaped json 'DSCConfigRoot' is '{}'", json_escaped_config_root);
-    json_string.replace("_DSCConfigRoot_", &json_escaped_config_root)
 }

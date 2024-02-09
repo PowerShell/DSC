@@ -107,7 +107,7 @@ Describe 'PowerShellGroup resource tests' {
                 - name: Class-resource Info
                   type: PSTestModule/TestClassResource
                   properties:
-                    Name: _DSCConfigRoot_/TestClassResourceInstance
+                    Name: "[envvar('DSCConfigRoot')]"
 "@
 
         $config_path = "$TestDrive/test_config.dsc.yaml"
@@ -116,7 +116,7 @@ Describe 'PowerShellGroup resource tests' {
         $out = dsc config get --path $config_path
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
-        $res.results[0].result.actualState.Name | Should -Be "$TestDrive/TestClassResourceInstance"
+        $res.results[0].result.actualState.Name | Should -Be $TestDrive
         $res.results[0].result.actualState.Prop1 | Should -Be $TestDrive
     }
 
@@ -132,12 +132,12 @@ Describe 'PowerShellGroup resource tests' {
                 - name: Class-resource Info
                   type: PSTestModule/TestClassResource
                   properties:
-                    Name: _DSCConfigRoot_/TestClassResourceInstance
+                    Name: "[envvar('DSCConfigRoot')]"
 "@
         $out = $yaml | dsc config get
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
-        $res.results[0].result.actualState.Name | Should -Be "/TestClassResourceInstance"
+        $res.results[0].result.actualState.Name | Should -Be ""
         $res.results[0].result.actualState.Prop1 | Should -Be ""
     }
 }
