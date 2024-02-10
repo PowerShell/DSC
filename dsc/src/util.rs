@@ -19,6 +19,8 @@ use dsc_lib::{
 use schemars::{schema_for, schema::RootSchema};
 use serde_yaml::Value;
 use std::collections::HashMap;
+use std::env;
+use std::path::Path;
 use std::process::exit;
 use syntect::{
     easy::HighlightLines,
@@ -356,4 +358,18 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     }
 
     parse_input_to_json(&value)
+}
+
+pub fn set_dscconfigroot(config_path: &str)
+{
+    let path = Path::new(config_path);
+    let config_root = match path.parent()
+    {
+        Some(dir_path) => { dir_path.to_str().unwrap_or_default().to_string()},
+        _ => String::new()
+    };
+
+    // Set env var so child processes (of resources) can use it
+    debug!("Setting 'DSCConfigRoot' env var as '{}'", config_root);
+    env::set_var("DSCConfigRoot", config_root.clone());
 }
