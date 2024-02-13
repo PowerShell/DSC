@@ -7,33 +7,11 @@ use serde_json::Value;
 
 use crate::configure::config_result::{ResourceGetResult, ResourceSetResult, ResourceTestResult};
 
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct GroupResourceGetResponse {
-    pub results: Vec<ResourceGetResult>,
-}
-
-impl GroupResourceGetResponse {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            results: Vec::new()
-        }
-    }
-}
-
-impl Default for GroupResourceGetResponse {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum GetResult {
     Resource(ResourceGetResponse),
-    Group(GroupResourceGetResponse),
+    Group(Vec<ResourceGetResult>),
 }
 
 impl From<TestResult> for GetResult {
@@ -44,9 +22,7 @@ impl From<TestResult> for GetResult {
                 for result in group.results {
                     results.push(result.into());
                 }
-                GetResult::Group(GroupResourceGetResponse {
-                    results
-                })
+                GetResult::Group(results)
             },
             TestResult::Resource(resource) => {
                 GetResult::Resource(ResourceGetResponse {

@@ -172,7 +172,7 @@ pub trait Invoke {
     fn schema(&self) -> Result<String, DscError>;
 
     /// Invoke the export operation on the resource.
-    ///    
+    ///
     /// # Arguments
     ///
     /// * `input` - Input for export operation.
@@ -233,9 +233,9 @@ impl Invoke for DscResource {
                     let get_result = self.get(expected)?;
                     let desired_state = serde_json::from_str(expected)?;
                     let actual_state = match get_result {
-                        GetResult::Group(group_response) => {
+                        GetResult::Group(results) => {
                             let mut result_array: Vec<Value> = Vec::new();
-                            for result in group_response.results {
+                            for result in results {
                                 result_array.push(serde_json::to_value(result)?);
                             }
                             Value::from(result_array)

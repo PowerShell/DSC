@@ -8,7 +8,7 @@ use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCC
 use dsc_lib::configure::config_result::ResourceGetResult;
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::{
-    GroupResourceGetResponse, GroupResourceSetResponse, GroupResourceTestResponse, TestResult
+    GroupResourceSetResponse, GroupResourceTestResponse, TestResult
 };
 use tracing::error;
 
@@ -28,8 +28,9 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
     match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
             if *as_group {
-                let group_result = GroupResourceGetResponse {
-                    results: result.results
+                let mut group_result = Vec::<ResourceGetResult>::new();
+                for result in result.results {
+                    group_result.push(result);
                 };
                 let json = match serde_json::to_string(&group_result) {
                     Ok(json) => json,
@@ -122,13 +123,10 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                     }
                 }
                 let json = if *as_get {
-                    let mut results = Vec::<ResourceGetResult>::new();
+                    let mut group_result = Vec::<ResourceGetResult>::new();
                     for test_result in result.results {
-                        results.push(test_result.into());
+                        group_result.push(test_result.into());
                     }
-                    let group_result = GroupResourceGetResponse {
-                        results
-                    };
                     match serde_json::to_string(&group_result) {
                         Ok(json) => json,
                         Err(err) => {

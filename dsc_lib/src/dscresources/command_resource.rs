@@ -4,7 +4,8 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, process::Command, io::{Write, Read}, process::Stdio};
-use crate::{dscerror::DscError, dscresources::invoke_result::{GroupResourceGetResponse, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
+use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
+use crate::configure::config_result::ResourceGetResult;
 use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 use tracing::{debug, info, trace};
 
@@ -53,7 +54,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
-    let result: GetResult = if let Ok(group_response) = serde_json::from_str::<GroupResourceGetResponse>(&stdout) {
+    let result: GetResult = if let Ok(group_response) = serde_json::from_str::<Vec<ResourceGetResult>>(&stdout) {
         trace!("Group get response: {:?}", &group_response);
         GetResult::Group(group_response)
     } else {
@@ -206,9 +207,9 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             let get_result = invoke_get(resource, cwd, desired)?;
             // for changed_properties, we compare post state to pre state
             let actual_state = match get_result {
-                GetResult::Group(group_response) => {
+                GetResult::Group(results) => {
                     let mut result_array: Vec<Value> = Vec::new();
-                    for result in group_response.results {
+                    for result in results {
                         result_array.push(serde_json::to_value(result)?);
                     }
                     Value::from(result_array)
@@ -304,9 +305,9 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             // perform a get and compare the result to the expected state
             let get_result = invoke_get(resource, cwd, expected)?;
             let actual_state = match get_result {
-                GetResult::Group(group_response) => {
+                GetResult::Group(results) => {
                     let mut result_array: Vec<Value> = Vec::new();
-                    for result in group_response.results {
+                    for result in results {
                         result_array.push(serde_json::to_value(&result)?);
                     }
                     Value::from(result_array)
