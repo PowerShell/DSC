@@ -39,6 +39,10 @@ class TestClassResource
         {
             $this.Prop1 = "ValueForProp1"
         }
+        else
+        {
+            $this.Prop1 = $env:DSCConfigRoot
+        }
         $this.EnumProp = [EnumPropEnumeration]::Expected
         return $this
     }
