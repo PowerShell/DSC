@@ -4,12 +4,8 @@
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-<<<<<<< HEAD
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
-=======
-use crate::util::{EXIT_DSC_ERROR, EXIT_VALIDATION_FAILED, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, serde_json_value_to_string, write_output, validate_json};
 use dsc_lib::configure::config_result::ResourceGetResult;
->>>>>>> 9a2f668 (support converting test result to a get result)
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::{
     GroupResourceGetResponse, GroupResourceSetResponse, GroupResourceTestResponse, TestResult
@@ -265,10 +261,10 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Set { format, .. } => {
             config_set(&mut configurator, format, as_group);
         },
-        ConfigSubCommand::Test { format, as_get } => {
+        ConfigSubCommand::Test { format, as_get, .. } => {
             config_test(&mut configurator, format, as_group, as_get);
         },
-        ConfigSubCommand::Validate => {
+        ConfigSubCommand::Validate { format, .. } => {
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,

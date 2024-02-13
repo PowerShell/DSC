@@ -108,6 +108,8 @@ pub enum ConfigSubCommand {
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
         path: Option<String>,
+        #[clap(short = 'f', long, help = "The output format to use")]
+        format: Option<OutputFormat>,
     },
     #[clap(name = "export", about = "Export the current configuration")]
     Export {
