@@ -322,14 +322,14 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
         ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
-            let mut methods = String::new();
+            let mut methods: Vec<String> = Vec::new();
             let mut table = Table::new(&["Type", "Version", "Methods", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if format is not specified and interactive
                 write_table = true;
             }
             for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
-                // if description is specified, skip if resource description does not contain it
+                // if description, tags, or write_table is specified, pull resource manifest if it exists
                 if description.is_some() || tags.is_some() || write_table {
                     let Some(ref resource_manifest) = resource.manifest else {
                         continue;
@@ -342,6 +342,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         }
                     };
 
+                    // if description is specified, skip if resource description does not contain it
                     if description.is_some() &&
                         (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
                         continue;
@@ -363,17 +364,17 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         if !found { continue; }
                     }
 
-                    methods = "get".to_string();
-                    if manifest.set.is_some() { methods.push_str(", set"); }
-                    if manifest.test.is_some() { methods.push_str(", test"); }
-                    if manifest.export.is_some() { methods.push_str(", export"); }
+                    methods = vec!["get".to_string()];
+                    if manifest.set.is_some() { methods.push("set".to_string()); }
+                    if manifest.test.is_some() { methods.push("test".to_string()); }
+                    if manifest.export.is_some() { methods.push("export".to_string()); }
                 }
 
                 if write_table {
                     table.add_row(vec![
                         resource.type_name,
                         resource.version,
-                        methods.clone(),
+                        methods.join(", "),
                         resource.requires.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
