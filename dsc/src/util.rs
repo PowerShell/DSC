@@ -384,18 +384,33 @@ pub fn set_dscconfigroot(config_path: &str)
     env::set_var("DSCConfigRoot", config_root.clone());
 }
 
+/// Validate the JSON against the schema.
+///
+/// # Arguments
+///
+/// * `source` - The source of the JSON
+/// * `schema` - The schema to validate against
+/// * `json` - The JSON to validate
+///
+/// # Returns
+///
+/// Nothing on success.
+///
+/// # Errors
+///
+/// * `DscError` - The JSON is invalid
 pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
     debug!("Validating {source} against schema");
     debug!("JSON: {json}");
     debug!("Schema: {schema}");
-    let compiled_schema = match JSONSchema::compile(&schema) {
+    let compiled_schema = match JSONSchema::compile(schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {
             return Err(DscError::Validation(format!("JSON Schema Compilation Error: {err}")));
         }
     };
 
-    if let Err(err) = compiled_schema.validate(&json) {
+    if let Err(err) = compiled_schema.validate(json) {
         let mut error = format!("'{source}' failed validation: ");
         for e in err {
             error.push_str(&format!("\n{e} "));

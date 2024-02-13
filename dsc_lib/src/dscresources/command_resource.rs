@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::{collections::HashMap, env, process::Command, io::{Write, Read}, process::Stdio};
 use crate::{dscerror::DscError, dscresources::invoke_result::{GroupResourceGetResponse, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
 use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -53,21 +53,19 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
-    let result: GetResult = match serde_json::from_str::<GroupResourceGetResponse>(&stdout) {
-        Ok(group_response) => {
-            GetResult::Group(group_response)
-        },
-        Err(_) => {
-            let result: Value = match serde_json::from_str(&stdout) {
-                Ok(r) => {r},
-                Err(err) => {
-                    return Err(DscError::Operation(format!("Failed to parse json from get {}|{}|{} -> {err}", &resource.get.executable, stdout, stderr)))
-                }
-            };
-            GetResult::Resource(ResourceGetResponse{
-                actual_state: result,
-            })
-        }
+    let result: GetResult = if let Ok(group_response) = serde_json::from_str::<GroupResourceGetResponse>(&stdout) {
+        trace!("Group get response: {:?}", &group_response);
+        GetResult::Group(group_response)
+    } else {
+        let result: Value = match serde_json::from_str(&stdout) {
+            Ok(r) => {r},
+            Err(err) => {
+                return Err(DscError::Operation(format!("Failed to parse JSON from get {}|{}|{} -> {err}", &resource.get.executable, stdout, stderr)))
+            }
+        };
+        GetResult::Resource(ResourceGetResponse{
+            actual_state: result,
+        })
     };
 
     Ok(result)
@@ -109,28 +107,22 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && !set.pre_test.unwrap_or_default() {
         info!("No pretest, invoking test {}", &resource.resource_type);
-        let (in_desired_state, desired_state, actual_state) = match invoke_test(resource, cwd, desired)? {
+        let (in_desired_state, actual_state) = match invoke_test(resource, cwd, desired)? {
             TestResult::Group(group_response) => {
-                let mut in_desired_state = true;
                 let mut result_array: Vec<Value> = Vec::new();
-                let mut desired_state_array: Vec<Value> = Vec::new();
-                for response in group_response.results {
-                    if response.in_desired_state == false {
-                        in_desired_state = false;
-                    }
-                    result_array.push(response.actual_state);
-                    desired_state_array.push(response.desired_state);
+                for result in group_response.results {
+                    result_array.push(serde_json::to_value(result)?);
                 }
-                (in_desired_state, Value::from(desired_state_array), Value::from(result_array))
+                (group_response.in_desired_state, Value::from(result_array))
             },
             TestResult::Resource(response) => {
-                (response.in_desired_state, response.desired_state, response.actual_state)
+                (response.in_desired_state, response.actual_state)
             }
         };
 
         if in_desired_state {
             return Ok(SetResult::Resource(ResourceSetResponse{
-                before_state: desired_state,
+                before_state: serde_json::from_str(desired)?,
                 after_state: actual_state,
                 changed_properties: None,
             }));
@@ -217,7 +209,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 GetResult::Group(group_response) => {
                     let mut result_array: Vec<Value> = Vec::new();
                     for result in group_response.results {
-                        result_array.push(result.actual_state);
+                        result_array.push(serde_json::to_value(result)?);
                     }
                     Value::from(result_array)
                 },
@@ -315,7 +307,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 GetResult::Group(group_response) => {
                     let mut result_array: Vec<Value> = Vec::new();
                     for result in group_response.results {
-                        result_array.push(result.actual_state);
+                        result_array.push(serde_json::to_value(&result)?);
                     }
                     Value::from(result_array)
                 },
@@ -326,7 +318,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             let diff_properties = get_diff( &expected_value, &actual_state);
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
-                actual_state: actual_state,
+                actual_state,
                 in_desired_state: diff_properties.is_empty(),
                 diff_properties,
             }))
@@ -460,7 +452,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
 #[allow(clippy::implicit_hasher)]
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>) -> Result<(i32, String, String), DscError> {
-    debug!("Invoking command {} with args {:?}", executable, args);
+    debug!("Invoking command '{}' with args {:?}", executable, args);
     let mut command = Command::new(executable);
     if input.is_some() {
         command.stdin(Stdio::piped());
@@ -510,10 +502,10 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
     let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
     if !stdout.is_empty() {
-        debug!("STDOUT returned: {}", &stdout);
+        trace!("STDOUT returned: {}", &stdout);
     }
     if !stderr.is_empty() {
-        debug!("STDERR returned: {}", &stderr);
+        trace!("STDERR returned: {}", &stderr);
     }
     Ok((exit_code, stdout, stderr))
 }

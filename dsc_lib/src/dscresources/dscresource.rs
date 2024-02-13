@@ -236,7 +236,7 @@ impl Invoke for DscResource {
                         GetResult::Group(group_response) => {
                             let mut result_array: Vec<Value> = Vec::new();
                             for result in group_response.results {
-                                result_array.push(result.actual_state);
+                                result_array.push(serde_json::to_value(result)?);
                             }
                             Value::from(result_array)
                         },
@@ -247,7 +247,7 @@ impl Invoke for DscResource {
                     let diff_properties = get_diff( &desired_state, &actual_state);
                     let test_result = TestResult::Resource(ResourceTestResponse {
                         desired_state: serde_json::from_str(expected)?,
-                        actual_state: actual_state,
+                        actual_state,
                         in_desired_state: diff_properties.is_empty(),
                         diff_properties,
                     });

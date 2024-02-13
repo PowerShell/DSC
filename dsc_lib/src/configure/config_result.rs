@@ -32,6 +32,16 @@ pub struct ResourceGetResult {
     pub result: GetResult,
 }
 
+impl From<ResourceTestResult> for ResourceGetResult {
+    fn from(test_result: ResourceTestResult) -> Self {
+        Self {
+            name: test_result.name,
+            resource_type: test_result.resource_type,
+            result: test_result.result.into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
@@ -55,6 +65,20 @@ impl ConfigurationGetResult {
 impl Default for ConfigurationGetResult {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl From<ConfigurationTestResult> for ConfigurationGetResult {
+    fn from(test_result: ConfigurationTestResult) -> Self {
+        let mut results = Vec::<ResourceGetResult>::new();
+        for result in test_result.results {
+            results.push(result.into());
+        }
+        Self {
+            results,
+            messages: test_result.messages,
+            had_errors: test_result.had_errors,
+        }
     }
 }
 

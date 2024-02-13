@@ -5,18 +5,20 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::configure::config_result::{ResourceGetResult, ResourceSetResult, ResourceTestResult};
+
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GroupResourceGetResponse {
-    pub results: Vec<ResourceGetResponse>,
+    pub results: Vec<ResourceGetResult>,
 }
 
 impl GroupResourceGetResponse {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            results: Vec::new(),
+            results: Vec::new()
         }
     }
 }
@@ -28,9 +30,31 @@ impl Default for GroupResourceGetResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
 pub enum GetResult {
     Resource(ResourceGetResponse),
     Group(GroupResourceGetResponse),
+}
+
+impl From<TestResult> for GetResult {
+    fn from(value: TestResult) -> Self {
+        match value {
+            TestResult::Group(group) => {
+                let mut results = Vec::<ResourceGetResult>::new();
+                for result in group.results {
+                    results.push(result.into());
+                }
+                GetResult::Group(GroupResourceGetResponse {
+                    results
+                })
+            },
+            TestResult::Resource(resource) => {
+                GetResult::Resource(ResourceGetResponse {
+                    actual_state: resource.actual_state
+                })
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -44,7 +68,7 @@ pub struct ResourceGetResponse {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GroupResourceSetResponse {
-    pub results: Vec<ResourceSetResponse>,
+    pub results: Vec<ResourceSetResult>,
 }
 
 impl GroupResourceSetResponse {
@@ -63,6 +87,7 @@ impl Default for GroupResourceSetResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
 pub enum SetResult {
     Resource(ResourceSetResponse),
     Group(GroupResourceSetResponse),
@@ -85,7 +110,9 @@ pub struct ResourceSetResponse {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GroupResourceTestResponse {
-    pub results: Vec<ResourceTestResponse>,
+    pub results: Vec<ResourceTestResult>,
+    #[serde(rename = "inDesiredState")]
+    pub in_desired_state: bool,
 }
 
 impl GroupResourceTestResponse {
@@ -93,6 +120,7 @@ impl GroupResourceTestResponse {
     pub fn new() -> Self {
         Self {
             results: Vec::new(),
+            in_desired_state: false,
         }
     }
 }
@@ -104,6 +132,7 @@ impl Default for GroupResourceTestResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
 pub enum TestResult {
     Resource(ResourceTestResponse),
     Group(GroupResourceTestResponse),

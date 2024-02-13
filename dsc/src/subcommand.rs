@@ -4,15 +4,15 @@
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
+<<<<<<< HEAD
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+=======
+use crate::util::{EXIT_DSC_ERROR, EXIT_VALIDATION_FAILED, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, serde_json_value_to_string, write_output, validate_json};
+use dsc_lib::configure::config_result::ResourceGetResult;
+>>>>>>> 9a2f668 (support converting test result to a get result)
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::{
-    GetResult,
-    SetResult,
-    TestResult,
-    GroupResourceGetResponse,
-    GroupResourceSetResponse,
-    GroupResourceTestResponse
+    GroupResourceGetResponse, GroupResourceSetResponse, GroupResourceTestResponse, TestResult
 };
 use tracing::error;
 
@@ -27,22 +27,14 @@ use dsc_lib::{
 use serde_yaml::Value;
 use std::process::exit;
 
-pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: bool)
+pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
 {
     match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
-            if as_group {
-                let mut group_result = GroupResourceGetResponse::new();
-                for resource_result in result.results {
-                    match resource_result.result {
-                        GetResult::Group(mut group_response) => {
-                            group_result.results.append(&mut group_response.results);
-                        },
-                        GetResult::Resource(response) => {
-                            group_result.results.push(response);
-                        }
-                    }
-                }
+            if *as_group {
+                let group_result = GroupResourceGetResponse {
+                    results: result.results
+                };
                 let json = match serde_json::to_string(&group_result) {
                     Ok(json) => json,
                     Err(err) => {
@@ -73,22 +65,14 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: bool)
+pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
 {
     match configurator.invoke_set(false, ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
-            if as_group {
-                let mut group_result = GroupResourceSetResponse::new();
-                for resource_result in result.results {
-                    match resource_result.result {
-                        SetResult::Group(mut group_response) => {
-                            group_result.results.append(&mut group_response.results);
-                        },
-                        SetResult::Resource(response) => {
-                            group_result.results.push(response);
-                        }
-                    }
-                }
+            if *as_group {
+                let group_result = GroupResourceSetResponse {
+                    results: result.results
+                };
                 let json = match serde_json::to_string(&group_result) {
                     Ok(json) => json,
                     Err(err) => {
@@ -119,27 +103,55 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: bool)
+pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool)
 {
     match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
         Ok(result) => {
-            if as_group {
-                let mut group_result = GroupResourceTestResponse::new();
-                for resource_result in result.results {
-                    match resource_result.result {
-                        TestResult::Group(mut group_response) => {
-                            group_result.results.append(&mut group_response.results);
+            if *as_group {
+                let mut in_desired_state = true;
+                for test_result in &result.results {
+                    match &test_result.result {
+                        TestResult::Resource(resource_test_result) => {
+                            if !resource_test_result.in_desired_state {
+                                in_desired_state = false;
+                                break;
+                            }
                         },
-                        TestResult::Resource(response) => {
-                            group_result.results.push(response);
+                        TestResult::Group(group_resource_test_result) => {
+                            if !group_resource_test_result.in_desired_state {
+                                in_desired_state = false;
+                                break;
+                            }
                         }
                     }
                 }
-                let json = match serde_json::to_string(&group_result) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        error!("JSON Error: {err}");
-                        exit(EXIT_JSON_ERROR);
+                let json = if *as_get {
+                    let mut results = Vec::<ResourceGetResult>::new();
+                    for test_result in result.results {
+                        results.push(test_result.into());
+                    }
+                    let group_result = GroupResourceGetResponse {
+                        results
+                    };
+                    match serde_json::to_string(&group_result) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            error!("JSON Error: {err}");
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    }
+                }
+                else {
+                    let group_result = GroupResourceTestResponse {
+                        results: result.results,
+                        in_desired_state
+                    };
+                    match serde_json::to_string(&group_result) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            error!("JSON Error: {err}");
+                            exit(EXIT_JSON_ERROR);
+                        }
                     }
                 };
                 write_output(&json, format);
@@ -194,7 +206,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool) {
     let json_string = match subcommand {
         ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
@@ -253,8 +265,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Set { format, .. } => {
             config_set(&mut configurator, format, as_group);
         },
-        ConfigSubCommand::Test { format, .. } => {
-            config_test(&mut configurator, format, as_group);
+        ConfigSubCommand::Test { format, as_get } => {
+            config_test(&mut configurator, format, as_group, as_get);
         },
         ConfigSubCommand::Validate => {
             let mut result = ValidateResult {
@@ -262,7 +274,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
                 reason: None,
             };
             let valid = match validate_config(&json_string) {
-                Ok(_) => {
+                Ok(()) => {
                     true
                 },
                 Err(err) => {
@@ -272,7 +284,11 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
                 }
             };
 
-            let json = serde_json::to_string(&result).unwrap();
+            let Ok(json) = serde_json::to_string(&result) else {
+                error!("Failed to convert validation result to JSON");
+                exit(EXIT_JSON_ERROR);
+            };
+
             write_output(&json, format);
             if !valid {
                 exit(EXIT_VALIDATION_FAILED);
@@ -285,7 +301,18 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
 }
 
 /// Validate configuration.
-#[allow(clippy::too_many_lines)]
+///
+/// # Arguments
+///
+/// * `config` - The configuration to validate.
+///
+/// # Returns
+///
+/// Nothing on success.
+///
+/// # Errors
+///
+/// * `DscError` - The error that occurred.
 pub fn validate_config(config: &str) -> Result<(), DscError> {
     // first validate against the config schema
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;

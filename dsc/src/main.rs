@@ -69,7 +69,7 @@ fn main() {
             if let Some(file_name) = parameters_file {
                 info!("Reading parameters from file {}", file_name);
                 match std::fs::read_to_string(file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters),  &input, as_group),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input, &as_group),
                     Err(err) => {
                         error!("Error: Failed to read parameters file: {err}");
                         exit(util::EXIT_INVALID_INPUT);
@@ -77,7 +77,7 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters,  &input, as_group);
+                subcommand::config(&subcommand, &parameters, &input, &as_group);
             }
         },
         SubCommand::Resource { subcommand } => {

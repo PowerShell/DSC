@@ -8,7 +8,8 @@
     "args": [
       "config",
       "--as-group",
-      "test"
+      "test",
+      "--as-get"
     ],
     "input": "stdin"
   },
@@ -28,7 +29,8 @@
     "args": [
       "config",
       "--as-group",
-      "test"
+      "test",
+      "--as-get"
     ],
     "input": "stdin",
     "return": "state"
