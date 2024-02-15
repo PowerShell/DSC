@@ -1,0 +1,32 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+    "description": "Takes a single-command line to execute on set",
+    "type": "Microsoft/RunCommandOnSet",
+    "version": "0.1.0",
+    "get": {
+        "executable": "runcommandonset",
+        "args": [
+          "get"
+        ]
+    },
+    "set": {
+        "executable": "runcommandonset",
+        "args": [
+          "set"
+        ]
+    },
+    "schema": {
+      "embedded": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "RunCommandOnSet",
+        "type": "object",
+        "required": [],
+        "properties": {
+            "exitCode": {
+              "type": "integer"
+            }
+        },
+        "additionalProperties": false
+      }
+    }
+}
