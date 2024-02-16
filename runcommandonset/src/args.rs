@@ -16,7 +16,7 @@ pub enum SubCommand {
     #[clap(name = "get", about = "Get formatted command to run on set.")]
     Get {
         #[clap(short = 'a', long, help = "The arguments to pass to the executable.")]
-        arguments: Option<String>,
+        arguments: Option<Vec<String>>,
         #[clap(short = 'e', long, help = "The executable to run.", default_value = "")]
         executable: String,
         #[clap(short = 'c', long, help = "The expected exit code, if non-zero.", default_value = "0")]
@@ -25,7 +25,7 @@ pub enum SubCommand {
     #[clap(name = "set", about = "Run formatted command.")]
     Set {
         #[clap(short = 'a', long, help = "The arguments to pass to the executable.")]
-        arguments: Option<String>,
+        arguments: Option<Vec<String>>,
         #[clap(short = 'e', long, help = "The executable to run.", default_value = "")]
         executable: String,
         #[clap(short = 'c', long, help = "The expected exit code, if non-zero.", default_value = "0")]

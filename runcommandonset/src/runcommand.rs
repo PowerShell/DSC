@@ -4,16 +4,16 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
-pub struct Command {
+pub struct RunCommand {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub arguments: Option<String>,
+    pub arguments: Option<Vec<String>>,
     pub executable: String,
     // default value for exit code is 0
     #[serde(default, skip_serializing_if = "is_default")]
     pub exit_code: i32,
 }
 
-impl Command {
+impl RunCommand {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {
             Ok(json) => json,
