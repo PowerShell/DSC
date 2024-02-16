@@ -19,7 +19,7 @@ pub enum SubCommand {
         arguments: Option<Vec<String>>,
         #[clap(short = 'e', long, help = "The executable to run.", default_value = "")]
         executable: String,
-        #[clap(short = 'c', long, help = "The expected exit code, if non-zero.", default_value = "0")]
+        #[clap(short = 'c', long, help = "The expected exit code to indicate success, if non-zero.", default_value = "0")]
         exit_code: i32,
     },
     #[clap(name = "set", about = "Run formatted command.")]
@@ -28,7 +28,7 @@ pub enum SubCommand {
         arguments: Option<Vec<String>>,
         #[clap(short = 'e', long, help = "The executable to run.", default_value = "")]
         executable: String,
-        #[clap(short = 'c', long, help = "The expected exit code, if non-zero.", default_value = "0")]
+        #[clap(short = 'c', long, help = "The expected exit code to indicate success, if non-zero.", default_value = "0")]
         exit_code: i32,
     }
 }
