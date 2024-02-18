@@ -3,22 +3,17 @@
 
 Describe 'Brew resource tests' {
     BeforeAll {
-        $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
-        $PSDefaultParameterValues['it:skip'] = ($null -eq (Get-Command brew -CommandType Application -ErrorAction Ignore))
+        $brewExists = ($null -ne (Get-Command brew -CommandType Application -ErrorAction Ignore))
     }
 
-    AfterAll {
-        $global:PSDefaultParameterValues = $originalDefaultParameterValues
-    }
-
-    It 'Config get works' {
+    It 'Config get works' -Skip:(-not $brewExists) {
         $out = dsc config get -p $PSScriptRoot/../examples/brew.dsc.yaml | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         $exists = $null -ne (Get-Command gitui -CommandType Application -ErrorAction Ignore)
         $out.results[1].result.actualState._exist | Should -Be $exists
     }
 
-    It 'Config test works' {
+    It 'Config test works' -Skip:(-not $brewExists) {
         $out = dsc config test -p $PSScriptRoot/../examples/brew.dsc.yaml | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         $exists = $null -ne (Get-Command gitui -CommandType Application -ErrorAction Ignore)
