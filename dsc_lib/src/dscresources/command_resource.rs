@@ -343,6 +343,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> Result<ValidateResult, DscError> {
+    trace!("Invoking validate '{}' using: {}", &resource.resource_type, &config);
     // TODO: use schema to validate config if validate is not implemented
     let Some(validate) = resource.validate.as_ref() else {
         return Err(DscError::NotImplemented("validate".to_string()));
@@ -533,12 +534,20 @@ fn replace_token(args: &mut Option<Vec<String>>, token: &str, value: &str) -> Re
 
 fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
 
-    debug!("resource_type - {}", resource.resource_type);
+    debug!("Verify JSON for '{}'", resource.resource_type);
 
-    //TODO: remove this after schema validation for classic PS resources is implemented
-    if (resource.resource_type == "DSC/PowerShellGroup")
-    || (resource.resource_type == "DSC/WMIGroup") {return Ok(());}
+    // see if resource implements validate
+    if resource.validate.is_some() {
+        trace!("Validating against JSON: {json}");
+        let result = invoke_validate(resource, cwd, json)?;
+        if result.valid {
+            return Ok(());
+        } else {
+            return Err(DscError::Validation("Resource reported input JSON is not valid".to_string()));
+        }
+    }
 
+    // otherwise, use schema validation
     let schema = get_schema(resource, cwd)?;
     let schema: Value = serde_json::from_str(&schema)?;
     let compiled_schema = match JSONSchema::compile(&schema) {

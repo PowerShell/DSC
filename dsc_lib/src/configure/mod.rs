@@ -165,6 +165,7 @@ impl Configurator {
         let config = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
         for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
+            trace!("Get resource '{}' named: {}", resource.resource_type, resource.name);
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -274,7 +275,7 @@ impl Configurator {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        for resource in &config.resources {
+        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };

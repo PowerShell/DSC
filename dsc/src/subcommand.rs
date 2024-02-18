@@ -10,11 +10,7 @@ use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::{
     GroupResourceSetResponse, GroupResourceTestResponse, TestResult
 };
-use tracing::error;
-
-use atty::Stream;
 use dsc_lib::{
-    configure::{Configurator, ErrorAction},
     DscManager,
     dscresources::invoke_result::ValidateResult,
     dscresources::dscresource::{ImplementedAs, Invoke},
@@ -22,6 +18,7 @@ use dsc_lib::{
 };
 use serde_yaml::Value;
 use std::process::exit;
+use tracing::{debug, error, trace};
 
 pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
 {
@@ -309,6 +306,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
 /// * `DscError` - The error that occurred.
 pub fn validate_config(config: &str) -> Result<(), DscError> {
     // first validate against the config schema
+    debug!("Validating configuration against schema");
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
     let config_value = serde_json::from_str(config)?;
     validate_json("Configuration", &schema, &config_value)?;
@@ -339,6 +337,8 @@ pub fn validate_config(config: &str) -> Result<(), DscError> {
             return Err(DscError::Validation("Error: Resource type not specified".to_string()));
         };
 
+        trace!("Validating resource named '{}'", resource_block["name"].as_str().unwrap_or_default());
+
         // get the actual resource
         let Some(resource) = get_resource(&dsc, type_name) else {
             return Err(DscError::Validation(format!("Error: Resource type '{type_name}' not found")));
@@ -351,7 +351,10 @@ pub fn validate_config(config: &str) -> Result<(), DscError> {
                 // convert to resource_manifest
                 let manifest: ResourceManifest = serde_json::from_value(manifest)?;
                 if manifest.validate.is_some() {
-                    let result = resource.validate(config)?;
+                    debug!("Resource {type_name} implements validation");
+                    // get the resource's part of the config
+                    let resource_config = resource_block["properties"].to_string();
+                    let result = resource.validate(&resource_config)?;
                     if !result.valid {
                         let reason = result.reason.unwrap_or("No reason provided".to_string());
                         let type_name = resource.type_name.clone();
@@ -360,6 +363,7 @@ pub fn validate_config(config: &str) -> Result<(), DscError> {
                 }
                 else {
                     // use schema validation
+                    trace!("Resource {type_name} does not implement validation, using schema");
                     let Ok(schema) = resource.schema() else {
                         return Err(DscError::Validation(format!("Error: Resource {type_name} does not have a schema nor supports validation")));
                     };
@@ -367,6 +371,8 @@ pub fn validate_config(config: &str) -> Result<(), DscError> {
 
                     validate_json(&resource.type_name, &schema, &resource_block["properties"])?;
                 }
+            } else {
+                return Err(DscError::Validation(format!("Error: Resource {type_name} does not have a manifest")));
             }
         }
     }

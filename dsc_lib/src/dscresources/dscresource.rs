@@ -6,7 +6,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
@@ -74,19 +74,20 @@ impl DscResource {
         let resource_manifest = import_manifest(manifest.clone())?;
 
         if resource_manifest.validate.is_some() {
-            debug!("Using custom validation");
+            trace!("Using custom validation");
             let validation_result = match self.validate(input) {
                 Ok(validation_result) => validation_result,
                 Err(err) => {
                     return Err(DscError::Validation(format!("Validation failed: {err}")));
                 },
             };
+            trace!("Validation result is valid: {}", validation_result.valid);
             if !validation_result.valid {
                 return Err(DscError::Validation("Validation failed".to_string()));
             }
         }
         else {
-            debug!("Using JSON schema validation");
+            trace!("Using JSON schema validation");
             let Ok(schema) = self.schema() else {
                 return Err(DscError::Validation("Schema not available".to_string()));
             };

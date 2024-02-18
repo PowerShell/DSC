@@ -1,0 +1,38 @@
+# Example for grouping and groups in groups
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+- name: Last Group
+  type: DSC/Group
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+    resources:
+    - name: Last
+      type: Test/Echo
+      properties:
+        text: Last
+  dependsOn:
+  - "[resourceId('DSC/Group','First Group')]"
+- name: First Group
+  type: DSC/Group
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+    resources:
+    - name: First
+      type: Test/Echo
+      properties:
+        text: First
+    - name: Nested Group
+      type: DSC/Group
+      properties:
+        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+        resources:
+        - name: Nested Second
+          type: Test/Echo
+          properties:
+            text: Nested Second
+          dependsOn:
+          - "[resourceId('Test/Echo','Nested First')]"
+        - name: Nested First
+          type: Test/Echo
+          properties:
+            text: Nested First
