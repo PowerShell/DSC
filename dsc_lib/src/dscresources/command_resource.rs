@@ -542,9 +542,9 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
         let result = invoke_validate(resource, cwd, json)?;
         if result.valid {
             return Ok(());
-        } else {
-            return Err(DscError::Validation("Resource reported input JSON is not valid".to_string()));
         }
+
+        return Err(DscError::Validation("Resource reported input JSON is not valid".to_string()));
     }
 
     // otherwise, use schema validation
