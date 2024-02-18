@@ -3,8 +3,12 @@
 
 Describe 'Brew resource tests' {
     BeforeAll {
-        # skip if brew is not installed
-        $PSDefaultParameterValues = @{ 'It:Skip' = ($null -eq (Get-Command brew -CommandType Application -ErrorAction Ignore)) }
+        $originalDefaultParameterValues = $PSDefaultParameterValues.Clone()
+        $PSDefaultParameterValues['it:skip'] = ($null -eq (Get-Command brew -CommandType Application -ErrorAction Ignore))
+    }
+
+    AfterAll {
+        $global:PSDefaultParameterValues = $originalDefaultParameterValues
     }
 
     It 'Config get works' {
