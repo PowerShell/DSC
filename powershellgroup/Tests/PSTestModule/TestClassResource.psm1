@@ -1,3 +1,5 @@
+using namespace System.Collections.Generic
+
 enum EnumPropEnumeration {
     Unexpected
     Expected
@@ -37,8 +39,25 @@ class TestClassResource
         {
             $this.Prop1 = "ValueForProp1"
         }
+        else
+        {
+            $this.Prop1 = $env:DSCConfigRoot
+        }
         $this.EnumProp = [EnumPropEnumeration]::Expected
         return $this
+    }
+
+    static [TestClassResource[]] Export()
+    {
+        $resultList = [List[TestClassResource]]::new()
+        1..5 | %{
+            $obj = New-Object TestClassResource
+            $obj.Name = "Object$_"
+            $obj.Prop1 = "Property of object$_"
+            $resultList.Add($obj)
+        }
+        
+        return $resultList.ToArray()
     }
 }
 

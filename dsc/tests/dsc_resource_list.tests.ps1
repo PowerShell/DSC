@@ -39,4 +39,15 @@ Describe 'Tests for listing resources' {
             $resources.type | Should -BeExactly $expectedType
         }
     }
+
+    It 'can accept the use of --format as a subcommand' {
+        $expectedCount = 1
+        $expectedType = 'Microsoft/OSInfo'
+        $resources = dsc resource list --description "operating system" --format pretty-json | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $resources.Count | Should -Be $expectedCount
+        if ($expectedCount -gt 0) {
+            $resources.type | Should -BeExactly $expectedType
+        }
+    }
 }

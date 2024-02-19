@@ -3,7 +3,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('List','Get','Set','Test','Validate')]
+    [ValidateSet('List','Get','Set','Test','Export','Validate')]
     $Operation = 'List',
     [Switch]
     $WinPS = $false,
@@ -21,7 +21,7 @@ function RefreshCache
     $script:ResourceCache = @{}
 
     $DscResources = Get-DscResource
-    
+
     foreach ($r in $DscResources)
     {
         $moduleName = "";
@@ -33,10 +33,21 @@ function RefreshCache
     }
 }
 
-if (($PSVersionTable.PSVersion.Major -ge 7) -and ($PSVersionTable.PSVersion.Minor -ge 4) `
+if (($PSVersionTable.PSVersion.Major -eq 7) -and ($PSVersionTable.PSVersion.Minor -eq 4) `
    -and ($PSVersionTable.PSVersion.PreReleaseLabel.StartsWith("preview")))
 {
     throw "PowerShell 7.4-previews are not supported by PowerShellGroup resource; please use PS 7.4.0-rc.1 or newer."
+}
+
+$inputobj_pscustomobj = $null
+if ($stdinput)
+{
+    $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
+    $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
+    if ($new_psmodulepath)
+    {
+        $env:PSModulePath = $ExecutionContext.InvokeCommand.ExpandString($new_psmodulepath)
+    }
 }
 
 $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable |
@@ -105,12 +116,6 @@ if ($Operation -eq 'List')
 }
 elseif ($Operation -eq 'Get')
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
     $result = @()
 
     RefreshCache
@@ -153,7 +158,7 @@ elseif ($Operation -eq 'Get')
         {
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
+            $inputobj_pscustomobj.psobject.properties | %{
                 if ($_.Name -ne "type")
                 {
                     $inputht[$_.Name] = $_.Value
@@ -181,12 +186,6 @@ elseif ($Operation -eq 'Get')
 }
 elseif ($Operation -eq 'Set')
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
     $result = @()
 
     RefreshCache
@@ -227,7 +226,7 @@ elseif ($Operation -eq 'Set')
         {
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
+            $inputobj_pscustomobj.psobject.properties | %{
                 if ($_.Name -ne "type")
                 {
                     $inputht[$_.Name] = $_.Value
@@ -255,12 +254,6 @@ elseif ($Operation -eq 'Set')
 }
 elseif ($Operation -eq 'Test')
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
-    {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
-
     $result = @()
 
     RefreshCache
@@ -301,7 +294,7 @@ elseif ($Operation -eq 'Test')
         {
             $inputht = @{}
             $ResourceTypeName = ($inputobj_pscustomobj.type -split "/")[1]
-            $inputobj_pscustomobj.psobject.properties | %{ 
+            $inputobj_pscustomobj.psobject.properties | %{
                 if ($_.Name -ne "type")
                 {
                     $inputht[$_.Name] = $_.Value
@@ -326,6 +319,74 @@ elseif ($Operation -eq 'Test')
     }
 
     $result | ConvertTo-Json
+}
+elseif ($Operation -eq 'Export')
+{
+    $result = @()
+
+    RefreshCache
+
+    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    {
+        foreach($r in $inputobj_pscustomobj.resources)
+        {
+            $cachedResourceInfo = $script:ResourceCache[$r.type]
+            if ($cachedResourceInfo)
+            {
+                $path = $cachedResourceInfo.Path # for class-based resources - this is path to psd1 of their defining module
+
+                $typeparts = $r.type -split "/"
+                $ResourceTypeName = $typeparts[1]
+
+                $scriptBody = "using module '$path'"
+                $script = [ScriptBlock]::Create($scriptBody)
+                . $script
+
+                $t = [Type]$ResourceTypeName
+                $method = $t.GetMethod('Export')
+                $resultArray = $method.Invoke($null,$null)
+                foreach ($instance in $resultArray)
+                {
+                    $instance | ConvertTo-Json -Compress | Write-Output
+                }
+            }
+            else
+            {
+                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-DscResource returns this resource type"
+                Write-Error $errmsg
+                exit 1
+            }
+        }
+    }
+    else # we are processing an individual resource call
+    {
+        $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
+        if ($cachedResourceInfo)
+        {
+            $path = $cachedResourceInfo.Path # for class-based resources - this is path to psd1 of their defining module
+
+            $typeparts = $inputobj_pscustomobj.type -split "/"
+            $ResourceTypeName = $typeparts[1]
+
+            $scriptBody = "using module '$path'"
+            $script = [ScriptBlock]::Create($scriptBody)
+            . $script
+
+            $t = [Type]$ResourceTypeName
+            $method = $t.GetMethod('Export')
+            $resultArray = $method.Invoke($null,$null)
+            foreach ($instance in $resultArray)
+            {
+                $instance | ConvertTo-Json -Compress | Write-Output
+            }
+        }
+        else
+        {
+            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-DscResource returns this resource type"
+            Write-Error $errmsg
+            exit 1
+        }
+    }
 }
 elseif ($Operation -eq 'Validate')
 {

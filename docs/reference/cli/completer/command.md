@@ -1,11 +1,11 @@
 ---
 description: Command line reference for the 'dsc completer' command
-ms.date:     10/05/2023
+ms.date:     01/17/2024
 ms.topic:    reference
-title:       dsc schema
+title:       dsc completer
 ---
 
-# dsc schema
+# dsc completer
 
 ## Synopsis
 

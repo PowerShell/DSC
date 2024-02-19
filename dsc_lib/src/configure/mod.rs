@@ -43,11 +43,19 @@ pub enum ErrorAction {
 /// * `resource` - The resource to export.
 /// * `conf` - The configuration to add the results to.
 ///
+/// # Panics
+///
+/// Doesn't panic because there is a match/Some check before unwrap(); false positive.
+///
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration) -> Result<(), DscError> {
-    let export_result = resource.export()?;
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, provider_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<(), DscError> {
+   
+    let export_result = match provider_resource {
+        Some(_) => provider_resource.unwrap().export(input)?,
+        _ => resource.export(input)?
+    };
 
     for (i, instance) in export_result.actual_state.iter().enumerate() {
         let mut r = config_doc::Resource::new();
@@ -269,7 +277,9 @@ impl Configurator {
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
-            add_resource_export_results_to_configuration(dsc_resource, &mut conf)?;
+
+            let input = serde_json::to_string(&resource.properties)?;
+            add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
         result.result = Some(conf);

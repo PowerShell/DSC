@@ -4,7 +4,7 @@
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, serde_json_value_to_string, write_output};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_SUCCESS, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot};
 use tracing::error;
 
 use atty::Stream;
@@ -116,34 +116,19 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format: &Option<OutputFormat>, stdin: &Option<String>) {
-    let Some(stdin) = stdin else {
-        error!("Configuration must be piped to STDIN");
-        exit(EXIT_INVALID_ARGS);
-    };
-
-    let json: serde_json::Value = match serde_json::from_str(stdin.as_ref()) {
-        Ok(json) => json,
-        Err(_) => {
-            match serde_yaml::from_str::<Value>(stdin.as_ref()) {
-                Ok(yaml) => {
-                    match serde_json::to_value(yaml) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            error!("Error: Failed to convert YAML to JSON: {err}");
-                            exit(EXIT_DSC_ERROR);
-                        }
-                    }
-                },
-                Err(err) => {
-                    error!("Error: Input is not valid JSON or YAML: {err}");
-                    exit(EXIT_INVALID_INPUT);
-                }
-            }
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>) {
+    let json_string = match subcommand {
+        ConfigSubCommand::Get { document, path, .. } |
+        ConfigSubCommand::Set { document, path, .. } |
+        ConfigSubCommand::Test { document, path, .. } |
+        ConfigSubCommand::Validate { document, path, .. } |
+        ConfigSubCommand::Export { document, path, .. } => {
+            let config_path = path.clone().unwrap_or_default();
+            set_dscconfigroot(&config_path);
+            get_input(document, stdin, path)
         }
     };
 
-    let json_string = serde_json_value_to_string(&json);
     let mut configurator = match Configurator::new(&json_string) {
         Ok(configurator) => configurator,
         Err(err) => {
@@ -179,24 +164,24 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, format
     };
 
     if let Err(err) = configurator.set_parameters(&parameters) {
-        error!("Error: Paramter input failure: {err}");
+        error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
 
     match subcommand {
-        ConfigSubCommand::Get => {
+        ConfigSubCommand::Get { format, .. } => {
             config_get(&mut configurator, format);
         },
-        ConfigSubCommand::Set => {
+        ConfigSubCommand::Set { format, .. } => {
             config_set(&mut configurator, format);
         },
-        ConfigSubCommand::Test => {
+        ConfigSubCommand::Test { format, .. } => {
             config_test(&mut configurator, format);
         },
-        ConfigSubCommand::Validate => {
+        ConfigSubCommand::Validate { .. } => {
             validate_config(&json_string);
         },
-        ConfigSubCommand::Export => {
+        ConfigSubCommand::Export { format, .. } => {
             config_export(&mut configurator, format);
         }
     }
@@ -324,7 +309,7 @@ pub fn validate_config(config: &str) {
     exit(EXIT_SUCCESS);
 }
 
-pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, stdin: &Option<String>) {
+pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
@@ -334,7 +319,7 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, description, tags } => {
+        ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
             let mut table = Table::new(&["Type", "Version", "Requires", "Description"]);
@@ -407,32 +392,33 @@ pub fn resource(subcommand: &ResourceSubCommand, format: &Option<OutputFormat>, 
                 }
             }
 
-            if write_table {
-                table.print();
-            }
+            if write_table { table.print(); }
         },
-        ResourceSubCommand::Get { resource, input, all } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            if *all { resource_command::get_all(&dsc, resource, input, stdin, format); }
-            else {
-                resource_command::get(&dsc, resource, input, stdin, format);
-            };
-        },
-        ResourceSubCommand::Set { resource, input } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::set(&dsc, resource, input, stdin, format);
-        },
-        ResourceSubCommand::Test { resource, input } => {
-            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
-            resource_command::test(&dsc, resource, input, stdin, format);
-        },
-        ResourceSubCommand::Schema { resource } => {
+        ResourceSubCommand::Schema { resource , format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::schema(&dsc, resource, format);
         },
-        ResourceSubCommand::Export { resource} => {
+        ResourceSubCommand::Export { resource, format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
             resource_command::export(&mut dsc, resource, format);
+        },
+        ResourceSubCommand::Get { resource, input, path, all, format } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            if *all { resource_command::get_all(&dsc, resource, format); }
+            else {
+                let parsed_input = get_input(input, stdin, path);
+                resource_command::get(&dsc, resource, parsed_input, format);
+            }
+        },
+        ResourceSubCommand::Set { resource, input, path, format } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            let parsed_input = get_input(input, stdin, path);
+            resource_command::set(&dsc, resource, parsed_input, format);
+        },
+        ResourceSubCommand::Test { resource, input, path, format } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            let parsed_input = get_input(input, stdin, path);
+            resource_command::test(&dsc, resource, parsed_input, format);
         },
     }
 }
