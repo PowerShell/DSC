@@ -45,7 +45,7 @@ pub enum ErrorAction {
 ///
 /// # Panics
 ///
-/// Doesn't panic because there is a match/Some check before unwrap(); false positive.
+/// Doesn't panic because there is a match/Some check before `unwrap()`; false positive.
 ///
 /// # Errors
 ///
