@@ -34,7 +34,7 @@
             "title": "The executable to run on set",
             "type": "string"
           },
-          "exitCode": {
+          "exit_code": {
             "title": "The expected exit code to indicate success, if non-zero",
             "type": "integer"
           }

@@ -1,7 +1,23 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum TraceFormat {
+    Default,
+    Plaintext,
+    Json,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum TraceLevel {
+    Error,
+    Warning,
+    Info,
+    Debug,
+    Trace
+}
 
 #[derive(Parser)]
 #[clap(name = "runcommandonset", version = "0.0.1", about = "Run a command on set", long_about = None)]
@@ -9,6 +25,10 @@ pub struct Arguments {
 
     #[clap(subcommand)]
     pub subcommand: SubCommand,
+    #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "info")]
+    pub trace_level: TraceLevel,
+    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
+    pub trace_format: TraceFormat,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]

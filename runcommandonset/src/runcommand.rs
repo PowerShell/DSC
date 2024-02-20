@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
 pub struct RunCommand {
+    pub executable: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arguments: Option<Vec<String>>,
-    pub executable: String,
     // default value for exit code is 0
     #[serde(default, skip_serializing_if = "is_default")]
     pub exit_code: i32,
