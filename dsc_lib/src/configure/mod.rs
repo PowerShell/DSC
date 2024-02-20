@@ -45,13 +45,13 @@ pub enum ErrorAction {
 ///
 /// # Panics
 ///
-/// Doesn't panic because there is a match/Some check before unwrap(); false positive.
+/// Doesn't panic because there is a match/Some check before `unwrap()`; false positive.
 ///
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
 pub fn add_resource_export_results_to_configuration(resource: &DscResource, provider_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<(), DscError> {
-   
+
     let export_result = match provider_resource {
         Some(_) => provider_resource.unwrap().export(input)?,
         _ => resource.export(input)?
