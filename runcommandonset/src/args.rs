@@ -27,7 +27,7 @@ pub struct Arguments {
     pub subcommand: SubCommand,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "info")]
     pub trace_level: TraceLevel,
-    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
+    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "json")]
     pub trace_format: TraceFormat,
 }
 

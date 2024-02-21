@@ -117,11 +117,11 @@ $projects = @(
     "process",
     "tools/dsctest",
     "tools/test_group_resource",
-    "y2j"
-    "powershellgroup"
-    "wmigroup"
-    "resources/brew"
-    "tools/dsctest"
+    "y2j",
+    "powershellgroup",
+    "wmigroup",
+    "resources/brew",
+    "runcommandonset"
 )
 $pedantic_unclean_projects = @("ntreg")
 $clippy_unclean_projects = @("tree-sitter-dscexpression")

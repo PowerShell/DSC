@@ -4,7 +4,7 @@
 use atty::Stream;
 use clap::{Parser};
 use std::{io::{self, Read}, process::exit};
-use tracing::{error, info, warn, debug};
+use tracing::{error, warn, debug};
 
 use args::{Arguments, SubCommand};
 use runcommand::{RunCommand};
@@ -51,11 +51,12 @@ fn main() {
         SubCommand::Set { arguments, executable, exit_code } => {
             command = parse_input(arguments, executable, exit_code, stdin);
             let (exit_code, stdout, stderr) = invoke_command(command.executable.as_ref(), command.arguments.clone());
+            // TODO: convert this to tracing json once other PR is merged to handle tracing from resources
             eprintln!("Stdout: {}", stdout);
             eprintln!("Stderr: {}", stderr);
             command.exit_code = exit_code;
         }
     }
-    
+
     println!("{}", command.to_json());
 }
