@@ -6,7 +6,7 @@ Describe 'tests for runcommandonset set' {
         $oldPath = $env:DSC_RESOURCE_PATH
         $env:DSC_RESOURCE_PATH = Join-Path $PSScriptRoot ".."
         $yaml = @"
-executable: pwsh.exe
+executable: pwsh
 arguments:
 - -Command
 - echo hello world
@@ -26,7 +26,7 @@ arguments:
     It 'Input can be sent to the resource via stdin json' {
         $json = @"
         {
-            "executable": "pwsh.exe",
+            "executable": "pwsh",
             "arguments": ["-Command", "echo hello world"],
         }
 "@
