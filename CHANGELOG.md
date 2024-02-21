@@ -24,6 +24,26 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased comparison link -->
 [unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...main
 
+### Changed
+
+- Updated the options for the `dsc` root command:
+
+  - The short name for the [--format][36] option, which controls the output format, is now `-o`
+    instead of `-f`.
+  - The `--logging-level` option is renamed to [--trace-level][37] with the short name `-l`. The
+    default trace level is now `warning` instead of `info`.
+  - Added the [--trace-format][38] option with the `-f` short name. This option enables you to
+    choose the format for the trace messages emitted to stderr. By default, the messages are
+    emitted as lines of text with console colors. You can set this option to `plaintext` to emit
+    the messages without console colors or to `json` to emit the messages as JSON objects.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#286][#286]
+  - PRs: [#299][#299]
+
+  </details>
+
 ### Added
 
 - Implemented support for referencing parameters in a configuration with the [parameters()][32]
@@ -495,6 +515,9 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [33]: docs/reference/cli/config/command.md#-p---parameters
 [34]: docs/reference/cli/config/command.md#-f---parameters_file
 [35]: docs/reference/cli/config/command.md
+[36]: docs/reference/cli/dsc.md#-o---format
+[37]: docs/reference/cli/dsc.md#-l---trace-level
+[38]: docs/reference/cli/dsc.md#-f---trace-format
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
@@ -534,8 +557,10 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#241]: https://github.com/PowerShell/DSC/issues/241
 [#248]: https://github.com/PowerShell/DSC/issues/248
 [#252]: https://github.com/PowerShell/DSC/issues/252
+[#286]: https://github.com/PowerShell/DSC/issues/286
 [#291]: https://github.com/PowerShell/DSC/issues/291
 [#294]: https://github.com/PowerShell/DSC/issues/294
+[#299]: https://github.com/PowerShell/DSC/issues/299
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57
