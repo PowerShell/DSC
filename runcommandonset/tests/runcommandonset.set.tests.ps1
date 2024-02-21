@@ -51,7 +51,7 @@ arguments:
     }
 
     It 'STDERR captured when calling resource directly with invalid args' {
-        $json = runcommandonset set -e pwsh.exe -a "echo hello world" 2> $TestDrive/output.txt
+        $json = runcommandonset set -e pwsh -a "echo hello world" 2> $TestDrive/output.txt
         $stdout = $json | ConvertFrom-Json
         $stdout.exit_code | Should -Be 64
         $expected = "Stderr: The argument 'echo hello world' is not recognized as the name of a script file. Check the spelling of the name, or if a path was included, verify that the path is correct and try again."
