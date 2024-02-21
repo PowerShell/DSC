@@ -26,7 +26,7 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 5;
 /// # Errors
 ///
 /// Error message then exit if the RunCommand struct cannot be initialized from the provided inputs.
-pub fn parse_input(arguments: Option<Vec<String>>, executable: String, exit_code: i32, stdin: Option<String>) -> runcommand::RunCommand {
+pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, exit_code: i32, stdin: Option<String>) -> runcommand::RunCommand {
     let command: runcommand::RunCommand;
     if let Some(input) = stdin {
         debug!("Input: {}", input);
@@ -43,11 +43,17 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: String, exit_code
             }
         }
     } else {
-        command = runcommand::RunCommand {
-            arguments,
-            executable,
-            exit_code,
-        };
+        if let Some(executable) = executable {
+            command = runcommand::RunCommand {
+                arguments,
+                executable,
+                exit_code,
+            };
+        }
+        else {
+            error!("Error: Executable is required when input is not provided via stdin");
+            exit(EXIT_INVALID_INPUT);
+        }
     }
     command
 }

@@ -59,4 +59,14 @@ arguments:
         $stderr | Should -Contain $expected
         $LASTEXITCODE | Should -Be 0
     }
+
+    It 'Executable is a required input via CLI arguments' {
+        $null = runcommandonset set -a foo
+        $LASTEXITCODE | Should -Be 4
+    }
+
+    It 'Executable is a required input via STDIN' {
+        '{ "arguments": "foo" }' | dsc resource set -r Microsoft/RunCommandOnSet
+        $LASTEXITCODE | Should -Be 2
+    }
 }

@@ -40,4 +40,14 @@ exit_code: 5
         $result.actualState.executable | Should -BeExactly 'foo'
         $result.actualState.exit_code | Should -BeExactly 5
     }
+
+    It 'Executable is a required input via CLI arguments' {
+        $null = runcommandonset get -a foo
+        $LASTEXITCODE | Should -Be 4
+    }
+
+    It 'Executable is a required input via STDIN' {
+        '{ "arguments": "foo" }' | dsc resource get -r Microsoft/RunCommandOnSet
+        $LASTEXITCODE | Should -Be 2
+    }
 }

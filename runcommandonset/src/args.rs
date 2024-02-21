@@ -37,8 +37,8 @@ pub enum SubCommand {
     Get {
         #[clap(short = 'a', long, help = "The arguments to pass to the executable.")]
         arguments: Option<Vec<String>>,
-        #[clap(short = 'e', long, help = "The executable to run.", default_value = "")]
-        executable: String,
+        #[clap(short = 'e', long, help = "The executable to run.")]
+        executable: Option<String>,
         #[clap(short = 'c', long, help = "The expected exit code to indicate success, if non-zero.", default_value = "0")]
         exit_code: i32,
     },
@@ -46,8 +46,8 @@ pub enum SubCommand {
     Set {
         #[clap(short = 'a', long, help = "The arguments to pass to the executable.")]
         arguments: Option<Vec<String>>,
-        #[clap(short = 'e', long, help = "The executable to run.", default_value = "")]
-        executable: String,
+        #[clap(short = 'e', long, help = "The executable to run.")]
+        executable: Option<String>,
         #[clap(short = 'c', long, help = "The expected exit code to indicate success, if non-zero.", default_value = "0")]
         exit_code: i32,
     }
