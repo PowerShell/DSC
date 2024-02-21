@@ -14,18 +14,18 @@ pub const EXIT_CODE_MISMATCH: i32 = 3;
 pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_PROCESS_TERMINATED: i32 = 5;
 
-/// Initialize RunCommand struct from input provided via stdin or via CLI arguments.
+/// Initialize `RunCommand` struct from input provided via stdin or via CLI arguments.
 ///
 /// # Arguments
 ///
 /// * `arguments` - Optional arguments to pass to the command
 /// * `executable` - The command to execute
-/// * `exit_code` - The expected exit_code upon success, if non-zero
+/// * `exit_code` - The expected exit code upon success, if non-zero
 /// * `stdin` - Optional JSON or YAML input provided via stdin
 ///
 /// # Errors
 ///
-/// Error message then exit if the RunCommand struct cannot be initialized from the provided inputs.
+/// Error message then exit if the `RunCommand` struct cannot be initialized from the provided inputs.
 pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, exit_code: i32, stdin: Option<String>) -> runcommand::RunCommand {
     let command: runcommand::RunCommand;
     if let Some(input) = stdin {
@@ -42,18 +42,16 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, e
                 }
             }
         }
-    } else {
-        if let Some(executable) = executable {
-            command = runcommand::RunCommand {
-                arguments,
-                executable,
-                exit_code,
-            };
-        }
-        else {
-            error!("Error: Executable is required when input is not provided via stdin");
-            exit(EXIT_INVALID_INPUT);
-        }
+    } else if let Some(executable) = executable {
+        command = runcommand::RunCommand {
+            executable,
+            arguments,
+            exit_code,
+        };
+    }
+    else {
+        error!("Error: Executable is required when input is not provided via stdin");
+        exit(EXIT_INVALID_INPUT);
     }
     command
 }
@@ -144,12 +142,9 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> (i32, Stri
         }
     };
 
-    let mut child_stdout = match child.stdout.take() {
-        Some(stdout) => stdout,
-        None => {
-            error!("Failed to open stdout for {}", executable);
-            exit(EXIT_DSC_ERROR);
-        }
+    let Some(mut child_stdout) = child.stdout.take() else {
+        error!("Failed to open stdout for {}", executable);
+        exit(EXIT_DSC_ERROR);
     };
     let mut stdout_buf = Vec::new();
     match child_stdout.read_to_end(&mut stdout_buf) {

@@ -52,8 +52,8 @@ fn main() {
             command = parse_input(arguments, executable, exit_code, stdin);
             let (exit_code, stdout, stderr) = invoke_command(command.executable.as_ref(), command.arguments.clone());
             // TODO: convert this to tracing json once other PR is merged to handle tracing from resources
-            eprintln!("Stdout: {}", stdout);
-            eprintln!("Stderr: {}", stderr);
+            eprintln!("Stdout: {stdout}");
+            eprintln!("Stderr: {stderr}");
             command.exit_code = exit_code;
         }
     }

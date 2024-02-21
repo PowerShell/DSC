@@ -14,6 +14,7 @@ pub struct RunCommand {
 }
 
 impl RunCommand {
+    #[must_use]
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {
             Ok(json) => json,
