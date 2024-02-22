@@ -32,14 +32,9 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, e
         debug!("Input: {}", input);
         command = match serde_json::from_str(&input) {
             Ok(json) => json,
-            Err(_) => {
-                match serde_yaml::from_str::<runcommand::RunCommand>(&input) {
-                    Ok(yaml) => yaml,
-                    Err(err) => {
-                        error!("Error: Input is not valid JSON or YAML: {err}");
-                        exit(EXIT_INVALID_INPUT);
-                    }
-                }
+            Err(err) => {
+                error!("Error: Input is not valid: {err}");
+                exit(EXIT_INVALID_INPUT);
             }
         }
     } else if let Some(executable) = executable {

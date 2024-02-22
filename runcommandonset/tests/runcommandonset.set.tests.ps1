@@ -31,13 +31,13 @@ arguments:
         }
 "@
 
-        $json | dsc resource set -r Microsoft/RunCommandOnSet > $TestDrive/output.txt
+        $json | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet > $TestDrive/output.txt
         # TODO: test output once DSC PR to capture it is merged
         $LASTEXITCODE | Should -Be 0
     }
 
     It 'Input can be sent to the resource via stdin yaml' {
-        $yaml | dsc resource set -r Microsoft/RunCommandOnSet > $TestDrive/output.txt
+        $yaml | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet > $TestDrive/output.txt
         # TODO: test output once DSC PR to capture it is merged
         $LASTEXITCODE | Should -Be 0
     }
@@ -66,7 +66,7 @@ arguments:
     }
 
     It 'Executable is a required input via STDIN' {
-        '{ "arguments": "foo" }' | dsc resource set -r Microsoft/RunCommandOnSet
+        '{ "arguments": "foo" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
         $LASTEXITCODE | Should -Be 2
     }
 }

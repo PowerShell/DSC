@@ -20,7 +20,7 @@ Describe 'tests for runcommandonset get' {
         }
 "@
 
-        $result = $json | dsc resource get -r Microsoft/RunCommandOnSet | ConvertFrom-Json
+        $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
         $result.actualState.arguments | Should -BeExactly @('bar', 'baz')
         $result.actualState.executable | Should -BeExactly 'foo'
         $result.actualState.exit_code | Should -BeExactly 5
@@ -35,7 +35,7 @@ arguments:
 exit_code: 5
 "@
 
-        $result = $yaml | dsc resource get -r Microsoft/RunCommandOnSet | ConvertFrom-Json
+        $result = $yaml | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
         $result.actualState.arguments | Should -BeExactly @('bar', 'baz')
         $result.actualState.executable | Should -BeExactly 'foo'
         $result.actualState.exit_code | Should -BeExactly 5
@@ -47,7 +47,7 @@ exit_code: 5
     }
 
     It 'Executable is a required input via STDIN' {
-        '{ "arguments": "foo" }' | dsc resource get -r Microsoft/RunCommandOnSet
+        '{ "arguments": "foo" }' | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet
         $LASTEXITCODE | Should -Be 2
     }
 }
