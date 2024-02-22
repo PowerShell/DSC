@@ -38,7 +38,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, debug, error};
+use tracing::{Level, debug, error, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 pub const EXIT_SUCCESS: i32 = 0;
@@ -300,6 +300,43 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
     }
+}
+
+/// Validate the JSON against the schema.
+///
+/// # Arguments
+///
+/// * `source` - The source of the JSON
+/// * `schema` - The schema to validate against
+/// * `json` - The JSON to validate
+///
+/// # Returns
+///
+/// Nothing on success.
+///
+/// # Errors
+///
+/// * `DscError` - The JSON is invalid
+pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
+    debug!("Validating {source} against schema");
+    trace!("JSON: {json}");
+    trace!("Schema: {schema}");
+    let compiled_schema = match JSONSchema::compile(schema) {
+        Ok(compiled_schema) => compiled_schema,
+        Err(err) => {
+            return Err(DscError::Validation(format!("JSON Schema Compilation Error: {err}")));
+        }
+    };
+
+    if let Err(err) = compiled_schema.validate(json) {
+        let mut error = format!("'{source}' failed validation: ");
+        for e in err {
+            error.push_str(&format!("\n{e} "));
+        }
+        return Err(DscError::Validation(error));
+    };
+
+    Ok(())
 }
 
 pub fn parse_input_to_json(value: &str) -> String {
