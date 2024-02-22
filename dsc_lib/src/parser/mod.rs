@@ -3,6 +3,7 @@
 
 use expressions::Expression;
 use serde_json::Value;
+use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::configure::context::Context;
@@ -43,6 +44,7 @@ impl Statement {
     ///
     /// This function will return an error if the statement fails to parse or execute.
     pub fn parse_and_execute(&mut self, statement: &str, context: &Context) -> Result<Value, DscError> {
+        debug!("Parsing statement: {0}", statement);
         let Some(tree) = &mut self.parser.parse(statement, None) else {
             return Err(DscError::Parser(format!("Error parsing statement: {statement}")));
         };

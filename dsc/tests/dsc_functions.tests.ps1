@@ -19,9 +19,9 @@ Describe 'tests for function expressions' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '$escapedText'
+                output: '$escapedText'
 "@
         $out = $config_yaml | dsc config get | ConvertFrom-Json
-        $out.results[0].result.actualState.text | Should -Be $expected
+        $out.results[0].result.actualState.output | Should -Be $expected
     }
 }

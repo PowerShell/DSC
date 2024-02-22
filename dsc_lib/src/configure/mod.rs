@@ -452,10 +452,11 @@ impl Configurator {
                             return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
                         };
                         let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
-                        let Some(string_result) = statement_result.as_str() else {
-                            return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
+                        if let Some(string_result) = statement_result.as_str() {
+                            result.insert(name.clone(), Value::String(string_result.to_string()));
+                        } else {
+                            result.insert(name.clone(), statement_result);
                         };
-                        result.insert(name.clone(), Value::String(string_result.to_string()));
                     },
                     _ => {
                         result.insert(name.clone(), value.clone());

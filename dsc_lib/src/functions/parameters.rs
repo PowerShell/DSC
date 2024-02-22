@@ -5,7 +5,7 @@ use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
 use serde_json::Value;
-use tracing::trace;
+use tracing::{debug, trace};
 
 #[derive(Debug, Default)]
 pub struct Parameters {}
@@ -24,6 +24,7 @@ impl Function for Parameters {
     }
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
+        debug!("Invoke parameters function");
         if let Some(key) = args[0].as_str() {
             trace!("parameters key: {key}");
             if context.parameters.contains_key(key) {

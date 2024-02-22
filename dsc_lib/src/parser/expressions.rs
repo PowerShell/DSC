@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use serde_json::Value;
-use tracing::debug;
+use tracing::{debug, trace};
 use tree_sitter::Node;
 
 use crate::configure::context::Context;
@@ -64,6 +64,7 @@ impl Expression {
     /// This function will return an error if the expression fails to execute.
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
         let result = self.function.invoke(function_dispatcher, context)?;
+        trace!("Function result: '{:?}'", result);
         if let Some(member_access) = &self.member_access {
             debug!("Evaluating member access '{:?}'", member_access);
             if !result.is_object() {
