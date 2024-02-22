@@ -33,7 +33,10 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
         if let Some(depends_on) = resource.depends_on.clone() {
             for dependency in depends_on {
                 let statement = parser.parse_and_execute(&dependency, context)?;
-                let (resource_type, resource_name) = get_type_and_name(&statement)?;
+                let Some(string_result) = statement.as_str() else {
+                    return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect: {dependency}")));
+                };
+                let (resource_type, resource_name) = get_type_and_name(string_result)?;
 
                 // find the resource by name
                 let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(resource_name)) else {
@@ -64,7 +67,10 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
                 let resource_index = order.iter().position(|r| r.name == resource.name && r.resource_type == resource.resource_type).ok_or(DscError::Validation("Resource not found in order".to_string()))?;
                 for dependency in depends_on {
                   let statement = parser.parse_and_execute(dependency, context)?;
-                  let (resource_type, resource_name) = get_type_and_name(&statement)?;
+                  let Some(string_result) = statement.as_str() else {
+                      return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect: {dependency}")));
+                  };
+                  let (resource_type, resource_name) = get_type_and_name(string_result)?;
                   let dependency_index = order.iter().position(|r| r.name == resource_name && r.resource_type == resource_type).ok_or(DscError::Validation("Dependency not found in order".to_string()))?;
                   if resource_index < dependency_index {
                       return Err(DscError::Validation(format!("Circular dependency detected for resource named '{0}'", resource.name)));

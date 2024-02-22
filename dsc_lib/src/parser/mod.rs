@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use expressions::Expression;
+use serde_json::Value;
 use tree_sitter::Parser;
 
 use crate::configure::context::Context;
@@ -41,7 +42,7 @@ impl Statement {
     /// # Errors
     ///
     /// This function will return an error if the statement fails to parse or execute.
-    pub fn parse_and_execute(&mut self, statement: &str, context: &Context) -> Result<String, DscError> {
+    pub fn parse_and_execute(&mut self, statement: &str, context: &Context) -> Result<Value, DscError> {
         let Some(tree) = &mut self.parser.parse(statement, None) else {
             return Err(DscError::Parser(format!("Error parsing statement: {statement}")));
         };
@@ -66,14 +67,14 @@ impl Statement {
                 let Ok(value) = child_node.utf8_text(statement_bytes) else {
                     return Err(DscError::Parser("Error parsing string literal".to_string()));
                 };
-                Ok(value.to_string())
+                Ok(Value::String(value.to_string()))
             },
             "escapedStringLiteral" => {
                 // need to remove the first character: [[ => [
                 let Ok(value) = child_node.utf8_text(statement_bytes) else {
                     return Err(DscError::Parser("Error parsing escaped string literal".to_string()));
                 };
-                Ok(value[1..].to_string())
+                Ok(Value::String(value[1..].to_string()))
             },
             "expression" => {
                 let expression = Expression::new(statement_bytes, &child_node)?;

@@ -17,7 +17,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = 'hello' }} | ConvertTo-Json
 
@@ -31,7 +31,7 @@ Describe 'Parameters tests' {
         }
 
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.text | Should -BeExactly 'hello'
+        $out.results[0].result.actualState.output | Should -BeExactly 'hello'
     }
 
     It 'Input is <type>' -TestCases @(
@@ -51,13 +51,13 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $out = $config_yaml | dsc config -p $params_json get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.text | Should -BeExactly $expected
+        $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
 
     It 'Input is incorrect type <type>' -TestCases @(
@@ -77,7 +77,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -104,7 +104,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -130,7 +130,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -154,7 +154,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -180,7 +180,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -208,7 +208,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[concat(parameters(''param1''),'','',parameters(''param2''),'','',parameters(''param3''),'','',parameters(''param4''))]'
+                output: '[concat(parameters(''param1''),'','',parameters(''param2''),'','',parameters(''param3''),'','',parameters(''param4''))]'
 "@
 
         $out = $config_yaml | dsc config get | ConvertFrom-Json

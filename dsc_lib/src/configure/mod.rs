@@ -14,7 +14,7 @@ use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, Config
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
-use tracing::debug;
+use tracing::{debug, trace};
 
 pub mod context;
 pub mod config_doc;
@@ -73,6 +73,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, prov
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
 // they are re-used to apply configuration
 fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<String, Value>>, DscError> {
+    debug!("Escape returned property values");
     let mut result: Map<String, Value> = Map::new();
     for (name, value) in properties {
         match value {
@@ -400,6 +401,7 @@ impl Configurator {
     }
 
     fn invoke_property_expressions(&mut self, properties: &Option<Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
+        debug!("Invoke property expressions");
         if properties.is_none() {
             return Ok(None);
         }
@@ -407,6 +409,7 @@ impl Configurator {
         let mut result: Map<String, Value> = Map::new();
         if let Some(properties) = properties {
             for (name, value) in properties {
+                trace!("Invoke property expression for {name}: {value}");
                 match value {
                     Value::Object(object) => {
                         let value = self.invoke_property_expressions(&Some(object.clone()))?;
@@ -431,7 +434,10 @@ impl Configurator {
                                         return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
                                     };
                                     let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
-                                    result_array.push(Value::String(statement_result));
+                                    let Some(string_result) = statement_result.as_str() else {
+                                        return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                    };
+                                    result_array.push(Value::String(string_result.to_string()));
                                 }
                                 _ => {
                                     result_array.push(element.clone());
@@ -446,7 +452,10 @@ impl Configurator {
                             return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
                         };
                         let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
-                        result.insert(name.clone(), Value::String(statement_result));
+                        let Some(string_result) = statement_result.as_str() else {
+                            return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
+                        };
+                        result.insert(name.clone(), Value::String(string_result.to_string()));
                     },
                     _ => {
                         result.insert(name.clone(), value.clone());
