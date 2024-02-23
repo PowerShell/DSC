@@ -12,6 +12,7 @@ use self::config_doc::{Configuration, DataType};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
+use indicatif::{ProgressBar, ProgressStyle};
 use serde_json::{Map, Value};
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, trace};
@@ -131,6 +132,14 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
+fn get_progress_bar(len: u64) -> Result<ProgressBar, DscError> {
+    let pb = ProgressBar::new(len);
+    pb.set_style(ProgressStyle::with_template(
+        "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}"
+    )?);
+   Ok(pb)
+}
+
 impl Configurator {
     /// Create a new `Configurator` instance.
     ///
@@ -164,8 +173,11 @@ impl Configurator {
     pub fn invoke_get(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationGetResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
-        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
-            trace!("Get resource '{}' named: {}", resource.resource_type, resource.name);
+        let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
+        let pb = get_progress_bar(resources.len() as u64)?;
+        for resource in resources {
+            pb.inc(1);
+            pb.set_message(format!("Get {}", resource.name));
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -181,6 +193,7 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
+        pb.finish_and_clear();
         Ok(result)
     }
 
@@ -197,7 +210,11 @@ impl Configurator {
     pub fn invoke_set(&mut self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
-        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
+        let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
+        let pb = get_progress_bar(resources.len() as u64)?;
+        for resource in resources {
+            pb.inc(1);
+            pb.set_message(format!("Set {}", resource.name));
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -213,6 +230,7 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
+        pb.finish_and_clear();
         Ok(result)
     }
 
@@ -229,7 +247,11 @@ impl Configurator {
     pub fn invoke_test(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationTestResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationTestResult::new();
-        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
+        let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
+        let pb = get_progress_bar(resources.len() as u64)?;
+        for resource in resources {
+            pb.inc(1);
+            pb.set_message(format!("Test {}", resource.name));
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -245,6 +267,7 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
+        pb.finish_and_clear();
         Ok(result)
     }
 
@@ -265,17 +288,13 @@ impl Configurator {
     pub fn invoke_export(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
         let config = self.validate_config()?;
 
-        let duplicates = Self::find_duplicate_resource_types(&config);
-        if !duplicates.is_empty()
-        {
-            let duplicates_string = &duplicates.join(",");
-            return Err(DscError::Validation(format!("Resource(s) {duplicates_string} specified multiple times")));
-        }
-
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        for resource in get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)? {
+        let pb = get_progress_bar(config.resources.len() as u64)?;
+        for resource in &config.resources {
+            pb.inc(1);
+            pb.set_message(format!("Export {}", resource.name));
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
@@ -285,7 +304,7 @@ impl Configurator {
         }
 
         result.result = Some(conf);
-
+        pb.finish_and_clear();
         Ok(result)
     }
 
@@ -367,27 +386,6 @@ impl Configurator {
             }
         }
         Ok(())
-    }
-
-    fn find_duplicate_resource_types(config: &Configuration) -> Vec<String>
-    {
-        let mut map: HashMap<&String, i32> = HashMap::new();
-        let mut result: HashSet<String> = HashSet::new();
-        let resource_list = &config.resources;
-        if resource_list.is_empty() {
-            return Vec::new();
-        }
-
-        for r in resource_list
-        {
-            let v = map.entry(&r.resource_type).or_insert(0);
-            *v += 1;
-            if *v > 1 {
-                result.insert(r.resource_type.clone());
-            }
-        }
-
-        result.into_iter().collect()
     }
 
     fn validate_config(&mut self) -> Result<Configuration, DscError> {
