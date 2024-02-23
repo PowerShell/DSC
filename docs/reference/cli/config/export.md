@@ -13,18 +13,36 @@ Generates a configuration document that defines the existing instances of a set 
 
 ## Syntax
 
+### Configuration document from stdin
+
 ```sh
-dsc config export [Options]
+<document-string> | dsc config export [Options]
+```
+
+### Configuration document from option string
+
+```sh
+dsc config export [Options] --document <document-string>
+```
+
+### Configuration document from file
+
+```sh
+dsc config export [Options] --path <document-filepath>
 ```
 
 ## Description
 
 The `export` subcommand generates a configuration document that includes every instance of a set of
-resources. This command expects a configuration document formatted as JSON or YAML over stdin. The
-input configuration defines the resources to export. DSC ignores any properties specified for the
-resources in the input configuration for the operation, but the input document and any properties
-for resource instances must still validate against the configuration document and resource instance
-schemas.
+resources.
+
+The configuration document must be passed to this command as JSON or YAML over stdin, as a string
+with the **document** option, or from a file with the **path** option.
+
+The input configuration defines the resources to export. DSC ignores any properties specified for
+the resources in the input configuration for the operation, but the input document and any
+properties for resource instances must still validate against the configuration document and
+resource instance schemas.
 
 Only specify resources with a resource manifest that defines the [export][01] section in the input
 configuration. Only define each resource type once. If the configuration document includes any
@@ -32,6 +50,36 @@ resource instance where the resource type isn't exportable or has already been d
 configuration, DSC raises an error.
 
 ## Options
+
+### -d, --document
+
+Specifies the configuration document to export from as a JSON or YAML object. DSC validates the
+document against the configuration document schema. If the validation fails, DSC raises an error.
+
+This option can't be used with configuration document over stdin or the `--path` option. Choose
+whether to pass the configuration document to the command over stdin, from a file with the `--path`
+option, or with the `--document` option.
+
+```yaml
+Type:      String
+Mandatory: false
+```
+
+### -p, --path
+
+Defines the path to a configuration document to export instead of piping the document from stdin or
+passing it as a string with the `--document` option. The specified file must contain a
+configuration document as a JSON or YAML object. DSC validates the document against the
+configuration document schema. If the validation fails, or if the specified file doesn't exist, DSC
+raises an error.
+
+This option is mutually exclusive with the `--document` option. When you use this option, DSC
+ignores any input from stdin.
+
+```yaml
+Type:      String
+Mandatory: false
+```
 
 ### -f, --format
 

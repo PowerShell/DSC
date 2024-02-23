@@ -79,20 +79,6 @@ Type:      Boolean
 Mandatory: false
 ```
 
-### -i, --input
-
-Defines input for the command as a string instead of piping input from stdin. This option is
-mutually exclusive with the `--input-file` option. When you use this option, DSC ignores any input
-from stdin.
-
-To pass input for a command or subcommand, specify this option before the command, like
-`dsc --input $desired resource test`.
-
-```yaml
-Type:      String
-Mandatory: false
-```
-
 ### -l, --trace-level
 
 Defines the minimum message level DSC should emit during an operation. Messages in DSC are
@@ -139,22 +125,6 @@ Type:         String
 Mandatory:    false
 DefaultValue: default
 ValidValues:  [default, plaintext, json]
-```
-
-### -p, --input-file
-
-Defines the path to a text file to read as input for the command instead of piping input from
-stdin. This option is mutually exclusive with the `--input` option. When you use this option, DSC
-ignores any input from stdin.
-
-To pass a file to read as input for a command or subcommand, specify this option before the
-command, like `dsc --input-file web.dsc.config.yaml config set`.
-
-If the specified file doesn't exist, DSC raises an error.
-
-```yaml
-Type:      String
-Mandatory: false
 ```
 
 ### -V, --version
