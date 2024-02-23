@@ -9,7 +9,7 @@ title:       Command-based DSC Resource manifest schema reference
 
 ## Synopsis
 
-The JSON file that defines a command-based DSC Resource.
+The data file that defines a command-based DSC Resource.
 
 ## Metadata
 
@@ -24,7 +24,9 @@ Type:          object
 Every command-based DSC Resource must have a manifest. The manifest file must:
 
 1. Be discoverable in the `PATH` environment variable.
-1. Follow the naming convention `<name>.dsc.resource.json`.
+1. Be formatted as either JSON or YAML.
+1. Follow the naming convention `<name>.dsc.resource.<extension>`. Valid extensions include `json`,
+   `yml`, and `yaml`.
 1. Be valid for the schema described in this document.
 
 The rest of this document describes the manifest's schema.
