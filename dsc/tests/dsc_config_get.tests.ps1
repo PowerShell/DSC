@@ -38,7 +38,7 @@ Describe 'dsc config get tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: hello
+                output: hello
 "@
         $null = $config_yaml | dsc config get --format pretty-json | Out-String
         $LASTEXITCODE | Should -Be 0
