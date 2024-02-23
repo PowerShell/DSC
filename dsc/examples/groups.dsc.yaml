@@ -9,7 +9,7 @@ resources:
     - name: Last
       type: Test/Echo
       properties:
-        text: Last
+        output: Last
   dependsOn:
   - "[resourceId('DSC/Group','First Group')]"
 - name: First Group
@@ -20,7 +20,7 @@ resources:
     - name: First
       type: Test/Echo
       properties:
-        text: First
+        output: First
     - name: Nested Group
       type: DSC/Group
       properties:
@@ -29,10 +29,10 @@ resources:
         - name: Nested Second
           type: Test/Echo
           properties:
-            text: Nested Second
+            output: Nested Second
           dependsOn:
           - "[resourceId('Test/Echo','Nested First')]"
         - name: Nested First
           type: Test/Echo
           properties:
-            text: Nested First
+            output: Nested First

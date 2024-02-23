@@ -14,7 +14,7 @@ results:
     type: Test/Echo
     result:
       actualState:
-        text: First
+        output: First
   - name: Nested Group
     type: DSC/Group
     result:
@@ -22,12 +22,12 @@ results:
       type: Test/Echo
       result:
         actualState:
-          text: Nested First
+          output: Nested First
     - name: Nested Second
       type: Test/Echo
       result:
         actualState:
-          text: Nested Second
+          output: Nested Second
 - name: Last Group
   type: DSC/Group
   result:
@@ -35,7 +35,7 @@ results:
     type: Test/Echo
     result:
       actualState:
-        text: Last
+        output: Last
 messages: []
 hadErrors: false
 '@
