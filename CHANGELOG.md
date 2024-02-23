@@ -24,6 +24,8 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased comparison link -->
 [unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...main
 
+<!-- Add entries between releases under the appropriate section heading here  -->
+
 ### Changed
 
 - Updated the options for the `dsc` root command:
@@ -62,7 +64,16 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-<!-- Add entries between releases under the appropriate section heading here  -->
+- Added support for authoring DSC Resource manifests in YAML. DSC now recognizes resource manifests
+  that use the `.dsc.resource.yml` or `.dsc.resource.yaml` file extension instead of only
+  `.dsc.resource.json`.
+
+  <details><summary>Related work Items</summary>
+
+  - Issues: [#129][#129]
+  - PRs: [#311][#311]
+
+  </details>
 
 ## [v3.0.0-alpha.4][release-v3.0.0-alpha.4] - 2023-11-14
 
@@ -523,6 +534,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#107]: https://github.com/PowerShell/DSC/issues/107
 [#121]: https://github.com/PowerShell/DSC/issues/121
 [#127]: https://github.com/PowerShell/DSC/issues/127
+[#129]: https://github.com/PowerShell/DSC/issues/129
 [#130]: https://github.com/PowerShell/DSC/issues/130
 [#133]: https://github.com/PowerShell/DSC/issues/133
 [#150]: https://github.com/PowerShell/DSC/issues/150
@@ -561,6 +573,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#291]: https://github.com/PowerShell/DSC/issues/291
 [#294]: https://github.com/PowerShell/DSC/issues/294
 [#299]: https://github.com/PowerShell/DSC/issues/299
+[#311]: https://github.com/PowerShell/DSC/issues/311
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57
