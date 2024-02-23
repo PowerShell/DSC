@@ -30,8 +30,9 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 - Updated the options for the `dsc` root command:
 
-  - The short name for the [--format][36] option, which controls the output format, is now `-o`
-    instead of `-f`.
+  - Removed the global [--format][36] option, which controls the output format. Now, the relevant
+    subcommands that return formattable output have the `--format` option (short option as `-f`)
+    added to them.
   - The `--logging-level` option is renamed to [--trace-level][37] with the short name `-l`. The
     default trace level is now `warning` instead of `info`.
   - Added the [--trace-format][38] option with the `-f` short name. This option enables you to
@@ -41,8 +42,12 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   <details><summary>Related work items</summary>
 
-  - Issues: [#286][#286]
-  - PRs: [#299][#299]
+  - Issues:
+    - [#286][#286]
+    - [#227][#227]
+  - PRs:
+    - [#299][#299]
+    - [#303][#303]
 
   </details>
 
@@ -565,6 +570,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#215]: https://github.com/PowerShell/DSC/issues/215
 [#216]: https://github.com/PowerShell/DSC/issues/216
 [#217]: https://github.com/PowerShell/DSC/issues/217
+[#227]: https://github.com/PowerShell/DSC/issues/227
 [#240]: https://github.com/PowerShell/DSC/issues/240
 [#241]: https://github.com/PowerShell/DSC/issues/241
 [#248]: https://github.com/PowerShell/DSC/issues/248
@@ -573,6 +579,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#291]: https://github.com/PowerShell/DSC/issues/291
 [#294]: https://github.com/PowerShell/DSC/issues/294
 [#299]: https://github.com/PowerShell/DSC/issues/299
+[#303]: https://github.com/PowerShell/DSC/issues/303
 [#311]: https://github.com/PowerShell/DSC/issues/311
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49

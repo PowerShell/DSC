@@ -96,6 +96,18 @@ Type:      String
 Mandatory: false
 ```
 
+### -f, --format
+
+The `--format` option controls the console output format for the command. If the command output is
+redirected or captured as a variable, the output is always JSON.
+
+```yaml
+Type:         String
+Mandatory:    false
+DefaultValue: yaml
+ValidValues:  [json, pretty-json, yaml]
+```
+
 ### -h, --help
 
 Displays the help for the current command or subcommand. When you specify this option, the

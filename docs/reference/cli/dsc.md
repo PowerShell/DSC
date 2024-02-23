@@ -69,21 +69,6 @@ example, `dsc config --help` or `dsc config set --help`.
 
 ## Options
 
-### -o, --format
-
-The `--format` option controls the console output format for the command. If the command output is
-redirected or captured as a variable, the output is always JSON.
-
-To set the output format for a command or subcommand, specify this option before the command, like
-`dsc --format pretty-json resource list`.
-
-```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: yaml
-ValidValues:  [json, pretty-json, yaml]
-```
-
 ### -h, --help
 
 Displays the help for the current command or subcommand. When you specify this option, the
