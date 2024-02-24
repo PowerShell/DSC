@@ -29,7 +29,7 @@ A configuration document can be defined as either YAML or JSON. For ease of auth
 recommends drafting configuration documents in YAML.
 
 For DSC's authoring tools to recognize a file as a DSC Configuration document, the filename must
-end with `.dsc.config.json` or `.dsc.config.yaml`.
+end with `.dsc.config.json`, `.dsc.config.yml`, or `.dsc.config.yaml`.
 
 You can use configuration document functions to dynamically determine values in the document at
 runtime. For more information, see [DSC Configuration document functions reference][01]
