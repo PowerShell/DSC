@@ -14,7 +14,7 @@ use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, Config
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::{ProgressBar, ProgressStyle};
 use serde_json::{Map, Value};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use tracing::{debug, trace};
 
 pub mod context;
