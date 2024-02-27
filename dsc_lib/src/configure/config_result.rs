@@ -32,6 +32,16 @@ pub struct ResourceGetResult {
     pub result: GetResult,
 }
 
+impl From<ResourceTestResult> for ResourceGetResult {
+    fn from(test_result: ResourceTestResult) -> Self {
+        Self {
+            name: test_result.name,
+            resource_type: test_result.resource_type,
+            result: test_result.result.into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
@@ -58,6 +68,20 @@ impl Default for ConfigurationGetResult {
     }
 }
 
+impl From<ConfigurationTestResult> for ConfigurationGetResult {
+    fn from(test_result: ConfigurationTestResult) -> Self {
+        let mut results = Vec::<ResourceGetResult>::new();
+        for result in test_result.results {
+            results.push(result.into());
+        }
+        Self {
+            results,
+            messages: test_result.messages,
+            had_errors: test_result.had_errors,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceSetResult {
@@ -65,6 +89,27 @@ pub struct ResourceSetResult {
     #[serde(rename="type")]
     pub resource_type: String,
     pub result: SetResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GroupResourceSetResult {
+    pub results: Vec<ResourceSetResult>,
+}
+
+impl GroupResourceSetResult {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            results: Vec::new(),
+        }
+    }
+}
+
+impl Default for GroupResourceSetResult {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -100,6 +145,27 @@ pub struct ResourceTestResult {
     #[serde(rename="type")]
     pub resource_type: String,
     pub result: TestResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct GroupResourceTestResult {
+    pub results: Vec<ResourceTestResult>,
+}
+
+impl GroupResourceTestResult {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            results: Vec::new(),
+        }
+    }
+}
+
+impl Default for GroupResourceTestResult {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

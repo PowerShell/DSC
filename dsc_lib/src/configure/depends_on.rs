@@ -8,6 +8,8 @@ use crate::parser::Statement;
 
 use super::context::Context;
 
+use tracing::{debug, trace};
+
 /// Gets the invocation order of resources based on their dependencies
 ///
 /// # Arguments
@@ -22,6 +24,7 @@ use super::context::Context;
 ///
 /// * `DscError::Validation` - The configuration is invalid
 pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statement, context: &Context) -> Result<Vec<Resource>, DscError> {
+    debug!("Getting resource invocation order");
     let mut order: Vec<Resource> = Vec::new();
     for resource in &config.resources {
         // validate that the resource isn't specified more than once in the config
@@ -84,6 +87,7 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
         order.push(resource.clone());
     }
 
+    trace!("Resource invocation order: {0:?}", order);
     Ok(order)
 }
 
