@@ -32,23 +32,20 @@ impl CommandDiscovery {
 
         let multi_progress_bar = MultiProgress::new();
         let pb = multi_progress_bar.add(
-            match return_all_resources {
-                true => {
-                    let pb = ProgressBar::new_spinner();
-                    pb.enable_steady_tick(Duration::from_millis(120));
-                    pb.set_style(ProgressStyle::with_template(
-                        "{spinner:.green} [{elapsed_precise}] {msg}"
-                    )?);
-                    pb
-                },
-                false => {
-                    let pb = ProgressBar::new(required_resource_types.len() as u64);
-                    pb.enable_steady_tick(Duration::from_millis(120));
-                    pb.set_style(ProgressStyle::with_template(
-                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}"
-                    )?);
-                    pb
-                }
+        if return_all_resources {
+                let pb = ProgressBar::new_spinner();
+                pb.enable_steady_tick(Duration::from_millis(120));
+                pb.set_style(ProgressStyle::with_template(
+                    "{spinner:.green} [{elapsed_precise}] {msg}"
+                )?);
+                pb
+            } else {
+                let pb = ProgressBar::new(required_resource_types.len() as u64);
+                pb.enable_steady_tick(Duration::from_millis(120));
+                pb.set_style(ProgressStyle::with_template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}"
+                )?);
+                pb
             }
         );
         pb.set_message("Searching for resources");
@@ -136,7 +133,7 @@ impl CommandDiscovery {
             pb_adapter.set_style(ProgressStyle::default_spinner().tick_strings(&[
                 "◷", "◶", "◵", "◴"
             ]));
-            pb_adapter.set_message(format!("Enumerating resources for adapter {}", provider));
+            pb_adapter.set_message(format!("Enumerating resources for adapter {provider}"));
             let provider_resource = resources.get(&provider).unwrap();
             let provider_type_name = provider_resource.type_name.clone();
             let manifest = import_manifest(provider_resource.manifest.clone().unwrap())?;
