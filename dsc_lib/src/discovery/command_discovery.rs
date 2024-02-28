@@ -33,17 +33,17 @@ impl CommandDiscovery {
         let multi_progress_bar = MultiProgress::new();
         let pb = multi_progress_bar.add(
         if return_all_resources {
-                let pb = ProgressBar::new_spinner();
+                let pb = ProgressBar::new(1);
                 pb.enable_steady_tick(Duration::from_millis(120));
                 pb.set_style(ProgressStyle::with_template(
-                    "{spinner:.green} [{elapsed_precise}] {msg}"
+                    "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.yellow}"
                 )?);
                 pb
             } else {
                 let pb = ProgressBar::new(required_resource_types.len() as u64);
                 pb.enable_steady_tick(Duration::from_millis(120));
                 pb.set_style(ProgressStyle::with_template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}"
+                    "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
                 )?);
                 pb
             }
@@ -128,11 +128,11 @@ impl CommandDiscovery {
         // now go through the provider resources and add them to the list of resources
         for provider in provider_resources {
             debug!("Enumerating resources for provider {}", provider);
-            let pb_adapter = multi_progress_bar.add(ProgressBar::new_spinner());
+            let pb_adapter = multi_progress_bar.add(ProgressBar::new(1));
             pb_adapter.enable_steady_tick(Duration::from_millis(120));
-            pb_adapter.set_style(ProgressStyle::default_spinner().tick_strings(&[
-                "◷", "◶", "◵", "◴"
-            ]));
+            pb_adapter.set_style(ProgressStyle::with_template(
+                "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
+            )?);
             pb_adapter.set_message(format!("Enumerating resources for adapter {provider}"));
             let provider_resource = resources.get(&provider).unwrap();
             let provider_type_name = provider_resource.type_name.clone();
@@ -204,13 +204,12 @@ impl CommandDiscovery {
                     }
                 };
             }
-            pb_adapter.finish_and_clear();
+            pb_adapter.finish_with_message(format!("Done with {provider}"));
 
             debug!("Provider {} listed {} matching resources", provider_type_name, provider_resources_count);
         }
 
-        pb.finish_and_clear();
-        multi_progress_bar.clear()?;
+        pb.finish_with_message("Discovery complete");
         Ok(resources)
     }
 }

@@ -137,7 +137,7 @@ fn get_progress_bar(len: u64) -> Result<ProgressBar, DscError> {
     let pb = ProgressBar::new(len);
     pb.enable_steady_tick(Duration::from_millis(120));
     pb.set_style(ProgressStyle::with_template(
-        "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}"
+        "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
     )?);
    Ok(pb)
 }
@@ -179,7 +179,7 @@ impl Configurator {
         let pb = get_progress_bar(resources.len() as u64)?;
         for resource in resources {
             pb.inc(1);
-            pb.set_message(format!("Get {}", resource.name));
+            pb.set_message(format!("Get '{}'", resource.name));
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -195,7 +195,7 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_and_clear();
+        pb.finish_with_message("Get configuration completed");
         Ok(result)
     }
 
@@ -216,7 +216,7 @@ impl Configurator {
         let pb = get_progress_bar(resources.len() as u64)?;
         for resource in resources {
             pb.inc(1);
-            pb.set_message(format!("Set {}", resource.name));
+            pb.set_message(format!("Set '{}'", resource.name));
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -232,7 +232,7 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_and_clear();
+        pb.finish_with_message("Set configuration completed");
         Ok(result)
     }
 
@@ -253,7 +253,7 @@ impl Configurator {
         let pb = get_progress_bar(resources.len() as u64)?;
         for resource in resources {
             pb.inc(1);
-            pb.set_message(format!("Test {}", resource.name));
+            pb.set_message(format!("Test '{}'", resource.name));
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -269,7 +269,7 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_and_clear();
+        pb.finish_with_message("Test configuration completed");
         Ok(result)
     }
 
@@ -296,7 +296,7 @@ impl Configurator {
         let pb = get_progress_bar(config.resources.len() as u64)?;
         for resource in &config.resources {
             pb.inc(1);
-            pb.set_message(format!("Export {}", resource.name));
+            pb.set_message(format!("Export '{}'", resource.name));
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
@@ -306,7 +306,7 @@ impl Configurator {
         }
 
         result.result = Some(conf);
-        pb.finish_and_clear();
+        pb.finish_with_message("Export configuration completed");
         Ok(result)
     }
 
