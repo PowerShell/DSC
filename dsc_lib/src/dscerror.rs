@@ -3,6 +3,7 @@
 
 use std::str::Utf8Error;
 
+use indicatif::style::TemplateError;
 use reqwest::StatusCode;
 use thiserror::Error;
 use tracing::error;
@@ -75,6 +76,9 @@ pub enum DscError {
 
     #[error("Parser: {0}")]
     Parser(String),
+
+    #[error("Progress: {0}")]
+    Progress(#[from] TemplateError),
 
     #[error("Resource not found: {0}")]
     ResourceNotFound(String),

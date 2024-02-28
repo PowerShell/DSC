@@ -56,7 +56,7 @@ Describe 'resource export tests' {
         $set_results.results.count | Should -BeGreaterThan 1
     }
 
-    It 'Duplicate resource types in Configuration Export should result in error' {
+    It 'Duplicate resource types in Configuration Export should not result in error' {
 
         $yaml = @'
             $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
@@ -71,8 +71,7 @@ Describe 'resource export tests' {
                 pid: 0
 '@
         $out = $yaml | dsc config export 2>&1
-        $LASTEXITCODE | Should -Be 2
-        $out | out-string | Should -BeLike '*specified multiple times*'
+        $LASTEXITCODE | Should -Be 0
     }
 
     It 'Export can be called on individual resource with the use of --format as a subcommand' {
