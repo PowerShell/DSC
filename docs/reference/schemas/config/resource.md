@@ -122,12 +122,12 @@ resource named `Tailspin Key`:
 
 > [!NOTE]
 > When defining dependencies for [nested resource instances][03], instances can only reference
-> dependencies in the same resource provider or group instance. They can't use the `resourceId()`
+> dependencies in the same resource adapter or group instance. They can't use the `resourceId()`
 > function to lookup instances at the top-level of the configuration document or inside another
-> provider or group instance.
+> adapter or group instance.
 >
 > If a top-level instance depends on a nested instance, use the `resourceId()` function to lookup
-> the instance of the provider or group containing the dependency instance instead.
+> the instance of the adapter or group containing the dependency instance instead.
 
 For more information about using functions in configuration documents, see
 [DSC Configuration document functions reference][04]. For more information about the `resourceId()`

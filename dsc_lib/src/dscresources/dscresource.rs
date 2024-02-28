@@ -31,7 +31,7 @@ pub struct DscResource {
     pub author: Option<String>,
     /// The properties of the resource.
     pub properties: Vec<String>,
-    /// The required resource provider for the resource.
+    /// The required resource adapter for the resource.
     pub requires: Option<String>,
     /// The manifest of the resource.
     pub manifest: Option<Value>,

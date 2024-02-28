@@ -8,7 +8,7 @@ class TestPSRepository : OMI_BaseResource
     [Write] String PublishLocation;
     [Write] String ScriptPublishLocation;
     [Write, ValueMap{"Trusted","Untrusted"}, Values{"Trusted","Untrusted"}] String InstallationPolicy;
-    [Write] String PackageManagementProvider;
+    [Write] String PackageManagementAdapter;
     [Read] Boolean Trusted;
     [Read] Boolean Registered;
 };

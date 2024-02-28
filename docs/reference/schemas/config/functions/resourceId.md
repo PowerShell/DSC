@@ -24,9 +24,9 @@ This function enables instances to reference another instance for the [dependsOn
 
 > [!NOTE]
 > When using the `resourceId` function for [nested resource instances][02], instances can only
-> reference other instances in the same resource provider or group instance. They can't use the
+> reference other instances in the same resource adapter or group instance. They can't use the
 > `resourceId()` function to lookup instances at the top-level of the configuration document or
-> inside another provider or group instance.
+> inside another adapter or group instance.
 
 ## Examples
 

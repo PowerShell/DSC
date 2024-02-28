@@ -62,7 +62,7 @@ Describe 'PowerShellGroup resource tests' {
 
     It 'Test works on script-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestPSRepository1','PackageManagementProvider':'NuGet'}" | dsc resource test -r PSTestModule/TestPSRepository
+        $r = "{'Name':'TestPSRepository1','PackageManagementAdapter':'NuGet'}" | dsc resource test -r PSTestModule/TestPSRepository
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.InDesiredState | Should -Be $True

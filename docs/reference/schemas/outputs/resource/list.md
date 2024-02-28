@@ -78,7 +78,7 @@ Required: true
 ### path
 
 Represents the path to the resource's manifest on the machine. For resources made available through
-a provider, this property identifies the path to the file that defines the resource instead.
+an adapter, this property identifies the path to the file that defines the resource instead.
 
 ```yaml
 Type:     string
@@ -88,7 +88,7 @@ Required: true
 ### directory
 
 Represents the path to the folder containing the resource's manifest on the machine. For resources
-made available through a provider, this property identifies the path to the folder containing the
+made available through an adapter, this property identifies the path to the folder containing the
 file that defines the resource instead.
 
 ```yaml
@@ -113,7 +113,7 @@ this property is `null`, the author is unknown.
 
 <!--
     Resources currently return this a null except for the test resources. Is
-    this only for provider resources, or something else?
+    this only for adapter resources, or something else?
 -->
 
 ```yaml
@@ -123,13 +123,13 @@ Required: true
 
 ### properties
 
-Defines the property names for resources made available through a provider resource. For other
+Defines the property names for resources made available through an adapter resource. For other
 resources, this property is an empty array.
 
 <!--
     Resources currently return this a null except for the test resources.
     Should this value be populated for all resources made available through a
-    provider?
+    adapter?
 -->
 
 ```yaml
@@ -141,7 +141,7 @@ ItemsPattern: ^\w+$
 
 ### requires
 
-Defines the fully qualified type name of the provider resource that this resource is made available
+Defines the fully qualified type name of the adapter resource that this resource is made available
 through.
 
 ```yaml

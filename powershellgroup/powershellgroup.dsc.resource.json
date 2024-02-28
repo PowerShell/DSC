@@ -2,11 +2,11 @@
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
     "type": "DSC/PowerShellGroup",
     "version": "0.1.0",
-    "description": "Resource provider to classic DSC Powershell resources.",
+    "description": "Resource adapter to classic DSC Powershell resources.",
     "tags": [
       "PowerShell"
     ],
-    "provider": {
+    "adapter": {
       "list": {
         "executable": "pwsh",
         "args": [
@@ -76,7 +76,7 @@
           "-Command",
           "$Input | ./powershellgroup.resource.ps1 Validate"
           ]
-      },  
+      },
     "exitCodes": {
       "0": "Success",
       "1": "Error"

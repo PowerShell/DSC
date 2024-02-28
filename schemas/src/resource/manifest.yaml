@@ -93,9 +93,9 @@ defaultSnippets:
               description: ${23:explanation of property purpose and usage}
               type:        ${24|string,integer,number,array,object,null|}
 
-  - label: ' Define a resource (provider)'
+  - label: ' Define a resource (adapter)'
     markdownDescription: |-
-      Defines a provider resource that enables users to define non-command-based DSC Resources in
+      Defines an adapter resource that enables users to define non-command-based DSC Resources in
       the configuration.
     body:
       $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
@@ -117,7 +117,7 @@ defaultSnippets:
         input:              ${15:stdin}
         implementsPretest: ^${16:false}
         return:             ${17:state}
-      provider:
+      adapter:
         config: ${18|full,sequence|}
         list:
           executable:   ${19:executable name}
@@ -191,23 +191,23 @@ properties:
 
       This property must be one of the canonical URLs for the version of the Command-based DSC
       Resource Manifest schema that the manifest is implemented for.
-      
+
       For every version of the schema, there are three valid urls:
 
       ```yaml
       .../resource/manifest.json
       ```
-      
+
       > The URL to the canonical non-bundled schema. When it's used for validation, the validating
       > client needs to retrieve this schema and every schema it references.
 
       ```yaml
       .../bundled/resource/manifest.json
       ```
-      
+
       > The URL to the bundled schema. When it's used for validation, the validating client only
       > needs to retrieve this schema.
-      > 
+      >
       > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
       > still validate the document when it uses this schema, other tools may error or behave
       > in unexpected ways.
@@ -215,11 +215,11 @@ properties:
       ```yaml
       .../bundled/resource/manifest.vscode.json
       ```
-      
+
       > The URL to the enhanced authoring schema. This schema is much larger than the other
       > schemas, as it includes additional definitions that provide contextual help and snippets
       > that the others don't include.
-      > 
+      >
       > This schema uses keywords that are only recognized by VS Code. While DSC can still
       > validate the document when it uses this schema, other tools may error or behave in
       > unexpected ways.
@@ -266,8 +266,8 @@ properties:
           >
           > Indicates that the resource manifest adheres to the `2023/08` schema. This version
           > is deprecated, and should only be used for compatibility with `alpha.3` and earlier.
-          > Migrate to using the `<VERSION>` of the schema 
-          
+          > Migrate to using the `<VERSION>` of the schema
+
           > This URL points to the canonical non-bundled schema. When it's used for validation, the
           > validating client needs to retrieve this schema and every schema it references.
 
@@ -373,8 +373,8 @@ properties:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.test.yaml
   validate:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.validate.yaml
-  provider:
-    $ref: /<PREFIX>/<VERSION>/resource/manifest.provider.yaml
+  adapter:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.adapter.yaml
   exitCodes:
     # This setting in the root of the schema implies exit codes must have the
     # same meaning across all executions. What about implementations that

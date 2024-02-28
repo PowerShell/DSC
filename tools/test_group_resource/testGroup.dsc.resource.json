@@ -16,7 +16,7 @@
             ]
         }
     },
-    "provider": {
+    "adapter": {
         "list": {
             "executable": "test_group_resource",
             "args": [

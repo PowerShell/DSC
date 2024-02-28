@@ -73,8 +73,8 @@
       }
     },
     "requires": {
-      "title": "Required DSC Resource Provider",
-      "description": "Defines the fully qualified type name of the DSC Resource Provider the DSC Resource depends on.",
+      "title": "Required DSC Resource Adapter",
+      "description": "Defines the fully qualified type name of the DSC Resource Adapter the DSC Resource depends on.",
       "oneOf": [
         {
           "$ref": "/PowerShell/DSC/main/schemas/2023/08/definitions/resourceType.json"

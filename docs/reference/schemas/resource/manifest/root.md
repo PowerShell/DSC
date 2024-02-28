@@ -215,14 +215,14 @@ Type:     object
 Required: false
 ```
 
-### provider
+### adapter
 
-When specified, the `provider` property defines the resource as a DSC Resource Provider.
+When specified, the `adapter` property defines the resource as a DSC Resource Adapter.
 
 The value of this property must be an object. The object's `list` and `config` properties are
-mandatory. The `list` property defines how to call the provider to return the resources that the
-provider can manage. The `config` property defines how the provider expects input. For more
-information, see the [DSC Resource manifest provider property schema reference][11].
+mandatory. The `list` property defines how to call the adapter to return the resources that the
+adapter can manage. The `config` property defines how the adapter expects input. For more
+information, see the [DSC Resource manifest adapter property schema reference][11].
 
 ### exitCodes
 
@@ -268,5 +268,5 @@ Required: true
 [08]: set.md
 [09]: test.md
 [10]: validate.md
-[11]: provider.md
+[11]: adapter.md
 [12]: schema/property.md
