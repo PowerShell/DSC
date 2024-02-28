@@ -6,12 +6,14 @@ use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{ResourceManifest, import_manifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::BTreeMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+use std::time::Duration;
 use tracing::{debug, error, warn};
 
 pub struct CommandDiscovery {
@@ -27,6 +29,29 @@ impl CommandDiscovery {
     fn search_for_resources(required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
+
+        let multi_progress_bar = MultiProgress::new();
+        let pb = multi_progress_bar.add(
+            match return_all_resources {
+                true => {
+                    let pb = ProgressBar::new_spinner();
+                    pb.enable_steady_tick(Duration::from_millis(120));
+                    pb.set_style(ProgressStyle::with_template(
+                        "{spinner:.green} [{elapsed_precise}] {msg}"
+                    )?);
+                    pb
+                },
+                false => {
+                    let pb = ProgressBar::new(required_resource_types.len() as u64);
+                    pb.enable_steady_tick(Duration::from_millis(120));
+                    pb.set_style(ProgressStyle::with_template(
+                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}"
+                    )?);
+                    pb
+                }
+            }
+        );
+        pb.set_message("Searching for resources");
 
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut provider_resources: Vec<String> = Vec::new();
@@ -88,6 +113,7 @@ impl CommandDiscovery {
                             {
                                 remaining_required_resource_types.retain(|x| *x != resource.type_name.to_lowercase());
                                 debug!("Found {} in {}", &resource.type_name, path.display());
+                                pb.inc(1);
                                 resources.insert(resource.type_name.to_lowercase(), resource);
                                 if remaining_required_resource_types.is_empty()
                                 {
@@ -105,6 +131,12 @@ impl CommandDiscovery {
         // now go through the provider resources and add them to the list of resources
         for provider in provider_resources {
             debug!("Enumerating resources for provider {}", provider);
+            let pb_adapter = multi_progress_bar.add(ProgressBar::new_spinner());
+            pb_adapter.enable_steady_tick(Duration::from_millis(120));
+            pb_adapter.set_style(ProgressStyle::default_spinner().tick_strings(&[
+                "◷", "◶", "◵", "◴"
+            ]));
+            pb_adapter.set_message(format!("Enumerating resources for adapter {}", provider));
             let provider_resource = resources.get(&provider).unwrap();
             let provider_type_name = provider_resource.type_name.clone();
             let manifest = import_manifest(provider_resource.manifest.clone().unwrap())?;
@@ -175,10 +207,13 @@ impl CommandDiscovery {
                     }
                 };
             }
+            pb_adapter.finish_and_clear();
 
             debug!("Provider {} listed {} matching resources", provider_type_name, provider_resources_count);
         }
 
+        pb.finish_and_clear();
+        multi_progress_bar.clear()?;
         Ok(resources)
     }
 }

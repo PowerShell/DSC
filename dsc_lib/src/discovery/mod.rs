@@ -36,7 +36,7 @@ impl Discovery {
 
         let mut regex: Option<Box<Regex>> = None;
         let mut resources: Vec<DscResource> = Vec::new();
-        if !type_name_filter.is_empty() 
+        if !type_name_filter.is_empty()
         {
             let regex_str = convert_wildcard_to_regex(type_name_filter);
             let mut regex_builder = RegexBuilder::new(regex_str.as_str());

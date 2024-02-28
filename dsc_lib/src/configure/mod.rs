@@ -15,6 +15,7 @@ use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::{ProgressBar, ProgressStyle};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use std::time::Duration;
 use tracing::{debug, trace};
 
 pub mod context;
@@ -134,6 +135,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
 
 fn get_progress_bar(len: u64) -> Result<ProgressBar, DscError> {
     let pb = ProgressBar::new(len);
+    pb.enable_steady_tick(Duration::from_millis(120));
     pb.set_style(ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}"
     )?);
