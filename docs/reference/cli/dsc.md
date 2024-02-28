@@ -69,21 +69,6 @@ example, `dsc config --help` or `dsc config set --help`.
 
 ## Options
 
-### -o, --format
-
-The `--format` option controls the console output format for the command. If the command output is
-redirected or captured as a variable, the output is always JSON.
-
-To set the output format for a command or subcommand, specify this option before the command, like
-`dsc --format pretty-json resource list`.
-
-```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: yaml
-ValidValues:  [json, pretty-json, yaml]
-```
-
 ### -h, --help
 
 Displays the help for the current command or subcommand. When you specify this option, the
@@ -91,20 +76,6 @@ application ignores all options and arguments after this one.
 
 ```yaml
 Type:      Boolean
-Mandatory: false
-```
-
-### -i, --input
-
-Defines input for the command as a string instead of piping input from stdin. This option is
-mutually exclusive with the `--input-file` option. When you use this option, DSC ignores any input
-from stdin.
-
-To pass input for a command or subcommand, specify this option before the command, like
-`dsc --input $desired resource test`.
-
-```yaml
-Type:      String
 Mandatory: false
 ```
 
@@ -154,22 +125,6 @@ Type:         String
 Mandatory:    false
 DefaultValue: default
 ValidValues:  [default, plaintext, json]
-```
-
-### -p, --input-file
-
-Defines the path to a text file to read as input for the command instead of piping input from
-stdin. This option is mutually exclusive with the `--input` option. When you use this option, DSC
-ignores any input from stdin.
-
-To pass a file to read as input for a command or subcommand, specify this option before the
-command, like `dsc --input-file web.dsc.config.yaml config set`.
-
-If the specified file doesn't exist, DSC raises an error.
-
-```yaml
-Type:      String
-Mandatory: false
 ```
 
 ### -V, --version

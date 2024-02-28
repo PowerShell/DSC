@@ -13,8 +13,22 @@ Invokes the test operation of a resource.
 
 ## Syntax
 
+### Instance properties from stdin
+
 ```sh
-dsc resource test [Options] --resource <RESOURCE>
+<instance-properties> | dsc resource set [Options] --resource <RESOURCE>
+```
+
+### Instance properties from input option
+
+```sh
+dsc resource set --input '<instance-properties>' --resource <RESOURCE>
+```
+
+### Instance properties from file
+
+```sh
+dsc resource set --path <instance-properties-filepath> --resource <RESOURCE>
 ```
 
 ## Description
@@ -24,8 +38,10 @@ The `test` subcommand validates the actual state of a resource instance against 
 This subcommand tests one instance of a specific DSC Resource. To test multiple resources, use a
 resource group or the [dsc config test][01] command.
 
-The desired state of the instance to test must be passed to this command as JSON. The JSON can be
-passed to this command from stdin or with the `--input` option.
+The desired state of the instance to test must be passed to this command as a JSON or YAML object.
+The object properties must be valid properties for the resource. The instance properties can be
+passed to this command from stdin, as a string with the `--input` option, or from a saved file with
+the `--path` option.
 
 If this command is invoked for a command-based DSC Resource that doesn't define its own test
 operation, DSC performs a synthetic test. The synthetic test compares each property for the desired
@@ -48,7 +64,7 @@ resource instance properties as JSON and passes them from stdin.
 ```sh
 '{
     "keyPath": "HKCU\\Example",
-    "_ensure": "present"
+    "_exist": true
 }' | dsc resource test --resource Microsoft.Windows/Registry
 ```
 
@@ -60,8 +76,25 @@ resource instance properties as JSON and passes them with the **input** option.
 ```sh
 dsc resource test --resource Microsoft.Windows/Registry --input '{
     "keyPath": "HKCU\\Example",
-    "_ensure": "present"
+    "_exist": true
 }'
+```
+
+### Example 3 - Testing a resource with properties from a YAML file
+
+The command tests whether the `Example` key exists in the current user hive. It specifies the
+path to a YAML file defining the resource instance properties with the **path** option.
+
+```sh
+```
+
+```yaml
+keyPath: HKCU\\Example
+_exist:  true
+```
+
+```sh
+dsc resource test --resource Microsoft.Windows/Registry --path ./example.yaml
 ```
 
 ## Options
@@ -84,16 +117,45 @@ Mandatory: true
 
 ### -i, --input
 
-Specifies a JSON object with the properties defining the desired state of a DSC Resource instance.
-DSC validates the JSON against the resource's instance schema. If the validation fails, DSC raises
-an error.
+Specifies a JSON or YAML object with the properties defining the desired state of a DSC Resource
+instance. DSC validates the object against the resource's instance schema. If the validation fails,
+DSC raises an error.
 
-This option can't be used with JSON over stdin. Choose whether to pass the instance JSON to the
-command over stdin or with the `--input` flag.
+This option can't be used with instance properties over stdin or the `--path` option. Choose
+whether to pass the instance properties to the command over stdin, from a file with the `--path`
+option, or with the `--input` option.
 
 ```yaml
 Type:      String
 Mandatory: false
+```
+
+### -p, --path
+
+Defines the path to a text file to read as input for the command instead of piping input from stdin
+or passing it as a string with the `--input` option. The specified file must contain JSON or YAML
+that represents valid properties for the resource. DSC validates the object against the resource's
+instance schema. If the validation fails, or if the specified file doesn't exist, DSC raises an
+error.
+
+This option is mutually exclusive with the `--input` option. When you use this option, DSC
+ignores any input from stdin.
+
+```yaml
+Type:      String
+Mandatory: false
+```
+
+### -f, --format
+
+The `--format` option controls the console output format for the command. If the command output is
+redirected or captured as a variable, the output is always JSON.
+
+```yaml
+Type:         String
+Mandatory:    false
+DefaultValue: yaml
+ValidValues:  [json, pretty-json, yaml]
 ```
 
 ### -h, --help
