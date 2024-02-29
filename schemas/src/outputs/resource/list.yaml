@@ -49,7 +49,7 @@ properties:
         type: string
         enum:
           - Command
-
+      
       # Need to understand how this works to document it more usefully
       - title: Custom implementation
         description: >-
@@ -82,9 +82,9 @@ properties:
       type: string
       pattern: ^\w+$
   requires:
-    title: Required DSC Resource Adapter
+    title: Required DSC Resource Provider
     description: >-
-      Defines the fully qualified type name of the DSC Resource Adapter the
+      Defines the fully qualified type name of the DSC Resource Provider the
       DSC Resource depends on.
     oneOf:
       - $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml

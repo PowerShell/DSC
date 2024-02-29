@@ -1,38 +1,38 @@
 ---
-description: JSON schema reference for the 'adapter' property in a DSC Resource manifest
+description: JSON schema reference for the 'provider' property in a DSC Resource manifest
 ms.date:     01/17/2024
 ms.topic:    reference
-title:       DSC Resource manifest adapter property schema reference
+title:       DSC Resource manifest provider property schema reference
 ---
 
-# DSC Resource manifest adapter property schema reference
+# DSC Resource manifest provider property schema reference
 
 ## Synopsis
 
-Defines a DSC Resource as a DSC Resource Adapter.
+Defines a DSC Resource as a DSC Resource Provider.
 
 ## Metadata
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.adapter.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.provider.json
 Type:          object
 ```
 
 ## Description
 
-DSC Resource Adapters must define the `adapter` property in their manifest. This property
-identifies the resource as an adapter and defines how DSC can call the adapter to get the
-resources the adapter supports and how to pass resource instances to the adapter.
+DSC Resource Providers must define the `provider` property in their manifest. This property
+identifies the resource as a provider and defines how DSC can call the provider to get the
+resources the provider supports and how to pass resource instances to the provider.
 
 ## Examples
 
 ### Example 1 - DSC/PowerShellGroup
 
-This example is from the `DSC/PowerShellGroup` DSC Resource Adapter.
+This example is from the `DSC/PowerShellGroup` DSC Resource Provider.
 
 ```json
-"adapter": {
+"provider": {
   "config": "full",
   "list": {
     "executable": "pwsh",
@@ -47,7 +47,7 @@ This example is from the `DSC/PowerShellGroup` DSC Resource Adapter.
 }
 ```
 
-The manifest sets `config` to `full`, indicating that the adapter expects a JSON blob representing
+The manifest sets `config` to `full`, indicating that the provider expects a JSON blob representing
 the full and unprocessed configuration from `stdin`.
 
 It defines `list.executable` as `pwsh`. The arguments defined in `list.args` ensure that DSC runs
@@ -59,7 +59,7 @@ PowerShell:
 - To invoke the `powershellgroup.resource.ps1` script in the same folder as the `dsc` command and
   pass the `List` argument.
 
-With this definition, DSC calls the `list` method for this adapter by running:
+With this definition, DSC calls the `list` method for this provider by running:
 
 ```sh
 pwsh -NoLogo -NonInteractive -NoProfile -Command "./powershellgroup.resource.ps1 List"
@@ -67,7 +67,7 @@ pwsh -NoLogo -NonInteractive -NoProfile -Command "./powershellgroup.resource.ps1
 
 ## Required Properties
 
-The `adapter` definition must include these properties:
+The `provider` definition must include these properties:
 
 - [config](#config)
 - [list](#list)
@@ -76,12 +76,12 @@ The `adapter` definition must include these properties:
 
 ### config
 
-The `config` property defines how the adapter expects to receive resource configurations. The
+The `config` property defines how the provider expects to receive resource configurations. The
 value must be one of the following options:
 
-- `full` - Indicates that the adapter expects a JSON blob containing the full and
+- `full` - Indicates that the provider expects a JSON blob containing the full and
   unprocessed configuration as a single JSON blob over `stdin`.
-- `sequence` - Indicates that the adapter expects each resource's configuration as
+- `sequence` - Indicates that the provider expects each resource's configuration as
   a [JSON Line][01] over `stdin`.
 
 ```yaml
@@ -91,7 +91,7 @@ ValidValues: [full, sequence]
 
 ### list
 
-The `list` property defines how to call the adapter to list the resources it supports. The value
+The `list` property defines how to call the provider to list the resources it supports. The value
 of this property must be an object and define the `executable` subproperty.
 
 ```yaml

@@ -63,8 +63,8 @@
     "validate": {
       "$ref": "/PowerShell/DSC/main/schemas/2023/10/resource/manifest.validate.json"
     },
-    "adapter": {
-      "$ref": "/PowerShell/DSC/main/schemas/2023/10/resource/manifest.adapter.json"
+    "provider": {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/resource/manifest.provider.json"
     },
     "exitCodes": {
       "title": "Exit Codes",
@@ -276,11 +276,11 @@
         }
       ]
     },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.adapter.json": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.provider.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.adapter.json",
-      "title": "Adapter",
-      "description": "Defines the DSC Resource as a DSC Resource Adapter. A DSC Resource Adapter enables users to manage resources that don't have their own manifests with DSC.",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.provider.json",
+      "title": "Provider",
+      "description": "Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to manage resources that don't have their own manifests with DSC.",
       "type": "object",
       "required": [
         "list",
@@ -289,7 +289,7 @@
       "properties": {
         "list": {
           "title": "List Command",
-          "description": "Defines how DSC must call the DSC Resource Adapter to list its supported DSC Resources.",
+          "description": "Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.",
           "type": "object",
           "required": [
             "executable"
@@ -305,7 +305,7 @@
         },
         "config": {
           "title": "Expected Configuration",
-          "description": "Defines whether the adapter expects to receive a full and unprocessed configuration as a single JSON blob over stdin or a sequence of JSON Lines for each child resource's configurations.",
+          "description": "Defines whether the provider expects to receive a full and unprocessed configuration as a single JSON blob over stdin or a sequence of JSON Lines for each child resource's configurations.",
           "type": "string",
           "enum": [
             "full",

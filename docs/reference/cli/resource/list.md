@@ -24,7 +24,7 @@ discovers resources by first searching the `PATH` or `DSC_RESOURCE_PATH` environ
 `.dsc.resource.json`, `.dsc.resource.yml`, and `dsc.resource.yaml` files. For more information
 about the environment variables DSC uses, see [Environment variables][01]
 
-If any of the discovered resources are resource adapters, DSC then calls the adapters to list
+If any of the discovered resources are resource providers, DSC then calls the providers to list
 their resources, too.
 
 DSC returns the list of discovered resources with their implementation information and metadata. If
@@ -47,9 +47,9 @@ type                       version tags                        description
 ----                       ------- ----                        -----------
 Test/TestGroup             0.1.0
 Microsoft/OSInfo           0.1.0   {os, linux, windows, macos} Returns information about the operating system.
-Microsoft.Windows/Registry 0.1.0   {Windows, NT}               Registry configuration adapter for the Windows Registry
+Microsoft.Windows/Registry 0.1.0   {Windows, NT}               Registry configuration provider for the Windows Registry
                                                                This is a test resource.
-DSC/PowerShellGroup        0.1.0   {PowerShell}                Resource adapter to classic DSC Powershell resources.
+DSC/PowerShellGroup        0.1.0   {PowerShell}                Resource provider to classic DSC Powershell resources.
 DSC/AssertionGroup         0.1.0                               `test` will be invoked for all resources in the supplied configuration.
 DSC/ParallelGroup          0.1.0                               All resources in the supplied configuration run concurrently.
                                                                This is a test resource.
@@ -85,7 +85,7 @@ Type                 Version  Requires  Description
 ---------------------------------------------------------------------------------------------------------------
 DSC/Group            0.1.0              All resources in the supplied configuration is treated as a group.
 DSC/ParallelGroup    0.1.0              All resources in the supplied configuration run concurrently.
-DSC/PowerShellGroup  0.1.0              Resource adapter to classic DSC Powershell resources.
+DSC/PowerShellGroup  0.1.0              Resource provider to classic DSC Powershell resources.
 DSC/AssertionGroup   0.1.0              `test` will be invoked for all resources in the supplied configuration.
 ```
 
@@ -118,7 +118,7 @@ dsc resource list --tags Windows --tags Linux
 ```output
 Type                        Version  Requires  Description
 -------------------------------------------------------------------------------------------------------
-Microsoft.Windows/Registry  0.1.0              Registry configuration adapter for the Windows Registry
+Microsoft.Windows/Registry  0.1.0              Registry configuration provider for the Windows Registry
 Microsoft/OSInfo            0.1.0              Returns information about the operating system.
 ```
 

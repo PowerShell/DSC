@@ -100,8 +100,8 @@
       }
     },
     {
-      "label": " Define a resource (adapter)",
-      "markdownDescription": "Defines a adapter resource that enables users to define non-command-based DSC Resources in\nthe configuration.",
+      "label": " Define a resource (provider)",
+      "markdownDescription": "Defines a provider resource that enables users to define non-command-based DSC Resources in\nthe configuration.",
       "body": {
         "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
         "type": "${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\\.]dsc[\\.]resource/$1/}}",
@@ -131,7 +131,7 @@
           "implementsPretest": "^${16:false}",
           "return": "${17:state}"
         },
-        "adapter": {
+        "provider": {
           "config": "${18|full,sequence|}",
           "list": {
             "executable": "${19:executable name}",
@@ -257,8 +257,8 @@
     "validate": {
       "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/resource/manifest.validate.json"
     },
-    "adapter": {
-      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/resource/manifest.adapter.json"
+    "provider": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/resource/manifest.provider.json"
     },
     "exitCodes": {
       "title": "Exit Codes",
@@ -675,12 +675,12 @@
                       }
                     ]
                   },
-                  "manifest.adapter.json": {
+                  "manifest.provider.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.adapter.json",
-                    "title": "Adapter",
-                    "description": "Defines the DSC Resource as a DSC Resource Adapter. A DSC Resource Adapter enables users to manage resources that don't have their own manifests with DSC.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the DSC Resource as a DSC Resource Adapter. A DSC Resource Adapter enables users to\nmanage resources that don't have their own manifests with DSC.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/adapter?view=dsc-3.0&preserve-view=true\n",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.provider.json",
+                    "title": "Provider",
+                    "description": "Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to manage resources that don't have their own manifests with DSC.",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to\nmanage resources that don't have their own manifests with DSC.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
                       "list",
@@ -689,8 +689,8 @@
                     "properties": {
                       "list": {
                         "title": "List Command",
-                        "description": "Defines how DSC must call the DSC Resource Adapter to list its supported DSC Resources.",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource Adapter to list its supported DSC Resources.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/adapter?view=dsc-3.0&preserve-view=true#list\n",
+                        "description": "Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource Provider to list its supported DSC Resources.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserve-view=true#list\n",
                         "type": "object",
                         "required": [
                           "executable"
@@ -698,26 +698,26 @@
                         "properties": {
                           "executable": {
                             "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandExecutable.json",
-                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/adapter?view=dsc-3.0&preserve-view=true#executable\n"
+                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserve-view=true#executable\n"
                           },
                           "args": {
                             "$ref": "#/$defs/PowerShell/DSC/main/schemas/2023/08/definitions/commandArgs.json",
-                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"resources\", \"list\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry resources list\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/adapter?view=dsc-3.0&preserve-view=true#args\n"
+                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"resources\", \"list\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry resources list\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserve-view=true#args\n"
                           }
                         }
                       },
                       "config": {
                         "title": "Expected Configuration",
-                        "description": "Defines whether the adapter expects to receive a full and unprocessed configuration as a single JSON blob over stdin or a sequence of JSON Lines for each child resource's configurations.",
+                        "description": "Defines whether the provider expects to receive a full and unprocessed configuration as a single JSON blob over stdin or a sequence of JSON Lines for each child resource's configurations.",
                         "type": "string",
                         "enum": [
                           "full",
                           "sequence"
                         ],
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines whether the adapter expects to receive a full and unprocessed configuration as a\nsingle JSON blob over stdin or a sequence of JSON Lines for each child resource's\nconfigurations.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/adapter?view=dsc-3.0&preserve-view=true#config\n",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines whether the provider expects to receive a full and unprocessed configuration as a\nsingle JSON blob over stdin or a sequence of JSON Lines for each child resource's\nconfigurations.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/provider?view=dsc-3.0&preserve-view=true#config\n",
                         "markdownEnumDescriptions": [
-                          "_Full and unprocessed config as a JSON blob_\n\n> Indicates that the adapter expects a JSON blob containing the full and unprocessed\n> configuration as a single JSON blob over `stdin`.\n",
-                          "_Resource instances as JSON Lines_\n\n> Indicates that the adapter expects each resource's configuration as a [JSON Line][01]\n> over `stdin`.\n\n[01]: https://jsonlines.org/\n"
+                          "_Full and unprocessed config as a JSON blob_\n\n> Indicates that the provider expects a JSON blob containing the full and unprocessed\n> configuration as a single JSON blob over `stdin`.\n",
+                          "_Resource instances as JSON Lines_\n\n> Indicates that the provider expects each resource's configuration as a [JSON Line][01]\n> over `stdin`.\n\n[01]: https://jsonlines.org/\n"
                         ]
                       }
                     },
@@ -739,7 +739,7 @@
                     "defaultSnippets": [
                       {
                         "label": " Define without arguments",
-                        "markdownDescription": "Define the adapter config kind and `list` command for the resource when no arguments are\nrequired.\n",
+                        "markdownDescription": "Define the provider config kind and `list` command for the resource when no arguments are\nrequired.\n",
                         "body": {
                           "config": "$1",
                           "list": {
@@ -749,7 +749,7 @@
                       },
                       {
                         "label": " Define with arguments",
-                        "markdownDescription": "Define the adapter config kind and `list` command for the resource when at least one\nargument is required.\n",
+                        "markdownDescription": "Define the provider config kind and `list` command for the resource when at least one\nargument is required.\n",
                         "body": {
                           "config": "$1",
                           "list": {
