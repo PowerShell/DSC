@@ -21,7 +21,7 @@ function Get-TargetResource {
         PublishLocation           = $null
         ScriptPublishLocation     = $null
         InstallationPolicy        = $null
-        PackageManagementAdapter = $null
+        PackageManagementProvider = $null
         Trusted                   = $false
         Registered                = $false
     }
@@ -33,7 +33,7 @@ function Get-TargetResource {
         $returnValue.PublishLocation = 'https://www.powershellgallery.com/api/v2/package/'
         $returnValue.ScriptPublishLocation = 'https://www.powershellgallery.com/api/v2/package/'
         $returnValue.InstallationPolicy = 'Untrusted'
-        $returnValue.PackageManagementAdapter = 'NuGet'
+        $returnValue.PackageManagementProvider = 'NuGet'
         $returnValue.Trusted = $False
         $returnValue.Registered = $True
     }
@@ -55,10 +55,10 @@ function Test-TargetResource {
 
         [Parameter()]
         [System.String]
-        $PackageManagementAdapter
+        $PackageManagementProvider
     )
 
-    if (($Name -eq "TestPSRepository1") -and ($PackageManagementAdapter -eq 'NuGet'))
+    if (($Name -eq "TestPSRepository1") -and ($PackageManagementProvider -eq 'NuGet'))
     {
         return $true
     }
@@ -78,6 +78,6 @@ function Set-TargetResource {
 
         [Parameter()]
         [System.String]
-        $PackageManagementAdapter
+        $PackageManagementProvider
     )
 }
