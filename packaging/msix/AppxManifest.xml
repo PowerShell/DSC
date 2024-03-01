@@ -14,7 +14,7 @@
   <Properties>
     <DisplayName>$DISPLAYNAME$</DisplayName>
     <PublisherDisplayName>Microsoft Corporation</PublisherDisplayName>
-    <Logo>..\assets\Sqaure64x64Logo.png</Logo>
+    <Logo>assets\Square64x64Logo.png</Logo>
     <desktop6:RegistryWriteVirtualization>disabled</desktop6:RegistryWriteVirtualization>
     <desktop6:FileSystemWriteVirtualization>disabled</desktop6:FileSystemWriteVirtualization>
   </Properties>
@@ -30,13 +30,13 @@
   <Applications>
     <Application Id="App" Executable="dsc.exe" EntryPoint="Windows.FullTrustApplication">
       <Extensions>
-        <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication" Executable="pwsh.exe">
+        <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication" Executable="dsc.exe">
           <uap3:AppExecutionAlias>
             <desktop:ExecutionAlias Alias="dsc.exe" />
           </uap3:AppExecutionAlias>
         </uap3:Extension>
       </Extensions>
-      <uap:VisualElements DisplayName="$DISPLAYNAME$" Description="DesiredStateConfiguration (DSC) enables a declarative model for configuration, also known as configuration as code." BackgroundColor="transparent" Square150x150Logo="..\assets\Square150x150Logo.png" Square44x44Logo="..\assets\Square44x44Logo.png">
+      <uap:VisualElements DisplayName="$DISPLAYNAME$" Description="DesiredStateConfiguration (DSC) enables a declarative model for configuration, also known as configuration as code." BackgroundColor="transparent" Square150x150Logo="assets\Square150x150Logo.png" Square44x44Logo="assets\Square44x44Logo.png">
       </uap:VisualElements>
     </Application>
   </Applications>
