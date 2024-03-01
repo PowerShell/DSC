@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use std::{io::Read, process::{Command, exit, Stdio}};
-use tracing::{Level, error, debug};
+use tracing::{Level, error, debug, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 use crate::args::{TraceFormat, TraceLevel};
@@ -120,7 +120,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
 /// Error message then exit if the command fails to execute or stdin/stdout/stderr cannot be opened.
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> (i32, String, String) {
     // originally implemented in dsc_lib/src/dscresources/command_resource.rs
-    debug!("Invoking command {} with args {:?}", executable, args);
+    trace!("Invoking command {} with args {:?}", executable, args);
     let mut command = Command::new(executable);
 
     command.stdout(Stdio::piped());

@@ -1,6 +1,6 @@
 {
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-    "description": "Takes a single-command line to execute on set",
+    "description": "Takes a single-command line to execute on DSC set operation",
     "type": "Microsoft.DSC.Transitional/RunCommandOnSet",
     "version": "0.1.0",
     "get": {
@@ -35,7 +35,7 @@
             "type": "string"
           },
           "exit_code": {
-            "title": "The expected exit code to indicate success, if non-zero",
+            "title": "The expected exit code to indicate success, if non-zero. Default is zero for success.",
             "type": "integer"
           }
         },

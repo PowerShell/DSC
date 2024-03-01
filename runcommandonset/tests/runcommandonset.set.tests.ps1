@@ -5,12 +5,6 @@ Describe 'tests for runcommandonset set' {
     BeforeAll {
         $oldPath = $env:DSC_RESOURCE_PATH
         $env:DSC_RESOURCE_PATH = Join-Path $PSScriptRoot ".."
-        $yaml = @"
-executable: pwsh
-arguments:
-- -Command
-- echo hello world
-"@
     }
 
     AfterEach {
@@ -23,27 +17,21 @@ arguments:
         $env:DSC_RESOURCE_PATH = $oldPath
     }
 
-    It 'Input can be sent to the resource via stdin json' {
+    It 'Input for executable and arguments can be sent to the resource' {
         $json = @"
         {
             "executable": "pwsh",
-            "arguments": ["-Command", "echo hello world"],
+            "arguments": ["-Command", "echo hello world"]
         }
 "@
 
-        $json | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet > $TestDrive/output.txt
-        # TODO: test output once DSC PR to capture it is merged
-        $LASTEXITCODE | Should -Be 0
-    }
-
-    It 'Input can be sent to the resource via stdin yaml' {
-        $yaml | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet > $TestDrive/output.txt
+        $json | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
         # TODO: test output once DSC PR to capture it is merged
         $LASTEXITCODE | Should -Be 0
     }
 
     It 'STDOUT captured via STDERR when calling resource directly' {
-        $yaml | runcommandonset set 2> $TestDrive/output.txt
+        $json | runcommandonset set 2> $TestDrive/output.txt
         $actual = Get-Content -Path $TestDrive/output.txt
         $actual | Should -Contain 'Stdout: hello'
         $actual | Should -Contain 'world'
@@ -66,7 +54,31 @@ arguments:
     }
 
     It 'Executable is a required input via STDIN' {
-        '{ "arguments": "foo" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
+        $null = '{ "arguments": "foo" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
+        $LASTEXITCODE | Should -Be 2
+    }
+
+    It 'Executable can be provided without arguments' {
+        $null = '{ "executable": "pwsh" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
+        $LASTEXITCODE | Should -Be 0
+    }
+
+    It 'Executable does not exist' {
+        '{ "executable": "foo" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet 2> $TestDrive/output.txt
+        $actual = Get-Content -Path $TestDrive/output.txt
+        $found_logging = $false
+        ForEach ($line in $actual) {
+            try {
+                $log = $line | ConvertFrom-Json
+                if ($log.fields.message -eq 'Failed to execute foo: program not found') {
+                    $found_logging = $true
+                    break
+                }
+            } catch {
+                # skip lines that aren't JSON
+            }
+        }
+        $found_logging | Should -Be $true
         $LASTEXITCODE | Should -Be 2
     }
 }
