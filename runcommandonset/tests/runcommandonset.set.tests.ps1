@@ -75,6 +75,7 @@ Describe 'tests for runcommandonset set' {
         ForEach ($line in $actual) {
             try {
                 $log = $line | ConvertFrom-Json
+                write-host $log.fields.message
                 if ($log.fields.message -eq 'Failed to execute foo: program not found') {
                     $found_logging = $true
                     break
