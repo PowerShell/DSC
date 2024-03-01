@@ -265,7 +265,7 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
 
     let resource = DscResource {
         type_name: manifest.resource_type.clone(),
-        kind: kind,
+        kind,
         implemented_as: ImplementedAs::Command,
         description: manifest.description.clone(),
         version: manifest.version.clone(),
