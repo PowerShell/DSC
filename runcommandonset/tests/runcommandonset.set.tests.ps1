@@ -79,7 +79,6 @@ Describe 'tests for runcommandonset set' {
         ForEach ($line in $actual) {
             try {
                 $log = $line | ConvertFrom-Json
-                write-host $log.fields.message
                 if ($log.fields.message -eq $expected_logging) {
                     $found_logging = $true
                     break
