@@ -2,11 +2,11 @@
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
     "type": "DSC/WMIGroup",
     "version": "0.1.0",
-    "description": "Resource provider to WMI resources.",
+    "description": "Resource adapter to WMI resources.",
     "tags": [
       "PowerShell"
     ],
-    "provider": {
+    "adapter": {
       "list": {
         "executable": "powershell",
         "args": [
@@ -39,7 +39,7 @@
           "-Command",
           "$Input | ./wmigroup.resource.ps1 Validate"
           ]
-      },  
+      },
     "exitCodes": {
       "0": "Success",
       "1": "Error"

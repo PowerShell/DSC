@@ -57,7 +57,7 @@ function Test-TargetResource {
         [System.String]
         $PackageManagementProvider
     )
-    
+
     if (($Name -eq "TestPSRepository1") -and ($PackageManagementProvider -eq 'NuGet'))
     {
         return $true

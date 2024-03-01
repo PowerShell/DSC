@@ -37,9 +37,9 @@ pub struct ResourceManifest {
     /// Details how to call the Validate method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validate: Option<ValidateMethod>,
-    /// Indicates the resource is a provider of other resources.
+    /// Indicates the resource is a adapter of other resources.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub provider: Option<Provider>,
+    pub adapter: Option<Adapter>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
     pub exit_codes: Option<HashMap<i32, String>>,
@@ -167,19 +167,19 @@ pub struct ExportMethod {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct Provider {
-    /// The way to list provider supported resources.
+pub struct Adapter {
+    /// The way to list adapter supported resources.
     pub list: ListMethod,
-    /// Defines how the provider supports accepting configuraiton.
+    /// Defines how the adapter supports accepting configuraiton.
     pub config: ConfigKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum ConfigKind {
-    /// The provider accepts full unprocessed configuration.
+    /// The adapter accepts full unprocessed configuration.
     #[serde(rename = "full")]
     Full,
-    /// The provider accepts configuration as a sequence.
+    /// The adapter accepts configuration as a sequence.
     #[serde(rename = "sequence")]
     Sequence,
 }
