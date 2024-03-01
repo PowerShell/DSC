@@ -192,8 +192,6 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
         Write-Host -ForegroundColor Red "Build failed"
         exit 1
     }
-
-    Copy-Item $PSScriptRoot/tools/add-path.ps1 $target -Force -ErrorAction Ignore
 }
 
 $relative = Resolve-Path $target -Relative

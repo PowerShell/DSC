@@ -7,6 +7,7 @@ use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceMani
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde::de;
 use std::collections::BTreeMap;
 use std::env;
 use std::ffi::OsStr;
@@ -28,6 +29,7 @@ impl CommandDiscovery {
     #[allow(clippy::too_many_lines)]
     fn search_for_resources(required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
+        debug!("Searching for resources: {:?}", required_resource_types);
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
         let multi_progress_bar = MultiProgress::new();
@@ -53,6 +55,7 @@ impl CommandDiscovery {
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut adapter_resources: Vec<String> = Vec::new();
         let mut remaining_required_resource_types = required_resource_types.to_owned();
+
         // try DSC_RESOURCE_PATH env var first otherwise use PATH
         let path_env = match env::var_os("DSC_RESOURCE_PATH") {
             Some(value) => value,
@@ -66,7 +69,15 @@ impl CommandDiscovery {
             }
         };
 
-        for path in env::split_paths(&path_env) {
+        let mut paths = env::split_paths(&path_env).collect::<Vec<_>>();
+
+        // add exe home to start of path
+        if let Some(exe_home) = env::current_exe()?.parent() {
+            debug!("Adding exe home to path: {}", exe_home.to_string_lossy());
+            paths.insert(0, exe_home.to_path_buf());
+        }
+
+        for path in paths {
             if path.exists() && path.is_dir() {
                 for entry in path.read_dir().unwrap() {
                     let entry = entry.unwrap();
