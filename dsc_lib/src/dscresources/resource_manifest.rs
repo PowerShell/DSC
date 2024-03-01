@@ -9,6 +9,14 @@ use std::collections::HashMap;
 use crate::dscerror::DscError;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum Kind {
+    Adapter,
+    Group,
+    Resource,
+}
+
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceManifest {
     /// The version of the resource manifest schema.
@@ -17,6 +25,9 @@ pub struct ResourceManifest {
     /// The namespaced name of the resource.
     #[serde(rename = "type")]
     pub resource_type: String,
+    /// The kind of resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<Kind>,
     /// The version of the resource.
     pub version: String,
     /// The description of the resource.

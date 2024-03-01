@@ -3,7 +3,7 @@
 
 Describe 'Tests for listing resources' {
     It 'dsc resource list' {
-        $resources = dsc resource list | ConvertFrom-Json
+        $resources = dsc resource list | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         $resources | Should -Not -BeNullOrEmpty
         $resources.Count | Should -BeGreaterThan 0
@@ -11,6 +11,9 @@ Describe 'Tests for listing resources' {
         $resources.type | Should -Contain 'DSC/Group'
         $resources.type | Should -Contain 'DSC/ParallelGroup'
         $resources.type | Should -Contain 'Microsoft/OSInfo'
+        ($resources | Where-Object { $_.type -eq 'DSC/Group' }).Kind | Should -BeExactly 'Group'
+        ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'Resource'
+        ($resources | Where-Object { $_.type -eq 'DSC/PowerShellGroup' }).Kind | Should -BeExactly 'Adapter'
     }
 
     It 'dsc resource list --tags "<tags>" and --description "<description> work' -TestCases @(

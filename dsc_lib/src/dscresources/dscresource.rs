@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::dscresources::resource_manifest::Kind;
 use dscerror::DscError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -16,6 +17,8 @@ pub struct DscResource {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
     pub type_name: String,
+    /// The kind of resource.
+    pub kind: Kind,
     /// The version of the resource.
     pub version: String,
     /// The file path to the resource.
@@ -51,6 +54,7 @@ impl DscResource {
     pub fn new() -> Self {
         Self {
             type_name: String::new(),
+            kind: Kind::Resource,
             version: String::new(),
             description: None,
             path: String::new(),

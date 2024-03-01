@@ -395,7 +395,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
 
             let mut write_table = false;
             let mut methods: Vec<String> = Vec::new();
-            let mut table = Table::new(&["Type", "Version", "Methods", "Requires", "Description"]);
+            let mut table = Table::new(&["Type", "Kind", "Version", "Methods", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if format is not specified and interactive
                 write_table = true;
@@ -445,6 +445,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                 if write_table {
                     table.add_row(vec![
                         resource.type_name,
+                        format!("{:?}", resource.kind),
                         resource.version,
                         methods.join(", "),
                         resource.requires.unwrap_or_default(),

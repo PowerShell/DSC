@@ -3,7 +3,7 @@
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscresources::dscresource::{DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{ResourceManifest, import_manifest};
+use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -255,8 +255,17 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
         }
     };
 
+    let kind = if let Some(kind) = manifest.kind.clone() {
+        kind
+    } else if manifest.adapter.is_some() {
+        Kind::Adapter
+    } else {
+        Kind::Resource
+    };
+
     let resource = DscResource {
         type_name: manifest.resource_type.clone(),
+        kind: kind,
         implemented_as: ImplementedAs::Command,
         description: manifest.description.clone(),
         version: manifest.version.clone(),
