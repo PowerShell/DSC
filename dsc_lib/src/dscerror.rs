@@ -59,7 +59,7 @@ pub enum DscError {
     #[error("Missing manifest: {0}")]
     MissingManifest(String),
 
-    #[error("Provider source '{0}' missing 'requires' property for resource '{1}'")]
+    #[error("Adapter-based resource '{0}' missing 'requires' property for resource '{1}'")]
     MissingRequires(String, String),
 
     #[error("Schema missing from manifest: {0}")]
