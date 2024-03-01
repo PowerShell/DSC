@@ -18,20 +18,25 @@ Describe 'tests for runcommandonset set' {
     }
 
     It 'Input for executable and arguments can be sent to the resource' {
-        $json = @"
+        $input_json = @"
         {
             "executable": "pwsh",
             "arguments": ["-Command", "echo hello world"]
         }
 "@
-
-        $json | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
+        $input_json | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
         # TODO: test output once DSC PR to capture it is merged
         $LASTEXITCODE | Should -Be 0
     }
 
     It 'STDOUT captured via STDERR when calling resource directly' {
-        $json | runcommandonset set 2> $TestDrive/output.txt
+        $input_json = @"
+        {
+            "executable": "pwsh",
+            "arguments": ["-Command", "echo hello world"]
+        }
+"@
+        $input_json | runcommandonset set 2> $TestDrive/output.txt
         $actual = Get-Content -Path $TestDrive/output.txt
         $actual | Should -Contain 'Stdout: hello'
         $actual | Should -Contain 'world'
