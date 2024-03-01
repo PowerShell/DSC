@@ -3,7 +3,8 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{Function, FunctionArg, FunctionResult, AcceptedArgKind};
+use crate::functions::{AcceptedArgKind, Function};
+use serde_json::Value;
 
 #[derive(Debug, Default)]
 pub struct ResourceId {}
@@ -21,38 +22,34 @@ impl Function for ResourceId {
         vec![AcceptedArgKind::String]
     }
 
-    fn invoke(&self, args: &[FunctionArg], _context: &Context) -> Result<FunctionResult, DscError> {
+    fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         let mut result = String::new();
         // first argument is the type and must contain only 1 slash
-        match &args[0] {
-            FunctionArg::String(value) => {
-                let slash_count = value.chars().filter(|c| *c == '/').count();
-                if slash_count != 1 {
-                    return Err(DscError::Function("resourceId".to_string(), "Type argument must contain exactly one slash".to_string()));
-                }
-                result.push_str(value);
-            },
-            _ => {
-                return Err(DscError::Parser("Invalid argument type".to_string()));
+        let resource_type = &args[0];
+        if let Some(value) = resource_type.as_str() {
+            let slash_count = value.chars().filter(|c| *c == '/').count();
+            if slash_count != 1 {
+                return Err(DscError::Function("resourceId".to_string(), "Type argument must contain exactly one slash".to_string()));
             }
+            result.push_str(value);
+        } else {
+            return Err(DscError::Parser("Invalid argument type for first parameter".to_string()));
         }
         // ARM uses a slash separator, but here we use a colon which is not allowed for the type nor name
         result.push(':');
         // second argument is the name and must contain no slashes
-        match &args[1] {
-            FunctionArg::String(value) => {
-                if value.contains('/') {
-                    return Err(DscError::Function("resourceId".to_string(), "Name argument cannot contain a slash".to_string()));
-                }
-
-                result.push_str(value);
-            },
-            _ => {
-                return Err(DscError::Parser("Invalid argument type".to_string()));
+        let resource_name = &args[1];
+        if let Some(value) = resource_name.as_str() {
+            if value.contains('/') {
+                return Err(DscError::Function("resourceId".to_string(), "Name argument cannot contain a slash".to_string()));
             }
+
+            result.push_str(value);
+        } else {
+            return Err(DscError::Parser("Invalid argument type for second parameter".to_string()));
         }
 
-        Ok(FunctionResult::String(result))
+        Ok(Value::String(result))
     }
 }
 

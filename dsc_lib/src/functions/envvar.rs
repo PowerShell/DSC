@@ -3,8 +3,9 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::parser::functions::{FunctionArg, FunctionResult};
-use super::{Function, AcceptedArgKind};
+use crate::functions::AcceptedArgKind;
+use super::Function;
+use serde_json::Value;
 use std::env;
 
 #[derive(Debug, Default)]
@@ -23,12 +24,8 @@ impl Function for Envvar {
         1
     }
 
-    fn invoke(&self, args: &[FunctionArg], _context: &Context) -> Result<FunctionResult, DscError> {
-        let FunctionArg::String(arg) = args.first().unwrap() else {
-            return Err(DscError::Parser("Invalid argument type".to_string()));
-        };
-
-        let val = env::var(arg).unwrap_or_default();
-        Ok(FunctionResult::String(val))
+    fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
+        let val = env::var(args[0].as_str().unwrap_or_default()).unwrap_or_default();
+        Ok(Value::String(val))
     }
 }

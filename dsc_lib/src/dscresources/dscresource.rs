@@ -6,7 +6,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use super::{command_resource, dscerror, resource_manifest::import_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
+use tracing::{debug, trace};
+
+use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -62,6 +64,7 @@ impl DscResource {
     }
 
     fn validate_input(&self, input: &str) -> Result<(), DscError> {
+        debug!("Validating input for resource: {}", &self.type_name);
         if input.is_empty() {
             return Ok(());
         }
@@ -71,14 +74,20 @@ impl DscResource {
         let resource_manifest = import_manifest(manifest.clone())?;
 
         if resource_manifest.validate.is_some() {
-            let Ok(validation_result) = self.validate(input) else {
-                return Err(DscError::Validation("Validation invocation failed".to_string()));
+            trace!("Using custom validation");
+            let validation_result = match self.validate(input) {
+                Ok(validation_result) => validation_result,
+                Err(err) => {
+                    return Err(DscError::Validation(format!("Validation failed: {err}")));
+                },
             };
+            trace!("Validation result is valid: {}", validation_result.valid);
             if !validation_result.valid {
                 return Err(DscError::Validation("Validation failed".to_string()));
             }
         }
         else {
+            trace!("Using JSON schema validation");
             let Ok(schema) = self.schema() else {
                 return Err(DscError::Validation("Schema not available".to_string()));
             };
@@ -164,7 +173,7 @@ pub trait Invoke {
     fn schema(&self) -> Result<String, DscError>;
 
     /// Invoke the export operation on the resource.
-    ///    
+    ///
     /// # Arguments
     ///
     /// * `input` - Input for export operation.
@@ -224,13 +233,25 @@ impl Invoke for DscResource {
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
                     let desired_state = serde_json::from_str(expected)?;
-                    let diff_properties = get_diff(&desired_state, &get_result.actual_state);
-                    let test_result = TestResult {
+                    let actual_state = match get_result {
+                        GetResult::Group(results) => {
+                            let mut result_array: Vec<Value> = Vec::new();
+                            for result in results {
+                                result_array.push(serde_json::to_value(result)?);
+                            }
+                            Value::from(result_array)
+                        },
+                        GetResult::Resource(response) => {
+                            response.actual_state
+                        }
+                    };
+                    let diff_properties = get_diff( &desired_state, &actual_state);
+                    let test_result = TestResult::Resource(ResourceTestResponse {
                         desired_state: serde_json::from_str(expected)?,
-                        actual_state: get_result.actual_state,
+                        actual_state,
                         in_desired_state: diff_properties.is_empty(),
                         diff_properties,
-                    };
+                    });
                     Ok(test_result)
                 }
                 else {

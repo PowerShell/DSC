@@ -5,7 +5,7 @@ use crate::args::OutputFormat;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
 use dsc_lib::configure::config_doc::Configuration;
 use dsc_lib::configure::add_resource_export_results_to_configuration;
-use dsc_lib::dscresources::invoke_result::GetResult;
+use dsc_lib::dscresources::invoke_result::{GetResult, ResourceGetResponse};
 use dsc_lib::dscerror::DscError;
 use tracing::{error, debug};
 
@@ -79,9 +79,9 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
 
     for instance in export_result.actual_state
     {
-        let get_result = GetResult {
+        let get_result = GetResult::Resource(ResourceGetResponse {
             actual_state: instance.clone(),
-        };
+        });
 
         let json = match serde_json::to_string(&get_result) {
             Ok(json) => json,

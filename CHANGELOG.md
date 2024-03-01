@@ -24,23 +24,36 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased comparison link -->
 [unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...main
 
+<!-- Add entries between releases under the appropriate section heading here  -->
+
 ### Changed
 
 - Updated the options for the `dsc` root command:
 
-  - The short name for the [--format][36] option, which controls the output format, is now `-o`
-    instead of `-f`.
-  - The `--logging-level` option is renamed to [--trace-level][37] with the short name `-l`. The
+  - Removed the global `--format` option, which controls the output format. Now, the relevant
+    subcommands that return formattable output have the `--format` option (short option as `-f`)
+    added to them.
+  - Removed the global `--input` and `--input-file` options. Now, the `config` subcommands have the
+    `--document` and `--path` options for specifying the configuration document as a string or from
+    a file. The relevant `resource` subcommands have the `--input` and `--path` options for
+    specifying the instance properties as a string or from a file.
+  - The `--logging-level` option is renamed to [--trace-level][36] with the short name `-l`. The
     default trace level is now `warning` instead of `info`.
-  - Added the [--trace-format][38] option with the `-f` short name. This option enables you to
+  - Added the [--trace-format][37] option with the `-f` short name. This option enables you to
     choose the format for the trace messages emitted to stderr. By default, the messages are
     emitted as lines of text with console colors. You can set this option to `plaintext` to emit
     the messages without console colors or to `json` to emit the messages as JSON objects.
 
   <details><summary>Related work items</summary>
 
-  - Issues: [#286][#286]
-  - PRs: [#299][#299]
+  - Issues:
+    - [#286][#286]
+    - [#227][#227]
+    - [#226][#226]
+  - PRs:
+    - [#299][#299]
+    - [#303][#303]
+    - [#305][#305]
 
   </details>
 
@@ -62,7 +75,16 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-<!-- Add entries between releases under the appropriate section heading here  -->
+- Added support for authoring DSC Resource manifests in YAML. DSC now recognizes resource manifests
+  that use the `.dsc.resource.yml` or `.dsc.resource.yaml` file extension instead of only
+  `.dsc.resource.json`.
+
+  <details><summary>Related work Items</summary>
+
+  - Issues: [#129][#129]
+  - PRs: [#311][#311]
+
+  </details>
 
 ## [v3.0.0-alpha.4][release-v3.0.0-alpha.4] - 2023-11-14
 
@@ -515,14 +537,14 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [33]: docs/reference/cli/config/command.md#-p---parameters
 [34]: docs/reference/cli/config/command.md#-f---parameters_file
 [35]: docs/reference/cli/config/command.md
-[36]: docs/reference/cli/dsc.md#-o---format
-[37]: docs/reference/cli/dsc.md#-l---trace-level
-[38]: docs/reference/cli/dsc.md#-f---trace-format
+[36]: docs/reference/cli/dsc.md#-l---trace-level
+[37]: docs/reference/cli/dsc.md#-f---trace-format
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
 [#121]: https://github.com/PowerShell/DSC/issues/121
 [#127]: https://github.com/PowerShell/DSC/issues/127
+[#129]: https://github.com/PowerShell/DSC/issues/129
 [#130]: https://github.com/PowerShell/DSC/issues/130
 [#133]: https://github.com/PowerShell/DSC/issues/133
 [#150]: https://github.com/PowerShell/DSC/issues/150
@@ -553,6 +575,8 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#215]: https://github.com/PowerShell/DSC/issues/215
 [#216]: https://github.com/PowerShell/DSC/issues/216
 [#217]: https://github.com/PowerShell/DSC/issues/217
+[#226]: https://github.com/PowerShell/DSC/issues/226
+[#227]: https://github.com/PowerShell/DSC/issues/227
 [#240]: https://github.com/PowerShell/DSC/issues/240
 [#241]: https://github.com/PowerShell/DSC/issues/241
 [#248]: https://github.com/PowerShell/DSC/issues/248
@@ -561,6 +585,9 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#291]: https://github.com/PowerShell/DSC/issues/291
 [#294]: https://github.com/PowerShell/DSC/issues/294
 [#299]: https://github.com/PowerShell/DSC/issues/299
+[#303]: https://github.com/PowerShell/DSC/issues/303
+[#305]: https://github.com/PowerShell/DSC/issues/305
+[#311]: https://github.com/PowerShell/DSC/issues/311
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57

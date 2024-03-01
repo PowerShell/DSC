@@ -21,8 +21,8 @@ dsc resource list [Options] <RESOURCE_NAME>
 
 The `list` subcommand searches for available DSC Resources and returns their information. DSC
 discovers resources by first searching the `PATH` or `DSC_RESOURCE_PATH` environment variable for
-`.dsc.resource.json` files. For more information about the environment variables DSC uses, see
-[Environment variables][01]
+`.dsc.resource.json`, `.dsc.resource.yml`, and `dsc.resource.yaml` files. For more information
+about the environment variables DSC uses, see [Environment variables][01]
 
 If any of the discovered resources are resource providers, DSC then calls the providers to list
 their resources, too.
@@ -165,6 +165,18 @@ resources that have at least one of the tags specified with this option.
 ```yaml
 Type:      String
 Mandatory: false
+```
+
+### -f, --format
+
+The `--format` option controls the console output format for the command. If the command output is
+redirected or captured as a variable, the output is always JSON.
+
+```yaml
+Type:         String
+Mandatory:    false
+DefaultValue: yaml
+ValidValues:  [json, pretty-json, yaml]
 ```
 
 ### -h, --help

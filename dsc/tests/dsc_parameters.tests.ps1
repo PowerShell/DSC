@@ -17,7 +17,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = 'hello' }} | ConvertTo-Json
 
@@ -31,16 +31,16 @@ Describe 'Parameters tests' {
         }
 
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.text | Should -BeExactly 'hello'
+        $out.results[0].result.actualState.output | Should -BeExactly 'hello'
     }
 
     It 'Input is <type>' -TestCases @(
-        @{ type = 'string'; value = 'hello'; expected = 'hello' }
-        @{ type = 'int'; value = 42; expected = 42 }
-        @{ type = 'bool'; value = $true; expected = $true }
-        @{ type = 'array'; value = @('hello', 'world'); expected = '["hello","world"]' }
+        @{ type = 'string'; value = 'hello' }
+        @{ type = 'int'; value = 42}
+        @{ type = 'bool'; value = $true}
+        @{ type = 'array'; value = @('hello', 'world')}
     ) {
-        param($type, $value, $expected)
+        param($type, $value)
 
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
@@ -51,13 +51,13 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $out = $config_yaml | dsc config -p $params_json get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.text | Should -BeExactly $expected
+        $out.results[0].result.actualState.output | Should -BeExactly $value
     }
 
     It 'Input is incorrect type <type>' -TestCases @(
@@ -77,7 +77,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -104,7 +104,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -130,7 +130,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -154,7 +154,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -180,7 +180,7 @@ Describe 'Parameters tests' {
             - name: Echo
               type: Test/Echo
               properties:
-                text: '[parameters(''param1'')]'
+                output: '[parameters(''param1'')]'
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
@@ -192,28 +192,43 @@ Describe 'Parameters tests' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             parameters:
-              param1:
+              paramString:
                 type: string
                 defaultValue: 'hello'
-              param2:
+              paramInt:
                 type: int
                 defaultValue: 7
-              param3:
+              paramBool:
                 type: bool
                 defaultValue: false
-              param4:
+              paramArray:
                 type: array
                 defaultValue: ['hello', 'world']
             resources:
-            - name: Echo
+            - name: String
               type: Test/Echo
               properties:
-                text: '[concat(parameters(''param1''),'','',parameters(''param2''),'','',parameters(''param3''),'','',parameters(''param4''))]'
+                output: '[parameters(''paramString'')]'
+            - name: Int
+              type: Test/Echo
+              properties:
+                output: '[parameters(''paramInt'')]'
+            - name: Bool
+              type: Test/Echo
+              properties:
+                output: '[parameters(''paramBool'')]'
+            - name: Array
+              type: Test/Echo
+              properties:
+                output: '[parameters(''paramArray'')]'
 "@
 
         $out = $config_yaml | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.text | Should -BeExactly 'hello,7,false,["hello","world"]'
+        $out.results[0].result.actualState.output | Should -BeExactly 'hello'
+        $out.results[1].result.actualState.output | Should -BeExactly 7
+        $out.results[2].result.actualState.output | Should -BeExactly $false
+        $out.results[3].result.actualState.output | Should -BeExactly @('hello', 'world')
     }
 
     It 'property value uses parameter value' {

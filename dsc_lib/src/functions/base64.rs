@@ -5,8 +5,9 @@ use base64::{Engine as _, engine::general_purpose};
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::parser::functions::{FunctionArg, FunctionResult};
-use super::{Function, AcceptedArgKind};
+use crate::functions::AcceptedArgKind;
+use serde_json::Value;
+use super::Function;
 
 #[derive(Debug, Default)]
 pub struct Base64 {}
@@ -24,11 +25,8 @@ impl Function for Base64 {
         1
     }
 
-    fn invoke(&self, args: &[FunctionArg], _context: &Context) -> Result<FunctionResult, DscError> {
-        let FunctionArg::String(arg) = args.first().unwrap() else {
-            return Err(DscError::Parser("Invalid argument type".to_string()));
-        };
-        Ok(FunctionResult::String(general_purpose::STANDARD.encode(arg)))
+    fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
+        Ok(Value::String(general_purpose::STANDARD.encode(args[0].as_str().unwrap_or_default())))
     }
 }
 

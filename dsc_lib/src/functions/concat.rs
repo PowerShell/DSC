@@ -3,7 +3,8 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{Function, FunctionArg, FunctionResult, AcceptedArgKind};
+use crate::functions::{AcceptedArgKind, Function};
+use serde_json::Value;
 use tracing::debug;
 
 #[derive(Debug, Default)]
@@ -19,26 +20,59 @@ impl Function for Concat {
     }
 
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String, AcceptedArgKind::Integer]
+        vec![AcceptedArgKind::String, AcceptedArgKind::Array]
     }
 
-    fn invoke(&self, args: &[FunctionArg], _context: &Context) -> Result<FunctionResult, DscError> {
-        let mut result = String::new();
-        for arg in args {
-            match arg {
-                FunctionArg::String(value) => {
-                    result.push_str(value);
-                },
-                FunctionArg::Integer(value) => {
-                    result.push_str(&value.to_string());
-                },
-                _ => {
-                    return Err(DscError::Parser("Invalid argument type".to_string()));
+    fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
+        debug!("concat function");
+        let mut string_result = String::new();
+        let mut array_result: Vec<String> = Vec::new();
+        let mut input_type : Option<AcceptedArgKind> = None;
+        for value in args {
+            if value.is_string() {
+                if input_type.is_none() {
+                    input_type = Some(AcceptedArgKind::String);
+                } else if input_type != Some(AcceptedArgKind::String) {
+                    return Err(DscError::Parser("Arguments must all be strings".to_string()));
                 }
+
+                string_result.push_str(value.as_str().unwrap_or_default());
+            } else if value.is_array() {
+                if input_type.is_none() {
+                    input_type = Some(AcceptedArgKind::Array);
+                } else if input_type != Some(AcceptedArgKind::Array) {
+                    return Err(DscError::Parser("Arguments must all be arrays".to_string()));
+                }
+
+                if let Some(array) = value.as_array() {
+                    for arg in array {
+                        if arg.is_string() {
+                            if arg.as_str().is_some() {
+                                array_result.push(arg.as_str().unwrap().to_string());
+                            } else {
+                                array_result.push(String::new());
+                            }
+                        } else {
+                            return Err(DscError::Parser("Only arrays of strings are valid".to_string()));
+                        }
+                    }
+                }
+            } else {
+                return Err(DscError::Parser("Invalid argument type".to_string()));
             }
         }
-        debug!("concat result: {result}");
-        Ok(FunctionResult::String(result))
+
+        match input_type {
+            Some(AcceptedArgKind::String) => {
+                Ok(Value::String(string_result))
+            },
+            Some(AcceptedArgKind::Array) => {
+                Ok(Value::Array(array_result.into_iter().map(Value::String).collect()))
+            },
+            _ => {
+                Err(DscError::Parser("Invalid argument type".to_string()))
+            }
+        }
     }
 }
 
@@ -62,17 +96,17 @@ mod tests {
     }
 
     #[test]
-    fn numbers() {
+    fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat(1, 2)]", &Context::new()).unwrap();
-        assert_eq!(result, "12");
+        let result = parser.parse_and_execute("[concat(createArray('a','b'), createArray('c','d'))]", &Context::new()).unwrap();
+        assert_eq!(result.to_string(), r#"["a","b","c","d"]"#);
     }
 
     #[test]
     fn string_and_numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', 1, 'b', 2)]", &Context::new()).unwrap();
-        assert_eq!(result, "a1b2");
+        let result = parser.parse_and_execute("[concat('a', 1)]", &Context::new());
+        assert!(result.is_err());
     }
 
     #[test]
@@ -86,6 +120,20 @@ mod tests {
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[concat('a')]", &Context::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn string_and_array() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[concat('a', createArray('b','c'))]", &Context::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn array_and_string() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[concat(createArray('a','b'), 'c')]", &Context::new());
         assert!(result.is_err());
     }
 }

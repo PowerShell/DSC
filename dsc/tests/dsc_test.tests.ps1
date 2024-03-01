@@ -56,7 +56,7 @@ Describe 'config test tests' {
     }
 
     It 'can accept the use of --format as a subcommand' {
-        $null = "text: hello" | dsc resource test -r Test/Echo --format pretty-json
+        $null = "output: hello" | dsc resource test -r Test/Echo --format pretty-json
         $LASTEXITCODE | Should -Be 0
     }
 }

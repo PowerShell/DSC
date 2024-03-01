@@ -54,6 +54,8 @@ pub enum SubCommand {
         parameters: Option<String>,
         #[clap(short = 'f', long, help = "Parameters to pass to the configuration as a JSON or YAML file", conflicts_with = "parameters")]
         parameters_file: Option<String>,
+        #[clap(long, hide = true)]
+        as_group: bool,
     },
     #[clap(name = "resource", about = "Invoke a specific DSC resource")]
     Resource {
@@ -97,6 +99,8 @@ pub enum ConfigSubCommand {
         path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
+        #[clap(long, hide = true)]
+        as_get: bool,
     },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate {
@@ -104,6 +108,8 @@ pub enum ConfigSubCommand {
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
         path: Option<String>,
+        #[clap(short = 'f', long, help = "The output format to use")]
+        format: Option<OutputFormat>,
     },
     #[clap(name = "export", about = "Export the current configuration")]
     Export {

@@ -65,11 +65,11 @@ fn main() {
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
-        SubCommand::Config { subcommand, parameters, parameters_file } => {
+        SubCommand::Config { subcommand, parameters, parameters_file, as_group } => {
             if let Some(file_name) = parameters_file {
                 info!("Reading parameters from file {}", file_name);
                 match std::fs::read_to_string(file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input, &as_group),
                     Err(err) => {
                         error!("Error: Failed to read parameters file: {err}");
                         exit(util::EXIT_INVALID_INPUT);
@@ -77,7 +77,7 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, &input);
+                subcommand::config(&subcommand, &parameters, &input, &as_group);
             }
         },
         SubCommand::Resource { subcommand } => {
@@ -136,7 +136,13 @@ fn check_debug() {
     if env::var("DEBUG_DSC").is_ok() {
         eprintln!("attach debugger to pid {} and press a key to continue", std::process::id());
         loop {
-            let event = event::read().unwrap();
+            let event = match event::read() {
+                Ok(event) => event,
+                Err(err) => {
+                    eprintln!("Error: Failed to read event: {err}");
+                    break;
+                }
+            };
             if let event::Event::Key(key) = event {
                 // workaround bug in 0.26+ https://github.com/crossterm-rs/crossterm/issues/752#issuecomment-1414909095
                 if key.kind == event::KeyEventKind::Press {
