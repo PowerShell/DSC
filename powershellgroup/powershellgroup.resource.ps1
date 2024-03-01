@@ -102,6 +102,7 @@ if ($Operation -eq 'List')
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
+            kind = 'Resource';
             version = $version_string;
             path = $r.Path;
             directory = $r.ParentPath;
