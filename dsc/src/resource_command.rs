@@ -27,7 +27,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider {} not found", requires);
+            error!("Adapter {} not found", requires);
             return;
         };
     }
@@ -64,7 +64,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider '{}' not found", requires);
+            error!("Adapter '{}' not found", requires);
             return;
         };
     }
@@ -98,7 +98,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
 ///
 /// # Panics
 ///
-/// Will panic if provider-based resource is not found.
+/// Will panic if adapter-based resource is not found.
 ///
 pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     if input.is_empty() {
@@ -118,7 +118,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider {} not found", requires);
+            error!("Adapter {} not found", requires);
             return;
         };
     }
@@ -146,7 +146,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
 ///
 /// # Panics
 ///
-/// Will panic if provider-based resource is not found.
+/// Will panic if adapter-based resource is not found.
 ///
 pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
@@ -161,7 +161,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider {} not found", requires);
+            error!("Adapter {} not found", requires);
             return;
         };
     }
@@ -216,20 +216,20 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
         return
     };
 
-    let mut provider_resource: Option<&DscResource> = None;
+    let mut adapter_resource: Option<&DscResource> = None;
     if let Some(requires) = &dsc_resource.requires {
         input = add_type_name_to_json(input, dsc_resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
-            provider_resource = Some(pr);
+            adapter_resource = Some(pr);
         } else {
-            error!("Provider '{}' not found", requires);
+            error!("Adapter '{}' not found", requires);
             return;
         };
     }
 
     let mut conf = Configuration::new();
 
-    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, provider_resource, &mut conf, &input) {
+    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, adapter_resource, &mut conf, &input) {
         error!("Error: {err}");
         exit(EXIT_DSC_ERROR);
     }

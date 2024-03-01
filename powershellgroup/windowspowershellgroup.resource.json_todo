@@ -2,8 +2,8 @@
     "manifestVersion": "1.0",
     "type": "DSC/WindowsPowerShellGroup",
     "version": "0.1.0",
-    "description": "Resource provider to classic DSC Powershell resources in Windows PowerShell.",
-    "provider": {
+    "description": "Resource adapter to classic DSC Powershell resources in Windows PowerShell.",
+    "adapter": {
       "list": {
         "executable": "powershell",
         "args": [
@@ -56,4 +56,3 @@
       "1": "Error"
     }
   }
-  
