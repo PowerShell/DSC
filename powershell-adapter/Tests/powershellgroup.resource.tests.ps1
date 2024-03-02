@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'PowerShellGroup resource tests' {
+Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         $OldPSModulePath  = $env:PSModulePath
-        $env:PSModulePath += ";" + $PSScriptRoot
+        $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath

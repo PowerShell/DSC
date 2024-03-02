@@ -1,6 +1,6 @@
 {
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-    "type": "DSC/WMIGroup",
+    "type": "Microsoft.Windows/WMI",
     "version": "0.1.0",
     "description": "Resource adapter to WMI resources.",
     "tags": [
@@ -14,7 +14,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "./wmigroup.resource.ps1 List"
+          "./wmi.resource.ps1 List"
         ]
         },
       "config": "full"
@@ -26,7 +26,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./wmigroup.resource.ps1 Get"
+        "$Input | ./wmi.resource.ps1 Get"
       ],
       "input": "stdin"
     },
@@ -37,7 +37,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "$Input | ./wmigroup.resource.ps1 Validate"
+          "$Input | ./wmi.resource.ps1 Validate"
           ]
       },
     "exitCodes": {

@@ -13,7 +13,7 @@ Describe 'Tests for listing resources' {
         $resources.type | Should -Contain 'Microsoft/OSInfo'
         ($resources | Where-Object { $_.type -eq 'DSC/Group' }).Kind | Should -BeExactly 'Group'
         ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'Resource'
-        ($resources | Where-Object { $_.type -eq 'DSC/PowerShellGroup' }).Kind | Should -BeExactly 'Adapter'
+        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/PowerShell' }).Kind | Should -BeExactly 'Adapter'
     }
 
     It 'dsc resource list --tags "<tags>" and --description "<description> work' -TestCases @(

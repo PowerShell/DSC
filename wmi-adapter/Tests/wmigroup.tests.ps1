@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'PowerShellGroup resource tests' {
+Describe 'WMI adapter resource tests' {
 
     BeforeAll {
         if ($IsWindows)
