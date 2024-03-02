@@ -7,9 +7,9 @@ Describe 'Tests for listing resources' {
         $LASTEXITCODE | Should -Be 0
         $resources | Should -Not -BeNullOrEmpty
         $resources.Count | Should -BeGreaterThan 0
-        $resources.type | Should -Contain 'DSC/AssertionGroup'
-        $resources.type | Should -Contain 'DSC/Group'
-        $resources.type | Should -Contain 'DSC/ParallelGroup'
+        $resources.type | Should -Contain 'Microsoft.DSC/Assertion'
+        $resources.type | Should -Contain 'Microsoft.DSC/Group'
+        $resources.type | Should -Contain 'Microsoft.DSC/Parallel'
         $resources.type | Should -Contain 'Microsoft/OSInfo'
     }
 

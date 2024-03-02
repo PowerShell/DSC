@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-  "type": "DSC/Group",
+  "type": "Microsoft.DSC/Group",
   "version": "0.1.0",
   "description": "All resources in the supplied configuration is treated as a group.",
   "get": {
