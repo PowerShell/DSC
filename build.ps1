@@ -222,7 +222,7 @@ if (!$Clippy) {
 
     if (!$found) {
         Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
-        $env:PATH += [System.IO.Path]::PathSeparator + $target
+        $env:PATH = $target + [System.IO.Path]::PathSeparator + $env:PATH
     }
 }
 
