@@ -7,7 +7,6 @@ use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceMani
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use serde::de;
 use std::collections::BTreeMap;
 use std::env;
 use std::ffi::OsStr;
