@@ -16,7 +16,7 @@ $VerbosePreference = 'Ignore'
 if ($Operation -eq 'List')
 {
     $clases = Get-CimClass
-    
+
     foreach ($r in $clases)
     {
         $version_string = "";
@@ -39,6 +39,7 @@ if ($Operation -eq 'List')
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
+            kind = 'Resource';
             version = $version_string;
             path = "";
             directory = "";
@@ -76,7 +77,7 @@ elseif ($Operation -eq 'Get')
             {
                 $instance_result = @{}
                 $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
-                $wmi_instance.psobject.properties | %{ 
+                $wmi_instance.psobject.properties | %{
                     if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
                     {
                         $instance_result[$_.Name] = $_.Value
@@ -106,7 +107,7 @@ elseif ($Operation -eq 'Get')
         {
             $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
             $result = @{}
-            $wmi_instance.psobject.properties | %{ 
+            $wmi_instance.psobject.properties | %{
                 if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
                 {
                     $result[$_.Name] = $_.Value
