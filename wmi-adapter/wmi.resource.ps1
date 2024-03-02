@@ -35,7 +35,7 @@ if ($Operation -eq 'List')
         $namespace = $r.CimSystemProperties.Namespace.ToLower().Replace('/','.')
         $classname = $r.CimSystemProperties.ClassName
         $fullResourceTypeName = "$namespace/$classname"
-        $requiresString = "DSC/WMIGroup"
+        $requiresString = "Microsoft.Windows/WMI"
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
