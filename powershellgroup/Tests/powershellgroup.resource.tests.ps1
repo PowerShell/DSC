@@ -9,6 +9,7 @@ Describe 'PowerShellGroup resource tests' {
         if ($null -eq (Get-Module PSDesiredStateConfiguration -ListAvailable)) {
             Install-Module -Name PSDesiredStateConfiguration -AllowPrerelease -Force -SkipPublisherCheck -AllowClobber
         }
+        Write-Verbose -Verbose (Get-DscResource | Out-String)
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
