@@ -6,7 +6,7 @@ Describe 'PowerShellGroup resource tests' {
     BeforeAll {
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
-        Install-Module -Name PSResourceGet -Repository PSGallery -Force
+        Install-Module -Name Microsoft.PowerShell.PSResourceGet -Repository PSGallery -Force
         Install-PSResource -Name PSDesiredStateConfiguration -RequiredVersion 3.0.0 -Prerelease
         Import-Module PSDesiredStateConfiguration -RequiredVersion 3.0.0
     }
