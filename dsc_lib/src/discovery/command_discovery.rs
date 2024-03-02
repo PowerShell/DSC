@@ -57,22 +57,19 @@ impl CommandDiscovery {
         let mut using_custom_path = false;
 
         // try DSC_RESOURCE_PATH env var first otherwise use PATH
-        let path_env = match env::var_os("DSC_RESOURCE_PATH") {
-            Some(value) => {
-                debug!("Using DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
-                using_custom_path = true;
-                value
-            },
-            None => {
-                trace!("DSC_RESOURCE_PATH not set, trying PATH");
-                match env::var_os("PATH") {
-                    Some(value) => {
-                        debug!("Using PATH: {:?}", value.to_string_lossy());
-                        value
-                    }
-                    None => {
-                        return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
-                    }
+        let path_env = if let Some(value) = env::var_os("DSC_RESOURCE_PATH") {
+            debug!("Using DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
+            using_custom_path = true;
+            value
+        } else {
+            trace!("DSC_RESOURCE_PATH not set, trying PATH");
+            match env::var_os("PATH") {
+                Some(value) => {
+                    debug!("Using PATH: {:?}", value.to_string_lossy());
+                    value
+                },
+                None => {
+                    return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
                 }
             }
         };
