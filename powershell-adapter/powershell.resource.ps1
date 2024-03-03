@@ -36,7 +36,7 @@ function RefreshCache
 if (($PSVersionTable.PSVersion.Major -eq 7) -and ($PSVersionTable.PSVersion.Minor -eq 4) `
    -and ($PSVersionTable.PSVersion.PreReleaseLabel.StartsWith("preview")))
 {
-    throw "PowerShell 7.4-previews are not supported by PowerShellGroup resource; please use PS 7.4.0-rc.1 or newer."
+    throw "PowerShell 7.4-previews are not supported by PowerShell adapter resource; please use PS 7.4.0-rc.1 or newer."
 }
 
 $inputobj_pscustomobj = $null
@@ -98,10 +98,11 @@ if ($Operation -eq 'List')
 
         $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
         $script:ResourceCache[$fullResourceTypeName] = $r
-       if ($WinPS) {$requiresString = "DSC/WindowsPowerShellGroup"} else {$requiresString = "DSC/PowerShellGroup"}
+       if ($WinPS) {$requiresString = "Microsoft.Windows/WindowsPowerShell"} else {$requiresString = "Microsoft.DSC/PowerShell"}
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
+            kind = 'Resource';
             version = $version_string;
             path = $r.Path;
             directory = $r.ParentPath;
@@ -395,5 +396,5 @@ elseif ($Operation -eq 'Validate')
 }
 else
 {
-    "ERROR: Unsupported operation requested from powershellgroup.resource.ps1"
+    "ERROR: Unsupported operation requested from powershell.resource.ps1"
 }
