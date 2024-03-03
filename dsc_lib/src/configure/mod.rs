@@ -4,6 +4,7 @@
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
+use crate::dscresources::resource_manifest::Kind;
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
@@ -185,15 +186,23 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-            if dsc_resource.kind.eq("adapter") {
+            let filter = if dsc_resource.kind == Kind::Adapter {
                 // add metadata to the properties so the adapter knows this is a config
-                let metadata = Map::new();
-                let dsc_value = Map::new();
+                let mut metadata = Map::new();
+                let mut dsc_value = Map::new();
                 dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
                 metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
-                properties.insert("metadata".to_string(), Value::Object(metadata));
-            }
-            let filter = serde_json::to_string(&properties)?;
+                if let Some(mut properties) = properties {
+                    properties.insert("metadata".to_string(), Value::Object(metadata));
+                    serde_json::to_string(&properties)?
+                } else {
+                    properties = Some(metadata);
+                    serde_json::to_string(&properties)?
+                }
+            } else {
+                serde_json::to_string(&properties)?
+            };
+            trace!("filter {filter}");
             let get_result = dsc_resource.get(&filter)?;
             let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
