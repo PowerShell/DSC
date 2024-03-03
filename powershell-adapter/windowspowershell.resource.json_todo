@@ -1,6 +1,6 @@
 {
     "manifestVersion": "1.0",
-    "type": "DSC/WindowsPowerShellGroup",
+    "type": "Microsoft.Windows/WindowsPowerShell",
     "version": "0.1.0",
     "description": "Resource adapter to classic DSC Powershell resources in Windows PowerShell.",
     "adapter": {
@@ -11,7 +11,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "./powershellgroup.resource.ps1 -WinPS List"
+          "./powershell.resource.ps1 -WinPS List"
         ]
         },
       "config": "full"
@@ -23,7 +23,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 -WinPS Get"
+        "$Input | ./powershell.resource.ps1 -WinPS Get"
       ]
       },
     "set": {
@@ -33,7 +33,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 -WinPS Set"
+        "$Input | ./powershell.resource.ps1 -WinPS Set"
       ],
       "input": "stdin",
       "preTest": true,
@@ -46,7 +46,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 -WinPS Test"
+        "$Input | ./powershell.resource.ps1 -WinPS Test"
       ],
       "input": "stdin",
       "return": "state"

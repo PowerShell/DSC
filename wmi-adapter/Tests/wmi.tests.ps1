@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'PowerShellGroup resource tests' {
+Describe 'WMI adapter resource tests' {
 
     BeforeAll {
         if ($IsWindows)
@@ -13,8 +13,8 @@ Describe 'PowerShellGroup resource tests' {
 
             $dscPath = (get-command dsc -CommandType Application).Path
             $dscFolder = Split-Path -Path $dscPath
-            $wmiGroupOptoutFile = Join-Path $dscFolder "wmigroup.dsc.resource.json.optout"
-            $wmiGroupOptinFile = Join-Path $dscFolder "wmigroup.dsc.resource.json"
+            $wmiGroupOptoutFile = Join-Path $dscFolder "wmi.dsc.resource.json.optout"
+            $wmiGroupOptinFile = Join-Path $dscFolder "wmi.dsc.resource.json"
             Rename-Item -Path $wmiGroupOptoutFile -NewName $wmiGroupOptinFile
         }
     }

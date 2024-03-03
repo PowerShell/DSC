@@ -2,7 +2,7 @@
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 resources:
 - name: Use class PowerShell resources
-  type: DSC/PowerShellGroup
+  type: Microsoft.DSC/PowerShell
   properties:
     resources:
     - name: OpenSSH service
