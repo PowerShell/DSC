@@ -180,11 +180,19 @@ impl Configurator {
         for resource in resources {
             pb.inc(1);
             pb.set_message(format!("Get '{}'", resource.name));
-            let properties = self.invoke_property_expressions(&resource.properties)?;
+            let mut properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
+            if dsc_resource.kind.eq("adapter") {
+                // add metadata to the properties so the adapter knows this is a config
+                let metadata = Map::new();
+                let dsc_value = Map::new();
+                dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
+                metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
+                properties.insert("metadata".to_string(), Value::Object(metadata));
+            }
             let filter = serde_json::to_string(&properties)?;
             let get_result = dsc_resource.get(&filter)?;
             let resource_result = config_result::ResourceGetResult {

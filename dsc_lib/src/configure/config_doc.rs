@@ -71,9 +71,10 @@ pub struct Resource {
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
     #[schemars(regex(pattern = r"^\[resourceId\(\s*'[a-zA-Z0-9\.]+/[a-zA-Z0-9]+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)]$"))]
     pub depends_on: Option<Vec<String>>,
-    // `identity` can be used for run-as
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<HashMap<String, Value>>,
 }
 
 // Defines the valid and recognized canonical URIs for the configuration schema
@@ -127,6 +128,7 @@ impl Resource {
             name: String::new(),
             depends_on: None,
             properties: None,
+            metadata: None,
         }
     }
 }
