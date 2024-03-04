@@ -25,6 +25,7 @@ use dsc_lib::{
     }
 };
 use jsonschema::JSONSchema;
+use path_absolutize::*;
 use schemars::{schema_for, schema::RootSchema};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -37,7 +38,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, debug, error, trace};
+use tracing::{Level, debug, error, warn, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 pub const EXIT_SUCCESS: i32 = 0;
@@ -406,16 +407,35 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     parse_input_to_json(&value)
 }
 
-pub fn set_dscconfigroot(config_path: &str)
+pub fn absolutize_and_set_dscconfigroot(config_path: &str) -> String
 {
     let path = Path::new(config_path);
-    let config_root = match path.parent()
+
+    // make path absolute
+    let full_path = path.absolutize().unwrap();
+    let config_root_path = match full_path.parent()
     {
-        Some(dir_path) => { dir_path.to_str().unwrap_or_default().to_string()},
-        _ => String::new()
+        Some(dir_path) => { dir_path },
+        _ => { 
+            // this should never happen because path was absolutized
+            error!("Error reading config path parent");
+            exit(EXIT_DSC_ERROR);
+        }
     };
 
+    let env_var = "DSC_CONFIG_ROOT";
+    
+    // warn if env var is already set/used
+    match env::var(env_var) {
+        Ok(_) => warn!("The current value of '{env_var}' env var will be overridden"),
+        Err(_) => (),
+    }
+
     // Set env var so child processes (of resources) can use it
-    debug!("Setting 'DSCConfigRoot' env var as '{}'", config_root);
-    env::set_var("DSCConfigRoot", config_root.clone());
+    let config_root = config_root_path.to_str().unwrap_or_default();
+    debug!("Setting '{env_var}' env var as '{}'", config_root);
+    env::set_var(env_var, config_root.clone());
+
+    // return absolutized path
+    full_path.to_str().unwrap_or_default().to_string()
 }

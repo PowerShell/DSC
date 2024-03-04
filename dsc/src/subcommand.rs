@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resource_command::{get_resource, self};
 use crate::Stream;
 use crate::tablewriter::Table;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, absolutize_and_set_dscconfigroot, validate_json};
 use dsc_lib::configure::{Configurator, ErrorAction, config_result::ResourceGetResult};
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::{
@@ -205,9 +205,15 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Test { document, path, .. } |
         ConfigSubCommand::Validate { document, path, .. } |
         ConfigSubCommand::Export { document, path, .. } => {
-            let config_path = path.clone().unwrap_or_default();
-            set_dscconfigroot(&config_path);
-            get_input(document, stdin, path)
+            let mut new_path = path;
+            let opt_new_path;
+            if path.is_some()
+            {
+                let config_path = path.clone().unwrap_or_default();
+                opt_new_path = Some(absolutize_and_set_dscconfigroot(&config_path));
+                new_path = &opt_new_path;
+            }
+            get_input(document, stdin, new_path)
         }
     };
 
