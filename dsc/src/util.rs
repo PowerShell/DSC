@@ -25,7 +25,7 @@ use dsc_lib::{
     }
 };
 use jsonschema::JSONSchema;
-use path_absolutize::*;
+use path_absolutize::Absolutize;
 use schemars::{schema_for, schema::RootSchema};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -413,28 +413,23 @@ pub fn absolutize_and_set_dscconfigroot(config_path: &str) -> String
 
     // make path absolute
     let full_path = path.absolutize().unwrap();
-    let config_root_path = match full_path.parent()
-    {
-        Some(dir_path) => { dir_path },
-        _ => { 
-            // this should never happen because path was absolutized
-            error!("Error reading config path parent");
-            exit(EXIT_DSC_ERROR);
-        }
+    let Some(config_root_path) = full_path.parent() else { 
+        // this should never happen because path was absolutized
+        error!("Error reading config path parent");
+        exit(EXIT_DSC_ERROR);
     };
 
     let env_var = "DSC_CONFIG_ROOT";
     
     // warn if env var is already set/used
-    match env::var(env_var) {
-        Ok(_) => warn!("The current value of '{env_var}' env var will be overridden"),
-        Err(_) => (),
+    if let Ok(_) = env::var(env_var) {
+        warn!("The current value of '{env_var}' env var will be overridden");
     }
 
     // Set env var so child processes (of resources) can use it
     let config_root = config_root_path.to_str().unwrap_or_default();
     debug!("Setting '{env_var}' env var as '{}'", config_root);
-    env::set_var(env_var, config_root.clone());
+    env::set_var(env_var, config_root);
 
     // return absolutized path
     full_path.to_str().unwrap_or_default().to_string()
