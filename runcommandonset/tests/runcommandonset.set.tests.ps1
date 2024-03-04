@@ -64,7 +64,14 @@ Describe 'tests for runcommandonset set' {
     }
 
     It 'Executable can be provided without arguments' {
-        $null = '{ "executable": "pwsh" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet
+        $result = '{ "executable": "pwsh" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
+        $result.changedProperties | Should -Be @()
+        $LASTEXITCODE | Should -Be 0
+    }
+
+    It 'Exit code does not need to be provided to detect difference' {
+        $result = '{ "executable": "pwsh", "arguments": ["invalid input"] }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
+        $result.changedProperties | Should -Be @( 'exit_code' )
         $LASTEXITCODE | Should -Be 0
     }
 
