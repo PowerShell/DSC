@@ -15,7 +15,8 @@
         "args": [
           "set"
         ],
-        "input": "stdin"
+        "input": "stdin",
+        "return": "state"
     },
     "schema": {
       "embedded": {
