@@ -1,6 +1,6 @@
 {
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-    "type": "DSC/PowerShellGroup",
+    "type": "Microsoft.DSC/PowerShell",
     "version": "0.1.0",
     "description": "Resource adapter to classic DSC Powershell resources.",
     "tags": [
@@ -14,7 +14,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "./powershellgroup.resource.ps1 List"
+          "./powershell.resource.ps1 List"
         ]
         },
       "config": "full"
@@ -26,7 +26,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 Get"
+        "$Input | ./powershell.resource.ps1 Get"
       ],
       "input": "stdin"
       },
@@ -37,7 +37,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 Set"
+        "$Input | ./powershell.resource.ps1 Set"
       ],
       "input": "stdin",
       "implementsPretest": true,
@@ -50,7 +50,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 Test"
+        "$Input | ./powershell.resource.ps1 Test"
       ],
       "input": "stdin",
       "return": "state"
@@ -62,7 +62,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershellgroup.resource.ps1 Export"
+        "$Input | ./powershell.resource.ps1 Export"
       ],
       "input": "stdin",
       "return": "state"
@@ -74,7 +74,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "$Input | ./powershellgroup.resource.ps1 Validate"
+          "$Input | ./powershell.resource.ps1 Validate"
           ]
       },
     "exitCodes": {

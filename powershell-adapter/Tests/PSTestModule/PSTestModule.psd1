@@ -9,7 +9,7 @@
     PowerShellVersion = '5.0'
     DscResourcesToExport = 'TestClassResource'
     FunctionsToExport = @(
-	    'Hello-World')
+	    'Test-World')
     VariablesToExport = '@()'
     AliasesToExport   = @()
     PrivateData       = @{

@@ -3,6 +3,7 @@
   "type": "DSC/ParallelGroup",
   "version": "0.1.0",
   "description": "All resources in the supplied configuration run concurrently.",
+  "kind": "Group",
   "get": {
     "executable": "dsc",
     "args": [

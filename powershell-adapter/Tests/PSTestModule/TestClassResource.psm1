@@ -56,12 +56,12 @@ class TestClassResource
             $obj.Prop1 = "Property of object$_"
             $resultList.Add($obj)
         }
-        
+
         return $resultList.ToArray()
     }
 }
 
-function Hello-World()
+function Test-World()
 {
     "Hello world from PSTestModule!"
 }

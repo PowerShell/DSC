@@ -113,13 +113,12 @@ $projects = @(
     "file_lib",
     "dsc",
     "osinfo",
-    "powershellgroup",
+    "powershell-adapter",
     "process",
     "tools/dsctest",
     "tools/test_group_resource",
     "y2j",
-    "powershellgroup",
-    "wmigroup",
+    "wmi-adapter",
     "resources/brew",
     "runcommandonset"
 )

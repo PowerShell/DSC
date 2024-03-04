@@ -5,7 +5,7 @@ mod args;
 
 use args::{Args, SubCommand};
 use clap::Parser;
-use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod};
+use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod, Kind};
 use dsc_lib::dscresources::dscresource::{DscResource, ImplementedAs};
 
 fn main() {
@@ -14,6 +14,7 @@ fn main() {
         SubCommand::List => {
             let resource1 = DscResource {
                 type_name: "Test/TestResource1".to_string(),
+                kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
@@ -26,6 +27,7 @@ fn main() {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
                     resource_type: "Test/TestResource1".to_string(),
+                    kind: Some(Kind::Resource),
                     version: "1.0.0".to_string(),
                     tags: None,
                     get: GetMethod {
@@ -44,6 +46,7 @@ fn main() {
             };
             let resource2 = DscResource {
                 type_name: "Test/TestResource2".to_string(),
+                kind: Kind::Resource,
                 version: "1.0.1".to_string(),
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
@@ -56,6 +59,7 @@ fn main() {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
                     resource_type: "Test/TestResource2".to_string(),
+                    kind: Some(Kind::Resource),
                     version: "1.0.1".to_string(),
                     tags: None,
                     get: GetMethod {
@@ -78,6 +82,7 @@ fn main() {
         SubCommand::ListMissingRequires => {
             let resource1 = DscResource {
                 type_name: "InvalidResource".to_string(),
+                kind: Kind::Resource,
                 version: "1.0.0".to_string(),
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),

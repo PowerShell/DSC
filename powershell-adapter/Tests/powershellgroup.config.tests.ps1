@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'PowerShellGroup resource tests' {
+Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         $OldPSModulePath  = $env:PSModulePath
@@ -46,7 +46,7 @@ Describe 'PowerShellGroup resource tests' {
             $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
             - name: Working with class-based resources
-              type: DSC/PowerShellGroup
+              type: Microsoft.DSC/PowerShell
               properties:
                 resources:
                 - name: Class-resource Info
@@ -67,13 +67,13 @@ Describe 'PowerShellGroup resource tests' {
         $OldPSModulePath  = $env:PSModulePath
         Copy-Item -Recurse -Force -Path "$PSScriptRoot/PSTestModule" -Destination $TestDrive
         Rename-Item -Path "$PSScriptRoot/PSTestModule" -NewName "_PSTestModule"
-        
+
         try {
             $yaml = @"
                 `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
                 resources:
                 - name: Working with class-based resources
-                  type: DSC/PowerShellGroup
+                  type: Microsoft.DSC/PowerShell
                   properties:
                     psmodulepath: `$env:PSModulePath;$TestDrive
                     resources:
@@ -101,7 +101,7 @@ Describe 'PowerShellGroup resource tests' {
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
             - name: Working with class-based resources
-              type: DSC/PowerShellGroup
+              type: Microsoft.DSC/PowerShell
               properties:
                 resources:
                 - name: Class-resource Info
@@ -126,7 +126,7 @@ Describe 'PowerShellGroup resource tests' {
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
             - name: Working with class-based resources
-              type: DSC/PowerShellGroup
+              type: Microsoft.DSC/PowerShell
               properties:
                 resources:
                 - name: Class-resource Info
