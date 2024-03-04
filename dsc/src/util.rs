@@ -412,7 +412,7 @@ pub fn absolutize_and_set_dscconfigroot(config_path: &str) -> String
     let path = Path::new(config_path);
 
     // make path absolute
-    let full_path = path.absolutize().unwrap();
+    let full_path = path.absolutize().unwrap_or_default();
     let Some(config_root_path) = full_path.parent() else { 
         // this should never happen because path was absolutized
         error!("Error reading config path parent");
@@ -422,7 +422,7 @@ pub fn absolutize_and_set_dscconfigroot(config_path: &str) -> String
     let env_var = "DSC_CONFIG_ROOT";
     
     // warn if env var is already set/used
-    if let Ok(_) = env::var(env_var) {
+    if env::var(env_var).is_ok() {
         warn!("The current value of '{env_var}' env var will be overridden");
     }
 
