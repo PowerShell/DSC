@@ -46,7 +46,7 @@ Describe 'tests for runcommandonset set' {
     It 'STDERR captured when calling resource directly with invalid args' {
         $json = runcommandonset set -e pwsh -a "echo hello world" 2> $TestDrive/output.txt
         $stdout = $json | ConvertFrom-Json
-        $stdout.exit_code | Should -Be 64
+        $stdout.exitCode | Should -Be 64
         $expected = "Stderr: The argument 'echo hello world' is not recognized as the name of a script file. Check the spelling of the name, or if a path was included, verify that the path is correct and try again."
         $stderr = Get-Content -Path $TestDrive/output.txt
         $stderr | Should -Contain $expected
@@ -71,7 +71,7 @@ Describe 'tests for runcommandonset set' {
 
     It 'Exit code does not need to be provided to detect difference' {
         $result = '{ "executable": "pwsh", "arguments": ["invalid input"] }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
-        $result.changedProperties | Should -Be @( 'exit_code' )
+        $result.changedProperties | Should -Be @( 'exitCode' )
         $LASTEXITCODE | Should -Be 0
     }
 

@@ -9,7 +9,7 @@ pub struct RunCommand {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arguments: Option<Vec<String>>,
     // default value for exit code is 0
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(rename = "exitCode", default, skip_serializing_if = "is_default")]
     pub exit_code: i32,
 }
 

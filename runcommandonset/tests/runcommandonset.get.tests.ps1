@@ -16,14 +16,14 @@ Describe 'tests for runcommandonset get' {
         {
             "executable": "foo",
             "arguments": ["bar", "baz"],
-            "exit_code": 5,
+            "exitCode": 5,
         }
 "@
 
         $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
         $result.actualState.arguments | Should -BeExactly @('bar', 'baz')
         $result.actualState.executable | Should -BeExactly 'foo'
-        $result.actualState.exit_code | Should -BeExactly 5
+        $result.actualState.exitCode | Should -BeExactly 5
     }
 
     It 'Executable is a required input via CLI arguments' {
