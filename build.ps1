@@ -121,7 +121,8 @@ $projects = @(
     "tools/test_group_resource",
     "y2j",
     "wmi-adapter",
-    "resources/brew"
+    "resources/brew",
+    "runcommandonset"
 )
 $pedantic_unclean_projects = @("ntreg")
 $clippy_unclean_projects = @("tree-sitter-dscexpression")
