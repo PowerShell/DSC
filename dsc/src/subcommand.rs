@@ -436,10 +436,10 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         if !found { continue; }
                     }
 
-                    methods = vec!["get".to_string()];
-                    if manifest.set.is_some() { methods.push("set".to_string()); }
-                    if manifest.test.is_some() { methods.push("test".to_string()); }
-                    if manifest.export.is_some() { methods.push("export".to_string()); }
+                    methods = vec!["g".to_string()];
+                    if manifest.set.is_some() { methods.push("s".to_string()); } else { methods.push("-".to_string()) };
+                    if manifest.test.is_some() { methods.push("t".to_string()); } else { methods.push("-".to_string()) };
+                    if manifest.export.is_some() { methods.push("e".to_string()); } else { methods.push("-".to_string()) };
                 }
 
                 if write_table {
@@ -447,7 +447,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         resource.type_name,
                         format!("{:?}", resource.kind),
                         resource.version,
-                        methods.join(", "),
+                        methods.join(""),
                         resource.requires.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
