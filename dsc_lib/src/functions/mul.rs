@@ -5,7 +5,7 @@ use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
 use serde_json::Value;
-use tracing::trace;
+use tracing::debug;
 
 #[derive(Debug, Default)]
 pub struct Mul {}
@@ -24,7 +24,7 @@ impl Function for Mul {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        trace!("mul function");
+        debug!("mul function");
         let value = args[0].as_i64().unwrap_or_default() * args[1].as_i64().unwrap_or_default();
         Ok(Value::Number(value.into()))
     }
