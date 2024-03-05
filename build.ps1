@@ -315,7 +315,7 @@ if ($Msix) {
 
         $makeappx = Get-ChildItem -Recurse -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin\*\' $arch) -Filter makeappx.exe | Sort-Object FullName -Descending | Select-Object -First 1
         if ($null -eq $makeappx) {
-            throw "makeappx not found"
+            throw "makeappx not found, please install Windows SDK"
         }
     }
 
