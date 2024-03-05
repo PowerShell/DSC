@@ -8,7 +8,7 @@ Describe 'Group resource tests' {
         $out | Should -BeExactly @'
 results:
 - name: First Group
-  type: DSC/Group
+  type: Microsoft.DSC/Group
   result:
   - name: First
     type: Test/Echo
@@ -16,7 +16,7 @@ results:
       actualState:
         output: First
   - name: Nested Group
-    type: DSC/Group
+    type: Microsoft.DSC/Group
     result:
     - name: Nested First
       type: Test/Echo
@@ -29,7 +29,7 @@ results:
         actualState:
           output: Nested Second
 - name: Last Group
-  type: DSC/Group
+  type: Microsoft.DSC/Group
   result:
   - name: Last
     type: Test/Echo
