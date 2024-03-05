@@ -6,6 +6,8 @@ param(
     [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
     $architecture = 'current',
     [switch]$Clippy,
+    [switch]$SkipBuild,
+    [switch]$Msix,
     [switch]$Test,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck
@@ -52,7 +54,7 @@ function Find-LinkExe {
     }
 }
 
-if (!$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
+if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
     if (!(Test-Path $BuildToolsPath)) {
         Write-Verbose -Verbose "link.exe not found, installing C++ build tools"
         Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
@@ -83,7 +85,6 @@ if (!$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction I
     #$env:PATH += ";$linkexe"
 }
 
-## Create the output folder
 $configuration = $Release ? 'release' : 'debug'
 $flags = @($Release ? '-r' : $null)
 if ($architecture -eq 'current') {
@@ -98,13 +99,14 @@ else {
     $target = Join-Path $PSScriptRoot 'bin' $architecture $configuration
 }
 
-if (Test-Path $target) {
-    Remove-Item $target -Recurse -ErrorAction Stop
-}
-New-Item -ItemType Directory $target > $null
+if (!$SkipBuild) {
+        if (Test-Path $target) {
+        Remove-Item $target -Recurse -ErrorAction Stop
+    }
+    New-Item -ItemType Directory $target > $null
 
-# make sure dependencies are built first so clippy runs correctly
-$windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
+    # make sure dependencies are built first so clippy runs correctly
+    $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
 
 # projects are in dependency order
 $projects = @(
@@ -126,73 +128,72 @@ $pedantic_unclean_projects = @("ntreg")
 $clippy_unclean_projects = @("tree-sitter-dscexpression")
 $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
-if ($IsWindows) {
-    $projects += $windows_projects
-}
+    if ($IsWindows) {
+        $projects += $windows_projects
+    }
 
-$failed = $false
-foreach ($project in $projects) {
-    ## Build format_json
-    Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
-    try {
-        Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
+    $failed = $false
+    foreach ($project in $projects) {
+        ## Build format_json
+        Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
+        try {
+            Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
-        if ($project -eq 'tree-sitter-dscexpression') {
-            ./build.ps1
-        }
+            if ($project -eq 'tree-sitter-dscexpression') {
+                ./build.ps1
+            }
 
-        if (Test-Path "./Cargo.toml")
-        {
-            if ($Clippy) {
-                if ($clippy_unclean_projects -contains $project) {
-                    Write-Verbose -Verbose "Skipping clippy for $project"
-                }
-                elseif ($pedantic_unclean_projects -contains $project) {
-                    Write-Verbose -Verbose "Running clippy for $project"
-                    cargo clippy @flags -- -Dwarnings
+            if (Test-Path "./Cargo.toml")
+            {
+                if ($Clippy) {
+                    if ($clippy_unclean_projects -contains $project) {
+                        Write-Verbose -Verbose "Skipping clippy for $project"
+                    }
+                    elseif ($pedantic_unclean_projects -contains $project) {
+                        Write-Verbose -Verbose "Running clippy for $project"
+                        cargo clippy @flags -- -Dwarnings
+                    }
+                    else {
+                        Write-Verbose -Verbose "Running clippy with pedantic for $project"
+                        cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                    }
                 }
                 else {
-                    Write-Verbose -Verbose "Running clippy with pedantic for $project"
-                    cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                    cargo build @flags
                 }
             }
+
+            if ($LASTEXITCODE -ne 0) {
+                $failed = $true
+            }
+
+            $binary = Split-Path $project -Leaf
+
+            if ($IsWindows) {
+                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore
+            }
             else {
-                cargo build @flags
+                Copy-Item "$path/$binary" $target -ErrorAction Ignore
             }
-        }
 
-        if ($LASTEXITCODE -ne 0) {
-            $failed = $true
-        }
-
-        $binary = Split-Path $project -Leaf
-
-        if ($IsWindows) {
-            Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore
-        }
-        else {
-            Copy-Item "$path/$binary" $target -ErrorAction Ignore
-        }
-
-        if (Test-Path "./copy_files.txt") {
-            Get-Content "./copy_files.txt" | ForEach-Object {
-                Copy-Item $_ $target -Force -ErrorAction Ignore
+            if (Test-Path "./copy_files.txt") {
+                Get-Content "./copy_files.txt" | ForEach-Object {
+                    Copy-Item $_ $target -Force -ErrorAction Ignore
+                }
             }
+
+            Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+
+        } finally {
+            Pop-Location
         }
+    }
 
-        Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
-
-    } finally {
-        Pop-Location
+    if ($failed) {
+        Write-Host -ForegroundColor Red "Build failed"
+        exit 1
     }
 }
-
-if ($failed) {
-    Write-Host -ForegroundColor Red "Build failed"
-    exit 1
-}
-
-Copy-Item $PSScriptRoot/tools/add-path.ps1 $target -Force -ErrorAction Ignore
 
 $relative = Resolve-Path $target -Relative
 if (!$Clippy) {
@@ -222,7 +223,7 @@ if (!$Clippy) {
 
     if (!$found) {
         Write-Host -ForegroundCOlor Yellow "Adding $target to `$env:PATH"
-        $env:PATH += [System.IO.Path]::PathSeparator + $target
+        $env:PATH = $target + [System.IO.Path]::PathSeparator + $env:PATH
     }
 }
 
@@ -292,6 +293,118 @@ if ($Test) {
     }
 
     Invoke-Pester -ErrorAction Stop
+}
+
+if ($Msix) {
+    if (!$IsWindows) {
+        throw "MSIX is only supported on Windows"
+    }
+
+    if ($architecture -eq 'current') {
+        throw 'MSIX requires a specific architecture'
+    }
+
+    $makeappx = Get-Command makeappx -CommandType Application -ErrorAction Ignore
+    if ($null -eq $makeappx) {
+        # try to find
+        if ($architecture -eq 'aarch64-pc-windows-msvc') {
+            $arch = 'arm64'
+        }
+        else {
+            $arch = 'x64'
+        }
+
+        $makeappx = Get-ChildItem -Recurse -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin\*\' $arch) -Filter makeappx.exe | Sort-Object FullName -Descending | Select-Object -First 1
+        if ($null -eq $makeappx) {
+            throw "makeappx not found, please install Windows SDK"
+        }
+    }
+
+    $makepri = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
+    $displayName = "DesiredStateConfiguration"
+    $productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
+    $isPreview = $productVersion -like '*-*'
+    $productName = "DesiredStateConfiguration"
+    if ($isPreview) {
+        Write-Verbose -Verbose "Preview version detected"
+        $productName += "-Preview"
+        # save preview number
+        $previewNumber = $productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1'
+        # remove label from version
+        $productVersion = $productVersion.Split('-')[0]
+        # replace revision number with preview number
+        $productVersion = $productVersion -replace '(\d+)$', "$previewNumber.0"
+        $displayName += "-Preview"
+    }
+    Write-Verbose -Verbose "Product version is $productVersion"
+    $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
+
+    # Appx manifest needs to be in root of source path, but the embedded version needs to be updated
+    # cp-459155 is 'CN=Microsoft Windows Store Publisher (Store EKU), O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+    # authenticodeFormer is 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+    $releasePublisher = 'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'
+
+    $appxManifest = Get-Content "$PSScriptRoot\packaging\msix\AppxManifest.xml" -Raw
+    $appxManifest = $appxManifest.Replace('$VERSION$', $ProductVersion).Replace('$ARCH$', $Arch).Replace('$PRODUCTNAME$', $productName).Replace('$DISPLAYNAME$', $displayName).Replace('$PUBLISHER$', $releasePublisher)
+    $msixTarget = Join-Path $PSScriptRoot 'bin' $architecture 'msix'
+    if (Test-Path $msixTarget) {
+        Remove-Item $msixTarget -Recurse -ErrorAction Stop
+    }
+
+    New-Item -ItemType Directory $msixTarget > $null
+    Set-Content -Path "$msixTarget\AppxManifest.xml" -Value $appxManifest -Force
+
+    $filesForMsix = @(
+        'dsc.exe',
+        'assertion.dsc.resource.json',
+        'group.dsc.resource.json',
+        'parallel.dsc.resource.json',
+        'powershellgroup.dsc.resource.json',
+        'powershellgroup.resource.ps1',
+        'wmigroup.dsc.resource.json.optout',
+        'wmigroup.resource.ps1'
+    )
+
+    foreach ($file in $filesForMsix) {
+        Copy-Item "$target\$file" $msixTarget -ErrorAction Stop
+    }
+
+    # Necessary image assets need to be in source assets folder
+    $assets = @(
+        'Square150x150Logo'
+        'Square64x64Logo'
+        'Square44x44Logo'
+        'Square44x44Logo.targetsize-48'
+        'Square44x44Logo.targetsize-48_altform-unplated'
+        'StoreLogo'
+    )
+
+    New-Item -ItemType Directory "$msixTarget\assets" > $null
+    foreach ($asset in $assets) {
+        Copy-Item "$PSScriptRoot\packaging\assets\$asset.png" "$msixTarget\assets" -ErrorAction Stop
+    }
+
+    Write-Verbose "Creating priconfig.xml" -Verbose
+    & $makepri createconfig /o /cf (Join-Path $msixTarget "priconfig.xml") /dq en-US
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create priconfig.xml"
+    }
+
+    Write-Verbose "Creating resources.pri" -Verbose
+    Push-Location $msixTarget
+    & $makepri new /v /o /pr $msixTarget /cf (Join-Path $msixTarget "priconfig.xml")
+    Pop-Location
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create resources.pri"
+    }
+
+    Write-Verbose "Creating msix package" -Verbose
+    $packageName = "$productName-$productVersion-$arch"
+    & $makeappx pack /o /v /h SHA256 /d $msixTarget /p (Join-Path -Path (Get-Location) -ChildPath "$packageName.msix")
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create msix package"
+    }
+    Write-Verbose "Created $packageName.msix" -Verbose
 }
 
 $env:RUST_BACKTRACE=1

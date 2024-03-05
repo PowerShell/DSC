@@ -2,6 +2,7 @@ Cargo.lock
 target
 bin/
 .DS_Store
+*.msix
 
 # Node.js generated files for tree-sitter
 build/
