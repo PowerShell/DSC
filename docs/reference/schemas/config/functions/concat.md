@@ -24,22 +24,23 @@ string. Separate each value with a comma. The `concat()` function is variadic. Y
 least two values to the function. The function can accept any number of arguments.
 
 The function concatenates the input values without any joining character. It accepts only strings
-and integers as input values.
+or arrays of strings as input values. The input values must be of the same type. If you pass a
+string and an array to the same function, the function raises an error.
 
 ## Examples
 
 ### Example 1 - Concatenate strings
 
-The configuration uses the `concat()` function to join the string `abc` and the integer `123`
+The configuration uses the `concat()` function to join the strings `abc` and `def`
 
 ```yaml
 # concat.example.1.dsc.config.yaml
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
 resources:
-  - name: Echo 'abc123'
+  - name: Echo 'abcdef'
     type: Test/Echo
     properties:
-      text: "[concat('abc', 123)]"
+      output: "[concat('abc', 'def')]"
 ```
 
 ```bash
@@ -48,11 +49,11 @@ dsc --input-file concat.example.1.dsc.config.yaml config get
 
 ```yaml
 results:
-- name: Echo 'abc123'
+- name: Echo 'abcdef'
   type: Test/Echo
   result:
     actualState:
-      text: abc123
+      output: abcdef
 messages: []
 hadErrors: false
 ```
@@ -61,11 +62,11 @@ hadErrors: false
 
 ### inputValue
 
-A value to concatenate. Each value must be either a string or an integer. The values are added to
-the output string in the same order you pass them to the function.
+A value to concatenate. Each value must be either a string or an array of strings. The strings are
+are added to the output string in the same order you pass them to the function.
 
 ```yaml
-Type:         [string, integer]
+Type:         [string, array]
 Required:     true
 MinimumCount: 2
 MaximumCount: 18446744073709551615

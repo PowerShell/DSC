@@ -15,24 +15,7 @@
       "description": "The results of the `set` method for every DSC Resource instance in the DSC Configuration Document with the instance's name and type.",
       "type": "array",
       "items": {
-        "title": "Set Result",
-        "type": "object",
-        "required": [
-          "name",
-          "type",
-          "result"
-        ],
-        "properties": {
-          "name": {
-            "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/instanceName.json"
-          },
-          "type": {
-            "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/resourceType.json"
-          },
-          "result": {
-            "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.json"
-          }
-        }
+        "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.full.json"
       }
     },
     "messages": {
@@ -43,6 +26,46 @@
     }
   },
   "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.full.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.full.json",
+      "title": "dsc resource set result (full)",
+      "description": "Describes the return data for the full result of the `set` operation for a\nresource instance. This data is returned:\n\n- For every instance in a configuration document when you use the\n  `dsc config set` command.\n\n- For nested instances of a group or adapter resource when you use the\n  `dsc resource set` command.",
+      "type": "object",
+      "required": [
+        "name",
+        "result",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/instanceName.json"
+        },
+        "type": {
+          "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/resourceType.json"
+        },
+        "result": {
+          "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.json"
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/messages.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/messages.json",
+      "title": "Messages",
+      "description": "A list of structured messages emitted by the DSC Resources during an operation.",
+      "type": "array",
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/message.json"
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/hadErrors.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/hadErrors.json",
+      "title": "Had Errors",
+      "description": "Indicates whether any of the DSC Resources returned a non-zero exit code.",
+      "type": "boolean"
+    },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/instanceName.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/instanceName.json",
@@ -64,7 +87,24 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.json",
       "title": "dsc resource set result",
-      "description": "Describes the return data for a DSC Resource instance from the `dsc resource set` command.",
+      "description": "Describes the return data for a DSC Resource instance from the `dsc resource set` command. The return data is either a single object that describes the enforced state of a non-nested instance or an array of objects that describe the enforced state of the nested instances for a group or adapter resource.",
+      "anyOf": [
+        {
+          "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.simple.json"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.full.json"
+          }
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.simple.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.simple.json",
+      "title": "dsc resource set result (simple)",
+      "description": "Describes the return data for a DSC Resource instance from the `dsc resource set` command. This data is returned for instances that aren't group resources, adapter resources, or nested inside a group or adapter resource.\nWhen you use `dsc resource set` for a group or adapter resource, the command returns an array of full test result objects that include the name and type for the nested instances.",
       "type": "object",
       "required": [
         "beforeState",
@@ -92,23 +132,6 @@
           }
         }
       }
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/messages.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/messages.json",
-      "title": "Messages",
-      "description": "A list of structured messages emitted by the DSC Resources during an operation.",
-      "type": "array",
-      "items": {
-        "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/message.json"
-      }
-    },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/hadErrors.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/hadErrors.json",
-      "title": "Had Errors",
-      "description": "Indicates whether any of the DSC Resources returned a non-zero exit code.",
-      "type": "boolean"
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/definitions/message.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

@@ -70,9 +70,9 @@ Required: true
 
 #### result
 
-An item's `result` property includes the actual state for the resource instance. The value for this
-property adheres to the same schema as the output for the `dsc resource test` command. For more
-information, see [dsc resource test result schema reference][02].
+An item's `result` property includes the validation state for the resource instance. The value for
+this property adheres to the same schema as the output for the `dsc resource test` command. For
+more information, see [dsc resource test result schema reference][02].
 
 ### messages
 
