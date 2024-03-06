@@ -4,6 +4,7 @@
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::Invoke;
+use crate::dscresources::resource_manifest::Kind;
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
@@ -142,6 +143,24 @@ fn get_progress_bar(len: u64) -> Result<ProgressBar, DscError> {
    Ok(pb)
 }
 
+fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Result<String, DscError> {
+    if *kind == Kind::Adapter {
+        // add metadata to the properties so the adapter knows this is a config
+        let mut metadata = Map::new();
+        let mut dsc_value = Map::new();
+        dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
+        metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
+        if let Some(mut properties) = properties {
+            properties.insert("metadata".to_string(), Value::Object(metadata));
+            return Ok(serde_json::to_string(&properties)?);
+        }
+        properties = Some(metadata);
+        return Ok(serde_json::to_string(&properties)?);
+    }
+
+    Ok(serde_json::to_string(&properties)?)
+}
+
 impl Configurator {
     /// Create a new `Configurator` instance.
     ///
@@ -185,7 +204,8 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-            let filter = serde_json::to_string(&properties)?;
+            let filter = add_metadata(&dsc_resource.kind, properties)?;
+            trace!("filter: {filter}");
             let get_result = dsc_resource.get(&filter)?;
             let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
@@ -222,7 +242,8 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-            let desired = serde_json::to_string(&properties)?;
+            let desired = add_metadata(&dsc_resource.kind, properties)?;
+            trace!("desired: {desired}");
             let set_result = dsc_resource.set(&desired, skip_test)?;
             let resource_result = config_result::ResourceSetResult {
                 name: resource.name.clone(),
@@ -259,7 +280,8 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
-            let expected = serde_json::to_string(&properties)?;
+            let expected = add_metadata(&dsc_resource.kind, properties)?;
+            trace!("expected: {expected}");
             let test_result = dsc_resource.test(&expected)?;
             let resource_result = config_result::ResourceTestResult {
                 name: resource.name.clone(),
@@ -294,14 +316,15 @@ impl Configurator {
         let mut conf = config_doc::Configuration::new();
 
         let pb = get_progress_bar(config.resources.len() as u64)?;
-        for resource in &config.resources {
+        for resource in config.resources {
             pb.inc(1);
             pb.set_message(format!("Export '{}'", resource.name));
+            let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
-
-            let input = serde_json::to_string(&resource.properties)?;
+            let input = add_metadata(&dsc_resource.kind, properties)?;
+            trace!("input: {input}");
             add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
