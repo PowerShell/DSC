@@ -21,7 +21,10 @@ param(
         'JsonVSCode'
         'Yaml'
         'YamlVSCode'
-    )
+    ),
+
+    [switch]
+    $NoBundle
 )
 
 begin {
@@ -202,7 +205,11 @@ begin {
             [Object[]]
             $SchemaList,
 
-            [LocalJsonSchemaRegistry] $SchemaRegistry
+            [LocalJsonSchemaRegistry]
+            $SchemaRegistry,
+
+            [Generic.List[string]]
+            $ResolvedReferences = [Generic.List[string]]::new()
         )
 
         begin {
@@ -212,18 +219,34 @@ begin {
                     $References.Add($_)
                 }
             }
+            $AddResolvedReference = {
+                if ($_ -notin $ResolvedReferences) {
+                    $ResolvedReferences.Add($_)
+                }
+            }
         }
 
         process {
             if ($PSCmdlet.ParameterSetName -eq 'SchemaObject') {
+                # Save the schema ID for later comparison
+                $id = $Schema.'$id'
+
                 $Schema.GetEnumerator().ForEach({
                     if ($_.Key -eq '$ref' -and $_.Value -notin $References) {
                         $References.Add($_.Value)
                     } elseif ($_.Value -is [Object[]]) {
-                        $NestedReferences = Get-JsonSchemaReference -SchemaList $_.Value
+                        $RecursiveParameters = @{
+                            ResolvedReferences = $ResolvedReferences
+                            SchemaList         = $_.Value
+                        }
+                        $NestedReferences = Get-JsonSchemaReference @RecursiveParameters
                         $NestedReferences.ForEach($AddNestedReference)
                     } elseif ($_.Value -is [Specialized.OrderedDictionary]) {
-                        $NestedReferences = Get-JsonSchemaReference -Schema $_.Value
+                        $RecursiveParameters = @{
+                            ResolvedReferences = $ResolvedReferences
+                            Schema             = $_.Value
+                        }
+                        $NestedReferences = Get-JsonSchemaReference @RecursiveParameters
                         $NestedReferences.ForEach($AddNestedReference)
                     }
                 })
@@ -243,13 +266,25 @@ begin {
 
             if ($null -ne $SchemaRegistry -and $References.Count -gt 0) {
                 foreach ($Reference in $References.Clone()) {
+                    # Avoid infinite recursion
+                    if ($Reference -eq $id -or $Reference -in $ResolvedReferences) {
+                        continue
+                    }
+
                     if ($Reference -in $SchemaRegistry.Map.Keys) {
+                        # Add current reference to the resolved list to avoid infinite recursion
+                        $ResolvedReferences.Add($Reference)
+                        # Resolve nested references with the schema registry
                         $Resolving = @{
-                            Schema = $SchemaRegistry.Map.$Reference
-                            SchemaRegistry = $SchemaRegistry
+                            Schema             = $SchemaRegistry.Map.$Reference
+                            SchemaRegistry     = $SchemaRegistry
+                            ResolvedReferences = $ResolvedReferences
                         }
                         $NestedReferences = Get-JsonSchemaReference @Resolving
+                        # Add resolved references to the lists of returning references
                         $NestedReferences.ForEach($AddNestedReference)
+                        # Also to resolved, to avoid re-resolving
+                        $NestedReferences.ForEach($AddResolvedReference)
                     }
                 }
             }
@@ -592,9 +627,11 @@ process {
     }
 
     if (-not (Test-Path -Path $OutputDirectory)) {
+        Write-Verbose "Creating a new folder for schema version: $($Config.version)"
         $null = New-Item -Path $OutputDirectory -ItemType Directory -Force
     }
 
+    Write-Verbose "Converting source schemas to JSON with interpolated values..."
     Get-ChildItem -Path $PSScriptRoot/src -Filter *.yaml -Recurse | ForEach-Object -Process {
         $SchemaContent = Get-Content -Path $_.FullName -Raw
         $SchemaContent = $SchemaContent -replace '<HOST>',             $Config.host
@@ -615,6 +652,7 @@ process {
         | Out-File -FilePath ($SchemaPath -replace '\.yaml$', '.json') -Force
     }
 
+    Write-Verbose "Building schema registry..."
     $RegistryParameters = @{
         SchemaDirectories = @(
             "$OutputDirectory/config"
@@ -632,6 +670,10 @@ process {
 
     $SchemaRegistry
 
+    if ($NoBundle) {
+        return
+    }
+
     $Bundles = $Config.bundle_schemas | ForEach-Object -Process {
         [hashtable]$Bundle     = $_
         $Bundle.ConfigFilePath = "$OutputDirectory/$($Bundle.ConfigFilePath)"
@@ -645,6 +687,7 @@ process {
         )
     }
 
+    Write-Verbose "Processing schema bundles: $($Bundles | ConvertTo-Json -Depth 99)"
     foreach ($BundleToExport in $Bundles) {
         if ($null -eq $BundleToExport.OutputDirectory) {
             $BundleToExport.OutputDirectory = "$OutputDirectory/bundled"
@@ -654,21 +697,11 @@ process {
         if ($null -eq $BundleToExport.OutputFormat) {
             $BundleToExport.OutputFormat = $OutputFormat
         }
-        Write-Verbose "Exporting: $($BundleToExport | ConvertTo-Json)"
+        Write-Verbose "Exporting bundled schema: $($BundleToExport | ConvertTo-Json)"
         Export-MergedJsonSchema @BundleToExport -SchemaRegistry $SchemaRegistry -ErrorAction Stop
     }
 
-    # Remove VS Code keywords from non-bundled schemas
-    # $SchemaRegistry.FileMap.GetEnumerator() | ForEach-Object -Process {
-    #     $SchemaPath = $_.Key
-    #     $SchemaData = $_.Value
-
-    #     $SchemaData
-    #     | ConvertTo-Json -Depth 99
-    #     | ForEach-Object { $_ -replace '\r\n', "`n" }
-    #     | Out-File -FilePath $SchemaPath -Force
-    # }
-
+    Write-Verbose "Removing VS Code keywords from non-bundled schemas..."
     $SchemaRegistry.FileMap.GetEnumerator() | ForEach-Object -Process {
         $SchemaPath = $_.Key
         $SchemaData = $_.Value
