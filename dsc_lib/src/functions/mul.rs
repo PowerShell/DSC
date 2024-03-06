@@ -25,7 +25,7 @@ impl Function for Mul {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("mul function");
-        let value = args[0].as_i64().unwrap_or_default() * args[1].as_i64().unwrap_or_default();
+        let value = args[0].as_i64().unwrap() * args[1].as_i64().unwrap();
         Ok(Value::Number(value.into()))
     }
 }
@@ -53,6 +53,21 @@ mod tests {
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[mul(5)]", &Context::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn overflow_result() {
+        let mut parser = Statement::new().unwrap();
+        // max value for i64 is 2^63 -1 (or 9,223,372,036,854,775,807)
+        let result = parser.parse_and_execute("[mul(9223372036854775807, 2)]", &Context::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn overflow_input() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[mul(9223372036854775808, 2)]", &Context::new());
         assert!(result.is_err());
     }
 }
