@@ -25,10 +25,14 @@ impl Function for Div {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("div function");
-        if let Some(value) = args[0].as_i64().unwrap().checked_div(args[1].as_i64().unwrap()) {
-            Ok(Value::Number(value.into()))
+        if let (Some(arg1), Some(arg2)) = (args[0].as_i64(), args[1].as_i64()) {
+            if let Some(value) = arg1.checked_div(arg2) {
+                Ok(Value::Number(value.into()))
+            } else {
+                Err(DscError::Parser("Cannot divide by zero".to_string()))
+            }
         } else {
-            Err(DscError::Parser("Cannot divide by zero".to_string()))
+            Err(DscError::Parser("Invalid argument(s)".to_string()))
         }
     }
 }
