@@ -407,12 +407,25 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     parse_input_to_json(&value)
 }
 
-pub fn absolutize_and_set_dscconfigroot(config_path: &str) -> String
+/// Sets DSC_CONFIG_ROOT env var and makes path absolute.
+///
+/// # Arguments
+///
+/// * `config_path` - Full path to the config file 
+///
+/// # Returns
+///
+/// Absolute full path to the config file.
+pub fn set_dscconfigroot(config_path: &str) -> String
 {
     let path = Path::new(config_path);
 
     // make path absolute
-    let full_path = path.absolutize().unwrap_or_default();
+    let Ok(full_path) = path.absolutize() else {
+            error!("Error making config path absolute");
+            exit(EXIT_DSC_ERROR);
+    };
+
     let Some(config_root_path) = full_path.parent() else { 
         // this should never happen because path was absolutized
         error!("Error reading config path parent");
