@@ -7,11 +7,11 @@ Describe 'Tests for listing resources' {
         $LASTEXITCODE | Should -Be 0
         $resources | Should -Not -BeNullOrEmpty
         $resources.Count | Should -BeGreaterThan 0
-        $resources.type | Should -Contain 'DSC/AssertionGroup'
-        $resources.type | Should -Contain 'DSC/Group'
-        $resources.type | Should -Contain 'DSC/ParallelGroup'
+        $resources.type | Should -Contain 'Microsoft.DSC/Assertion'
+        $resources.type | Should -Contain 'Microsoft.DSC/Group'
+        $resources.type | Should -Contain 'Microsoft.DSC/Parallel'
         $resources.type | Should -Contain 'Microsoft/OSInfo'
-        ($resources | Where-Object { $_.type -eq 'DSC/Group' }).Kind | Should -BeExactly 'Group'
+        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/Group' }).Kind | Should -BeExactly 'Group'
         ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'Resource'
         ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/PowerShell' }).Kind | Should -BeExactly 'Adapter'
     }

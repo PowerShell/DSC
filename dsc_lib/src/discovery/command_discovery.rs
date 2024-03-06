@@ -14,7 +14,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::time::Duration;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, trace, warn};
 
 pub struct CommandDiscovery {
 }
@@ -28,6 +28,7 @@ impl CommandDiscovery {
     #[allow(clippy::too_many_lines)]
     fn search_for_resources(required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
+        debug!("Searching for resources: {:?}", required_resource_types);
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
         let multi_progress_bar = MultiProgress::new();
@@ -53,20 +54,37 @@ impl CommandDiscovery {
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut adapter_resources: Vec<String> = Vec::new();
         let mut remaining_required_resource_types = required_resource_types.to_owned();
+        let mut using_custom_path = false;
+
         // try DSC_RESOURCE_PATH env var first otherwise use PATH
-        let path_env = match env::var_os("DSC_RESOURCE_PATH") {
-            Some(value) => value,
-            None => {
-                match env::var_os("PATH") {
-                    Some(value) => value,
-                    None => {
-                        return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
-                    }
+        let path_env = if let Some(value) = env::var_os("DSC_RESOURCE_PATH") {
+            debug!("Using DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
+            using_custom_path = true;
+            value
+        } else {
+            trace!("DSC_RESOURCE_PATH not set, trying PATH");
+            match env::var_os("PATH") {
+                Some(value) => {
+                    debug!("Using PATH: {:?}", value.to_string_lossy());
+                    value
+                },
+                None => {
+                    return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
                 }
             }
         };
 
-        for path in env::split_paths(&path_env) {
+        let mut paths = env::split_paths(&path_env).collect::<Vec<_>>();
+
+        // add exe home to start of path
+        if !using_custom_path {
+            if let Some(exe_home) = env::current_exe()?.parent() {
+                debug!("Adding exe home to path: {}", exe_home.to_string_lossy());
+                paths.insert(0, exe_home.to_path_buf());
+            }
+        }
+
+        for path in paths {
             if path.exists() && path.is_dir() {
                 for entry in path.read_dir().unwrap() {
                     let entry = entry.unwrap();
