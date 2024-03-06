@@ -13,6 +13,14 @@ $ProgressPreference = 'Ignore'
 $WarningPreference = 'Ignore'
 $VerbosePreference = 'Ignore'
 
+function IsConfiguration($obj) {
+    if ($null -ne $obj.metadata -and $null -ne $obj.metadata.'Microsoft.DSC' -and $obj.metadata.'Microsoft.DSC'.context -eq 'Configuration') {
+        return $true
+    }
+
+    return $false
+}
+
 if ($Operation -eq 'List')
 {
     $clases = Get-CimClass
@@ -62,7 +70,7 @@ elseif ($Operation -eq 'Get')
 
     $result = @()
 
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) # we are processing a config batch
     {
         foreach($r in $inputobj_pscustomobj.resources)
         {

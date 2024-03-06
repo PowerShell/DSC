@@ -33,6 +33,14 @@ function RefreshCache
     }
 }
 
+function IsConfiguration($obj) {
+    if ($null -ne $obj.metadata -and $null -ne $obj.metadata.'Microsoft.DSC' -and $obj.metadata.'Microsoft.DSC'.context -eq 'Configuration') {
+        return $true
+    }
+
+    return $false
+}
+
 if (($PSVersionTable.PSVersion.Major -eq 7) -and ($PSVersionTable.PSVersion.Minor -eq 4) `
    -and ($PSVersionTable.PSVersion.PreReleaseLabel.StartsWith("preview")))
 {
@@ -121,7 +129,7 @@ elseif ($Operation -eq 'Get')
 
     RefreshCache
 
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) # we are processing a config batch
     {
         foreach($r in $inputobj_pscustomobj.resources)
         {
@@ -191,7 +199,7 @@ elseif ($Operation -eq 'Set')
 
     RefreshCache
 
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) # we are processing a config batch
     {
         foreach($r in $inputobj_pscustomobj.resources)
         {
@@ -259,7 +267,7 @@ elseif ($Operation -eq 'Test')
 
     RefreshCache
 
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) # we are processing a config batch
     {
         foreach($r in $inputobj_pscustomobj.resources)
         {
@@ -327,7 +335,7 @@ elseif ($Operation -eq 'Export')
 
     RefreshCache
 
-    if ($inputobj_pscustomobj.resources) # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) # we are processing a config batch
     {
         foreach($r in $inputobj_pscustomobj.resources)
         {
