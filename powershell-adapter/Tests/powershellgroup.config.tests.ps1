@@ -107,7 +107,7 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: PSTestModule/TestClassResource
                   properties:
-                    Name: "[envvar('DSCConfigRoot')]"
+                    Name: "[envvar('DSC_CONFIG_ROOT')]"
 "@
 
         $config_path = "$TestDrive/test_config.dsc.yaml"
@@ -132,7 +132,7 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: PSTestModule/TestClassResource
                   properties:
-                    Name: "[envvar('DSCConfigRoot')]"
+                    Name: "[envvar('DSC_CONFIG_ROOT')]"
 "@
         $out = $yaml | dsc config get
         $LASTEXITCODE | Should -Be 0

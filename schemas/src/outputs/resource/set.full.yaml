@@ -1,0 +1,26 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/outputs/resource/set.full.yaml
+
+title: dsc resource set result (full)
+description: |-
+  Describes the return data for the full result of the `set` operation for a
+  resource instance. This data is returned:
+  
+  - For every instance in a configuration document when you use the
+    `dsc config set` command.
+
+  - For nested instances of a group or adapter resource when you use the
+    `dsc resource set` command.
+
+type: object
+required:
+  - name
+  - result
+  - type
+properties:
+  name:
+    $ref: /<PREFIX>/<VERSION>/definitions/instanceName.yaml
+  type:
+    $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
+  result:
+    $ref: /<PREFIX>/<VERSION>/outputs/resource/set.yaml
