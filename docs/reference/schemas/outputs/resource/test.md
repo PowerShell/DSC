@@ -21,18 +21,29 @@ Type:          object
 
 ## Description
 
-The output from the `dsc resource test` command includes the actual state for the specified
-resource instance.
+Describes the return data for a DSC Resource instance from the `dsc resource get` command. The
+return data is either a single object that describes the tested state of a non-nested instance or
+an array of objects that describe the tested state of the nested instances for a group or adapter
+resource.
 
-## Required properties
+DSC returns a [simple test response](#simple-test-response) when the instance isn't a group
+resource, adapter resource, or nested inside a group or adapter resource.
+
+When the retrieved instance is for group resource, adapter resource, or nested inside a group or
+adapter resource, DSC returns a [full test result](#full-test-result), which also includes the
+resource type and instance name.
+
+## Simple test response
+
+### Required properties
 
 The output always includes these properties:
 
 - [desiredState](#desiredstate)
 
-## Properties
+### Properties
 
-### desiredState
+#### desiredState
 
 Represents the desired state of the resource instance. DSC validates this property's value against
 the resource's instance schema.
@@ -42,7 +53,7 @@ Type:     object
 Required: true
 ```
 
-### actualState
+#### actualState
 
 Represents the actual state of the resource instance. DSC validates this property's value against
 the resource's instance schema.
@@ -52,7 +63,7 @@ Type:     object
 Required: true
 ```
 
-### inDesiredState
+#### inDesiredState
 
 Indicates whether the resource instance's properties are in the desired state. This value is `true`
 if every property is in the desired state and otherwise `false`.
@@ -62,7 +73,7 @@ Type:     boolean
 Required: true
 ```
 
-### differingProperties
+#### differingProperties
 
 Defines the names of the properties that aren't in the desired state. If this value is an empty
 array, the instance's properties are in the desired state.
@@ -72,3 +83,55 @@ Type:      array
 Required:  true
 ItemsType: string
 ```
+
+## Full test result
+
+Describes the return data for the full result of the `test` operation for a resource instance. This
+data is returned:
+
+- For every instance in a configuration document when you use the `dsc config test` command.
+- For nested instances of a group or adapter resource when you use the `dsc resource test` command.
+
+### Required properties
+
+- [name](#name)
+- [type](#type)
+- [result](#result)
+
+### Properties
+
+#### type
+
+The `type` property identifies the instance's DSC Resource by its fully qualified type name.
+For more information about type names, see
+[DSC Resource fully qualified type name schema reference][01].
+
+```yaml
+Type:     string
+Required: true
+Pattern:  ^\w+(\.\w+){0,2}\/\w+$
+```
+
+#### name
+
+The `name` property identifies the instance by its short, unique, human-readable name.
+
+```yaml
+Type:     string
+Required: true
+```
+
+#### result
+
+The `result` property includes the validation state for the resource. This value is either:
+
+- The [simple test response](#simple-test-response) for the instance
+- An array of full get result objects for each nested instance, if the resource is a group or
+  adapter resource.
+
+```yaml
+Type: [object, array]
+Required: true
+```
+
+[01]: ../../definitions/resourceType.md

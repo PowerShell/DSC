@@ -11,7 +11,7 @@ Describe 'WMI adapter resource tests' {
 
             $configPath = Join-path $PSScriptRoot "test_wmi_config.dsc.yaml"
 
-            $dscPath = (get-command dsc -CommandType Application).Path
+            $dscPath = (get-command dsc -CommandType Application | Select-Object -First 1).Path
             $dscFolder = Split-Path -Path $dscPath
             $wmiGroupOptoutFile = Join-Path $dscFolder "wmi.dsc.resource.json.optout"
             $wmiGroupOptinFile = Join-Path $dscFolder "wmi.dsc.resource.json"

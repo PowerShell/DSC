@@ -205,9 +205,15 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Test { document, path, .. } |
         ConfigSubCommand::Validate { document, path, .. } |
         ConfigSubCommand::Export { document, path, .. } => {
-            let config_path = path.clone().unwrap_or_default();
-            set_dscconfigroot(&config_path);
-            get_input(document, stdin, path)
+            let mut new_path = path;
+            let opt_new_path;
+            if path.is_some()
+            {
+                let config_path = path.clone().unwrap_or_default();
+                opt_new_path = Some(set_dscconfigroot(&config_path));
+                new_path = &opt_new_path;
+            }
+            get_input(document, stdin, new_path)
         }
     };
 
@@ -394,13 +400,13 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
         ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
-            let mut methods: Vec<String> = Vec::new();
             let mut table = Table::new(&["Type", "Kind", "Version", "Methods", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if format is not specified and interactive
                 write_table = true;
             }
             for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
+                let mut methods = "g---".to_string();
                 // if description, tags, or write_table is specified, pull resource manifest if it exists
                 if description.is_some() || tags.is_some() || write_table {
                     let Some(ref resource_manifest) = resource.manifest else {
@@ -436,10 +442,9 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         if !found { continue; }
                     }
 
-                    methods = vec!["get".to_string()];
-                    if manifest.set.is_some() { methods.push("set".to_string()); }
-                    if manifest.test.is_some() { methods.push("test".to_string()); }
-                    if manifest.export.is_some() { methods.push("export".to_string()); }
+                    if manifest.set.is_some() { methods.replace_range(1..2, "s"); }
+                    if manifest.test.is_some() { methods.replace_range(2..3, "t"); }
+                    if manifest.export.is_some() { methods.replace_range(3..4, "e"); }
                 }
 
                 if write_table {
@@ -447,7 +452,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         resource.type_name,
                         format!("{:?}", resource.kind),
                         resource.version,
-                        methods.join(", "),
+                        methods,
                         resource.requires.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
