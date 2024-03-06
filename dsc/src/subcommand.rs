@@ -400,13 +400,13 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
         ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
-            let mut methods = String::new();
             let mut table = Table::new(&["Type", "Kind", "Version", "Methods", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if format is not specified and interactive
                 write_table = true;
             }
             for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
+                let mut methods = "g---".to_string();
                 // if description, tags, or write_table is specified, pull resource manifest if it exists
                 if description.is_some() || tags.is_some() || write_table {
                     let Some(ref resource_manifest) = resource.manifest else {
@@ -442,7 +442,6 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         if !found { continue; }
                     }
 
-                    methods = "g---".to_string();
                     if manifest.set.is_some() { methods.replace_range(1..2, "s"); }
                     if manifest.test.is_some() { methods.replace_range(2..3, "t"); }
                     if manifest.export.is_some() { methods.replace_range(3..4, "e"); }
@@ -453,7 +452,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         resource.type_name,
                         format!("{:?}", resource.kind),
                         resource.version,
-                        methods.clone(),
+                        methods,
                         resource.requires.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
