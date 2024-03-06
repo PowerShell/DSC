@@ -21,7 +21,7 @@ resources:
         keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
         valueName: SystemRoot
 - name: myGroup
-  type: DSC/Group # each resource in this group would run in sequence
+  type: Microsoft.DSC/Group # each resource in this group would run in sequence
   properties:
     resources:
     - name: current user registry
@@ -35,7 +35,7 @@ resources:
         keyPath: HKCU\example2
         _ensure: present
     - name: mygroup
-      type: DSC/Group
+      type: Microsoft.DSC/Group
       properties:
         resources:
         - name: myreg

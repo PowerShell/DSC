@@ -40,6 +40,7 @@ use syntect::{
 };
 use tracing::{Level, debug, error, warn, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
+use tracing_indicatif::IndicatifLayer;
 
 pub const EXIT_SUCCESS: i32 = 0;
 pub const EXIT_INVALID_ARGS: i32 = 1;
@@ -269,7 +270,8 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
         .or_else(|_| EnvFilter::try_new("warning"))
         .unwrap_or_default()
         .add_directive(tracing_level.into());
-    let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
+    let indicatif_layer = IndicatifLayer::new();
+    let layer = tracing_subscriber::fmt::Layer::default().with_writer(indicatif_layer.get_stderr_writer());
     let fmt = match trace_format {
         TraceFormat::Default => {
             layer
@@ -295,7 +297,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
         }
     };
 
-    let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
+    let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter).with(indicatif_layer);
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
