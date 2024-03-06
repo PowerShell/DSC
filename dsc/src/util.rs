@@ -407,7 +407,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     parse_input_to_json(&value)
 }
 
-/// Sets DSC_CONFIG_ROOT env var and makes path absolute.
+/// Sets `DSC_CONFIG_ROOT` env var and makes path absolute.
 ///
 /// # Arguments
 ///
