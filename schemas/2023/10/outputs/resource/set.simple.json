@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/set.simple.json",
+  "title": "dsc resource set result (simple)",
+  "description": "Describes the return data for a DSC Resource instance from the `dsc resource set` command. This data is returned for instances that aren't group resources, adapter resources, or nested inside a group or adapter resource.\nWhen you use `dsc resource set` for a group or adapter resource, the command returns an array of full test result objects that include the name and type for the nested instances.",
+  "type": "object",
+  "required": [
+    "beforeState",
+    "afterState",
+    "changedProperties"
+  ],
+  "properties": {
+    "beforeState": {
+      "title": "State before enforcing",
+      "description": "This property always represents the desired state of the DSC Resource instance before the `set` method runs. DSC validates this return value against the DSC Resource's schema.",
+      "type": "object"
+    },
+    "afterState": {
+      "title": "State after enforcing",
+      "description": "This property always represents the current state of the DSC Resource instance as returned by its `set` method after enforcing the desired state. DSC validates this return value against the DSC Resource's schema.",
+      "type": "object"
+    },
+    "changedProperties": {
+      "title": "Changed properties",
+      "description": "This property always represents the list of property names for the DSC Resource instance that the `set` method modified. When this value is an empty array, the `set` method didn't enforce any properties for the instance.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

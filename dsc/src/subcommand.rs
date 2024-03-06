@@ -205,9 +205,15 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Test { document, path, .. } |
         ConfigSubCommand::Validate { document, path, .. } |
         ConfigSubCommand::Export { document, path, .. } => {
-            let config_path = path.clone().unwrap_or_default();
-            set_dscconfigroot(&config_path);
-            get_input(document, stdin, path)
+            let mut new_path = path;
+            let opt_new_path;
+            if path.is_some()
+            {
+                let config_path = path.clone().unwrap_or_default();
+                opt_new_path = Some(set_dscconfigroot(&config_path));
+                new_path = &opt_new_path;
+            }
+            get_input(document, stdin, new_path)
         }
     };
 
