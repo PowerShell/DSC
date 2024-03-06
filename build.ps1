@@ -104,7 +104,7 @@ if (Test-Path $target) {
 New-Item -ItemType Directory $target > $null
 
 # make sure dependencies are built first so clippy runs correctly
-$windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
+$windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry", "reboot_pending", "wmi-adapter")
 
 # projects are in dependency order
 $projects = @(
@@ -118,9 +118,7 @@ $projects = @(
     "tools/dsctest",
     "tools/test_group_resource",
     "y2j",
-    "wmi-adapter",
-    "resources/brew",
-    "reboot_pending"
+    "resources/brew"
 )
 $pedantic_unclean_projects = @("ntreg")
 $clippy_unclean_projects = @("tree-sitter-dscexpression")
