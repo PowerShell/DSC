@@ -7,9 +7,9 @@ resources:
     keyPath: HKCU\example
     _ensure: Present
   dependsOn:
-  - "[resourceId('DSC/AssertionGroup','my assertions')]"
+  - "[resourceId('Microsoft.DSC/Assertion','my assertions')]"
 - name: my assertions
-  type: DSC/AssertionGroup
+  type: Microsoft.DSC/Assertion
   properties:
     $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
     resources:
