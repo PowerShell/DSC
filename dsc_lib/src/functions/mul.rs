@@ -25,8 +25,11 @@ impl Function for Mul {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("mul function");
-        let value = args[0].as_i64().unwrap() * args[1].as_i64().unwrap();
-        Ok(Value::Number(value.into()))
+        if let (Some(arg1), Some(arg2)) = (args[0].as_i64(), args[1].as_i64()) {
+            Ok(Value::Number((arg1 * arg2).into()))
+        } else {
+            Err(DscError::Parser("Invalid argument(s)".to_string()))
+        }
     }
 }
 
