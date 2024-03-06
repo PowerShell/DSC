@@ -15,24 +15,7 @@
       "description": "The results of the `test` method for every DSC Resource instance in the DSC Configuration Document with the instance's name and type.",
       "type": "array",
       "items": {
-        "title": "Test Result",
-        "type": "object",
-        "required": [
-          "name",
-          "type",
-          "result"
-        ],
-        "properties": {
-          "name": {
-            "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/instanceName.json"
-          },
-          "type": {
-            "$ref": "/PowerShell/DSC/main/schemas/2023/10/definitions/resourceType.json"
-          },
-          "result": {
-            "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/test.json"
-          }
-        }
+        "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/test.full.json"
       }
     },
     "messages": {

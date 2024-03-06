@@ -19,19 +19,7 @@ properties:
       DSC Configuration Document with the instance's name and type.
     type: array
     items:
-      title: Set Result
-      type: object
-      required:
-        - name
-        - type
-        - result
-      properties:
-        name:
-          $ref: /<PREFIX>/<VERSION>/definitions/instanceName.yaml
-        type:
-          $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
-        result:
-          $ref: /<PREFIX>/<VERSION>/outputs/resource/set.yaml
+      $ref: /<PREFIX>/<VERSION>/outputs/resource/set.full.yaml
   messages:
     $ref: /<PREFIX>/<VERSION>/definitions/messages.yaml
   hadErrors:

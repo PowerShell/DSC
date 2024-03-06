@@ -2,38 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/test.json",
   "title": "dsc resource test result",
-  "description": "Describes the return data for a DSC Resource instance from the `dsc resource test` command.",
-  "type": "object",
-  "required": [
-    "desiredState",
-    "actualState",
-    "inDesiredState",
-    "differingProperties"
-  ],
-  "properties": {
-    "desiredState": {
-      "title": "Desired state",
-      "description": "This property always represents the desired state of the DSC Resource instance as specified to DSC.",
-      "type": "object"
+  "description": "Describes the return data for a DSC Resource instance from the `dsc resource get` command. The return data is either a single object that describes the tested state of a non-nested instance or an array of objects that describe the tested state of the nested instances for a group or adapter resource.",
+  "anyOf": [
+    {
+      "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/test.simple.json"
     },
-    "actualState": {
-      "title": "Actual state",
-      "description": "This property always represents the current state of the DSC Resource instance as returned by its `test` method or, if the DSC Resource doesn't define the `test` method, by its `get` method. DSC validates this return value against the DSC Resource's schema.",
-      "type": "object"
-    },
-    "inDesiredState": {
-      "title": "Instance is in the desired state",
-      "description": "This property indicates whether the instance is in the desired state.",
-      "type": "boolean"
-    },
-    "differingProperties": {
-      "title": "Differing properties",
-      "description": "This property always represents the list of property names for the DSC Resource instance that aren't in the desired state. When this property is an empty array, the instance is in the desired state.",
+    {
       "type": "array",
-      "default": [],
       "items": {
-        "type": "string"
+        "$ref": "/PowerShell/DSC/main/schemas/2023/10/outputs/resource/test.full.json"
       }
     }
-  }
+  ]
 }
