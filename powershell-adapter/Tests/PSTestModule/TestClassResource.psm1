@@ -41,7 +41,7 @@ class TestClassResource
         }
         else
         {
-            $this.Prop1 = $env:DSCConfigRoot
+            $this.Prop1 = $env:DSC_CONFIG_ROOT
         }
         $this.EnumProp = [EnumPropEnumeration]::Expected
         return $this
