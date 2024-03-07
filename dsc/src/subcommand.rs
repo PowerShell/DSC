@@ -409,42 +409,41 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                 let mut methods = "g---".to_string();
                 // if description, tags, or write_table is specified, pull resource manifest if it exists
                 if description.is_some() || tags.is_some() || write_table {
-                    let Some(ref resource_manifest) = resource.manifest else {
-                        continue;
-                    };
-                    let manifest = match import_manifest(resource_manifest.clone()) {
-                        Ok(resource_manifest) => resource_manifest,
-                        Err(err) => {
-                            error!("Error in manifest for {0}: {err}", resource.type_name);
+                    if let Some(ref resource_manifest) = resource.manifest {
+                        let manifest = match import_manifest(resource_manifest.clone()) {
+                            Ok(resource_manifest) => resource_manifest,
+                            Err(err) => {
+                                error!("Error in manifest for {0}: {err}", resource.type_name);
+                                continue;
+                            }
+                        };
+
+                        // if description is specified, skip if resource description does not contain it
+                        if description.is_some() &&
+                            (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
                             continue;
                         }
-                    };
 
-                    // if description is specified, skip if resource description does not contain it
-                    if description.is_some() &&
-                        (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
-                        continue;
-                    }
+                        // if tags is specified, skip if resource tags do not contain the tags
+                        if let Some(tags) = tags {
+                            let Some(manifest_tags) = manifest.tags else { continue; };
 
-                    // if tags is specified, skip if resource tags do not contain the tags
-                    if let Some(tags) = tags {
-                        let Some(manifest_tags) = manifest.tags else { continue; };
-
-                        let mut found = false;
-                        for tag_to_find in tags {
-                            for tag in &manifest_tags {
-                                if tag.to_lowercase() == tag_to_find.to_lowercase() {
-                                    found = true;
-                                    break;
+                            let mut found = false;
+                            for tag_to_find in tags {
+                                for tag in &manifest_tags {
+                                    if tag.to_lowercase() == tag_to_find.to_lowercase() {
+                                        found = true;
+                                        break;
+                                    }
                                 }
                             }
+                            if !found { continue; }
                         }
-                        if !found { continue; }
-                    }
 
-                    if manifest.set.is_some() { methods.replace_range(1..2, "s"); }
-                    if manifest.test.is_some() { methods.replace_range(2..3, "t"); }
-                    if manifest.export.is_some() { methods.replace_range(3..4, "e"); }
+                        if manifest.set.is_some() { methods.replace_range(1..2, "s"); }
+                        if manifest.test.is_some() { methods.replace_range(2..3, "t"); }
+                        if manifest.export.is_some() { methods.replace_range(3..4, "e"); }
+                    }
                 }
 
                 if write_table {
