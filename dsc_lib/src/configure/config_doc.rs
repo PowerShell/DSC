@@ -7,6 +7,33 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum ContextKind {
+    Configuration,
+    Resource,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum SecurityContextKind {
+    Current,
+    Elevated,
+    Restricted,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct MicrosoftDscMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<ContextKind>,
+    #[serde(rename = "requiredSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub required_security_context: Option<SecurityContextKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct Metadata {
+    #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
+    pub microsoft: Option<MicrosoftDscMetadata>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -18,7 +45,7 @@ pub struct Configuration {
     pub variables: Option<HashMap<String, Value>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<HashMap<String, Value>>,
+    pub metadata: Option<Metadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

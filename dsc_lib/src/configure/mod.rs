@@ -9,11 +9,12 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use self::context::Context;
-use self::config_doc::{Configuration, DataType};
+use self::config_doc::{Configuration, DataType, Metadata, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::{ProgressBar, ProgressStyle};
+use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -159,6 +160,36 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
     }
 
     Ok(serde_json::to_string(&properties)?)
+}
+
+fn check_security_context(metadata: &Option<Metadata>) -> Result<(), DscError> {
+    if metadata.is_none() {
+        return Ok(());
+    }
+
+    if let Some(metadata) = &metadata {
+        if let Some(microsoft_dsc) = &metadata.microsoft {
+            if let Some(required_security_context) = &microsoft_dsc.required_security_context {
+                match required_security_context {
+                    SecurityContextKind::Current => {
+                        // no check needed
+                    },
+                    SecurityContextKind::Elevated => {
+                        if get_security_context() != SecurityContext::Admin {
+                            return Err(DscError::SecurityContext("Elevated security context required".to_string()));
+                        }
+                    },
+                    SecurityContextKind::Restricted => {
+                        if get_security_context() != SecurityContext::User {
+                            return Err(DscError::SecurityContext("Restricted security context required".to_string()));
+                        }
+                    },
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 impl Configurator {
@@ -415,6 +446,7 @@ impl Configurator {
 
     fn validate_config(&mut self) -> Result<Configuration, DscError> {
         let config: Configuration = serde_json::from_str(self.config.as_str())?;
+        check_security_context(&config.metadata)?;
 
         // Perform discovery of resources used in config
         let mut required_resources = config.resources.iter().map(|p| p.resource_type.to_lowercase()).collect::<Vec<String>>();
