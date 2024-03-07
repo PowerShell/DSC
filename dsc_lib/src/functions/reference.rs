@@ -47,14 +47,14 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let mut context = Context::new();
         context.outputs.insert("foo:bar".to_string(), "baz".into());
-        let result = parser.parse_and_execute("[referene('foo:bar')]", &context).unwrap();
+        let result = parser.parse_and_execute("[reference('foo:bar')]", &context).unwrap();
         assert_eq!(result, "baz");
     }
 
     #[test]
     fn invalid_resourceid() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[referene('foo:bar')]", &Context::new());
+        let result = parser.parse_and_execute("[reference('foo:bar')]", &Context::new());
         assert!(result.is_err());
     }
 }
