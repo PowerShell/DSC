@@ -1,0 +1,12 @@
+# Simple example showing how to reference output from a resource to use in another
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+- name: os
+  type: Microsoft/OSInfo
+  properties: {}
+- name: Echo
+  type: Test/Echo
+  properties:
+    output: "[concat('The OS is ', reference(resourceId('Microsoft/OSInfo','os')).actualState.family)]"
+  dependsOn:
+  - "[resourceId('Microsoft/OSInfo','os')]"

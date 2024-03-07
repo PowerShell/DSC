@@ -73,6 +73,10 @@ impl Expression {
 
             let mut value = result;
             for member in member_access {
+                if member == "." {
+                    continue;
+                }
+
                 if !value.is_object() {
                     return Err(DscError::Parser(format!("Member access '{member}' on non-object value")));
                 }
