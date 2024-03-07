@@ -29,10 +29,7 @@ impl Function for Reference {
             if context.outputs.contains_key(key) {
                 Ok(context.outputs[key].clone())
             } else {
-                Err(DscError::Parser(format!(
-                    "Invalid resourceId or resource has not executed yet: {}",
-                    key
-                )))
+                Err(DscError::Parser(format!("Invalid resourceId or resource has not executed yet: {key}")))
             }
         } else {
             Err(DscError::Parser("Invalid argument".to_string()))
