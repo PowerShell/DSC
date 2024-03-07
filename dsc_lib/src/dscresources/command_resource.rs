@@ -7,7 +7,7 @@ use std::{collections::HashMap, env, process::Command, io::{Write, Read}, proces
 use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
 use crate::configure::config_result::ResourceGetResult;
 use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
-use tracing::{debug, info, trace};
+use tracing::{error, warn, info, debug, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -19,10 +19,16 @@ pub fn log_resource_traces(stderr: &String)
         for trace_line in stderr.lines() {
             match serde_json::from_str::<Value>(trace_line){
                 Result::Ok(json_obj) => {
-                    let trace = json_obj.get("Trace");
-                    if trace.is_some()
-                    {
-                        trace!("{}", trace.unwrap().as_str().unwrap_or_default());
+                    if let Some(msg) = json_obj.get("Error") {
+                        error!("{}", msg.as_str().unwrap_or_default());
+                    } else if let Some(msg) = json_obj.get("Warning") {
+                        warn!("{}", msg.as_str().unwrap_or_default());
+                    } else if let Some(msg) = json_obj.get("Info") {
+                        info!("{}", msg.as_str().unwrap_or_default());
+                    } else if let Some(msg) = json_obj.get("Debug") {
+                        debug!("{}", msg.as_str().unwrap_or_default());
+                    } else if let Some(msg) = json_obj.get("Trace") {
+                        trace!("{}", msg.as_str().unwrap_or_default());
                     }
                 },
                 Result::Err(_) => {}

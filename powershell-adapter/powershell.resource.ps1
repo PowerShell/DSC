@@ -75,15 +75,15 @@ Import-Module $DscModule -DisableNameChecking
 
 # Adding some debug info to STDERR
 $m = gmo PSDesiredStateConfiguration
-$trace = @{"Trace"="PSVersion="+$PSVersionTable.PSVersion.ToString()} | ConvertTo-Json -Compress
+$trace = @{"Debug"="PSVersion="+$PSVersionTable.PSVersion.ToString()} | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Trace"="PSPath="+$PSHome} | ConvertTo-Json -Compress
+$trace = @{"Debug"="PSPath="+$PSHome} | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Trace"="ModuleVersion="+$m.Version.ToString()} | ConvertTo-Json -Compress
+$trace = @{"Debug"="ModuleVersion="+$m.Version.ToString()} | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Trace"="ModulePath="+$m.Path} | ConvertTo-Json -Compress
+$trace = @{"Debug"="ModulePath="+$m.Path} | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Trace"="PSModulePath="+$env:PSModulePath} | ConvertTo-Json -Compress
+$trace = @{"Debug"="PSModulePath="+$env:PSModulePath} | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
 
 if ($Operation -eq 'List')
