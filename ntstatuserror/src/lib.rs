@@ -15,7 +15,7 @@ pub struct NtStatusError {
 
 impl NtStatusError {
     /// Create a new `NtStatusError` from an NTSTATUS error code and a message.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `status` - The NTSTATUS error code

@@ -1,0 +1,11 @@
+# example showing use of specific metadata to indicate this config requires admin to run
+# note that the resource doesn't require admin, but this will fail to even try to run the
+# config if the user is not root or elevated as administrator
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+metadata:
+  Microsoft.DSC:
+    requiredSecurityContext: Elevated
+resources:
+- name: os
+  type: Microsoft/OSInfo
+  properties: {}

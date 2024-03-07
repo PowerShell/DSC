@@ -1,0 +1,7 @@
+[package]
+name = "security_context_lib"
+version = "0.1.0"
+edition = "2021"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+is_elevated = "0.1.0"
