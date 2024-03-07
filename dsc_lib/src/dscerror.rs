@@ -89,6 +89,9 @@ pub enum DscError {
     #[error("No Schema: {0}")]
     SchemaNotAvailable(String),
 
+    #[error("Security context: {0}")]
+    SecurityContext(String),
+
     #[error("Utf-8 conversion error: {0}")]
     Utf8Conversion(#[from] Utf8Error),
 

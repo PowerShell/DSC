@@ -111,6 +111,7 @@ if (!$SkipBuild) {
 # projects are in dependency order
 $projects = @(
     "tree-sitter-dscexpression",
+    "security_context_lib",
     "dsc_lib",
     "file_lib",
     "dsc",

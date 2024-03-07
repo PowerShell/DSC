@@ -45,7 +45,7 @@ pub struct Configuration {
     pub variables: Option<HashMap<String, Value>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<HashMap<String, Value>>,
+    pub metadata: Option<Metadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
