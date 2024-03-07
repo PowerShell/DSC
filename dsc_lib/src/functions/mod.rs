@@ -7,6 +7,7 @@ use crate::DscError;
 use crate::configure::context::Context;
 use serde_json::Value;
 
+pub mod add;
 pub mod base64;
 pub mod concat;
 pub mod create_array;
@@ -56,6 +57,7 @@ impl FunctionDispatcher {
     #[must_use]
     pub fn new() -> Self {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
+        functions.insert("add".to_string(), Box::new(add::Add{}));
         functions.insert("base64".to_string(), Box::new(base64::Base64{}));
         functions.insert("concat".to_string(), Box::new(concat::Concat{}));
         functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
