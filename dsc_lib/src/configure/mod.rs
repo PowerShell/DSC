@@ -9,7 +9,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use self::context::Context;
-use self::config_doc::{Configuration, DataType, SecurityContextKind};
+use self::config_doc::{Configuration, DataType, Metadata, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
@@ -162,12 +162,12 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
     Ok(serde_json::to_string(&properties)?)
 }
 
-fn check_security_context(config: &Configuration) -> Result<(), DscError> {
-    if config.metadata.is_none() {
+fn check_security_context(metadata: &Option<Metadata>) -> Result<(), DscError> {
+    if metadata.is_none() {
         return Ok(());
     }
 
-    if let Some(metadata) = &config.metadata {
+    if let Some(metadata) = &metadata {
         if let Some(microsoft_dsc) = &metadata.microsoft {
             if let Some(required_security_context) = &microsoft_dsc.required_security_context {
                 match required_security_context {
@@ -446,7 +446,7 @@ impl Configurator {
 
     fn validate_config(&mut self) -> Result<Configuration, DscError> {
         let config: Configuration = serde_json::from_str(self.config.as_str())?;
-        check_security_context(&config)?;
+        check_security_context(&config.metadata)?;
 
         // Perform discovery of resources used in config
         let mut required_resources = config.resources.iter().map(|p| p.resource_type.to_lowercase()).collect::<Vec<String>>();
