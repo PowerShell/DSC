@@ -105,8 +105,8 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target > $null
 
-    # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry")
+# make sure dependencies are built first so clippy runs correctly
+$windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry", "reboot_pending", "wmi-adapter")
 
 # projects are in dependency order
 $projects = @(
@@ -121,7 +121,6 @@ $projects = @(
     "tools/dsctest",
     "tools/test_group_resource",
     "y2j",
-    "wmi-adapter",
     "resources/brew",
     "runcommandonset"
 )
