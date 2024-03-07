@@ -4,7 +4,8 @@
 Describe 'Tests for configuration security context metadata' {
     BeforeAll {
         $isAdmin = if ($IsWindows) {
-            [System.Security.Principal.WindowsIdentity]::GetCurrent().Owner.IsWellKnown('Builtin\Administrators')
+            $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+            [System.Security.Principal.WindowsPrincipal]::new($identity).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
         }
         else {
             [System.Environment]::UserName -eq 'root'
