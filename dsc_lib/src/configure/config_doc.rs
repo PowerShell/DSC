@@ -7,6 +7,33 @@ use serde_json::{Map, Value};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum ContextKind {
+    Configuration,
+    Resource,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum SecurityContextKind {
+    Current,
+    Elevated,
+    Restricted,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct MicrosoftDscMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<ContextKind>,
+    #[serde(rename = "requiredSecurityContext", skip_serializing_if = "Option::is_none")]
+    pub required_security_context: Option<SecurityContextKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct Metadata {
+    #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
+    pub microsoft: Option<MicrosoftDscMetadata>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -18,7 +45,7 @@ pub struct Configuration {
     pub variables: Option<HashMap<String, Value>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<HashMap<String, Value>>,
+    pub metadata: Option<Metadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -30,13 +57,13 @@ pub struct Parameter {
     #[serde(rename = "allowedValues", skip_serializing_if = "Option::is_none")]
     pub allowed_values: Option<Vec<Value>>,
     #[serde(rename = "minValue", skip_serializing_if = "Option::is_none")]
-    pub min_value: Option<Value>,
+    pub min_value: Option<i64>,
     #[serde(rename = "maxValue", skip_serializing_if = "Option::is_none")]
-    pub max_value: Option<Value>,
+    pub max_value: Option<i64>,
     #[serde(rename = "minLength", skip_serializing_if = "Option::is_none")]
-    pub min_length: Option<Value>,
+    pub min_length: Option<i64>,
     #[serde(rename = "maxLength", skip_serializing_if = "Option::is_none")]
-    pub max_length: Option<Value>,
+    pub max_length: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -71,9 +98,10 @@ pub struct Resource {
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
     #[schemars(regex(pattern = r"^\[resourceId\(\s*'[a-zA-Z0-9\.]+/[a-zA-Z0-9]+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)]$"))]
     pub depends_on: Option<Vec<String>>,
-    // `identity` can be used for run-as
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<HashMap<String, Value>>,
 }
 
 // Defines the valid and recognized canonical URIs for the configuration schema
@@ -127,6 +155,7 @@ impl Resource {
             name: String::new(),
             depends_on: None,
             properties: None,
+            metadata: None,
         }
     }
 }

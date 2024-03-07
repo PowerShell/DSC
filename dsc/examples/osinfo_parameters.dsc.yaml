@@ -1,0 +1,14 @@
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+parameters:
+  osFamily:
+    type: string
+    defaultValue: Windows
+    allowedValues:
+      - Windows
+      - Linux
+      - macOS
+resources:
+- name: os
+  type: Microsoft/OSInfo
+  properties:
+    family: "[parameters('osFamily')]"

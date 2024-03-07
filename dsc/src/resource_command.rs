@@ -5,7 +5,7 @@ use crate::args::OutputFormat;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
 use dsc_lib::configure::config_doc::Configuration;
 use dsc_lib::configure::add_resource_export_results_to_configuration;
-use dsc_lib::dscresources::invoke_result::GetResult;
+use dsc_lib::dscresources::invoke_result::{GetResult, ResourceGetResponse};
 use dsc_lib::dscerror::DscError;
 use tracing::{error, debug};
 
@@ -15,10 +15,7 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    // TODO: support streaming stdin which includes resource and input
-    let mut input = get_input(input, stdin);
-
+pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
@@ -30,7 +27,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider {} not found", requires);
+            error!("Adapter {} not found", requires);
             return;
         };
     }
@@ -54,13 +51,25 @@ pub fn get(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
     }
 }
 
-pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let Some(resource) = get_resource(dsc, resource_type) else {
+pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+    let mut input = String::new();
+    let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
+
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    let export_result = match resource.export() {
+    if let Some(requires) = &resource.requires {
+        input = add_type_name_to_json(input, resource.type_name.clone());
+        if let Some(pr) = get_resource(dsc, requires) {
+            resource = pr;
+        } else {
+            error!("Adapter '{}' not found", requires);
+            return;
+        };
+    }
+
+    let export_result = match resource.export(&input) {
         Ok(export) => { export }
         Err(err) => {
             error!("Error: {err}");
@@ -70,9 +79,9 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _
 
     for instance in export_result.actual_state
     {
-        let get_result = GetResult {
+        let get_result = GetResult::Resource(ResourceGetResponse {
             actual_state: instance.clone(),
-        };
+        });
 
         let json = match serde_json::to_string(&get_result) {
             Ok(json) => json,
@@ -89,10 +98,9 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, _input: &Option<String>, _
 ///
 /// # Panics
 ///
-/// Will panic if provider-based resource is not found.
+/// Will panic if adapter-based resource is not found.
 ///
-pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let mut input = get_input(input, stdin);
+pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     if input.is_empty() {
         error!("Error: Input is empty");
         exit(EXIT_INVALID_ARGS);
@@ -110,7 +118,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider {} not found", requires);
+            error!("Adapter {} not found", requires);
             return;
         };
     }
@@ -138,10 +146,9 @@ pub fn set(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin:
 ///
 /// # Panics
 ///
-/// Will panic if provider-based resource is not found.
+/// Will panic if adapter-based resource is not found.
 ///
-pub fn test(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin: &Option<String>, format: &Option<OutputFormat>) {
-    let mut input = get_input(input, stdin);
+pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
@@ -154,7 +161,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, input: &Option<String>, stdin
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Provider {} not found", requires);
+            error!("Adapter {} not found", requires);
             return;
         };
     }
@@ -203,14 +210,26 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: &Option<OutputForma
 }
 
 pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+    let mut input = String::new();
     let Some(dsc_resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
 
+    let mut adapter_resource: Option<&DscResource> = None;
+    if let Some(requires) = &dsc_resource.requires {
+        input = add_type_name_to_json(input, dsc_resource.type_name.clone());
+        if let Some(pr) = get_resource(dsc, requires) {
+            adapter_resource = Some(pr);
+        } else {
+            error!("Adapter '{}' not found", requires);
+            return;
+        };
+    }
+
     let mut conf = Configuration::new();
 
-    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, &mut conf) {
+    if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, adapter_resource, &mut conf, &input) {
         error!("Error: {err}");
         exit(EXIT_DSC_ERROR);
     }
@@ -229,48 +248,4 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
 pub fn get_resource<'a>(dsc: &'a DscManager, resource: &str) -> Option<&'a DscResource> {
     //TODO: add dinamically generated resource to dsc
     dsc.find_resource(String::from(resource).to_lowercase().as_str())
-}
-
-fn get_input(input: &Option<String>, stdin: &Option<String>) -> String {
-    let input = match (input, stdin) {
-        (Some(_input), Some(_stdin)) => {
-            error!("Error: Cannot specify both --input and stdin");
-            exit(EXIT_INVALID_ARGS);
-        }
-        (Some(input), None) => input.clone(),
-        (None, Some(stdin)) => stdin.clone(),
-        (None, None) => {
-            return String::new();
-        },
-    };
-
-    if input.is_empty() {
-        return String::new();
-    }
-
-    match serde_json::from_str::<serde_json::Value>(&input) {
-        Ok(_) => input,
-        Err(json_err) => {
-            match serde_yaml::from_str::<serde_yaml::Value>(&input) {
-                Ok(yaml) => {
-                    match serde_json::to_string(&yaml) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            error!("Error: Cannot convert YAML to JSON: {err}");
-                            exit(EXIT_INVALID_ARGS);
-                        }
-                    }
-                },
-                Err(err) => {
-                    if input.contains('{') {
-                        error!("Error: Input is not valid JSON: {json_err}");
-                    }
-                    else {
-                        error!("Error: Input is not valid YAML: {err}");
-                    }
-                    exit(EXIT_INVALID_ARGS);
-                }
-            }
-        }
-    }
 }

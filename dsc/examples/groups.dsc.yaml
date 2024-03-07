@@ -1,0 +1,41 @@
+# Example for grouping and groups in groups
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+metadata:
+  Microsoft.DSC:
+    requiredSecurityContext: Current # this is the default and just used as an example indicating this config works for admins and non-admins
+resources:
+- name: Last Group
+  type: Microsoft.DSC/Group
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+    resources:
+    - name: Last
+      type: Test/Echo
+      properties:
+        output: Last
+  dependsOn:
+  - "[resourceId('Microsoft.DSC/Group','First Group')]"
+- name: First Group
+  type: Microsoft.DSC/Group
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+    resources:
+    - name: First
+      type: Test/Echo
+      properties:
+        output: First
+    - name: Nested Group
+      type: Microsoft.DSC/Group
+      properties:
+        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+        resources:
+        - name: Nested Second
+          type: Test/Echo
+          properties:
+            output: Nested Second
+          dependsOn:
+          - "[resourceId('Test/Echo','Nested First')]"
+        - name: Nested First
+          type: Test/Echo
+          properties:
+            output: Nested First

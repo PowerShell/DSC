@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Resource provider tests' {
+Describe 'Resource adapter tests' {
 
-    It 'Can list provider resources' {
+    It 'Can list adapter resources' {
 
         $out = dsc resource list *testresource* | ConvertFrom-Json | Sort-Object -Property type
         $out.Count | Should -Be 2
@@ -19,7 +19,7 @@ Describe 'Resource provider tests' {
         $out[1].requires | Should -BeExactly 'Test/TestGroup'
     }
 
-    It 'Error if provider resource is missing "requires" member' {
+    It 'Error if adapter resource is missing "requires" member' {
         $invalid_manifest = @'
         {
             "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
@@ -39,7 +39,7 @@ Describe 'Resource provider tests' {
                     ]
                 }
             },
-            "provider": {
+            "adapter": {
                 "list": {
                     "executable": "test_group_resource",
                     "args": [

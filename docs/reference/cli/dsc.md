@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc' command
-ms.date:     10/05/2023
+ms.date:     02/05/2024
 ms.topic:    reference
 title:       dsc
 ---
@@ -69,21 +69,6 @@ example, `dsc config --help` or `dsc config set --help`.
 
 ## Options
 
-### -f, --format
-
-The `--format` option controls the console output format for the command. If the command output is
-redirected or captured as a variable, the output is always JSON.
-
-To set the output format for a command or subcommand, specify this option before the command, like
-`dsc --format pretty-json resource list`.
-
-```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: yaml
-ValidValues:  [json, pretty-json, yaml]
-```
-
 ### -h, --help
 
 Displays the help for the current command or subcommand. When you specify this option, the
@@ -94,59 +79,52 @@ Type:      Boolean
 Mandatory: false
 ```
 
-### -i, --input
+### -l, --trace-level
 
-Defines input for the command as a string instead of piping input from stdin. This option is
-mutually exclusive with the `--input-file` option. When you use this option, DSC ignores any input
-from stdin.
+Defines the minimum message level DSC should emit during an operation. Messages in DSC are
+categorized by their level.
 
-To pass input for a command or subcommand, specify this option before the command, like
-`dsc --input $desired resource test`.
-
-```yaml
-Type:      String
-Mandatory: false
-```
-
-### -l, --logging-level
-
-Defines the minimum log level DSC should emit during an operation. Messages in DSC are categorized
-by their log level.
-
-The following list shows the valid log levels from highest to lowest level. When this option is
+The following list shows the valid message levels from highest to lowest level. When this option is
 set to any value in the list, DSC emits messages at that level and above.
 
-- `Error`
-- `Warning`
-- `Info` (default)
-- `Debug`
-- `Trace`
+- `error`
+- `warning` (default)
+- `info`
+- `debug`
+- `trace`
 
-For example, when the log level is `Debug`, DSC emits messages for every log level except `Trace`.
-Dsc emits only error messages when the log level is `Error`. DSC ignores every message with a lower
-log level.
+> [!WARNING]
+> The `trace` level output emits all JSON input/output that DSC processes during execution. DSC
+> doesn't sanitize the JSON before emitting it. This trace level is only intended for developer
+> use. Never redirect `trace` level output to storage as it may contain sensitive information.
+
+For example, when the log level is `debug`, DSC emits messages for every log level except `trace`.
+When the log level is `error`, DSC only emits error messages. DSC ignores every message with a
+lower log level.
 
 ```yaml
-Type: String
-Mandatory: false
-DefaultValue: Info
-ValidValues:  [Error, Warning, Info, Debug, Trace]
+Type:         String
+Mandatory:    false
+DefaultValue: warning
+ValidValues:  [error, warning, info, debug, trace]
 ```
 
-### -p, --input-file
+### -f, --trace-format
 
-Defines the path to a text file to read as input for the command instead of piping input from
-stdin. This option is mutually exclusive with the `--input` option. When you use this option, DSC
-ignores any input from stdin.
+Defines the output format to use when emitting trace messages on stderr. DSC supports the following
+formats:
 
-To pass a file to read as input for a command or subcommand, specify this option before the
-command, like `dsc --input-file web.dsc.config.yaml config set`.
-
-If the specified file doesn't exist, DSC raises an error.
+- `default` - Emits the message with ANSI console coloring for the timestamp, message level, and
+  line number.
+- `plaintext` - As `default` but without any console colors.
+- `json` - Emits each message as a compressed JSON object with the timestamp, level, message, and
+  line number as properties.
 
 ```yaml
-Type:      String
-Mandatory: false
+Type:         String
+Mandatory:    false
+DefaultValue: default
+ValidValues:  [default, plaintext, json]
 ```
 
 ### -V, --version

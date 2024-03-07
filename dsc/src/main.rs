@@ -8,7 +8,7 @@ use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
-use tracing::{Level, error, info, warn, debug};
+use tracing::{error, info, warn, debug};
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -31,35 +31,11 @@ fn main() {
 
     let args = Args::parse();
 
-    let tracing_level = match args.logging_level {
-        util::LogLevel::Error => Level::ERROR,
-        util::LogLevel::Warning => Level::WARN,
-        util::LogLevel::Info => Level::INFO,
-        util::LogLevel::Debug => Level::DEBUG,
-        util::LogLevel::Trace => Level::TRACE,
-    };
-
-    // create subscriber that writes all events to stderr
-    let subscriber = tracing_subscriber::fmt().pretty().with_max_level(tracing_level).with_writer(std::io::stderr).finish();
-    if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default subscriber");
-    }
+    util::enable_tracing(&args.trace_level, &args.trace_format);
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
-    let input = if args.input.is_some() {
-        args.input
-    } else if args.input_file.is_some() {
-        info!("Reading input from file {}", args.input_file.as_ref().unwrap());
-        let input_file = args.input_file.unwrap();
-        match std::fs::read_to_string(input_file) {
-            Ok(input) => Some(input),
-            Err(err) => {
-                error!("Error: Failed to read input file: {err}");
-                exit(util::EXIT_INVALID_INPUT);
-            }
-        }
-    } else if atty::is(Stream::Stdin) {
+    let input = if atty::is(Stream::Stdin) {
         None
     } else {
         info!("Reading input from STDIN");
@@ -72,7 +48,15 @@ fn main() {
                 exit(util::EXIT_INVALID_ARGS);
             },
         };
-        Some(input)
+        // get_input call expects at most 1 input, so wrapping Some(empty input) would throw it off
+        // have only seen this happen with dsc_args.test.ps1 running on the CI pipeline
+        if input.is_empty() {
+            debug!("Input from STDIN is empty");
+            None
+        }
+        else {
+            Some(input)
+        }
     };
 
     match args.subcommand {
@@ -81,13 +65,25 @@ fn main() {
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
-        SubCommand::Config { subcommand } => {
-            subcommand::config(&subcommand, &args.format, &input);
+        SubCommand::Config { subcommand, parameters, parameters_file, as_group } => {
+            if let Some(file_name) = parameters_file {
+                info!("Reading parameters from file {}", file_name);
+                match std::fs::read_to_string(file_name) {
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input, &as_group),
+                    Err(err) => {
+                        error!("Error: Failed to read parameters file: {err}");
+                        exit(util::EXIT_INVALID_INPUT);
+                    }
+                }
+            }
+            else {
+                subcommand::config(&subcommand, &parameters, &input, &as_group);
+            }
         },
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand, &args.format, &input);
+            subcommand::resource(&subcommand, &input);
         },
-        SubCommand::Schema { dsc_type } => {
+        SubCommand::Schema { dsc_type , format } => {
             let schema = util::get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -96,7 +92,7 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, &args.format);
+            util::write_output(&json, &format);
         },
     }
 
@@ -140,7 +136,13 @@ fn check_debug() {
     if env::var("DEBUG_DSC").is_ok() {
         eprintln!("attach debugger to pid {} and press a key to continue", std::process::id());
         loop {
-            let event = event::read().unwrap();
+            let event = match event::read() {
+                Ok(event) => event,
+                Err(err) => {
+                    eprintln!("Error: Failed to read event: {err}");
+                    break;
+                }
+            };
             if let event::Event::Key(key) = event {
                 // workaround bug in 0.26+ https://github.com/crossterm-rs/crossterm/issues/752#issuecomment-1414909095
                 if key.kind == event::KeyEventKind::Press {

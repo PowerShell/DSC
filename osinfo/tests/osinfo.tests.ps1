@@ -12,7 +12,7 @@ Describe 'osinfo resource tests' {
             $out.actualState.family | Should -BeExactly 'Linux'
         }
         elseif ($IsMacOS) {
-            $out.actualState.family | Should -BeExactly 'MacOS'
+            $out.actualState.family | Should -BeExactly 'macOS'
         }
 
         $out.actualState.version | Should -Not -BeNullOrEmpty
@@ -50,7 +50,7 @@ Describe 'osinfo resource tests' {
             $out.resources[0].properties.family | Should -BeExactly 'Linux'
         }
         elseif ($IsMacOS) {
-            $out.resources[0].properties.family | Should -BeExactly 'MacOS'
+            $out.resources[0].properties.family | Should -BeExactly 'macOS'
         }
     }
 }

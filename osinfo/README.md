@@ -19,10 +19,10 @@ Example output:
 ```json
 {
   "$id": "https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json",
-  "type": "Windows",
+  "family": "Windows",
   "version": "10.0.25309",
   "edition": "Windows 11 Professional",
-  "bitness": "X64"
+  "bitness": "64"
 }
 ```
 
@@ -43,10 +43,10 @@ Example output as YAML:
 ```yaml
 actual_state:
   $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  type: Windows
+  family: Windows
   version: 10.0.25309
   edition: Windows 11 Professional
-  bitness: X64
+  bitness: 64
 ```
 
 ## Performing a `test`
@@ -65,10 +65,10 @@ expected_state:
   type: unknown
 actual_state:
   $id: https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json
-  type: Windows
+  family: Windows
   version: 10.0.25309
   edition: Windows 11 Professional
-  bitness: X64
+  bitness: 64
 diff_properties:
 - type
 ```

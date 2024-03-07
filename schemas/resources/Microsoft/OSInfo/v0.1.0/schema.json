@@ -48,7 +48,7 @@
             "type": "string",
             "enum": [
                 "Linux",
-                "MacOS",
+                "macOS",
                 "Windows"
             ],
             "title": "Operating system family",

@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc config set' command.
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       dsc config set result schema reference
 ---
@@ -70,8 +70,8 @@ Required: true
 
 #### result
 
-An item's `result` property includes the actual state for the resource instance. The value for this
-property adheres to the same schema as the output for the `dsc resource set` command. For more
+An item's `result` property includes the enforced state for the resource instance. The value for
+this property adheres to the same schema as the output for the `dsc resource set` command. For more
 information, see [dsc resource set result schema reference][02].
 
 ### messages

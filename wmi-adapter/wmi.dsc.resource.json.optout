@@ -1,0 +1,47 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+    "type": "Microsoft.Windows/WMI",
+    "version": "0.1.0",
+    "description": "Resource adapter to WMI resources.",
+    "tags": [
+      "PowerShell"
+    ],
+    "adapter": {
+      "list": {
+        "executable": "powershell",
+        "args": [
+          "-NoLogo",
+          "-NonInteractive",
+          "-NoProfile",
+          "-Command",
+          "./wmi.resource.ps1 List"
+        ]
+        },
+      "config": "full"
+    },
+    "get": {
+      "executable": "powershell",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "$Input | ./wmi.resource.ps1 Get"
+      ],
+      "input": "stdin"
+    },
+    "validate": {
+        "executable": "powershell",
+        "args": [
+          "-NoLogo",
+          "-NonInteractive",
+          "-NoProfile",
+          "-Command",
+          "$Input | ./wmi.resource.ps1 Validate"
+          ]
+      },
+    "exitCodes": {
+      "0": "Success",
+      "1": "Error"
+    }
+  }

@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the '_purge' well-known DSC Resource property.
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Resource _purge property schema
 ---

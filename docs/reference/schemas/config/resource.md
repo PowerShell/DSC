@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a resource instance in a Desired State Configuration document.
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Configuration document resource instance schema
 ---
@@ -72,7 +72,7 @@ The `properties` of a resource instance define its desired state. The value of t
 be an object. For assertion  resources, the value may be an empty object (`{}`). DSC uses the
 DSC Resource's instance schema to validate the defined properties.
 
-<!-- For more information about instance schemas in DSC, see [DSC Resource instance schemas][03]. -->
+<!-- For more information about instance schemas in DSC, see [DSC Resource instance schemas][aa]. -->
 
 ```yaml
 Type:     object
@@ -85,9 +85,10 @@ To declare that a resource instance is dependent on another instance in the conf
 the `dependsOn` property.
 
 This property defines a list of DSC Resource instances that DSC must successfully process before
-processing this instance. Each value for this property must be the `resourceID()` lookup for
-another instance in the configuration. Multiple instances can depend on the same instance, but
-every dependency for an instance must be unique in that instance's `dependsOn` property.
+processing this instance. Each value for this property must be the [resourceID() function][02]
+lookup for another instance in the configuration. Multiple instances can depend on the same
+instance, but every dependency for an instance must be unique in that instance's `dependsOn`
+property.
 
 The `resourceID()` function uses this syntax:
 
@@ -120,7 +121,7 @@ resource named `Tailspin Key`:
 ```
 
 > [!NOTE]
-> When defining dependencies for [nested resource instances][02], instances can only reference
+> When defining dependencies for [nested resource instances][03], instances can only reference
 > dependencies in the same resource provider or group instance. They can't use the `resourceId()`
 > function to lookup instances at the top-level of the configuration document or inside another
 > provider or group instance.
@@ -128,7 +129,11 @@ resource named `Tailspin Key`:
 > If a top-level instance depends on a nested instance, use the `resourceId()` function to lookup
 > the instance of the provider or group containing the dependency instance instead.
 
-<!-- For more information, see [Configuration resource dependencies][04]. -->
+For more information about using functions in configuration documents, see
+[DSC Configuration document functions reference][04]. For more information about the `resourceId()`
+function, see [resourceId][02].
+
+<!-- For more information, see [Configuration resource dependencies][ab]. -->
 
 ```yaml
 Type:              array
@@ -139,7 +144,8 @@ ItemsPattern:      ^\[resourceId\(\s*'\w+(\.\w+){0,2}\/\w+'\s*,\s*'[a-zA-Z0-9 ]+
 ```
 
 [01]: ../definitions/resourceType.md
-[02]: /powershell/dsc/glossary#nested-resource-instance
-<!-- [02]: ../../../resources/concepts/assertion-resources.md -->
-<!-- [03]: ../../../resources/concepts/schemas.md -->
-<!-- [04]: ../../../configurations/concepts/dependencies.md -->
+[02]: functions/resourceId.md
+[03]: /powershell/dsc/glossary#nested-resource-instance
+[04]: functions/overview.md
+<!-- [aa]: ../../../resources/concepts/schemas.md -->
+<!-- [ab]: ../../../configurations/concepts/dependencies.md -->

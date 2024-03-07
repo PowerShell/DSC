@@ -21,8 +21,8 @@ dsc resource list [Options] <RESOURCE_NAME>
 
 The `list` subcommand searches for available DSC Resources and returns their information. DSC
 discovers resources by first searching the `PATH` or `DSC_RESOURCE_PATH` environment variable for
-`.dsc.resource.json` files. For more information about the environment variables DSC uses, see
-[Environment variables][01]
+`.dsc.resource.json`, `.dsc.resource.yml`, and `dsc.resource.yaml` files. For more information
+about the environment variables DSC uses, see [Environment variables][01]
 
 If any of the discovered resources are resource providers, DSC then calls the providers to list
 their resources, too.
@@ -43,17 +43,21 @@ dsc resource list
 ```
 
 ```Output
-type                       version tags                        description
-----                       ------- ----                        -----------
-Test/TestGroup             0.1.0
-Microsoft/OSInfo           0.1.0   {os, linux, windows, macos} Returns information about the operating system.
-Microsoft.Windows/Registry 0.1.0   {Windows, NT}               Registry configuration provider for the Windows Registry
-                                                               This is a test resource.
-DSC/PowerShellGroup        0.1.0   {PowerShell}                Resource provider to classic DSC Powershell resources.
-DSC/AssertionGroup         0.1.0                               `test` will be invoked for all resources in the supplied configuration.
-DSC/ParallelGroup          0.1.0                               All resources in the supplied configuration run concurrently.
-                                                               This is a test resource.
-DSC/Group                  0.1.0                               All resources in the supplied configuration is treated as a group.
+Type                        Version  Methods                 Requires        Description
+----------------------------------------------------------------------------------------------------------------------------------------------------
+DSC.PackageManagement/Brew  0.1.0    get, set, export                        DSC resource to manage Homebrew packages
+DSC/AssertionGroup          0.1.0    get, set, test                          `test` will be invoked for all resources in the supplied configuration.
+DSC/Group                   0.1.0    get, set, test                          All resources in the supplied configuration is treated as a group.     
+DSC/ParallelGroup           0.1.0    get, set, test                          All resources in the supplied configuration run concurrently.
+DSC/PowerShellGroup         0.1.0    get, set, test, export                  Resource provider to classic DSC Powershell resources.
+Microsoft.Windows/Registry  0.1.0    get, set, test                          Registry configuration provider for the Windows Registry
+Microsoft/OSInfo            0.1.0    get, export                             Returns information about the operating system.
+Microsoft/Process           0.1.0    get, set, test, export                  Returns information about running processes.
+Test/Echo                   0.1.0    get, set, test
+Test/Sleep                  0.1.0    get, set, test
+Test/TestGroup              0.1.0    get
+Test/TestResource1          1.0.0    get                     Test/TestGroup  This is a test resource.
+Test/TestResource2          1.0.1    get                     Test/TestGroup  This is a test resource.
 ```
 
 ### Example 2 - List a specific resource
@@ -66,9 +70,9 @@ dsc resource list DSC/Group
 ```
 
 ```Output
-Type       Version  Requires  Description
-------------------------------------------------------------------------------------------------
-DSC/Group  0.1.0              All resources in the supplied configuration is treated as a group.
+Type       Version  Methods         Requires  Description
+----------------------------------------------------------------------------------------------------------------
+DSC/Group  0.1.0    get, set, test            All resources in the supplied configuration is treated as a group.
 ```
 
 ### Example 3 - List resources with a matching type name
@@ -81,12 +85,12 @@ dsc resource list DSC/*
 ```
 
 ```Output
-Type                 Version  Requires  Description
----------------------------------------------------------------------------------------------------------------
-DSC/Group            0.1.0              All resources in the supplied configuration is treated as a group.
-DSC/ParallelGroup    0.1.0              All resources in the supplied configuration run concurrently.
-DSC/PowerShellGroup  0.1.0              Resource provider to classic DSC Powershell resources.
-DSC/AssertionGroup   0.1.0              `test` will be invoked for all resources in the supplied configuration.
+Type                 Version  Methods                 Requires  Description
+---------------------------------------------------------------------------------------------------------------------------------------
+DSC/AssertionGroup   0.1.0    get, set, test                    `test` will be invoked for all resources in the supplied configuration.
+DSC/Group            0.1.0    get, set, test                    All resources in the supplied configuration is treated as a group.
+DSC/ParallelGroup    0.1.0    get, set, test                    All resources in the supplied configuration run concurrently.
+DSC/PowerShellGroup  0.1.0    get, set, test, export            Resource provider to classic DSC Powershell resources.
 ```
 
 ### Example 4 - List resources with a matching description
@@ -99,11 +103,11 @@ dsc resource list --description 'supplied configuration'
 ```
 
 ```Output
-Type                Version  Requires  Description
---------------------------------------------------------------------------------------------------------------
-DSC/ParallelGroup   0.1.0              All resources in the supplied configuration run concurrently.
-DSC/AssertionGroup  0.1.0              `test` will be invoked for all resources in the supplied configuration.
-DSC/Group           0.1.0              All resources in the supplied configuration is treated as a group.
+Type                Version  Methods         Requires  Description
+------------------------------------------------------------------------------------------------------------------------------
+DSC/AssertionGroup  0.1.0    get, set, test            `test` will be invoked for all resources in the supplied configuration.
+DSC/Group           0.1.0    get, set, test            All resources in the supplied configuration is treated as a group.
+DSC/ParallelGroup   0.1.0    get, set, test            All resources in the supplied configuration run concurrently.
 ```
 
 ### Example 5 - List resources with matching tags
@@ -116,10 +120,10 @@ dsc resource list --tags Windows --tags Linux
 ```
 
 ```output
-Type                        Version  Requires  Description
--------------------------------------------------------------------------------------------------------
-Microsoft.Windows/Registry  0.1.0              Registry configuration provider for the Windows Registry
-Microsoft/OSInfo            0.1.0              Returns information about the operating system.
+Type                        Version  Methods         Requires  Description
+-----------------------------------------------------------------------------------------------------------------------
+Microsoft.Windows/Registry  0.1.0    get, set, test            Registry configuration provider for the Windows Registry
+Microsoft/OSInfo            0.1.0    get, export               Returns information about the operating system.
 ```
 
 ## Arguments
@@ -167,6 +171,20 @@ Type:      String
 Mandatory: false
 ```
 
+### -f, --format
+
+The `--format` option controls the console output format for the command. If the command output is
+redirected or captured as a variable, the output is always a series of JSON Lines representing each
+returned resource. When this option isn't specified, the output for the command shows a table
+representing a summary of the returned resources. For more information, see [Output](#output).
+
+```yaml
+Type:         String
+Mandatory:    false
+DefaultValue: yaml
+ValidValues:  [json, pretty-json, yaml]
+```
+
 ### -h, --help
 
 Displays the help for the current command or subcommand. When you specify this option, the
@@ -182,6 +200,22 @@ Mandatory: false
 This command returns a JSON object for each resource that includes the resource's type, version,
 manifest settings, and other metadata. For more information, see
 [dsc resource list result schema][02].
+
+If the output of the command isn't captured or redirected, it displays in the console by default as
+a summary table for the returned resources. The summary table includes the following columns,
+displayed in the listed order:
+
+- **Type** - The fully qualified type name of the resource.
+- **Version** - The semantic version of the resource.
+- **Methods** - A comma-separated list of the implemented methods for the resource. Valid methods
+  are `get`, `set`, `test`, and `export`. Resources that don't implement `test` rely on DSC's
+  synthetic test functionality.
+- **Requires** - The fully qualified type name of the provider resource that DSC uses to invoke the
+  returned resource.
+- **Description** - The short description of the resource's purpose and usage.
+
+To display the output objects as either JSON or YAML objects in the console, use the
+[--format](#-f---format) option.
 
 [01]: ../dsc.md#environment-variables
 [02]: ../../schemas/outputs/resource/list.md

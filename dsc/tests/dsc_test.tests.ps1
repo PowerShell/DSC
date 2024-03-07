@@ -54,4 +54,9 @@ Describe 'config test tests' {
         $out.differingProperties[1] | Should -BeExactly 'valueData'
         $out.differingProperties[2] | Should -BeExactly '_exist'
     }
+
+    It 'can accept the use of --format as a subcommand' {
+        $null = "output: hello" | dsc resource test -r Test/Echo --format pretty-json
+        $LASTEXITCODE | Should -Be 0
+    }
 }

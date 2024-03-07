@@ -2,7 +2,7 @@
 title: "Desired State Configuration changelog"
 description: >-
   A log of the changes for releases of DSCv3.
-ms.date: 10/05/2023
+ms.date: 03/06/2024
 ---
 
 # Changelog
@@ -22,9 +22,187 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link -->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.3...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.5...main
 
 <!-- Add entries between releases under the appropriate section heading here  -->
+
+## [v3.0.0-alpha.5][release-v3.0.0-alpha.5] - 2024-02-27
+
+This section includes a summary of changes for the `alpha.5` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-alpha.5].
+
+<!-- Release links -->
+[release-v3.0.0-alpha.5]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-alpha.5 "Link to the DSC v3.0.0-alpha.5 release on GitHub"
+[compare-v3.0.0-alpha.5]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...v3.0.0-alpha.5
+
+### Changed
+
+- Updated the options for the `dsc` root command:
+
+  - Removed the global `--format` option, which controls the output format. Now, the relevant
+    subcommands that return formattable output have the `--format` option (short option as `-f`)
+    added to them.
+  - Removed the global `--input` and `--input-file` options. Now, the `config` subcommands have the
+    `--document` and `--path` options for specifying the configuration document as a string or from
+    a file. The relevant `resource` subcommands have the `--input` and `--path` options for
+    specifying the instance properties as a string or from a file.
+  - The `--logging-level` option is renamed to [--trace-level][36] with the short name `-l`. The
+    default trace level is now `warning` instead of `info`.
+  - Added the [--trace-format][37] option with the `-f` short name. This option enables you to
+    choose the format for the trace messages emitted to stderr. By default, the messages are
+    emitted as lines of text with console colors. You can set this option to `plaintext` to emit
+    the messages without console colors or to `json` to emit the messages as JSON objects.
+
+  <details><summary>Related work items</summary>
+
+  - Issues:
+    - [#286][#286]
+    - [#227][#227]
+    - [#226][#226]
+  - PRs:
+    - [#299][#299]
+    - [#303][#303]
+    - [#305][#305]
+
+  </details>
+
+- Updated the JSON schemas for the [get][38], [set][39], and [test][40] output data. This change
+  corrects an issue with how DSC surfaced information about instances nested inside group and
+  adapter resources. Now when you review the output, you'll be able to see the results for each
+  nested instance instead of a confusing object that loses the nested instance type and name
+  information.
+
+  This schema change is backwards compatible.
+
+  <details><summary>Related work items</summary>
+
+  - Issues:
+    - [#165][#165]
+    - [#266][#266]
+    - [#284][#284]
+  - PRs: [#318][#318]
+
+  <details>
+
+- Changed the [concat][41] configuration function to match the behavior of the ARM template
+  function. The `concat()` function now only accepts strings or arrays of strings as input values.
+  It raises an error if the input values are not of the same type.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#271][#271]
+  - PRs: [#322][#322]
+
+  <details>
+
+### Added
+
+- Implemented support for referencing parameters in a configuration with the [parameters()][32]
+  configuration function. This enables you to take advantage of parameterized configurations. Until
+  this release, you could define but not reference parameters.
+
+  Now, you can use the [--parameters][33] and [--parameters-file][34] options with the
+  [dsc config][35] commands to pass values for any parameter defined in the configuration document.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#49][#49]
+  - PRs:
+    - [#291][#291]
+    - [#294][#294]
+
+  </details>
+
+- Added support for authoring DSC Resource manifests in YAML. DSC now recognizes resource manifests
+  that use the `.dsc.resource.yml` or `.dsc.resource.yaml` file extension instead of only
+  `.dsc.resource.json`.
+
+  <details><summary>Related work Items</summary>
+
+  - Issues: [#129][#129]
+  - PRs: [#311][#311]
+
+  </details>
+
+- Added the [DSCConfigRoot][42] environment variable and the [envvar() configuration function][43]
+  to enable users to reference files and folders relative to the folder containing the
+  configuration document. DSC automatically creates the `DSCConfigRoot` environment variable when
+  you use the `--path` option to specify the configuration document instead of passing the document
+  as a string from stdin or with the `--document` option.
+
+  > [!NOTE]
+  > In this release, DSC doesn't expand the specified path to an absolute path. You should always
+  > specify the full path to the configuration document if you want to reference the
+  > `DSCConfigRoot` variable in your configuration. Further, DSC always sets the value for this
+  > environment variable when you use the `--path` option. If the environment variable is already
+  > set, it overrides it silently.
+  >
+  > In a future release, the variable will be renamed to `DSC_CONFIG_ROOT` and DSC will
+  > automatically expand relative paths into absolute paths when setting the environment variable.
+  > It will also emit a warning when it overrides the variable.
+
+  <details><summary>Related work Items</summary>
+
+  - Issues: [#75][#75]
+  - PRs: [#313][#313]
+
+  </details>
+
+- Added support for using the [dsc config export][44] and [dsc resource export][45] commands with
+  the PowerShell adapter resource. PSDSC resources can now participate in the `export` command if
+  they define a static method that returns an array of the PSDSC resource class.
+
+  <details><summary>Related work Items</summary>
+
+  - Issues: [#183][#183]
+  - PRs: [#307][#307]
+
+  </details>
+
+- Added the `methods` column to the default table view for the console output of the
+  [dsc resource list][46] command. This new column indicates which methods the resource explicitly
+  implements. Valid values include `get`, `set`, `test`, and `export`. This information is only
+  available in the table view. It isn't part of the output object for the command. If you use the
+  [--format][47] parameter, capture the command output, or redirect the output, the `methods`
+  information isn't included.
+
+  Resources that don't implement `test` rely on DSC's synthetic test behavior instead. They can
+  still be used for test and set operations.
+
+  Resources that don't implement `export` can't be used with the `dsc config export` or
+  `dsc resource export` commands.
+
+  Resources that don't implement `set` can be used for auditing, but not `dsc resource set`. They
+  can be used with the `dsc config set` command, but only if they're nested inside a
+  `DSC/AssertionGroup` instance.
+
+  <details><summary>Related work Items</summary>
+
+  - Issues: [#309][#309]
+  - PRs: [#314][#314]
+
+  </details>
+
+- Added an prototype for a WMI resource adapter to enable users to query WMI. The adapter is
+  disabled by default, as enumerating the WMI resources can have a performance impact. To enable
+  it, rename the resource manifest from `wmigroup.dsc.resource.json.optout` to
+  `wmigroup.dsc.resource.json`.
+
+  <details><summary>Related work Items</summary>
+
+  - Issues: [#263][#263]
+  - PRs: [#279][#279]
+
+  </details>
+
+## [v3.0.0-alpha.4][release-v3.0.0-alpha.4] - 2023-11-14
+
+This section includes a summary of changes for the `alpha.4` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-alpha.4].
+
+<!-- Release links -->
+[release-v3.0.0-alpha.4]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-alpha.4 "Link to the DSC v3.0.0-alpha.4 release on GitHub"
+[compare-v3.0.0-alpha.4]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.3...v3.0.0-alpha.4
 
 ### Changed
 
@@ -69,7 +247,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 ### Added
 
-- Added the [--input][24] and [--input-file][25] global options to the root `dsc` command. Now, you
+- Added the `--input` and `--input-file` global options to the root `dsc` command. Now, you
   can pass input to DSC from a variable or file instead of piping from stdin.
 
   <details><summary>Related work items</summary>
@@ -102,7 +280,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 - DSC now emits log messages to the stderr stream. This can make it easier to understand what DSC
   is doing. This doesn't affect the data output. By default, DSC emits errors, warnings, and
   informational messages, but not debug or trace messaging. You can control the level of the
-  logging with the new [--logging-level][27] option on the root `dsc` command.
+  logging with the new `--logging-level` option on the root `dsc` command.
 
   <details><summary>Related work items</summary>
 
@@ -123,6 +301,22 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   - Issues: [#173][#173]
   - PRs: [#240][#240]
+
+  </details>
+
+- Added initial [configuration document functions][28] to DSC. You can now use the [base64()][29],
+  [concat()][30], and [resourceId()][31] functions in the configuration document.
+
+  > [!NOTE]
+  > The `resourceId` function has been reimplemented as a document function instead of a special
+  > case, but it has the same functionality and parameters.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#57][#57]
+  - PRs:
+    - [#241][#241]
+    - [#252][#252]
 
   </details>
 
@@ -438,15 +632,35 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [21]: docs/reference/schemas/config/document.md#schema
 [22]: docs/reference/schemas/resource/manifest/root.md#schema
 [23]: docs/reference/schemas/resource/properties/exist.md
-[24]: docs/reference/cli/dsc.md#-i---input
-[25]: docs/reference/cli/dsc.md#-p---input-file
 [26]: docs/reference/cli/completer/command.md
-[27]: docs/reference/cli/dsc.md#-l---logging-level
+[28]: docs/reference/schemas/config/functions/overview.md
+[29]: docs/reference/schemas/config/functions/base64.md
+[30]: docs/reference/schemas/config/functions/concat.md
+[31]: docs/reference/schemas/config/functions/resourceId.md
+
+<!-- alpha.5 links -->
+[32]: docs/reference/schemas/config/functions/parameters.md
+[33]: docs/reference/cli/config/command.md#-p---parameters
+[34]: docs/reference/cli/config/command.md#-f---parameters_file
+[35]: docs/reference/cli/config/command.md
+[36]: docs/reference/cli/dsc.md#-l---trace-level
+[37]: docs/reference/cli/dsc.md#-f---trace-format
+[38]: docs/reference/schemas/outputs/resource/get.md
+[39]: docs/reference/schemas/outputs/resource/set.md
+[40]: docs/reference/schemas/outputs/resource/test.md
+[41]: docs/reference/schemas/config/functions/concat.md
+[42]: docs/reference/cli/config/command.md#environment-variables
+[43]: docs/reference/schemas/config/functions/envvar.md
+[44]: docs/reference/cli/config/export.md
+[45]: docs/reference/cli/resource/export.md
+[46]: docs/reference/cli/resource/list.md
+[47]: docs/reference/cli/resource/list.md#-f---format
 
 <!-- Issue and PR links -->
 [#107]: https://github.com/PowerShell/DSC/issues/107
 [#121]: https://github.com/PowerShell/DSC/issues/121
 [#127]: https://github.com/PowerShell/DSC/issues/127
+[#129]: https://github.com/PowerShell/DSC/issues/129
 [#130]: https://github.com/PowerShell/DSC/issues/130
 [#133]: https://github.com/PowerShell/DSC/issues/133
 [#150]: https://github.com/PowerShell/DSC/issues/150
@@ -455,6 +669,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#159]: https://github.com/PowerShell/DSC/issues/159
 [#162]: https://github.com/PowerShell/DSC/issues/162
 [#163]: https://github.com/PowerShell/DSC/issues/163
+[#165]: https://github.com/PowerShell/DSC/issues/165
 [#168]: https://github.com/PowerShell/DSC/issues/168
 [#171]: https://github.com/PowerShell/DSC/issues/171
 [#172]: https://github.com/PowerShell/DSC/issues/172
@@ -465,6 +680,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#177]: https://github.com/PowerShell/DSC/issues/177
 [#181]: https://github.com/PowerShell/DSC/issues/181
 [#182]: https://github.com/PowerShell/DSC/issues/182
+[#183]: https://github.com/PowerShell/DSC/issues/183
 [#186]: https://github.com/PowerShell/DSC/issues/186
 [#197]: https://github.com/PowerShell/DSC/issues/197
 [#198]: https://github.com/PowerShell/DSC/issues/198
@@ -477,8 +693,33 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#215]: https://github.com/PowerShell/DSC/issues/215
 [#216]: https://github.com/PowerShell/DSC/issues/216
 [#217]: https://github.com/PowerShell/DSC/issues/217
+[#226]: https://github.com/PowerShell/DSC/issues/226
+[#227]: https://github.com/PowerShell/DSC/issues/227
 [#240]: https://github.com/PowerShell/DSC/issues/240
+[#241]: https://github.com/PowerShell/DSC/issues/241
 [#248]: https://github.com/PowerShell/DSC/issues/248
+[#252]: https://github.com/PowerShell/DSC/issues/252
+[#263]: https://github.com/PowerShell/DSC/issues/263
+[#266]: https://github.com/PowerShell/DSC/issues/266
+[#271]: https://github.com/PowerShell/DSC/issues/271
+[#279]: https://github.com/PowerShell/DSC/issues/279
+[#284]: https://github.com/PowerShell/DSC/issues/284
+[#286]: https://github.com/PowerShell/DSC/issues/286
+[#291]: https://github.com/PowerShell/DSC/issues/291
+[#294]: https://github.com/PowerShell/DSC/issues/294
+[#299]: https://github.com/PowerShell/DSC/issues/299
+[#303]: https://github.com/PowerShell/DSC/issues/303
+[#305]: https://github.com/PowerShell/DSC/issues/305
+[#307]: https://github.com/PowerShell/DSC/issues/307
+[#309]: https://github.com/PowerShell/DSC/issues/309
+[#311]: https://github.com/PowerShell/DSC/issues/311
+[#313]: https://github.com/PowerShell/DSC/issues/313
+[#314]: https://github.com/PowerShell/DSC/issues/314
+[#318]: https://github.com/PowerShell/DSC/issues/318
+[#322]: https://github.com/PowerShell/DSC/issues/322
 [#45]:  https://github.com/PowerShell/DSC/issues/45
+[#49]:  https://github.com/PowerShell/DSC/issues/49
+[#57]:  https://github.com/PowerShell/DSC/issues/57
 [#73]:  https://github.com/PowerShell/DSC/issues/73
+[#75]:  https://github.com/PowerShell/DSC/issues/75
 [#98]:  https://github.com/PowerShell/DSC/issues/98

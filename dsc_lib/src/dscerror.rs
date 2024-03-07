@@ -3,6 +3,7 @@
 
 use std::str::Utf8Error;
 
+use indicatif::style::TemplateError;
 use reqwest::StatusCode;
 use thiserror::Error;
 use tracing::error;
@@ -52,10 +53,13 @@ pub enum DscError {
     #[error("Manifest: {0}\nJSON: {1}")]
     Manifest(String, serde_json::Error),
 
+    #[error("Manifest: {0}\nYAML: {1}")]
+    ManifestYaml(String, serde_yaml::Error),
+
     #[error("Missing manifest: {0}")]
     MissingManifest(String),
 
-    #[error("Provider source '{0}' missing 'requires' property for resource '{1}'")]
+    #[error("Adapter-based resource '{0}' missing 'requires' property for resource '{1}'")]
     MissingRequires(String, String),
 
     #[error("Schema missing from manifest: {0}")]
@@ -64,11 +68,17 @@ pub enum DscError {
     #[error("Not implemented: {0}")]
     NotImplemented(String),
 
+    #[error("Number conversion error: {0}")]
+    NumberConversion(#[from] std::num::TryFromIntError),
+
     #[error("Operation: {0}")]
     Operation(String),
 
     #[error("Parser: {0}")]
     Parser(String),
+
+    #[error("Progress: {0}")]
+    Progress(#[from] TemplateError),
 
     #[error("Resource not found: {0}")]
     ResourceNotFound(String),
@@ -78,6 +88,9 @@ pub enum DscError {
 
     #[error("No Schema: {0}")]
     SchemaNotAvailable(String),
+
+    #[error("Security context: {0}")]
+    SecurityContext(String),
 
     #[error("Utf-8 conversion error: {0}")]
     Utf8Conversion(#[from] Utf8Error),

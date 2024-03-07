@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'validate' property in a DSC Resource manifest
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Resource manifest validate property schema reference
 ---

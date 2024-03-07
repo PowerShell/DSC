@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use serde_json::Value;
+use serde_json::{Number, Value};
 use tree_sitter::Node;
 
 use crate::DscError;
+use crate::configure::context::Context;
 use crate::parser::{
     expressions::Expression,
     FunctionDispatcher,
@@ -18,16 +19,8 @@ pub struct Function {
 
 #[derive(Clone)]
 pub enum FunctionArg {
-    String(String),
-    Integer(i32),
-    Boolean(bool),
+    Value(Value),
     Expression(Expression),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum FunctionResult {
-    String(String),
-    Object(Value),
 }
 
 impl Function {
@@ -58,24 +51,24 @@ impl Function {
     /// # Errors
     ///
     /// This function will return an error if the function fails to execute.
-    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher) -> Result<FunctionResult, DscError> {
+    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
         // if any args are expressions, we need to invoke those first
-        let mut resolved_args: Vec<FunctionArg> = vec![];
+        let mut resolved_args: Vec<Value> = vec![];
         if let Some(args) = &self.args {
             for arg in args {
                 match arg {
                     FunctionArg::Expression(expression) => {
-                        let value = expression.invoke(function_dispatcher)?;
-                        resolved_args.push(FunctionArg::String(value));
+                        let value = expression.invoke(function_dispatcher, context)?;
+                        resolved_args.push(value.clone());
                     },
-                    _ => {
-                        resolved_args.push(arg.clone());
+                    FunctionArg::Value(value) => {
+                        resolved_args.push(value.clone());
                     }
                 }
             }
         }
 
-        function_dispatcher.invoke(&self.name, &resolved_args)
+        function_dispatcher.invoke(&self.name, &resolved_args, context)
     }
 }
 
@@ -89,15 +82,15 @@ fn convert_args_node(statement_bytes: &[u8], args: &Option<Node>) -> Result<Opti
         match arg.kind() {
             "string" => {
                 let value = arg.utf8_text(statement_bytes)?;
-                result.push(FunctionArg::String(value.to_string()));
+                result.push(FunctionArg::Value(Value::String(value.to_string())));
             },
             "number" => {
                 let value = arg.utf8_text(statement_bytes)?;
-                result.push(FunctionArg::Integer(value.parse::<i32>()?));
+                result.push(FunctionArg::Value(Value::Number(Number::from(value.parse::<i32>()?))));
             },
             "boolean" => {
                 let value = arg.utf8_text(statement_bytes)?;
-                result.push(FunctionArg::Boolean(value.parse::<bool>()?));
+                result.push(FunctionArg::Value(Value::Bool(value.parse::<bool>()?)));
             },
             "expression" => {
                 // TODO: this is recursive, we may want to stop at a specific depth

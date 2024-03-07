@@ -1,11 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use serde_json::Value;
+use tracing::{debug, trace};
 use tree_sitter::Node;
 
+use crate::configure::context::Context;
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
-use crate::parser::functions::{Function, FunctionResult};
+use crate::parser::functions::Function;
 
 #[derive(Clone)]
 pub struct Expression {
@@ -59,30 +62,34 @@ impl Expression {
     /// # Errors
     ///
     /// This function will return an error if the expression fails to execute.
-    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher) -> Result<String, DscError> {
-        let result = self.function.invoke(function_dispatcher)?;
+    pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
+        let result = self.function.invoke(function_dispatcher, context)?;
+        trace!("Function result: '{:?}'", result);
         if let Some(member_access) = &self.member_access {
-            match result {
-                FunctionResult::String(_) => {
-                    Err(DscError::Parser("Member access on string not supported".to_string()))
-                },
-                FunctionResult::Object(object) => {
-                    let mut value = object;
-                    if !value.is_object() {
-                        return Err(DscError::Parser(format!("Member access on non-object value '{value}'")));
+            debug!("Evaluating member access '{:?}'", member_access);
+            if !result.is_object() {
+                return Err(DscError::Parser("Member access on non-object value".to_string()));
+            }
+
+            let mut value = result;
+            for member in member_access {
+                if !value.is_object() {
+                    return Err(DscError::Parser(format!("Member access '{member}' on non-object value")));
+                }
+
+                if let Some(object) = value.as_object() {
+                    if !object.contains_key(member) {
+                        return Err(DscError::Parser(format!("Member '{member}' not found")));
                     }
-                    for member in member_access {
-                        value = value[member].clone();
-                    }
-                    Ok(value.to_string())
+
+                    value = object[member].clone();
                 }
             }
+
+            Ok(value)
         }
         else {
-            match result {
-                FunctionResult::String(value) => Ok(value),
-                FunctionResult::Object(object) => Ok(object.to_string()),
-            }
+            Ok(result)
         }
     }
 }

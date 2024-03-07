@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a parameter in a Desired State Configuration document.
-ms.date:     08/04/2023
+ms.date:     01/17/2024
 ms.topic:    reference
 title:       DSC Configuration document parameter schema
 ---
@@ -31,6 +31,8 @@ property of the configuration document. The value is an object that defines the 
 
 Every parameter defines its data type. Parameters may also define a default value, validation
 checks, a description of their purpose, and arbitrary metadata.
+
+To reference parameters in resource instances, use the [parameters() configuration function][02].
 
 ## Required Properties
 
@@ -72,7 +74,7 @@ independent logging or recording that isn't handled by DSC, the value may be sto
 Use secure strings for passwords and secrets.
 
 For more information about data types, see
-[DSC configuration parameter data type schema reference][02].
+[DSC configuration parameter data type schema reference][03].
 
 ```yaml
 Type:        string
@@ -172,4 +174,5 @@ Required: false
 ```
 
 [01]: resource.md
-[02]: ../definitions/parameters/dataTypes.md
+[02]: ./functions/parameters.md
+[03]: ../definitions/parameters/dataTypes.md

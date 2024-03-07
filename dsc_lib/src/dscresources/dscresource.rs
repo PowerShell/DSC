@@ -1,12 +1,15 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::dscresources::resource_manifest::Kind;
 use dscerror::DscError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use super::{command_resource, dscerror, resource_manifest::import_manifest, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
+use tracing::{debug, trace};
+
+use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -14,6 +17,8 @@ pub struct DscResource {
     /// The namespaced name of the resource.
     #[serde(rename="type")]
     pub type_name: String,
+    /// The kind of resource.
+    pub kind: Kind,
     /// The version of the resource.
     pub version: String,
     /// The file path to the resource.
@@ -29,7 +34,7 @@ pub struct DscResource {
     pub author: Option<String>,
     /// The properties of the resource.
     pub properties: Vec<String>,
-    /// The required resource provider for the resource.
+    /// The required resource adapter for the resource.
     pub requires: Option<String>,
     /// The manifest of the resource.
     pub manifest: Option<Value>,
@@ -49,6 +54,7 @@ impl DscResource {
     pub fn new() -> Self {
         Self {
             type_name: String::new(),
+            kind: Kind::Resource,
             version: String::new(),
             description: None,
             path: String::new(),
@@ -59,6 +65,54 @@ impl DscResource {
             requires: None,
             manifest: None,
         }
+    }
+
+    fn validate_input(&self, input: &str) -> Result<(), DscError> {
+        debug!("Validating input for resource: {}", &self.type_name);
+        if input.is_empty() {
+            return Ok(());
+        }
+        let Some(manifest) = &self.manifest else {
+            return Err(DscError::MissingManifest(self.type_name.clone()));
+        };
+        let resource_manifest = import_manifest(manifest.clone())?;
+
+        if resource_manifest.validate.is_some() {
+            trace!("Using custom validation");
+            let validation_result = match self.validate(input) {
+                Ok(validation_result) => validation_result,
+                Err(err) => {
+                    return Err(DscError::Validation(format!("Validation failed: {err}")));
+                },
+            };
+            trace!("Validation result is valid: {}", validation_result.valid);
+            if !validation_result.valid {
+                return Err(DscError::Validation("Validation failed".to_string()));
+            }
+        }
+        else {
+            trace!("Using JSON schema validation");
+            let Ok(schema) = self.schema() else {
+                return Err(DscError::Validation("Schema not available".to_string()));
+            };
+
+            let schema = serde_json::from_str::<Value>(&schema)?;
+
+            let Ok(compiled_schema) = jsonschema::JSONSchema::compile(&schema) else {
+                return Err(DscError::Validation("Schema compilation failed".to_string()));
+            };
+
+            let input = serde_json::from_str::<Value>(input)?;
+            if let Err(err) = compiled_schema.validate(&input) {
+                let mut error = format!("Resource '{}' failed validation: ", self.type_name);
+                for e in err {
+                    error.push_str(&format!("\n{e} "));
+                }
+                return Err(DscError::Validation(error));
+            };
+        }
+
+        Ok(())
     }
 }
 
@@ -124,14 +178,19 @@ pub trait Invoke {
 
     /// Invoke the export operation on the resource.
     ///
+    /// # Arguments
+    ///
+    /// * `input` - Input for export operation.
+    ///
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn export(&self) -> Result<ExportResult, DscError>;
+    fn export(&self, input: &str) -> Result<ExportResult, DscError>;
 }
 
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
+        self.validate_input(filter)?;
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("get custom resources".to_string()))
@@ -147,6 +206,7 @@ impl Invoke for DscResource {
     }
 
     fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
+        self.validate_input(desired)?;
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -162,6 +222,7 @@ impl Invoke for DscResource {
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+        self.validate_input(expected)?;
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("test custom resources".to_string()))
@@ -176,13 +237,25 @@ impl Invoke for DscResource {
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
                     let desired_state = serde_json::from_str(expected)?;
-                    let diff_properties = get_diff(&desired_state, &get_result.actual_state);
-                    let test_result = TestResult {
+                    let actual_state = match get_result {
+                        GetResult::Group(results) => {
+                            let mut result_array: Vec<Value> = Vec::new();
+                            for result in results {
+                                result_array.push(serde_json::to_value(result)?);
+                            }
+                            Value::from(result_array)
+                        },
+                        GetResult::Resource(response) => {
+                            response.actual_state
+                        }
+                    };
+                    let diff_properties = get_diff( &desired_state, &actual_state);
+                    let test_result = TestResult::Resource(ResourceTestResponse {
                         desired_state: serde_json::from_str(expected)?,
-                        actual_state: get_result.actual_state,
+                        actual_state,
                         in_desired_state: diff_properties.is_empty(),
                         diff_properties,
-                    };
+                    });
                     Ok(test_result)
                 }
                 else {
@@ -222,19 +295,12 @@ impl Invoke for DscResource {
         }
     }
 
-    fn export(&self) -> Result<ExportResult, DscError> {
-        match &self.implemented_as {
-            ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("export custom resources".to_string()))
-            },
-            ImplementedAs::Command => {
-                let Some(manifest) = &self.manifest else {
-                    return Err(DscError::MissingManifest(self.type_name.clone()));
-                };
-                let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_export(&resource_manifest, &self.directory)
-            },
-        }
+    fn export(&self, input: &str) -> Result<ExportResult, DscError> {
+        let Some(manifest) = &self.manifest else {
+            return Err(DscError::MissingManifest(self.type_name.clone()));
+        };
+        let resource_manifest = import_manifest(manifest.clone())?;
+        command_resource::invoke_export(&resource_manifest, &self.directory, Some(input))
     }
 }
 

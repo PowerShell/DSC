@@ -41,6 +41,7 @@ pub enum Bitness {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Family {
     Linux,
+    #[serde(rename = "macOS")]
     MacOS,
     Windows,
 }

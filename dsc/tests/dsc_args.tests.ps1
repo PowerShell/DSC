@@ -44,6 +44,12 @@ Describe 'config argument tests' {
         $env:DSC_RESOURCE_PATH = $env:PATH + $sep + $TestDrive
     }
 
+    AfterEach {
+        if (Test-Path $TestDrive/error.txt) {
+            Remove-Item -Path $TestDrive/error.txt
+        }
+    }
+
     AfterAll {
         $env:DSC_RESOURCE_PATH = $oldPath
     }
@@ -85,7 +91,7 @@ actualState:
     ) {
         param($format, $expected)
 
-        $out = dsc --format $format resource get -r Test/Hello | Out-String
+        $out = dsc resource get -r Test/Hello --format $format | Out-String
         $LASTEXITCODE | Should -Be 0
         $out.Trim() | Should -BeExactly $expected
     }
@@ -100,8 +106,8 @@ actualState:
     }
 
     It 'input can be passed using <parameter>' -TestCases @(
-        @{ parameter = '-i' }
-        @{ parameter = '--input' }
+        @{ parameter = '-d' }
+        @{ parameter = '--document' }
     ) {
         param($parameter)
 
@@ -114,14 +120,14 @@ resources:
     family: Windows
 '@
 
-        $out = dsc $parameter "$yaml" config get | ConvertFrom-Json
+        $out = dsc config get $parameter "$yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
 
     It 'input can be passed using <parameter>' -TestCases @(
         @{ parameter = '-p' }
-        @{ parameter = '--input-file' }
+        @{ parameter = '--path' }
     ) {
         param($parameter)
 
@@ -135,19 +141,40 @@ resources:
 '@
 
         Set-Content -Path $TestDrive/foo.yaml -Value $yaml
-        $out = dsc $parameter "$TestDrive/foo.yaml" config get | ConvertFrom-Json
+        $out = dsc config get $parameter "$TestDrive/foo.yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
 
-    It '--input and --input-file cannot be used together' {
-        dsc --input 1 --input-file foo.json config get 2> $TestDrive/error.txt
+    It '--document and --path cannot be used together' {
+        dsc config get --document 1 --path foo.json 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 2
     }
 
-    It '--logging-level has effect' {
+    It 'stdin and --document cannot be used together' {
+        '{ "foo": true }' | dsc config get --document 1 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 1
+    }
+
+    It 'stdin and --path cannot be used together' {
+        '{ "foo": true }' | dsc config get --path foo.json 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 1
+    }
+
+    It 'stdin, --document and --path cannot be used together' {
+        '{ "foo": true }' | dsc config get --document 1 --path foo.json 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 2
+    }
+
+    It '--trace-level has effect' {
         dsc -l debug resource get -r Microsoft/OSInfo 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'DEBUG'
         $LASTEXITCODE | Should -Be 0
@@ -158,5 +185,33 @@ resources:
         dsc -l trace resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'PSModulePath'
         $LASTEXITCODE | Should -Be 0
+
+    It 'stdin cannot be empty if neither input or path is provided' {
+        '' | dsc resource set -r Microsoft/OSInfo 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 1
+    }
+
+    It 'input cannot be empty if neither stdin or path is provided' {
+        dsc resource set -r Microsoft/OSInfo --input " " 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 1
+    }
+
+    It 'path contents cannot be empty if neither stdin or input is provided' {
+        Set-Content -Path $TestDrive/empty.yaml -Value " "
+        dsc resource set -r Microsoft/OSInfo --path $TestDrive/empty.yaml 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 1
+    }
+
+    It 'document cannot be empty if neither stdin or path is provided' {
+        dsc config set --document " " 2> $TestDrive/error.txt
+        $err = Get-Content $testdrive/error.txt -Raw
+        $err.Length | Should -Not -Be 0
+        $LASTEXITCODE | Should -Be 4
     }
 }

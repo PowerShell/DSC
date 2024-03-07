@@ -27,12 +27,20 @@ Describe 'dsc config get tests' {
     It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {
         $jsonPath = Join-Path $PSScriptRoot '../examples/invalid_schema.dsc.yaml'
         $config = Get-Content $jsonPath -Raw
-        $out = $config | dsc config get | ConvertFrom-Json
+        $null = $config | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2
-        $out.hadErrors | Should -BeTrue
-        $out.results.Count | Should -Be 0
-        $out.messages.Count | Should -Be 2
-        $out.messages[0].level | Should -BeExactly 'Error'
-        $out.messages[1].level | Should -BeExactly 'Error'
+    }
+
+    It 'can accept the use of --format as a subcommand' {
+        $config_yaml = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            resources:
+            - name: Echo
+              type: Test/Echo
+              properties:
+                output: hello
+"@
+        $null = $config_yaml | dsc config get --format pretty-json | Out-String
+        $LASTEXITCODE | Should -Be 0
     }
 }

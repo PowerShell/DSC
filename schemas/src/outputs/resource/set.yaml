@@ -5,36 +5,13 @@ $id:     <HOST>/<PREFIX>/<VERSION>/outputs/resource/set.yaml
 title: dsc resource set result
 description: >-
   Describes the return data for a DSC Resource instance from the
-  `dsc resource set` command.
+  `dsc resource set` command. The return data is either a single object that
+  describes the enforced state of a non-nested instance or an array of objects
+  that describe the enforced state of the nested instances for a group or
+  adapter resource.
 
-type: object
-required:
-  - beforeState
-  - afterState
-  - changedProperties
-properties:
-  beforeState:
-    title: State before enforcing
-    description: >-
-      This property always represents the desired state of the DSC Resource
-      instance before the `set` method runs. DSC validates this return value
-      against the DSC Resource's schema.
-    type: object
-  afterState:
-    title: State after enforcing
-    description: >-
-      This property always represents the current state of the DSC Resource
-      instance as returned by its `set` method after enforcing the desired
-      state. DSC validates this return value against the DSC Resource's schema.
-    type: object
-  changedProperties:
-    title: Changed properties
-    description: >-
-      This property always represents the list of property names for the DSC
-      Resource instance that the `set` method modified. When this value is an
-      empty array, the `set` method didn't enforce any properties for the
-      instance.
-    type: array
-    default: []
+anyOf:
+  - $ref: /<PREFIX>/<VERSION>/outputs/resource/set.simple.yaml
+  - type: array
     items:
-      type: string
+      $ref: /<PREFIX>/<VERSION>/outputs/resource/set.full.yaml
