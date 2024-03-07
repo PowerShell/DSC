@@ -408,10 +408,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
                 let mut methods = "g---".to_string();
                 // if description, tags, or write_table is specified, pull resource manifest if it exists
-                if description.is_some() || tags.is_some() || write_table {
-                    let Some(ref resource_manifest) = resource.manifest else {
-                        continue;
-                    };
+                if let Some(ref resource_manifest) = resource.manifest {
                     let manifest = match import_manifest(resource_manifest.clone()) {
                         Ok(resource_manifest) => resource_manifest,
                         Err(err) => {
@@ -445,6 +442,11 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                     if manifest.set.is_some() { methods.replace_range(1..2, "s"); }
                     if manifest.test.is_some() { methods.replace_range(2..3, "t"); }
                     if manifest.export.is_some() { methods.replace_range(3..4, "e"); }
+                } else {
+                    // resource does not have a manifest but filtering on description or tags was requested - skip such resource
+                    if description.is_some() || tags.is_some() {
+                        continue;
+                    }
                 }
 
                 if write_table {
