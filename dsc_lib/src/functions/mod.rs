@@ -15,6 +15,7 @@ pub mod envvar;
 pub mod mul;
 pub mod parameters;
 pub mod resource_id;
+pub mod sub;
 
 /// The kind of argument that a function accepts.
 #[derive(Debug, PartialEq)]
@@ -64,6 +65,7 @@ impl FunctionDispatcher {
         functions.insert("mul".to_string(), Box::new(mul::Mul{}));
         functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
         functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
+        functions.insert("sub".to_string(), Box::new(sub::Sub{}));
         Self {
             functions,
         }
