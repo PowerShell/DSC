@@ -12,7 +12,6 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::BufReader;
-use std::mem;
 use std::path::Path;
 use tracing::{debug, error, trace, warn, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
@@ -43,7 +42,7 @@ impl CommandDiscovery {
             )?);
         }
         pb_span.pb_set_message("Searching for resources");
-        let pb_span_enter = pb_span.enter();
+        let _ = pb_span.enter();
 
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut adapter_resources: Vec<String> = Vec::new();
@@ -144,7 +143,7 @@ impl CommandDiscovery {
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
             )?);
             pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter {adapter}").as_str());
-            let pb_adapter_enter = pb_adapter_span.enter();
+            let _ = pb_adapter_span.enter();
             let adapter_resource = resources.get(&adapter).unwrap();
             let adapter_type_name = adapter_resource.type_name.clone();
             let manifest = import_manifest(adapter_resource.manifest.clone().unwrap())?;
@@ -215,13 +214,9 @@ impl CommandDiscovery {
                     }
                 };
             }
-            mem::drop(pb_adapter_enter);
-            mem::drop(pb_adapter_span);
 
             debug!("Adapter '{}' listed {} matching resources", adapter_type_name, adapter_resources_count);
         }
-        mem::drop(pb_span_enter);
-        mem::drop(pb_span);
         Ok(resources)
     }
 }

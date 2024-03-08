@@ -136,6 +136,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
 }
 
 fn get_progress_bar_span(len: u64) -> Result<Span, DscError> {
+    // use warn_span since that is the default logging level but progress bars will be suppressed if error trace level is used
     let pb_span = warn_span!("");
     pb_span.pb_set_style(&ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
@@ -247,8 +248,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        mem::drop(pb_span_enter);
-        mem::drop(pb_span);
+        std::mem::drop(pb_span_enter);
+        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -327,8 +328,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        mem::drop(pb_span_enter);
-        mem::drop(pb_span);
+        std::mem::drop(pb_span_enter);
+        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -366,9 +367,9 @@ impl Configurator {
             add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
+        std::mem::drop(pb_span_enter);
+        std::mem::drop(pb_span);
         result.result = Some(conf);
-        mem::drop(pb_span_enter);
-        mem::drop(pb_span);
         Ok(result)
     }
 
