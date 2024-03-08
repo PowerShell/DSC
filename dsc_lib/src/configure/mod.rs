@@ -16,9 +16,9 @@ use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
-use tracing_indicatif::span_ext::IndicatifSpanExt;
 use std::{collections::HashMap, mem};
 use tracing::{debug, trace, warn_span, Span};
+use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 pub mod context;
 pub mod config_doc;
@@ -270,7 +270,7 @@ impl Configurator {
         let pb_span_enter = pb_span.enter();
         for resource in resources {
             Span::current().pb_inc(1);
-            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
+            pb_span.pb_set_message(format!("Set '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -310,7 +310,7 @@ impl Configurator {
         let pb_span_enter = pb_span.enter();
         for resource in resources {
             Span::current().pb_inc(1);
-            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
+            pb_span.pb_set_message(format!("Test '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -356,7 +356,7 @@ impl Configurator {
         let pb_span_enter = pb_span.enter();
         for resource in config.resources {
             Span::current().pb_inc(1);
-            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
+            pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));

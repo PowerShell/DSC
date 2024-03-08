@@ -17,6 +17,7 @@ clap_complete = { version = "4.4" }
 crossterm = { version = "0.27" }
 ctrlc = { version = "3.4.0" }
 dsc_lib = { path = "../dsc_lib" }
+indicatif = { version = "0.17" }
 jsonschema = "0.17"
 path-absolutize = { version = "3.1.1" }
 schemars = { version = "0.8.12" }
@@ -29,4 +30,3 @@ thiserror = "1.0.52"
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17", features = ["ansi", "env-filter", "json"] }
 tracing-indicatif = { version = "0.3.6" }
-indicatif = { version = "0.17" }

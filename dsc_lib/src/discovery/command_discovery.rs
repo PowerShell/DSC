@@ -32,19 +32,18 @@ impl CommandDiscovery {
         debug!("Searching for resources: {:?}", required_resource_types);
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
-        let header_span = warn_span!("header");
+        let pb_span = warn_span!("progress bar");
         if return_all_resources {
-            debug!("returning all resources");
-            header_span.pb_set_style(&ProgressStyle::with_template(
+            pb_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.yellow}"
             )?);
         } else {
-            header_span.pb_set_style(&ProgressStyle::with_template(
+            pb_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
             )?);
         }
-        header_span.pb_set_message("Searching for resources");
-        let header_span_enter = header_span.enter();
+        pb_span.pb_set_message("Searching for resources");
+        let pb_span_enter = pb_span.enter();
 
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut adapter_resources: Vec<String> = Vec::new();
@@ -221,8 +220,8 @@ impl CommandDiscovery {
 
             debug!("Adapter '{}' listed {} matching resources", adapter_type_name, adapter_resources_count);
         }
-        mem::drop(header_span_enter);
-        mem::drop(header_span);
+        mem::drop(pb_span_enter);
+        mem::drop(pb_span);
         Ok(resources)
     }
 }

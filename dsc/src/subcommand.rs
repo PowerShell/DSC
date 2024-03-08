@@ -398,6 +398,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
 
     match subcommand {
         ResourceSubCommand::List { resource_name, description, tags, format } => {
+
             let mut write_table = false;
             let mut table = Table::new(&["Type", "Kind", "Version", "Methods", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
