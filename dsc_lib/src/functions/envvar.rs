@@ -41,8 +41,8 @@ mod tests {
     #[test]
     fn valid() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[envvar('PWD')]", &Context::new()).unwrap();
-        assert_eq!(result, std::env::var("PWD").unwrap());
+        let result = parser.parse_and_execute("[envvar('PATH')]", &Context::new()).unwrap();
+        assert_eq!(result, std::env::var("PATH").unwrap());
     }
 
     #[test]
