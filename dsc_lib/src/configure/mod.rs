@@ -136,7 +136,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
 }
 
 fn get_progress_bar_span(len: u64) -> Result<Span, DscError> {
-    let pb_span = warn_span!("progress bar");
+    let pb_span = warn_span!("");
     pb_span.pb_set_style(&ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
     )?);

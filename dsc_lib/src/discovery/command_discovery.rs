@@ -32,7 +32,7 @@ impl CommandDiscovery {
         debug!("Searching for resources: {:?}", required_resource_types);
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
-        let pb_span = warn_span!("progress bar");
+        let pb_span = warn_span!("");
         if return_all_resources {
             pb_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.yellow}"
@@ -139,7 +139,7 @@ impl CommandDiscovery {
         // now go through the adapter resources and add them to the list of resources
         for adapter in adapter_resources {
             debug!("Enumerating resources for adapter {}", adapter);
-            let pb_adapter_span = warn_span!("adapter");
+            let pb_adapter_span = warn_span!("");
             pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
             )?);
