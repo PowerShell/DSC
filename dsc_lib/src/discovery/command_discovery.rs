@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::dscresources::dscresource::{DscResource, ImplementedAs};
+use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
@@ -275,12 +275,25 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
         Kind::Resource
     };
 
+    // all command based resources are required to support `get`
+    let mut capabilities = vec![Capability::Get];
+    if manifest.set.is_some() {
+        capabilities.push(Capability::Set);
+    }
+    if manifest.test.is_some() {
+        capabilities.push(Capability::Test);
+    }
+    if manifest.export.is_some() {
+        capabilities.push(Capability::Export);
+    }
+
     let resource = DscResource {
         type_name: manifest.resource_type.clone(),
         kind,
         implemented_as: ImplementedAs::Command,
         description: manifest.description.clone(),
         version: manifest.version.clone(),
+        capabilities,
         path: path.to_str().unwrap().to_string(),
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: Some(serde_json::to_value(manifest)?),
