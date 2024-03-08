@@ -25,7 +25,30 @@ impl Function for Envvar {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        let val = env::var(args[0].as_str().unwrap_or_default()).unwrap_or_default();
-        Ok(Value::String(val))
+        if let Ok(val) = env::var(args[0].as_str().unwrap_or_default()) {
+            return Ok(Value::String(val));
+        }
+
+        Err(DscError::Function("envvar".to_string(), "Environment variable not found".to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::configure::context::Context;
+    use crate::parser::Statement;
+
+    #[test]
+    fn valid() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[envvar('PWD')]", &Context::new()).unwrap();
+        assert_eq!(result, std::env::var("PWD").unwrap());
+    }
+
+    #[test]
+    fn invalid() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[envvar('INVALID')]", &Context::new());
+        assert!(result.is_err());
     }
 }
