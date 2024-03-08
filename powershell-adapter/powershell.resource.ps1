@@ -117,7 +117,8 @@ elseif ($Operation -eq 'Get') {
 
     RefreshCache
 
-    if (IsConfiguration $inputobj_pscustomobj) { # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) {
+        # we are processing a config batch
         foreach ($r in $inputobj_pscustomobj.resources) {
             #Write-Output $r.type
             $cachedResourceInfo = $script:ResourceCache[$r.type]
@@ -143,7 +144,8 @@ elseif ($Operation -eq 'Get') {
             }
         }
     }
-    else { # we are processing an individual resource call
+    else {
+        # we are processing an individual resource call
         $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
         if ($cachedResourceInfo) {
             $inputht = @{}
@@ -176,7 +178,8 @@ elseif ($Operation -eq 'Set') {
 
     RefreshCache
 
-    if (IsConfiguration $inputobj_pscustomobj) { # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) {
+        # we are processing a config batch
         foreach ($r in $inputobj_pscustomobj.resources) {
             #Write-Output $r.type
             $cachedResourceInfo = $script:ResourceCache[$r.type]
@@ -200,7 +203,8 @@ elseif ($Operation -eq 'Set') {
             }
         }
     }
-    else { # we are processing an individual resource call
+    else {
+        # we are processing an individual resource call
         $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
         if ($cachedResourceInfo) {
             $inputht = @{}
@@ -233,7 +237,8 @@ elseif ($Operation -eq 'Test') {
 
     RefreshCache
 
-    if (IsConfiguration $inputobj_pscustomobj) { # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) {
+        # we are processing a config batch
         foreach ($r in $inputobj_pscustomobj.resources) {
             #Write-Output $r.type
             $cachedResourceInfo = $script:ResourceCache[$r.type]
@@ -257,7 +262,8 @@ elseif ($Operation -eq 'Test') {
             }
         }
     }
-    else { # we are processing an individual resource call
+    else {
+        # we are processing an individual resource call
         $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
         if ($cachedResourceInfo) {
             $inputht = @{}
@@ -290,7 +296,8 @@ elseif ($Operation -eq 'Export') {
 
     RefreshCache
 
-    if (IsConfiguration $inputobj_pscustomobj) { # we are processing a config batch
+    if (IsConfiguration $inputobj_pscustomobj) {
+        # we are processing a config batch
         foreach ($r in $inputobj_pscustomobj.resources) {
             $cachedResourceInfo = $script:ResourceCache[$r.type]
             if ($cachedResourceInfo) {
@@ -317,7 +324,8 @@ elseif ($Operation -eq 'Export') {
             }
         }
     }
-    else { # we are processing an individual resource call
+    else {
+        # we are processing an individual resource call
         $cachedResourceInfo = $script:ResourceCache[$inputobj_pscustomobj.type]
         if ($cachedResourceInfo) {
             $path = $cachedResourceInfo.Path # for class-based resources - this is path to psd1 of their defining module
