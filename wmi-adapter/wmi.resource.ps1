@@ -49,6 +49,7 @@ if ($Operation -eq 'List')
             type = $fullResourceTypeName;
             kind = 'Resource';
             version = $version_string;
+            capabilities = @('Get');
             path = "";
             directory = "";
             implementedAs = "";
