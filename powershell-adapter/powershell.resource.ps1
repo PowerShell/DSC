@@ -106,12 +106,21 @@ if ($Operation -eq 'List')
 
         $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
         $script:ResourceCache[$fullResourceTypeName] = $r
-       if ($WinPS) {$requiresString = "Microsoft.Windows/WindowsPowerShell"} else {$requiresString = "Microsoft.DSC/PowerShell"}
+        if ($WinPS) {$requiresString = "Microsoft.Windows/WindowsPowerShell"} else {$requiresString = "Microsoft.DSC/PowerShell"}
+
+        $t = [Type]$r.ResourceType
+        $exportMethod = $t.GetMethod('Export')
+
+        $capabilities = @('Get', 'Set', 'Test')
+        if ($null -ne $exportMethod) {
+            $capabilities += 'Export'
+        }
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
             kind = 'Resource';
             version = $version_string;
+            capabilities = $capabilities;
             path = $r.Path;
             directory = $r.ParentPath;
             implementedAs = $r.ImplementationDetail;

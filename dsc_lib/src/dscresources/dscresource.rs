@@ -21,6 +21,8 @@ pub struct DscResource {
     pub kind: Kind,
     /// The version of the resource.
     pub version: String,
+    /// The capabilities of the resource.
+    pub capabilities: Vec<Capability>,
     /// The file path to the resource.
     pub path: String,
     /// The description of the resource.
@@ -41,6 +43,14 @@ pub struct DscResource {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum Capability {
+    Get,
+    Set,
+    Test,
+    Export,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum ImplementedAs {
     /// A command line executable
@@ -56,6 +66,7 @@ impl DscResource {
             type_name: String::new(),
             kind: Kind::Resource,
             version: String::new(),
+            capabilities: Vec::new(),
             description: None,
             path: String::new(),
             directory: String::new(),
