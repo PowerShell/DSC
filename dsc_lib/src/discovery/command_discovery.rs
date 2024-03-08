@@ -6,15 +6,15 @@ use crate::dscresources::dscresource::{DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::ProgressStyle;
 use std::collections::BTreeMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::BufReader;
+use std::mem;
 use std::path::Path;
-use std::time::Duration;
-use tracing::{debug, error, info, info_span, trace, warn, Span};
+use tracing::{debug, error, trace, warn, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 pub struct CommandDiscovery {
@@ -32,19 +32,13 @@ impl CommandDiscovery {
         debug!("Searching for resources: {:?}", required_resource_types);
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
-        //let multi_progress_bar = MultiProgress::new();
-        //let pb = multi_progress_bar.add(
-        let header_span = info_span!("header");
+        let header_span = warn_span!("header");
         if return_all_resources {
-            // let pb = ProgressBar::new(1);
-            // pb.enable_steady_tick(Duration::from_millis(120));
             debug!("returning all resources");
             header_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.yellow}"
             )?);
         } else {
-            // let pb = ProgressBar::new(required_resource_types.len() as u64);
-            // pb.enable_steady_tick(Duration::from_millis(120));
             header_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
             )?);
@@ -146,13 +140,11 @@ impl CommandDiscovery {
         // now go through the adapter resources and add them to the list of resources
         for adapter in adapter_resources {
             debug!("Enumerating resources for adapter {}", adapter);
-            let pb_adapter_span = info_span!("adapter");
+            let pb_adapter_span = warn_span!("adapter");
             pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
             )?);
             pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter {adapter}").as_str());
-            // let pb_adapter = multi_progress_bar.add(ProgressBar::new(1));
-            // pb_adapter.enable_steady_tick(Duration::from_millis(120));
             let pb_adapter_enter = pb_adapter_span.enter();
             let adapter_resource = resources.get(&adapter).unwrap();
             let adapter_type_name = adapter_resource.type_name.clone();
@@ -224,15 +216,13 @@ impl CommandDiscovery {
                     }
                 };
             }
-            std::mem::drop(pb_adapter_enter);
-            std::mem::drop(pb_adapter_span);
-            info!("Done with {adapter}");
+            mem::drop(pb_adapter_enter);
+            mem::drop(pb_adapter_span);
 
             debug!("Adapter '{}' listed {} matching resources", adapter_type_name, adapter_resources_count);
         }
-        std::mem::drop(header_span_enter);
-        std::mem::drop(header_span);
-        info!("Discovery complete");
+        mem::drop(header_span_enter);
+        mem::drop(header_span);
         Ok(resources)
     }
 }

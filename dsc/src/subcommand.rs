@@ -19,11 +19,7 @@ use dsc_lib::{
 };
 use serde_yaml::Value;
 use std::process::exit;
-use tracing::{debug, error, info_span, trace};
-use indicatif::ProgressStyle;
-use std::time::Duration;
-use tracing::Span;
-use tracing_indicatif::span_ext::IndicatifSpanExt;
+use tracing::{debug, error, trace};
 
 pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
 {

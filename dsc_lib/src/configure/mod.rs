@@ -13,12 +13,12 @@ use self::config_doc::{Configuration, DataType, Metadata, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
-use std::time::Duration;
-use tracing::{debug, trace};
+use tracing_indicatif::span_ext::IndicatifSpanExt;
+use std::{collections::HashMap, mem};
+use tracing::{debug, trace, warn_span, Span};
 
 pub mod context;
 pub mod config_doc;
@@ -135,13 +135,13 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn get_progress_bar(len: u64) -> Result<ProgressBar, DscError> {
-    let pb = ProgressBar::new(len);
-    pb.enable_steady_tick(Duration::from_millis(120));
-    pb.set_style(ProgressStyle::with_template(
+fn get_progress_bar_span(len: u64) -> Result<Span, DscError> {
+    let pb_span = warn_span!("progress bar");
+    pb_span.pb_set_style(&ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
     )?);
-   Ok(pb)
+    pb_span.pb_set_length(len);
+    Ok(pb_span)
 }
 
 fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Result<String, DscError> {
@@ -226,10 +226,11 @@ impl Configurator {
         let config = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
-        let pb = get_progress_bar(resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in resources {
-            pb.inc(1);
-            pb.set_message(format!("Get '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -246,7 +247,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_with_message("Get configuration completed");
+        mem::drop(pb_span_enter);
+        mem::drop(pb_span);
         Ok(result)
     }
 
@@ -264,10 +266,11 @@ impl Configurator {
         let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
-        let pb = get_progress_bar(resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in resources {
-            pb.inc(1);
-            pb.set_message(format!("Set '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -284,7 +287,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_with_message("Set configuration completed");
+        mem::drop(pb_span_enter);
+        mem::drop(pb_span);
         Ok(result)
     }
 
@@ -302,10 +306,11 @@ impl Configurator {
         let config = self.validate_config()?;
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
-        let pb = get_progress_bar(resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in resources {
-            pb.inc(1);
-            pb.set_message(format!("Test '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -322,7 +327,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_with_message("Test configuration completed");
+        mem::drop(pb_span_enter);
+        mem::drop(pb_span);
         Ok(result)
     }
 
@@ -346,10 +352,11 @@ impl Configurator {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        let pb = get_progress_bar(config.resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(config.resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in config.resources {
-            pb.inc(1);
-            pb.set_message(format!("Export '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
@@ -360,7 +367,8 @@ impl Configurator {
         }
 
         result.result = Some(conf);
-        pb.finish_with_message("Export configuration completed");
+        mem::drop(pb_span_enter);
+        mem::drop(pb_span);
         Ok(result)
     }
 
