@@ -13,6 +13,7 @@ pub mod concat;
 pub mod create_array;
 pub mod div;
 pub mod envvar;
+pub mod mod_function;
 pub mod mul;
 pub mod parameters;
 pub mod resource_id;
@@ -64,6 +65,7 @@ impl FunctionDispatcher {
         functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
         functions.insert("div".to_string(), Box::new(div::Div{}));
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
+        functions.insert("mod".to_string(), Box::new(mod_function::Mod{}));
         functions.insert("mul".to_string(), Box::new(mul::Mul{}));
         functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
         functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
