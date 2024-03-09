@@ -17,7 +17,7 @@ pub struct SecureString {
 
 impl Display for SecureString {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "SecureString")
+        write!(f, "<SecureString>")
     }
 }
 
@@ -33,7 +33,7 @@ pub struct SecureObject {
 
 impl Display for SecureObject {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "SecureObject")
+        write!(f, "<SecureObject>")
     }
 }
 
