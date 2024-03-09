@@ -120,7 +120,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.results[0].result.actualState.Prop1 | Should -Be $TestDrive
     }
 
-    It 'DSCConfigRoot macro is empty when config is piped from stdin' -Skip:(!$IsWindows){
+    It 'DSC_CONFIG_ROOT env var does not exist when config is piped from stdin' -Skip:(!$IsWindows){
 
         $yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
@@ -134,10 +134,7 @@ Describe 'PowerShell adapter resource tests' {
                   properties:
                     Name: "[envvar('DSC_CONFIG_ROOT')]"
 "@
-        $out = $yaml | dsc config get
-        $LASTEXITCODE | Should -Be 0
-        $res = $out | ConvertFrom-Json
-        $res.results[0].result.actualState.Name | Should -Be ""
-        $res.results[0].result.actualState.Prop1 | Should -Be ""
+        $null = $yaml | dsc config get
+        $LASTEXITCODE | Should -Be 2
     }
 }

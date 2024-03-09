@@ -14,7 +14,7 @@ use dsc_lib::dscresources::invoke_result::{
 use dsc_lib::{
     DscManager,
     dscresources::invoke_result::ValidateResult,
-    dscresources::dscresource::{ImplementedAs, Invoke},
+    dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
 use serde_yaml::Value;
@@ -400,18 +400,19 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
         ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
-            let mut table = Table::new(&["Type", "Kind", "Version", "Methods", "Requires", "Description"]);
+            let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "Requires", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if format is not specified and interactive
                 write_table = true;
             }
             for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
-                let mut methods = "g---".to_string();
+                let mut capabilities = "g---".to_string();
+                if resource.capabilities.contains(&Capability::Set) { capabilities.replace_range(1..2, "s"); }
+                if resource.capabilities.contains(&Capability::Test) { capabilities.replace_range(2..3, "t"); }
+                if resource.capabilities.contains(&Capability::Export) { capabilities.replace_range(3..4, "e"); }
+
                 // if description, tags, or write_table is specified, pull resource manifest if it exists
-                if description.is_some() || tags.is_some() || write_table {
-                    let Some(ref resource_manifest) = resource.manifest else {
-                        continue;
-                    };
+                if let Some(ref resource_manifest) = resource.manifest {
                     let manifest = match import_manifest(resource_manifest.clone()) {
                         Ok(resource_manifest) => resource_manifest,
                         Err(err) => {
@@ -441,10 +442,11 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         }
                         if !found { continue; }
                     }
-
-                    if manifest.set.is_some() { methods.replace_range(1..2, "s"); }
-                    if manifest.test.is_some() { methods.replace_range(2..3, "t"); }
-                    if manifest.export.is_some() { methods.replace_range(3..4, "e"); }
+                } else {
+                    // resource does not have a manifest but filtering on description or tags was requested - skip such resource
+                    if description.is_some() || tags.is_some() {
+                        continue;
+                    }
                 }
 
                 if write_table {
@@ -452,7 +454,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         resource.type_name,
                         format!("{:?}", resource.kind),
                         resource.version,
-                        methods,
+                        capabilities,
                         resource.requires.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
