@@ -240,6 +240,7 @@ impl Configurator {
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
             let get_result = dsc_resource.get(&filter)?;
+            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&get_result)?);
             let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
@@ -280,6 +281,7 @@ impl Configurator {
             let desired = add_metadata(&dsc_resource.kind, properties)?;
             trace!("desired: {desired}");
             let set_result = dsc_resource.set(&desired, skip_test)?;
+            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
             let resource_result = config_result::ResourceSetResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
@@ -320,6 +322,7 @@ impl Configurator {
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("expected: {expected}");
             let test_result = dsc_resource.test(&expected)?;
+            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&test_result)?);
             let resource_result = config_result::ResourceTestResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),

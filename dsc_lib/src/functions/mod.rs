@@ -16,6 +16,7 @@ pub mod envvar;
 pub mod mod_function;
 pub mod mul;
 pub mod parameters;
+pub mod reference;
 pub mod resource_id;
 pub mod sub;
 
@@ -68,6 +69,7 @@ impl FunctionDispatcher {
         functions.insert("mod".to_string(), Box::new(mod_function::Mod{}));
         functions.insert("mul".to_string(), Box::new(mul::Mul{}));
         functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
+        functions.insert("reference".to_string(), Box::new(reference::Reference{}));
         functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
         functions.insert("sub".to_string(), Box::new(sub::Sub{}));
         Self {
