@@ -17,7 +17,7 @@ use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, mem};
-use tracing::{debug, trace, warn_span, Span};
+use tracing::{debug, info, trace, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 pub mod context;
@@ -390,6 +390,7 @@ impl Configurator {
         let config = serde_json::from_str::<Configuration>(self.config.as_str())?;
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
+                debug!("No parameters defined in configuration and no parameters input");
                 return Ok(());
             }
             return Err(DscError::Validation("No parameters defined in configuration".to_string()));
@@ -447,6 +448,7 @@ impl Configurator {
                     },
                 }
 
+                info!("Set parameter '{name}' to '{value}'");
                 self.context.parameters.insert(name.clone(), value.clone());
             }
             else {
