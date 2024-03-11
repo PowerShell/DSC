@@ -35,7 +35,7 @@ impl Function for Min {
                 }
             }
             else {
-                Err(DscError::Parser("List must contain more than 1 integer".to_string()))
+                Err(DscError::Parser("Array cannot be empty".to_string()))
             }
         }
         else {
@@ -45,18 +45,9 @@ impl Function for Min {
 }
 
 fn find_min(args: &[Value]) -> Result<Value, DscError> {
-    let mut min_value = i64::MAX;
-    for value in args {
-        if let Some(int_value) = value.as_i64() {
-            if int_value < min_value {
-                min_value = int_value;
-            }
-        }
-        else {
-            return Err(DscError::Parser("Input must only contain integers".to_string()));
-        }
-    }
-    Ok(Value::Number(min_value.into()))
+    let array = args.into_iter().map(|v| v.as_i64().ok_or(DscError::Parser("Input must only contain integers".to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
+    let value = array.iter().min().ok_or(DscError::Parser("Unable to find min value".to_string()))?;
+    Ok(Value::Number(value.clone().into()))
 }
 
 #[cfg(test)]
@@ -116,7 +107,7 @@ mod tests {
     #[test]
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(1)]", &Context::new());
+        let result = parser.parse_and_execute("[min(createArray(1))]", &Context::new());
         assert!(result.is_err());
     }
 
