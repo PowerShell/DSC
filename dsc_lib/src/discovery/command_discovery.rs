@@ -2,19 +2,19 @@
 // Licensed under the MIT License.
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::dscresources::dscresource::{DscResource, ImplementedAs};
+use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::ProgressStyle;
 use std::collections::BTreeMap;
 use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
-use std::time::Duration;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, trace, warn, warn_span, Span};
+use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 pub struct CommandDiscovery {
 }
@@ -31,25 +31,18 @@ impl CommandDiscovery {
         debug!("Searching for resources: {:?}", required_resource_types);
         let return_all_resources = required_resource_types.len() == 1 && required_resource_types[0] == "*";
 
-        let multi_progress_bar = MultiProgress::new();
-        let pb = multi_progress_bar.add(
+        let pb_span = warn_span!("");
         if return_all_resources {
-                let pb = ProgressBar::new(1);
-                pb.enable_steady_tick(Duration::from_millis(120));
-                pb.set_style(ProgressStyle::with_template(
-                    "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.yellow}"
-                )?);
-                pb
-            } else {
-                let pb = ProgressBar::new(required_resource_types.len() as u64);
-                pb.enable_steady_tick(Duration::from_millis(120));
-                pb.set_style(ProgressStyle::with_template(
-                    "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
-                )?);
-                pb
-            }
-        );
-        pb.set_message("Searching for resources");
+            pb_span.pb_set_style(&ProgressStyle::with_template(
+                "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.yellow}"
+            )?);
+        } else {
+            pb_span.pb_set_style(&ProgressStyle::with_template(
+                "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
+            )?);
+        }
+        pb_span.pb_set_message("Searching for resources");
+        let _ = pb_span.enter();
 
         let mut resources: BTreeMap<String, DscResource> = BTreeMap::new();
         let mut adapter_resources: Vec<String> = Vec::new();
@@ -128,7 +121,7 @@ impl CommandDiscovery {
                             {
                                 remaining_required_resource_types.retain(|x| *x != resource.type_name.to_lowercase());
                                 debug!("Found {} in {}", &resource.type_name, path.display());
-                                pb.inc(1);
+                                Span::current().pb_inc(1);
                                 resources.insert(resource.type_name.to_lowercase(), resource);
                                 if remaining_required_resource_types.is_empty()
                                 {
@@ -140,18 +133,17 @@ impl CommandDiscovery {
                 }
             }
         }
-
         debug!("Found {} matching non-adapter resources", resources.len() - adapter_resources.len());
 
         // now go through the adapter resources and add them to the list of resources
         for adapter in adapter_resources {
             debug!("Enumerating resources for adapter {}", adapter);
-            let pb_adapter = multi_progress_bar.add(ProgressBar::new(1));
-            pb_adapter.enable_steady_tick(Duration::from_millis(120));
-            pb_adapter.set_style(ProgressStyle::with_template(
+            let pb_adapter_span = warn_span!("");
+            pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
             )?);
-            pb_adapter.set_message(format!("Enumerating resources for adapter {adapter}"));
+            pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter {adapter}").as_str());
+            let _ = pb_adapter_span.enter();
             let adapter_resource = resources.get(&adapter).unwrap();
             let adapter_type_name = adapter_resource.type_name.clone();
             let manifest = import_manifest(adapter_resource.manifest.clone().unwrap())?;
@@ -222,12 +214,9 @@ impl CommandDiscovery {
                     }
                 };
             }
-            pb_adapter.finish_with_message(format!("Done with {adapter}"));
 
             debug!("Adapter '{}' listed {} matching resources", adapter_type_name, adapter_resources_count);
         }
-
-        pb.finish_with_message("Discovery complete");
         Ok(resources)
     }
 }
@@ -281,12 +270,25 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
         Kind::Resource
     };
 
+    // all command based resources are required to support `get`
+    let mut capabilities = vec![Capability::Get];
+    if manifest.set.is_some() {
+        capabilities.push(Capability::Set);
+    }
+    if manifest.test.is_some() {
+        capabilities.push(Capability::Test);
+    }
+    if manifest.export.is_some() {
+        capabilities.push(Capability::Export);
+    }
+
     let resource = DscResource {
         type_name: manifest.resource_type.clone(),
         kind,
         implemented_as: ImplementedAs::Command,
         description: manifest.description.clone(),
         version: manifest.version.clone(),
+        capabilities,
         path: path.to_str().unwrap().to_string(),
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: Some(serde_json::to_value(manifest)?),

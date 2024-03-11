@@ -53,4 +53,12 @@ Describe 'Tests for listing resources' {
             $resources.type | Should -BeExactly $expectedType
         }
     }
+
+    It 'Capabilities are returned' {
+        $resource = dsc resource list Microsoft/OSInfo | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $resource.capabilities.Count | Should -Be 2
+        $resource.capabilities | Should -Contain 'Get'
+        $resource.capabilities | Should -Contain 'Export'
+    }
 }
