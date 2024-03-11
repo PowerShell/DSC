@@ -39,7 +39,7 @@ impl Expression {
             }
             let mut result = vec![];
             let mut cursor = members.walk();
-            for member in members.children(&mut cursor) {
+            for member in members.named_children(&mut cursor) {
                 if member.is_error() {
                     return Err(DscError::Parser("Error parsing dot-notation member".to_string()));
                 }

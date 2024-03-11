@@ -7,7 +7,7 @@ use std::collections::HashMap;
 pub struct Context {
     pub parameters: HashMap<String, Value>,
     pub _variables: HashMap<String, Value>,
-    pub _outputs: HashMap<String, Value>, // This is eventually for References function to get output from resources
+    pub outputs: HashMap<String, Value>, // this is used by the `reference()` function to retrieve output
 }
 
 impl Context {
@@ -16,7 +16,7 @@ impl Context {
         Self {
             parameters: HashMap::new(),
             _variables: HashMap::new(),
-            _outputs: HashMap::new(),
+            outputs: HashMap::new(),
         }
     }
 }
