@@ -45,9 +45,9 @@ impl Function for Min {
 }
 
 fn find_min(args: &[Value]) -> Result<Value, DscError> {
-    let array = args.into_iter().map(|v| v.as_i64().ok_or(DscError::Parser("Input must only contain integers".to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
+    let array = args.iter().map(|v| v.as_i64().ok_or(DscError::Parser("Input must only contain integers".to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
     let value = array.iter().min().ok_or(DscError::Parser("Unable to find min value".to_string()))?;
-    Ok(Value::Number(value.clone().into()))
+    Ok(Value::Number((*value).into()))
 }
 
 #[cfg(test)]
