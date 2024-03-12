@@ -134,7 +134,7 @@ function Get-ActualState {
         }
         else {
             # TODO: simplify and use direct calls for class based resources
-            $addToActualState.properties = @{"NotImplemented" = "true"}
+            $addToActualState.properties = @{'NotImplemented' = 'true' }
         }
 
         return $addToActualState
@@ -169,17 +169,38 @@ switch ($Operation) {
                 }
             }
 
+            $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
+
+            # TODO this does not seem to be populating correctly. Need to investigate.
+            [manifest]$manifest = @{
+                $schema   = 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json'
+                type        = $Type
+                version     = $r.version.ToString()
+                description = $module.Description
+                tags        = $module.PrivateData.PSData.Tags
+            }
+
+            # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
+            if ($module.PrivateData.PSData.Capabilities) {
+                $capabilities = $module.PrivateData.PSData.Capabilities
+            }
+            else {
+                $capabilities = @('Get', 'Set', 'Test')
+            }
+
             # OUTPUT dsc is expecting the following properties
             [resourceOutput]@{
                 type          = $Type
                 kind          = 'Resource'
                 version       = $r.version.ToString()
+                capabilities  = $capabilities
                 path          = $r.Path
                 directory     = $r.ParentPath
                 implementedAs = $r.ImplementationDetail
                 author        = $r.CompanyName
                 properties    = $r.Properties.Name
                 requires      = $requiresString
+                manifest      = $manifest
             } | ConvertTo-Json -Compress
         }
     }
@@ -243,12 +264,28 @@ class configFormat {
 # output format for resource list
 class resourceOutput {
     [string] $type
+    [string] $kind
     [string] $version
+    [string[]] $capabilities
     [string] $path
     [string] $directory
     [string] $implementedAs
     [string] $author
     [string[]] $properties
     [string] $requires
-    [string] $kind
+    [manifest] $manifest
+}
+
+# manifest format for resource list
+class manifest {
+    [string] ${$schema}
+    [string] $type
+    [string] $version
+    [string] $description
+    [string] $tags
+    [string] $get
+    [string] $set
+    [string] $test
+    [string] $export
+    [string] $schema
 }
