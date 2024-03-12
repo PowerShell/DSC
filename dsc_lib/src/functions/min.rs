@@ -27,12 +27,7 @@ impl Function for Min {
         debug!("min function");
         if args.len() == 1 {
             if let Some(array) = args[0].as_array() {
-                if array.len() > 1 {
-                    find_min(array)
-                }
-                else {
-                    Err(DscError::Parser("Array must contain more than 1 integer".to_string()))
-                }
+                find_min(array)
             }
             else {
                 Err(DscError::Parser("Array cannot be empty".to_string()))
@@ -79,14 +74,14 @@ mod tests {
     #[test]
     fn array_single_value() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(0)]", &Context::new());
-        assert!(result.is_err());
+        let result = parser.parse_and_execute("[min(createArray(0)]", &Context::new()).unwrap();
+        assert_eq!(result, 0);
     }
 
     #[test]
     fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray('0','3'), createArray('2','5'))]", &Context::new());
+        let result = parser.parse_and_execute("[min(createArray(0, 3), createArray(2, 5))]", &Context::new());
         assert!(result.is_err());
     }
 
@@ -102,13 +97,6 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[min(8, min(2, 5), 3)]", &Context::new()).unwrap();
         assert_eq!(result, 2);
-    }
-
-    #[test]
-    fn invalid_one_parameter() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(1))]", &Context::new());
-        assert!(result.is_err());
     }
 
     #[test]
