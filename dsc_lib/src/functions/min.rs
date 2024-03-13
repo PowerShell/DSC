@@ -95,8 +95,8 @@ mod tests {
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(8, min(2, 5), 3)]", &Context::new()).unwrap();
-        assert_eq!(result, 2);
+        let result = parser.parse_and_execute("[min(8, min(2, -9), 3)]", &Context::new()).unwrap();
+        assert_eq!(result, -9);
     }
 
     #[test]
