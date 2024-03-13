@@ -5,6 +5,7 @@ use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
+use crate::dscresources::command_resource::log_resource_traces;
 use crate::dscerror::DscError;
 use indicatif::ProgressStyle;
 use std::collections::BTreeMap;
@@ -165,6 +166,7 @@ impl CommandDiscovery {
                     continue;
                 },
             };
+            log_resource_traces(&stderr);
 
             if exit_code != 0 {
                 /* In case of "resource list" operation - print failure from adapter as warning
