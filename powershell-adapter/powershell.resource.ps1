@@ -4,10 +4,50 @@ param(
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate')]
     [string]$Operation = 'Default',
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
-    [string]$stdinput = '@{}',
-    [Parameter(Mandatory = $false, Position = 2, HelpMessage = 'Use Windows PowerShell 5.1 instead of PowerShell 7.')]
-    [switch]$WinPS = $false
+    [string]$stdinput = '@{}'
 )
+
+# cached resource
+class resourceCache {
+    [string] $Type
+    [psobject] $DscResourceInfo
+}
+
+# format expected for configuration and resource output
+class configFormat {
+    [string] $name
+    [string] $type
+    [psobject] $properties
+}
+
+# manifest format for resource list
+class manifest {
+    [string] ${$schema}
+    [string] $type
+    [string] $version
+    [string] $description
+    [string] $tags
+    [string] $get
+    [string] $set
+    [string] $test
+    [string] $export
+    [string] $schema
+}
+
+# output format for resource list
+class resourceOutput {
+    [string] $type
+    [string] $kind
+    [string] $version
+    [string[]] $capabilities
+    [string] $path
+    [string] $directory
+    [string] $implementedAs
+    [string] $author
+    [string[]] $properties
+    [string] $requires
+    [manifest] $manifest
+}
 
 # If the OS is Windows, import the latest installed PSDesiredStateConfiguration module. For Linux/MacOS, only class based resources are supported and are called directly.
 if ($IsWindows) {
@@ -48,6 +88,7 @@ $resourceCache = Invoke-CacheRefresh
 # Convert the INPUT to a configFormat object so configuration and resource are standardized as moch as possible
 function Get-ConfigObject {
     param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         $stdinput
     )
     # normalize the INPUT object to an array of configFormat objects
@@ -105,36 +146,59 @@ function Get-ActualState {
         }
 
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
-        if ($cachedResourceInfo.ImplementationDetail -EQ 'ScriptBased') {
+        switch ($cachedResourceInfo.ImplementationDetail) {
+            'ScriptBased' {
 
-            # imports the .psm1 file for the DSC resource as a PowerShell module and stores the list of parameters
-            Import-Module -Scope Local -Name $cachedResourceInfo.path -Force -ErrorAction stop
-            $validParams = (Get-Command -Module $cachedResourceInfo.ResourceType -Name 'Get-TargetResource').Parameters.Keys
-            # prune any properties that are not valid parameters of Get-TargetResource
-            $DesiredState.properties.psobject.properties | ForEach-Object -Process {
-                if ($validParams -notcontains $_.Name) {
-                    $DesiredState.properties.psobject.properties.Remove($_.Name)
+                # imports the .psm1 file for the DSC resource as a PowerShell module and stores the list of parameters
+                Import-Module -Scope Local -Name $cachedResourceInfo.path -Force -ErrorAction stop
+                $validParams = (Get-Command -Module $cachedResourceInfo.ResourceType -Name 'Get-TargetResource').Parameters.Keys
+                # prune any properties that are not valid parameters of Get-TargetResource
+                $DesiredState.properties.psobject.properties | ForEach-Object -Process {
+                    if ($validParams -notcontains $_.Name) {
+                        $DesiredState.properties.psobject.properties.Remove($_.Name)
+                    }
+                }
+
+                # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
+                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+
+                # using the cmdlet from PSDesiredStateConfiguration module, and handle errors
+                try {
+                    $getResult = Invoke-DscResource -Method Get -ModuleName $cachedResourceInfo.ModuleName -Name $cachedResourceInfo.Name -Property $property
+
+                    # set the properties of the OUTPUT object from the result of Get-TargetResource
+                    $addToActualState.properties = $getResult
+                }
+                catch {
+                    Write-Error $_.Exception.Message
+                    exit 1
                 }
             }
+            'ClassBased' {
+                try {
+                    # load powershell class from external module
+                    $resource = Get-TypeInstanceFromModule -modulename $cachedResourceInfo.ModuleName -classname $cachedResourceInfo.Name
+                    $resourceInstance = $resource::New()
 
-            # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
-            $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+                    # set each property of $resourceInstance to the value of the property in the $desiredState INPUT object
+                    $DesiredState.properties.psobject.properties | ForEach-Object -Process {
+                        $resourceInstance.$($_.Name) = $_.Value
+                    }
+                    $getResult = $resourceInstance.Get()
 
-            # using the cmdlet from PSDesiredStateConfiguration module, and handle errors
-            try {
-                $getResult = Invoke-DscResource -Method Get -ModuleName $cachedResourceInfo.ModuleName -Name $cachedResourceInfo.Name -Property $property
-
-                # set the properties of the OUTPUT object from the result of Get-TargetResource
-                $addToActualState.properties = $getResult
+                    # set the properties of the OUTPUT object from the result of Get-TargetResource
+                    $addToActualState.properties = $getResult
+                }
+                catch {
+                    Write-Error $_.Exception.Message
+                    #exit 1
+                }
             }
-            catch {
-                Write-Error $_.Exception.Message
+            Default {
+                $errmsg = 'Can not find implementation of type: "' + $cachedResourceInfo.ImplementationDetail + '". If this is a binary resource such as File, use the Microsoft.Dsc/WindowsPowerShell adapter.'
+                Write-Error $errmsg
                 exit 1
             }
-        }
-        else {
-            # TODO: simplify and use direct calls for class based resources
-            $addToActualState.properties = @{'NotImplemented' = 'true' }
         }
 
         return $addToActualState
@@ -144,6 +208,18 @@ function Get-ActualState {
         Write-Error $errmsg
         exit 1
     }
+}
+
+# Get-TypeInstanceFromModule function to get the type instance from the module
+function Get-TypeInstanceFromModule {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $modulename,
+        [Parameter(Mandatory = $true)]
+        [string] $classname
+    )
+    $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
+    return $instance
 }
 
 # initialize OUTPUT as array
@@ -158,22 +234,10 @@ switch ($Operation) {
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
             $r = $resourceCache | Where-Object Type -EQ $Type | ForEach-Object DscResourceInfo
 
-            if ($null -ne $r.moduleName) {
-                if ($WinPS) {
-                    $requiresString = 'Microsoft.DSC/WindowsPowerShell'
-                }
-                if (-not $WinPS) {
-                    $requiresString = 'Microsoft.DSC/PowerShell' 
-                    # Binary resources are not supported in PowerShell 7
-                    if ($r.ImplementedAs -EQ 'Binary') { continue }
-                }
-            }
-
-            $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-
             # TODO this does not seem to be populating correctly. Need to investigate.
+            $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
             [manifest]$manifest = @{
-                $schema   = 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json'
+                $schema     = 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json'
                 type        = $Type
                 version     = $r.version.ToString()
                 description = $module.Description
@@ -205,12 +269,11 @@ switch ($Operation) {
         }
     }
     'Get' {
-        $desiredState = Get-ConfigObject -stdinput $stdinput
+        $desiredState = $stdInput | Get-ConfigObject
+
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
-            $actualState = Get-ActualState -DesiredState $ds -ResourceCache $resourceCache
-            # add resource actual state to the OUTPUT object
-            $result += $actualState
+            $result += Get-ActualState -DesiredState $ds -ResourceCache $resourceCache
         }
     
         # OUTPUT
@@ -246,46 +309,4 @@ switch ($Operation) {
     Default {
         Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
     }
-}
-
-# cached resource
-class resourceCache {
-    [string] $Type
-    [psobject] $DscResourceInfo
-}
-
-# format expected for configuration and resource output
-class configFormat {
-    [string] $name
-    [string] $type
-    [psobject] $properties
-}
-
-# output format for resource list
-class resourceOutput {
-    [string] $type
-    [string] $kind
-    [string] $version
-    [string[]] $capabilities
-    [string] $path
-    [string] $directory
-    [string] $implementedAs
-    [string] $author
-    [string[]] $properties
-    [string] $requires
-    [manifest] $manifest
-}
-
-# manifest format for resource list
-class manifest {
-    [string] ${$schema}
-    [string] $type
-    [string] $version
-    [string] $description
-    [string] $tags
-    [string] $get
-    [string] $set
-    [string] $test
-    [string] $export
-    [string] $schema
 }
