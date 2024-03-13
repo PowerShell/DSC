@@ -442,13 +442,13 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 /// # Errors
 ///
 /// Error returned if the resource does not successfully export the current state
-pub fn invoke_export(resource: &ResourceManifest, cwd: &str, _input: Option<&str>) -> Result<ExportResult, DscError> {
+pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>) -> Result<ExportResult, DscError> {
 
     let Some(export) = resource.export.as_ref() else {
         return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
     };
 
-    let (exit_code, stdout, stderr) = invoke_command(&export.executable, export.args.clone(), None, Some(cwd), None)?;
+    let (exit_code, stdout, stderr) = invoke_command(&export.executable, export.args.clone(), input, Some(cwd), None)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
