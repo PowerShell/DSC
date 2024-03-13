@@ -483,6 +483,10 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
                 return Err(DscError::Operation(format!("Failed to parse json from export {}|{}|{} -> {err}", &export.executable, stdout, stderr)))
             }
         };
+        if resource.kind == Some(Kind::Resource) {
+            debug!("Verifying output of export '{}' using '{}'", &resource.resource_type, &resource.get.executable);
+            verify_json(resource, cwd, &line)?;
+        }
         instances.push(instance);
     }
 
