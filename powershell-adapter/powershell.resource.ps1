@@ -20,20 +20,6 @@ class configFormat {
     [psobject] $properties
 }
 
-# manifest format for resource list
-class manifest {
-    [string] ${$schema}
-    [string] $type
-    [string] $version
-    [string] $description
-    [string] $tags
-    [string] $get
-    [string] $set
-    [string] $test
-    [string] $export
-    [string] $schema
-}
-
 # output format for resource list
 class resourceOutput {
     [string] $type
@@ -46,25 +32,13 @@ class resourceOutput {
     [string] $author
     [string[]] $properties
     [string] $requires
-    [manifest] $manifest
+    [string] $description
 }
 
-# If the OS is Windows, import the latest installed PSDesiredStateConfiguration module. For Linux/MacOS, only class based resources are supported and are called directly.
-if ($IsWindows) {
-    $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-    Import-Module $DscModule -DisableNameChecking -ErrorAction Ignore
-        
-    if ($null -eq $DscModule) {
-        # Missing module is okay for listing resources
-        if ($Operation -eq 'List') {
-            Write-Warning 'The PowerShell adapter was called but the module PSDesiredStateConfiguration could not be found in PSModulePath. To install the module, run Install-PSResource -Name PSDesiredStateConfiguration'
-            exit 0
-        }
-        else {
-            Write-Error 'The PowerShell adapter was called but the module PSDesiredStateConfiguration could not be found in PSModulePath. To install the module, run Install-PSResource -Name PSDesiredStateConfiguration'
-            exit 1
-        }
-    }
+# module types
+enum moduleType {
+    ScriptBased
+    ClassBased
 }
 
 # Cache the results of Get-DscResource to optimize performance
@@ -146,8 +120,22 @@ function Get-ActualState {
         }
 
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
-        switch ($cachedResourceInfo.ImplementationDetail) {
+        switch ([moduleType]$cachedResourceInfo.ImplementationDetail) {
             'ScriptBased' {
+
+                # If the OS is Windows, import the latest installed PSDesiredStateConfiguration module. For Linux/MacOS, only class based resources are supported and are called directly.
+                if ($IsWindows) {
+                    $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
+                    Import-Module $DscModule -DisableNameChecking -ErrorAction Ignore
+        
+                    if ($null -eq $DscModule) {
+                        Write-Error 'The PowerShell adapter was called but the module PSDesiredStateConfiguration could not be found in PSModulePath. To install the module, run Install-PSResource -Name PSDesiredStateConfiguration'
+                        exit 1
+                    }
+                } else {
+                    Write-Error 'Script based resources are only supported on Windows.'
+                    exit 1
+                }
 
                 # imports the .psm1 file for the DSC resource as a PowerShell module and stores the list of parameters
                 Import-Module -Scope Local -Name $cachedResourceInfo.path -Force -ErrorAction stop
@@ -223,7 +211,7 @@ function Get-TypeInstanceFromModule {
 }
 
 # initialize OUTPUT as array
-$result = @()
+$result = [System.Collections.Generic.List[Object]]::new()
 
 # process the operation requested to the script
 switch ($Operation) {
@@ -234,15 +222,7 @@ switch ($Operation) {
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
             $r = $resourceCache | Where-Object Type -EQ $Type | ForEach-Object DscResourceInfo
 
-            # TODO this does not seem to be populating correctly. Need to investigate.
             $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-            [manifest]$manifest = @{
-                $schema     = 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json'
-                type        = $Type
-                version     = $r.version.ToString()
-                description = $module.Description
-                tags        = $module.PrivateData.PSData.Tags
-            }
 
             # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
             if ($module.PrivateData.PSData.Capabilities) {
@@ -264,7 +244,7 @@ switch ($Operation) {
                 author        = $r.CompanyName
                 properties    = $r.Properties.Name
                 requires      = $requiresString
-                manifest      = $manifest
+                description   = $module.Description
             } | ConvertTo-Json -Compress
         }
     }
@@ -312,14 +292,14 @@ switch ($Operation) {
 }
 
 # Adding some debug info to STDERR
-$m = gmo PSDesiredStateConfiguration
-$trace = @{"Debug"="PSVersion="+$PSVersionTable.PSVersion.ToString()} | ConvertTo-Json -Compress
+$m = Get-Module PSDesiredStateConfiguration
+$trace = @{'Debug' = 'PSVersion=' + $PSVersionTable.PSVersion.ToString() } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Debug"="PSPath="+$PSHome} | ConvertTo-Json -Compress
+$trace = @{'Debug' = 'PSPath=' + $PSHome } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Debug"="ModuleVersion="+$m.Version.ToString()} | ConvertTo-Json -Compress
+$trace = @{'Debug' = 'ModuleVersion=' + $m.Version.ToString() } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Debug"="ModulePath="+$m.Path} | ConvertTo-Json -Compress
+$trace = @{'Debug' = 'ModulePath=' + $m.Path } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{"Debug"="PSModulePath="+$env:PSModulePath} | ConvertTo-Json -Compress
+$trace = @{'Debug' = 'PSModulePath=' + $env:PSModulePath } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
