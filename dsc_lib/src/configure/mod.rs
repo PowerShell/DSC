@@ -401,14 +401,14 @@ impl Configurator {
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
-                        self.statement_parser.parse_and_execute(&value, &self.context)?
+                        self.statement_parser.parse_and_execute(value, &self.context)?
                     } else {
                         return Err(DscError::Parser("Default value as string is not defined".to_string()));
                     }
                 } else {
                     default_value.clone()
                 };
-                Configurator::validate_parameter_type(&name, &value, &parameter.parameter_type)?;
+                Configurator::validate_parameter_type(name, &value, &parameter.parameter_type)?;
                 self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
