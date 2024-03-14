@@ -310,3 +310,16 @@ switch ($Operation) {
         Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
     }
 }
+
+# Adding some debug info to STDERR
+$m = gmo PSDesiredStateConfiguration
+$trace = @{"Debug"="PSVersion="+$PSVersionTable.PSVersion.ToString()} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="PSPath="+$PSHome} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="ModuleVersion="+$m.Version.ToString()} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="ModulePath="+$m.Path} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="PSModulePath="+$env:PSModulePath} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
