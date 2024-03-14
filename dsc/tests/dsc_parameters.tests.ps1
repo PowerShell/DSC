@@ -276,7 +276,7 @@ Describe 'Parameters tests' {
       $out.results[1].result.actualState.output | Should -BeExactly 'mySecretProperty'
     }
 
-    It 'paramter types are validated for <type>' -TestCases @(
+    It 'parameter types are validated for <type>' -TestCases @(
       @{ type = 'array'; value = 'hello'}
       @{ type = 'bool'; value = 'hello'}
       @{ type = 'int'; value = @(1,2)}
