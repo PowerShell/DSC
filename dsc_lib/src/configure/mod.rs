@@ -398,9 +398,18 @@ impl Configurator {
 
         for (name, parameter) in parameters {
             if let Some(default_value) = &parameter.default_value {
-                // TODO: default values can be expressions
-                // TODO: validate default value matches the type
-                self.context.parameters.insert(name.clone(), default_value.clone());
+                // default values can be expressions
+                let value = if default_value.is_string() {
+                    if let Some(value) = default_value.as_str() {
+                        self.statement_parser.parse_and_execute(&value, &self.context)?
+                    } else {
+                        return Err(DscError::Parser("Default value as string is not defined".to_string()));
+                    }
+                } else {
+                    default_value.clone()
+                };
+                Configurator::validate_parameter_type(&name, &value, &parameter.parameter_type)?;
+                self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
 
@@ -420,41 +429,50 @@ impl Configurator {
                 // TODO: additional array constraints
                 // TODO: object constraints
 
-                match constraint.parameter_type {
-                    DataType::String | DataType::SecureString => {
-                        if !value.is_string() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
-                        }
-                    },
-                    DataType::Int => {
-                        if !value.is_i64() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not an integer")));
-                        }
-                    },
-                    DataType::Bool => {
-                        if !value.is_boolean() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not a boolean")));
-                        }
-                    },
-                    DataType::Array => {
-                        if !value.is_array() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
-                        }
-                    },
-                    DataType::Object | DataType::SecureObject => {
-                        if !value.is_object() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
-                        }
-                    },
+                Configurator::validate_parameter_type(&name, &value, &constraint.parameter_type)?;
+                if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
+                    info!("Set secure parameter '{name}'");
+                } else {
+                    info!("Set parameter '{name}' to '{value}'");
                 }
-
-                info!("Set parameter '{name}' to '{value}'");
-                self.context.parameters.insert(name.clone(), value.clone());
+                self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
             }
             else {
                 return Err(DscError::Validation(format!("Parameter '{name}' not defined in configuration")));
             }
         }
+        Ok(())
+    }
+
+    fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
+        match parameter_type {
+            DataType::String | DataType::SecureString => {
+                if !value.is_string() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
+                }
+            },
+            DataType::Int => {
+                if !value.is_i64() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not an integer")));
+                }
+            },
+            DataType::Bool => {
+                if !value.is_boolean() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not a boolean")));
+                }
+            },
+            DataType::Array => {
+                if !value.is_array() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
+                }
+            },
+            DataType::Object | DataType::SecureObject => {
+                if !value.is_object() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
+                }
+            },
+        }
+
         Ok(())
     }
 

@@ -21,7 +21,7 @@ pub struct Args {
 pub enum SubCommand {
     #[clap(name = "echo", about = "Return the input")]
     Echo {
-        #[clap(name = "input", short, long, help = "The input to the echo command")]
+        #[clap(name = "input", short, long, help = "The input to the echo command as JSON")]
         input: String,
     },
 
@@ -33,7 +33,7 @@ pub enum SubCommand {
 
     #[clap(name = "sleep", about = "Sleep for a specified number of seconds")]
     Sleep {
-        #[clap(name = "input", short, long, help = "The input to the sleep command")]
+        #[clap(name = "input", short, long, help = "The input to the sleep command as JSON")]
         input: String,
     },
 }
