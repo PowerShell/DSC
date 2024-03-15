@@ -47,8 +47,13 @@ function Invoke-CacheRefresh {
     [resourceCache[]]$resourceCache = @()
     $DscResources = Get-DscResource
     foreach ($dsc in $DscResources) {
-        if ($dsc.ModuleName) { $moduleName = $dsc.ModuleName }
-        elseif ($dsc.ParentPath) { $moduleName = Split-Path $dsc.ParentPath | Split-Path | Split-Path -Leaf }
+        if ($dsc.ModuleName) {
+            $moduleName = $dsc.ModuleName
+        }
+        elseif ($dsc.ParentPath) {
+            $moduleName = Split-Path $dsc.ParentPath | Split-Path | Split-Path -Leaf
+            $dsc.ModuleName = $moduleName
+        }
 
         $resourceCache += [resourceCache]@{
             Type            = "$moduleName/$($dsc.Name)"
@@ -132,7 +137,8 @@ function Get-ActualState {
                         Write-Error 'The PowerShell adapter was called but the module PSDesiredStateConfiguration could not be found in PSModulePath. To install the module, run Install-PSResource -Name PSDesiredStateConfiguration'
                         exit 1
                     }
-                } else {
+                }
+                else {
                     Write-Error 'Script based resources are only supported on Windows.'
                     exit 1
                 }
@@ -222,9 +228,8 @@ switch ($Operation) {
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
             $r = $resourceCache | Where-Object Type -EQ $Type | ForEach-Object DscResourceInfo
 
-            $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-
             # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
+            $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
             if ($module.PrivateData.PSData.Capabilities) {
                 $capabilities = $module.PrivateData.PSData.Capabilities
             }
