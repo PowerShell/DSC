@@ -38,11 +38,8 @@ extends:
       - job: BuildWin
         dependsOn: SetPackageVersion
         variables:
-        - group: ESRP
-        - name: PackageVersion
-          value: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         pool:
           type: windows
         displayName: Build
@@ -168,7 +165,7 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
           Codeql.Enabled: true
-          Codeql.Language: cpp
+          Codeql.Language: rust
           Codeql.Cadence: 72  
         displayName: Build
         pool:
