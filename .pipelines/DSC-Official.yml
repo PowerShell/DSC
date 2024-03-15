@@ -10,11 +10,6 @@ variables:
   value: onebranch.azurecr.io/windows/ltsc2019/vse2022:latest
 resources:
   repositories:
-  - repository: ComplianceRepo
-    type: github
-    endpoint: ComplianceGHRepo
-    name: PowerShell/compliance
-    ref: master
   - repository: onebranchTemplates
     type: git
     name: OneBranch.Pipelines/GovernedTemplates
@@ -229,41 +224,3 @@ extends:
             Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz"
           displayName: Upload artifacts
           condition: succeeded()
-    - stage: compliance
-      displayName: Compliance
-      dependsOn: BuildAndSign
-      jobs:
-      - job: Compliance_Job
-        variables:
-        - name: PackageVersion
-          value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
-        pool:
-          type: windows
-        steps:
-        - checkout: self
-          clean: true
-        - checkout: ComplianceRepo
-          clean: true
-        - download: current
-          artifact: release
-        - download: current
-          artifact: signed
-        - pwsh: |
-            Get-ChildItem -Path 'ENV:'
-          displayName: Capture environment
-        - template: assembly-module-compliance.yml@ComplianceRepo
-          parameters:
-            AnalyzeTarget: '$(Build.SourcesDirectory)/DSC/bin/x86_64-pc-windows-msvc/release/*.exe'
-            AnalyzeSymPath: 'SRV*'
-            sourceScanPath: '$(Build.SourcesDirectory)/DSC'
-            suppressionsFile: ''
-            optionsRulesDBPath: ''
-            optionsFTPath: ''
-            codeBaseName: 'DSC'
-            softwareName: 'DSC'
-            softwareNameFolder: '$(Build.SourcesDirectory)/DSC/bin/x86_64-pc-windows-msvc/release'
-            softwareVersion: '$(PackageVersion)'
-            connectionString: RunAs=App;AppId=$(APIScanClient);TenantId=$(APIScanTenant);AppKey=$(APIScanSecret)
-            APIScan: true
