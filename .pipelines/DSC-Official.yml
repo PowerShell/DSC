@@ -39,6 +39,7 @@ extends:
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         pool:
           type: windows
@@ -104,6 +105,7 @@ extends:
         dependsOn: BuildWin
         variables:
           signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         pool:
           type: windows
