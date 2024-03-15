@@ -116,7 +116,7 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         displayName: Linux-x64-gnu
         pool:
-          type: lniux
+          type: linux
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
