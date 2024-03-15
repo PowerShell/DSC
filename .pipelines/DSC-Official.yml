@@ -1,13 +1,9 @@
 trigger: none
 variables:
-- name: BuildConfiguration
-  value: 'release'
-- name: PackageRoot
-  value: '$(System.ArtifactsDirectory)/Packages'
-- name: LinuxContainerImage
-  value: onebranch.azurecr.io/linux/ubuntu-2004:latest
-- name: WindowsContainerImage
-  value: onebranch.azurecr.io/windows/ltsc2019/vse2022:latest
+  BuildConfiguration: 'release'
+  PackageRoot: '$(System.ArtifactsDirectory)/Packages'
+  LinuxContainerImage: onebranch.azurecr.io/linux/ubuntu-2004:latest
+  WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2019/vse2022:latest
 resources:
   repositories:
   - repository: onebranchTemplates
@@ -28,12 +24,9 @@ extends:
         pool:
           type: windows
         variables:
-        - name: repoRoot
-          value: $(Build.SourcesDirectory)\DSC
-        - name: ob_sdl_tsa_configFile
-          value: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          repoRoot: $(Build.SourcesDirectory)\DSC
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         steps:
         - checkout: self
         - pwsh: |
@@ -105,10 +98,8 @@ extends:
       - job: PublishSigned
         dependsOn: BuildWin
         variables:
-        - name: signOutPath
-          value: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         pool:
           type: windows
         steps:
@@ -121,13 +112,11 @@ extends:
       - job: BuildLinux
         dependsOn: SetPackageVersion
         variables:
-        - name: PackageVersion
-          value: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         displayName: Linux-x64-gnu
         pool:
-          type: windows
+          type: lniux
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
@@ -145,10 +134,8 @@ extends:
       - job: BuildLinuxArm64
         dependsOn: SetPackageVersion
         variables:
-        - name: PackageVersion
-          value: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         displayName: Linux-ARM64-gnu
         pool:
           type: windows
@@ -169,13 +156,17 @@ extends:
       - job: BuildMac
         dependsOn: SetPackageVersion
         variables:
-        - name: PackageVersion
-          value: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          Codeql.Enabled: true
+          Codeql.Language: cpp
+          Codeql.Cadence: 72  
         displayName: Build
         pool:
-          type: windows
+          type: linux
+          isCustom: true
+          name: Azure Pipelines
+          vmImage: 'macOS-latest'
         strategy:
           matrix:
             macOS x64:
