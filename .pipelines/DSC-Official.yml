@@ -30,6 +30,8 @@ extends:
         variables:
         - name: repoRoot
           value: $(Build.SourcesDirectory)\DSC
+        - name: ob_sdl_tsa_configFile
+          value: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
         - name: ob_outputDirectory
           value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         steps:
