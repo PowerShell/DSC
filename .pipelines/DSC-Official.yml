@@ -29,7 +29,7 @@ extends:
           type: windows
         variables:
         - name: repoRoot
-          value: $(Build.SourcesDirectory)\OSS_Microsoft_PSSA
+          value: $(Build.SourcesDirectory)\DSC
         - name: ob_outputDirectory
           value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         steps:
