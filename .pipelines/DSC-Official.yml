@@ -4,7 +4,6 @@ variables:
   value: 'release'
 - name: PackageRoot
   value: '$(System.ArtifactsDirectory)/Packages'
-- group: DSCAPIScan
 - name: LinuxContainerImage
   value: onebranch.azurecr.io/linux/ubuntu-2004:latest
 - name: WindowsContainerImage
