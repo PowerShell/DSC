@@ -28,12 +28,14 @@ extends:
         pool:
           type: windows
         variables:
+        - name: repoRoot
+          value: $(Build.SourcesDirectory)\OSS_Microsoft_PSSA
         - name: ob_outputDirectory
           value: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         steps:
         - checkout: self
         - pwsh: |
-            $packageVersion = ./build.ps1 -GetPackageVersion
+            $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
