@@ -90,20 +90,6 @@ extends:
             Write-Host "sending " + $vstsCommandString
             Write-Host "##$vstsCommandString"
           displayName: Setup variables for signing
-        - checkout: ComplianceRepo
-        - template: EsrpSign.yml@ComplianceRepo
-          parameters:
-            buildOutputPath: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
-            signOutputPath: $(signOutPath.signOutPath)
-            certificateId: "CP-230012"
-            pattern: '*.exe,*.ps1'
-            useMinimatch: false
-        - template: Sbom.yml@ComplianceRepo
-          parameters:
-            BuildDropPath: $(signOutPath.signOutPath)
-            Build_Repository_Uri: 'https://github.com/powershell/DSC'
-            PackageName: 'DSC'
-            PackageVersion: $(PackageVersion)
         - pwsh: |
             compress-archive -Path "$(signOutPath.signOutPath)/*" -DestinationPath "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).zip"
           displayName: 'Compress $(buildName)'
@@ -143,12 +129,6 @@ extends:
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
           displayName: 'Build x86_64-unknown-linux-gnu'
           condition: succeeded()
-        - template: Sbom.yml@ComplianceRepo
-          parameters:
-            BuildDropPath: $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration)
-            Build_Repository_Uri: 'https://github.com/powershell/DSC'
-            PackageName: 'DSC'
-            PackageVersion: $(PackageVersion)
         - pwsh: |
             new-item -itemType Directory $(PackageRoot) -Force
             tar czf '$(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
@@ -173,12 +153,6 @@ extends:
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
           displayName: 'Build aarch64-unknown-linux-gnu'
           condition: succeeded()
-        - template: Sbom.yml@ComplianceRepo
-          parameters:
-            BuildDropPath: $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration)
-            Build_Repository_Uri: 'https://github.com/powershell/DSC'
-            PackageName: 'DSC'
-            PackageVersion: $(PackageVersion)
         - pwsh: |
             new-item -itemType Directory $(PackageRoot) -Force
             tar czf '$(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
@@ -209,12 +183,6 @@ extends:
             ./build.ps1 -Release -Architecture $(buildName)
           displayName: 'Build $(buildName)'
           condition: succeeded()
-        - template: Sbom.yml@ComplianceRepo
-          parameters:
-            BuildDropPath: $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration)
-            Build_Repository_Uri: 'https://github.com/powershell/DSC'
-            PackageName: 'DSC'
-            PackageVersion: $(PackageVersion)
         - pwsh: |
             new-item -itemType Directory $(PackageRoot) -Force
             tar czf '$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
