@@ -41,6 +41,9 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          Codeql.Enabled: true
+          Codeql.Language: rust
+          Codeql.Cadence: 72
         pool:
           type: windows
         displayName: Build
@@ -94,12 +97,8 @@ extends:
             Write-Host "##$vstsCommandString"
           displayName: Setup variables for signing
         - pwsh: |
-            compress-archive -Path "$(signOutPath.signOutPath)/*" -DestinationPath "$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).zip"
+            compress-archive -Path "$(signOutPath.signOutPath)/*" -DestinationPath "$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).zip"
           displayName: 'Compress $(buildName)'
-          condition: succeeded()
-        - pwsh: |
-            Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)\DSC-$(PackageVersion)-$(buildName).zip"
-          displayName: Upload artifacts
           condition: succeeded()
       - job: PublishSigned
         dependsOn: BuildWin
@@ -131,13 +130,8 @@ extends:
           displayName: 'Build x86_64-unknown-linux-gnu'
           condition: succeeded()
         - pwsh: |
-            new-item -itemType Directory $(PackageRoot) -Force
-            tar czf '$(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
+            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress x86_64-unknown-linux-gnu'
-          condition: succeeded()
-        - pwsh: |
-            Write-Host '##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz'
-          displayName: Upload artifacts
           condition: succeeded()
       - job: BuildLinuxArm64
         dependsOn: SetPackageVersion
@@ -155,22 +149,14 @@ extends:
           displayName: 'Build aarch64-unknown-linux-gnu'
           condition: succeeded()
         - pwsh: |
-            new-item -itemType Directory $(PackageRoot) -Force
-            tar czf '$(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
+            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress aarch64-unknown-linux-gnu'
-          condition: succeeded()
-        - pwsh: |
-            Write-Host '##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz'
-          displayName: Upload artifacts
           condition: succeeded()
       - job: BuildMac
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
-          Codeql.Enabled: true
-          Codeql.Language: rust
-          Codeql.Cadence: 72  
         displayName: Build
         pool:
           type: linux
@@ -189,11 +175,6 @@ extends:
           displayName: 'Build $(buildName)'
           condition: succeeded()
         - pwsh: |
-            new-item -itemType Directory $(PackageRoot) -Force
-            tar czf '$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
           displayName: 'Compress $(buildName)'
-          condition: succeeded()
-        - pwsh: |
-            Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(PackageRoot)/DSC-$(PackageVersion)-$(buildName).tar.gz"
-          displayName: Upload artifacts
           condition: succeeded()
