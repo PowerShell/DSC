@@ -38,6 +38,10 @@ if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
     }
 }
 
+if ($IsLinux -and (Test-Path /etc/mariner-release)) {
+    tdnf install -y openssl-devel
+}
+
 rustup default stable
 $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
