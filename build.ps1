@@ -27,6 +27,7 @@ if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
     Write-Verbose -Verbose "Rust not found, installing..."
     if (!$IsWindows) {
         curl https://sh.rustup.rs -sSf | sh -s -- -y
+        $env:PATH += ":$env:HOME/.cargo/bin"
     }
     else {
         Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
