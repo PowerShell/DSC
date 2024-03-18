@@ -1,19 +1,48 @@
+name: DSC-Release-$(Build.BuildId)
 trigger: none
+
+pr:
+  branches:
+    include:
+    - onebranch
+    - release*
+
 variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
-  LinuxContainerImage: onebranch.azurecr.io/linux/ubuntu-2004:latest
+  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
   WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2019/vse2022:latest
+
 resources:
   repositories:
   - repository: onebranchTemplates
     type: git
     name: OneBranch.Pipelines/GovernedTemplates
     ref: refs/heads/main
+
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
   parameters:
     customTags: 'ES365AIMigrationTooling'
+    globalSdl:
+      disableLegacyManifest: true
+      sbom:
+        enabled: true
+        packageName: Microsoft.DSC
+      codeql:
+        compiled:
+          enabled: true
+      asyncSdl: # https://aka.ms/obpipelines/asyncsdl
+        enabled: true
+        forStages: [Build]
+        credscan:
+          enabled: true
+          scanFolder:  $(Build.SourcesDirectory)\DSC
+        binskim:
+          enabled: true
+        apiscan:
+          enabled: false
+
     stages:
     - stage: BuildAndSign
       displayName: Build Native Binaries
@@ -29,6 +58,8 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
         steps:
         - checkout: self
+          env:
+            ob_restore_phase: true # set to run before signing step
         - pwsh: |
             $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
@@ -41,6 +72,7 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          signSrcPath: $(repoRoot)/out
           Codeql.Enabled: true
           Codeql.Language: rust
           Codeql.Cadence: 72
@@ -55,6 +87,15 @@ extends:
               buildName: aarch64-pc-windows-msvc
         steps:
         - checkout: self
+          env:
+            ob_restore_phase: true
+        - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
+          env:
+            ob_restore_phase: true
+          inputs:
+            Enabled: true
+            AnalyzeInPipeline: true
+            Language: rust
         - pwsh: |
             $tmpdir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
             New-Item -ItemType Directory -Path $tmpdir
@@ -65,39 +106,35 @@ extends:
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           condition: succeeded()
+        - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
+          condition: always()
+          env:
+            ob_restore_phase: true
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
             $outPath = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)" -ErrorAction Ignore
             # workaround known issue of building in OneBranch copying from TMP folder
-            $null = New-Item -ItemType Directory -Path "$(Build.SourcesDirectory)/DSC/bin" -ErrorAction Ignore
-            Copy-Item -Recurse -Force $env:CARGO_TARGET_DIR "$(Build.SourcesDirectory)/DSC/bin"
+            $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
+            Copy-Item -Recurse -Force $env:CARGO_TARGET_DIR "$(signSrcPath)"
             # Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination $outPath -Verbose -Force
           displayName: Copy binaries
           condition: succeeded()
+        - task: onebranch.pipeline.signing@1
+          displayName: Sign 1st party files
+          inputs:
+            command: 'sign'
+            signing_profile: external_distribution
+            files_to_sign: '**\*.exe;**\*.json'
+            search_root: $(signSrcPath)
+        - task: CopyFiles@2
+          displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
+          inputs:
+            SourceFolder: "$(signSrcPath)"
+            Contents: '**'
+            TargetFolder: $(ob_outputDirectory)
         - pwsh: |
-            Set-Location "$(PackageRoot)"
-            $signSrcPath = "$(PackageRoot)/out/$(buildName)"
-            # Set signing src path variable
-            $vstsCommandString = "vso[task.setvariable variable=signSrcPath]${signSrcPath}"
-            Write-Host ("sending " + $vstsCommandString)
-            Write-Host "##$vstsCommandString"
-        - pwsh: |
-            $signOutPath = "$(PackageRoot)/signed"
-            $null = New-Item -ItemType Directory -Path $signOutPath
-            # Set signing out path variable
-            $vstsCommandString = "vso[task.setvariable variable=signOutPath;isoutput=true]${signOutPath}"
-            Write-Host "sending " + $vstsCommandString
-            Write-Host "##$vstsCommandString"
-          name: signOutPath
-        - pwsh: |
-            # Set path variable for guardian codesign validation
-            $vstsCommandString = "vso[task.setvariable variable=GDN_CODESIGN_TARGETDIRECTORY]$(signOutPath.signOutPath)"
-            Write-Host "sending " + $vstsCommandString
-            Write-Host "##$vstsCommandString"
-          displayName: Setup variables for signing
-        - pwsh: |
-            compress-archive -Path "$(signOutPath.signOutPath)/*" -DestinationPath "$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).zip"
+            compress-archive -Path "$(ob_outputDirectory)/*" -DestinationPath "$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).zip"
           displayName: 'Compress $(buildName)'
           condition: succeeded()
       - job: PublishSigned
@@ -120,7 +157,6 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
-          LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
         displayName: Linux-x64-gnu
         pool:
           type: linux
@@ -138,7 +174,6 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
-          LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
         displayName: Linux-ARM64-gnu
         pool:
           type: linux
