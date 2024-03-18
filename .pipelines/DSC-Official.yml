@@ -72,6 +72,7 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          repoRoot: $(Build.SourcesDirectory)\DSC
           signSrcPath: $(repoRoot)/out
           Codeql.Enabled: true
           Codeql.Language: rust
