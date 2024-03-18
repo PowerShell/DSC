@@ -35,6 +35,22 @@ class resourceOutput {
     [string] $description
 }
 
+# dsc resource type (settable clone)
+class dscResource {
+    [string] $ImplementationDetail
+    [string] $ResourceType
+    [string] $Name
+    [string] $FriendlyName
+    [string] $Module
+    [string] $ModuleName
+    [string] $Version
+    [string] $Path
+    [string] $ParentPath
+    [string] $ImplementedAs
+    [string] $CompanyName
+    [string[]] $Properties
+}
+
 # module types
 enum moduleType {
     ScriptBased
@@ -47,17 +63,21 @@ function Invoke-CacheRefresh {
     [resourceCache[]]$resourceCache = @()
     $DscResources = Get-DscResource
     foreach ($dsc in $DscResources) {
+        # workaround: if the resource does not have a module name, get it from parent path
+        # workaround: modulename is not settable, so clone the object without being read-only
+        $DscResourceInfo = [dscResource]::new()
+        $dsc.PSObject.Properties | ForEach-Object -Process { $DscResourceInfo.$($_.Name) = $_.Value }
         if ($dsc.ModuleName) {
             $moduleName = $dsc.ModuleName
         }
         elseif ($dsc.ParentPath) {
             $moduleName = Split-Path $dsc.ParentPath | Split-Path | Split-Path -Leaf
-            $dsc.ModuleName = $moduleName
+            $DscResourceInfo.ModuleName = $moduleName
         }
 
         $resourceCache += [resourceCache]@{
             Type            = "$moduleName/$($dsc.Name)"
-            DscResourceInfo = $dsc
+            DscResourceInfo = $DscResourceInfo
         }
     }
     return $resourceCache
