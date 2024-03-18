@@ -55,7 +55,7 @@ extends:
         variables:
           repoRoot: $(Build.SourcesDirectory)\DSC
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         steps:
         - checkout: self
           env:
@@ -72,7 +72,7 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           repoRoot: $(Build.SourcesDirectory)\DSC
           signSrcPath: $(repoRoot)/out
           Codeql.Enabled: true
@@ -144,7 +144,7 @@ extends:
         variables:
           signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         pool:
           type: windows
         steps:
@@ -153,13 +153,13 @@ extends:
           inputs:
             SourceFolder: $(signOutPath)
             Contents: '**'
-            TargetFolder: $(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT/signed
+            TargetFolder: $(Build.ArtifactStagingDirectory)/signed
 
       - job: BuildLinux
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-x64-gnu
         pool:
           type: linux
@@ -169,7 +169,6 @@ extends:
           displayName: 'Build x86_64-unknown-linux-gnu'
           condition: succeeded()
         - pwsh: |
-            new-item -itemtype directory -path '$(ob_outputDirectory)'
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress x86_64-unknown-linux-gnu'
           condition: succeeded()
@@ -178,7 +177,7 @@ extends:
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-gnu
         pool:
           type: linux
@@ -189,7 +188,6 @@ extends:
           displayName: 'Build aarch64-unknown-linux-gnu'
           condition: succeeded()
         - pwsh: |
-            new-item -itemtype directory -path '$(ob_outputDirectory)'
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress aarch64-unknown-linux-gnu'
           condition: succeeded()
@@ -198,7 +196,7 @@ extends:
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Build
         pool:
           type: linux
@@ -217,7 +215,6 @@ extends:
           displayName: 'Build $(buildName)'
           condition: succeeded()
         - pwsh: |
-            new-item -itemtype directory -path '$(ob_outputDirectory)' -ErrorAction Ignore
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
           displayName: 'Compress $(buildName)'
           condition: succeeded()
