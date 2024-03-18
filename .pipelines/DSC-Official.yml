@@ -66,6 +66,7 @@ extends:
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
           name: Package
+
       - job: BuildWin
         dependsOn: SetPackageVersion
         variables:
@@ -153,6 +154,7 @@ extends:
             SourceFolder: $(signOutPath)
             Contents: '**'
             TargetFolder: $(Build.ArtifactStagingDirectory)/ONEBRANCH_ARTIFACT/signed
+
       - job: BuildLinux
         dependsOn: SetPackageVersion
         variables:
@@ -170,6 +172,7 @@ extends:
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress x86_64-unknown-linux-gnu'
           condition: succeeded()
+
       - job: BuildLinuxArm64
         dependsOn: SetPackageVersion
         variables:
@@ -188,6 +191,7 @@ extends:
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress aarch64-unknown-linux-gnu'
           condition: succeeded()
+
       - job: BuildMac
         dependsOn: SetPackageVersion
         variables:
