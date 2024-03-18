@@ -66,7 +66,11 @@ function Invoke-CacheRefresh {
         # workaround: if the resource does not have a module name, get it from parent path
         # workaround: modulename is not settable, so clone the object without being read-only
         $DscResourceInfo = [dscResource]::new()
-        $dsc.PSObject.Properties | ForEach-Object -Process { $DscResourceInfo.$($_.Name) = $_.Value }
+        $dsc.PSObject.Properties | ForEach-Object -Process {
+            if (@($_.Name, $_.Value) -notcontains $null) {
+                $DscResourceInfo.$($_.Name) = $_.Value
+            }
+        }
         if ($dsc.ModuleName) {
             $moduleName = $dsc.ModuleName
         }
