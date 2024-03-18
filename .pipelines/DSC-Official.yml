@@ -169,6 +169,7 @@ extends:
           displayName: 'Build x86_64-unknown-linux-gnu'
           condition: succeeded()
         - pwsh: |
+            new-item -itemtype directory -path '$(ob_outputDirectory)'
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress x86_64-unknown-linux-gnu'
           condition: succeeded()
@@ -188,6 +189,7 @@ extends:
           displayName: 'Build aarch64-unknown-linux-gnu'
           condition: succeeded()
         - pwsh: |
+            new-item -itemtype directory -path '$(ob_outputDirectory)'
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
           displayName: 'Compress aarch64-unknown-linux-gnu'
           condition: succeeded()
@@ -215,6 +217,7 @@ extends:
           displayName: 'Build $(buildName)'
           condition: succeeded()
         - pwsh: |
+            new-item -itemtype directory -path '$(ob_outputDirectory)' -ErrorAction Ignore
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
           displayName: 'Compress $(buildName)'
           condition: succeeded()
