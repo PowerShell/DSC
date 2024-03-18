@@ -67,7 +67,7 @@ function Invoke-CacheRefresh {
         # workaround: modulename is not settable, so clone the object without being read-only
         $DscResourceInfo = [dscResource]::new()
         $dsc.PSObject.Properties | ForEach-Object -Process {
-            if (![string]::IsNullOrEmpty($_.Value)) { $_.Value = ''}
+            if ([string]::IsNullOrEmpty($_.Value)) { $_.Value = ''}
             $DscResourceInfo.$($_.Name) = $_.Value
         }
         if ($dsc.ModuleName) {
