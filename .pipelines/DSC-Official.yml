@@ -112,7 +112,8 @@ extends:
             $outPath = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)" -ErrorAction Ignore
             # workaround known issue of building in OneBranch copying from TMP folder
             $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
-            Copy-Item -Recurse -Force $env:CARGO_TARGET_DIR "$(signSrcPath)"
+            # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
+            Copy-Item "$env:CARGO_TARGET_DIR/*.exe" "$(signSrcPath)"
             # Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination $outPath -Verbose -Force
           displayName: Copy binaries
           condition: succeeded()
@@ -121,13 +122,16 @@ extends:
           inputs:
             command: 'sign'
             signing_profile: external_distribution
-            files_to_sign: '**\*.exe;**\*.json'
+            files_to_sign: |
+              *.exe;
+              *.json;
+              *.ps1;
             search_root: $(signSrcPath)
         - task: CopyFiles@2
           displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
           inputs:
             SourceFolder: "$(signSrcPath)"
-            Contents: '**'
+            Contents: '*'
             TargetFolder: $(ob_outputDirectory)
         - pwsh: |
             compress-archive -Path "$(ob_outputDirectory)/*" -DestinationPath "$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).zip"
