@@ -137,6 +137,26 @@ extends:
             compress-archive -Path "$(ob_outputDirectory)/*" -DestinationPath "$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).zip"
           displayName: 'Compress $(buildName)'
           condition: succeeded()
+        - pwsh: |
+            Set-Location "$(Build.SourcesDirectory)/DSC"
+            ./build.ps1 -msix -skipbuild
+            Copy-Item *.msix "$(ob_outputDirectory)"
+          displayName: 'Create msix for $(buildName)'
+          condition: succeeded()
+
+      - job: Create msix bundle
+        dependsOn: BuildWin
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        pool:
+          type: windows
+        steps:
+        - pwsh: |
+            Set-Location "$(Build.SourcesDirectory)/DSC"
+            ./build.ps1 -msixbundle
+          displayName: 'Create msixbundle'
+          condition: succeeded()
+
       - job: PublishSigned
         dependsOn: BuildWin
         variables:
@@ -216,3 +236,48 @@ extends:
             tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
           displayName: 'Compress $(buildName)'
           condition: succeeded()
+
+    - stage: Release
+      dependsOn: BuildAndSign
+      variables:
+        PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+        drop: $(Pipeline.Workspace)/drop_build_main
+      jobs:
+      - job: Validation
+        displayName: Manual validation
+        pool:
+          type: agentless
+        timeoutInMinutes: 1440
+        steps:
+        - task: ManualValidation@0
+          displayName: Wait 24 hours for validation
+          inputs:
+            notifyUsers: $(Build.RequestedForEmail)
+            instructions: Please validate the release
+            timeoutInMinutes: 1440
+      - job: GitHub
+        dependsOn: validation
+        displayName: Publish draft to GitHub
+        pool:
+          type: windows
+        variables:
+          ob_outputDirectory: '$(Build.SourcesDirectory)''
+        steps:
+        - download: current
+          displayName: Download artifacts
+        - task: GitHubRelease@1
+          displayName: Create GitHub release
+          inputs:
+            gitHubConnection: GitHub
+            repositoryName: PowerShell/DSC
+            action: create
+            assets: |
+              *.zip;
+              *.tar.gz;
+            addChangeLog: true
+            changeLogCompareToRelease: 'lastFullRelease'
+            changeLogType: 'commitBased'
+            releaseNotesFilePath: CHANGELOG.md
+            tagSource: gitTag
+            tag: v$(version)
+            isDraft: true
