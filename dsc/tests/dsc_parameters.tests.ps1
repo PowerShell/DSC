@@ -81,7 +81,7 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        {$config_yaml | dsc config -p $params_json get} | Should -Throw
+        {$config_yaml | dsc config -p $params_json get 2>&1} | Should -CMATCH 'ERROR'
         $LASTEXITCODE | Should -Be 4
     }
 
@@ -108,7 +108,7 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        {$config_yaml | dsc config -p $params_json get} | Should -Throw
+        {$config_yaml | dsc config -p $params_json get get 2>&1} | Should -CMATCH 'ERROR'
         $LASTEXITCODE | Should -Be 4
     }
 
@@ -134,7 +134,7 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        {$config_yaml | dsc config -p $params_json get} | Should -Throw
+        {$config_yaml | dsc config -p $params_json get get 2>&1} | Should -CMATCH 'ERROR'
         $LASTEXITCODE | Should -Be 4
     }
 
@@ -158,7 +158,7 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        {$config_yaml | dsc config -p $params_json get} | Should -Throw
+        {$config_yaml | dsc config -p $params_json get get 2>&1} | Should -CMATCH 'ERROR'
         $LASTEXITCODE | Should -Be 4
     }
 
@@ -184,7 +184,7 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        {$config_yaml | dsc config -p $params_json get} | Should -Throw
+        {$config_yaml | dsc config -p $params_json get get 2>&1} | Should -CMATCH 'ERROR'
         $LASTEXITCODE | Should -Be 4
     }
 

@@ -45,7 +45,7 @@ Describe 'config get tests' {
             "Name": "ProductName"
         }
 '@
-        {$json | dsc resource get -r Microsoft.Windows/registry} | Should -Throw
+        {$json | dsc resource get -r Microsoft.Windows/registry get 2>&1} | Should -CMATCH 'ERROR'
         $LASTEXITCODE | Should -Be 2
     }
 }
