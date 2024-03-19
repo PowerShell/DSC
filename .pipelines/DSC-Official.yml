@@ -145,7 +145,7 @@ extends:
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()
 
-      - job: Create msix bundle
+      - job: CreateMsixBundle
         dependsOn: BuildWin
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
