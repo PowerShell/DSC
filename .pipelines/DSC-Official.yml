@@ -68,24 +68,25 @@ extends:
 
       - job: BuildWin
         dependsOn: SetPackageVersion
-        variables:
-          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          repoRoot: $(Build.SourcesDirectory)\DSC
-          signSrcPath: $(repoRoot)/out
-          ob_sdl_sbom_enabled: true
-          ob_signing_setup_enabled: true
-          ob_sdl_codeql_compiled_enabled: false
-        pool:
-          type: windows
-        displayName: Build
         strategy:
           matrix:
             Windows x64:
               buildName: x86_64-pc-windows-msvc
             Windows x64_arm64:
               buildName: aarch64-pc-windows-msvc
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          repoRoot: $(Build.SourcesDirectory)\DSC
+          signSrcPath: $(repoRoot)/out
+          ob_artifactBaseName: 'DSC-$(buildName)'
+          ob_sdl_sbom_enabled: true
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: false
+        pool:
+          type: windows
+        displayName: Build
         steps:
         - checkout: self
           target: host
