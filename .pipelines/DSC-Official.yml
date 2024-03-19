@@ -57,6 +57,7 @@ extends:
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
         steps:
         - checkout: self
+          target: host
         - pwsh: |
             $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
@@ -86,6 +87,7 @@ extends:
               buildName: aarch64-pc-windows-msvc
         steps:
         - checkout: self
+          target: host
         - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
           inputs:
             Enabled: true
