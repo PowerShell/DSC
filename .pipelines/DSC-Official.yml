@@ -58,8 +58,6 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         steps:
         - checkout: self
-          env:
-            ob_restore_phase: true # set to run before signing step
         - pwsh: |
             $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
@@ -89,11 +87,7 @@ extends:
               buildName: aarch64-pc-windows-msvc
         steps:
         - checkout: self
-          env:
-            ob_restore_phase: true
         - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
-          env:
-            ob_restore_phase: true
           inputs:
             Enabled: true
             AnalyzeInPipeline: true
@@ -110,8 +104,6 @@ extends:
           condition: succeeded()
         - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
           condition: always()
-          env:
-            ob_restore_phase: true
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
