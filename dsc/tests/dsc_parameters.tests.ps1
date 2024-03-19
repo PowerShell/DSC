@@ -82,7 +82,7 @@ Describe 'Parameters tests' {
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
         $testError = & {$config_yaml | dsc config -p $params_json get 2>&1}
-        $testError | Select-String '^error:' -Quiet | Should -BeTrue
+        $testError | Select-String 'Parameter input failure:' -Quiet | Should -BeTrue
         $LASTEXITCODE | Should -Be 2
     }
 
