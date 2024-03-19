@@ -262,7 +262,7 @@ extends:
         pool:
           type: windows
         variables:
-          ob_outputDirectory: '$(Build.SourcesDirectory)''
+          ob_outputDirectory: '$(Build.SourcesDirectory)'
         steps:
         - download: current
           displayName: Download artifacts
@@ -276,6 +276,7 @@ extends:
               *.zip;
               *.tar.gz;
             addChangeLog: true
+            changeLogType: commitBased
             releaseNotesFilePath: CHANGELOG.md
             tagSource: gitTag
             tag: v$(version)
