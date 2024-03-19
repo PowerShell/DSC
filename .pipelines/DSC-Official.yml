@@ -55,7 +55,6 @@ extends:
         variables:
           repoRoot: $(Build.SourcesDirectory)\DSC
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         steps:
         - checkout: self
         - pwsh: |
