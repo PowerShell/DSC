@@ -37,7 +37,7 @@ class resourceOutput {
 
 # dsc resource type (settable clone)
 class dscResource {
-    [string] $ImplementationDetail
+    [moduleType] $ImplementationDetail
     [string] $ResourceType
     [string] $Name
     [string] $FriendlyName
@@ -48,7 +48,7 @@ class dscResource {
     [string] $ParentPath
     [string] $ImplementedAs
     [string] $CompanyName
-    [string[]] $Properties
+    [psobject[]] $Properties
 }
 
 # module types
@@ -63,19 +63,26 @@ function Invoke-CacheRefresh {
     [resourceCache[]]$resourceCache = @()
     $DscResources = Get-DscResource
     foreach ($dsc in $DscResources) {
+        # only support known moduleType, excluding binary
+        if ([moduleType].GetEnumNames() -notcontains $dsc.ImplementationDetail) {
+            continue
+        }
         # workaround: if the resource does not have a module name, get it from parent path
         # workaround: modulename is not settable, so clone the object without being read-only
         $DscResourceInfo = [dscResource]::new()
-        $dsc.PSObject.Properties | ForEach-Object -Process {
-            if ([string]::IsNullOrEmpty($_.Value)) { $_.Value = ''}
-            $DscResourceInfo.$($_.Name) = $_.Value
-        }
+        $dsc.PSObject.Properties | ForEach-Object -Process { $DscResourceInfo.$($_.Name) = $_.Value }
         if ($dsc.ModuleName) {
             $moduleName = $dsc.ModuleName
         }
         elseif ($dsc.ParentPath) {
             $moduleName = Split-Path $dsc.ParentPath | Split-Path | Split-Path -Leaf
+            $DscResourceInfo.Module = $moduleName
             $DscResourceInfo.ModuleName = $moduleName
+            # workaround: populate module version from psmoduleinfo if available
+            if ($moduleInfo = Get-Module -Name $moduleName -ListAvailable -ErrorAction Ignore) {
+                $moduleInfo = $moduleInfo | Sort-Object -Property Version -Descending | Select-Object -First 1
+                $DscResourceInfo.Version = $moduleInfo.Version.ToString()
+            }
         }
 
         $resourceCache += [resourceCache]@{
