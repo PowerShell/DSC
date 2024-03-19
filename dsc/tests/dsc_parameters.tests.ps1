@@ -83,7 +83,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get 2>&1}
         $testError | Select-String 'Parameter input failure:' -Quiet | Should -BeTrue
-        $LASTEXITCODE | Should -Be 2
+        $LASTEXITCODE | Should -Be 4
     }
 
     It 'Input length is wrong for <type>' -TestCases @(
