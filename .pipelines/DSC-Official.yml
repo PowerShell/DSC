@@ -75,9 +75,9 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           repoRoot: $(Build.SourcesDirectory)\DSC
           signSrcPath: $(repoRoot)/out
-          Codeql.Enabled: true
-          Codeql.Language: rust
-          Codeql.Cadence: 72
+          ob_sdl_sbom_enabled: true
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: false
         pool:
           type: windows
         displayName: Build
