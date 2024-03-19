@@ -83,7 +83,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get 2>&1}
         $testError | Select-String '^error:' -Quiet | Should -BeTrue
-        $LASTEXITCODE | Should -Be 4
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Input length is wrong for <type>' -TestCases @(
@@ -111,7 +111,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
         $testError | Select-String '^error:' -Quiet | Should -BeTrue
-        $LASTEXITCODE | Should -Be 4
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Input number value is out of range for <min> and <max>' -TestCases @(
@@ -138,7 +138,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
         $testError | Select-String '^error:' -Quiet | Should -BeTrue
-        $LASTEXITCODE | Should -Be 4
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Input is not in the allowed value list for <type>' -TestCases @(
@@ -163,7 +163,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
         $testError | Select-String '^error:' -Quiet | Should -BeTrue
-        $LASTEXITCODE | Should -Be 4
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Length constraint is incorrectly applied to <type> with <constraint>' -TestCases @(
@@ -190,7 +190,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
         $testError | Select-String '^error:' -Quiet | Should -BeTrue
-        $LASTEXITCODE | Should -Be 4
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Default value is used when not provided' {
