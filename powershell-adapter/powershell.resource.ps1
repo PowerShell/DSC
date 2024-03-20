@@ -267,6 +267,15 @@ switch ($Operation) {
                 $capabilities = @('Get', 'Set', 'Test')
             }
 
+            # this text comes directly from the resource manifest for v3 native resources
+            if ($r.Description) {
+                $description = $r.Description
+            }
+            else {
+                # some modules have long multi-line descriptions. to avoid issue, use only the first line.
+                $description = $module.Description.split("`r`n")[0]
+            }
+
             # OUTPUT dsc is expecting the following properties
             [resourceOutput]@{
                 type          = $Type
@@ -279,7 +288,7 @@ switch ($Operation) {
                 author        = $r.CompanyName
                 properties    = $r.Properties.Name
                 requires      = $requiresString
-                description   = $module.Description
+                description   = $description
             } | ConvertTo-Json -Compress
         }
     }

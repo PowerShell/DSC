@@ -9,6 +9,6 @@ resources:
       properties:
         Name: TestPSRepository1
     - name: Class-resource Info
-      type: PSTestModule/TestClassResource
+      type: TestClassResource/TestClassResource
       properties:
         Name: TestClassResource1

@@ -14,7 +14,7 @@ function Get-TargetResource {
     )
 
     $returnValue = @{
-        Ensure                    = [EnsureEnumeration]::Absent
+        Ensure                    = [EnsureEnumeration].GetEnumName(0)
         Name                      = $Name
         SourceLocation            = $null
         ScriptSourceLocation      = $null
@@ -27,7 +27,7 @@ function Get-TargetResource {
     }
 
     if ($Name -eq "TestPSRepository1") {
-        $returnValue.Ensure = [EnsureEnumeration]::Present
+        $returnValue.Ensure = [EnsureEnumeration].GetEnumName(1)
         $returnValue.SourceLocation = 'https://www.powershellgallery.com/api/v2'
         $returnValue.ScriptSourceLocation = 'https://www.powershellgallery.com/api/v2/items/psscript'
         $returnValue.PublishLocation = 'https://www.powershellgallery.com/api/v2/package/'
