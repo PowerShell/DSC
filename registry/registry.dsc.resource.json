@@ -1,52 +1,57 @@
 {
-  "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-  "type": "Microsoft.Windows/Registry",
-  "description": "Manage Windows Registry keys and values",
-  "tags": [
-    "Windows",
-    "NT"
-  ],
-  "version": "0.1.0",
-  "get": {
-    "executable": "registry",
-    "args": [
-      "config",
-      "get"
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+    "type": "Microsoft.Windows/Registry",
+    "description": "Manage Windows Registry keys and values",
+    "tags": [
+        "Windows"
     ],
-    "input": "stdin"
-  },
-  "set": {
-    "executable": "registry",
-    "args": [
-      "config",
-      "set"
-    ],
-    "input": "stdin",
-    "implementsPretest": true,
-    "return": "state"
-  },
-  "test": {
-    "executable": "registry",
-    "args": [
-      "config",
-      "test"
-    ],
-    "input": "stdin",
-    "return": "state"
-  },
-  "exitCodes": {
-    "0": "Success",
-    "1": "Invalid parameter",
-    "2": "Invalid input",
-    "3": "Registry error",
-    "4": "JSON serialization failed"
-  },
-  "schema": {
-    "command": {
-      "executable": "registry",
-      "args": [
-        "schema"
-      ]
+    "version": "0.1.0",
+    "get": {
+        "executable": "registry",
+        "args": [
+            "config",
+            "get",
+            "--input",
+            "{json}"
+        ],
+        "input": {
+            "arg": "{json}"
+        }
+    },
+    "set": {
+        "executable": "registry",
+        "args": [
+            "config",
+            "set",
+            "--input",
+            "{json}"
+        ],
+        "input": {
+            "arg": "{json}"
+        }
+    },
+    "delete": {
+        "executable": "registry",
+        "args": [
+            "config",
+            "remove",
+            "--input",
+            "{json}"
+        ],
+        "input": {
+            "arg": "{json}"
+        }
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid parameter",
+        "2": "Invalid input",
+        "3": "Registry error",
+        "4": "JSON serialization failed"
+    },
+    "schema": {
+        "command": {
+            "executable": "registry"
+        }
     }
-  }
 }
