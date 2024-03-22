@@ -4,8 +4,10 @@
 use serde_json::Value;
 use std::collections::HashMap;
 
+use super::config_doc::DataType;
+
 pub struct Context {
-    pub parameters: HashMap<String, Value>,
+    pub parameters: HashMap<String, (Value, DataType)>,
     pub _variables: HashMap<String, Value>,
     pub outputs: HashMap<String, Value>, // this is used by the `reference()` function to retrieve output
 }
