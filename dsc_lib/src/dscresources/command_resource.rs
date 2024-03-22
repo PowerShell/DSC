@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::{collections::HashMap, env, process::Command, io::{Write, Read}, process::Stdio};
 use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
 use crate::configure::config_result::ResourceGetResult;
-use super::{dscresource::get_diff,resource_manifest::{ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
+use super::{dscresource::get_diff,resource_manifest::{Kind, ResourceManifest, InputKind, ReturnKind, SchemaKind}, invoke_result::{GetResult, SetResult, TestResult, ValidateResult, ExportResult}};
 use tracing::{error, warn, info, debug, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
@@ -76,6 +76,11 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    }
+
+    if resource.kind == Some(Kind::Resource) {
+        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
+        verify_json(resource, cwd, &stdout)?;
     }
 
     let result: GetResult = if let Ok(group_response) = serde_json::from_str::<Vec<ResourceGetResult>>(&stdout) {
@@ -179,6 +184,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
+    if resource.kind == Some(Kind::Resource) {
+        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
+        verify_json(resource, cwd, &stdout)?;
+    }
+
     let pre_state: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
@@ -192,8 +202,14 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
+
     match set.returns {
         Some(ReturnKind::State) => {
+
+            if resource.kind == Some(Kind::Resource) {
+                debug!("Verifying output of set '{}' using '{}'", &resource.resource_type, &set.executable);
+                verify_json(resource, cwd, &stdout)?;
+            }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
                 Result::Ok(r) => {r},
@@ -291,6 +307,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    }
+
+    if resource.kind == Some(Kind::Resource) {
+        debug!("Verifying output of test '{}' using '{}'", &resource.resource_type, &test.executable);
+        verify_json(resource, cwd, &stdout)?;
     }
 
     let expected_value: Value = serde_json::from_str(expected)?;
@@ -462,6 +483,10 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
                 return Err(DscError::Operation(format!("Failed to parse json from export {}|{}|{} -> {err}", &export.executable, stdout, stderr)))
             }
         };
+        if resource.kind == Some(Kind::Resource) {
+            debug!("Verifying output of export '{}' using '{}'", &resource.resource_type, &resource.get.executable);
+            verify_json(resource, cwd, line)?;
+        }
         instances.push(instance);
     }
 
