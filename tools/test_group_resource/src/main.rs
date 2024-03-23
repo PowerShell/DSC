@@ -6,7 +6,7 @@ mod args;
 use args::{Args, SubCommand};
 use clap::Parser;
 use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod, Kind};
-use dsc_lib::dscresources::dscresource::{DscResource, ImplementedAs};
+use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 
 fn main() {
     let args = Args::parse();
@@ -16,6 +16,7 @@ fn main() {
                 type_name: "Test/TestResource1".to_string(),
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
+                capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
                 path: "test_resource1".to_string(),
@@ -48,6 +49,7 @@ fn main() {
                 type_name: "Test/TestResource2".to_string(),
                 kind: Kind::Resource,
                 version: "1.0.1".to_string(),
+                capabilities: vec![Capability::Get, Capability::Set],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
                 path: "test_resource2".to_string(),
@@ -84,6 +86,7 @@ fn main() {
                 type_name: "InvalidResource".to_string(),
                 kind: Kind::Resource,
                 version: "1.0.0".to_string(),
+                capabilities: vec![Capability::Get],
                 description: Some("This is a test resource.".to_string()),
                 implemented_as: ImplementedAs::Custom("TestResource".to_string()),
                 path: "test_resource1".to_string(),

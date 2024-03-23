@@ -32,8 +32,7 @@ module.exports = grammar({
     number: $ => /-?\d+/,
     boolean: $ => choice('true', 'false'),
 
-    memberAccess: $ => repeat1($._member),
-    _member: $ => seq('.', $.memberName),
+    memberAccess: $ => seq('.', $.memberName, repeat(seq('.', $.memberName))),
     memberName: $ => /[a-zA-Z0-9_-]+/,
   }
 

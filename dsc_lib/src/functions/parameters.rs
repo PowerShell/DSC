@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::config_doc::DataType;
+use crate::configure::parameters::SecureKind;
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
@@ -28,7 +30,25 @@ impl Function for Parameters {
         if let Some(key) = args[0].as_str() {
             trace!("parameters key: {key}");
             if context.parameters.contains_key(key) {
-                Ok(context.parameters[key].clone())
+                let (value, data_type) = &context.parameters[key];
+
+                // if secureString or secureObject types, we keep it as JSON object
+                match data_type {
+                    DataType::SecureString => {
+                        let Some(value) = value.as_str() else {
+                            return Err(DscError::Parser(format!("Parameter '{key}' is not a string")));
+                        };
+                        let secure_string = SecureKind::SecureString(value.to_string());
+                        Ok(serde_json::to_value(secure_string)?)
+                    },
+                    DataType::SecureObject => {
+                        let secure_object = SecureKind::SecureObject(value.clone());
+                        Ok(serde_json::to_value(secure_object)?)
+                    },
+                    _ => {
+                        Ok(value.clone())
+                    }
+                }
             }
             else {
                 Err(DscError::Parser(format!("Parameter '{key}' not found in context")))

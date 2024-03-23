@@ -180,6 +180,13 @@ resources:
         $LASTEXITCODE | Should -Be 0
     }
 
+    It 'resource tracing shows up' {
+        # Assumption here is that DSC/PowerShellGroup provider is visible
+        dsc -l trace resource list 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'PSModulePath'
+        $LASTEXITCODE | Should -Be 0
+    }
+
     It 'stdin cannot be empty if neither input or path is provided' {
         '' | dsc resource set -r Microsoft/OSInfo 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw

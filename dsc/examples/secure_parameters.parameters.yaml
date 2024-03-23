@@ -1,0 +1,4 @@
+parameters:
+  myString: mySecret
+  myObject:
+    myProperty: mySecretProperty

@@ -73,13 +73,23 @@ if ($null -eq $DscModule)
 
 Import-Module $DscModule -DisableNameChecking
 
+# Adding some debug info to STDERR
+$m = gmo PSDesiredStateConfiguration
+$trace = @{"Debug"="PSVersion="+$PSVersionTable.PSVersion.ToString()} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="PSPath="+$PSHome} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="ModuleVersion="+$m.Version.ToString()} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="ModulePath="+$m.Path} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+$trace = @{"Debug"="PSModulePath="+$env:PSModulePath} | ConvertTo-Json -Compress
+$host.ui.WriteErrorLine($trace)
+
 if ($Operation -eq 'List')
 {
     $DscResources= Get-DscResource
-    #TODO: following should be added to debug stream of every operation
-    #$m = gmo PSDesiredStateConfiguration
-    #$r += @{"DebugInfo"=@{"ModuleVersion"=$m.Version.ToString();"ModulePath"=$m.Path;"PSVersion"=$PSVersionTable.PSVersion.ToString();"PSPath"=$PSHome}}
-    #$r[0] | ConvertTo-Json -Compress -Depth 3
+
     foreach ($r in $DscResources)
     {
         if ($r.ImplementedAs -eq "Binary")
@@ -106,12 +116,21 @@ if ($Operation -eq 'List')
 
         $fullResourceTypeName = "$moduleName/$($r.ResourceType)"
         $script:ResourceCache[$fullResourceTypeName] = $r
-       if ($WinPS) {$requiresString = "Microsoft.Windows/WindowsPowerShell"} else {$requiresString = "Microsoft.DSC/PowerShell"}
+        if ($WinPS) {$requiresString = "Microsoft.Windows/WindowsPowerShell"} else {$requiresString = "Microsoft.DSC/PowerShell"}
+
+        $t = [Type]$r.ResourceType
+        $exportMethod = $t.GetMethod('Export')
+
+        $capabilities = @('Get', 'Set', 'Test')
+        if ($null -ne $exportMethod) {
+            $capabilities += 'Export'
+        }
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
             kind = 'Resource';
             version = $version_string;
+            capabilities = $capabilities;
             path = $r.Path;
             directory = $r.ParentPath;
             implementedAs = $r.ImplementationDetail;

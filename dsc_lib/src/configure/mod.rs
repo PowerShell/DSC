@@ -13,12 +13,12 @@ use self::config_doc::{Configuration, DataType, Metadata, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
-use std::time::Duration;
-use tracing::{debug, trace};
+use std::{collections::HashMap, mem};
+use tracing::{debug, info, trace, warn_span, Span};
+use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 pub mod context;
 pub mod config_doc;
@@ -135,13 +135,14 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn get_progress_bar(len: u64) -> Result<ProgressBar, DscError> {
-    let pb = ProgressBar::new(len);
-    pb.enable_steady_tick(Duration::from_millis(120));
-    pb.set_style(ProgressStyle::with_template(
+fn get_progress_bar_span(len: u64) -> Result<Span, DscError> {
+    // use warn_span since that is the default logging level but progress bars will be suppressed if error trace level is used
+    let pb_span = warn_span!("");
+    pb_span.pb_set_style(&ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
     )?);
-   Ok(pb)
+    pb_span.pb_set_length(len);
+    Ok(pb_span)
 }
 
 fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Result<String, DscError> {
@@ -226,10 +227,11 @@ impl Configurator {
         let config = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
-        let pb = get_progress_bar(resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in resources {
-            pb.inc(1);
-            pb.set_message(format!("Get '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -238,6 +240,7 @@ impl Configurator {
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
             let get_result = dsc_resource.get(&filter)?;
+            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&get_result)?);
             let resource_result = config_result::ResourceGetResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
@@ -246,7 +249,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_with_message("Get configuration completed");
+        std::mem::drop(pb_span_enter);
+        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -264,10 +268,11 @@ impl Configurator {
         let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
-        let pb = get_progress_bar(resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in resources {
-            pb.inc(1);
-            pb.set_message(format!("Set '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Set '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -276,6 +281,7 @@ impl Configurator {
             let desired = add_metadata(&dsc_resource.kind, properties)?;
             trace!("desired: {desired}");
             let set_result = dsc_resource.set(&desired, skip_test)?;
+            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
             let resource_result = config_result::ResourceSetResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
@@ -284,7 +290,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_with_message("Set configuration completed");
+        mem::drop(pb_span_enter);
+        mem::drop(pb_span);
         Ok(result)
     }
 
@@ -302,10 +309,11 @@ impl Configurator {
         let config = self.validate_config()?;
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
-        let pb = get_progress_bar(resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in resources {
-            pb.inc(1);
-            pb.set_message(format!("Test '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Test '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -314,6 +322,7 @@ impl Configurator {
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("expected: {expected}");
             let test_result = dsc_resource.test(&expected)?;
+            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&test_result)?);
             let resource_result = config_result::ResourceTestResult {
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
@@ -322,7 +331,8 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
-        pb.finish_with_message("Test configuration completed");
+        std::mem::drop(pb_span_enter);
+        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -346,10 +356,11 @@ impl Configurator {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        let pb = get_progress_bar(config.resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(config.resources.len() as u64)?;
+        let pb_span_enter = pb_span.enter();
         for resource in config.resources {
-            pb.inc(1);
-            pb.set_message(format!("Export '{}'", resource.name));
+            Span::current().pb_inc(1);
+            pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
@@ -359,8 +370,9 @@ impl Configurator {
             add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
+        std::mem::drop(pb_span_enter);
+        std::mem::drop(pb_span);
         result.result = Some(conf);
-        pb.finish_with_message("Export configuration completed");
         Ok(result)
     }
 
@@ -378,6 +390,7 @@ impl Configurator {
         let config = serde_json::from_str::<Configuration>(self.config.as_str())?;
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
+                debug!("No parameters defined in configuration and no parameters input");
                 return Ok(());
             }
             return Err(DscError::Validation("No parameters defined in configuration".to_string()));
@@ -385,9 +398,18 @@ impl Configurator {
 
         for (name, parameter) in parameters {
             if let Some(default_value) = &parameter.default_value {
-                // TODO: default values can be expressions
-                // TODO: validate default value matches the type
-                self.context.parameters.insert(name.clone(), default_value.clone());
+                // default values can be expressions
+                let value = if default_value.is_string() {
+                    if let Some(value) = default_value.as_str() {
+                        self.statement_parser.parse_and_execute(value, &self.context)?
+                    } else {
+                        return Err(DscError::Parser("Default value as string is not defined".to_string()));
+                    }
+                } else {
+                    default_value.clone()
+                };
+                Configurator::validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
 
@@ -407,40 +429,50 @@ impl Configurator {
                 // TODO: additional array constraints
                 // TODO: object constraints
 
-                match constraint.parameter_type {
-                    DataType::String | DataType::SecureString => {
-                        if !value.is_string() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
-                        }
-                    },
-                    DataType::Int => {
-                        if !value.is_i64() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not an integer")));
-                        }
-                    },
-                    DataType::Bool => {
-                        if !value.is_boolean() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not a boolean")));
-                        }
-                    },
-                    DataType::Array => {
-                        if !value.is_array() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
-                        }
-                    },
-                    DataType::Object | DataType::SecureObject => {
-                        if !value.is_object() {
-                            return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
-                        }
-                    },
+                Configurator::validate_parameter_type(&name, &value, &constraint.parameter_type)?;
+                if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
+                    info!("Set secure parameter '{name}'");
+                } else {
+                    info!("Set parameter '{name}' to '{value}'");
                 }
-
-                self.context.parameters.insert(name.clone(), value.clone());
+                self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
             }
             else {
                 return Err(DscError::Validation(format!("Parameter '{name}' not defined in configuration")));
             }
         }
+        Ok(())
+    }
+
+    fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
+        match parameter_type {
+            DataType::String | DataType::SecureString => {
+                if !value.is_string() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
+                }
+            },
+            DataType::Int => {
+                if !value.is_i64() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not an integer")));
+                }
+            },
+            DataType::Bool => {
+                if !value.is_boolean() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not a boolean")));
+                }
+            },
+            DataType::Array => {
+                if !value.is_array() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
+                }
+            },
+            DataType::Object | DataType::SecureObject => {
+                if !value.is_object() {
+                    return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
+                }
+            },
+        }
+
         Ok(())
     }
 
