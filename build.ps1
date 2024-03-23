@@ -338,7 +338,7 @@ if ($MsixBundle) {
     $isPreview = $productVersion -like '*-*'
     $packageName = "DSC-$productVersion-Win"
     $makeappx = Find-MakeAppx
-    & $makeappx bundle /d $PSScriptRoot /p "$PSScriptRoot\$packageName.msixbundle'
+    & $makeappx bundle /d $PSScriptRoot /p "$PSScriptRoot\$packageName.msixbundle"
     return
 }
 
