@@ -8,6 +8,7 @@ param(
     [switch]$Clippy,
     [switch]$SkipBuild,
     [switch]$Msix,
+    [switch]$MsixBundle,
     [switch]$Test,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck
@@ -26,14 +27,20 @@ if ($GetPackageVersion) {
 if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
     Write-Verbose -Verbose "Rust not found, installing..."
     if (!$IsWindows) {
-        curl https://sh.rustup.rs -sSf | sh
+        curl https://sh.rustup.rs -sSf | sh -s -- -y
+        $env:PATH += ":$env:HOME/.cargo/bin"
     }
     else {
         Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
         Write-Verbose -Verbose "Use the default settings to ensure build works"
-        & 'temp:/rustup-init.exe'
+        & 'temp:/rustup-init.exe' -y
+        $env:PATH += ";$env:USERPROFILE\.cargo\bin"
         Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
     }
+}
+
+if ($IsLinux -and (Test-Path /etc/mariner-release)) {
+    tdnf install -y openssl-devel
 }
 
 rustup default stable
@@ -52,6 +59,10 @@ function Find-LinkExe {
     finally {
         Pop-Location
     }
+}
+
+if ($Msix -or $MsixBundle) {
+    $SkipBuild = $true
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -113,7 +124,6 @@ $projects = @(
     "tree-sitter-dscexpression",
     "security_context_lib",
     "dsc_lib",
-    "file_lib",
     "dsc",
     "osinfo",
     "powershell-adapter",
@@ -295,15 +305,7 @@ if ($Test) {
     Invoke-Pester -ErrorAction Stop
 }
 
-if ($Msix) {
-    if (!$IsWindows) {
-        throw "MSIX is only supported on Windows"
-    }
-
-    if ($architecture -eq 'current') {
-        throw 'MSIX requires a specific architecture'
-    }
-
+function Find-MakeAppx() {
     $makeappx = Get-Command makeappx -CommandType Application -ErrorAction Ignore
     if ($null -eq $makeappx) {
         # try to find
@@ -320,6 +322,36 @@ if ($Msix) {
         }
     }
 
+    $makeappx
+}
+
+if ($MsixBundle) {
+    if ($Msix) {
+        throw "Creating MsixBundle requires all msix packages to already be created"
+    }
+
+    if (!$IsWindows) {
+        throw "MsixBundle is only supported on Windows"
+    }
+
+    $productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
+    $isPreview = $productVersion -like '*-*'
+    $packageName = "DSC-$productVersion-Win"
+    $makeappx = Find-MakeAppx
+    & $makeappx bundle /d $PSScriptRoot /p "$PSScriptRoot\$packageName.msixbundle"
+    return
+}
+
+if ($Msix) {
+    if (!$IsWindows) {
+        throw "MSIX is only supported on Windows"
+    }
+
+    if ($architecture -eq 'current') {
+        throw 'MSIX requires a specific architecture'
+    }
+
+    $makeappx = Find-MakeAppx
     $makepri = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
     $displayName = "DesiredStateConfiguration"
     $productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'

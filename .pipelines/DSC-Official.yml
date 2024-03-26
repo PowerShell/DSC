@@ -1,0 +1,283 @@
+name: DSC-Release-$(Build.BuildId)
+trigger: none
+
+pr:
+  branches:
+    include:
+    - onebranch
+    - release*
+
+variables:
+  BuildConfiguration: 'release'
+  PackageRoot: '$(System.ArtifactsDirectory)/Packages'
+  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
+  WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2019/vse2022:latest
+
+resources:
+  repositories:
+  - repository: onebranchTemplates
+    type: git
+    name: OneBranch.Pipelines/GovernedTemplates
+    ref: refs/heads/main
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
+  parameters:
+    customTags: 'ES365AIMigrationTooling'
+    globalSdl:
+      disableLegacyManifest: true
+      sbom:
+        enabled: true
+        packageName: Microsoft.DSC
+      codeql:
+        compiled:
+          enabled: true
+      asyncSdl: # https://aka.ms/obpipelines/asyncsdl
+        enabled: true
+        forStages: [Build]
+        credscan:
+          enabled: true
+          scanFolder:  $(Build.SourcesDirectory)\DSC
+        binskim:
+          enabled: true
+        apiscan:
+          enabled: false
+
+    stages:
+    - stage: BuildAndSign
+      displayName: Build Native Binaries
+      dependsOn: []
+      jobs:
+      - job: SetPackageVersion
+        displayName: Set PackageVersion
+        pool:
+          type: windows
+        variables:
+          repoRoot: $(Build.SourcesDirectory)\DSC
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        steps:
+        - checkout: self
+          target: host
+        - pwsh: |
+            $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
+            $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
+            Write-Host ("sending " + $vstsCommandString)
+            Write-Host "##$vstsCommandString"
+          name: Package
+
+      - job: BuildWin
+        dependsOn: SetPackageVersion
+        strategy:
+          matrix:
+            Windows x64:
+              buildName: x86_64-pc-windows-msvc
+            Windows x64_arm64:
+              buildName: aarch64-pc-windows-msvc
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          repoRoot: $(Build.SourcesDirectory)\DSC
+          signSrcPath: $(repoRoot)/out
+          ob_artifactBaseName: 'DSC-$(buildName)'
+          ob_sdl_sbom_enabled: true
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: false
+        pool:
+          type: windows
+        displayName: Build
+        steps:
+        - checkout: self
+          target: host
+        - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
+          inputs:
+            Enabled: true
+            AnalyzeInPipeline: true
+            Language: rust
+        - pwsh: |
+            $tmpdir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
+            New-Item -ItemType Directory -Path $tmpdir
+            Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
+          displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
+        - pwsh: |
+            Set-Location "$(Build.SourcesDirectory)/DSC"
+            ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
+          displayName: 'Build $(buildName)'
+          condition: succeeded()
+        - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
+          condition: always()
+        - pwsh: |
+            $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
+            $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
+            $outPath = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)" -ErrorAction Ignore
+            # workaround known issue of building in OneBranch copying from TMP folder
+            $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
+            # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
+            Copy-Item "$env:CARGO_TARGET_DIR/*.exe" "$(signSrcPath)"
+            # Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination $outPath -Verbose -Force
+          displayName: Copy binaries
+          condition: succeeded()
+        - task: onebranch.pipeline.signing@1
+          displayName: Sign 1st party files
+          inputs:
+            command: 'sign'
+            signing_profile: external_distribution
+            files_to_sign: |
+              *.exe;
+              *.json;
+              *.ps1;
+            search_root: $(signSrcPath)
+        - task: CopyFiles@2
+          displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
+          inputs:
+            SourceFolder: "$(signSrcPath)"
+            Contents: '*'
+            TargetFolder: $(ob_outputDirectory)
+        - pwsh: |
+            compress-archive -Path "$(ob_outputDirectory)/*" -DestinationPath "$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).zip"
+          displayName: 'Compress $(buildName)'
+          condition: succeeded()
+        - pwsh: |
+            Set-Location "$(Build.SourcesDirectory)/DSC"
+            ./build.ps1 -msix -skipbuild
+            Copy-Item *.msix "$(ob_outputDirectory)"
+          displayName: 'Create msix for $(buildName)'
+          condition: succeeded()
+
+      - job: CreateMsixBundle
+        dependsOn: BuildWin
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        pool:
+          type: windows
+        steps:
+        - pwsh: |
+            Set-Location "$(Build.SourcesDirectory)/DSC"
+            ./build.ps1 -msixbundle
+          displayName: 'Create msixbundle'
+          condition: succeeded()
+
+      - job: PublishSigned
+        dependsOn: BuildWin
+        variables:
+          signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
+          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        pool:
+          type: windows
+        steps:
+        - task: CopyFiles@2
+          displayName: "Copy Files for 'PublishPipelineArtifact@1' publish task"
+          inputs:
+            SourceFolder: $(signOutPath)
+            Contents: '**'
+            TargetFolder: $(Build.ArtifactStagingDirectory)/signed
+
+      - job: BuildLinux
+        dependsOn: SetPackageVersion
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-x64-gnu
+        pool:
+          type: linux
+        steps:
+        - pwsh: |
+            ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
+          displayName: 'Build x86_64-unknown-linux-gnu'
+          condition: succeeded()
+        - pwsh: |
+            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
+          displayName: 'Compress x86_64-unknown-linux-gnu'
+          condition: succeeded()
+
+      - job: BuildLinuxArm64
+        dependsOn: SetPackageVersion
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-ARM64-gnu
+        pool:
+          type: linux
+          hostArchitecture: arm64
+        steps:
+        - pwsh: |
+            ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
+          displayName: 'Build aarch64-unknown-linux-gnu'
+          condition: succeeded()
+        - pwsh: |
+            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
+          displayName: 'Compress aarch64-unknown-linux-gnu'
+          condition: succeeded()
+
+      - job: BuildMac
+        dependsOn: SetPackageVersion
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Build
+        pool:
+          type: linux
+          isCustom: true
+          name: Azure Pipelines
+          vmImage: 'macOS-latest'
+        strategy:
+          matrix:
+            macOS x64:
+              buildName: x86_64-apple-darwin
+            macOS arm64:
+              buildName: aarch64-apple-darwin
+        steps:
+        - pwsh: |
+            ./build.ps1 -Release -Architecture $(buildName)
+          displayName: 'Build $(buildName)'
+          condition: succeeded()
+        - pwsh: |
+            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
+          displayName: 'Compress $(buildName)'
+          condition: succeeded()
+
+    - stage: Release
+      dependsOn: BuildAndSign
+      variables:
+        PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+        drop: $(Pipeline.Workspace)/drop_build_main
+      jobs:
+      - job: Validation
+        displayName: Manual validation
+        pool:
+          type: agentless
+        timeoutInMinutes: 1440
+        steps:
+        - task: ManualValidation@0
+          displayName: Wait 24 hours for validation
+          inputs:
+            notifyUsers: $(Build.RequestedForEmail)
+            instructions: Please validate the release
+            timeoutInMinutes: 1440
+      - job: GitHub
+        dependsOn: validation
+        displayName: Publish draft to GitHub
+        pool:
+          type: windows
+        variables:
+          ob_outputDirectory: '$(Build.SourcesDirectory)'
+        steps:
+        - download: current
+          displayName: Download artifacts
+        - task: GitHubRelease@1
+          displayName: Create GitHub release
+          inputs:
+            gitHubConnection: GitHub
+            repositoryName: PowerShell/DSC
+            action: create
+            assets: |
+              *.zip;
+              *.tar.gz;
+            addChangeLog: true
+            changeLogType: commitBased
+            releaseNotesFilePath: CHANGELOG.md
+            tagSource: gitTag
+            tag: v$(version)
+            isDraft: true

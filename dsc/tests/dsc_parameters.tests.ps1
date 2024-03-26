@@ -273,4 +273,39 @@ Describe 'Parameters tests' {
       $out.results[0].result.actualState.family | Should -BeExactly $os
       $out.results[0].result.inDesiredState | Should -BeTrue
     }
+
+    It 'secure types can be passed as objects to resources' {
+      $out = dsc config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml get -p $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results[0].result.actualState.output | Should -BeExactly 'mySecret'
+      $out.results[1].result.actualState.output | Should -BeExactly 'mySecretProperty'
+    }
+
+    It 'parameter types are validated for <type>' -TestCases @(
+      @{ type = 'array'; value = 'hello'}
+      @{ type = 'bool'; value = 'hello'}
+      @{ type = 'int'; value = @(1,2)}
+      @{ type = 'object'; value = 1}
+      @{ type = 'secureString'; value = 1}
+      @{ type = 'secureObject'; value = 'hello'}
+      @{ type = 'string'; value = 42 }
+    ){
+      param($type, $value)
+
+      $config_yaml = @"
+        `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+        parameters:
+          param:
+            type: $type
+        resources:
+        - name: Echo
+          type: Test/Echo
+          properties:
+            output: '[parameters(''param'')]'
+"@
+
+      $params_json = @{ parameters = @{ param = $value }} | ConvertTo-Json
+      $null = $config_yaml | dsc config -p $params_json get
+      $LASTEXITCODE | Should -Be 4
+    }
 }

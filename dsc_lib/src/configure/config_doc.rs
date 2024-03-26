@@ -74,7 +74,7 @@ pub struct Parameter {
 pub enum DataType {
     #[serde(rename = "string")]
     String,
-    #[serde(rename = "securestring")]
+    #[serde(rename = "secureString")]
     SecureString,
     #[serde(rename = "int")]
     Int,
@@ -82,7 +82,7 @@ pub enum DataType {
     Bool,
     #[serde(rename = "object")]
     Object,
-    #[serde(rename = "secureobject")]
+    #[serde(rename = "secureObject")]
     SecureObject,
     #[serde(rename = "array")]
     Array,

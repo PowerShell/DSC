@@ -10,3 +10,12 @@ use std::collections::HashMap;
 pub struct Input {
     pub parameters: HashMap<String, Value>,
 }
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields, untagged)]
+pub enum SecureKind {
+    #[serde(rename = "secureString")]
+    SecureString(String),
+    #[serde(rename = "secureObject")]
+    SecureObject(Value),
+}
