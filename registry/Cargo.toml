@@ -1,0 +1,27 @@
+[package]
+name = "registry"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+strip = true
+# optimize for size
+opt-level = 2
+# enable link time optimization to remove dead code
+lto = true
+
+[profile.dev]
+lto = true
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+crossterm = "0.27.0"
+registry = "1.2.3"
+schemars = "0.8.0"
+serde = "1.0.130"
+serde_json = "1.0.68"
+thiserror = "1.0.30"
+utfx = "0.1.0"
+
+[build-dependencies]
+static_vcruntime = "2.0"

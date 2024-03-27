@@ -44,9 +44,15 @@ pub struct DscResource {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum Capability {
+    /// The resource supports retriving configuration.
     Get,
+    /// The resource supports applying configuration.
     Set,
+    /// The resource supports validating configuration.
     Test,
+    /// The resource supports the `_exist` property directly.
+    Exist,
+    /// The resource supports exporting configuration.
     Export,
 }
 
