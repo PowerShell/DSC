@@ -15,7 +15,7 @@ class TestClassResource
     [string] $Prop1
 
     [DscProperty()]
-    [EnumPropEnumeration] $EnumProp
+    [string] $EnumProp
 
     [void] Set()
     {
@@ -43,7 +43,7 @@ class TestClassResource
         {
             $this.Prop1 = $env:DSC_CONFIG_ROOT
         }
-        $this.EnumProp = [EnumPropEnumeration]::Expected
+        $this.EnumProp = [EnumPropEnumeration].GetEnumName(1)
         return $this
     }
 

@@ -20,6 +20,7 @@
                 'PSEdition_Core',
                 'Linux',
                 'Mac')
+            Capabilities = @('Get', 'Test')
         }
     }
 }
