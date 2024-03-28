@@ -136,7 +136,7 @@ if ($Operation -eq 'List')
             implementedAs = $r.ImplementationDetail;
             author = $author_string;
             properties = $propertyList;
-            requires = $requiresString
+            requireAdapter = $requiresString
         }
 
         $z | ConvertTo-Json -Compress

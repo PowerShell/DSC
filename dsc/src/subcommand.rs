@@ -455,7 +455,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         format!("{:?}", resource.kind),
                         resource.version,
                         capabilities,
-                        resource.requires.unwrap_or_default(),
+                        resource.require_adapter.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
                 }

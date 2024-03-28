@@ -23,7 +23,7 @@ fn main() {
                 directory: "test_directory".to_string(),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
-                requires: Some("Test/TestGroup".to_string()),
+                require_adapter: Some("Test/TestGroup".to_string()),
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
@@ -56,7 +56,7 @@ fn main() {
                 directory: "test_directory".to_string(),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
-                requires: Some("Test/TestGroup".to_string()),
+                require_adapter: Some("Test/TestGroup".to_string()),
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
                     schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
@@ -93,7 +93,7 @@ fn main() {
                 directory: "test_directory".to_string(),
                 author: Some("Microsoft".to_string()),
                 properties: vec!["Property1".to_string(), "Property2".to_string()],
-                requires: None,
+                require_adapter: None,
                 manifest: None,
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());
