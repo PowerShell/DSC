@@ -11,15 +11,15 @@ Describe 'Resource adapter tests' {
         $out[0].version | Should -Be '1.0.0'
         $out[0].path | Should -BeExactly 'test_resource1'
         $out[0].implementedas | Should -BeExactly 'TestResource'
-        $out[0].requires | Should -BeExactly 'Test/TestGroup'
+        $out[0].requireAdapter | Should -BeExactly 'Test/TestGroup'
         $out[1].type | Should -BeExactly 'Test/TestResource2'
         $out[1].version | Should -Be '1.0.1'
         $out[1].path | Should -BeExactly 'test_resource2'
         $out[1].implementedas | Should -BeExactly 'TestResource'
-        $out[1].requires | Should -BeExactly 'Test/TestGroup'
+        $out[1].requireAdapter | Should -BeExactly 'Test/TestGroup'
     }
 
-    It 'Error if adapter resource is missing "requires" member' {
+    It 'Error if adapter resource is missing "requireAdapter" member' {
         $invalid_manifest = @'
         {
             "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",

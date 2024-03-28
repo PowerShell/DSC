@@ -36,7 +36,8 @@ pub struct DscResource {
     /// The properties of the resource.
     pub properties: Vec<String>,
     /// The required resource adapter for the resource.
-    pub requires: Option<String>,
+    #[serde(rename="requireAdapter")]
+    pub require_adapter: Option<String>,
     /// The manifest of the resource.
     pub manifest: Option<Value>,
 }
@@ -72,7 +73,7 @@ impl DscResource {
             implemented_as: ImplementedAs::Command,
             author: None,
             properties: Vec::new(),
-            requires: None,
+            require_adapter: None,
             manifest: None,
         }
     }

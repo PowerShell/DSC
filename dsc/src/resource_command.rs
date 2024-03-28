@@ -22,7 +22,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if let Some(requires) = &resource.requires {
+    if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
@@ -59,7 +59,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if let Some(requires) = &resource.requires {
+    if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
@@ -113,7 +113,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
-    if let Some(requires) = &resource.requires {
+    if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
@@ -156,7 +156,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
 
-    if let Some(requires) = &resource.requires {
+    if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
@@ -217,7 +217,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
     };
 
     let mut adapter_resource: Option<&DscResource> = None;
-    if let Some(requires) = &dsc_resource.requires {
+    if let Some(requires) = &dsc_resource.require_adapter {
         input = add_type_name_to_json(input, dsc_resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
             adapter_resource = Some(pr);

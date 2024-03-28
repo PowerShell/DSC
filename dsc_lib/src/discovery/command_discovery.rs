@@ -182,7 +182,7 @@ impl CommandDiscovery {
             for line in stdout.lines() {
                 match serde_json::from_str::<DscResource>(line){
                     Result::Ok(resource) => {
-                        if resource.requires.is_none() {
+                        if resource.require_adapter.is_none() {
                             if return_all_resources {
                                 warn!("{}", DscError::MissingRequires(adapter.clone(), resource.type_name.clone()).to_string());
                             } else {
