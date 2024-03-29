@@ -265,6 +265,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                     let manifest = import_manifest(resource.manifest.clone().unwrap())?;
                                     if manifest.kind == Some(Kind::Adapter) {
                                         adapter_resources.insert(resource.type_name.to_lowercase(), resource.clone());
+                                        resources.insert(resource.type_name.to_lowercase(), resource.clone());
                                     }
                                 }
                                 if remaining_required_resource_types.contains(&resource.type_name.to_lowercase())

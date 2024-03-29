@@ -182,7 +182,7 @@ resources:
 
     It 'resource tracing shows up' {
         # Assumption here is that DSC/PowerShellGroup provider is visible
-        dsc -l trace resource list 2> $TestDrive/tracing.txt
+        dsc -l trace resource list * *PowerShell* 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'PSModulePath'
         $LASTEXITCODE | Should -Be 0
     }
