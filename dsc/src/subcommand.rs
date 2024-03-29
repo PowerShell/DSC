@@ -397,7 +397,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, description, tags, format } => {
+        ResourceSubCommand::List { resource_name, adapter_name, description, tags, format } => {
 
             let mut write_table = false;
             let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "Requires", "Description"]);
@@ -405,7 +405,9 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                 // write as table if format is not specified and interactive
                 write_table = true;
             }
-            for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
+            for resource in dsc.list_available_resources(
+                &resource_name.clone().unwrap_or("*".to_string()),
+                &adapter_name.clone().unwrap_or_default()) {
                 let mut capabilities = "g---".to_string();
                 if resource.capabilities.contains(&Capability::Set) { capabilities.replace_range(1..2, "s"); }
                 if resource.capabilities.contains(&Capability::Test) { capabilities.replace_range(2..3, "t"); }
