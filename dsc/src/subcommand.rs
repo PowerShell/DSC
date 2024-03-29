@@ -387,6 +387,7 @@ pub fn validate_config(config: &str) -> Result<(), DscError> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
