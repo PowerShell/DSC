@@ -66,7 +66,7 @@ impl CommandDiscovery {
         let mut uniques = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
 
-        return Ok(paths);
+        Ok(paths)
     }
 }
 
