@@ -112,11 +112,22 @@ fn check_debug() {
     if env::var("DEBUG_REGISTRY").is_ok() {
         eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
         loop {
-            let event = event::read().unwrap();
-            if let event::Event::Key(_key) = event {
-                break;
+            let event = match event::read() {
+                Ok(event) => event,
+                Err(err) => {
+                    eprintln!("Error: Failed to read event: {err}");
+                    break;
+                }
+            };
+            if let event::Event::Key(key) = event {
+                // workaround bug in 0.26+ https://github.com/crossterm-rs/crossterm/issues/752#issuecomment-1414909095
+                if key.kind == event::KeyEventKind::Press {
+                    break;
+                }
+            } else {
+                eprintln!("Unexpected event: {event:?}");
+                continue;
             }
-            eprintln!("Unexpected event: {event:?}");
         }
     }
 }

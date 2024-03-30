@@ -42,6 +42,9 @@ pub struct ResourceManifest {
     /// Details how to call the Test method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<TestMethod>,
+    /// Details how to call the Delete method of the resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delete: Option<DeleteMethod>,
     /// Details how to call the Export method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub export: Option<ExportMethod>,
@@ -159,6 +162,16 @@ pub struct TestMethod {
     /// The type of return value expected from the Test method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct DeleteMethod {
+    /// The command to run to test the state of the resource.
+    pub executable: String,
+    /// The arguments to pass to the command to perform a Test.
+    pub args: Option<Vec<String>>,
+    /// How to pass required input for a Test.
+    pub input: InputKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

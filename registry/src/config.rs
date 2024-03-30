@@ -21,11 +21,11 @@ pub struct RegistryConfig {
     #[serde(rename = "keyPath")]
     pub key_path: String,
     /// The name of the registry value.
-    #[serde(rename = "valueName")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "valueName", skip_serializing_if = "Option::is_none")]
     pub value_name: Option<String>,
     /// The data of the registry value.
-    #[serde(rename = "valueData")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "valueData", skip_serializing_if = "Option::is_none")]
     pub value_data: Option<RegistryValueData>,
+    #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
+    pub exist: Option<bool>,
 }
