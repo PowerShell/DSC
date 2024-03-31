@@ -48,10 +48,12 @@ pub enum Capability {
     Get,
     /// The resource supports applying configuration.
     Set,
+    /// The resource supports the `_exist` property directly.
+    SetHandlesExist,
     /// The resource supports validating configuration.
     Test,
-    /// The resource supports the `_exist` property directly.
-    Exist,
+    /// The resource supports deleting configuration.
+    Delete,
     /// The resource supports exporting configuration.
     Export,
 }

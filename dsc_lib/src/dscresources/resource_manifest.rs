@@ -146,6 +146,9 @@ pub struct SetMethod {
     /// Whether to run the Test method before the Set method.  True means the resource will perform its own test before running the Set method.
     #[serde(rename = "implementsPretest", skip_serializing_if = "Option::is_none")]
     pub pre_test: Option<bool>,
+    /// Indicates that the resource directly handles `_exist` as a property.
+    #[serde(rename = "handlesExist", skip_serializing_if = "Option::is_none")]
+    pub handles_exist: Option<bool>,
     /// The type of return value expected from the Set method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,

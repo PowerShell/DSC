@@ -409,10 +409,22 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             for resource in dsc.list_available_resources(
                 &resource_name.clone().unwrap_or("*".to_string()),
                 &adapter_name.clone().unwrap_or_default()) {
-                let mut capabilities = "g---".to_string();
-                if resource.capabilities.contains(&Capability::Set) { capabilities.replace_range(1..2, "s"); }
-                if resource.capabilities.contains(&Capability::Test) { capabilities.replace_range(2..3, "t"); }
-                if resource.capabilities.contains(&Capability::Export) { capabilities.replace_range(3..4, "e"); }
+
+                let mut capabilities = "------".to_string();
+                let capability_types = vec![
+                    (Capability::Get, "g"),
+                    (Capability::Set, "s"),
+                    (Capability::SetHandlesExist, "x"),
+                    (Capability::Test, "t"),
+                    (Capability::Delete, "d"),
+                    (Capability::Export, "e"),
+                ];
+
+                for i in 0..capability_types.len() {
+                    if resource.capabilities.contains(&capability_types[i].0) {
+                        capabilities.replace_range(i..i+1, capability_types[i].1);
+                    }
+                }
 
                 // if description, tags, or write_table is specified, pull resource manifest if it exists
                 if let Some(ref resource_manifest) = resource.manifest {
