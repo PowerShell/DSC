@@ -10,7 +10,7 @@ use args::{Args, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use crate::echo::Echo;
-use crate::exist::{Exist, ExistValue};
+use crate::exist::{Exist, State};
 use crate::sleep::Sleep;
 use std::{thread, time::Duration};
 
@@ -36,10 +36,10 @@ fn main() {
                 }
             };
             match exist.state {
-                ExistValue::Exist => {
+                State::Exist => {
                     exist.exist = Some(true);
                 },
-                ExistValue::DoesNotExist => {
+                State::Absent => {
                     exist.exist = Some(false);
                 },
             }

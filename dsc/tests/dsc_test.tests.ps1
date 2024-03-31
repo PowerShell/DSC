@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'config test tests' {
+Describe 'resource test tests' {
     It 'should confirm matching state' -Skip:(!$IsWindows) {
         $json = @'
         {

@@ -4,6 +4,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[allow(clippy::module_name_repetitions)]
 pub enum RegistryError {
     #[error("Invalid hive: {0}.")]
     InvalidHive(String),

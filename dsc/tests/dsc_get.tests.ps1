@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'config get tests' {
+Describe 'resource get tests' {
     It 'should get from registry using <type> resource' -Skip:(!$IsWindows) -TestCases @(
         @{ type = 'string' }
     ) {

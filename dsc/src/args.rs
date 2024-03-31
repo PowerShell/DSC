@@ -173,6 +173,15 @@ pub enum ResourceSubCommand {
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
+    #[clap(name = "test", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
+    Delete {
+        #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `delete` on")]
+        resource: String,
+        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML", conflicts_with = "path")]
+        input: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a JSON or YAML file used as input to the configuration or resource", conflicts_with = "input")]
+        path: Option<String>,
+    },
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {
         #[clap(short, long, help = "The name of the resource to get the JSON schema")]

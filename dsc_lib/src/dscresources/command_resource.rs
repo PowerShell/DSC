@@ -71,7 +71,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
         }
     }
 
-    info!("Invoking get {} using {}", &resource.resource_type, &resource.get.executable);
+    info!("Invoking get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, get_args, input_filter, Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
@@ -162,18 +162,15 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     let mut get_env: Option<HashMap<String, String>> = None;
     let mut get_input: Option<&str> = None;
     let mut get_args = resource.get.args.clone();
-    match &resource.get.input {
-        Some(InputKind::Env) => {
+    match &set.input {
+        InputKind::Env => {
             get_env = Some(json_to_hashmap(desired)?);
         },
-        Some(InputKind::Stdin) => {
+        InputKind::Stdin => {
             get_input = Some(desired);
         },
-        Some(InputKind::Arg(arg_token)) => {
+        InputKind::Arg(arg_token) => {
             replace_token(&mut get_args, arg_token, desired)?;
-        },
-        None => {
-            // leave input as none
         },
     }
 
@@ -196,7 +193,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
 
-    info!("Invoking set {} using {}", &resource.resource_type, &set.executable);
+    info!("Invoking set '{}' using '{}'", &resource.resource_type, &set.executable);
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), input_desired, Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
@@ -281,7 +278,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
-    let Some(test) = resource.test.as_ref() else {
+    let Some(test) = &resource.test else {
         return Err(DscError::NotImplemented("test".to_string()));
     };
 
@@ -302,7 +299,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
         },
     }
 
-    info!("Invoking test {} using {}", &resource.resource_type, &test.executable);
+    info!("Invoking test '{}' using '{}'", &resource.resource_type, &test.executable);
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, input_expected, Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
@@ -373,6 +370,48 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             }))
         },
     }
+}
+
+/// Invoke the delete operation against a command resource.
+/// 
+/// # Arguments
+/// 
+/// * `resource` - The resource manifest for the command resource.
+/// * `cwd` - The current working directory.
+/// * `filter` - The filter to apply to the resource in JSON.
+/// 
+/// # Errors
+/// 
+/// Error is returned if the underlying command returns a non-zero exit code.
+pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<(), DscError> {
+    let Some(delete) = &resource.delete else {
+        return Err(DscError::NotImplemented("delete".to_string()));
+    };
+
+    let mut env: Option<HashMap<String, String>> = None;
+    let mut input_filter: Option<&str> = None;
+    let mut get_args = resource.get.args.clone();
+    verify_json(resource, cwd, filter)?;
+    match &delete.input {
+        InputKind::Env => {
+            env = Some(json_to_hashmap(filter)?);
+        },
+        InputKind::Stdin => {
+            input_filter = Some(filter);
+        },
+        InputKind::Arg(arg_name) => {
+            replace_token(&mut get_args, arg_name, filter)?;
+        },
+    }
+
+    info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
+    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, get_args, input_filter, Some(cwd), env)?;
+    log_resource_traces(&stderr);
+    if exit_code != 0 {
+        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    }
+
+    Ok(())
 }
 
 /// Invoke the validate operation against a command resource.

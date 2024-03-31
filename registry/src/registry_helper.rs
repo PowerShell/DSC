@@ -3,11 +3,11 @@
 
 use registry::{Data, Hive, RegKey, Security, key, value};
 use utfx::{U16CString, UCString};
-use crate::config::{RegistryConfig, RegistryValueData};
+use crate::config::{Registry, RegistryValueData};
 use crate::error::RegistryError;
 
 pub struct RegistryHelper {
-    config: RegistryConfig
+    config: Registry
 }
 
 impl RegistryHelper {
@@ -19,7 +19,7 @@ impl RegistryHelper {
         )
     }
 
-    pub fn get(&self) -> Result<RegistryConfig, RegistryError> {
+    pub fn get(&self) -> Result<Registry, RegistryError> {
         let exist: bool;
         let (reg_key, _subkey) = match self.open(Security::Read) {
             Ok((reg_key, subkey)) => {
@@ -27,7 +27,7 @@ impl RegistryHelper {
             },
             Err(RegistryError::RegistryKeyNotFound(_)) => {
                 exist = false;
-                return Ok(RegistryConfig {
+                return Ok(Registry {
                     key_path: self.config.key_path.clone(),
                     value_name: None,
                     value_data: None,
@@ -42,7 +42,7 @@ impl RegistryHelper {
                 Ok(value) => value,
                 Err(value::Error::NotFound(_,_)) => {
                     exist = false;
-                    return Ok(RegistryConfig {
+                    return Ok(Registry {
                         key_path: self.config.key_path.clone(),
                         value_name: Some(value_name.clone()),
                         value_data: None,
@@ -52,14 +52,14 @@ impl RegistryHelper {
                 Err(e) => return Err(RegistryError::RegistryValue(e)),
             };
 
-            Ok(RegistryConfig {
+            Ok(Registry {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
                 value_data: Some(convert_reg_value(&value)?),
                 exist: None,
             })
         } else {
-            Ok(RegistryConfig {
+            Ok(Registry {
                 key_path: self.config.key_path.clone(),
                 value_name: None,
                 value_data: None,
@@ -124,10 +124,10 @@ impl RegistryHelper {
                         };
                         m16.push(utf16);
                     }
-                    reg_key.set_value(&value_name, &Data::MultiString(m16))?
+                    reg_key.set_value(&value_name, &Data::MultiString(m16))?;
                 },
                 RegistryValueData::QWord(q) => {
-                    reg_key.set_value(&value_name, &Data::U64(*q))?
+                    reg_key.set_value(&value_name, &Data::U64(*q))?;
                 },
             }
         }
@@ -149,7 +149,7 @@ impl RegistryHelper {
             reg_key.delete_value(value_name)?;
         } else {
             // to delete the key, we need to open the parent key first
-            let parent_path = get_parent_key_path(&self.config.key_path)?;
+            let parent_path = get_parent_key_path(&self.config.key_path);
             let (hive, parent_subkey) = get_hive_from_path(parent_path)?;
             let parent_reg_key = hive.open(parent_subkey, Security::AllAccess)?;
 
@@ -179,7 +179,7 @@ impl RegistryHelper {
         let parent_key: RegKey;
         let mut subkeys: Vec<&str> = Vec::new();
         let (hive, subkey) = self.get_hive()?;
-        let parent_key_path = get_parent_key_path(subkey)?;
+        let parent_key_path = get_parent_key_path(subkey);
         let subkey_name = &subkey[parent_key_path.len() + 1..];
         subkeys.push(subkey_name);
         let mut current_key_path = parent_key_path;
@@ -192,10 +192,10 @@ impl RegistryHelper {
                     break;
                 },
                 Err(key::Error::NotFound(_,_)) => {
-                    let parent_key_path = get_parent_key_path(current_key_path)?;
+                    let parent_key_path = get_parent_key_path(current_key_path);
                     if parent_key_path.is_empty() {
                         subkeys.insert(0, current_key_path);
-                        current_key_path = "".as_ref();
+                        current_key_path = "";
                     } else {
                         let subkey_name = &current_key_path[parent_key_path.len() + 1..];
                         subkeys.insert(0, subkey_name);
@@ -220,7 +220,7 @@ fn get_hive_from_path(path: &str) -> Result<(Hive, &str), RegistryError> {
             let (hive, subkey) = path.split_at(index);
             (hive, &subkey[1..])
         },
-        None => (path, "".as_ref()),
+        None => (path, ""),
     };
 
     match hive {
@@ -239,18 +239,16 @@ fn open_regkey(path: &str, permission: Security) -> Result<(RegKey, &str), Regis
         Ok(regkey) => Ok((regkey, subkey)),
         // handle NotFound error
         Err(key::Error::NotFound(_, _)) => {
-            return Err(RegistryError::RegistryKeyNotFound(path.to_string()));
+            Err(RegistryError::RegistryKeyNotFound(path.to_string()))
         },
-        Err(e) => return Err(RegistryError::RegistryKey(e)),
+        Err(e) => Err(RegistryError::RegistryKey(e)),
     }
 }
 
-fn get_parent_key_path(key_path: &str) -> Result<&str, RegistryError> {
+fn get_parent_key_path(key_path: &str) -> &str {
     match key_path.rfind('\\') {
-        Some(index) => Ok(&key_path[..index]),
-        None => {
-            Ok("".as_ref())
-        }
+        Some(index) => &key_path[..index],
+        None => "",
     }
 }
 

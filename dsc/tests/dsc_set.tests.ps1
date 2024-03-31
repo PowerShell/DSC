@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'config set tests' {
+Describe 'resource set tests' {
     BeforeAll {
         $manifest = @'
         {

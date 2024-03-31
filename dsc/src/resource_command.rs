@@ -94,12 +94,6 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
     }
 }
 
-/// Set operation.
-///
-/// # Panics
-///
-/// Will panic if adapter-based resource is not found.
-///
 pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     if input.is_empty() {
         error!("Error: Input is empty");
@@ -142,12 +136,6 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
     }
 }
 
-/// Test operation.
-///
-/// # Panics
-///
-/// Will panic if adapter-based resource is not found.
-///
 pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
@@ -178,6 +166,33 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
             };
             write_output(&json, format);
         }
+        Err(err) => {
+            error!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    }
+}
+
+pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
+    let Some(mut resource) = get_resource(dsc, resource_type) else {
+        error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
+        return
+    };
+
+    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+
+    if let Some(requires) = &resource.require_adapter {
+        input = add_type_name_to_json(input, resource.type_name.clone());
+        if let Some(pr) = get_resource(dsc, requires) {
+            resource = pr;
+        } else {
+            error!("Adapter {} not found", requires);
+            return;
+        };
+    }
+
+    match resource.delete(input.as_str()) {
+        Ok(()) => {}
         Err(err) => {
             error!("Error: {err}");
             exit(EXIT_DSC_ERROR);

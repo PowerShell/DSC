@@ -16,7 +16,7 @@ pub enum RegistryValueData {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "Registry", deny_unknown_fields)]
-pub struct RegistryConfig {
+pub struct Registry {
     /// The path to the registry key.
     #[serde(rename = "keyPath")]
     pub key_path: String,

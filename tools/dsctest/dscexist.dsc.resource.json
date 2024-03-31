@@ -25,6 +25,17 @@
         },
         "handlesExist": true
     },
+    "delete": {
+        "executable": "dsctest",
+        "args": [
+            "exist",
+            "--input",
+            "{json}"
+        ],
+        "input": {
+            "arg": "{json}"
+        }    
+    },
     "schema": {
         "command": {
             "executable": "dsctest",

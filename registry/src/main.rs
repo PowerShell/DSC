@@ -12,7 +12,7 @@ use registry_helper::RegistryHelper;
 use schemars::schema_for;
 use std::process::exit;
 
-use crate::config::RegistryConfig;
+use crate::config::Registry;
 
 mod args;
 pub mod config;
@@ -72,7 +72,7 @@ fn main() {
                         }
                     };
                     match reg_helper.set() {
-                        Ok(_) => {},
+                        Ok(()) => {},
                         Err(err) => {
                             eprintln!("Error: {err}");
                             exit(EXIT_REGISTRY_ERROR);
@@ -88,7 +88,7 @@ fn main() {
                         }
                     };
                     match reg_helper.remove() {
-                        Ok(_) => {},
+                        Ok(()) => {},
                         Err(err) => {
                             eprintln!("Error: {err}");
                             exit(EXIT_REGISTRY_ERROR);
@@ -98,7 +98,7 @@ fn main() {
             }
         },
         args::SubCommand::Schema => {
-            let schema = schema_for!(RegistryConfig);
+            let schema = schema_for!(Registry);
             let json =serde_json::to_string(&schema).unwrap();
             println!("{json}");
         },
