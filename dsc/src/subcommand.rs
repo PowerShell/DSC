@@ -400,7 +400,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
         ResourceSubCommand::List { resource_name, description, tags, format } => {
 
             let mut write_table = false;
-            let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "Requires", "Description"]);
+            let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
             if format.is_none() && atty::is(Stream::Stdout) {
                 // write as table if format is not specified and interactive
                 write_table = true;
@@ -455,7 +455,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
                         format!("{:?}", resource.kind),
                         resource.version,
                         capabilities,
-                        resource.requires.unwrap_or_default(),
+                        resource.require_adapter.unwrap_or_default(),
                         resource.description.unwrap_or_default()
                     ]);
                 }
