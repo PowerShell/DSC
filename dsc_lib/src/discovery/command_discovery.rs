@@ -9,15 +9,13 @@ use crate::dscresources::command_resource::invoke_command;
 use crate::dscresources::command_resource::log_resource_traces;
 use crate::dscerror::DscError;
 use indicatif::ProgressStyle;
-use regex::{RegexBuilder, Regex};
-use std::collections::BTreeMap;
-use std::collections::HashSet;
+use regex::RegexBuilder;
+use std::collections::{BTreeMap, HashSet};
 use std::env;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tracing::{debug, error, trace, warn, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
 
@@ -81,7 +79,7 @@ impl ResourceDiscovery for CommandDiscovery {
     #[allow(clippy::too_many_lines)]
     fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, DscResource>, DscError> {
 
-        debug!("Listing resources with type_name_filter/adapter_name_filter: {:?}/{:?}", type_name_filter, adapter_name_filter);
+        debug!("Listing resources with type_name_filter/adapter_name_filter: {type_name_filter}/{adapter_name_filter}");
 
         let pb_span = warn_span!("");
         pb_span.pb_set_style(&ProgressStyle::with_template(
@@ -95,16 +93,13 @@ impl ResourceDiscovery for CommandDiscovery {
 
         let regex_str = convert_wildcard_to_regex(type_name_filter);
         debug!("Using regex {regex_str} as filter for resource type");
-        let mut regex_builder = RegexBuilder::new(regex_str.as_str());
+        let mut regex_builder = RegexBuilder::new(&regex_str);
         regex_builder.case_insensitive(true);
-        let type_regex: Regex;
-        if let Ok(reg_v) = regex_builder.build() {
-            type_regex = reg_v;
-        } else {
+        let Ok(type_regex) = regex_builder.build() else {
             let err_str = "Could not build Regex filter for resource type";
             error!(err_str);
             return Err(DscError::Operation(err_str.to_string()));
-        }
+        };
 
         if let Ok(paths) = CommandDiscovery::get_resource_paths() {
             for path in paths {
@@ -129,8 +124,8 @@ impl ResourceDiscovery for CommandDiscovery {
                                     },
                                 };
 
-                                if resource.manifest.is_some() {
-                                    let manifest = import_manifest(resource.manifest.clone().unwrap())?;
+                                if let Some(ref manifest) = resource.manifest {
+                                    let manifest = import_manifest(manifest.clone())?;
                                     if manifest.kind == Some(Kind::Adapter) {
                                         adapter_resources.insert(resource.type_name.to_lowercase(),resource.clone());
                                     }
@@ -150,30 +145,35 @@ impl ResourceDiscovery for CommandDiscovery {
         if !adapter_name_filter.is_empty() {
             let regex_str = convert_wildcard_to_regex(adapter_name_filter);
             debug!("Using regex {regex_str} as filter for adapter name");
-            let mut regex_builder = RegexBuilder::new(regex_str.as_str());
+            let mut regex_builder = RegexBuilder::new(&regex_str);
             regex_builder.case_insensitive(true);
-            let adapter_regex: Regex;
-            if let Ok(reg_v) = regex_builder.build() {
-                adapter_regex = reg_v;
-            } else {
+            let Ok(adapter_regex) = regex_builder.build() else {
                 let err_str = "Could not build Regex filter for adapter name";
                 error!(err_str);
                 return Err(DscError::Operation(err_str.to_string()));
-            }
+            };
 
             // now go through the adapter resources and add them to the list of resources
             for adapter in adapter_resources {
                 if adapter_regex.is_match(&adapter.1.type_name) {
-                    debug!("Enumerating resources for adapter {}", adapter.1.type_name);
+                    debug!("Enumerating resources for adapter '{}'", adapter.1.type_name);
                     let pb_adapter_span = warn_span!("");
                     pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
                         "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
                     )?);
-                    pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter {}", adapter.1.type_name).as_str());
+                    pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter '{}'", adapter.1.type_name).as_str());
                     let _ = pb_adapter_span.enter();
                     let adapter_resource = adapter.1;
                     let adapter_type_name = adapter_resource.type_name.clone();
-                    let manifest = import_manifest(adapter_resource.manifest.clone().unwrap())?;
+                    let manifest = if let Some(manifest) = adapter_resource.manifest {
+                        if let Ok(manifest) = import_manifest(manifest) {
+                            manifest
+                        } else {
+                            return Err(DscError::Operation(format!("Failed to import manifest for '{}'", adapter_resource.type_name.clone())));
+                        }
+                    } else {
+                        return Err(DscError::MissingManifest(adapter_resource.type_name.clone()));
+                    };
                     let mut adapter_resources_count = 0;
                     // invoke the list command
                     let list_command = manifest.adapter.unwrap().list;
@@ -261,8 +261,8 @@ impl ResourceDiscovery for CommandDiscovery {
                                     },
                                 };
 
-                                if resource.manifest.is_some() {
-                                    let manifest = import_manifest(resource.manifest.clone().unwrap())?;
+                                if let Some(ref manifest) = resource.manifest {
+                                    let manifest = import_manifest(manifest.clone())?;
                                     if manifest.kind == Some(Kind::Adapter) {
                                         adapter_resources.insert(resource.type_name.to_lowercase(), resource.clone());
                                         resources.insert(resource.type_name.to_lowercase(), resource.clone());
@@ -289,16 +289,24 @@ impl ResourceDiscovery for CommandDiscovery {
 
         // now go through the adapter resources and add them to the list of resources
         for adapter in adapter_resources {
-            debug!("Enumerating resources for adapter {}", adapter.1.type_name);
+            debug!("Enumerating resources for adapter '{}'", adapter.1.type_name);
             let pb_adapter_span = warn_span!("");
             pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
             )?);
-            pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter {}", adapter.1.type_name).as_str());
+            pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter '{}'", adapter.1.type_name).as_str());
             let _ = pb_adapter_span.enter();
             let adapter_resource = adapter.1;
             let adapter_type_name = adapter_resource.type_name.clone();
-            let manifest = import_manifest(adapter_resource.manifest.clone().unwrap())?;
+            let manifest = if let Some(manifest) = adapter_resource.manifest {
+                if let Ok(manifest) = import_manifest(manifest) {
+                    manifest
+                } else {
+                    return Err(DscError::Operation(format!("Failed to import manifest for '{}'", adapter_resource.type_name.clone())));
+                }
+            } else {
+                return Err(DscError::MissingManifest(adapter_resource.type_name.clone()));
+            };
             let mut adapter_resources_count = 0;
             // invoke the list command
             let list_command = manifest.adapter.unwrap().list;
