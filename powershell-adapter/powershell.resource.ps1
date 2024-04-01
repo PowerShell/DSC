@@ -2,10 +2,13 @@
 param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate.')]
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate')]
-    [string]$Operation = 'Default',
+    [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
-    [string]$stdinput = '@{}'
+    [string]$jsonInput = '@{}'
 )
+
+# load private functions of psDscAdapter stub module
+Import-Module './psDscAdapter/psDscAdapter.psd1' -Force
 
 # cached resource
 class resourceCache {
@@ -35,8 +38,14 @@ class resourceOutput {
     [string] $description
 }
 
+# module types
+enum moduleType {
+    ScriptBased
+    ClassBased
+}
+
 # dsc resource type (settable clone)
-class dscResource {
+class DscResourceInfo {
     [moduleType] $ImplementationDetail
     [string] $ResourceType
     [string] $Name
@@ -51,17 +60,32 @@ class dscResource {
     [psobject[]] $Properties
 }
 
-# module types
-enum moduleType {
-    ScriptBased
-    ClassBased
-}
-
 # Cache the results of Get-DscResource to optimize performance
 function Invoke-CacheRefresh {
+    param(
+        [Parameter(Mandatory = $false)]
+        [string[]] $module
+    )
     # cache the results of Get-DscResource
     [resourceCache[]]$resourceCache = @()
-    $DscResources = Get-DscResource
+
+    # improve by performance by having the option to only get details for named modules
+    if ($null -ne $module) {
+        if ($module.gettype().name -eq 'string') {
+            $module = @($module)
+        }
+        $DscResources = @()
+        $Modules = @()
+        foreach ($m in $module) {
+            $DscResources += psDscAdapter\Get-DscResource -Module $m
+            $Modules += Get-Module -Name $m -ListAvailable
+        }
+    }
+    else {
+        $DscResources = psDscAdapter\Get-DscResource
+        $Modules = Get-Module -ListAvailable
+    }
+
     foreach ($dsc in $DscResources) {
         # only support known moduleType, excluding binary
         if ([moduleType].GetEnumNames() -notcontains $dsc.ImplementationDetail) {
@@ -69,7 +93,7 @@ function Invoke-CacheRefresh {
         }
         # workaround: if the resource does not have a module name, get it from parent path
         # workaround: modulename is not settable, so clone the object without being read-only
-        $DscResourceInfo = [dscResource]::new()
+        $DscResourceInfo = [DscResourceInfo]::new()
         $dsc.PSObject.Properties | ForEach-Object -Process { $DscResourceInfo.$($_.Name) = $_.Value }
         if ($dsc.ModuleName) {
             $moduleName = $dsc.ModuleName
@@ -79,7 +103,7 @@ function Invoke-CacheRefresh {
             $DscResourceInfo.Module = $moduleName
             $DscResourceInfo.ModuleName = $moduleName
             # workaround: populate module version from psmoduleinfo if available
-            if ($moduleInfo = Get-Module -Name $moduleName -ListAvailable -ErrorAction Ignore) {
+            if ($moduleInfo = $Modules | Where-Object { $_.Name -eq $moduleName }) {
                 $moduleInfo = $moduleInfo | Sort-Object -Property Version -Descending | Select-Object -First 1
                 $DscResourceInfo.Version = $moduleInfo.Version.ToString()
             }
@@ -92,16 +116,15 @@ function Invoke-CacheRefresh {
     }
     return $resourceCache
 }
-$resourceCache = Invoke-CacheRefresh
 
 # Convert the INPUT to a configFormat object so configuration and resource are standardized as moch as possible
 function Get-ConfigObject {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        $stdinput
+        $jsonInput
     )
     # normalize the INPUT object to an array of configFormat objects
-    $inputObj = $stdInput | ConvertFrom-Json -Depth 10
+    $inputObj = $jsonInput | ConvertFrom-Json
     $desiredState = @()
 
     # catch potential for improperly formatted configuration input
@@ -109,7 +132,7 @@ function Get-ConfigObject {
         Write-Warning 'The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}'
     }
 
-    if ($inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
+    if ($null -ne $inputObj.metadata -and $null -ne $inputObj.metadata.'Microsoft.DSC' -and $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
         # change the type from pscustomobject to configFormat
         $inputObj.resources | ForEach-Object -Process {
             $desiredState += [configFormat]@{
@@ -135,7 +158,7 @@ function Get-ConfigObject {
 # Get-ActualState function to get the actual state of the resource
 function Get-ActualState {
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ValueFromPipeline = $true)]
         [configFormat]$DesiredState,
         [Parameter(Mandatory)]
         [resourceCache[]]$ResourceCache
@@ -158,17 +181,8 @@ function Get-ActualState {
         switch ([moduleType]$cachedResourceInfo.ImplementationDetail) {
             'ScriptBased' {
 
-                # If the OS is Windows, import the latest installed PSDesiredStateConfiguration module. For Linux/MacOS, only class based resources are supported and are called directly.
-                if ($IsWindows) {
-                    $DscModule = Get-Module -Name PSDesiredStateConfiguration -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-                    Import-Module $DscModule -DisableNameChecking -ErrorAction Ignore
-        
-                    if ($null -eq $DscModule) {
-                        Write-Error 'The PowerShell adapter was called but the module PSDesiredStateConfiguration could not be found in PSModulePath. To install the module, run Install-PSResource -Name PSDesiredStateConfiguration'
-                        exit 1
-                    }
-                }
-                else {
+                # If the OS is Windows, import the embedded psDscAdapter module. For Linux/MacOS, only class based resources are supported and are called directly.
+                if (!$IsWindows) {
                     Write-Error 'Script based resources are only supported on Windows.'
                     exit 1
                 }
@@ -186,9 +200,9 @@ function Get-ActualState {
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
 
-                # using the cmdlet from PSDesiredStateConfiguration module, and handle errors
+                # using the cmdlet from psDscAdapter module, and handle errors
                 try {
-                    $getResult = Invoke-DscResource -Method Get -ModuleName $cachedResourceInfo.ModuleName -Name $cachedResourceInfo.Name -Property $property
+                    $getResult = psDscAdapter\Invoke-DscResource -Method Get -ModuleName $cachedResourceInfo.ModuleName -Name $cachedResourceInfo.Name -Property $property
 
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $getResult
@@ -215,7 +229,7 @@ function Get-ActualState {
                 }
                 catch {
                     Write-Error $_.Exception.Message
-                    #exit 1
+                    exit 1
                 }
             }
             Default {
@@ -228,7 +242,8 @@ function Get-ActualState {
         return $addToActualState
     }
     else {
-        $errmsg = 'Can not find type "' + $ds.type + '". Please ensure that Get-DscResource returns this resource type.'
+        $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
+        $errmsg = 'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.'
         Write-Error $errmsg
         exit 1
     }
@@ -252,6 +267,8 @@ $result = [System.Collections.Generic.List[Object]]::new()
 # process the operation requested to the script
 switch ($Operation) {
     'List' {
+        $resourceCache = Invoke-CacheRefresh
+
         # cache was refreshed on script load
         foreach ($Type in $resourceCache.Type) {
         
@@ -260,8 +277,8 @@ switch ($Operation) {
 
             # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
             $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-            if ($module.PrivateData.PSData.Capabilities) {
-                $capabilities = $module.PrivateData.PSData.Capabilities
+            if ($module.PrivateData.PSData.DscCapabilities) {
+                $capabilities = $module.PrivateData.PSData.DscCapabilities
             }
             else {
                 $capabilities = @('Get', 'Set', 'Test')
@@ -293,7 +310,10 @@ switch ($Operation) {
         }
     }
     'Get' {
-        $desiredState = $stdInput | Get-ConfigObject
+        $desiredState = $jsonInput | Get-ConfigObject
+
+        # only need to cache the resources that are used
+        $resourceCache = Invoke-CacheRefresh -module ($desiredState | ForEach-Object {$_.Type.Split('/')[0]})
 
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
@@ -336,14 +356,12 @@ switch ($Operation) {
 }
 
 # Adding some debug info to STDERR
-$m = Get-Module PSDesiredStateConfiguration
 $trace = @{'Debug' = 'PSVersion=' + $PSVersionTable.PSVersion.ToString() } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
 $trace = @{'Debug' = 'PSPath=' + $PSHome } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
-$trace = @{'Debug' = 'ModuleVersion=' + $m.Version.ToString() } | ConvertTo-Json -Compress
-$host.ui.WriteErrorLine($trace)
-$trace = @{'Debug' = 'ModulePath=' + $m.Path } | ConvertTo-Json -Compress
+$m = Get-Command 'Get-DscResource'
+$trace = @{'Debug' = 'Module=' + $m.Source.ToString() } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
 $trace = @{'Debug' = 'PSModulePath=' + $env:PSModulePath } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)

@@ -1,0 +1,97 @@
+
+[ClassVersion("1.0.0"), FriendlyName("ConfigurationRepositoryWeb")] 
+class MSFT_WebDownloadManager : OMI_ConfigurationDownloadManager
+{
+  [Key] string ServerURL;
+  string CertificateID;
+  boolean AllowUnsecureConnection;
+  string RegistrationKey;
+  string ConfigurationNames[];
+  string ProxyURL;
+  [EmbeddedInstance("MSFT_Credential")] string ProxyCredential;
+};
+
+[ClassVersion("1.0.0"), FriendlyName("ConfigurationRepositoryShare")] 
+class MSFT_FileDownloadManager : OMI_ConfigurationDownloadManager
+{
+  [Key] string SourcePath;
+  [EmbeddedInstance("MSFT_Credential")] string Credential;
+};
+
+[ClassVersion("1.0.0"), FriendlyName("ResourceRepositoryWeb")] 
+class MSFT_WebResourceManager : OMI_ResourceModuleManager
+{
+  [Key] string ServerURL;
+  string CertificateID;
+  boolean AllowUnsecureConnection;
+  string RegistrationKey;
+  string ProxyURL;
+  [EmbeddedInstance("MSFT_Credential")] string ProxyCredential;
+};
+
+[ClassVersion("1.0.0"), FriendlyName("ResourceRepositoryShare")] 
+class MSFT_FileResourceManager : OMI_ResourceModuleManager
+{
+  [Key] string SourcePath;
+  [EmbeddedInstance("MSFT_Credential")] string Credential;
+};
+
+[ClassVersion("1.0.0"), FriendlyName("ReportServerWeb")] 
+class MSFT_WebReportManager : OMI_ReportManager
+{
+  [Key] string ServerURL;
+  string CertificateID;
+  boolean AllowUnsecureConnection;
+  string RegistrationKey;
+  string ProxyURL;
+  [EmbeddedInstance("MSFT_Credential")] string ProxyCredential;
+};
+
+[ClassVersion("1.0.0"), FriendlyName("PartialConfiguration")] 
+class MSFT_PartialConfiguration : OMI_MetaConfigurationResource
+{
+  [Write] String Description;
+  [Write] String ExclusiveResources[];
+  [Write] String ConfigurationSource[];
+  [Write] String ResourceModuleSource[];
+  [Write] String DependsOn[];
+  [ValueMap{"Push", "Pull", "Disabled"},Values{"Push", "Pull", "Disabled"}] string RefreshMode;
+};
+
+[ClassVersion("1.0.0"), FriendlyName("SignatureValidation")] 
+class MSFT_SignatureValidation : OMI_MetaConfigurationResource
+{
+  [Write]string TrustedStorePath;
+  [ValueMap{"Configuration","Module"},Values{"Configuration","Module"}]string SignedItemType[];
+};
+
+[ClassVersion("2.0.0"),FriendlyName("Settings")] 
+class MSFT_DSCMetaConfigurationV2
+{
+  uint32 ConfigurationModeFrequencyMins;
+  boolean RebootNodeIfNeeded;
+  [ValueMap{"ApplyOnly", "ApplyAndMonitor", "ApplyAndAutoCorrect", "MonitorOnly"},Values{"ApplyOnly", "ApplyAndMonitor", "ApplyAndAutoCorrect", "MonitorOnly"}] string ConfigurationMode;
+  [ValueMap {"ContinueConfiguration","StopConfiguration"}, Values {"ContinueConfiguration","StopConfiguration"}]
+  string ActionAfterReboot;
+  [ValueMap{"Push", "Pull", "Disabled"},Values{"Push", "Pull", "Disabled"}] string RefreshMode;
+  string CertificateID;
+  string ConfigurationID;
+  uint32 RefreshFrequencyMins;
+  boolean AllowModuleOverwrite;
+  [ValueMap {"None","ForceModuleImport", "All", "ResourceScriptBreakAll", "ResourceScriptBreakpoint"}, Values {"None","ForceModuleImport", "All", "ResourceScriptBreakAll", "ResourceScriptBreakpoint"}]
+  string DebugMode[];
+  [Read] string LCMVersion;
+  [Read] string LCMCompatibleVersions[];
+  [Read,ValueMap{"Idle", "Busy", "PendingReboot", "PendingConfiguration"},Values{"Idle", "Busy", "PendingReboot", "PendingConfiguration"}] string LCMState;
+  [Read] string LCMStateDetail;
+  [EmbeddedInstance("OMI_ConfigurationDownloadManager")] string ConfigurationDownloadManagers[];
+  [EmbeddedInstance("OMI_ResourceModuleManager")] string ResourceModuleManagers[];
+  [EmbeddedInstance("OMI_ReportManager")] string ReportManagers[];
+  [EmbeddedInstance("MSFT_PartialConfiguration")] string PartialConfigurations[];  
+  uint32 StatusRetentionTimeInDays;
+  [Read] string AgentId;
+  string SignatureValidationPolicy; 
+  [EmbeddedInstance("MSFT_SignatureValidation")] 
+  string  SignatureValidations[];
+  uint32 MaximumDownloadSizeMB;   
+};

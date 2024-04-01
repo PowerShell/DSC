@@ -21,3 +21,6 @@ resources:
     keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
     valueName: ProductName
     _ensure: Present
+metadata:
+  Microsoft.Dsc:
+  - context: Configuration

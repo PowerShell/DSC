@@ -5,7 +5,7 @@ Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         $OldPSModulePath  = $env:PSModulePath
-        $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot + [System.IO.Path]::DirectorySeparatorChar
+        $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
         
         $configPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
     }

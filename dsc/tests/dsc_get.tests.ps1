@@ -46,7 +46,7 @@ Describe 'config get tests' {
         }
 '@
         $testError = & {$json | dsc resource get -r Microsoft.Windows/registry get 2>&1}
-        $testError | Select-String '^error:' -Quiet | Should -BeTrue
+        $testError | Should -match '^error:'
         $LASTEXITCODE | Should -Be 2
     }
 }

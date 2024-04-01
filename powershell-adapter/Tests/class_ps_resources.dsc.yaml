@@ -1,4 +1,7 @@
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+metadata:
+  Microsoft.Dsc:
+  - context: Configuration
 resources:
 - name: Working with classic DSC resources
   type: Microsoft.DSC/PowerShell
