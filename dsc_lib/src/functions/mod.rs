@@ -14,6 +14,7 @@ pub mod create_array;
 pub mod div;
 pub mod envvar;
 pub mod int;
+pub mod max;
 pub mod min;
 pub mod mod_function;
 pub mod mul;
@@ -69,6 +70,7 @@ impl FunctionDispatcher {
         functions.insert("div".to_string(), Box::new(div::Div{}));
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
         functions.insert("int".to_string(), Box::new(int::Int{}));
+        functions.insert("max".to_string(), Box::new(max::Max{}));
         functions.insert("min".to_string(), Box::new(min::Min{}));
         functions.insert("mod".to_string(), Box::new(mod_function::Mod{}));
         functions.insert("mul".to_string(), Box::new(mul::Mul{}));
