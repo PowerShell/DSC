@@ -28,7 +28,7 @@ Describe 'dsc config get tests' {
         $jsonPath = Join-Path $PSScriptRoot '../examples/invalid_schema.dsc.yaml'
         $config = Get-Content $jsonPath -Raw
         $testError = & {$config | dsc config get get 2>&1}
-        $testError | Should -match '^error:'  
+        $testError | Select-String '^error:' -Quiet | Should -Be $true
         $LASTEXITCODE | Should -Be 2
     }
 
