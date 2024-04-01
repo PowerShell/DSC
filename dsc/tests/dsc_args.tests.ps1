@@ -215,4 +215,85 @@ resources:
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
     }
+
+    It 'verify `dsc resource list` and `dsc resource list *`' {
+        # return all native resources, providers, but not provider-based resources;
+        # results for `dsc resource list` and `dsc resource list *` should be the same
+        $a = dsc resource list -f json
+        $b = dsc resource list * -f json
+        $a.Count | Should -Be $b.Count
+        0..($a.Count-1) | %{
+            $a_obj = $a[$_] | ConvertFrom-Json
+            $b_obj = $b[$_] | ConvertFrom-Json
+            $a_obj.type | Should -Be $b_obj.type
+            # adapter-based resources should Not be in the results
+            $a_obj.requireAdapter | Should -BeNullOrEmpty
+            $b_obj.requireAdapter | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'verify `dsc resource list resource_filter`' {
+        # same as previous but also apply resource_filter filter
+        $a = dsc resource list Test* -f json
+        0..($a.Count-1) | %{
+            $a_obj = $a[$_] | ConvertFrom-Json
+            $a_obj.type.StartsWith("Test") | Should -Be $true
+            # adapter-based resources should Not be in the results
+            $a_obj.requireAdapter | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'verify `dsc resource list * *`' {
+        # everything should be in the results: all native resources, providers, and provider-based resources
+        $a = dsc resource list * * -f json
+        $resourceKindFound = $false
+        $groupKindFound = $false
+        $adapterKindFound = $false
+
+        $adapterBasedResourceFound = $false
+
+        0..($a.Count-1) | %{
+            $a_obj = $a[$_] | ConvertFrom-Json
+            if ($a_obj.kind -eq "Resource") {
+                $resourceKindFound = $true
+            } elseif ($a_obj.kind -eq "Group") {
+                $groupKindFound = $true
+            } elseif ($a_obj.kind -eq "Adapter") {
+                $adapterKindFound = $true
+            }
+            
+            if ($a_obj.requireAdapter) {
+                $adapterBasedResourceFound = $true
+            }
+            
+            # break loop early if one of each is found
+            if ($resourceKindFound -and $groupKindFound -and $adapterKindFound -and $adapterBasedResourceFound)
+            {
+                break
+            }
+        }
+
+        $resourceKindFound | Should -Be $true
+        $groupKindFound | Should -Be $true
+        $adapterKindFound | Should -Be $true
+        $adapterBasedResourceFound | Should -Be $true
+    }
+
+    It 'verify `dsc resource list * adapter_filter`' {
+        # return all native resources, providers, and all resources of providers that match adapter_filter filter
+        $a = dsc resource list * Test* -f json | ConvertFrom-Json
+        $adapterBasedResources = $a | ? {$_.requireAdapter}
+        foreach ($r in $adapterBasedResources) {
+            $r.requireAdapter.StartsWith("Test") | Should -Be $true
+        }
+    }
+
+    It 'verify `dsc resource list resource_filter adapter_filter`' {
+        # same as previous but also apply resource_filter filter to resource types
+        $a = dsc resource list *TestResource2 *TestGroup -f json | ConvertFrom-Json
+        $a.Count | Should -Be 1
+        $r = $a[0]
+        $r.requireAdapter | Should -Not -BeNullOrEmpty
+        $r.requireAdapter.StartsWith("Test") | Should -Be $true
+    }
 }
