@@ -21,7 +21,7 @@ Describe 'WMI adapter resource tests' {
 
     It 'List shows WMI resources' -Skip:(!$IsWindows){
 
-        $r = dsc resource list *OperatingSystem* Microsoft.Windows/WMI
+        $r = dsc resource list *OperatingSystem* -a Microsoft.Windows/WMI
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.Count | Should -BeGreaterOrEqual 1

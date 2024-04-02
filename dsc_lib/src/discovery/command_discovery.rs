@@ -131,7 +131,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                     }
                                 }
 
-                                if type_regex.is_match(&resource.type_name) {
+                                if adapter_name_filter.is_empty() && type_regex.is_match(&resource.type_name) {
                                     resources.insert(resource.type_name.to_lowercase(), resource);
                                 }
                             }

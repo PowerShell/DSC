@@ -5,7 +5,7 @@ Describe 'Resource adapter tests' {
 
     It 'Can list adapter resources' {
 
-        $out = dsc resource list *testresource* Test/TestGroup | ConvertFrom-Json | Sort-Object -Property type
+        $out = dsc resource list *testresource* -a Test/TestGroup | ConvertFrom-Json | Sort-Object -Property type
         $out.Count | Should -Be 2
         $out[0].type | Should -BeExactly 'Test/TestResource1'
         $out[0].version | Should -Be '1.0.0'
@@ -56,7 +56,7 @@ Describe 'Resource adapter tests' {
             Set-Content -Path testdrive:/invalid.dsc.resource.json -Value $invalid_manifest
             $env:PATH += [System.IO.Path]::PathSeparator + (Resolve-Path (Resolve-Path $TestDrive -Relative))
 
-            $out = dsc resource list *invalid* *InvalidTestGroup* 2>&1
+            $out = dsc resource list *invalid* -a *InvalidTestGroup* 2>&1
             $LASTEXITCODE | Should -Be 0
             ,$out | Should -Match ".*?'requires'*"
         }

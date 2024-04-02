@@ -182,7 +182,7 @@ resources:
 
     It 'resource tracing shows up' -Skip:(!$IsWindows) {
         # Assumption here is that DSC/PowerShellGroup provider is visible
-        dsc -l trace resource list * *PowerShell* 2> $TestDrive/tracing.txt
+        dsc -l trace resource list * -a *PowerShell* 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'PSModulePath'
         $LASTEXITCODE | Should -Be 0
     }
@@ -217,7 +217,7 @@ resources:
     }
 
     It 'verify `dsc resource list` and `dsc resource list *`' {
-        # return all native resources, providers, but not provider-based resources;
+        # return all native resources, providers, but not adapter-based resources;
         # results for `dsc resource list` and `dsc resource list *` should be the same
         $a = dsc resource list -f json
         $b = dsc resource list '*' -f json
@@ -243,57 +243,32 @@ resources:
         }
     }
 
-    It 'verify `dsc resource list * *`' {
-        # everything should be in the results: all native resources, providers, and provider-based resources
-        $a = dsc resource list '*' '*' -f json
-        $resourceKindFound = $false
-        $groupKindFound = $false
-        $adapterKindFound = $false
-
-        $adapterBasedResourceFound = $false
-
+    It 'verify `dsc resource list * -a *`' {
+        # return all adapter-based resources
+        $a = dsc resource list '*' -a '*' -f json
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
-            if ($a_obj.kind -eq "Resource") {
-                $resourceKindFound = $true
-            } elseif ($a_obj.kind -eq "Group") {
-                $groupKindFound = $true
-            } elseif ($a_obj.kind -eq "Adapter") {
-                $adapterKindFound = $true
-            }
-            
-            if ($a_obj.requireAdapter) {
-                $adapterBasedResourceFound = $true
-            }
-            
-            # break loop early if one of each is found
-            if ($resourceKindFound -and $groupKindFound -and $adapterKindFound -and $adapterBasedResourceFound)
-            {
-                break
-            }
+            $a_obj.requireAdapter | Should -Not -BeNullOrEmpty
+            $a_obj.kind | Should -Be "Resource"
         }
-
-        $resourceKindFound | Should -Be $true
-        $groupKindFound | Should -Be $true
-        $adapterKindFound | Should -Be $true
-        $adapterBasedResourceFound | Should -Be $true
     }
 
     It 'verify `dsc resource list * adapter_filter`' {
-        # return all native resources, providers, and all resources of providers that match adapter_filter filter
-        $a = dsc resource list '*' Test* -f json | ConvertFrom-Json
-        $adapterBasedResources = $a | ? {$_.requireAdapter}
-        foreach ($r in $adapterBasedResources) {
+        # return all resources of adapters that match adapter_filter filter
+        $a = dsc resource list '*' -a Test* -f json | ConvertFrom-Json
+        foreach ($r in $a) {
             $r.requireAdapter.StartsWith("Test") | Should -Be $true
+            $r.kind | Should -Be "Resource"
         }
     }
 
     It 'verify `dsc resource list resource_filter adapter_filter`' {
         # same as previous but also apply resource_filter filter to resource types
-        $a = dsc resource list *TestResource2 *TestGroup -f json | ConvertFrom-Json
+        $a = dsc resource list *TestResource2 -a *TestGroup -f json | ConvertFrom-Json
         $a.Count | Should -Be 1
         $r = $a[0]
         $r.requireAdapter | Should -Not -BeNullOrEmpty
         $r.requireAdapter.StartsWith("Test") | Should -Be $true
+        $r.kind | Should -Be "Resource"
     }
 }
