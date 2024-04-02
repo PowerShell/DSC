@@ -7,14 +7,25 @@ use crate::config::{Registry, RegistryValueData};
 use crate::error::RegistryError;
 
 pub struct RegistryHelper {
-    config: Registry
+    config: Registry,
+    hive: Hive,
+    subkey: String,
 }
 
 impl RegistryHelper {
     pub fn new(config: &str) -> Result<Self, RegistryError> {
+        let registry: Registry = match serde_json::from_str(config) {
+            Ok(config) => config,
+            Err(e) => return Err(RegistryError::Json(e)),
+        };
+        let key_path = registry.key_path.clone();
+        let (hive, subkey) = get_hive_from_path(&key_path)?;
+
         Ok(
             Self {
-                config: serde_json::from_str(config)?,
+                config: registry,
+                hive,
+                subkey: subkey.to_string(),
             }
         )
     }
@@ -86,8 +97,7 @@ impl RegistryHelper {
                     reg_key = reg_key.create(path, Security::CreateSubKey)?;
                 }
 
-                let (hive, subkey) = self.get_hive()?;
-                hive.open(subkey, Security::Write)?
+                self.open(Security::Write)?.0
             },
             Err(e) => return Err(e),
         };
@@ -165,10 +175,6 @@ impl RegistryHelper {
         Ok(())
     }
 
-    fn get_hive(&self) -> Result<(Hive, &str), RegistryError> {
-        get_hive_from_path(&self.config.key_path)
-    }
-
     fn open(&self, permission: Security) -> Result<(RegKey, &str), RegistryError> {
         open_regkey(&self.config.key_path, permission)
     }
@@ -178,15 +184,14 @@ impl RegistryHelper {
     fn get_valid_parent_key_and_subkeys(&self) -> Result<(RegKey, Vec<&str>), RegistryError> {
         let parent_key: RegKey;
         let mut subkeys: Vec<&str> = Vec::new();
-        let (hive, subkey) = self.get_hive()?;
-        let parent_key_path = get_parent_key_path(subkey);
-        let subkey_name = &subkey[parent_key_path.len() + 1..];
+        let parent_key_path = get_parent_key_path(&self.subkey);
+        let subkey_name = &self.subkey[parent_key_path.len() + 1..];
         subkeys.push(subkey_name);
         let mut current_key_path = parent_key_path;
 
         loop {
             // we try to open with CreateSubKey permission to know if we can create the key
-            match hive.open(current_key_path, Security::CreateSubKey) {
+            match self.hive.open(current_key_path, Security::CreateSubKey) {
                 Ok(regkey) => {
                     parent_key = regkey;
                     break;

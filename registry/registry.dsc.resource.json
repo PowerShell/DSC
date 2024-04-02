@@ -51,7 +51,10 @@
     },
     "schema": {
         "command": {
-            "executable": "registry"
+            "executable": "registry",
+            "args": [
+                "schema"
+            ]
         }
     }
 }

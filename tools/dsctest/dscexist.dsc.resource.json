@@ -23,18 +23,8 @@
         "input": {
             "arg": "{json}"
         },
-        "handlesExist": true
-    },
-    "delete": {
-        "executable": "dsctest",
-        "args": [
-            "exist",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }    
+        "handlesExist": true,
+        "return": "state"
     },
     "schema": {
         "command": {

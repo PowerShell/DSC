@@ -119,21 +119,6 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     };
     verify_json(resource, cwd, desired)?;
 
-    let mut env: Option<HashMap<String, String>> = None;
-    let mut input_desired: Option<&str> = None;
-    let mut args = set.args.clone();
-    match &set.input {
-        InputKind::Env => {
-            env = Some(json_to_hashmap(desired)?);
-        },
-        InputKind::Stdin => {
-            input_desired = Some(desired);
-        },
-        InputKind::Arg(arg_token) => {
-            replace_token(&mut args, arg_token, desired)?;
-        },
-    }
-
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && !set.pre_test.unwrap_or_default() {
         info!("No pretest, invoking test {}", &resource.resource_type);
@@ -162,15 +147,18 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     let mut get_env: Option<HashMap<String, String>> = None;
     let mut get_input: Option<&str> = None;
     let mut get_args = resource.get.args.clone();
-    match &set.input {
-        InputKind::Env => {
+    match &resource.get.input {
+        Some(InputKind::Env) => {
             get_env = Some(json_to_hashmap(desired)?);
         },
-        InputKind::Stdin => {
+        Some(InputKind::Stdin) => {
             get_input = Some(desired);
         },
-        InputKind::Arg(arg_token) => {
+        Some(InputKind::Arg(arg_token)) => {
             replace_token(&mut get_args, arg_token, desired)?;
+        },
+        None => {
+            // leave input as none
         },
     }
 
@@ -193,8 +181,23 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
 
+    let mut env: Option<HashMap<String, String>> = None;
+    let mut input_desired: Option<&str> = None;
+    let mut args = set.args.clone();
+    match &set.input {
+        InputKind::Env => {
+            env = Some(json_to_hashmap(desired)?);
+        },
+        InputKind::Stdin => {
+            input_desired = Some(desired);
+        },
+        InputKind::Arg(arg_token) => {
+            replace_token(&mut args, arg_token, desired)?;
+        },
+    }
+
     info!("Invoking set '{}' using '{}'", &resource.resource_type, &set.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, set.args.clone(), input_desired, Some(cwd), env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));

@@ -35,14 +35,12 @@ fn main() {
                     std::process::exit(1);
                 }
             };
-            match exist.state {
-                State::Exist => {
-                    exist.exist = Some(true);
-                },
-                State::Absent => {
-                    exist.exist = Some(false);
-                },
+            if exist.exist {
+                exist.state = Some(State::Present);
+            } else {
+                exist.state = Some(State::Absent);
             }
+
             serde_json::to_string(&exist).unwrap()
         },
         SubCommand::Schema { subcommand } => {

@@ -173,7 +173,7 @@ pub enum ResourceSubCommand {
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
-    #[clap(name = "test", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
+    #[clap(name = "delete", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
     Delete {
         #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `delete` on")]
         resource: String,
