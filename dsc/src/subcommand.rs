@@ -444,7 +444,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, descript
     }
     for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
         let mut capabilities = "------".to_string();
-        let capability_types = vec![
+        let capability_types = [
             (Capability::Get, "g"),
             (Capability::Set, "s"),
             (Capability::SetHandlesExist, "x"),
