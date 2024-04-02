@@ -34,6 +34,7 @@ class resourceOutput {
     [string] $implementedAs
     [string] $author
     [string[]] $properties
+    [string] $requireAdapter
     [string] $description
 }
 
@@ -294,16 +295,17 @@ switch ($Operation) {
 
             # OUTPUT dsc is expecting the following properties
             [resourceOutput]@{
-                type          = $Type
-                kind          = 'Resource'
-                version       = $r.version.ToString()
-                capabilities  = $capabilities
-                path          = $r.Path
-                directory     = $r.ParentPath
-                implementedAs = $r.ImplementationDetail
-                author        = $r.CompanyName
-                properties    = $r.Properties.Name
-                description   = $description
+                type           = $Type
+                kind           = 'Resource'
+                version        = $r.version.ToString()
+                capabilities   = $capabilities
+                path           = $r.Path
+                directory      = $r.ParentPath
+                implementedAs  = $r.ImplementationDetail
+                author         = $r.CompanyName
+                properties     = $r.Properties.Name
+                requireAdapter = 'Microsoft.Dsc/PowerShell'
+                description    = $description
             } | ConvertTo-Json -Compress
         }
     }
