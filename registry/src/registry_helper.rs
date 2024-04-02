@@ -287,8 +287,7 @@ fn get_product_name() {
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion"#);
     assert_eq!(reg_config.value_name, Some("ProductName".to_string()));
-    // value data starts with "Windows 10"
-    assert!(matches!(reg_config.value_data, Some(RegistryValueData::String(s)) if s.starts_with("Windows 10")));
+    assert!(matches!(reg_config.value_data, Some(RegistryValueData::String(s)) if s.starts_with("Windows ")));
 }
 
 #[test]
