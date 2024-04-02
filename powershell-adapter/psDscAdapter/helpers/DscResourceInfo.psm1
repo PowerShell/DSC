@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 Set-StrictMode -Version latest
 $ErrorActionPreference = 'Stop'
 

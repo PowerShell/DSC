@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate.')]
@@ -8,7 +10,7 @@ param(
 )
 
 # load private functions of psDscAdapter stub module
-Import-Module './psDscAdapter/psDscAdapter.psd1' -Force
+Import-Module '$PSScriptRoot/psDscAdapter/psDscAdapter.psd1' -Force
 
 # cached resource
 class resourceCache {
@@ -20,7 +22,7 @@ class resourceCache {
 class configFormat {
     [string] $name
     [string] $type
-    [psobject] $properties
+    [psobject[]] $properties
 }
 
 # output format for resource list
@@ -99,6 +101,7 @@ function Invoke-CacheRefresh {
             $moduleName = $dsc.ModuleName
         }
         elseif ($dsc.ParentPath) {
+            # workaround: populate module name from parent path that is three levels up
             $moduleName = Split-Path $dsc.ParentPath | Split-Path | Split-Path -Leaf
             $DscResourceInfo.Module = $moduleName
             $DscResourceInfo.ModuleName = $moduleName

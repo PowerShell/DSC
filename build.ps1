@@ -193,9 +193,6 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
             }
 
             Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
-            
-            $psdscFolder = New-Item -Path $target -Name 'psDscAdapter' -Force -ItemType Directory -ErrorAction Ignore
-            Copy-Item -Path "./psDscAdapter/*" -Destination $psdscFolder -Recurse -Force -ErrorAction Ignore
 
         } finally {
             Pop-Location

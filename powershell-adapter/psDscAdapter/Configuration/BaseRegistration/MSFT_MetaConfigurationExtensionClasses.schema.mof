@@ -1,4 +1,3 @@
-
 [ClassVersion("1.0.0"), FriendlyName("ConfigurationRepositoryWeb")] 
 class MSFT_WebDownloadManager : OMI_ConfigurationDownloadManager
 {

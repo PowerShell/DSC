@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 using namespace System.Collections.Generic
 
 enum EnumPropEnumeration {
@@ -43,7 +46,7 @@ class TestClassResource
         {
             $this.Prop1 = $env:DSC_CONFIG_ROOT
         }
-        $this.EnumProp = [EnumPropEnumeration].GetEnumName(1)
+        $this.EnumProp = ([EnumPropEnumeration]::Expected).ToString()
         return $this
     }
 

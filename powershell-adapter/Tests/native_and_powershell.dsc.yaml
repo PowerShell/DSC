@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # Example configuration mixing native app resources with classic PS resources
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
 resources:
@@ -21,6 +24,3 @@ resources:
     keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
     valueName: ProductName
     _ensure: Present
-metadata:
-  Microsoft.Dsc:
-  - context: Configuration

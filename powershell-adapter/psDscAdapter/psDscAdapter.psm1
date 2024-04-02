@@ -1,4 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 #  Module adapted from 'PSDesiredStateConfiguration'
+
 data LocalizedData
 {
     # culture="en-US"

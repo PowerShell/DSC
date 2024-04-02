@@ -6,7 +6,6 @@ Describe 'PowerShell adapter resource tests' {
     BeforeAll {
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
-        
         $configPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
     }
     AfterAll {
@@ -20,6 +19,7 @@ Describe 'PowerShell adapter resource tests' {
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState.result[0].properties.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
         $res.results[0].result.actualState.result[1].properties.Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.results[0].result.actualState.result[1].properties.EnumProp | Should -BeExactly 'Expected'
     }
 
     <#

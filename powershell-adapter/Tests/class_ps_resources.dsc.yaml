@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
 metadata:
   Microsoft.Dsc:
@@ -15,3 +18,5 @@ resources:
       type: TestClassResource/TestClassResource
       properties:
         Name: TestClassResource1
+        Prop1: ValueForProp1
+        EnumProp: Expected
