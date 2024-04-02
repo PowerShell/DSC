@@ -10,7 +10,7 @@ param(
 )
 
 # load private functions of psDscAdapter stub module
-Import-Module '$PSScriptRoot/psDscAdapter/psDscAdapter.psd1' -Force
+Import-Module "$PSScriptRoot/psDscAdapter/psDscAdapter.psd1" -Force
 
 # cached resource
 class resourceCache {
