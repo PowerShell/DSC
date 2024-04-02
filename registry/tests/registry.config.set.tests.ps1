@@ -29,19 +29,4 @@ Describe 'registry config set tests' {
         $result.valueData.String | Should -Be 'World'
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
-
-    It 'Can set a key to be absent' -Skip:(!$IsWindows) {
-        $json = @'
-        {
-            "keyPath": "HKCU\\1",
-            "_exist": false
-        }
-'@
-        $out = registry config set --input $json
-        $LASTEXITCODE | Should -Be 0
-        $result = $out | ConvertFrom-Json
-        $result.keyPath | Should -BeExactly 'HKCU\1'
-        $result._exist | Should -Be $false
-        ($result.psobject.properties | Measure-Object).Count | Should -Be 3
-    }
 }

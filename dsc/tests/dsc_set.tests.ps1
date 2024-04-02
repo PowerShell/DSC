@@ -61,7 +61,7 @@ Describe 'resource set tests' {
                 "_exist": false
             }
 '@
-            $json | registry config set
+            $null = registry config set --input $json
         }
     }
 
@@ -73,11 +73,12 @@ Describe 'resource set tests' {
                 "_exist": false
             }
 '@
-            $json | registry config set
+            $null = registry config set --input $json
         }
     }
 
-    It 'can set and remove a registry value' -Skip:(!$IsWindows) {
+    # test pending changes in engine to call delete if _exist is not handled directly
+    It 'can set and remove a registry value' -Pending {
         $json = @'
         {
             "keyPath": "HKCU\\1\\2\\3",

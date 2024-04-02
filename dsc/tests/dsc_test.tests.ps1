@@ -9,7 +9,7 @@ Describe 'resource test tests' {
             "valueName": "ProductName"
         }
 '@
-        $current = $json | registry config get
+        $current = registry config get --input $json
         $out = $current | dsc resource test -r Microsoft.Windows/registry
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
@@ -49,10 +49,9 @@ Describe 'resource test tests' {
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.inDesiredState | Should -BeFalse
-        $out.differingProperties.Count | Should -Be 3
-        $out.differingProperties[0] | Should -BeExactly 'valueName'
-        $out.differingProperties[1] | Should -BeExactly 'valueData'
-        $out.differingProperties[2] | Should -BeExactly '_exist'
+        $out.differingProperties.Count | Should -Be 2
+        $out.differingProperties[0] | Should -BeExactly 'valueData'
+        $out.differingProperties[1] | Should -BeExactly '_exist'
     }
 
     It 'can accept the use of --format as a subcommand' {

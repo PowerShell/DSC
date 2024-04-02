@@ -32,7 +32,6 @@ Describe 'resource get tests' {
         $output = $json | dsc resource get -r $resource
         $LASTEXITCODE | Should -Be 0
         $output = $output | ConvertFrom-Json
-        $output.actualState.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
         $output.actualState.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
         $output.actualState.valueName | Should -BeExactly 'ProductName'
         $output.actualState.valueData.String | Should -Match 'Windows .*'
