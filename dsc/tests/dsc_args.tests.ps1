@@ -220,7 +220,7 @@ resources:
         # return all native resources, providers, but not provider-based resources;
         # results for `dsc resource list` and `dsc resource list *` should be the same
         $a = dsc resource list -f json
-        $b = dsc resource list * -f json
+        $b = dsc resource list '*' -f json
         $a.Count | Should -Be $b.Count
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
@@ -245,7 +245,7 @@ resources:
 
     It 'verify `dsc resource list * *`' {
         # everything should be in the results: all native resources, providers, and provider-based resources
-        $a = dsc resource list * * -f json
+        $a = dsc resource list '*' '*' -f json
         $resourceKindFound = $false
         $groupKindFound = $false
         $adapterKindFound = $false
@@ -281,7 +281,7 @@ resources:
 
     It 'verify `dsc resource list * adapter_filter`' {
         # return all native resources, providers, and all resources of providers that match adapter_filter filter
-        $a = dsc resource list * Test* -f json | ConvertFrom-Json
+        $a = dsc resource list '*' Test* -f json | ConvertFrom-Json
         $adapterBasedResources = $a | ? {$_.requireAdapter}
         foreach ($r in $adapterBasedResources) {
             $r.requireAdapter.StartsWith("Test") | Should -Be $true
