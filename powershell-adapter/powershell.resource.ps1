@@ -34,7 +34,6 @@ class resourceOutput {
     [string] $implementedAs
     [string] $author
     [string[]] $properties
-    [string] $requires
     [string] $description
 }
 
@@ -304,7 +303,6 @@ switch ($Operation) {
                 implementedAs = $r.ImplementationDetail
                 author        = $r.CompanyName
                 properties    = $r.Properties.Name
-                requires      = $requiresString
                 description   = $description
             } | ConvertTo-Json -Compress
         }
