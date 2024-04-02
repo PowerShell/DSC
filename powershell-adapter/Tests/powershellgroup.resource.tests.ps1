@@ -13,7 +13,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Discovery includes class-based and script-based resources ' -Skip:(!$IsWindows){
 
-        $r = dsc resource list * *PowerShell*
+        $r = dsc resource list * -a *PowerShell*
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
         ($resources | ? {$_.Type -eq 'PSTestModule/TestClassResource'}).Count | Should -Be 1
