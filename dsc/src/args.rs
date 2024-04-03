@@ -128,6 +128,9 @@ pub enum ResourceSubCommand {
     List {
         /// Optional filter to apply to the list of resources
         resource_name: Option<String>,
+        /// Optional adapter filter to apply to the list of resources
+        #[clap(short = 'a', long = "adapter", help = "Adapter filter to limit the resource search")]
+        adapter_name: Option<String>,
         #[clap(short, long, help = "Description keyword to search for in the resource description")]
         description: Option<String>,
         #[clap(short, long, help = "Tag to search for in the resource tags")]
