@@ -23,6 +23,9 @@ pub enum DscError {
     #[error("Function '{0}' error: {1}")]
     Function(String, String),
 
+    #[error("Function '{0}' error: {1}")]
+    FunctionArg(String, String),
+
     #[error("HTTP: {0}")]
     Http(#[from] reqwest::Error),
 
