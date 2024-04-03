@@ -435,14 +435,14 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
     let mut write_table = false;
     let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
     if format.is_none() && atty::is(Stream::Stdout) {
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or_default()) {
+    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
         let mut capabilities = "------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
