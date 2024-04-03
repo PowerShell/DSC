@@ -121,6 +121,13 @@ class resourceOutput {
     [string] $description
 }
 
+# format expected for configuration and resource output
+class configFormat {
+    [string] $name
+    [string] $type
+    [psobject] $properties
+}
+
 # Adding some debug info to STDERR
 $trace = @{'Debug' = 'PSVersion=' + $PSVersionTable.PSVersion.ToString() } | ConvertTo-Json -Compress
 $host.ui.WriteErrorLine($trace)
