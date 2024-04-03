@@ -1146,7 +1146,7 @@ function Get-ConfigObject {
 
     if ($null -ne $inputObj.metadata -and $null -ne $inputObj.metadata.'Microsoft.DSC' -and $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
         # change the type from pscustomobject to configFormat
-        $inputObj.resources.properties.resources | ForEach-Object -Process {
+        $inputObj.resources | ForEach-Object -Process {
             $desiredState += [configFormat]@{
                 name       = $_.name
                 type       = $_.type
@@ -1231,7 +1231,7 @@ function Get-ActualState {
                     $resourceInstance = $resource::New()
 
                     # set each property of $resourceInstance to the value of the property in the $desiredState INPUT object
-                    ($DesiredState.properties.psobject.properties | Where-Object name -EQ syncroot | ForEach-Object value).psobject.properties | ForEach-Object -Process {
+                    $DesiredState.properties.psobject.properties | ForEach-Object -Process {
                         $resourceInstance.$($_.Name) = $_.Value
                     }
                     $getResult = $resourceInstance.Get()

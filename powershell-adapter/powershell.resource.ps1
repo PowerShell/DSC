@@ -9,11 +9,17 @@ param(
     [string]$jsonInput = '@{}'
 )
 
-# load private functions of psDscAdapter stub module
-Import-Module "$PSScriptRoot/psDscAdapter/psDscAdapter.psd1" -Force
+if ('Validate'-ne $Operation) {
+    # write $jsonInput to STDERR for debugging
+    $trace = @{'Debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
 
-# initialize OUTPUT as array
-$result = [System.Collections.Generic.List[Object]]::new()
+    # load private functions of psDscAdapter stub module
+    Import-Module "$PSScriptRoot/psDscAdapter/psDscAdapter.psd1" -Force
+
+    # initialize OUTPUT as array
+    $result = [System.Collections.Generic.List[Object]]::new()
+}
 
 # process the operation requested to the script
 switch ($Operation) {
@@ -64,15 +70,18 @@ switch ($Operation) {
         $desiredState = $jsonInput | Get-ConfigObject
 
         # only need to cache the resources that are used
-        $resourceCache = Invoke-CacheRefresh -module ($desiredState | ForEach-Object {$_.Type.Split('/')[0]})
+        $resourceCache = Invoke-CacheRefresh -module ($desiredState | ForEach-Object { $_.Type.Split('/')[0] })
 
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
             $result += Get-ActualState -DesiredState $ds -ResourceCache $resourceCache
         }
     
-        # OUTPUT
-        @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
+        # OUTPUT json to stderr for debug, and to stdout
+        $result = @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
+        $trace = @{'Debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
+        return $result
     }
     'Set' {
         throw 'SET not implemented'
@@ -119,13 +128,6 @@ class resourceOutput {
     [string[]] $properties
     [string] $requireAdapter
     [string] $description
-}
-
-# format expected for configuration and resource output
-class configFormat {
-    [string] $name
-    [string] $type
-    [psobject] $properties
 }
 
 # Adding some debug info to STDERR

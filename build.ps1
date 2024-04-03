@@ -188,7 +188,14 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
             if (Test-Path "./copy_files.txt") {
                 Get-Content "./copy_files.txt" | ForEach-Object {
-                    Copy-Item $_ $target -Force -ErrorAction Ignore
+                    # copy the file to the target directory, creating the directory path if needed
+                    $fileCopyPath = $_.split('/')
+                    if ($fileCopyPath.Length -gt 1) {
+                        $fileCopyPath = $fileCopyPath[0..($fileCopyPath.Length - 2)]
+                        $fileCopyPath = $fileCopyPath -join '/'
+                        New-Item -ItemType Directory -Path "$target/$fileCopyPath" -Force -ErrorAction Ignore | Out-Null
+                    }
+                    Copy-Item $_ "$target/$_" -Force -ErrorAction Ignore
                 }
             }
 
