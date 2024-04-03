@@ -399,85 +399,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, format } => {
-
-            let mut write_table = false;
-            let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
-            if format.is_none() && atty::is(Stream::Stdout) {
-                // write as table if format is not specified and interactive
-                write_table = true;
-            }
-            for resource in dsc.list_available_resources(
-                &resource_name.clone().unwrap_or("*".to_string()),
-                &adapter_name.clone().unwrap_or_default()) {
-                let mut capabilities = "g---".to_string();
-                if resource.capabilities.contains(&Capability::Set) { capabilities.replace_range(1..2, "s"); }
-                if resource.capabilities.contains(&Capability::Test) { capabilities.replace_range(2..3, "t"); }
-                if resource.capabilities.contains(&Capability::Export) { capabilities.replace_range(3..4, "e"); }
-
-                // if description, tags, or write_table is specified, pull resource manifest if it exists
-                if let Some(ref resource_manifest) = resource.manifest {
-                    let manifest = match import_manifest(resource_manifest.clone()) {
-                        Ok(resource_manifest) => resource_manifest,
-                        Err(err) => {
-                            error!("Error in manifest for {0}: {err}", resource.type_name);
-                            continue;
-                        }
-                    };
-
-                    // if description is specified, skip if resource description does not contain it
-                    if description.is_some() &&
-                        (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
-                        continue;
-                    }
-
-                    // if tags is specified, skip if resource tags do not contain the tags
-                    if let Some(tags) = tags {
-                        let Some(manifest_tags) = manifest.tags else { continue; };
-
-                        let mut found = false;
-                        for tag_to_find in tags {
-                            for tag in &manifest_tags {
-                                if tag.to_lowercase() == tag_to_find.to_lowercase() {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if !found { continue; }
-                    }
-                } else {
-                    // resource does not have a manifest but filtering on description or tags was requested - skip such resource
-                    if description.is_some() || tags.is_some() {
-                        continue;
-                    }
-                }
-
-                if write_table {
-                    table.add_row(vec![
-                        resource.type_name,
-                        format!("{:?}", resource.kind),
-                        resource.version,
-                        capabilities,
-                        resource.require_adapter.unwrap_or_default(),
-                        resource.description.unwrap_or_default()
-                    ]);
-                }
-                else {
-                    // convert to json
-                    let json = match serde_json::to_string(&resource) {
-                        Ok(json) => json,
-                        Err(err) => {
-                            error!("JSON Error: {err}");
-                            exit(EXIT_JSON_ERROR);
-                        }
-                    };
-                    write_output(&json, format);
-                    // insert newline separating instances if writing to console
-                    if atty::is(Stream::Stdout) { println!(); }
-                }
-            }
-
-            if write_table { table.print(); }
+            list_resources(&mut dsc, resource_name, adapter_name, description, tags, format);
         },
         ResourceSubCommand::Schema { resource , format } => {
             dsc.discover_resources(&[resource.to_lowercase().to_string()]);
@@ -505,5 +427,102 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             let parsed_input = get_input(input, stdin, path);
             resource_command::test(&dsc, resource, parsed_input, format);
         },
+        ResourceSubCommand::Delete { resource, input, path } => {
+            dsc.discover_resources(&[resource.to_lowercase().to_string()]);
+            let parsed_input = get_input(input, stdin, path);
+            resource_command::delete(&dsc, resource, parsed_input);
+        },
+    }
+}
+
+fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
+    let mut write_table = false;
+    let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
+    if format.is_none() && atty::is(Stream::Stdout) {
+        // write as table if format is not specified and interactive
+        write_table = true;
+    }
+    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
+        let mut capabilities = "------".to_string();
+        let capability_types = [
+            (Capability::Get, "g"),
+            (Capability::Set, "s"),
+            (Capability::SetHandlesExist, "x"),
+            (Capability::Test, "t"),
+            (Capability::Delete, "d"),
+            (Capability::Export, "e"),
+        ];
+
+        for (i, (capability, letter)) in capability_types.iter().enumerate() {
+            if resource.capabilities.contains(capability) {
+                capabilities.replace_range(i..=i, letter);
+            }
+        }
+
+        // if description, tags, or write_table is specified, pull resource manifest if it exists
+        if let Some(ref resource_manifest) = resource.manifest {
+            let manifest = match import_manifest(resource_manifest.clone()) {
+                Ok(resource_manifest) => resource_manifest,
+                Err(err) => {
+                    error!("Error in manifest for {0}: {err}", resource.type_name);
+                    continue;
+                }
+            };
+
+            // if description is specified, skip if resource description does not contain it
+            if description.is_some() &&
+                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
+                continue;
+            }
+
+            // if tags is specified, skip if resource tags do not contain the tags
+            if let Some(tags) = tags {
+                let Some(manifest_tags) = manifest.tags else { continue; };
+
+                let mut found = false;
+                for tag_to_find in tags {
+                    for tag in &manifest_tags {
+                        if tag.to_lowercase() == tag_to_find.to_lowercase() {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if !found { continue; }
+            }
+        } else {
+            // resource does not have a manifest but filtering on description or tags was requested - skip such resource
+            if description.is_some() || tags.is_some() {
+                continue;
+            }
+        }
+
+        if write_table {
+            table.add_row(vec![
+                resource.type_name,
+                format!("{:?}", resource.kind),
+                resource.version,
+                capabilities,
+                resource.require_adapter.unwrap_or_default(),
+                resource.description.unwrap_or_default()
+            ]);
+        }
+        else {
+            // convert to json
+            let json = match serde_json::to_string(&resource) {
+                Ok(json) => json,
+                Err(err) => {
+                    error!("JSON Error: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json, format);
+            // insert newline separating instances if writing to console
+            if atty::is(Stream::Stdout) { println!(); }
+        }
+    }
+
+    if write_table {
+        table.print();
     }
 }

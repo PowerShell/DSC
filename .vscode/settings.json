@@ -2,9 +2,6 @@
     "rust-analyzer.linkedProjects": [
         "./dsc/Cargo.toml",
         "./dsc_lib/Cargo.toml",
-        "./ntreg/Cargo.toml",
-        "./ntstatuserror/Cargo.toml",
-        "./ntuserinfo/Cargo.toml",
         "./osinfo/Cargo.toml",
         "./registry/Cargo.toml",
         "./tools/test_group_resource/Cargo.toml",
@@ -22,5 +19,6 @@
     "yaml.schemas": {
         "schemas/2023/10/bundled/config/document.vscode.json": "**.dsc.{yaml,yml,config.yaml,config.yml}",
         "schemas/2023/10/bundled/resource/manifest.vscode.json": "**.dsc.resource.{yaml,yml}"
-    }
+    },
+    "sarif-viewer.connectToGithubCodeScanning": "off"
 }

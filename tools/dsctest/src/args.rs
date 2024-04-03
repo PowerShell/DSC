@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
     Echo,
+    Exist,
     Sleep,
 }
 
@@ -34,6 +35,12 @@ pub enum SubCommand {
     #[clap(name = "sleep", about = "Sleep for a specified number of seconds")]
     Sleep {
         #[clap(name = "input", short, long, help = "The input to the sleep command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "exist", about = "Check if a resource exists")]
+    Exist {
+        #[clap(name = "input", short, long, help = "The input to the exist command as JSON")]
         input: String,
     },
 }

@@ -117,7 +117,7 @@ if (!$SkipBuild) {
     New-Item -ItemType Directory $target > $null
 
 # make sure dependencies are built first so clippy runs correctly
-$windows_projects = @("pal", "ntreg", "ntstatuserror", "ntuserinfo", "registry", "reboot_pending", "wmi-adapter")
+$windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
 
 # projects are in dependency order
 $projects = @(
@@ -134,7 +134,7 @@ $projects = @(
     "resources/brew",
     "runcommandonset"
 )
-$pedantic_unclean_projects = @("ntreg")
+$pedantic_unclean_projects = @()
 $clippy_unclean_projects = @("tree-sitter-dscexpression")
 $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
