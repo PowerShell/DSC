@@ -367,11 +367,17 @@ pub fn parse_input_to_json(value: &str) -> String {
 pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> String {
     let value = match (input, stdin, path) {
         (Some(_), Some(_), None) | (None, Some(_), Some(_)) => {
-            error!("Error: Cannot specify both stdin and --input or --path");
+            error!("Error: Cannot specify both stdin and --document or --path");
             exit(EXIT_INVALID_ARGS);
         },
         (Some(input), None, None) => {
             debug!("Reading input from command line parameter");
+
+            // see if user accidentally passed in a file path
+            if Path::new(input).exists() {
+                error!("Error: Document provided is a file path, use --path instead");
+                exit(EXIT_INVALID_INPUT);
+            }
             input.clone()
         },
         (None, Some(stdin), None) => {
@@ -413,7 +419,7 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
 ///
 /// # Arguments
 ///
-/// * `config_path` - Full path to the config file 
+/// * `config_path` - Full path to the config file
 ///
 /// # Returns
 ///
@@ -428,14 +434,14 @@ pub fn set_dscconfigroot(config_path: &str) -> String
             exit(EXIT_DSC_ERROR);
     };
 
-    let Some(config_root_path) = full_path.parent() else { 
+    let Some(config_root_path) = full_path.parent() else {
         // this should never happen because path was absolutized
         error!("Error reading config path parent");
         exit(EXIT_DSC_ERROR);
     };
 
     let env_var = "DSC_CONFIG_ROOT";
-    
+
     // warn if env var is already set/used
     if env::var(env_var).is_ok() {
         warn!("The current value of '{env_var}' env var will be overridden");

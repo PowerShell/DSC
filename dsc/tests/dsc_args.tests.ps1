@@ -271,4 +271,10 @@ resources:
         $r.requireAdapter.StartsWith("Test") | Should -Be $true
         $r.kind | Should -Be "Resource"
     }
+
+    It 'passing filepath to document arg should error' {
+        $configFile = Resolve-Path $PSScriptRoot/../examples/osinfo.dsc.json
+        $stderr = dsc config get -d $configFile 2>&1
+        $stderr | Should -Match '.*?--path.*?'
+    }
 }
