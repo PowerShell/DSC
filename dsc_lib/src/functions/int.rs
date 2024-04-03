@@ -82,10 +82,10 @@ mod tests {
             DscError::Function(func, msg) => {
                 assert_eq!(func, "int".to_string());
                 assert_eq!(msg, "unable to parse string to int".to_string());
-            }
+            },
             _ => {
                 panic!("unexpected error type: {}", err);
-            },
+            }
         }
     }
 }
