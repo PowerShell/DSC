@@ -24,14 +24,16 @@ Set-StrictMode -Off
 
 # if these files are missing, it is difficult to troubleshoot why the module is not working as expected
 $requiredFileCount = 0
-$requiredFiles = @(
+@(
     "$PSScriptRoot/Configuration/BaseRegistration/BaseResource.Schema.mof"
     "$PSScriptRoot/Configuration/BaseRegistration/MSFT_MetaConfigurationExtensionClasses.Schema.mof"
     "$PSScriptRoot/Configuration/BaseRegistration/en-us/BaseResource.Schema.mfl"
     "$PSScriptRoot/Configuration/BaseRegistration/en-us/MSFT_MetaConfigurationExtensionClasses.Schema.mfl"
 ) | ForEach-Object { if (Test-Path $_) { $requiredFileCount++ } }
-$trace = @{'Debug' = 'Dsicovered required psDscAdapter files= ' + $requiredFileCount + ' of 4 files' } | ConvertTo-Json -Compress
-$host.ui.WriteErrorLine($trace)
+if (4 -ne $requiredFileCount) {
+    $trace = @{'Debug' = 'ERROR: The psDscAdapter module is missing required files. Re-install DSC.' } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
+}
 
 # In case localized resource is not available we revert back to English as defined in LocalizedData section so ignore the error instead of showing it to user.
 Import-LocalizedData -BindingVariable LocalizedData -FileName psDscAdapter.Resource.psd1 -ErrorAction Ignore
