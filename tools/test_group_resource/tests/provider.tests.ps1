@@ -5,7 +5,7 @@ Describe 'Resource adapter tests' {
 
     It 'Can list adapter resources' {
 
-        $out = dsc resource list *testresource* -a Test/TestGroup | ConvertFrom-Json | Sort-Object -Property type
+        $out = dsc resource list '*testresource*' -a Test/TestGroup | ConvertFrom-Json | Sort-Object -Property type
         $out.Count | Should -Be 2
         $out[0].type | Should -BeExactly 'Test/TestResource1'
         $out[0].version | Should -Be '1.0.0'
