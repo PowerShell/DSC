@@ -3,12 +3,14 @@
 
 mod args;
 mod echo;
+mod exist;
 mod sleep;
 
 use args::{Args, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
 use crate::echo::Echo;
+use crate::exist::{Exist, State};
 use crate::sleep::Sleep;
 use std::{thread, time::Duration};
 
@@ -25,10 +27,29 @@ fn main() {
             };
             serde_json::to_string(&echo).unwrap()
         },
+        SubCommand::Exist { input } => {
+            let mut exist = match serde_json::from_str::<Exist>(&input) {
+                Ok(exist) => exist,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            if exist.exist {
+                exist.state = Some(State::Present);
+            } else {
+                exist.state = Some(State::Absent);
+            }
+
+            serde_json::to_string(&exist).unwrap()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Echo => {
                     schema_for!(Echo)
+                },
+                Schemas::Exist => {
+                    schema_for!(Exist)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
