@@ -7,7 +7,7 @@ mod discovery_trait;
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError};
 use std::collections::BTreeMap;
-use tracing::{error};
+use tracing::error;
 
 pub struct Discovery {
     pub resources: BTreeMap<String, DscResource>,
