@@ -11,7 +11,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "./powershell.resource.ps1 -WinPS List"
+          "./windowspowershell.resource.ps1 -WinPS List"
         ]
         },
       "config": "full"
@@ -23,7 +23,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershell.resource.ps1 -WinPS Get"
+        "$Input | ./windowspowershell.resource.ps1 -WinPS Get"
       ]
       },
     "set": {
@@ -33,7 +33,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershell.resource.ps1 -WinPS Set"
+        "$Input | ./windowspowershell.resource.ps1 -WinPS Set"
       ],
       "input": "stdin",
       "preTest": true,
@@ -46,7 +46,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershell.resource.ps1 -WinPS Test"
+        "$Input | ./windowspowershell.resource.ps1 -WinPS Test"
       ],
       "input": "stdin",
       "return": "state"

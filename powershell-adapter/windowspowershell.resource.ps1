@@ -69,7 +69,7 @@ switch ($Operation) {
     'Get' {
         $desiredState = $psDscAdapter.invoke( {param($jsonInput) Get-ConfigObject -jsonInput $jsonInput}, $jsonInput )
         if ($null -eq $desiredState) {
-            $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
+            $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided JSON input.' } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
             exit 1
         }
