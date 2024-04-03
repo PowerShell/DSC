@@ -30,7 +30,7 @@ impl Function for Int {
         if arg.is_string() {
             let input = arg.as_str().ok_or(DscError::Function("int".to_string(), "invalid input string".to_string()))?;
             let result = input.parse::<f64>().map_err(|_| DscError::Function("int".to_string(), "unable to parse string to int".to_string()))?;
-            value = NumCast::from(result).ok_or(DscError::Parser("unable to cast to int".to_string()))?;
+            value = NumCast::from(result).ok_or(DscError::Function("int".to_string(), "unable to cast to int".to_string()))?;
         } else if arg.is_number() {
             value = arg.as_i64().ok_or(DscError::Function("int".to_string(), "unable to parse number to int".to_string()))?;
         } else {
