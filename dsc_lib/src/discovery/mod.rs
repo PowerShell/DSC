@@ -6,9 +6,8 @@ mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError};
-use regex::{RegexBuilder, Regex};
 use std::collections::BTreeMap;
-use tracing::{debug, error};
+use tracing::error;
 
 pub struct Discovery {
     pub resources: BTreeMap<String, DscResource>,
@@ -29,30 +28,16 @@ impl Discovery {
 
     /// List operation.
     #[allow(clippy::missing_panics_doc)] // false positive in clippy; this function will never panic
-    pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
+    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
 
-        let mut regex: Option<Box<Regex>> = None;
         let mut resources: Vec<DscResource> = Vec::new();
-        if !type_name_filter.is_empty()
-        {
-            let regex_str = convert_wildcard_to_regex(type_name_filter);
-            let mut regex_builder = RegexBuilder::new(regex_str.as_str());
-            debug!("Using regex {regex_str} as filter for resource type");
-            regex_builder.case_insensitive(true);
-            if let Ok(reg_v) = regex_builder.build() {
-                regex = Some(Box::new(reg_v));
-            } else {
-                error!("Could not build Regex");
-                return resources;
-            }
-        }
 
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.list_available_resources() {
+            let discovered_resources = match discovery_type.list_available_resources(type_name_filter, adapter_name_filter) {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");
@@ -61,9 +46,7 @@ impl Discovery {
             };
 
             for resource in discovered_resources {
-                if type_name_filter.is_empty() || regex.as_ref().unwrap().is_match(resource.0.as_str()) {
                     resources.push(resource.1);
-                }
             };
         }
 
