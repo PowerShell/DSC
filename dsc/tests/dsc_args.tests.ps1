@@ -234,7 +234,7 @@ resources:
 
     It 'verify `dsc resource list resource_filter`' {
         # same as previous but also apply resource_filter filter
-        $a = dsc resource list Test* -f json
+        $a = dsc resource list 'Test*' -f json
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
             $a_obj.type.StartsWith("Test") | Should -Be $true
