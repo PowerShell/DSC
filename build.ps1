@@ -188,6 +188,10 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
             if (Test-Path "./copy_files.txt") {
                 Get-Content "./copy_files.txt" | ForEach-Object {
+                    # if the line contains a '\' character, throw an error
+                    if ($_ -match '\\') {
+                        throw "copy_files.txt should use '/' as the path separator"
+                    }
                     # copy the file to the target directory, creating the directory path if needed
                     $fileCopyPath = $_.split('/')
                     if ($fileCopyPath.Length -gt 1) {
