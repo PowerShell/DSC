@@ -390,11 +390,17 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
 
     // all command based resources are required to support `get`
     let mut capabilities = vec![Capability::Get];
-    if manifest.set.is_some() {
+    if let Some(set) = &manifest.set {
         capabilities.push(Capability::Set);
+        if set.handles_exist == Some(true) {
+            capabilities.push(Capability::SetHandlesExist);
+        }
     }
     if manifest.test.is_some() {
         capabilities.push(Capability::Test);
+    }
+    if manifest.delete.is_some() {
+        capabilities.push(Capability::Delete);
     }
     if manifest.export.is_some() {
         capabilities.push(Capability::Export);

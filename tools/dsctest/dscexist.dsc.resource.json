@@ -1,0 +1,39 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+    "type": "Test/Exist",
+    "version": "0.1.0",
+    "get": {
+        "executable": "dsctest",
+        "args": [
+            "exist",
+            "--input",
+            "{json}"
+        ],
+        "input": {
+            "arg": "{json}"
+        }
+    },
+    "set": {
+        "executable": "dsctest",
+        "args": [
+            "exist",
+            "--input",
+            "{json}"
+        ],
+        "input": {
+            "arg": "{json}"
+        },
+        "handlesExist": true,
+        "return": "state"
+    },
+    "schema": {
+        "command": {
+            "executable": "dsctest",
+            "args": [
+                "schema",
+                "-s",
+                "exist"
+            ]
+        }
+    }
+}
