@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 mod args;
+mod delete;
 mod echo;
 mod exist;
 mod sleep;
@@ -9,6 +10,7 @@ mod sleep;
 use args::{Args, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
+use crate::delete::Delete;
 use crate::echo::Echo;
 use crate::exist::{Exist, State};
 use crate::sleep::Sleep;
@@ -17,6 +19,17 @@ use std::{thread, time::Duration};
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
+        SubCommand::Delete { input } => {
+            let mut delete = match serde_json::from_str::<Delete>(&input) {
+                Ok(delete) => delete,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            delete.delete_called = Some(true);
+            serde_json::to_string(&delete).unwrap()
+        },
         SubCommand::Echo { input } => {
             let echo = match serde_json::from_str::<Echo>(&input) {
                 Ok(echo) => echo,
@@ -45,6 +58,9 @@ fn main() {
         },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
+                Schemas::Delete => {
+                    schema_for!(Delete)
+                },
                 Schemas::Echo => {
                     schema_for!(Echo)
                 },

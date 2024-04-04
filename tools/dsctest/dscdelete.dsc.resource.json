@@ -1,11 +1,11 @@
 {
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-    "type": "Test/Exist",
+    "type": "Test/Delete",
     "version": "0.1.0",
     "get": {
         "executable": "dsctest",
         "args": [
-            "exist",
+            "delete",
             "--input",
             "{json}"
         ],
@@ -13,19 +13,16 @@
             "arg": "{json}"
         }
     },
-    "set": {
+    "delete": {
         "executable": "dsctest",
         "args": [
-            "exist",
+            "delete",
             "--input",
             "{json}"
         ],
         "input": {
             "arg": "{json}"
-        },
-        "handlesExist": true,
-        "implementsPretest": true,
-        "return": "state"
+        }
     },
     "schema": {
         "command": {
@@ -33,7 +30,7 @@
             "args": [
                 "schema",
                 "-s",
-                "exist"
+                "delete"
             ]
         }
     }

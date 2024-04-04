@@ -71,6 +71,9 @@ pub enum DscError {
     #[error("Not implemented: {0}")]
     NotImplemented(String),
 
+    #[error("Not supported: {0}")]
+    NotSupported(String),
+
     #[error("Number conversion error: {0}")]
     NumberConversion(#[from] std::num::TryFromIntError),
 
