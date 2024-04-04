@@ -316,9 +316,8 @@ impl Configurator {
                 // convert get result to set result                
                 let set_result = match before_result {
                     GetResult::Resource(before_response) => {
-                        let after_result = match after_result {
-                            GetResult::Resource(get_response) => get_response,
-                            _ => return Err(DscError::NotSupported("Group resources not supported for delete".to_string())),
+                        let GetResult::Resource(after_result) = after_result else { 
+                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
                         };
                         let before_value = serde_json::to_value(&before_response.actual_state)?;
                         let after_value = serde_json::to_value(&after_result.actual_state)?;
