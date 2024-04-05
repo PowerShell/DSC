@@ -24,16 +24,16 @@ if ('Validate'-ne $Operation) {
 # process the operation requested to the script
 switch ($Operation) {
     'List' {
-        $resourceCache = Invoke-DscCacheRefresh
+        $dscResourceCache = Invoke-DscCacheRefresh
 
         # cache was refreshed on script load
-        foreach ($Type in $resourceCache.Type) {
+        foreach ($dscResource in $dscResourceCache) {
         
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
-            $r = $resourceCache | Where-Object Type -EQ $Type | ForEach-Object DscResourceInfo
+            $DscResourceInfo = $dscResource.DscResourceInfo
 
             # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
-            $module = Get-Module -Name $r.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
+            $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
             if ($module.PrivateData.PSData.DscCapabilities) {
                 $capabilities = $module.PrivateData.PSData.DscCapabilities
             }
@@ -42,8 +42,8 @@ switch ($Operation) {
             }
 
             # this text comes directly from the resource manifest for v3 native resources
-            if ($r.Description) {
-                $description = $r.Description
+            if ($DscResourceInfo.Description) {
+                $description = $DscResourceInfo.Description
             }
             else {
                 # some modules have long multi-line descriptions. to avoid issue, use only the first line.
@@ -52,22 +52,22 @@ switch ($Operation) {
 
             # OUTPUT dsc is expecting the following properties
             [resourceOutput]@{
-                type           = $Type
+                type           = $dscResource.Type
                 kind           = 'Resource'
-                version        = $r.version.ToString()
+                version        = $DscResourceInfo.version.ToString()
                 capabilities   = $capabilities
-                path           = $r.Path
-                directory      = $r.ParentPath
-                implementedAs  = $r.ImplementationDetail
-                author         = $r.CompanyName
-                properties     = $r.Properties.Name
-                requireAdapter = 'Microsoft.Dsc/PowerShell'
+                path           = $DscResourceInfo.Path
+                directory      = $DscResourceInfo.ParentPath
+                implementedAs  = $DscResourceInfo.ImplementationDetail
+                author         = $DscResourceInfo.CompanyName
+                properties     = $DscResourceInfo.Properties.Name
+                requireAdapter = 'Microsoft.Dsc/PowerShell' # TODO - this could also be /WindowsPowerShell
                 description    = $description
             } | ConvertTo-Json -Compress
         }
     }
     'Get' {
-        $desiredState = $psDscAdapter.invoke( {param($jsonInput) Get-ConfigObject -jsonInput $jsonInput}, $jsonInput )
+        $desiredState = $psDscAdapter.invoke(   {param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput}, $jsonInput )
         if ($null -eq $desiredState) {
             $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
@@ -81,9 +81,9 @@ switch ($Operation) {
             $host.ui.WriteErrorLine($trace)
             exit 1
         }
-        
-        $resourceCache = Invoke-DscCacheRefresh -module $dscResourceModules
-        if ($resourceCache.count -ne $dscResourceModules.count) {
+
+        $dscResourceCache = Invoke-DscCacheRefresh -module $dscResourceModules
+        if ($dscResourceCache.count -lt $dscResourceModules.count) {
             $trace = @{'Debug' = 'ERROR: DSC resource module not found.' } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
             exit 1
@@ -91,7 +91,7 @@ switch ($Operation) {
 
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
-            $actualState = $psDscAdapter.invoke( {param($ds, $resourcecache) Get-ActualState -DesiredState $ds -ResourceCache $resourcecache}, $ds, $resourceCache)
+            $actualState = $psDscAdapter.invoke( {param($ds, $dscResourceCache) Get-ActualState -DesiredState $ds -dscResourceCache $dscResourceCache}, $ds, $dscResourceCache)
             if ($null -eq $actualState) {
                 $trace = @{'Debug' = 'ERROR: Incomplete GET for resource ' + $ds.Name } | ConvertTo-Json -Compress
                 $host.ui.WriteErrorLine($trace)
