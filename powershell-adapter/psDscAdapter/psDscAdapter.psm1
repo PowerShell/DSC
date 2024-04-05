@@ -1143,15 +1143,15 @@ function Invoke-DscCacheRefresh {
     }
 
     foreach ($dscResource in $DscResources) {
+        # resources that shipped in Windows should only be used with Windows PowerShell
+        if ($dscResource.ParentPath -like "$env:SYSTEMROOT\System32\*" -and $PSVersionTable.PSVersion.Major -gt 5) {
+            continue
+        }
+
         # only support known dscResourceType
         if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
             $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
-            continue
-        }
-
-        # only support Binary on Windows PowerShell
-        if ('Binary' -eq $dsc.ImplementationDetail -and -not ($PSVersionTable.PSVersion.Major -lt 6)) {
             continue
         }
 
@@ -1210,6 +1210,14 @@ function Get-DscResourceObject {
         $host.ui.WriteErrorLine($trace)
     }
 
+    # match adapter to version of powershell
+    if ($PSVersionTable.PSVersion.Major -le 5) {
+        $adapterName = 'Microsoft.DSC/WindowsPowerShell'
+    }
+    else {
+        $adapterName = 'Microsoft.DSC/PowerShell'
+    }
+
     if ($null -ne $inputObj.metadata -and $null -ne $inputObj.metadata.'Microsoft.DSC' -and $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
         # change the type from pscustomobject to dscResourceObject
         $inputObj.resources | ForEach-Object -Process {
@@ -1225,7 +1233,7 @@ function Get-DscResourceObject {
         $type = $inputObj.type
         $inputObj.psobject.properties.Remove('type')
         $desiredState += [dscResourceObject]@{
-            name       = 'Microsoft.Dsc/PowerShell' # TODO - this might be Microsoft.DSC/WindowsPowerShell
+            name       = $adapterName
             type       = $type
             properties = $inputObj
         }

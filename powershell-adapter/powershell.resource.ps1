@@ -9,7 +9,7 @@ param(
     [string]$jsonInput = '@{}'
 )
 
-if ('Validate'-ne $Operation) {
+if ('Validate' -ne $Operation) {
     # write $jsonInput to STDERR for debugging
     $trace = @{'Debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
     $host.ui.WriteErrorLine($trace)
@@ -33,21 +33,31 @@ switch ($Operation) {
             $DscResourceInfo = $dscResource.DscResourceInfo
 
             # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
-            $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-            if ($module.PrivateData.PSData.DscCapabilities) {
-                $capabilities = $module.PrivateData.PSData.DscCapabilities
-            }
-            else {
-                $capabilities = @('Get', 'Set', 'Test')
+            if ($DscResourceInfo.ModuleName) {
+                $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
+                if ($module.PrivateData.PSData.DscCapabilities) {
+                    $capabilities = $module.PrivateData.PSData.DscCapabilities
+                }
+                else {
+                    $capabilities = @('Get', 'Set', 'Test')
+                }
             }
 
             # this text comes directly from the resource manifest for v3 native resources
             if ($DscResourceInfo.Description) {
                 $description = $DscResourceInfo.Description
             }
-            else {
+            elseif ($module.Description) {
                 # some modules have long multi-line descriptions. to avoid issue, use only the first line.
                 $description = $module.Description.split("`r`n")[0]
+            }
+
+            # match adapter to version of powershell
+            if ($PSVersionTable.PSVersion.Major -le 5) {
+                $requireAdapter = 'Microsoft.DSC/WindowsPowerShell'
+            }
+            else {
+                $requireAdapter = 'Microsoft.DSC/PowerShell'
             }
 
             # OUTPUT dsc is expecting the following properties
@@ -61,13 +71,13 @@ switch ($Operation) {
                 implementedAs  = $DscResourceInfo.ImplementationDetail
                 author         = $DscResourceInfo.CompanyName
                 properties     = $DscResourceInfo.Properties.Name
-                requireAdapter = 'Microsoft.Dsc/PowerShell' # TODO - this could also be /WindowsPowerShell
+                requireAdapter = $requireAdapter
                 description    = $description
             } | ConvertTo-Json -Compress
         }
     }
     'Get' {
-        $desiredState = $psDscAdapter.invoke(   {param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput}, $jsonInput )
+        $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
             $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
@@ -91,7 +101,7 @@ switch ($Operation) {
 
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
-            $actualState = $psDscAdapter.invoke( {param($ds, $dscResourceCache) Get-ActualState -DesiredState $ds -dscResourceCache $dscResourceCache}, $ds, $dscResourceCache)
+            $actualState = $psDscAdapter.invoke( { param($ds, $dscResourceCache) Get-ActualState -DesiredState $ds -dscResourceCache $dscResourceCache }, $ds, $dscResourceCache)
             if ($null -eq $actualState) {
                 $trace = @{'Debug' = 'ERROR: Incomplete GET for resource ' + $ds.Name } | ConvertTo-Json -Compress
                 $host.ui.WriteErrorLine($trace)
