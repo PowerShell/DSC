@@ -3,7 +3,9 @@
 
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
-use crate::dscresources::dscresource::Invoke;
+use crate::dscresources::dscresource::get_diff;
+use crate::dscresources::invoke_result::GetResult;
+use crate::dscresources::{dscresource::{Capability, Invoke}, invoke_result::{SetResult, ResourceSetResponse}};
 use crate::dscresources::resource_manifest::Kind;
 use crate::DscResource;
 use crate::discovery::Discovery;
@@ -278,16 +280,67 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
+
+            // see if the properties contains `_exist` and is false
+            let exist = match &properties {
+                Some(property_map) => {
+                    if let Some(exist) = property_map.get("_exist") {
+                        !matches!(exist, Value::Bool(false))
+                    } else {
+                        true
+                    }
+                },
+                _ => {
+                    true
+                }
+            };
+
             let desired = add_metadata(&dsc_resource.kind, properties)?;
             trace!("desired: {desired}");
-            let set_result = dsc_resource.set(&desired, skip_test)?;
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
-            let resource_result = config_result::ResourceSetResult {
-                name: resource.name.clone(),
-                resource_type: resource.resource_type.clone(),
-                result: set_result,
-            };
-            result.results.push(resource_result);
+
+            if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
+                debug!("Resource handles _exist or _exist is true");
+                let set_result = dsc_resource.set(&desired, skip_test)?;
+                self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+                let resource_result = config_result::ResourceSetResult {
+                    name: resource.name.clone(),
+                    resource_type: resource.resource_type.clone(),
+                    result: set_result,
+                };
+                result.results.push(resource_result);    
+            } else if dsc_resource.capabilities.contains(&Capability::Delete) {
+                debug!("Resource implements delete and _exist is false");
+                let before_result = dsc_resource.get(&desired)?;
+                dsc_resource.delete(&desired)?;
+                let after_result = dsc_resource.get(&desired)?;
+                // convert get result to set result                
+                let set_result = match before_result {
+                    GetResult::Resource(before_response) => {
+                        let GetResult::Resource(after_result) = after_result else { 
+                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
+                        };
+                        let before_value = serde_json::to_value(&before_response.actual_state)?;
+                        let after_value = serde_json::to_value(&after_result.actual_state)?;
+                        ResourceSetResponse {
+                            before_state: before_response.actual_state,
+                            after_state: after_result.actual_state,
+                            changed_properties: Some(get_diff(&before_value, &after_value)),
+                        }
+                    },
+                    GetResult::Group(_) => {
+                        return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
+                    },
+                };
+                self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+                let resource_result = config_result::ResourceSetResult {
+                    name: resource.name.clone(),
+                    resource_type: resource.resource_type.clone(),
+                    result: SetResult::Resource(set_result),
+                };
+                result.results.push(resource_result);
+            } else {
+                return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
+            }
         }
 
         mem::drop(pb_span_enter);
