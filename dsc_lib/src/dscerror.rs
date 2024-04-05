@@ -89,7 +89,7 @@ pub enum DscError {
     #[error("Schema: {0}")]
     Schema(String),
 
-    #[error("No Schema: {0}")]
+    #[error("No Schema found and `validate` is not supported: {0}")]
     SchemaNotAvailable(String),
 
     #[error("Security context: {0}")]
