@@ -6,23 +6,21 @@
         "executable": "dsctest",
         "args": [
             "delete",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "delete": {
         "executable": "dsctest",
         "args": [
             "delete",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "schema": {
         "command": {
