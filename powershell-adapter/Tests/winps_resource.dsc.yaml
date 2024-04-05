@@ -5,10 +5,11 @@
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
 resources:
 - name: Get info from classic DSC resources
-  type: Microsoft.Windows/WindowsPowerShell
+  type: Microsoft.DSC/WindowsPowerShell
   properties:
     resources:
-    - name: Get Info
-      type: PSDesiredStateConfiguration/MSFT_ServiceResource
+    - name: File
+      type: Windows/File
       properties:
-        Name: sshd
+        DestinationPath: 'c:\test.txt'
+        Contents: 'Hello, World!'

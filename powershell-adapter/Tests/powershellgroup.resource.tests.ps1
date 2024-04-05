@@ -20,6 +20,14 @@ Describe 'PowerShell adapter resource tests' {
         ($resources | ? {$_.Type -eq 'PSTestModule/TestPSRepository'}).Count | Should -Be 1
     }
 
+    It 'Windows PowerShell adapter supports File resource' -Skip:(!$IsWindows){
+
+        $r = dsc resource list --adapter Microsoft.DSC/WindowsPowerShell
+        $LASTEXITCODE | Should -Be 0
+        $resources = $r | ConvertFrom-Json
+        ($resources | ? {$_.Type -eq 'Windows/File'}).Count | Should -Be 1
+    }
+
     It 'Get works on class-based resource' -Skip:(!$IsWindows){
 
         $r = "{'Name':'TestClassResource1', 'Type':'TestClassResource/TestClassResource'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'

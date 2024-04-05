@@ -6,7 +6,8 @@ Describe 'PowerShell adapter resource tests' {
     BeforeAll {
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
-        $configPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
+        $pwshConfigPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
+        $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
@@ -14,7 +15,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on config with class-based and script-based resources' -Skip:(!$IsWindows){
 
-        $r = Get-Content -Raw $configPath | dsc config get
+        $r = Get-Content -Raw $pwshConfigPath | dsc config get
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState.result[0].properties.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
@@ -22,10 +23,18 @@ Describe 'PowerShell adapter resource tests' {
         $res.results[0].result.actualState.result[1].properties.EnumProp | Should -BeExactly 'Expected'
     }
 
+    It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
+
+      $r = Get-Content -Raw $winpsConfigPath | dsc config get
+      $LASTEXITCODE | Should -Be 0
+      $res = $r | ConvertFrom-Json
+      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -BeExactly 'c:\test.txt'
+  }
+
     <#
     It 'Test works on config with class-based and script-based resources' -Skip:(!$IsWindows){
 
-        $r = Get-Content -Raw $configPath | dsc config test
+        $r = Get-Content -Raw $pwshConfigPath | dsc config test
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState.result[0] | Should -Not -BeNull
@@ -34,7 +43,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Set works on config with class-based and script-based resources' -Skip:(!$IsWindows){
 
-        $r = Get-Content -Raw $configPath | dsc config set
+        $r = Get-Content -Raw $pwshConfigPath | dsc config set
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results.result.afterState.result[0].RebootRequired | Should -Not -BeNull
