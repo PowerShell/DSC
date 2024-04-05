@@ -24,7 +24,6 @@
             "arg": "{json}"
         },
         "handlesExist": true,
-        "implementsPretest": true,
         "return": "state"
     },
     "schema": {

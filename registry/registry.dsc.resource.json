@@ -34,7 +34,7 @@
         "executable": "registry",
         "args": [
             "config",
-            "remove",
+            "delete",
             "--input",
             "{json}"
         ],

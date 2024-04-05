@@ -120,7 +120,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     verify_json(resource, cwd, desired)?;
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
-    if !skip_test && !set.pre_test.unwrap_or_default() {
+    if !skip_test && set.pre_test != Some(true) {
         info!("No pretest, invoking test {}", &resource.resource_type);
         let (in_desired_state, actual_state) = match invoke_test(resource, cwd, desired)? {
             TestResult::Group(group_response) => {
@@ -282,7 +282,8 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
     let Some(test) = &resource.test else {
-        return Err(DscError::NotImplemented("test".to_string()));
+        info!("Resource '{}' does not implement test, performing synthetic test", &resource.resource_type);
+        return invoke_synthetic_test(resource, cwd, expected);
     };
 
     verify_json(resource, cwd, expected)?;
@@ -375,6 +376,30 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     }
 }
 
+fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
+    let get_result = invoke_get(resource, cwd, expected)?;
+    let actual_state = match get_result {
+        GetResult::Group(results) => {
+            let mut result_array: Vec<Value> = Vec::new();
+            for result in results {
+                result_array.push(serde_json::to_value(&result)?);
+            }
+            Value::from(result_array)
+        },
+        GetResult::Resource(response) => {
+            response.actual_state
+        }
+    };
+    let expected_value: Value = serde_json::from_str(expected)?;
+    let diff_properties = get_diff(&expected_value, &actual_state);
+    Ok(TestResult::Resource(ResourceTestResponse {
+        desired_state: expected_value,
+        actual_state,
+        in_desired_state: diff_properties.is_empty(),
+        diff_properties,
+    }))
+}
+
 /// Invoke the delete operation against a command resource.
 /// 
 /// # Arguments
@@ -393,7 +418,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_filter: Option<&str> = None;
-    let mut get_args = resource.get.args.clone();
+    let mut delete_args = delete.args.clone();
     verify_json(resource, cwd, filter)?;
     match &delete.input {
         InputKind::Env => {
@@ -403,12 +428,12 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
             input_filter = Some(filter);
         },
         InputKind::Arg(arg_name) => {
-            replace_token(&mut get_args, arg_name, filter)?;
+            replace_token(&mut delete_args, arg_name, filter)?;
         },
     }
 
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
-    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, get_args, input_filter, Some(cwd), env)?;
+    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, delete_args, input_filter, Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));

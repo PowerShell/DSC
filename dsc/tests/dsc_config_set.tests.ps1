@@ -18,7 +18,6 @@ Describe 'dsc config get tests' {
         $out = $config_yaml | dsc config set | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Test/Exist'
-        $out.results[0].result.beforeState.state | Should -BeExactly 'Absent'
         $out.results[0].result.beforeState._exist | Should -BeFalse
         $out.results[0].result.afterState.state | Should -BeExactly 'Absent'
         $out.results[0].result.afterState._exist | Should -BeFalse
