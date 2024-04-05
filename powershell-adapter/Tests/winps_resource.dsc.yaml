@@ -11,5 +11,5 @@ resources:
     - name: File
       type: Windows/File
       properties:
-        DestinationPath: 'c:\test.txt'
+        DestinationPath: $env:TEMP\test.txt
         Contents: 'Hello, World!'

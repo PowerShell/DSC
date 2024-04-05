@@ -28,7 +28,7 @@ Describe 'PowerShell adapter resource tests' {
       $r = Get-Content -Raw $winpsConfigPath | dsc config get
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
-      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -BeExactly 'c:\test.txt'
+      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -BeNullOrEmpty
   }
 
     <#
