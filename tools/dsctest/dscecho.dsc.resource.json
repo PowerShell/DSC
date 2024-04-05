@@ -6,34 +6,31 @@
         "executable": "dsctest",
         "args": [
             "echo",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "set": {
         "executable": "dsctest",
         "args": [
             "echo",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "test": {
         "executable": "dsctest",
         "args": [
             "echo",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "schema": {
         "command": {
