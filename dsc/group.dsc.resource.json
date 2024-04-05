@@ -48,6 +48,7 @@
     "args": [
       "config",
       "validate"
-    ]
+    ],
+    "input": "stdin"
   }
 }

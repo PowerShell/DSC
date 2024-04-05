@@ -96,9 +96,6 @@ pub enum ArgKind {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum InputKind {
-    /// The input replaces arguments with this token in the command.
-    #[serde(rename = "arg")]
-    Arg,
     /// The input is accepted as environmental variables.
     #[serde(rename = "env")]
     Env,
@@ -156,7 +153,7 @@ pub struct SetMethod {
     /// The arguments to pass to the command to perform a Set.
     pub args: Option<Vec<ArgKind>>,
     /// How to pass required input for a Set.
-    pub input: InputKind,
+    pub input: Option<InputKind>,
     /// Whether to run the Test method before the Set method.  True means the resource will perform its own test before running the Set method.
     #[serde(rename = "implementsPretest", skip_serializing_if = "Option::is_none")]
     pub pre_test: Option<bool>,
@@ -175,7 +172,7 @@ pub struct TestMethod {
     /// The arguments to pass to the command to perform a Test.
     pub args: Option<Vec<ArgKind>>,
     /// How to pass required input for a Test.
-    pub input: InputKind,
+    pub input: Option<InputKind>,
     /// The type of return value expected from the Test method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
@@ -188,7 +185,7 @@ pub struct DeleteMethod {
     /// The arguments to pass to the command to perform a Delete.
     pub args: Option<Vec<ArgKind>>,
     /// How to pass required input for a Delete.
-    pub input: InputKind,
+    pub input: Option<InputKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -198,7 +195,7 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The arguments to pass to the command to perform a Validate.
     pub args: Option<Vec<ArgKind>>,
     /// How to pass required input for a Validate.
-    pub input: InputKind,
+    pub input: Option<InputKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

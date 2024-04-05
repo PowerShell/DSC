@@ -54,7 +54,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_filter: Option<&str> = None;
-    let mut args: Option<Vec<String>> = None;
+    let args = process_args(&resource.get.args, filter);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
 
@@ -64,9 +64,6 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
             },
             InputKind::Stdin => {
                 input_filter = Some(filter);
-            },
-            InputKind::Arg => {
-                args = process_args(&resource.get.args, filter);
             },
         }
     }
@@ -146,16 +143,13 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     let mut get_env: Option<HashMap<String, String>> = None;
     let mut get_input: Option<&str> = None;
-    let mut args: Option<Vec<String>> = None;
+    let args = process_args(&resource.get.args, desired);
     match &resource.get.input {
         Some(InputKind::Env) => {
             get_env = Some(json_to_hashmap(desired)?);
         },
         Some(InputKind::Stdin) => {
             get_input = Some(desired);
-        },
-        Some(InputKind::Arg) => {
-            args = process_args(&resource.get.args, desired);
         },
         None => {
             // leave input as none
@@ -183,16 +177,16 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let mut args: Option<Vec<String>> = None;
+    let args = process_args(&set.args, desired);
     match &set.input {
-        InputKind::Env => {
+        Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
         },
-        InputKind::Stdin => {
+        Some(InputKind::Stdin) => {
             input_desired = Some(desired);
         },
-        InputKind::Arg => {
-            args = process_args(&set.args, desired);
+        None => {
+            // leave input as none
         },
     }
 
@@ -290,16 +284,16 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_expected: Option<&str> = None;
-    let mut args: Option<Vec<String>> = None;
+    let args = process_args(&test.args, expected);
     match &test.input {
-        InputKind::Env => {
+        Some(InputKind::Env) => {
            env = Some(json_to_hashmap(expected)?);
         },
-        InputKind::Stdin => {
+        Some(InputKind::Stdin) => {
             input_expected = Some(expected);
         },
-        InputKind::Arg => {
-            args = process_args(&test.args, expected);
+        None => {
+            // leave input as none
         },
     }
 
@@ -416,19 +410,20 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
         return Err(DscError::NotImplemented("delete".to_string()));
     };
 
+    verify_json(resource, cwd, filter)?;
+
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_filter: Option<&str> = None;
-    let mut args: Option<Vec<String>> = None;
-    verify_json(resource, cwd, filter)?;
+    let args = process_args(&delete.args, filter);
     match &delete.input {
-        InputKind::Env => {
+        Some(InputKind::Env) => {
             env = Some(json_to_hashmap(filter)?);
         },
-        InputKind::Stdin => {
+        Some(InputKind::Stdin) => {
             input_filter = Some(filter);
         },
-        InputKind::Arg => {
-            args = process_args(&delete.args, filter);
+        None => {
+            // leave input as none
         },
     }
 
@@ -466,16 +461,16 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_config: Option<&str> = None;
-    let mut args: Option<Vec<String>> = None;
+    let args = process_args(&validate.args, config);
     match &validate.input {
-        InputKind::Env => {
+        Some(InputKind::Env) => {
             env = Some(json_to_hashmap(config)?);
         },
-        InputKind::Stdin => {
+        Some(InputKind::Stdin) => {
             input_config = Some(config);
         },
-        InputKind::Arg => {
-            args = process_args(&validate.args, config);
+        None => {
+            // leave input as none
         },
     }
 
@@ -551,24 +546,29 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
         return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
     };
 
+
     let mut env: Option<HashMap<String, String>> = None;
     let mut export_input: Option<&str> = None;
-    let mut args: Option<Vec<String>> = None;
+    let args: Option<Vec<String>>;
     if let Some(input) = input {
-        match &export.input {
-            Some(InputKind::Env) => {
-                env = Some(json_to_hashmap(input)?);
-            },
-            Some(InputKind::Stdin) => {
-                export_input = Some(input);
-            },
-            Some(InputKind::Arg) => {
-                args = process_args(&export.args, input);
-            },
-            None => {
-                // leave input as none
-            },
+        if !input.is_empty() {
+            verify_json(resource, cwd, input)?;
+            match &export.input {
+                Some(InputKind::Env) => {
+                    env = Some(json_to_hashmap(input)?);
+                },
+                Some(InputKind::Stdin) => {
+                    export_input = Some(input);
+                },
+                None => {
+                    // leave input as none
+                },
+            }
         }
+
+        args = process_args(&export.args, input);
+    } else {
+        args = process_args(&export.args, "");
     }
 
     let (exit_code, stdout, stderr) = invoke_command(&export.executable, args, export_input, Some(cwd), env)?;
@@ -682,7 +682,7 @@ fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>>
                 processed_args.push(s.clone());
             },
             ArgKind::Json { json_input_arg, mandatory } => {
-                if value.is_empty() && *mandatory == Some(true) {
+                if value.is_empty() && *mandatory != Some(true) {
                     continue;
                 }
 

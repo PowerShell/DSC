@@ -11,36 +11,33 @@
         "args": [
             "config",
             "get",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "set": {
         "executable": "registry",
         "args": [
             "config",
             "set",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "delete": {
         "executable": "registry",
         "args": [
             "config",
-            "delete",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            "remove",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "exitCodes": {
         "0": "Success",
