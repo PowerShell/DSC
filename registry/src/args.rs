@@ -24,7 +24,7 @@ pub enum ConfigSubCommand {
         input: String,
     },
     #[clap(name = "delete", about = "Delete registry configuration.")]
-    Remove {
+    Delete {
         #[clap(short, long, required = true, help = "The registry JSON input.")]
         input: String,
     },

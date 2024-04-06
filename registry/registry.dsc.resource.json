@@ -32,7 +32,7 @@
         "executable": "registry",
         "args": [
             "config",
-            "remove",
+            "delete",
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
