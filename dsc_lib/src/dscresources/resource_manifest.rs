@@ -15,7 +15,6 @@ pub enum Kind {
     Resource,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceManifest {
@@ -28,7 +27,7 @@ pub struct ResourceManifest {
     /// The kind of resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
-    /// The version of the resource.
+    /// The version of the resource using semantic versioning.
     pub version: String,
     /// The description of the resource.
     pub description: Option<String>,
