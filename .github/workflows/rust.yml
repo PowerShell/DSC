@@ -18,9 +18,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build
       shell: pwsh
-      run: |
-        npm ci
-        ./build.ps1 -clippy
+      run: ./build.ps1 -clippy
     - name: Run tests
       shell: pwsh
       run: ./build.ps1 -test
@@ -33,9 +31,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build
       shell: pwsh
-      run: |
-        npm ci
-        ./build.ps1 -clippy
+      run: ./build.ps1 -clippy
     - name: Run tests
       shell: pwsh
       run: ./build.ps1 -test
@@ -48,9 +44,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build
       shell: pwsh
-      run: |
-        npm ci
-        ./build.ps1 -clippy
+      run: ./build.ps1 -clippy
     - name: Run tests
       shell: pwsh
       run: ./build.ps1 -test
