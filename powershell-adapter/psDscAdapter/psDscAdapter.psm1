@@ -1122,7 +1122,7 @@ function Invoke-DscCacheRefresh {
     [CmdletBinding(HelpUri = '')]
     param(
         [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-        [Microsoft.PowerShell.Commands.ModuleSpecification]
+        [Object[]]
         $Module
     )
     # for the WindowsPowerShell adapter, always use the version of PSDesiredStateConfiguration that ships in Windows
@@ -1133,6 +1133,7 @@ function Invoke-DscCacheRefresh {
             $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
         }
+        $DSCVersion = [version]'1.1.0'
     }
         
     # cache the results of Get-DscResource
@@ -1165,11 +1166,14 @@ function Invoke-DscCacheRefresh {
             continue
         }
 
-        # only support known dscResourceType
-        if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
-            $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
-            continue
+        # we can't run this check in PSDesiredStateConfiguration 1.1 because the property doesn't exist
+        if ( $DSCVersion -ge [version]'2.0.0' ) {
+            # only support known dscResourceType
+            if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
+                $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
+                $host.ui.WriteErrorLine($trace)
+                continue
+            }
         }
 
         # workaround: if the resource does not have a module name, get it from parent path
