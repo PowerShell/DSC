@@ -1263,6 +1263,14 @@ function Get-ActualState {
             if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $DesiredState.($_.Name) }
         }
 
+        # for the WindowsPowerShell adapter, always use the version of PSDesiredStateConfiguration that ships in Windows
+        if ($PSVersionTable.PSVersion.Major -le 5) {
+            $psdscWindowsPath = "$env:SYSTEMROOT\system32\WindowsPowerShell\v1.0\Modules\PSDesiredStateConfiguration\PSDesiredStateConfiguration.psd1"
+            Import-Module $psdscWindowsPath -Force -ErrorAction stop -ErrorVariable $importModuleError
+            $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
+            $host.ui.WriteErrorLine($trace)
+        }
+
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
         switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
             'ScriptBased' {
@@ -1340,10 +1348,6 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    Import-Module -Name 'PSDesiredStateConfiguration' -Force -ErrorAction stop -ErrorVariable $importModuleError
-                    $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
-
                     $getResult = PSDesiredStateConfiguration\Invoke-DscResource -Method Get -ModuleName 'PSDesiredStateConfiguration' -Name $cachedDscResourceInfo.Name -Property $property
 
                     # only return DSC properties from the Cim instance
