@@ -381,7 +381,7 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     };
 
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {:?} version value: {err}", path)));
+        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
     }
 
     let kind = if let Some(kind) = manifest.kind.clone() {

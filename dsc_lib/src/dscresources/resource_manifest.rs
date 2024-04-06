@@ -29,7 +29,6 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
-    #[validate(custom(function = "validate_semver"))]
     pub version: String,
     /// The description of the resource.
     pub description: Option<String>,
@@ -251,11 +250,11 @@ pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
 ///
 /// # Returns
 ///
-/// * `Result<(), ValidationError>` - The result of the validation.
+/// * `Result<(), Error>` - The result of the validation.
 ///
 /// # Errors
 ///
-/// * `DscError` - The version string is not a valid semantic version.
+/// * `Error` - The version string is not a valid semantic version.
 pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
     Version::parse(version)?;
     Ok(())
