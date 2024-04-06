@@ -1125,6 +1125,16 @@ function Invoke-DscCacheRefresh {
         [Microsoft.PowerShell.Commands.ModuleSpecification]
         $Module
     )
+    # for the WindowsPowerShell adapter, always use the version of PSDesiredStateConfiguration that ships in Windows
+    if ($PSVersionTable.PSVersion.Major -le 5) {
+        $psdscWindowsPath = "$env:windir\System32\WindowsPowerShell\v1.0\Modules\PSDesiredStateConfiguration\PSDesiredStateConfiguration.psd1"
+        Import-Module $psdscWindowsPath -Force -ErrorAction stop -ErrorVariable $importModuleError
+        if (-not [string]::IsNullOrEmpty($importModuleError)) {
+            $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
+            $host.ui.WriteErrorLine($trace)
+        }
+    }
+        
     # cache the results of Get-DscResource
     [dscResourceCache[]]$dscResourceCache = @()
 
@@ -1137,15 +1147,15 @@ function Invoke-DscCacheRefresh {
         $DscResources = @()
         $Modules = @()
         foreach ($m in $module) {
-            $DscResources += psDscAdapter\Get-DscResource -Module $m
+            $DscResources += Get-DscResource -Module $m
             $Modules += Get-Module -Name $m -ListAvailable
         }
     }
     elseif ('Windows' -eq $module) {
-        $DscResources = psDscAdapter\Get-DscResource | Where-Object { $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" }
+        $DscResources = Get-DscResource | Where-Object { $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" }
     }
     else {
-        $DscResources = psDscAdapter\Get-DscResource
+        $DscResources = Get-DscResource
         $Modules = Get-Module -ListAvailable
     }
 
@@ -1285,7 +1295,7 @@ function Get-ActualState {
         switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
             'ScriptBased' {
 
-                # If the OS is Windows, import the embedded psDscAdapter module. For Linux/MacOS, only class based resources are supported and are called directly.
+                # For Linux/MacOS, only class based resources are supported and are called directly.
                 if (!$IsWindows) {
                     $trace = @{'Debug' = 'ERROR: Script based resources are only supported on Windows.' } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
@@ -1305,9 +1315,9 @@ function Get-ActualState {
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
 
-                # using the cmdlet from psDscAdapter module, and handle errors
+                # using the cmdlet the appropriate dsc module, and handle errors
                 try {
-                    $getResult = psDscAdapter\Invoke-DscResource -Method Get -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+                    $getResult = Invoke-DscResource -Method Get -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
 
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $getResult
