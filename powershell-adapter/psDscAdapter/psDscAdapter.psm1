@@ -1300,7 +1300,7 @@ function Get-ActualState {
             'ScriptBased' {
 
                 # For Linux/MacOS, only class based resources are supported and are called directly.
-                if (!$IsWindows -and $PSVersionTable.PSVersion.Major -gt 5) {
+                if ($IsLinux) {
                     $trace = @{'Debug' = 'ERROR: Script based resources are only supported on Windows.' } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
                     exit 1
