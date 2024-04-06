@@ -4,7 +4,7 @@
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{import_manifest, Kind, ResourceManifest};
+use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscresources::command_resource::log_resource_traces;
 use crate::dscerror::DscError;
@@ -379,6 +379,10 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
             }
         }
     };
+
+    if let Err(err) = validate_semver(&manifest.version) {
+        return Err(DscError::Validation(format!("Invalid manifest {:?} version value: {err}", path)));
+    }
 
     let kind = if let Some(kind) = manifest.kind.clone() {
         kind

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use schemars::JsonSchema;
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -28,6 +29,7 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
     /// The version of the resource using semantic versioning.
+    #[validate(custom(function = "validate_semver"))]
     pub version: String,
     /// The description of the resource.
     pub description: Option<String>,
@@ -232,11 +234,29 @@ pub struct ListMethod {
 ///
 /// * `DscError` - The JSON value is invalid or the schema version is not supported.
 pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
+    // TODO: enable schema version validation, if not provided, use the latest
     // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json";
     let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
     // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
     //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
     // }
-
     Ok(manifest)
+}
+
+/// Validate a semantic version string.
+///
+/// # Arguments
+///
+/// * `version` - The semantic version string to validate.
+///
+/// # Returns
+///
+/// * `Result<(), ValidationError>` - The result of the validation.
+///
+/// # Errors
+///
+/// * `DscError` - The version string is not a valid semantic version.
+pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
+    Version::parse(version)?;
+    Ok(())
 }
