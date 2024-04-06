@@ -1323,13 +1323,11 @@ function Get-ActualState {
                 }
             }
             'Binary' {
-                <# TODO Verify if this is still needed
                 if (-not ($PSVersionTable.PSVersion.Major -lt 6)) {
                     $trace = @{'Debug' = 'To use a binary resource such as File, use the Microsoft.DSC/WindowsPowerShell adapter.' } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
                     exit 1
                 }
-                #>
 
                 if (-not (($cachedDscResourceInfo.ModuleName -eq 'Windows') -and ('File', 'Log', 'SignatureValidation' -contains $cachedDscResourceInfo.Name))) {
                     $trace = @{'Debug' = 'Only File, Log, and SignatureValidation are supported as Binary resources.' } | ConvertTo-Json -Compress
@@ -1342,6 +1340,10 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
+                    Import-Module -Name 'PSDesiredStateConfiguration' -Force -ErrorAction stop -ErrorVariable $importModuleError
+                    $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
+                    $host.ui.WriteErrorLine($trace)
+
                     $getResult = PSDesiredStateConfiguration\Invoke-DscResource -Method Get -ModuleName 'PSDesiredStateConfiguration' -Name $cachedDscResourceInfo.Name -Property $property
 
                     # only return DSC properties from the Cim instance
