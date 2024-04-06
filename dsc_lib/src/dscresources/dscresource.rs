@@ -130,13 +130,13 @@ pub trait Invoke {
     fn test(&self, expected: &str) -> Result<TestResult, DscError>;
 
     /// Invoke the delete operation on the resource.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `filter` - The filter as JSON to apply to the resource.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if the underlying resource fails.
     fn delete(&self, filter: &str) -> Result<(), DscError>;
 
@@ -256,7 +256,7 @@ impl Invoke for DscResource {
                 let resource_manifest = import_manifest(manifest.clone())?;
                 command_resource::invoke_delete(&resource_manifest, &self.directory, filter)
             },
-        }        
+        }
     }
 
     fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
