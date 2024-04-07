@@ -103,7 +103,7 @@ switch ($Operation) {
         }
 
         # write list of resources to STDERR for debugging
-        $trace = @{'Debug' = 'resourceCache=' + $($dscResourceCache | ConvertTo-Json -Depth 1 -Compress) } | ConvertTo-Json -Compress
+        $trace = @{'Debug' = 'resourceCache=' + $($dscResourceCache | ConvertTo-Json -Depth 1 -Compress -WarningAction Ignore) } | ConvertTo-Json -Compress
         $host.ui.WriteErrorLine($trace)
 
         foreach ($ds in $desiredState) {
