@@ -1384,6 +1384,8 @@ function Get-ActualState {
                     $d = Get-DscResource File
                     $trace = @{'Debug' = 'TEMP Running invoke-dscresource: ' + $cachedDscResourceInfo.Name } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
+                    # TODO remove diagnostic
+                    $tempTest = Invoke-DscResource -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = 1.1} -Name 'File' -Property @{DestinationPath = "$env:TEMP\test.txt"}
                     $getResult = Invoke-DscResource -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = 1.1} -Name $cachedDscResourceInfo.Name -Property $property
 
                     # only return DSC properties from the Cim instance
