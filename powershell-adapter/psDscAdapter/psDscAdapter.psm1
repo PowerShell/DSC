@@ -1283,6 +1283,9 @@ function Get-ActualState {
             $host.ui.WriteErrorLine($trace)
         }
     }
+    $moduleVersion = Get-Module PSDesiredStateConfiguration | ForEach-Object Version
+    $trace = @{'Debug' = 'PSDesiredStateConfiguration module version: ' + $moduleVersion } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo
@@ -1361,8 +1364,8 @@ function Get-ActualState {
                 }
             }
             'Binary' {
-                if (-not ($PSVersionTable.PSVersion.Major -lt 6)) {
-                    $trace = @{'Debug' = 'To use a binary resource such as File, use the Microsoft.DSC/WindowsPowerShell adapter.' } | ConvertTo-Json -Compress
+                if ($PSVersionTable.PSVersion.Major -gt 5) {
+                    $trace = @{'Debug' = 'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.DSC/WindowsPowerShell adapter.' } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
                     exit 1
                 }

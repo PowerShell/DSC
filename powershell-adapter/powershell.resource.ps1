@@ -51,6 +51,9 @@ switch ($Operation) {
                 # some modules have long multi-line descriptions. to avoid issue, use only the first line.
                 $description = $module.Description.split("`r`n")[0]
             }
+            else {
+                $description = $null
+            }
 
             # match adapter to version of powershell
             if ($PSVersionTable.PSVersion.Major -le 5) {
