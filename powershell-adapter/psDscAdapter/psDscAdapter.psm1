@@ -1141,7 +1141,7 @@ function Invoke-DscCacheRefresh {
 
     # improve by performance by having the option to only get details for named modules
     # workaround for File and SignatureValidation resources that ship in Windows
-    if ($null -ne $module -and 'Windows' -ne $module) {
+    if ($null -ne $module -and 'PSDesiredStateConfiguration' -ne $module) {
         if ($module.gettype().name -eq 'string') {
             $module = @($module)
         }
@@ -1152,7 +1152,7 @@ function Invoke-DscCacheRefresh {
             $Modules += Get-Module -Name $m -ListAvailable
         }
     }
-    elseif ('Windows' -eq $module) {
+    elseif ('PSDesiredStateConfiguration' -eq $module) {
         $DscResources = Get-DscResource | Where-Object { $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" }
     }
     else {
@@ -1189,9 +1189,9 @@ function Invoke-DscCacheRefresh {
             $moduleName = $dscResource.ModuleName
         }
         elseif ($binaryBuiltInModulePaths -contains $dscResource.ParentPath) {
-            $moduleName = 'Windows'
-            $DscResourceInfo.Module = 'Windows'
-            $DscResourceInfo.ModuleName = 'Windows'
+            $moduleName = 'PSDesiredStateConfiguration'
+            $DscResourceInfo.Module = 'PSDesiredStateConfiguration'
+            $DscResourceInfo.ModuleName = 'PSDesiredStateConfiguration'
             $DscResourceInfo.CompanyName = 'Microsoft Corporation'
             $DscResourceInfo.Version = '1.0.0'
             if ($PSVersionTable.PSVersion.Major -le 5 -and $DscResourceInfo.ImplementedAs -eq 'Binary') {
@@ -1298,6 +1298,9 @@ function Get-ActualState {
             if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $DesiredState.($_.Name) }
         }
 
+        $trace = @{'Debug' = 'DSC resource implementation: ' + [dscResourceType]$cachedDscResourceInfo.ImplementationDetail } | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
+
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
         switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
             'ScriptBased' {
@@ -1364,7 +1367,7 @@ function Get-ActualState {
                     exit 1
                 }
 
-                if (-not (($cachedDscResourceInfo.ModuleName -eq 'Windows') -and ('File', 'Log', 'SignatureValidation' -contains $cachedDscResourceInfo.Name))) {
+                if (-not (($cachedDscResourceInfo.ImplementedAs -eq 'Binary') -and ('File', 'Log', 'SignatureValidation' -contains $cachedDscResourceInfo.Name))) {
                     $trace = @{'Debug' = 'Only File, Log, and SignatureValidation are supported as Binary resources.' } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
                     exit 1

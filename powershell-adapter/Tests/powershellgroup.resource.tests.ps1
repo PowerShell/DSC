@@ -25,7 +25,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource list --adapter Microsoft.DSC/WindowsPowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        ($resources | ? {$_.Type -eq 'Windows/File'}).Count | Should -Be 1
+        ($resources | ? {$_.Type -eq 'PSDesiredStateConfiguration/File'}).Count | Should -Be 1
     }
 
     It 'Get works on class-based resource' -Skip:(!$IsWindows){

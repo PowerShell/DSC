@@ -9,7 +9,7 @@ resources:
   properties:
     resources:
     - name: File
-      type: Windows/File
+      type: PSDesiredStateConfiguration/File
       properties:
         DestinationPath: $env:TEMP\test.txt
         Contents: 'Hello, World!'
