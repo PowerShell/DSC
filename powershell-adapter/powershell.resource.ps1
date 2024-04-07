@@ -52,7 +52,7 @@ switch ($Operation) {
                 $description = $module.Description.split("`r`n")[0]
             }
             else {
-                $description = $null
+                $description = ''
             }
 
             # match adapter to version of powershell
