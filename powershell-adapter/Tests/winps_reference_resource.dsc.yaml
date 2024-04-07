@@ -1,0 +1,22 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+resources:
+- name: Copy contents from one file to another
+  type: Microsoft.DSC/WindowsPowerShell
+  properties:
+    resources:
+    - name: From
+      type: PSDesiredStateConfiguration/File
+      properties:
+        DestinationPath: $env:TEMP\testFrom.txt
+    - name: To
+      type: PSDesiredStateConfiguration/File
+      properties:
+        DestinationPath: $env:TEMP\testTo.txt
+        Contents: "[reference(resourceId('PSDesiredStateConfiguration/File','From')).contents)]"
+      output: Contents
+      dependsOn:
+      - "[resourceId('PSDesiredStateConfiguration/File','From')]"
+
