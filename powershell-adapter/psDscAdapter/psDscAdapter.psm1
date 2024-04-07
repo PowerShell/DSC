@@ -1375,7 +1375,7 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    $getResult = PSDesiredStateConfiguration\Invoke-DscResource -Method Get -ModuleName 'PSDesiredStateConfiguration' -Name $cachedDscResourceInfo.Name -Property $property
+                    $getResult = Invoke-DscResource -Method Get -ModuleName 'PSDesiredStateConfiguration' -Name $cachedDscResourceInfo.Name -Property $property
 
                     # only return DSC properties from the Cim instance
                     $cachedDscResourceInfo.Properties.Name | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
