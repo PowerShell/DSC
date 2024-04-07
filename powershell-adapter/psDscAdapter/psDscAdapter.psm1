@@ -1194,6 +1194,9 @@ function Invoke-DscCacheRefresh {
             $DscResourceInfo.ModuleName = 'Windows'
             $DscResourceInfo.CompanyName = 'Microsoft Corporation'
             $DscResourceInfo.Version = '1.0.0'
+            if ($PSVersionTable.PSVersion.Major -le 5 -and $DscResourceInfo.ImplementedAs -eq 'Binary') {
+                $DscResourceInfo.ImplementationDetail = 'Binary'
+            }
         }
         elseif ($dscResource.ParentPath) {
             # workaround: populate module name from parent path that is three levels up
