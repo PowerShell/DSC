@@ -11,3 +11,10 @@ tree-sitter-dscexpression/bindings/
 tree-sitter-dscexpression/src/
 tree-sitter-dscexpression/parser.*
 tree-sitter-dscexpression/binding.gyp
+# generated during build
+tree-sitter-dscexpression/.editorconfig
+tree-sitter-dscexpression/.gitattributes
+tree-sitter-dscexpression/Makefile
+tree-sitter-dscexpression/Package.swift
+tree-sitter-dscexpression/pyproject.toml
+tree-sitter-dscexpression/setup.py
