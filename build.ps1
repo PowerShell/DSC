@@ -186,8 +186,6 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
                 Copy-Item "$path/$binary" $target -ErrorAction Ignore
             }
 
-            Save-PSResource -Path $target -Name 'PSDesiredStateConfiguration' -Version '2.0.7' -Repository PSGallery -TrustRepository
-
             if (Test-Path "./copy_files.txt") {
                 Get-Content "./copy_files.txt" | ForEach-Object {
                     # if the line contains a '\' character, throw an error
@@ -211,6 +209,8 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
             Pop-Location
         }
     }
+
+    Save-PSResource -Path $target -Name 'PSDesiredStateConfiguration' -Version '2.0.7' -Repository PSGallery -TrustRepository
 
     if ($failed) {
         Write-Host -ForegroundColor Red "Build failed"

@@ -30,7 +30,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on Binary resource' -Skip:(!$IsWindows){
 
-        $r = "{'DestinationPath':'$env:TEMP\\test.txt', 'Type':'PSDesiredStateConfiguration/File'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'
+        $r = '{"Name": "File test", "Type":"PSDesiredStateConfiguration/File", "DestinationPath":"$env:TEMP\\test.txt"}' | dsc resource get -r 'Microsoft.Dsc/WindowsPowerShell'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.Contents | Should -BeNullOrEmpty
