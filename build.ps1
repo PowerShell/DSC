@@ -186,7 +186,7 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
                 Copy-Item "$path/$binary" $target -ErrorAction Ignore
             }
 
-            Save-PSResource -Path $target -Name 'PSDesiredStateConfiguration' -Version '2.0.7'
+            Save-PSResource -Path $target -Name 'PSDesiredStateConfiguration' -Version '2.0.7' -Repository PSGallery -TrustRepository
 
             if (Test-Path "./copy_files.txt") {
                 Get-Content "./copy_files.txt" | ForEach-Object {
@@ -308,7 +308,7 @@ if ($Test) {
         if (-not(Get-Module -ListAvailable -Name Pester))
         {   "Installing module Pester"
             $InstallTargetDir = ($env:PSModulePath -split ";")[0]
-            Find-PSResource -Name 'Pester' -Repository 'PSGallery' | Save-PSResource -Path $InstallTargetDir
+            Find-PSResource -Name 'Pester' -Repository 'PSGallery' | Save-PSResource -Path $InstallTargetDir -TrustRepository
         }
 
         "Updated Pester module location:"
