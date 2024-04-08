@@ -1386,7 +1386,9 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    $getResult = Invoke-DscResource -Name $cachedDscResourceInfo.Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1'} -Property $property
+                    $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru
+                    $getResult = $PSDesiredStateConfiguration.invoke({param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1'} -Property $Property }, $cachedDscResourceInfo.Name, $property )
+
                     $trace = @{'Debug' = 'TEMP output: ' + $($getResult | convertto-json -depth 10 -Compress) } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
 

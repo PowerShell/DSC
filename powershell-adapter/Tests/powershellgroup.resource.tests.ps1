@@ -28,6 +28,14 @@ Describe 'PowerShell adapter resource tests' {
         ($resources | ? {$_.Type -eq 'PSDesiredStateConfiguration/File'}).Count | Should -Be 1
     }
 
+    It 'Get works on Binary resource' -Skip:(!$IsWindows){
+
+        $r = "{'DestinationPath':'$env:TEMP\\test.txt', 'Type':'PSDesiredStateConfiguration/File'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.result.properties.Contents | Should -BeNullOrEmpty
+    }
+
     It 'Get works on class-based resource' -Skip:(!$IsWindows){
 
         $r = "{'Name':'TestClassResource1', 'Type':'TestClassResource/TestClassResource'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'
