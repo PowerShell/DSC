@@ -102,10 +102,6 @@ switch ($Operation) {
             exit 1
         }
 
-        # write list of resources to STDERR for debugging
-        $trace = @{'Debug' = 'resourceCache=' + $($dscResourceCache | ConvertTo-Json -Depth 1 -Compress -WarningAction Ignore) } | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
-
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
             $actualState = $psDscAdapter.invoke( { param($ds, $dscResourceCache) Get-ActualState -DesiredState $ds -dscResourceCache $dscResourceCache }, $ds, $dscResourceCache)

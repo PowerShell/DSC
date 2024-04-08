@@ -1381,15 +1381,8 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    $trace = @{'Debug' = 'TEMP Running invoke-dscresource: ' + $cachedDscResourceInfo.Name } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
-                    # TODO remove diagnostic
-                    $tempTest = Invoke-DscResource -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = 1.1} -Name 'File' -Property @{DestinationPath = "$env:TEMP\test.txt"}
-                    $trace = @{'Debug' = 'TEMP output from first run: ' + $($tempTest | convertto-json -depth 10 -Compress) } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
-                    
-                    $getResult = Invoke-DscResource -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = 1.1} -Name $cachedDscResourceInfo.Name -Property $property
-                    $trace = @{'Debug' = 'TEMP output from second run: ' + $($getResult | convertto-json -depth 10 -Compress) } | ConvertTo-Json -Compress
+                    $getResult = Invoke-DscResource -Method Get -Name $cachedDscResourceInfo.Name -Property $property
+                    $trace = @{'Debug' = 'TEMP output: ' + $($getResult | convertto-json -depth 10 -Compress) } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
 
                     # only return DSC properties from the Cim instance
