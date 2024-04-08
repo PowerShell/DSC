@@ -56,9 +56,11 @@ function Invoke-DscCacheRefresh {
         }
     }
     elseif ('PSDesiredStateConfiguration' -eq $module) {
+        # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
         $DscResources = Get-DscResource | Where-Object { $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" }
     }
     else {
+        # if no module is specified, get all resources
         $DscResources = Get-DscResource
         $Modules = Get-Module -ListAvailable
     }
@@ -87,7 +89,10 @@ function Invoke-DscCacheRefresh {
             "$env:windir\system32\Configuration\BaseRegistration"
         )
         $DscResourceInfo = [DscResourceInfo]::new()
-        $dscResource.PSObject.Properties | ForEach-Object -Process { $DscResourceInfo.$($_.Name) = $_.Value }
+        $dscResource.PSObject.Properties | ForEach-Object -Process {
+            if ($null -eq $_.Value) {$_.Value = ''}
+            $DscResourceInfo.$($_.Name) = $_.Value
+        }
         if ($dscResource.ModuleName) {
             $moduleName = $dscResource.ModuleName
         }
