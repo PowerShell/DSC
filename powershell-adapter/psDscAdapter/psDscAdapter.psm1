@@ -1284,6 +1284,10 @@ function Get-ActualState {
         }
     }
 
+    $osVersion = [System.Environment]::OSVersion.VersionString
+    $trace = @{'Debug' = 'OS version: ' + $osVersion } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
+
     $psVersion = $PSVersionTable.PSVersion.ToString()
     $trace = @{'Debug' = 'PowerShell version: ' + $psVersion } | ConvertTo-Json -Compress
     $host.ui.WriteErrorLine($trace)

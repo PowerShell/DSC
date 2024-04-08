@@ -256,14 +256,12 @@ if ($Test) {
     $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
     if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
     {   "Installing module PSDesiredStateConfiguration 2.0.7"
-        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-        Install-PSResource PSDesiredStateConfiguration -RequiredVersion 2.0.7
+        Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository PSGallery -TrustRepository
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
     {   "Installing module Pester"
-        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-        Install-PSResource Pester -WarningAction Ignore
+        Install-PSResource Pester -WarningAction Ignore -Repository PSGallery -TrustRepository
     }
 
     foreach ($project in $projects) {
