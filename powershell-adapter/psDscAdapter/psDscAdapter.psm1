@@ -8,6 +8,14 @@
 if ($PSVersionTable.PSVersion.Major -gt 5) {
     $PSDesiredStateConfiguration = Import-Module -Path '../PSDesiredStateConfiguration/2.0.7/PSDesiredStateConfiguration.psd1' -Force -PassThru
 }
+else {
+    $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
+    $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru -ErrorAction stop -ErrorVariable $importModuleError
+    if (-not [string]::IsNullOrEmpty($importModuleError)) {
+        $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
+    }
+}
 
 <# public function Invoke-DscCacheRefresh
 .SYNOPSIS
@@ -28,17 +36,7 @@ function Invoke-DscCacheRefresh {
         [Object[]]
         $Module
     )
-    # for the WindowsPowerShell adapter, always use the version of PSDesiredStateConfiguration that ships in Windows
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        $psdscWindowsPath = "$env:windir\System32\WindowsPowerShell\v1.0\Modules\PSDesiredStateConfiguration\PSDesiredStateConfiguration.psd1"
-        Import-Module $psdscWindowsPath -Force -ErrorAction stop -ErrorVariable $importModuleError
-        if (-not [string]::IsNullOrEmpty($importModuleError)) {
-            $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
-        }
-        $DSCVersion = [version]'1.1.0'
-    }
-        
+
     # cache the results of Get-DscResource
     [dscResourceCache[]]$dscResourceCache = @()
 
@@ -72,7 +70,7 @@ function Invoke-DscCacheRefresh {
         }
 
         # we can't run this check in PSDesiredStateConfiguration 1.1 because the property doesn't exist
-        if ( $DSCVersion -ge [version]'2.0.0' ) {
+        if ( $PSVersionTable.PSVersion.Major -le 5 ) {
             # only support known dscResourceType
             if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
                 $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
@@ -90,7 +88,7 @@ function Invoke-DscCacheRefresh {
         )
         $DscResourceInfo = [DscResourceInfo]::new()
         $dscResource.PSObject.Properties | ForEach-Object -Process {
-            if ($null -eq $_.Value) {$_.Value = ''}
+            if ($null -eq $_.Value) { $_.Value = '' }
             $DscResourceInfo.$($_.Name) = $_.Value
         }
         if ($dscResource.ModuleName) {
@@ -181,16 +179,6 @@ function Get-ActualState {
         [Parameter(Mandatory)]
         [dscResourceCache[]]$dscResourceCache
     )
-
-    # for the WindowsPowerShell adapter, always use the version of PSDesiredStateConfiguration that ships in Windows
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        $psdscWindowsPath = "$env:windir\System32\WindowsPowerShell\v1.0\Modules\PSDesiredStateConfiguration\PSDesiredStateConfiguration.psd1"
-        Import-Module $psdscWindowsPath -Force -ErrorAction stop -ErrorVariable $importModuleError
-        if (-not [string]::IsNullOrEmpty($importModuleError)) {
-            $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
-        }
-    }
 
     $osVersion = [System.Environment]::OSVersion.VersionString
     $trace = @{'Debug' = 'OS version: ' + $osVersion } | ConvertTo-Json -Compress
@@ -298,11 +286,9 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
-                    $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru
-                    $getResult = $PSDesiredStateConfiguration.invoke({param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1'} -Property $Property }, $cachedDscResourceInfo.Name, $property )
+                    $getResult = $PSDesiredStateConfiguration.invoke({ param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1' } -Property $Property }, $cachedDscResourceInfo.Name, $property )
 
-                    $trace = @{'Debug' = 'TEMP output: ' + $($getResult | convertto-json -depth 10 -Compress) } | ConvertTo-Json -Compress
+                    $trace = @{'Debug' = 'TEMP output: ' + $($getResult | ConvertTo-Json -Depth 10 -Compress) } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
 
                     # only return DSC properties from the Cim instance
