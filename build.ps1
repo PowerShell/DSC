@@ -186,6 +186,8 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
                 Copy-Item "$path/$binary" $target -ErrorAction Ignore
             }
 
+            Save-PSResource -Path $target -ResourceName 'PSDesiredStateConfiguration' -Version '2.0.7'
+
             if (Test-Path "./copy_files.txt") {
                 Get-Content "./copy_files.txt" | ForEach-Object {
                     # if the line contains a '\' character, throw an error
@@ -255,13 +257,13 @@ if ($Test) {
     if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
     {   "Installing module PSDesiredStateConfiguration 2.0.7"
         Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-        Install-Module PSDesiredStateConfiguration -RequiredVersion 2.0.7
+        Install-PSResource PSDesiredStateConfiguration -RequiredVersion 2.0.7
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
     {   "Installing module Pester"
         Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-        Install-Module Pester -WarningAction Ignore
+        Install-PSResource Pester -WarningAction Ignore
     }
 
     foreach ($project in $projects) {
