@@ -38,7 +38,7 @@ function Invoke-DscCacheRefresh {
     )
 
     # cache the results of Get-DscResource
-    [dscResourceCache[]]$dscResourceCache = @()
+    [dscResourceCache[]]$dscResourceCache = [System.Collections.Generic.List[Object]]::new()
 
     # improve by performance by having the option to only get details for named modules
     # workaround for File and SignatureValidation resources that ship in Windows
@@ -46,8 +46,8 @@ function Invoke-DscCacheRefresh {
         if ($module.gettype().name -eq 'string') {
             $module = @($module)
         }
-        $DscResources = @()
-        $Modules = @()
+        $DscResources = [System.Collections.Generic.List[Object]]::new()
+        $Modules = [System.Collections.Generic.List[Object]]::new()
         foreach ($m in $module) {
             $DscResources += Get-DscResource -Module $m
             $Modules += Get-Module -Name $m -ListAvailable
@@ -55,7 +55,7 @@ function Invoke-DscCacheRefresh {
     }
     elseif ('PSDesiredStateConfiguration' -eq $module) {
         # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
-        $DscResources = Get-DscResource | Where-Object { $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" }
+        $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" )}
     }
     else {
         # if no module is specified, get all resources
@@ -95,6 +95,7 @@ function Invoke-DscCacheRefresh {
                 $DscResourceInfo.$($_.Name) = ''
             }
         }
+
         if ($dscResource.ModuleName) {
             $moduleName = $dscResource.ModuleName
         }
@@ -108,7 +109,7 @@ function Invoke-DscCacheRefresh {
                 $DscResourceInfo.ImplementationDetail = 'Binary'
             }
         }
-        elseif ($dscResource.ParentPath) {
+        elseif ($binaryBuiltInModulePaths -notcontains $dscResource.ParentPath -and $null -ne $dscResource.ParentPath) {
             # workaround: populate module name from parent path that is three levels up
             $moduleName = Split-Path $dscResource.ParentPath | Split-Path | Split-Path -Leaf
             $DscResourceInfo.Module = $moduleName
