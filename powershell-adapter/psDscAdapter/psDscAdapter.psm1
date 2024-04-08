@@ -70,7 +70,7 @@ function Invoke-DscCacheRefresh {
         }
 
         # we can't run this check in PSDesiredStateConfiguration 1.1 because the property doesn't exist
-        if ( $PSVersionTable.PSVersion.Major -le 5 ) {
+        if ( $PSVersionTable.PSVersion.Major -gt 5 ) {
             # only support known dscResourceType
             if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
                 $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
