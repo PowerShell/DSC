@@ -2,6 +2,12 @@
 # Licensed under the MIT License.
 
 Describe 'registry config set tests' {
+    AfterEach {
+        if ($IsWindows) {
+            Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
+        }
+    }
+
     It 'Can set a deeply nested key and value' -Skip:(!$IsWindows) {
         $json = @'
         {
@@ -28,5 +34,42 @@ Describe 'registry config set tests' {
         $result.valueName | Should -Be 'Hello'
         $result.valueData.String | Should -Be 'World'
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
+    }
+
+    It 'delete called when _exist is false' -Skip:(!$IsWindows) {
+        $config = @{
+            '$schema' = 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
+            resources = @(
+                @{
+                    name = 'reg'
+                    type = 'Microsoft.Windows/Registry'
+                    properties = @{
+                        keyPath = 'HKCU\1\2'
+                        valueName = 'Test'
+                        valueData = @{
+                            String = 'Test'
+                        }
+                        _exist = $true
+                    }
+                }
+            )
+        }
+
+        $out = dsc config set -d ($config | ConvertTo-Json -Depth 10)
+        $LASTEXITCODE | Should -Be 0
+
+        $config.resources[0].properties._exist = $false
+        $out = dsc config set -d ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.afterState._exist | Should -Be $false
+
+        Get-ItemProperty -Path 'HKCU:\1\2' -Name 'Test' -ErrorAction Ignore | Should -BeNullOrEmpty
+
+        $config.resources[0].properties.valueName = $null
+        $out = dsc config set -d ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.afterState._exist | Should -Be $false
+
+        Get-Item -Path 'HKCU:\1\2' -ErrorAction Ignore | Should -BeNullOrEmpty
     }
 }

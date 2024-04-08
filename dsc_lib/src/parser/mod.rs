@@ -26,7 +26,7 @@ impl Statement {
     /// This function will return an error if the underlying parser fails to initialize.
     pub fn new() -> Result<Self, DscError> {
         let mut parser = Parser::new();
-        parser.set_language(tree_sitter_dscexpression::language())?;
+        parser.set_language(&tree_sitter_dscexpression::language())?;
         let function_dispatcher = FunctionDispatcher::new();
         Ok(Self {
             parser,
