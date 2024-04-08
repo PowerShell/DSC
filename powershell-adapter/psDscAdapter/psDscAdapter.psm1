@@ -1386,6 +1386,7 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
+                    $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
                     $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru
                     $getResult = $PSDesiredStateConfiguration.invoke({param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1'} -Property $Property }, $cachedDscResourceInfo.Name, $property )
 
