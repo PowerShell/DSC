@@ -1283,6 +1283,11 @@ function Get-ActualState {
             $host.ui.WriteErrorLine($trace)
         }
     }
+
+    $psVersion = $PSVersionTable.PSVersion.ToString()
+    $trace = @{'Debug' = 'PowerShell version: ' + $psVersion } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
+
     $moduleVersion = Get-Module PSDesiredStateConfiguration | ForEach-Object Version
     $trace = @{'Debug' = 'PSDesiredStateConfiguration module version: ' + $moduleVersion } | ConvertTo-Json -Compress
     $host.ui.WriteErrorLine($trace)
@@ -1381,7 +1386,7 @@ function Get-ActualState {
 
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    $getResult = Invoke-DscResource -Method Get -Name $cachedDscResourceInfo.Name -Property $property
+                    $getResult = Invoke-DscResource -Name $cachedDscResourceInfo.Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1'} -Property $property
                     $trace = @{'Debug' = 'TEMP output: ' + $($getResult | convertto-json -depth 10 -Compress) } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
 
