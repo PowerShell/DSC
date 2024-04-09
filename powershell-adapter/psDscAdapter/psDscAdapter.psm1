@@ -242,8 +242,11 @@ function Get-ActualState {
                 try {
                     $getResult = Invoke-DscResource -Method Get -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
 
+                    # only return DSC properties
+                    $getResult.psobject.Properties.name | Where-Object { 'CimClass','CimInstanceProperties','CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
-                    $addToActualState.properties = $getResult
+                    $addToActualState.properties = $getDscResult
                 }
                 catch {
                     $trace = @{'Debug' = 'ERROR: ' + $_.Exception.Message } | ConvertTo-Json -Compress
@@ -293,11 +296,8 @@ function Get-ActualState {
                 try {
                     $getResult = $PSDesiredStateConfiguration.invoke({ param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1' } -Property $Property -ErrorAction Stop }, $cachedDscResourceInfo.Name, $property )
 
-                    $trace = @{'Debug' = 'TEMP output: ' + $($getResult | ConvertTo-Json -Depth 10 -Compress) } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
-
-                    # only return DSC properties from the Cim instance
-                    $getresult.psobject.Properties.name | Where-Object { 'CimClass','CimInstanceProperties','CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    # only return DSC properties
+                    $getResult.psobject.Properties.name | Where-Object { 'CimClass','CimInstanceProperties','CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
 
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $getDscResult
