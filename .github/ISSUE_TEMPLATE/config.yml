@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/PowerShell/DSC/discussions/new?category=q-a
+    about: >-
+      If you have a question about DSC, the docs, or this project, ask it here.
