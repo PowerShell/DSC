@@ -1,0 +1,186 @@
+{
+	// Place your DSCv3 workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Placeholders with the same ids are connected.
+	"Configuration function template": {
+		"scope": "markdown",
+		"prefix": "docs-config-func-template",
+		"description": "Template for a DSC configuration function reference document",
+		"isFileTemplate": true,
+		"body": [
+			"---",
+			"description: Reference for the '${1:name}' DSC configuration document function",
+			"ms.date:     $CURRENT_MONTH/$CURRENT_DATE/$CURRENT_YEAR",
+			"ms.topic:    reference",
+			"title:       ${1:name}",
+			"---",
+			"",
+			"# ${1:name}",
+			"",
+			"## Synopsis",
+			"",
+			"${2:One sentence description}",
+			"",
+			"## Syntax",
+			"",
+			"```Syntax",
+			"${1:name}(${3:input syntax})",
+			"```",
+			"",
+			"## Description",
+			"",
+			"The `${1:name}` function ${4:full description}.",
+			"",
+			"## Examples",
+			"",
+			"### Example 1 - ${5:example title}",
+			"",
+			"${6:example synopsis}",
+			"",
+			"```yaml",
+			"# ${1:name}.example.1.dsc.config.yaml",
+			"\\$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json",
+			"resources:",
+			"- name: ${7:descriptive resource name}",
+			"  type: Test/Echo",
+			"  properties:",
+			"    output: \"[${1:name}(${8:example input})]\"",
+			"```",
+			"",
+			"```bash",
+			"dsc config get --document ${1:name}.example.1.dsc.config.yaml",
+			"```",
+			"",
+			"```yaml",
+			"results:",
+			"- name: ${7:descriptive resource name}",
+			"  type: Test/Echo",
+			"  result:",
+			"    actualState:",
+			"      output: ${9:example output}",
+			"messages: []",
+			"hadErrors: false",
+			"```",
+			"",
+			"## Parameters",
+			"",
+			"### ${10:parameter name}",
+			"",
+			"${11:parameter description}",
+			"",
+			"```yaml",
+			"Type:         ${12:parameter type}",
+			"Required:     ${13:whether parameter is mandatory}",
+			"MinimumCount: ${14:1}",
+			"MaximumCount: ${15:1}",
+			"```",
+			"",
+			"## Output",
+			"",
+			"${16:output description}",
+			"",
+			"```yaml",
+			"Type: ${17:output type}",
+			"```",
+			"",
+			"<!-- Link reference definitions -->",
+			""
+		  ]
+	},
+	"Configuration function example": {
+		"scope": "markdown",
+		"prefix": "docs-config-func-example",
+		"description": "Add an example to a DSC configuration function reference document",
+		"body": [
+			"### Example ${1:exampleIndex} - ${2:example title}",
+			"",
+			"${3:example synopsis}",
+			"",
+			"```yaml",
+			"# $TM_FILENAME_BASE.example.$1.dsc.config.yaml",
+			"\\$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json",
+			"resources:",
+			"- name: ${4:descriptive resource name}",
+			"  type: Test/Echo",
+			"  properties:",
+			"    output: \"[$TM_FILENAME_BASE(${5:example input})]\"",
+			"```",
+			"",
+			"```bash",
+			"dsc config get --document ${TM_FILENAME_BASE}.example.$1.dsc.config.yaml",
+			"```",
+			"",
+			"```yaml",
+			"results:",
+			"- name: $4",
+			"  type: Test/Echo",
+			"  result:",
+			"    actualState:",
+			"      output: ${6:example output}",
+			"messages: []",
+			"hadErrors: false",
+			"```"
+		]
+	},
+	"Changelog Entry": {
+		"scope": "markdown",
+		"prefix": "docs-changelog-entry-single-issue-pr",
+		"description": "Template for a DSC changelog entry",
+		"body": [
+			"- ${1:Change description}",
+			"",
+			"  <details><summary>Related work items</summary>",
+			"",
+			"  - Issues: [#${2:related issue id}][#${2:related issue id}]",
+			"  - PRs: [#${3:related pull request id}][#${3:related pull request id}]",
+			"",
+			"  <details>",
+			""
+		]
+	}
+	"Changelog Entry Multi Item": {
+		"scope": "markdown",
+		"prefix": "docs-changelog-entry-multi-issue-pr",
+		"description": "Template for a DSC changelog entry",
+		"body": [
+			"- ${1:Change description}",
+			"",
+			"  <details><summary>Related work items</summary>",
+			"",
+			"  - Issues:",
+			"    - [#${2:related issue id}][#${2:related issue id}]",
+			"  - PRs:",
+			"    - [#${3:related pull request id}][#${3:related pull request id}]",
+			"",
+			"  <details>",
+			""
+		]
+	}
+	"Changelog release heading": {
+		"scope": "markdown",
+		"prefix": "docs-changelog-release-heading",
+		"description": "Template for a DSC changelog release heading",
+		"body": [
+			"## [${1:v3.0.0-${2:alpha.5}}][release-${1:v3.0.0-${2:alpha.5}}] - ${3:${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}}",
+			"",
+			"This section includes a summary of changes for the `${2:alpha.5}` release. For the full list of changes",
+			"in this release, see the [diff on GitHub][compare-${1:v3.0.0-${2:alpha.5}}].",
+			"",
+			"<!-- Release links -->",
+			"[release-${1:v3.0.0-${2:alpha.5}}]: https://github.com/PowerShell/DSC/releases/tag/${1:v3.0.0-${2:alpha.5}} \"Link to the DSC ${1:v3.0.0-${2:alpha.5}} release on GitHub\"",
+			"[compare-${1:v3.0.0-${2:alpha.5}}]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...${1:v3.0.0-${2:alpha.5}}"
+		]
+	
+	}
+	"Github Work Item Link": {
+		"scope": "markdown",
+		"prefix": "docs-gh-link",
+		"description": "Template for a DSC Github work item link",
+		"body": [
+			"[#${1:work item id}]: https://github.com/PowerShell/DSC/issues/${1:work item id}"
+		]
+	}
+}
