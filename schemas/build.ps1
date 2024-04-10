@@ -3,6 +3,12 @@ using namespace System.Collections
 
 <#
     .SYNOPSIS
+        Build the DSC schema files from the source YAML files.
+    
+    .DESCRIPTION
+        This build script composes the JSON Schema files from the source YAML files, creating new
+        files in the specified output directory. It creates a schema registry to analyze the source
+        schemas and resolve references for bundling.
 #>
 
 [cmdletbinding(DefaultParameterSetName='ByConfig')]

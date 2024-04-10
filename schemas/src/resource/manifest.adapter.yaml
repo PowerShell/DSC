@@ -1,20 +1,20 @@
 # yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
 $schema: https://json-schema.org/draft/2020-12/schema
-$id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.provider.yaml
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.adapter.yaml
 
-title: Provider
+title: Adapter
 description: >-
-  Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to
+  Defines the DSC Resource as a DSC Resource Adapter. A DSC Resource Adapter enables users to
   manage resources that don't have their own manifests with DSC.
 markdownDescription: | # VS Code only
   ***
   [_Online Documentation_][01]
   ***
 
-  Defines the DSC Resource as a DSC Resource Provider. A DSC Resource Provider enables users to
+  Defines the DSC Resource as a DSC Resource Adapter. A DSC Resource Adapter enables users to
   manage resources that don't have their own manifests with DSC.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>
 
 type: object
 required:
@@ -24,15 +24,15 @@ properties:
   list:
     title: List Command
     description: >-
-      Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.
+      Defines how DSC must call the DSC Resource Adapter to list its supported DSC Resources.
     markdownDescription: | # VS Code only
       ***
       [_Online Documentation_][01]
       ***
 
-      Defines how DSC must call the DSC Resource Provider to list its supported DSC Resources.
+      Defines how DSC must call the DSC Resource Adapter to list its supported DSC Resources.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#list
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>#list
     type: object
     required:
       - executable
@@ -49,7 +49,7 @@ properties:
           is only required when the command isn't recognizable by the operating system as an
           executable.
 
-          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#executable
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>#executable
       args:
         $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
         markdownDescription: |
@@ -75,11 +75,11 @@ properties:
           registry resources list
           ```
 
-          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#args
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>#args
   config:
     title: Expected Configuration
     description: >-
-      Defines whether the provider expects to receive a full and unprocessed configuration as a
+      Defines whether the adapter expects to receive a full and unprocessed configuration as a
       single JSON blob over stdin or a sequence of JSON Lines for each child resource's
       configurations.
     type: string
@@ -92,21 +92,21 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines whether the provider expects to receive a full and unprocessed configuration as a
+      Defines whether the adapter expects to receive a full and unprocessed configuration as a
       single JSON blob over stdin or a sequence of JSON Lines for each child resource's
       configurations.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/provider?<DOCS_VERSION_PIN>#config
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>#config
     markdownEnumDescriptions:
       - | # full
           _Full and unprocessed config as a JSON blob_
 
-          > Indicates that the provider expects a JSON blob containing the full and unprocessed
+          > Indicates that the adapter expects a JSON blob containing the full and unprocessed
           > configuration as a single JSON blob over `stdin`.
       - | # sequence
           _Resource instances as JSON Lines_
 
-          > Indicates that the provider expects each resource's configuration as a [JSON Line][01]
+          > Indicates that the adapter expects each resource's configuration as a [JSON Line][01]
           > over `stdin`.
 
           [01]: https://jsonlines.org/
@@ -125,7 +125,7 @@ examples:
 defaultSnippets: # VS Code only
   - label: ' Define without arguments'
     markdownDescription: |
-      Define the provider config kind and `list` command for the resource when no arguments are
+      Define the adapter config kind and `list` command for the resource when no arguments are
       required.
     body:
       config: $1
@@ -134,7 +134,7 @@ defaultSnippets: # VS Code only
 
   - label: ' Define with arguments'
     markdownDescription: |
-      Define the provider config kind and `list` command for the resource when at least one
+      Define the adapter config kind and `list` command for the resource when at least one
       argument is required.
     body:
       config: $1

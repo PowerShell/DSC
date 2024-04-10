@@ -93,9 +93,9 @@ defaultSnippets:
               description: ${23:explanation of property purpose and usage}
               type:        ${24|string,integer,number,array,object,null|}
 
-  - label: ' Define a resource (provider)'
+  - label: ' Define a resource (adapter)'
     markdownDescription: |-
-      Defines a provider resource that enables users to define non-command-based DSC Resources in
+      Defines an adapter resource that enables users to define non-command-based DSC Resources in
       the configuration.
     body:
       $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
@@ -117,7 +117,7 @@ defaultSnippets:
         input:              ${15:stdin}
         implementsPretest: ^${16:false}
         return:             ${17:state}
-      provider:
+      adapter:
         config: ${18|full,sequence|}
         list:
           executable:   ${19:executable name}
@@ -180,6 +180,9 @@ properties:
       - <HOST>/<PREFIX>/<VERSION>/resource/manifest.yaml
       - <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       - <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.vscode.yaml
+      - <HOST>/<PREFIX>/2023/10/resource/manifest.yaml
+      - <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.yaml
+      - <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.vscode.yaml
       - <HOST>/<PREFIX>/2023/08/resource/manifest.yaml
       - <HOST>/<PREFIX>/2023/08/bundled/resource/manifest.yaml
       - <HOST>/<PREFIX>/2023/08/bundled/resource/manifest.vscode.yaml
@@ -259,6 +262,50 @@ properties:
           > This schema uses keywords that are only recognized by VS Code. While DSC can still
           > validate the document when it uses this schema, other tools may error or behave in
           > unexpected ways.
+
+      - | # <HOST>/<PREFIX>/2023/10/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `2023/10` non-bundled
+          >
+          > Indicates that the resource manifest adheres to the `2023/10` schema. This version
+          > is deprecated, and should only be used for compatibility with `alpha.5` and earlier.
+          > Migrate to using the `<VERSION>` of the schema 
+          >
+          > This URL points to the canonical non-bundled schema. When it's used for validation, the
+          > validating client needs to retrieve this schema and every schema it references.
+
+      - | # <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `2023/10` bundled
+          >
+          >Indicates that the resource manifest adheres to the `2023/10` schema. This version
+          > is deprecated, and should only be used for compatibility with `alpha.5` and earlier.
+          > Migrate to using the `<VERSION>` of the schema.
+          >
+          > This URL points to the bundled schema. When it's used for validation, the validating
+          > client only needs to retrieve this schema.
+          >
+          > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
+          > still validate the document when it uses this schema, other tools may error or behave
+          > in unexpected ways.
+      - | # <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.vscode.yaml
+          <!-- force a line break -->
+
+          > #### `2023/10` enhanced authoring
+          >
+          >Indicates that the resource manifest adheres to the `2023/10` schema. This version
+          > is deprecated, and should only be used for compatibility with `alpha.5` and earlier.
+          > Migrate to using the `<VERSION>` of the schema.
+          >
+          > This URL points to the enhanced authoring schema. This schema is much larger than the
+          > other schemas, as it includes additional definitions that provide contextual help and
+          > snippets that the others don't include.
+          >
+          > This schema uses keywords that are only recognized by VS Code. While DSC can still
+          > validate the document when it uses this schema, other tools may error or behave in
+          > unexpected ways.
       - | # <HOST>/<PREFIX>/2023/08/resource/manifest.yaml
           <!-- force a line break -->
 
@@ -267,7 +314,7 @@ properties:
           > Indicates that the resource manifest adheres to the `2023/08` schema. This version
           > is deprecated, and should only be used for compatibility with `alpha.3` and earlier.
           > Migrate to using the `<VERSION>` of the schema 
-          
+          >
           > This URL points to the canonical non-bundled schema. When it's used for validation, the
           > validating client needs to retrieve this schema and every schema it references.
 
@@ -276,9 +323,12 @@ properties:
 
           > #### `2023/08` bundled
           >
-          > Indicates that the resource manifest adheres to the `2023/08` schema. This URL
-          > points to the bundled schema. When it's used for validation, the validating client
-          > only needs to retrieve this schema.
+          > Indicates that the resource manifest adheres to the `2023/08` schema. This version
+          > is deprecated, and should only be used for compatibility with `alpha.3` and earlier.
+          > Migrate to using the `<VERSION>` of the schema 
+          >
+          > This URL points to the bundled schema. When it's used for validation, the validating
+          > client only needs to retrieve this schema.
           >
           > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
           > still validate the document when it uses this schema, other tools may error or behave
@@ -288,9 +338,12 @@ properties:
 
           > #### `2023/08` enhanced authoring
           >
-          > Indicates that the resource manifest adheres to the `2023/08` schema. This URL
-          > points to the enhanced authoring schema. This schema is much larger than the other
-          > schemas, as it includes additional definitions that provide contextual help and
+          > Indicates that the resource manifest adheres to the `2023/08` schema. This version
+          > is deprecated, and should only be used for compatibility with `alpha.3` and earlier.
+          > Migrate to using the `<VERSION>` of the schema 
+          >
+          > This URL points to the enhanced authoring schema. This schema is much larger than the
+          > other schemas, as it includes additional definitions that provide contextual help and
           > snippets that the others don't include.
           >
           > This schema uses keywords that are only recognized by VS Code. While DSC can still
@@ -373,8 +426,8 @@ properties:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.test.yaml
   validate:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.validate.yaml
-  provider:
-    $ref: /<PREFIX>/<VERSION>/resource/manifest.provider.yaml
+  adapter:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.adapter.yaml
   exitCodes:
     # This setting in the root of the schema implies exit codes must have the
     # same meaning across all executions. What about implementations that
