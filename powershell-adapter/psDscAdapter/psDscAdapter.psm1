@@ -53,7 +53,8 @@ function Invoke-DscCacheRefresh {
             $Modules += Get-Module -Name $m -ListAvailable
         }
     }
-    elseif ('PSDesiredStateConfiguration' -eq $module) {
+    elseif ('PSDesiredStateConfiguration' -eq $module -and $PSVersionTable.PSVersion.Major -le 5 ) {
+        # the resources in Windows should only load in Windows PowerShell
         # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
         $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" ) }
     }
