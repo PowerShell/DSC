@@ -77,13 +77,8 @@ Describe 'tests for resource discovery' {
             "get": {
                 "executable": "dsctest",
                 "args": [
-                    "echo",
-                    "--input",
-                    "{json}"
-                ],
-                "input": {
-                    "arg": "{json}"
-                }
+                    "echo"
+                ]
             },
             "schema": {
                 "command": {
