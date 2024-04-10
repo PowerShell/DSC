@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/outputs/config/set.json",
+  "title": "DSC Configuration set command result",
+  "description": "Represents the data structure returned by the `dsc config set` command.",
+  "type": "object",
+  "required": [
+    "results",
+    "messages",
+    "hadErrors"
+  ],
+  "properties": {
+    "results": {
+      "title": "Results",
+      "description": "The results of the `set` method for every DSC Resource instance in the DSC Configuration Document with the instance's name and type.",
+      "type": "array",
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/2024/04/outputs/resource/set.full.json"
+      }
+    },
+    "messages": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/messages.json"
+    },
+    "hadErrors": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/hadErrors.json"
+    }
+  }
+}
