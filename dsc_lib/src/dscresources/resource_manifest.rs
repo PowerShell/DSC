@@ -256,7 +256,7 @@ pub struct ListMethod {
 /// * `DscError` - The JSON value is invalid or the schema version is not supported.
 pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
     // TODO: enable schema version validation, if not provided, use the latest
-    // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json";
+    // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json";
     let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
     // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
     //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));

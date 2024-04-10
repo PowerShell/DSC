@@ -38,7 +38,7 @@ Describe 'registry config set tests' {
 
     It 'delete called when _exist is false' -Skip:(!$IsWindows) {
         $config = @{
-            '$schema' = 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
+            '$schema' = 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
             resources = @(
                 @{
                     name = 'reg'

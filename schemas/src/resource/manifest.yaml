@@ -396,6 +396,31 @@ properties:
       Defines a short synopsis of the DSC Resource's purpose.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#description-1
+  kind:
+    title: Resource kind
+    description: >-
+      Defines whether the resource is a normal DSC Resource, a group resource, or an adapter
+      resource. This property is only required for group resources.
+    markdownDescription: | # VS Code only
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines whether the resource is a normal DSC Resource, a group resource, or an adapter
+      resource. This property is only required for group resources.
+
+      DSC infers the default value for this property based on whether the [adapter][02] property is
+      defined in the manifest:
+
+      - If the `adapter` property is defined in the manifest, the default `kind` is `Adapter`.
+      - If the `adapter` property is not defined in the manifest, the default `kind` is `Resource`.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#kind
+    type: string
+    enum:
+      - Resource
+      - Adapter
+      - Group
   tags:
     title: Tags
     description: >-
