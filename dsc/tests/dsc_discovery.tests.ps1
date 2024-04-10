@@ -67,4 +67,45 @@ Describe 'tests for resource discovery' {
         $resources = dsc resource list | ConvertFrom-Json
         $resources.Count | Should -Be 0
     }
+
+    It 'warns on invalid semver' {
+        $manifest = @'
+        {
+            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+            "type": "Test/Echo",
+            "version": "1.1.0..1",
+            "get": {
+                "executable": "dsctest",
+                "args": [
+                    "echo",
+                    "--input",
+                    "{json}"
+                ],
+                "input": {
+                    "arg": "{json}"
+                }
+            },
+            "schema": {
+                "command": {
+                    "executable": "dsctest",
+                    "args": [
+                        "schema",
+                        "-s",
+                        "echo"
+                    ]
+                }
+            }
+        }
+'@
+        $oldPath = $env:DSC_RESOURCE_PATH
+        try {
+            $env:DSC_RESOURCE_PATH = $testdrive
+            Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
+            $out = dsc resource list 2>&1
+            $out | Should -Match 'WARN.*?Validation.*?Invalid manifest.*?version'
+        }
+        finally {
+            $env:DSC_RESOURCE_PATH = $oldPath
+        }
+    }
 }
