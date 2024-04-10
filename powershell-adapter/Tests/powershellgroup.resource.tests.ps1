@@ -28,12 +28,20 @@ Describe 'PowerShell adapter resource tests' {
         ($resources | ? {$_.Type -eq 'PSDesiredStateConfiguration/File'}).Count | Should -Be 1
     }
 
-    It 'Get works on Binary resource' -Skip:(!$IsWindows){
+    It 'Get works on Binary "File" resource' -Skip:(!$IsWindows){
 
-        $r = '{"Name": "File test", "Type":"PSDesiredStateConfiguration/File", "DestinationPath":"$env:TEMP\\test.txt"}' | dsc resource get -r 'Microsoft.Dsc/WindowsPowerShell'
+        $r = '{"DestinationPath":"$env:TEMP\\test.txt"}' | dsc resource get -r 'PSDesiredStateConfiguration/File'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.Contents | Should -BeNullOrEmpty
+    }
+
+    It 'Get works on traditional "Script" resource' -Skip:(!$IsWindows){
+
+        $r = '{"GetScript": "Get-Content $env:TEMP\\tests.txt", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.result.properties.GetScript | Should -BeNullOrEmpty
     }
 
     It 'Get works on class-based resource' -Skip:(!$IsWindows){

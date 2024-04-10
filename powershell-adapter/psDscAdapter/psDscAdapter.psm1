@@ -55,7 +55,7 @@ function Invoke-DscCacheRefresh {
     }
     elseif ('PSDesiredStateConfiguration' -eq $module) {
         # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
-        $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" )}
+        $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" ) }
     }
     else {
         # if no module is specified, get all resources
@@ -242,9 +242,14 @@ function Get-ActualState {
                 try {
                     $getResult = Invoke-DscResource -Method Get -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
 
-                    # only return DSC properties
-                    $getResult.psobject.Properties.name | Where-Object { 'CimClass','CimInstanceProperties','CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
-
+                    if ($getResult.GetType().Name -eq 'Hashtable') {
+                        $getResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    }
+                    else {
+                        # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
+                        $getResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    }
+                    
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $getDscResult
                 }
@@ -296,9 +301,14 @@ function Get-ActualState {
                 try {
                     $getResult = $PSDesiredStateConfiguration.invoke({ param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1' } -Property $Property -ErrorAction Stop }, $cachedDscResourceInfo.Name, $property )
 
-                    # only return DSC properties
-                    $getResult.psobject.Properties.name | Where-Object { 'CimClass','CimInstanceProperties','CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
-
+                    if ($getResult.GetType().Name -eq 'Hashtable') {
+                        $getResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    }
+                    else {
+                        # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
+                        $getResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    }
+                    
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $getDscResult
                 }
