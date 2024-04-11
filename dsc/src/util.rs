@@ -272,26 +272,30 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
         .add_directive(tracing_level.into());
     let indicatif_layer = IndicatifLayer::new();
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(indicatif_layer.get_stderr_writer());
+    let with_source = tracing_level == Level::DEBUG || tracing_level == Level::TRACE;
     let fmt = match trace_format {
         TraceFormat::Default => {
             layer
                 .with_ansi(true)
                 .with_level(true)
-                .with_line_number(true)
+                .with_target(with_source)
+                .with_line_number(with_source)
                 .boxed()
         },
         TraceFormat::Plaintext => {
             layer
                 .with_ansi(false)
                 .with_level(true)
-                .with_line_number(false)
+                .with_target(with_source)
+                .with_line_number(with_source)
                 .boxed()
         },
         TraceFormat::Json => {
             layer
                 .with_ansi(false)
                 .with_level(true)
-                .with_line_number(true)
+                .with_target(with_source)
+                .with_line_number(with_source)
                 .json()
                 .boxed()
         }
