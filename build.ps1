@@ -14,6 +14,8 @@ param(
     [switch]$SkipLinkCheck
 )
 
+winrm quickconfig -quiet
+
 if ($GetPackageVersion) {
     $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
     if ($null -eq $match) {

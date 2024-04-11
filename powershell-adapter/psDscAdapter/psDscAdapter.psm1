@@ -6,7 +6,8 @@
 # PSDesiredStateConfiguration 2.0.7 module will be saved in the DSC build
 # in Windows PowerShell, we should always use version 1.1 that ships in Windows
 if ($PSVersionTable.PSVersion.Major -gt 5) {
-    $PSDesiredStateConfiguration = Import-Module "$PSScriptRoot/../PSDesiredStateConfiguration/2.0.7/PSDesiredStateConfiguration.psd1" -Force -PassThru
+    $parentFolder = (Get-Item (Resolve-Path $PSScriptRoot).Path).Parent
+    $PSDesiredStateConfiguration = Import-Module "$parentFolder/PSDesiredStateConfiguration/2.0.7/PSDesiredStateConfiguration.psd1" -Force -PassThru
 }
 else {
     $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
