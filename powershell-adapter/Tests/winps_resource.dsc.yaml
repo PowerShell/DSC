@@ -10,5 +10,5 @@ resources:
     - name: File
       type: PSDesiredStateConfiguration/File
       properties:
-        DestinationPath: $env:TEMP\test.txt
+        DestinationPath: c:\test.txt
         Contents: 'Hello, World!'
