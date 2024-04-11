@@ -30,18 +30,20 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on Binary "File" resource' -Skip:(!$IsWindows){
 
-        $r = '{"DestinationPath":"$env:TEMP\\test.txt"}' | dsc resource get -r 'PSDesiredStateConfiguration/File'
+        'test' | Set-Content -Path c:\test.txt -Force
+        $r = '{"DestinationPath":"c:\\test.txt"}' | dsc resource get -r 'PSDesiredStateConfiguration/File'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.Contents | Should -BeNullOrEmpty
+        $res.actualState.result.properties.DestinationPath | Should -Be 'c:\test.txt'
     }
 
     It 'Get works on traditional "Script" resource' -Skip:(!$IsWindows){
 
-        $r = '{"GetScript": "Get-Content $env:TEMP\\tests.txt", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
+        'test' | Set-Content -Path c:\test.txt -Force
+        $r = '{"GetScript": "Get-Content c:\\tests.txt", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.GetScript | Should -BeNullOrEmpty
+        $res.actualState.result.properties.GetScript | Should -Be 'c:\test.txt'
     }
 
     It 'Get works on class-based resource' -Skip:(!$IsWindows){

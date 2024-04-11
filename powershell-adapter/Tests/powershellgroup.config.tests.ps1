@@ -25,10 +25,11 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
 
+      'test' | Set-Content -Path c:\test.txt -Force
       $r = Get-Content -Raw $winpsConfigPath | dsc config get
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
-      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -BeNullOrEmpty
+      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be 'c:\test.txt'
   }
 
     <#
