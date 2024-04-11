@@ -4,6 +4,9 @@
 Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
+        if ($isWindows) {
+          winrm quickconfig -quiet
+        }  
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
         $pwshConfigPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
