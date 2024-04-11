@@ -30,7 +30,7 @@ Describe 'PowerShell adapter resource tests' {
       $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
-      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be '$testFile'
+      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
   }
 
     <#
