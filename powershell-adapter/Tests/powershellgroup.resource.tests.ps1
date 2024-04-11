@@ -43,7 +43,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = '{"GetScript": "@{result = $(Get-Content c:\\test.txt)}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.GetScript | Should -Be 'c:\test.txt'
+        $res.actualState.result.properties.result | Should -Be 'test'
     }
 
     It 'Get works on class-based resource' -Skip:(!$IsWindows){
