@@ -30,17 +30,19 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on Binary "File" resource' -Skip:(!$IsWindows){
 
-        'test' | Set-Content -Path TestDrive:\test.txt -Force
-        $r = '{"DestinationPath":"TestDrive:\\test.txt"}' | dsc resource get -r 'PSDesiredStateConfiguration/File'
+        $testFile = 'c:\test.txt'
+        'test' | Set-Content -Path $testFile -Force
+        $r = '{"DestinationPath":"' + $testFile.replace('\','\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.DestinationPath | Should -Be 'TestDrive:\test.txt'
+        $res.actualState.result.properties.DestinationPath | Should -Be "$testFile"
     }
 
     It 'Get works on traditional "Script" resource' -Skip:(!$IsWindows){
 
-        'test' | Set-Content -Path TestDrive:\test.txt -Force
-        $r = '{"GetScript": "@{result = $(Get-Content TestDrive:\\test.txt)}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
+        $testFile = 'c:\test.txt'
+        'test' | Set-Content -Path $testFile -Force
+        $r = '{"GetScript": "@{result = $(Get-Content ' + $testFile.replace('\','\\') + ')}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.result | Should -Be 'test'

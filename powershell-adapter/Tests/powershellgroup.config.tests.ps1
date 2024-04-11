@@ -25,11 +25,12 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
 
-      'test' | Set-Content -Path TestDrive:\test.txt -Force
-      $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt','TestDrive:\test.txt') | dsc config get
+      $testFile = 'c:\test.txt'
+      'test' | Set-Content -Path $testFile -Force
+      $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
-      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be 'TestDrive:\test.txt'
+      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be '$testFile'
   }
 
     <#

@@ -65,6 +65,8 @@ function Invoke-DscCacheRefresh {
         $Modules = Get-Module -ListAvailable
     }
 
+    $psdscVersion = Get-Module PSDesiredStateConfiguration | Sort-Object -descending | Select-Object -First 1 | ForEach-Object Version
+
     foreach ($dscResource in $DscResources) {
         # resources that shipped in Windows should only be used with Windows PowerShell
         if ($dscResource.ParentPath -like "$env:windir\System32\*" -and $PSVersionTable.PSVersion.Major -gt 5) {
@@ -72,7 +74,7 @@ function Invoke-DscCacheRefresh {
         }
 
         # we can't run this check in PSDesiredStateConfiguration 1.1 because the property doesn't exist
-        if ( $PSVersionTable.PSVersion.Major -gt 5 ) {
+        if ( $psdscVersion -ge '2.0.7' ) {
             # only support known dscResourceType
             if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
                 $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
