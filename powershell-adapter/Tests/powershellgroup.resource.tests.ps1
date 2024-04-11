@@ -40,7 +40,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'Get works on traditional "Script" resource' -Skip:(!$IsWindows){
 
         'test' | Set-Content -Path c:\test.txt -Force
-        $r = '{"GetScript": "Get-Content c:\\test.txt", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
+        $r = '{"GetScript": "@{result = $(Get-Content c:\\test.txt)}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.GetScript | Should -Be 'c:\test.txt'
