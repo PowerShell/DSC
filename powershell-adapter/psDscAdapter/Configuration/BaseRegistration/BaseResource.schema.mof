@@ -1,0 +1,90 @@
+[ClassVersion("1.0.0")]
+class MSFT_Credential 
+{   
+    [MaxLen ( 256 )]
+    string UserName;
+    string Password;
+};
+
+[Abstract, ClassVersion("1.0.0")] 
+class OMI_BaseResource
+{
+  [required] string ResourceId;
+  [write] string SourceInfo;
+  [write] string DependsOn[];
+  [required] string ModuleName;
+  [required] string ModuleVersion;
+  [write] string ConfigurationName;
+  [write, EmbeddedInstance("MSFT_Credential")] string PsDscRunAsCredential;
+};
+
+[Abstract, ClassVersion("1.0.0")]
+class MSFT_KeyValuePair
+{
+	[Key]
+	string Key;
+
+	[write]
+	string Value;
+};
+
+[Abstract, ClassVersion("1.0.0")] 
+class MSFT_BaseConfigurationProviderRegistration
+{
+  [key] String ClassName;
+  String DSCEngineCompatVersion;
+  String DSCModuleVersion;
+};
+
+[ClassVersion("1.0.0")] 
+class MSFT_CimConfigurationProviderRegistration : MSFT_BaseConfigurationProviderRegistration
+{
+  String Namespace;
+};
+
+[ClassVersion("1.0.0")] 
+class MSFT_PSConfigurationProviderRegistration : MSFT_BaseConfigurationProviderRegistration
+{
+  String ModuleName;
+  String ProviderPath;
+  String ModulePath;
+};
+
+[ClassVersion("1.0.0")] 
+class OMI_ConfigurationDocument
+{
+  String Version;
+  String Author;
+  String Copyright;
+  String HelpInfoUri;
+  String ContentType;
+  String GenerationDate;
+  String GenerationHost;
+  String Name;
+  String MinimumCompatibleVersion;
+  String CompatibleVersionAdditionalProperties[];
+  boolean UseCms;
+};
+
+[Abstract,ClassVersion("1.0.0")] 
+class OMI_MetaConfigurationResource
+{
+  [required] string ResourceId;
+  [write] string SourceInfo;
+};
+
+[Abstract,ClassVersion("1.0.0")] 
+class OMI_ResourceModuleManager : OMI_MetaConfigurationResource
+{
+};
+
+[Abstract,ClassVersion("1.0.0")] 
+class OMI_ConfigurationDownloadManager : OMI_MetaConfigurationResource
+{
+};
+
+
+[Abstract,ClassVersion("1.0.0")] 
+class OMI_ReportManager : OMI_MetaConfigurationResource
+{
+};

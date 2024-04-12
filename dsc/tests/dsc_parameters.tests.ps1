@@ -81,7 +81,8 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        $null = $config_yaml | dsc config -p $params_json get
+        $testError = & {$config_yaml | dsc config -p $params_json get 2>&1}
+        $testError | Should -match 'Parameter input failure:'
         $LASTEXITCODE | Should -Be 4
     }
 
@@ -108,8 +109,9 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        $null = $config_yaml | dsc config -p $params_json get
-        $LASTEXITCODE | Should -Be 4
+        $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
+        $testError[0] | Should -match 'error'
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Input number value is out of range for <min> and <max>' -TestCases @(
@@ -134,8 +136,9 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        $null = $config_yaml | dsc config -p $params_json get
-        $LASTEXITCODE | Should -Be 4
+        $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
+        $testError[0] | Should -match 'error'
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Input is not in the allowed value list for <type>' -TestCases @(
@@ -158,8 +161,9 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        $null = $config_yaml | dsc config -p $params_json get
-        $LASTEXITCODE | Should -Be 4
+        $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
+        $testError[0] | Should -match 'error'
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Length constraint is incorrectly applied to <type> with <constraint>' -TestCases @(
@@ -184,8 +188,9 @@ Describe 'Parameters tests' {
 "@
         $params_json = @{ parameters = @{ param1 = $value }} | ConvertTo-Json
 
-        $null = $config_yaml | dsc config -p $params_json get | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 4
+        $testError = & {$config_yaml | dsc config -p $params_json get get 2>&1}
+        $testError[0] | Should -match 'error'
+        $LASTEXITCODE | Should -Be 2
     }
 
     It 'Default value is used when not provided' {

@@ -188,7 +188,18 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
             if (Test-Path "./copy_files.txt") {
                 Get-Content "./copy_files.txt" | ForEach-Object {
-                    Copy-Item $_ $target -Force -ErrorAction Ignore
+                    # if the line contains a '\' character, throw an error
+                    if ($_ -match '\\') {
+                        throw "copy_files.txt should use '/' as the path separator"
+                    }
+                    # copy the file to the target directory, creating the directory path if needed
+                    $fileCopyPath = $_.split('/')
+                    if ($fileCopyPath.Length -gt 1) {
+                        $fileCopyPath = $fileCopyPath[0..($fileCopyPath.Length - 2)]
+                        $fileCopyPath = $fileCopyPath -join '/'
+                        New-Item -ItemType Directory -Path "$target/$fileCopyPath" -Force -ErrorAction Ignore | Out-Null
+                    }
+                    Copy-Item $_ "$target/$_" -Force -ErrorAction Ignore
                 }
             }
 
@@ -198,6 +209,8 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
             Pop-Location
         }
     }
+
+    Save-PSResource -Path $target -Name 'PSDesiredStateConfiguration' -Version '2.0.7' -Repository PSGallery -TrustRepository
 
     if ($failed) {
         Write-Host -ForegroundColor Red "Build failed"
@@ -243,14 +256,12 @@ if ($Test) {
     $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
     if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
     {   "Installing module PSDesiredStateConfiguration 2.0.7"
-        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-        Install-Module PSDesiredStateConfiguration -RequiredVersion 2.0.7
+        Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository PSGallery -TrustRepository
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
     {   "Installing module Pester"
-        Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-        Install-Module Pester -WarningAction Ignore
+        Install-PSResource Pester -WarningAction Ignore -Repository PSGallery -TrustRepository
     }
 
     foreach ($project in $projects) {
@@ -295,7 +306,7 @@ if ($Test) {
         if (-not(Get-Module -ListAvailable -Name Pester))
         {   "Installing module Pester"
             $InstallTargetDir = ($env:PSModulePath -split ";")[0]
-            Find-Module -Name 'Pester' -Repository 'PSGallery' | Save-Module -Path $InstallTargetDir
+            Find-PSResource -Name 'Pester' -Repository 'PSGallery' | Save-PSResource -Path $InstallTargetDir -TrustRepository
         }
 
         "Updated Pester module location:"

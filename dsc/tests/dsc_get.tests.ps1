@@ -44,7 +44,8 @@ Describe 'resource get tests' {
             "Name": "ProductName"
         }
 '@
-        $json | dsc resource get -r Microsoft.Windows/registry
+        $testError = & {$json | dsc resource get -r Microsoft.Windows/registry get 2>&1}
+        $testError[0] | SHould -match 'error:'
         $LASTEXITCODE | Should -Be 2
     }
 }

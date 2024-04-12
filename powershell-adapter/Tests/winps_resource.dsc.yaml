@@ -1,11 +1,14 @@
-# Example configuration mixing native app resources with classic PS resources
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
 resources:
 - name: Get info from classic DSC resources
   type: Microsoft.Windows/WindowsPowerShell
   properties:
     resources:
-    - name: Get Info
-      type: PSDesiredStateConfiguration/MSFT_ServiceResource
+    - name: File
+      type: PSDesiredStateConfiguration/File
       properties:
-        Name: sshd
+        DestinationPath: c:\test.txt
+        Contents: 'Hello, World!'
