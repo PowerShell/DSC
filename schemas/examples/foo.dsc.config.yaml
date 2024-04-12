@@ -1,4 +1,8 @@
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+# For testing outside of the repository, set the schema in the yaml server directive to:
+#    https://raw.githubusercontent.com/PowerShell/DSC/main/2024/04/resource/manifest.json
+#
+# Hover on the keys to see the documentation. Try changing values and adding new settings.
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 # Try adding the variables, metadata, and parameters properties,
 # then use IntelliSense to define a few entries.
 
