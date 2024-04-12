@@ -125,6 +125,7 @@ $projects = @(
     "security_context_lib",
     "dsc_lib",
     "dsc",
+    "intunecompliance"
     "osinfo",
     "powershell-adapter",
     "process",

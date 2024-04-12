@@ -1,0 +1,87 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+  "type": "Microsoft.InTune/WindowsCustomCompliance",
+  "version": "0.1.0",
+  "description": "DSC resource to re-use Microsoft InTune custom compliance scripts.",
+  "tags": [
+    "Compliance"
+  ],
+  "get": {
+    "executable": "pwsh",
+    "args": [
+      "-NoLogo",
+      "-NonInteractive",
+      "-NoProfile",
+      "-Command",
+      "$Input | ./intunecompliance.resource.ps1 Get"
+    ],
+    "input": "stdin"
+  },
+  "validate": {
+    "executable": "powershell",
+    "args": [
+      "-NoLogo",
+      "-NonInteractive",
+      "-NoProfile",
+      "-Command",
+      "$Input | ./intunecompliance.resource.ps1 Validate"
+    ]
+  },
+  "exitCodes": {
+    "0": "Success",
+    "1": "Error"
+  },
+  "schema": {
+    "embedded": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft/OSInfo/v0.1.0/schema.json",
+      "title": "InTuneCompliance",
+      "description": "DSC resource to re-use Microsoft InTune custom compliance scripts.\n",
+      "markdownDescription": "DSC resource to re-use Microsoft InTune custom compliance scripts.\n",
+      "type": "object",
+      "required": [],
+      "properties": {
+        "JSON": {
+          "type": "string",
+          "description": "File path to the JSON file.",
+          "markdownDescription": "File path to the JSON file.\n"
+        },
+        "Script": {
+          "type": "string",
+          "description": "File path to the Script file.",
+          "markdownDescription": "File path to the Script file.\n"
+        },
+        "SettingName": {
+          "type": "string",
+          "description": "The name of the custom setting to use for base compliance. This name is case-sensitive.",
+          "markdownDescription": "The name of the custom setting to use for base compliance. This name is case-sensitive.\n"
+        },
+        "Operator": {
+          "type": "string",
+          "description": "Represents a specific action that is used to build a compliance rule.",
+          "markdownDescription": "Represents a specific action that is used to build a compliance rule.\nSupported operators:\n - IsEquals\n - NotEquals\n - GreaterThan\n - GreaterEquals\n - LessThan\n - LessEquals"
+        },
+        "DataType": {
+          "type": "string",
+          "description": "The type of data that you can use to build your compliance rule.",
+          "markdownDescription": "The type of data that you can use to build your compliance rule.\nSupported types:\n - Boolean\n - Int64\n - Double\n - String\n - DateTime\n - Version"
+        },
+        "Operand": {
+          "type": "string",
+          "description": "Represent the values that the operator works on.",
+          "markdownDescription": "Represent the values that the operator works on."
+        },
+        "MoreInfoUrl": {
+          "type": "string",
+          "description": "A URL that’s shown to device users so they can learn more about the compliance requirement when their device is noncompliant for a setting. You can also use this to link to instructions to help users bring their device into compliance for this setting.",
+          "markdownDescription": "A URL that’s shown to device users so they can learn more about the compliance requirement when their device is noncompliant for a setting. You can also use this to link to instructions to help users bring their device into compliance for this setting."
+        },
+        "RemediationStrings": {
+          "type": "string",
+          "description": "Information that gets displayed when a device is noncompliant to a setting. This information is intended to help users understand the remediation options to bring a device to a compliant state. There must be at least one string.",
+          "markdownDescription": "Information that gets displayed when a device is noncompliant to a setting. This information is intended to help users understand the remediation options to bring a device to a compliant state. There must be at least one string."
+        }
+      }
+    }
+  }
+}
