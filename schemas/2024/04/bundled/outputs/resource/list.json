@@ -8,6 +8,9 @@
     "type": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/resourceType.json"
     },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json"
+    },
     "version": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/semver.json"
     },
@@ -97,6 +100,18 @@
       "type": "string",
       "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
     },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json",
+      "title": "Resource kind",
+      "description": "Defines whether the resource is a normal DSC Resource, a group resource, or an adapter resource. This property is only required for group resources.",
+      "type": "string",
+      "enum": [
+        "Resource",
+        "Adapter",
+        "Group"
+      ]
+    },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/semver.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/semver.json",
@@ -148,6 +163,9 @@
           "title": "Resource Description",
           "description": "A short synopsis of the DSC Resource's purpose.",
           "type": "string"
+        },
+        "kind": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json"
         },
         "tags": {
           "title": "Tags",

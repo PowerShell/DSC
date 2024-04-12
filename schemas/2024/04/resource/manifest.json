@@ -41,6 +41,9 @@
       "description": "A short synopsis of the DSC Resource's purpose.",
       "type": "string"
     },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json"
+    },
     "tags": {
       "title": "Tags",
       "description": "Defines a list of searchable terms for the resource.",

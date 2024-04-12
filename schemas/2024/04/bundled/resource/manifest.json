@@ -41,6 +41,9 @@
       "description": "A short synopsis of the DSC Resource's purpose.",
       "type": "string"
     },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json"
+    },
     "tags": {
       "title": "Tags",
       "description": "Defines a list of searchable terms for the resource.",
@@ -117,6 +120,18 @@
       "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
       "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json",
+      "title": "Resource kind",
+      "description": "Defines whether the resource is a normal DSC Resource, a group resource, or an adapter resource. This property is only required for group resources.",
+      "type": "string",
+      "enum": [
+        "Resource",
+        "Adapter",
+        "Group"
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.get.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

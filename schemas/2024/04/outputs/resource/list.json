@@ -8,6 +8,9 @@
     "type": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/resourceType.json"
     },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json"
+    },
     "version": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/semver.json"
     },
