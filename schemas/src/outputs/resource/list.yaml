@@ -20,6 +20,21 @@ properties:
   version:
     # Only the Test* resources seem to have this field populated.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+  capabilities:
+    title: Resource capabilities
+    description: >-
+      Defines the list of DSC operations the resource is compatible with. If the resource doesn't
+      list a given operation, like `Set` or `Export`, the resource can't be used for those
+      operations. The exception to this is `Test` - DSC uses synthetic testing for resources that
+      don't have the `Test` capability.
+    type: array
+    items:
+      type: string
+      enum:
+        - Get
+        - Set
+        - Test
+        - Export
   description:
     title: Resource Description
     description: >-
