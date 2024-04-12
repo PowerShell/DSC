@@ -75,7 +75,7 @@
         "pattern": "^\\w+$"
       }
     },
-    "requires": {
+    "requireAdapter": {
       "title": "Required DSC Resource Adapter",
       "description": "Defines the fully qualified type name of the DSC Resource Adapter the DSC Resource depends on.",
       "oneOf": [
