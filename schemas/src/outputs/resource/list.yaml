@@ -33,7 +33,9 @@ properties:
       enum:
         - Get
         - Set
+        - SetHandlesExist
         - Test
+        - Delete
         - Export
   description:
     title: Resource Description

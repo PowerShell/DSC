@@ -264,14 +264,17 @@
     "get": {
       "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/resource/manifest.get.json"
     },
-    "export": {
-      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json"
-    },
     "set": {
       "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json"
     },
     "test": {
       "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/resource/manifest.test.json"
+    },
+    "delete": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json"
+    },
+    "export": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json"
     },
     "validate": {
       "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json"
@@ -474,46 +477,6 @@
                       }
                     ]
                   },
-                  "manifest.export.json": {
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json",
-                    "title": "Get Method",
-                    "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to get the current state of every instance.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true\n",
-                    "type": "object",
-                    "required": [
-                      "executable"
-                    ],
-                    "properties": {
-                      "executable": {
-                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true#executable\n"
-                      },
-                      "args": {
-                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"export\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config export\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true#args\n"
-                      }
-                    },
-                    "defaultSnippets": [
-                      {
-                        "label": " Define without arguments",
-                        "markdownDescription": "Define the export command for the resource when no arguments are required.\n",
-                        "body": {
-                          "executable": "${1:executable_name}"
-                        }
-                      },
-                      {
-                        "label": " Define with arguments",
-                        "markdownDescription": "Define the export command for the resource when at least one argument is required.\n",
-                        "body": {
-                          "executable": "${1:executable_name}",
-                          "args": [
-                            "${2:--first-argument}"
-                          ]
-                        }
-                      }
-                    ]
-                  },
                   "manifest.set.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json",
@@ -544,6 +507,13 @@
                         "type": "boolean",
                         "default": false,
                         "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines whether the DSC Resource performs its own test to ensure idempotency when calling the\n`set` command. Set this value to `true` if the DSC Resource tests input before modifying\nsystem state.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#implementspretest\n"
+                      },
+                      "handlesExist": {
+                        "title": "Resource handles _exist property",
+                        "description": "Defines whether the DSC Resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC Resource handles instance deletion internally when receiving a `set` command where the instance defines the `_exist` property as `false`.",
+                        "type": "boolean",
+                        "default": false,
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines whether the DSC Resource has its own built-in handling for the [`_exist`][02] common\nproperty. Set this value to `true` if the DSC Resource handles instance deletion internally\nwhen receiving a `set` command where the instance defines the `_exist` property as `false`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#handlesExist\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/exist?view=dsc-3.0&preserve-view=true\n"
                       },
                       "return": {
                         "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
@@ -658,6 +628,107 @@
                           "executable": "${3:executable_name}",
                           "args": [
                             "${4:--first-argument}"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "manifest.delete.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json",
+                    "title": "Delete method",
+                    "description": "Defines how DSC must call the DSC Resource to delete an instance. Define this method for resources as an alternative to handling the `_exist` property in a `set` operation, which can lead to highly complex code. If the `set` operation for the resource is able to handle deleting an instance when `_exist` is `false`, set the `handlesExist` property of the set method definition to `true` instead.",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to delete an instance. Define this method for\nresources as an alternative to handling the [`_exist`][02] property in a `set` operation, which\ncan lead to highly complex code. If the `set` method for the resource is able to handle deleting\nan instance when `_exist` is `false`, set the [`handlesExist`][03] property of the set method\ndefinition to `true` instead.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/exist?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#handlesExist\n",
+                    "type": "object",
+                    "required": [
+                      "executable",
+                      "input"
+                    ],
+                    "properties": {
+                      "executable": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true#executable\n"
+                      },
+                      "args": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"delete\"]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config delete\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true#args\n"
+                      },
+                      "input": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true#input\n"
+                      }
+                    },
+                    "examples": [
+                      {
+                        "executable": "registry",
+                        "args": [
+                          "config",
+                          "delete",
+                          "--input",
+                          "{json}"
+                        ],
+                        "input": {
+                          "arg": "{json}"
+                        }
+                      }
+                    ],
+                    "defaultSnippets": [
+                      {
+                        "label": " Define without arguments",
+                        "markdownDescription": "Define the `validate` command for the resource when no arguments are required.\n",
+                        "body": {
+                          "executable": "${1:executable_name}",
+                          "input": "${2:stdin}"
+                        }
+                      },
+                      {
+                        "label": " Define with arguments",
+                        "markdownDescription": "Define the `validate` command for the resource when at least one argument is required.\n",
+                        "body": {
+                          "executable": "${1:executable_name}",
+                          "args": [
+                            "${2:--first-argument}"
+                          ],
+                          "input": "${3:stdin}"
+                        }
+                      }
+                    ]
+                  },
+                  "manifest.export.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json",
+                    "title": "Get Method",
+                    "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to get the current state of every instance.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true\n",
+                    "type": "object",
+                    "required": [
+                      "executable"
+                    ],
+                    "properties": {
+                      "executable": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true#executable\n"
+                      },
+                      "args": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"export\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config export\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true#args\n"
+                      }
+                    },
+                    "defaultSnippets": [
+                      {
+                        "label": " Define without arguments",
+                        "markdownDescription": "Define the export command for the resource when no arguments are required.\n",
+                        "body": {
+                          "executable": "${1:executable_name}"
+                        }
+                      },
+                      {
+                        "label": " Define with arguments",
+                        "markdownDescription": "Define the export command for the resource when at least one argument is required.\n",
+                        "body": {
+                          "executable": "${1:executable_name}",
+                          "args": [
+                            "${2:--first-argument}"
                           ]
                         }
                       }

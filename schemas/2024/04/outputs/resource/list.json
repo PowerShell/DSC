@@ -23,7 +23,9 @@
         "enum": [
           "Get",
           "Set",
+          "SetHandlesExist",
           "Test",
+          "Delete",
           "Export"
         ]
       }

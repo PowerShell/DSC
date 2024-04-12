@@ -420,12 +420,14 @@ properties:
         characters are permitted.
   get:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.get.yaml
-  export:
-    $ref: /<PREFIX>/<VERSION>/resource/manifest.export.yaml
   set:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.set.yaml
   test:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.test.yaml
+  delete:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.delete.yaml
+  export:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.export.yaml
   validate:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.validate.yaml
   adapter:

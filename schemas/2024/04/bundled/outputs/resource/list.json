@@ -23,7 +23,9 @@
         "enum": [
           "Get",
           "Set",
+          "SetHandlesExist",
           "Test",
+          "Delete",
           "Export"
         ]
       }
@@ -194,14 +196,17 @@
         "get": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.get.json"
         },
-        "export": {
-          "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json"
-        },
         "set": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json"
         },
         "test": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.test.json"
+        },
+        "delete": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json"
+        },
+        "export": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json"
         },
         "validate": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json"
@@ -275,24 +280,6 @@
         }
       ]
     },
-    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json",
-      "title": "Get Method",
-      "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
-      "type": "object",
-      "required": [
-        "executable"
-      ],
-      "properties": {
-        "executable": {
-          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
-        },
-        "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
-        }
-      }
-    },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json",
@@ -316,6 +303,12 @@
         "implementsPretest": {
           "title": "Resource Performs Pre-Test",
           "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
+          "type": "boolean",
+          "default": false
+        },
+        "handlesExist": {
+          "title": "Resource handles _exist property",
+          "description": "Defines whether the DSC Resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC Resource handles instance deletion internally when receiving a `set` command where the instance defines the `_exist` property as `false`.",
           "type": "boolean",
           "default": false
         },
@@ -374,6 +367,60 @@
           "return": "state"
         }
       ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json",
+      "title": "Delete method",
+      "description": "Defines how DSC must call the DSC Resource to delete an instance. Define this method for resources as an alternative to handling the `_exist` property in a `set` operation, which can lead to highly complex code. If the `set` operation for the resource is able to handle deleting an instance when `_exist` is `false`, set the `handlesExist` property of the set method definition to `true` instead.",
+      "type": "object",
+      "required": [
+        "executable",
+        "input"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
+        }
+      },
+      "examples": [
+        {
+          "executable": "registry",
+          "args": [
+            "config",
+            "delete",
+            "--input",
+            "{json}"
+          ],
+          "input": {
+            "arg": "{json}"
+          }
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json",
+      "title": "Get Method",
+      "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+        }
+      }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

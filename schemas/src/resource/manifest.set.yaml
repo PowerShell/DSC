@@ -90,6 +90,26 @@ properties:
       system state.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#implementspretest
+  handlesExist:
+    title: Resource handles _exist property
+    description: >-
+      Defines whether the DSC Resource has its own built-in handling for the `_exist` common
+      property. Set this value to `true` if the DSC Resource handles instance deletion internally
+      when receiving a `set` command where the instance defines the `_exist` property as `false`.
+    type: boolean
+    default: false
+    # VS Code only
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      Defines whether the DSC Resource has its own built-in handling for the [`_exist`][02] common
+      property. Set this value to `true` if the DSC Resource handles instance deletion internally
+      when receiving a `set` command where the instance defines the `_exist` property as `false`.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#handlesExist
+      [02]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
   return:
     description: >-
       Defines whether the command returns a JSON blob of the DSC Resource's state after the set

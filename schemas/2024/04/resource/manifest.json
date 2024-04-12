@@ -57,14 +57,17 @@
     "get": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.get.json"
     },
-    "export": {
-      "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json"
-    },
     "set": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json"
     },
     "test": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.test.json"
+    },
+    "delete": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json"
+    },
+    "export": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json"
     },
     "validate": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json"
