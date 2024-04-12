@@ -141,23 +141,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         }
     }
 
-    let mut get_env: Option<HashMap<String, String>> = None;
-    let mut get_input: Option<&str> = None;
     let args = process_args(&resource.get.args, desired);
-    match &resource.get.input {
-        Some(InputKind::Env) => {
-            get_env = Some(json_to_hashmap(desired)?);
-        },
-        Some(InputKind::Stdin) => {
-            get_input = Some(desired);
-        },
-        None => {
-            // leave input as none
-        },
-    }
+    let (get_env, get_input) = get_env_stdin(&resource.get.input, desired)?;
 
     info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &resource.get.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, get_input, Some(cwd), get_env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, get_input.as_deref(), Some(cwd), get_env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -282,23 +270,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 
     verify_json(resource, cwd, expected)?;
 
-    let mut env: Option<HashMap<String, String>> = None;
-    let mut input_expected: Option<&str> = None;
     let args = process_args(&test.args, expected);
-    match &test.input {
-        Some(InputKind::Env) => {
-           env = Some(json_to_hashmap(expected)?);
-        },
-        Some(InputKind::Stdin) => {
-            input_expected = Some(expected);
-        },
-        None => {
-            // leave input as none
-        },
-    }
+    let (env, input_expected) = get_env_stdin(&test.input, expected)?;
 
     info!("Invoking test '{}' using '{}'", &resource.resource_type, &test.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, input_expected, Some(cwd), env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, input_expected.as_deref(), Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -412,23 +388,11 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
 
     verify_json(resource, cwd, filter)?;
 
-    let mut env: Option<HashMap<String, String>> = None;
-    let mut input_filter: Option<&str> = None;
     let args = process_args(&delete.args, filter);
-    match &delete.input {
-        Some(InputKind::Env) => {
-            env = Some(json_to_hashmap(filter)?);
-        },
-        Some(InputKind::Stdin) => {
-            input_filter = Some(filter);
-        },
-        None => {
-            // leave input as none
-        },
-    }
+    let (env, input_filter) = get_env_stdin(&delete.input, filter)?;
 
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
-    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, args, input_filter, Some(cwd), env)?;
+    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, args, input_filter.as_deref(), Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -459,22 +423,11 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
         return Err(DscError::NotImplemented("validate".to_string()));
     };
 
-    let mut env: Option<HashMap<String, String>> = None;
-    let mut input_config: Option<&str> = None;
     let args = process_args(&validate.args, config);
-    match &validate.input {
-        Some(InputKind::Env) => {
-            env = Some(json_to_hashmap(config)?);
-        },
-        Some(InputKind::Stdin) => {
-            input_config = Some(config);
-        },
-        None => {
-            // leave input as none
-        },
-    }
+    let (env, input_config) = get_env_stdin(&validate.input, config)?;
 
-    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, args, input_config, Some(cwd), env)?;
+    info!("Invoking validate '{}' using '{}'", &resource.resource_type, &validate.executable);
+    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, args, input_config.as_deref(), Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -548,22 +501,12 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
 
 
     let mut env: Option<HashMap<String, String>> = None;
-    let mut export_input: Option<&str> = None;
+    let mut export_input: Option<String> = None;
     let args: Option<Vec<String>>;
     if let Some(input) = input {
         if !input.is_empty() {
             verify_json(resource, cwd, input)?;
-            match &export.input {
-                Some(InputKind::Env) => {
-                    env = Some(json_to_hashmap(input)?);
-                },
-                Some(InputKind::Stdin) => {
-                    export_input = Some(input);
-                },
-                None => {
-                    // leave input as none
-                },
-            }
+            (env, export_input) = get_env_stdin(&export.input, input)?;
         }
 
         args = process_args(&export.args, input);
@@ -571,7 +514,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
         args = process_args(&export.args, "");
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&export.executable, args, export_input, Some(cwd), env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&export.executable, args, export_input.as_deref(), Some(cwd), env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -693,6 +636,24 @@ fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>>
     }
 
     Some(processed_args)
+}
+
+fn get_env_stdin(input_kind: &Option<InputKind>, input: &str) -> Result<(Option<HashMap<String, String>>, Option<String>), DscError> {
+    let mut env: Option<HashMap<String, String>> = None;
+    let mut input_value: Option<String> = None;
+    match input_kind {
+        Some(InputKind::Env) => {
+            env = Some(json_to_hashmap(input)?);
+        },
+        Some(InputKind::Stdin) => {
+            input_value = Some(input.to_string());
+        },
+        None => {
+            // leave input as none
+        },
+    }
+
+    Ok((env, input_value))
 }
 
 fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
