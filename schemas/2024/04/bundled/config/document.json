@@ -129,7 +129,7 @@
               {
                 "properties": {
                   "type": {
-                    "const": "securestring"
+                    "const": "secureString"
                   }
                 }
               },
@@ -146,13 +146,13 @@
             "properties": {
               "minLength": {
                 "title": "Minimum length",
-                "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+                "description": "The minimum valid length for a `string`, `secureString`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
                 "type": "integer",
                 "minimum": 0
               },
               "maxLength": {
                 "title": "Maximum length",
-                "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+                "description": "The maximum valid length for a `string`, `secureString`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
                 "type": "integer",
                 "minimum": 0
               }
@@ -172,7 +172,7 @@
               {
                 "properties": {
                   "type": {
-                    "const": "securestring"
+                    "const": "secureString"
                   }
                 }
               }
@@ -204,7 +204,7 @@
               {
                 "properties": {
                   "type": {
-                    "const": "secureobject"
+                    "const": "secureObject"
                   }
                 }
               }
@@ -325,11 +325,11 @@
       "type": "string",
       "enum": [
         "string",
-        "securestring",
+        "secureString",
         "int",
         "bool",
         "object",
-        "secureobject",
+        "secureObject",
         "array"
       ]
     },

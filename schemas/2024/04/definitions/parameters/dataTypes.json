@@ -6,11 +6,11 @@
   "type": "string",
   "enum": [
     "string",
-    "securestring",
+    "secureString",
     "int",
     "bool",
     "object",
-    "secureobject",
+    "secureObject",
     "array"
   ]
 }

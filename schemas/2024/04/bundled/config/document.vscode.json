@@ -273,7 +273,7 @@
                             {
                               "properties": {
                                 "type": {
-                                  "const": "securestring"
+                                  "const": "secureString"
                                 }
                               }
                             },
@@ -290,17 +290,17 @@
                           "properties": {
                             "minLength": {
                               "title": "Minimum length",
-                              "description": "The minimum valid length for a `string`, `securestring`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+                              "description": "The minimum valid length for a `string`, `secureString`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
                               "type": "integer",
                               "minimum": 0,
-                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe minimum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `maxLength` property, this value must be less than the value of `maxLength`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#minLength\n"
+                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe minimum valid length for a `string`, `secureString`, or `array`. If defined with\nthe `maxLength` property, this value must be less than the value of `maxLength`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#minLength\n"
                             },
                             "maxLength": {
                               "title": "Maximum length",
-                              "description": "The maximum valid length for a `string`, `securestring`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+                              "description": "The maximum valid length for a `string`, `secureString`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
                               "type": "integer",
                               "minimum": 0,
-                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe maximum valid length for a `string`, `securestring`, or `array`. If defined with\nthe `minLength` property, this value must be less than the value of `minLength`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#maxLength\n"
+                              "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe maximum valid length for a `string`, `secureString`, or `array`. If defined with\nthe `minLength` property, this value must be less than the value of `minLength`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/parameter?view=dsc-3.0&preserve-view=true#maxLength\n"
                             }
                           }
                         }
@@ -318,7 +318,7 @@
                             {
                               "properties": {
                                 "type": {
-                                  "const": "securestring"
+                                  "const": "secureString"
                                 }
                               }
                             }
@@ -350,7 +350,7 @@
                             {
                               "properties": {
                                 "type": {
-                                  "const": "secureobject"
+                                  "const": "secureObject"
                                 }
                               }
                             }
@@ -512,14 +512,14 @@
                       "type": "string",
                       "enum": [
                         "string",
-                        "securestring",
+                        "secureString",
                         "int",
                         "bool",
                         "object",
-                        "secureobject",
+                        "secureObject",
                         "array"
                       ],
-                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the data type for the parameter value.\n\nThe valid data types for a parameter are:\n\n- `array` for arrays\n- `bool` for booleans\n- `int` for integers\n- `object` for objects\n- `string` for strings\n- `secureobject` for secure objects\n- `securestring` for secure strings\n\nAccess parameters in a configuration using this syntax:\n\n```yaml\n\"[parameter('<parameter-name>')]\"\n```\n\nIn YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.\nIf the syntax isn't quoted, YAML interprets the syntax as an array.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true\n",
+                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the data type for the parameter value.\n\nThe valid data types for a parameter are:\n\n- `array` for arrays\n- `bool` for booleans\n- `int` for integers\n- `object` for objects\n- `string` for strings\n- `secureObject` for secure objects\n- `secureString` for secure strings\n\nAccess parameters in a configuration using this syntax:\n\n```yaml\n\"[parameter('<parameter-name>')]\"\n```\n\nIn YAML, the parameter syntax needs to be enclosed in double-quotes when used as an inline value.\nIf the syntax isn't quoted, YAML interprets the syntax as an array.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true\n",
                       "markdownEnumDescriptions": [
                         "_Strings are an arbitrary set of text._\n\n> To define a long strings in YAML, use the folded block syntax or literal block syntax by\n> adding a `>` or `|` and a line break after the key. Then, indent the next line. Every line\n> in the string must start at the same level of indentation. You can trim the trailing\n> whitespace by using `>-` or `|-` instead.\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#strings\n",
                         "_Secure strings are text that needs to be handled securely._\n\n> Secure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or\n> record. If a secure data type parameter is used for a resource instance property that doesn't\n> expect a secure value, the resource may still log or record the value. If the resource has\n> independent logging or recording that isn't handled by DSC, the value may be stored\n> insecurely.\n>\n> Use secure strings for passwords and secrets. Never define a default value for secure string\n> parameters.\n>\n> For more information, see the [_Online Documentation_][01].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/parameters/datatypes?view=dsc-3.0&preserve-view=true#secure-strings-and-objects\n",

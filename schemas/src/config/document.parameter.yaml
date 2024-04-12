@@ -165,14 +165,14 @@ allOf:
   - if:
       oneOf:
         - properties: { type: { const: string } }
-        - properties: { type: { const: securestring } }
+        - properties: { type: { const: secureString } }
         - properties: { type: { const: array } }
     then:
       properties:
         minLength:
           title: Minimum length
           description: >-
-            The minimum valid length for a `string`, `securestring`, or `array`. If defined with
+            The minimum valid length for a `string`, `secureString`, or `array`. If defined with
             the `maxLength` property, this value must be less than the value of `maxLength`.
           type: integer
           minimum: 0
@@ -182,14 +182,14 @@ allOf:
             [_Online Documentation_][01]
             ***
 
-            The minimum valid length for a `string`, `securestring`, or `array`. If defined with
+            The minimum valid length for a `string`, `secureString`, or `array`. If defined with
             the `maxLength` property, this value must be less than the value of `maxLength`.
 
             [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#minLength
         maxLength:
           title: Maximum length
           description: >-
-            The maximum valid length for a `string`, `securestring`, or `array`. If defined with
+            The maximum valid length for a `string`, `secureString`, or `array`. If defined with
             the `minLength` property, this value must be less than the value of `minLength`.
           type: integer
           minimum: 0
@@ -199,7 +199,7 @@ allOf:
             [_Online Documentation_][01]
             ***
 
-            The maximum valid length for a `string`, `securestring`, or `array`. If defined with
+            The maximum valid length for a `string`, `secureString`, or `array`. If defined with
             the `minLength` property, this value must be less than the value of `minLength`.
 
             [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>#maxLength
@@ -207,7 +207,7 @@ allOf:
   - if:
       oneOf:
         - properties: { type: { const: string } }
-        - properties: { type: { const: securestring } }
+        - properties: { type: { const: secureString } }
     then:
       properties:
         defaultValue:  { type: string }
@@ -215,7 +215,7 @@ allOf:
   - if:
       oneOf:
         - properties: { type: { const: object } }
-        - properties: { type: { const: secureobject } }
+        - properties: { type: { const: secureObject } }
     then:
       properties:
         defaultValue:  { type: object }
