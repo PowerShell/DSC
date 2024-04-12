@@ -38,7 +38,11 @@ function Invoke-DscCacheRefresh {
         $Module
     )
 
-    # cache the results of Get-DscResource
+    # write psmodulepath to debug logs
+    $trace = @{'Debug' = 'PSModulePath:' + $env:PSModulePath } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
+
+    # create a list object to store cache of Get-DscResource
     [dscResourceCache[]]$dscResourceCache = [System.Collections.Generic.List[Object]]::new()
 
     # improve by performance by having the option to only get details for named modules
