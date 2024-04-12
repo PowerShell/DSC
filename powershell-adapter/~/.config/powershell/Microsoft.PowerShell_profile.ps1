@@ -1,1 +1,0 @@
-$env:psmodulepath = $env:psmodulepath.trimend(';')

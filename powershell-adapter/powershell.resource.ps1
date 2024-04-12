@@ -57,7 +57,7 @@ switch ($Operation) {
 
             # match adapter to version of powershell
             if ($PSVersionTable.PSVersion.Major -le 5) {
-                $requireAdapter = 'Microsoft.DSC/WindowsPowerShell'
+                $requireAdapter = 'Microsoft.Windows/WindowsPowerShell'
             }
             else {
                 $requireAdapter = 'Microsoft.DSC/PowerShell'

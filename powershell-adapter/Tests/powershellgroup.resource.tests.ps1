@@ -25,7 +25,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Windows PowerShell adapter supports File resource' -Skip:(!$IsWindows){
 
-        $r = dsc resource list --adapter Microsoft.DSC/WindowsPowerShell
+        $r = dsc resource list --adapter Microsoft.Windows/WindowsPowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
         ($resources | ? {$_.Type -eq 'PSDesiredStateConfiguration/File'}).Count | Should -Be 1

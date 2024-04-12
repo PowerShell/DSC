@@ -151,7 +151,7 @@ function Get-DscResourceObject {
 
     # match adapter to version of powershell
     if ($PSVersionTable.PSVersion.Major -le 5) {
-        $adapterName = 'Microsoft.DSC/WindowsPowerShell'
+        $adapterName = 'Microsoft.Windows/WindowsPowerShell'
     }
     else {
         $adapterName = 'Microsoft.DSC/PowerShell'
@@ -287,7 +287,7 @@ function Get-ActualState {
             }
             'Binary' {
                 if ($PSVersionTable.PSVersion.Major -gt 5) {
-                    $trace = @{'Debug' = 'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.DSC/WindowsPowerShell adapter.' } | ConvertTo-Json -Compress
+                    $trace = @{'Debug' = 'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.Windows/WindowsPowerShell adapter.' } | ConvertTo-Json -Compress
                     $host.ui.WriteErrorLine($trace)
                     exit 1
                 }
