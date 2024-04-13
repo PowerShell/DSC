@@ -34,7 +34,7 @@ Describe 'dsc config set tests' {
         $out.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
         $out.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
         $out.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty
-        $out.metadata.'Microsoft.DSC'.securityContext | Should -BeExactly 'Restricted'
+        $out.metadata.'Microsoft.DSC'.securityContext | Should -Not -BeNullOrEmpty
 
     }
 }

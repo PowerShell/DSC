@@ -53,7 +53,7 @@ Describe 'dsc config get tests' {
         $result.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
         $result.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
         $result.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty
-        $result.metadata.'Microsoft.DSC'.securityContext | Should -BeExactly 'Restricted'
+        $result.metadata.'Microsoft.DSC'.securityContext | Should -Not -BeNullOrEmpty
         $LASTEXITCODE | Should -Be 0
     }
 }

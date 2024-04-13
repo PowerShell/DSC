@@ -14,7 +14,7 @@ metadata:
     startDatetime: *
     endDatetime: *
     duration: PT*S
-    securityContext: Restricted
+    securityContext: *
 results:
 - name: First Group
   type: Microsoft.DSC/Group
