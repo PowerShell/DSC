@@ -45,31 +45,16 @@ pub fn log_resource_traces(stderr: &str)
 ///
 /// Error returned if the resource does not successfully get the current state
 pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<GetResult, DscError> {
-    let input_kind = if let Some(input_kind) = &resource.get.input {
-        input_kind.clone()
-    }
-    else {
-        InputKind::Stdin
-    };
-
-    let mut env: Option<HashMap<String, String>> = None;
-    let mut input_filter: Option<&str> = None;
+    let mut command_input = CommandInput { env: None, stdin: None };
     let args = process_args(&resource.get.args, filter);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
 
-        match input_kind {
-            InputKind::Env => {
-                env = Some(json_to_hashmap(filter)?);
-            },
-            InputKind::Stdin => {
-                input_filter = Some(filter);
-            },
-        }
+        command_input = get_command_input(&resource.get.input, filter)?;
     }
 
     info!("Invoking get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, input_filter, Some(cwd), env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -142,10 +127,10 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     }
 
     let args = process_args(&resource.get.args, desired);
-    let (get_env, get_input) = get_env_stdin(&resource.get.input, desired)?;
+    let command_input = get_command_input(&resource.get.input, desired)?;
 
     info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &resource.get.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, get_input.as_deref(), Some(cwd), get_env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -271,10 +256,10 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     verify_json(resource, cwd, expected)?;
 
     let args = process_args(&test.args, expected);
-    let (env, input_expected) = get_env_stdin(&test.input, expected)?;
+    let command_input = get_command_input(&test.input, expected)?;
 
     info!("Invoking test '{}' using '{}'", &resource.resource_type, &test.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, input_expected.as_deref(), Some(cwd), env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -389,10 +374,10 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
     verify_json(resource, cwd, filter)?;
 
     let args = process_args(&delete.args, filter);
-    let (env, input_filter) = get_env_stdin(&delete.input, filter)?;
+    let command_input = get_command_input(&delete.input, filter)?;
 
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
-    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, args, input_filter.as_deref(), Some(cwd), env)?;
+    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -424,10 +409,10 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
     };
 
     let args = process_args(&validate.args, config);
-    let (env, input_config) = get_env_stdin(&validate.input, config)?;
+    let command_input = get_command_input(&validate.input, config)?;
 
     info!("Invoking validate '{}' using '{}'", &resource.resource_type, &validate.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, args, input_config.as_deref(), Some(cwd), env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -500,13 +485,13 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
     };
 
 
-    let mut env: Option<HashMap<String, String>> = None;
-    let mut export_input: Option<String> = None;
+    let mut command_input: CommandInput = CommandInput { env: None, stdin: None };
     let args: Option<Vec<String>>;
     if let Some(input) = input {
         if !input.is_empty() {
             verify_json(resource, cwd, input)?;
-            (env, export_input) = get_env_stdin(&export.input, input)?;
+            
+            command_input = get_command_input(&export.input, input)?;
         }
 
         args = process_args(&export.args, input);
@@ -514,7 +499,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
         args = process_args(&export.args, "");
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&export.executable, args, export_input.as_deref(), Some(cwd), env)?;
+    let (exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     log_resource_traces(&stderr);
     if exit_code != 0 {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
@@ -638,22 +623,30 @@ fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>>
     Some(processed_args)
 }
 
-fn get_env_stdin(input_kind: &Option<InputKind>, input: &str) -> Result<(Option<HashMap<String, String>>, Option<String>), DscError> {
+struct CommandInput {
+    env: Option<HashMap<String, String>>,
+    stdin: Option<String>,
+}
+
+fn get_command_input(input_kind: &Option<InputKind>, input: &str) -> Result<CommandInput, DscError> {
     let mut env: Option<HashMap<String, String>> = None;
-    let mut input_value: Option<String> = None;
+    let mut stdin: Option<String> = None;
     match input_kind {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(input)?);
         },
         Some(InputKind::Stdin) => {
-            input_value = Some(input.to_string());
+            stdin = Some(input.to_string());
         },
         None => {
             // leave input as none
         },
     }
 
-    Ok((env, input_value))
+    Ok(CommandInput {
+        env,
+        stdin,
+    })
 }
 
 fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
