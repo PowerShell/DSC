@@ -33,7 +33,7 @@ pub enum ExecutionKind {
     WhatIf,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct MicrosoftDscMetadata {
     /// Version of DSC
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -59,21 +59,6 @@ pub struct MicrosoftDscMetadata {
     /// Identifies if the operation is part of a configuration
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context: Option<ContextKind>,
-}
-
-impl Default for MicrosoftDscMetadata {
-    fn default() -> Self {
-        Self {
-            version: None,
-            operation: None,
-            execution_type: None,
-            start_datetime: None,
-            end_datetime: None,
-            duration: None,
-            security_context: None,
-            context: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

@@ -282,6 +282,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
+    #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
