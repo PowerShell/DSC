@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::config_doc::{MicrosoftMetadata, MicrosoftMetadata::DscInput};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::get_diff;
@@ -11,9 +12,9 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use self::context::Context;
-use self::config_doc::{Configuration, DataType, Metadata, SecurityContextKind};
+use self::config_doc::{Configuration, DataType, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
-use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
+use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ExecutionKind, MicrosoftDscResultMetadata, Operation, ResultMetadata};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
@@ -21,7 +22,6 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, mem};
 use tracing::{debug, info, trace, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
-
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
@@ -165,12 +165,12 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
     Ok(serde_json::to_string(&properties)?)
 }
 
-fn check_security_context(metadata: &Option<Metadata>) -> Result<(), DscError> {
+fn check_security_context(metadata: &Option<MicrosoftMetadata>) -> Result<(), DscError> {
     if metadata.is_none() {
         return Ok(());
     }
 
-    if let Some(metadata) = &metadata {
+    if let Some(DscInput(metadata)) = &metadata {
         if let Some(microsoft_dsc) = &metadata.microsoft {
             if let Some(required_security_context) = &microsoft_dsc.required_security_context {
                 match required_security_context {
@@ -251,6 +251,9 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
+        result.metadata = Some(
+            self.get_result_metadata(Operation::Get)
+        );
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
@@ -343,6 +346,9 @@ impl Configurator {
             }
         }
 
+        result.metadata = Some(
+            self.get_result_metadata(Operation::Set)
+        );
         mem::drop(pb_span_enter);
         mem::drop(pb_span);
         Ok(result)
@@ -384,6 +390,9 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
+        result.metadata = Some(
+            self.get_result_metadata(Operation::Test)
+        );
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
@@ -423,9 +432,14 @@ impl Configurator {
             add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
+        conf.metadata = Some(
+            MicrosoftMetadata::DscResult(
+                self.get_result_metadata(Operation::Export)
+            )
+        );
+        result.result = Some(conf);
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
-        result.result = Some(conf);
         Ok(result)
     }
 
@@ -495,6 +509,21 @@ impl Configurator {
             }
         }
         Ok(())
+    }
+
+    fn get_result_metadata(&self, operation: Operation) -> ResultMetadata {
+        let end_datetime = chrono::Local::now();
+        ResultMetadata {
+            microsoft: MicrosoftDscResultMetadata {
+                version: env!("CARGO_PKG_VERSION").to_string(),
+                operation,
+                execution_type: self.context.execution_type.clone(),
+                start_datetime: self.context.start_datetime.to_rfc3339(),
+                end_datetime: end_datetime.to_rfc3339(),
+                duration: end_datetime.signed_duration_since(self.context.start_datetime).to_string(),
+                security_context: self.context.security_context.clone(),
+            }
+        }
     }
 
     fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {

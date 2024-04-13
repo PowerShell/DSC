@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
+use super::config_result::ResultMetadata;
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum ContextKind {
     Configuration,
@@ -28,6 +30,13 @@ pub struct MicrosoftDscMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum MicrosoftMetadata {
+    DscInput(Metadata),
+    DscResult(ResultMetadata),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct Metadata {
     #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
     pub microsoft: Option<MicrosoftDscMetadata>,
@@ -45,7 +54,7 @@ pub struct Configuration {
     pub variables: Option<HashMap<String, Value>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>,
+    pub metadata: Option<MicrosoftMetadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
