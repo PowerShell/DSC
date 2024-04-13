@@ -10,6 +10,7 @@ node_modules/
 
 # Swift artifacts
 .build/
+Package.swift
 
 # Go artifacts
 go.sum
@@ -20,6 +21,8 @@ _obj/
 dist/
 *.egg-info
 *.whl
+pyproject.toml
+setup.py
 
 # C artifacts
 *.a
@@ -28,6 +31,7 @@ dist/
 *.dylib
 *.dll
 *.pc
+Makefile
 
 # Example dirs
 /examples/*/
@@ -36,3 +40,5 @@ dist/
 *.wasm
 *.obj
 *.o
+
+.editorconfig
