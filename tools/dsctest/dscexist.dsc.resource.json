@@ -6,23 +6,21 @@
         "executable": "dsctest",
         "args": [
             "exist",
-            "--input",
-            "{json}"
-        ],
-        "input": {
-            "arg": "{json}"
-        }
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
     },
     "set": {
         "executable": "dsctest",
         "args": [
             "exist",
-            "--input",
-            "{json}"
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
         ],
-        "input": {
-            "arg": "{json}"
-        },
         "handlesExist": true,
         "return": "state"
     },

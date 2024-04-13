@@ -28,7 +28,8 @@
         "-NoProfile",
         "-Command",
         "$Input | ./powershell.resource.ps1 Get"
-      ]
+      ],
+      "input": "stdin"
       },
     "set": {
       "executable": "powershell",

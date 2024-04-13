@@ -72,27 +72,14 @@ Describe 'tests for resource discovery' {
         $manifest = @'
         {
             "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-            "type": "Test/Echo",
+            "type": "Test/InvalidSemver",
             "version": "1.1.0..1",
             "get": {
-                "executable": "dsctest",
-                "args": [
-                    "echo",
-                    "--input",
-                    "{json}"
-                ],
-                "input": {
-                    "arg": "{json}"
-                }
+                "executable": "dsctest"
             },
             "schema": {
                 "command": {
-                    "executable": "dsctest",
-                    "args": [
-                        "schema",
-                        "-s",
-                        "echo"
-                    ]
+                    "executable": "dsctest"
                 }
             }
         }
@@ -102,6 +89,7 @@ Describe 'tests for resource discovery' {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
             $out = dsc resource list 2>&1
+            write-verbose -verbose ($out | Out-String)
             $out | Should -Match 'WARN.*?Validation.*?Invalid manifest.*?version'
         }
         finally {

@@ -54,24 +54,20 @@ Describe 'config argument tests' {
         $env:DSC_RESOURCE_PATH = $oldPath
     }
 
-    It 'input is <type>' -Skip:(!$IsWindows) -TestCases @(
+    It 'input is <type>' -TestCases @(
         @{ type = 'yaml'; text = @'
-            keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
-            valueName: ProductName
+            output: Hello There
 '@ }
         @{ type = 'json'; text = @'
             {
-                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
-                "valueName": "ProductName"
+                "output": "Hello There"
             }
 '@ }
     ) {
         param($text)
-        $output = $text | dsc resource get -r Microsoft.Windows/Registry
+        $output = $text | dsc resource get -r Test/Echo
         $output = $output | ConvertFrom-Json
-        $output.actualState.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
-        $output.actualState.valueName | Should -BeExactly 'ProductName'
-        $output.actualState.valueData.String | Should -Match 'Windows .*'
+        $output.actualState.output | Should -BeExactly 'Hello There'
     }
 
     It '--format <format> is used even when redirected' -TestCases @(
