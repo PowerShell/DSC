@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{MicrosoftMetadata, MicrosoftMetadata::DscInput};
+use crate::configure::config_doc::Metadata;
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::get_diff;
@@ -12,9 +12,9 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use self::context::Context;
-use self::config_doc::{Configuration, DataType, SecurityContextKind};
+use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
-use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ExecutionKind, MicrosoftDscResultMetadata, Operation, ResultMetadata};
+use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
@@ -165,14 +165,14 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
     Ok(serde_json::to_string(&properties)?)
 }
 
-fn check_security_context(metadata: &Option<MicrosoftMetadata>) -> Result<(), DscError> {
+fn check_security_context(metadata: &Option<Metadata>) -> Result<(), DscError> {
     if metadata.is_none() {
         return Ok(());
     }
 
-    if let Some(DscInput(metadata)) = &metadata {
+    if let Some(metadata) = &metadata {
         if let Some(microsoft_dsc) = &metadata.microsoft {
-            if let Some(required_security_context) = &microsoft_dsc.required_security_context {
+            if let Some(required_security_context) = &microsoft_dsc.security_context {
                 match required_security_context {
                     SecurityContextKind::Current => {
                         // no check needed
@@ -432,11 +432,7 @@ impl Configurator {
             add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
-        conf.metadata = Some(
-            MicrosoftMetadata::DscResult(
-                self.get_result_metadata(Operation::Export)
-            )
-        );
+        conf.metadata = Some(self.get_result_metadata(Operation::Export));
         result.result = Some(conf);
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
@@ -511,18 +507,21 @@ impl Configurator {
         Ok(())
     }
 
-    fn get_result_metadata(&self, operation: Operation) -> ResultMetadata {
+    fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
-        ResultMetadata {
-            microsoft: MicrosoftDscResultMetadata {
-                version: env!("CARGO_PKG_VERSION").to_string(),
-                operation,
-                execution_type: self.context.execution_type.clone(),
-                start_datetime: self.context.start_datetime.to_rfc3339(),
-                end_datetime: end_datetime.to_rfc3339(),
-                duration: end_datetime.signed_duration_since(self.context.start_datetime).to_string(),
-                security_context: self.context.security_context.clone(),
-            }
+        Metadata {
+            microsoft: Some(
+                MicrosoftDscMetadata {
+                    context: None,
+                    version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                    operation: Some(operation),
+                    execution_type: Some(self.context.execution_type.clone()),
+                    start_datetime: Some(self.context.start_datetime.to_rfc3339()),
+                    end_datetime: Some(end_datetime.to_rfc3339()),
+                    duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
+                    security_context: Some(self.context.security_context.clone()),
+                }
+            )
         }
     }
 

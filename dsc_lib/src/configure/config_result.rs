@@ -4,9 +4,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
-use crate::configure::config_doc::Configuration;
-
-use super::config_doc::SecurityContextKind;
+use crate::configure::config_doc::{Configuration, Metadata};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum MessageLevel {
@@ -23,41 +21,6 @@ pub struct ResourceMessage {
     pub resource_type: String,
     pub message: String,
     pub level: MessageLevel,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub enum Operation {
-    Get,
-    Set,
-    Test,
-    Export,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub enum ExecutionKind {
-    Actual,
-    WhatIf,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct ResultMetadata {
-    #[serde(rename = "Microsoft.DSC")]
-    pub microsoft: MicrosoftDscResultMetadata,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct MicrosoftDscResultMetadata {
-    pub version: String,
-    pub operation: Operation,
-    #[serde(rename = "executionType")]
-    pub execution_type: ExecutionKind,
-    #[serde(rename = "startDatetime")]
-    pub start_datetime: String,
-    #[serde(rename = "endDatetime")]
-    pub end_datetime: String,
-    pub duration: String,
-    #[serde(rename = "securityContext")]
-    pub security_context: SecurityContextKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -82,7 +45,7 @@ impl From<ResourceTestResult> for ResourceGetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
-    pub metadata: Option<ResultMetadata>,
+    pub metadata: Option<Metadata>,
     pub results: Vec<ResourceGetResult>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
@@ -155,7 +118,7 @@ impl Default for GroupResourceSetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationSetResult {
-    pub metadata: Option<ResultMetadata>,
+    pub metadata: Option<Metadata>,
     pub results: Vec<ResourceSetResult>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
@@ -213,7 +176,7 @@ impl Default for GroupResourceTestResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationTestResult {
-    pub metadata: Option<ResultMetadata>,
+    pub metadata: Option<Metadata>,
     pub results: Vec<ResourceTestResult>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
@@ -241,7 +204,7 @@ impl Default for ConfigurationTestResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationExportResult {
-    pub metadata: Option<ResultMetadata>,
+    pub metadata: Option<Metadata>,
     pub result: Option<Configuration>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
