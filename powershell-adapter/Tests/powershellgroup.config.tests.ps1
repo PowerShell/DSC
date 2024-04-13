@@ -5,7 +5,7 @@ Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         if ($isWindows) {
-          winrm quickconfig -quiet
+          winrm quickconfig -quiet -force
         }  
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
@@ -28,7 +28,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
 
-      $testFile = 'c:\test.txt'
+      $testFile = "$testdrive\test.txt"
       'test' | Set-Content -Path $testFile -Force
       $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get
       $LASTEXITCODE | Should -Be 0

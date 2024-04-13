@@ -5,7 +5,7 @@ Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         if ($isWindows) {
-            winrm quickconfig -quiet
+            winrm quickconfig -quiet -force
         }    
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
@@ -33,7 +33,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on Binary "File" resource' -Skip:(!$IsWindows){
 
-        $testFile = 'c:\test.txt'
+        $testFile = "$testdrive\test.txt"
         'test' | Set-Content -Path $testFile -Force
         $r = '{"DestinationPath":"' + $testFile.replace('\','\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File'
         $LASTEXITCODE | Should -Be 0
@@ -43,7 +43,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on traditional "Script" resource' -Skip:(!$IsWindows){
 
-        $testFile = 'c:\test.txt'
+        $testFile = "$testdrive\test.txt"
         'test' | Set-Content -Path $testFile -Force
         $r = '{"GetScript": "@{result = $(Get-Content ' + $testFile.replace('\','\\') + ')}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
         $LASTEXITCODE | Should -Be 0

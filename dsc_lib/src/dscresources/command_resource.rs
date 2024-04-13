@@ -562,13 +562,14 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     }
 
     let mut child = command.spawn()?;
-    if input.is_some() {
+    if let Some(input) = input {
+        trace!("Writing stdin to command: {input}");
         // pipe to child stdin in a scope so that it is dropped before we wait
         // otherwise the pipe isn't closed and the child process waits forever
         let Some(mut child_stdin) = child.stdin.take() else {
             return Err(DscError::CommandOperation("Failed to open stdin".to_string(), executable.to_string()));
         };
-        child_stdin.write_all(input.unwrap_or_default().as_bytes())?;
+        child_stdin.write_all(input.as_bytes())?;
         child_stdin.flush()?;
     }
 
@@ -633,12 +634,15 @@ fn get_command_input(input_kind: &Option<InputKind>, input: &str) -> Result<Comm
     let mut stdin: Option<String> = None;
     match input_kind {
         Some(InputKind::Env) => {
+            debug!("Parsing input as environment variables");
             env = Some(json_to_hashmap(input)?);
         },
         Some(InputKind::Stdin) => {
+            debug!("Parsing input as stdin");
             stdin = Some(input.to_string());
         },
         None => {
+            debug!("No input kind specified");
             // leave input as none
         },
     }
