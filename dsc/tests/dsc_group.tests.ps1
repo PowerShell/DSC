@@ -16,31 +16,59 @@ metadata:
     duration: PT*S
     securityContext: *
 results:
-- name: First Group
+- metadata:
+    Microsoft.DSC:
+      version: 0.1.0
+      duration: *
+  name: First Group
   type: Microsoft.DSC/Group
   result:
-  - name: First
+  - metadata:
+      Microsoft.DSC:
+        version: 0.1.0
+        duration: *
+    name: First
     type: Test/Echo
     result:
       actualState:
         output: First
-  - name: Nested Group
+  - metadata:
+      Microsoft.DSC:
+        version: 0.1.0
+        duration: *
+    name: Nested Group
     type: Microsoft.DSC/Group
     result:
-    - name: Nested First
+    - metadata:
+        Microsoft.DSC:
+          version: 0.1.0
+          duration: *
+      name: Nested First
       type: Test/Echo
       result:
         actualState:
           output: Nested First
-    - name: Nested Second
+    - metadata:
+        Microsoft.DSC:
+          version: 0.1.0
+          duration: *
+      name: Nested Second
       type: Test/Echo
       result:
         actualState:
           output: Nested Second
-- name: Last Group
+- metadata:
+    Microsoft.DSC:
+      version: 0.1.0
+      duration: *
+  name: Last Group
   type: Microsoft.DSC/Group
   result:
-  - name: Last
+  - metadata:
+      Microsoft.DSC:
+        version: 0.1.0
+        duration: *
+    name: Last
     type: Test/Echo
     result:
       actualState:

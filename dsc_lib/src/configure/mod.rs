@@ -241,9 +241,22 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
+            let start_datetime = chrono::Local::now();
             let get_result = dsc_resource.get(&filter)?;
+            let end_datetime = chrono::Local::now();
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&get_result)?);
             let resource_result = config_result::ResourceGetResult {
+                metadata: Some(
+                    Metadata {
+                        microsoft: Some(
+                            MicrosoftDscMetadata {
+                                version: Some(dsc_resource.version.clone()),
+                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                ..Default::default()
+                            }
+                        )
+                    }
+                ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: get_result,
@@ -303,9 +316,22 @@ impl Configurator {
 
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("Resource handles _exist or _exist is true");
+                let start_datetime = chrono::Local::now();
                 let set_result = dsc_resource.set(&desired, skip_test)?;
+                let end_datetime = chrono::Local::now();
                 self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
                 let resource_result = config_result::ResourceSetResult {
+                    metadata: Some(
+                        Metadata {
+                            microsoft: Some(
+                                MicrosoftDscMetadata {
+                                    version: Some(dsc_resource.version.clone()),
+                                    duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                    ..Default::default()
+                                }
+                            )
+                        }
+                    ),
                     name: resource.name.clone(),
                     resource_type: resource.resource_type.clone(),
                     result: set_result,
@@ -314,7 +340,9 @@ impl Configurator {
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 debug!("Resource implements delete and _exist is false");
                 let before_result = dsc_resource.get(&desired)?;
+                let start_datetime = chrono::Local::now();
                 dsc_resource.delete(&desired)?;
+                let end_datetime = chrono::Local::now();
                 let after_result = dsc_resource.get(&desired)?;
                 // convert get result to set result                
                 let set_result = match before_result {
@@ -336,6 +364,17 @@ impl Configurator {
                 };
                 self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
                 let resource_result = config_result::ResourceSetResult {
+                    metadata: Some(
+                        Metadata {
+                            microsoft: Some(
+                                MicrosoftDscMetadata {
+                                    version: Some(dsc_resource.version.clone()),
+                                    duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                    ..Default::default()
+                                }
+                            )
+                        }
+                    ),
                     name: resource.name.clone(),
                     resource_type: resource.resource_type.clone(),
                     result: SetResult::Resource(set_result),
@@ -380,9 +419,22 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("expected: {expected}");
+            let start_datetime = chrono::Local::now();
             let test_result = dsc_resource.test(&expected)?;
+            let end_datetime = chrono::Local::now();
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&test_result)?);
             let resource_result = config_result::ResourceTestResult {
+                metadata: Some(
+                    Metadata {
+                        microsoft: Some(
+                            MicrosoftDscMetadata {
+                                version: Some(dsc_resource.version.clone()),
+                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                ..Default::default()
+                            }
+                        )
+                    }
+                ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: test_result,

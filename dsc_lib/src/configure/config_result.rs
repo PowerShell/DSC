@@ -26,6 +26,8 @@ pub struct ResourceMessage {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceGetResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
     pub resource_type: String,
@@ -35,6 +37,7 @@ pub struct ResourceGetResult {
 impl From<ResourceTestResult> for ResourceGetResult {
     fn from(test_result: ResourceTestResult) -> Self {
         Self {
+            metadata: None,
             name: test_result.name,
             resource_type: test_result.resource_type,
             result: test_result.result.into(),
@@ -88,6 +91,8 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceSetResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
     pub resource_type: String,
@@ -146,6 +151,8 @@ impl Default for ConfigurationSetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceTestResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
     pub resource_type: String,

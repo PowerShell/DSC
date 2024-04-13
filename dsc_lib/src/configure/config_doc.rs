@@ -61,6 +61,21 @@ pub struct MicrosoftDscMetadata {
     pub context: Option<ContextKind>,
 }
 
+impl Default for MicrosoftDscMetadata {
+    fn default() -> Self {
+        Self {
+            version: None,
+            operation: None,
+            execution_type: None,
+            start_datetime: None,
+            end_datetime: None,
+            duration: None,
+            security_context: None,
+            context: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct Metadata {
     #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
