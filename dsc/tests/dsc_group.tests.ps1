@@ -18,14 +18,12 @@ metadata:
 results:
 - metadata:
     Microsoft.DSC:
-      version: 0.1.0
       duration: *
   name: First Group
   type: Microsoft.DSC/Group
   result:
   - metadata:
       Microsoft.DSC:
-        version: 0.1.0
         duration: *
     name: First
     type: Test/Echo
@@ -34,14 +32,12 @@ results:
         output: First
   - metadata:
       Microsoft.DSC:
-        version: 0.1.0
         duration: *
     name: Nested Group
     type: Microsoft.DSC/Group
     result:
     - metadata:
         Microsoft.DSC:
-          version: 0.1.0
           duration: *
       name: Nested First
       type: Test/Echo
@@ -50,7 +46,6 @@ results:
           output: Nested First
     - metadata:
         Microsoft.DSC:
-          version: 0.1.0
           duration: *
       name: Nested Second
       type: Test/Echo
@@ -59,14 +54,12 @@ results:
           output: Nested Second
 - metadata:
     Microsoft.DSC:
-      version: 0.1.0
       duration: *
   name: Last Group
   type: Microsoft.DSC/Group
   result:
   - metadata:
       Microsoft.DSC:
-        version: 0.1.0
         duration: *
     name: Last
     type: Test/Echo

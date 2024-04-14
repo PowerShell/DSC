@@ -250,7 +250,6 @@ impl Configurator {
                     Metadata {
                         microsoft: Some(
                             MicrosoftDscMetadata {
-                                version: Some(dsc_resource.version.clone()),
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
@@ -326,7 +325,6 @@ impl Configurator {
                         Metadata {
                             microsoft: Some(
                                 MicrosoftDscMetadata {
-                                    version: Some(dsc_resource.version.clone()),
                                     duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                     ..Default::default()
                                 }
@@ -369,7 +367,6 @@ impl Configurator {
                         Metadata {
                             microsoft: Some(
                                 MicrosoftDscMetadata {
-                                    version: Some(dsc_resource.version.clone()),
                                     duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                     ..Default::default()
                                 }
@@ -429,7 +426,6 @@ impl Configurator {
                     Metadata {
                         microsoft: Some(
                             MicrosoftDscMetadata {
-                                version: Some(dsc_resource.version.clone()),
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
