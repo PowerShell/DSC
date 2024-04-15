@@ -16,9 +16,13 @@ markdownDescription: |
   [_Online Documentation_][01]
   ***
 
-  Indicates whether the DSC Resource instance should exist.
+  Indicates whether the DSC Resource instance should exist. For DSC Resources that define the
+  [delete method in their manifest][02], DSC calls the `delete` method for the resource when an
+  instance defines `_exist` as `false` and the instance exists.
+
 
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
+  [02]: <DOCS?BASE_URL>/reference/schemas/resource/manifest/delete?<DOCS_VERSION_PIN>
 markdownEnumDescriptions:
   - | # false
     _Instance shouldn't exist._

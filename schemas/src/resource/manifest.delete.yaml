@@ -21,9 +21,13 @@ markdownDescription: | # VS Code only
   an instance when `_exist` is `false`, set the [`handlesExist`][03] property of the set method
   definition to `true` instead.
 
+  If you define the delete method in a resource manifest, ensure that you also define the
+  [`_exist`][02] property in the [JSON schema for the resource's properties][04].
+
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/delete?<DOCS_VERSION_PIN>
   [02]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
   [03]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#handlesExist
+  [04]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>
 
 type: object
 required:
