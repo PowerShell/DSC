@@ -41,7 +41,19 @@ Describe 'dsc config get tests' {
               properties:
                 output: hello
 "@
-        $null = $config_yaml | dsc config get --format pretty-json | Out-String
+        $result = $config_yaml | dsc config get --format pretty-json | ConvertFrom-Json
+        $result.hadErrors | Should -BeFalse
+        $result.results.Count | Should -Be 1
+        $result.results[0].Name | Should -Be 'Echo'
+        $result.results[0].type | Should -BeExactly 'Test/Echo'
+        $result.results[0].result.actualState.output | Should -Be 'hello'
+        $result.metadata.'Microsoft.DSC'.version | Should -BeLike '3.*'
+        $result.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Get'
+        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
+        $result.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
+        $result.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
+        $result.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty
+        $result.metadata.'Microsoft.DSC'.securityContext | Should -Not -BeNullOrEmpty
         $LASTEXITCODE | Should -Be 0
     }
 }

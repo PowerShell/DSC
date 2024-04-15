@@ -4,7 +4,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
-use crate::configure::config_doc;
+use crate::configure::config_doc::{Configuration, Metadata};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum MessageLevel {
@@ -26,6 +26,8 @@ pub struct ResourceMessage {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceGetResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
     pub resource_type: String,
@@ -35,6 +37,7 @@ pub struct ResourceGetResult {
 impl From<ResourceTestResult> for ResourceGetResult {
     fn from(test_result: ResourceTestResult) -> Self {
         Self {
+            metadata: None,
             name: test_result.name,
             resource_type: test_result.resource_type,
             result: test_result.result.into(),
@@ -45,6 +48,7 @@ impl From<ResourceTestResult> for ResourceGetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationGetResult {
+    pub metadata: Option<Metadata>,
     pub results: Vec<ResourceGetResult>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
@@ -55,6 +59,7 @@ impl ConfigurationGetResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            metadata: None,
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
@@ -75,6 +80,7 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
             results.push(result.into());
         }
         Self {
+            metadata: None,
             results,
             messages: test_result.messages,
             had_errors: test_result.had_errors,
@@ -85,6 +91,8 @@ impl From<ConfigurationTestResult> for ConfigurationGetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceSetResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
     pub resource_type: String,
@@ -115,6 +123,7 @@ impl Default for GroupResourceSetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationSetResult {
+    pub metadata: Option<Metadata>,
     pub results: Vec<ResourceSetResult>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
@@ -125,6 +134,7 @@ impl ConfigurationSetResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            metadata: None,
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
@@ -141,6 +151,8 @@ impl Default for ConfigurationSetResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceTestResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     pub name: String,
     #[serde(rename="type")]
     pub resource_type: String,
@@ -171,6 +183,7 @@ impl Default for GroupResourceTestResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationTestResult {
+    pub metadata: Option<Metadata>,
     pub results: Vec<ResourceTestResult>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
@@ -181,6 +194,7 @@ impl ConfigurationTestResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            metadata: None,
             results: Vec::new(),
             messages: Vec::new(),
             had_errors: false,
@@ -197,7 +211,8 @@ impl Default for ConfigurationTestResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigurationExportResult {
-    pub result: Option<config_doc::Configuration>,
+    pub metadata: Option<Metadata>,
+    pub result: Option<Configuration>,
     pub messages: Vec<ResourceMessage>,
     #[serde(rename = "hadErrors")]
     pub had_errors: bool,
@@ -207,6 +222,7 @@ impl ConfigurationExportResult {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            metadata: None,
             result: None,
             messages: Vec::new(),
             had_errors: false,

@@ -17,6 +17,8 @@ Describe 'dsc config set tests' {
 "@
         $out = $config_yaml | dsc config set | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
+        $out.hadErrors | Should -BeFalse
+        $out.results.Count | Should -Be 2
         $out.results[0].type | Should -BeExactly 'Test/Exist'
         $out.results[0].result.beforeState._exist | Should -BeFalse
         $out.results[0].result.afterState.state | Should -BeExactly 'Absent'
@@ -26,5 +28,13 @@ Describe 'dsc config set tests' {
         $out.results[1].result.beforeState._exist | Should -BeFalse
         $out.results[1].result.afterState.deleteCalled | Should -BeTrue
         $out.results[1].result.afterState._exist | Should -BeFalse
+        $out.metadata.'Microsoft.DSC'.version | Should -BeLike '3.*'
+        $out.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Set'
+        $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
+        $out.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
+        $out.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
+        $out.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty
+        $out.metadata.'Microsoft.DSC'.securityContext | Should -Not -BeNullOrEmpty
+
     }
 }

@@ -5,38 +5,68 @@ Describe 'Group resource tests' {
     It 'Nested groups should work for get' {
         $out = (dsc config get -p $PSScriptRoot/../examples/groups.dsc.yaml -f yaml | Out-String).Trim()
         $LASTEXITCODE | Should -Be 0
-        $out | Should -BeExactly @'
+        $out | Should -BeLike @'
+metadata:
+  Microsoft.DSC:
+    version: 3*
+    operation: Get
+    executionType: Actual
+    startDatetime: *
+    endDatetime: *
+    duration: PT*S
+    securityContext: *
 results:
-- name: First Group
+- metadata:
+    Microsoft.DSC:
+      duration: *
+  name: First Group
   type: Microsoft.DSC/Group
   result:
-  - name: First
+  - metadata:
+      Microsoft.DSC:
+        duration: *
+    name: First
     type: Test/Echo
     result:
       actualState:
         output: First
-  - name: Nested Group
+  - metadata:
+      Microsoft.DSC:
+        duration: *
+    name: Nested Group
     type: Microsoft.DSC/Group
     result:
-    - name: Nested First
+    - metadata:
+        Microsoft.DSC:
+          duration: *
+      name: Nested First
       type: Test/Echo
       result:
         actualState:
           output: Nested First
-    - name: Nested Second
+    - metadata:
+        Microsoft.DSC:
+          duration: *
+      name: Nested Second
       type: Test/Echo
       result:
         actualState:
           output: Nested Second
-- name: Last Group
+- metadata:
+    Microsoft.DSC:
+      duration: *
+  name: Last Group
   type: Microsoft.DSC/Group
   result:
-  - name: Last
+  - metadata:
+      Microsoft.DSC:
+        duration: *
+    name: Last
     type: Test/Echo
     result:
       actualState:
         output: Last
-messages: []
+messages: `[`]
 hadErrors: false
 '@
     }

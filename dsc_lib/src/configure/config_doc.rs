@@ -20,11 +20,45 @@ pub enum SecurityContextKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum Operation {
+    Get,
+    Set,
+    Test,
+    Export,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum ExecutionKind {
+    Actual,
+    WhatIf,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct MicrosoftDscMetadata {
+    /// Version of DSC
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    /// The operation being performed
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation: Option<Operation>,
+    /// The type of execution
+    #[serde(rename = "executionType", skip_serializing_if = "Option::is_none")]
+    pub execution_type: Option<ExecutionKind>,
+    /// The start time of the configuration operation
+    #[serde(rename = "startDatetime", skip_serializing_if = "Option::is_none")]
+    pub start_datetime: Option<String>,
+    /// The end time of the configuration operation
+    #[serde(rename = "endDatetime", skip_serializing_if = "Option::is_none")]
+    pub end_datetime: Option<String>,
+    /// The duration of the configuration operation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration: Option<String>,
+    /// The security context of the configuration operation, can be specified to be required
+    #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
+    pub security_context: Option<SecurityContextKind>,
+    /// Identifies if the operation is part of a configuration
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context: Option<ContextKind>,
-    #[serde(rename = "requiredSecurityContext", skip_serializing_if = "Option::is_none")]
-    pub required_security_context: Option<SecurityContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
