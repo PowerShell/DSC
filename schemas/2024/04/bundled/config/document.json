@@ -49,9 +49,7 @@
       }
     },
     "metadata": {
-      "title": "Configuration metadata",
-      "description": "Defines a set of key-value pairs for the configuration. This metadata isn't validated.",
-      "type": "object"
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/config/document.metadata.json"
     }
   },
   "$defs": {
@@ -314,6 +312,34 @@
           "title": "Managed instance properties",
           "description": "Defines the properties of the DSC Resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC Resource's schema.",
           "type": "object"
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.metadata.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.metadata.json",
+      "title": "Configuration metadata",
+      "description": "Defines a set of key-value pairs for the configuration. Except for the `Microsoft.DSC` property, this metadata isn't validated. You can pass any data into this property of a configuration document.",
+      "type": "object",
+      "properties": {
+        "Microsoft.DSC": {
+          "type": "object",
+          "title": "DSC metadata",
+          "description": "The `Microsoft.DSC` metadata property contains directives and information that DSC itself uses when processing a configuration document. Unlike other metadata key-value pairs, DSC validates these properties.",
+          "unevaluatedProperties": false,
+          "properties": {
+            "requiredSecurityContext": {
+              "type": "string",
+              "enum": [
+                "Current",
+                "Elevated",
+                "Restricted"
+              ],
+              "default": "Current",
+              "title": "Required security context",
+              "description": "This property defines the security context a configuration requires. If you invoke a DSC operation against the configuration document in a security context that conflicts with this metadata, DSC raises an error when it validates the configuration document.\nThe default security context is `Current`."
+            }
+          }
         }
       }
     },

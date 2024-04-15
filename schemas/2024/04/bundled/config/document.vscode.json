@@ -122,38 +122,7 @@
       "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a list of DSC Resource instances for the configuration to manage.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#resources\n"
     },
     "metadata": {
-      "title": "Configuration metadata",
-      "description": "Defines a set of key-value pairs for the configuration. This metadata isn't validated.",
-      "type": "object",
-      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a set of key-value pairs for the configuration. This metadata isn't validated.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/document?view=dsc-3.0&preserve-view=true#metadata-1\n",
-      "defaultSnippets": [
-        {
-          "label": " New metadata property",
-          "markdownDescription": "Defines a key-value pair for the metadata:\n\n```yaml\nmetadataName: value\n```",
-          "body": {
-            "${1:metadataName}": "${2:value}"
-          }
-        },
-        {
-          "label": " New metadata property (object)",
-          "markdownDescription": "Defines a new key-value pair for the metadata where the value is an object.\n\n```yaml\nmetadataName:\n  key: value\n```",
-          "body": {
-            "${1:metadataName}": {
-              "${2:key}": "${3:value}"
-            }
-          }
-        },
-        {
-          "label": " New metadata property (array)",
-          "markdownDescription": "Defines a new key-value pair for the metadata where the value is an array.\n\n```yaml\nmetadataName:\n  - firstValue\n  - secondValue\n```",
-          "body": {
-            "${1:metadataName}": [
-              "${2:firstValue}",
-              "${3:secondValue}"
-            ]
-          }
-        }
-      ]
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/config/document.metadata.json"
     }
   },
   "$defs": {
@@ -497,6 +466,70 @@
                           "properties": {
                             "${5:propertyName}": "${6:propertyValue}"
                           }
+                        }
+                      }
+                    ]
+                  },
+                  "document.metadata.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.metadata.json",
+                    "title": "Configuration metadata",
+                    "description": "Defines a set of key-value pairs for the configuration. Except for the `Microsoft.DSC` property, this metadata isn't validated. You can pass any data into this property of a configuration document.",
+                    "type": "object",
+                    "properties": {
+                      "Microsoft.DSC": {
+                        "type": "object",
+                        "title": "DSC metadata",
+                        "description": "The `Microsoft.DSC` metadata property contains directives and information that DSC itself uses when processing a configuration document. Unlike other metadata key-value pairs, DSC validates these properties.",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe `Microsoft.DSC` metadata property contains directives and information that DSC itself\nuses when processing a configuration document. Unlike other metadata key-value pairs, DSC\nvalidates these properties.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/metadata?view=dsc-3.0&preserve-view=true#microsoft.dsc\n",
+                        "unevaluatedProperties": false,
+                        "properties": {
+                          "requiredSecurityContext": {
+                            "type": "string",
+                            "enum": [
+                              "Current",
+                              "Elevated",
+                              "Restricted"
+                            ],
+                            "default": "Current",
+                            "title": "Required security context",
+                            "description": "This property defines the security context a configuration requires. If you invoke a DSC operation against the configuration document in a security context that conflicts with this metadata, DSC raises an error when it validates the configuration document.\nThe default security context is `Current`.",
+                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThis property defines the security context a configuration requires. If you invoke a DSC\noperation against the configuration document in a security context that conflicts with\nthis metadata, DSC raises an error when it validates the configuration document.\n\nThe default security context is `Current`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/metadata?view=dsc-3.0&preserve-view=true#microsoft.dsc\n",
+                            "markdownEnumDescriptions": [
+                              "<!-- force a line break -->\n\n> ### Current security context\n>\n> Indicates that the configuration document is usable under any security context. You\n> can invoke DSC operations against the document when elevated as root or an\n> administrator and as a normal user or account.\n",
+                              "<!-- force a line break -->\n\n> ### Elevated security context\n>\n> Indicates that the configuration document is usable only in an elevated security\n> context. You can invoke DSC operations against the document when elevated as root or\n> an administrator. When you invoke DSC operations against the document as a\n> non-elevated user or account, DSC raises an error when it validates the configuration\n> document.\n",
+                              "<!-- force a line break -->\n\n> ### Restricted security context\n>\n> Indicates that the configuration document is usable only in a non-elevated security\n> context. You can invoke DSC operations against the document as a non-elevated user or\n> account. When you invoke DSC operations against the document as root or an\n> administrator, DSC raises an error when it validates the configuration document.\n"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a set of key-value pairs for the configuration. Except for the `Microsoft.DSC`\nproperty, this metadata isn't validated. You can pass any data into this property of a\nconfiguration document.\n\nThe `Microsoft.DSC` metadata property contains metadata directives and information that DSC\nitself uses when processing the configuration document. For more information, see\n[Microsoft.DSC][02]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/metadata?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/metadata?view=dsc-3.0&preserve-view=true#microsoft.dsc\n",
+                    "defaultSnippets": [
+                      {
+                        "label": " New metadata property",
+                        "markdownDescription": "Defines a key-value pair for the metadata:\n\n```yaml\nmetadataName: value\n```",
+                        "body": {
+                          "${1:metadataName}": "${2:value}"
+                        }
+                      },
+                      {
+                        "label": " New metadata property (object)",
+                        "markdownDescription": "Defines a new key-value pair for the metadata where the value is an object.\n\n```yaml\nmetadataName:\n  key: value\n```",
+                        "body": {
+                          "${1:metadataName}": {
+                            "${2:key}": "${3:value}"
+                          }
+                        }
+                      },
+                      {
+                        "label": " New metadata property (array)",
+                        "markdownDescription": "Defines a new key-value pair for the metadata where the value is an array.\n\n```yaml\nmetadataName:\n  - firstValue\n  - secondValue\n```",
+                        "body": {
+                          "${1:metadataName}": [
+                            "${2:firstValue}",
+                            "${3:secondValue}"
+                          ]
                         }
                       }
                     ]

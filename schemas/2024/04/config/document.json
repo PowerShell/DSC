@@ -49,9 +49,7 @@
       }
     },
     "metadata": {
-      "title": "Configuration metadata",
-      "description": "Defines a set of key-value pairs for the configuration. This metadata isn't validated.",
-      "type": "object"
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/config/document.metadata.json"
     }
   }
 }
