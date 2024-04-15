@@ -39,8 +39,8 @@ impl DscManager {
         self.discovery.find_resource(name)
     }
 
-    pub fn list_available_resources(&mut self, type_name_filter: &str) -> Vec<DscResource> {
-        self.discovery.list_available_resources(type_name_filter)
+    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Vec<DscResource> {
+        self.discovery.list_available_resources(type_name_filter, adapter_name_filter)
     }
 
     pub fn discover_resources(&mut self, required_resource_types: &[String]) {

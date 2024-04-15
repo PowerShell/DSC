@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'config get tests' {
+Describe 'resource get tests' {
     It 'should get from registry using <type> resource' -Skip:(!$IsWindows) -TestCases @(
         @{ type = 'string' }
     ) {
@@ -32,7 +32,6 @@ Describe 'config get tests' {
         $output = $json | dsc resource get -r $resource
         $LASTEXITCODE | Should -Be 0
         $output = $output | ConvertFrom-Json
-        $output.actualState.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
         $output.actualState.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
         $output.actualState.valueName | Should -BeExactly 'ProductName'
         $output.actualState.valueData.String | Should -Match 'Windows .*'
@@ -45,7 +44,8 @@ Describe 'config get tests' {
             "Name": "ProductName"
         }
 '@
-        $json | dsc resource get -r Microsoft.Windows/registry
+        $testError = & {$json | dsc resource get -r Microsoft.Windows/registry get 2>&1}
+        $testError[0] | SHould -match 'error:'
         $LASTEXITCODE | Should -Be 2
     }
 }

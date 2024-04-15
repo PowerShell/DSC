@@ -7,7 +7,7 @@ Describe 'tracing tests' {
         # @{ level = 'WARNING' } TODO: currently no warnings are emitted
         @{ level = 'info' }
         @{ level = 'debug' }
-        # @{ level = 'trace' } TODO: currently no trace is emitted
+        @{ level = 'trace' }
     ) {
         param($level)
 
@@ -42,6 +42,25 @@ Describe 'tracing tests' {
             $trace.timestamp | Should -Not -BeNullOrEmpty
             $trace.level | Should -BeIn 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'TRACE'
             $trace.fields.message | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    It 'trace level <level> emits source info: <sourceExpected>' -TestCases @(
+        @{ level = 'error'; sourceExpected = $false }
+        @{ level = 'warning'; sourceExpected = $false }
+        @{ level = 'info'; sourceExpected = $false }
+        @{ level = 'debug'; sourceExpected = $true }
+        @{ level = 'trace'; sourceExpected = $true }
+    ) {
+        param($level, $sourceExpected)
+
+        $logPath = "$TestDrive/dsc_trace.log"
+        $null = '{}' | dsc -l $level resource get -r 'DoesNotExist' 2> $logPath
+        $log = Get-Content $logPath -Raw
+        if ($sourceExpected) {
+            $log | Should -BeLike "*dsc*: *"
+        } else {
+            $log | Should -Not -BeLike "*dsc*: *"
         }
     }
 }

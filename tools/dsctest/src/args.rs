@@ -5,7 +5,9 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
+    Delete,
     Echo,
+    Exist,
     Sleep,
 }
 
@@ -19,9 +21,21 @@ pub struct Args {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "delete", about = "delete operation")]
+    Delete {
+        #[clap(name = "input", short, long, help = "The input to the delete command as JSON")]
+        input: String,
+    },
+
     #[clap(name = "echo", about = "Return the input")]
     Echo {
         #[clap(name = "input", short, long, help = "The input to the echo command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "exist", about = "Check if a resource exists")]
+    Exist {
+        #[clap(name = "input", short, long, help = "The input to the exist command as JSON")]
         input: String,
     },
 

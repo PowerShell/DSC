@@ -38,6 +38,7 @@ Describe 'resource export tests' {
         $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
         $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
+        $config_with_process_list.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Export'
     }
 
     It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {

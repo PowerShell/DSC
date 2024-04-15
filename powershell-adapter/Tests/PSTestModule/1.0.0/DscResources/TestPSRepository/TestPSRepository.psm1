@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 enum EnsureEnumeration {
     Absent
     Present
@@ -14,7 +17,7 @@ function Get-TargetResource {
     )
 
     $returnValue = @{
-        Ensure                    = [EnsureEnumeration]::Absent
+        Ensure                    = ([EnsureEnumeration]::Absent).ToString()
         Name                      = $Name
         SourceLocation            = $null
         ScriptSourceLocation      = $null
@@ -27,7 +30,7 @@ function Get-TargetResource {
     }
 
     if ($Name -eq "TestPSRepository1") {
-        $returnValue.Ensure = [EnsureEnumeration]::Present
+        $returnValue.Ensure = ([EnsureEnumeration]::Present).ToString()
         $returnValue.SourceLocation = 'https://www.powershellgallery.com/api/v2'
         $returnValue.ScriptSourceLocation = 'https://www.powershellgallery.com/api/v2/items/psscript'
         $returnValue.PublishLocation = 'https://www.powershellgallery.com/api/v2/package/'

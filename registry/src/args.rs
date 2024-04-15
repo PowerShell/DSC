@@ -14,11 +14,20 @@ pub struct Arguments {
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum ConfigSubCommand {
     #[clap(name = "get", about = "Retrieve registry configuration.")]
-    Get,
+    Get {
+        #[clap(short, long, required = true, help = "The registry JSON input.")]
+        input: String,
+    },
     #[clap(name = "set", about = "Apply registry configuration.")]
-    Set,
-    #[clap(name = "test", about = "Validate registry configuration.")]
-    Test,
+    Set {
+        #[clap(short, long, required = true, help = "The registry JSON input.")]
+        input: String,
+    },
+    #[clap(name = "delete", about = "Delete registry configuration.")]
+    Delete {
+        #[clap(short, long, required = true, help = "The registry JSON input.")]
+        input: String,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -39,8 +48,6 @@ pub enum SubCommand {
         #[clap(short, long, help = "The value to set.")]
         value: String,
     },
-    #[clap(name = "test", about = "Validate registry matches input JSON.")]
-    Test,
     #[clap(name = "remove", about = "Remove a registry key or value.", arg_required_else_help = true)]
     Remove {
         #[clap(short, long, required = true, help = "The registry key path to remove.")]
@@ -69,8 +76,5 @@ pub enum SubCommand {
         subcommand: ConfigSubCommand,
     },
     #[clap(name = "schema", about = "Retrieve JSON schema.")]
-    Schema {
-        #[clap(short, long, help = "Pretty print JSON.")]
-        pretty: bool,
-    }
+    Schema,
 }

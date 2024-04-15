@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use schemars::JsonSchema;
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -15,7 +16,6 @@ pub enum Kind {
     Resource,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceManifest {
@@ -28,7 +28,7 @@ pub struct ResourceManifest {
     /// The kind of resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<Kind>,
-    /// The version of the resource.
+    /// The version of the resource using semantic versioning.
     pub version: String,
     /// The description of the resource.
     pub description: Option<String>,
@@ -42,6 +42,9 @@ pub struct ResourceManifest {
     /// Details how to call the Test method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<TestMethod>,
+    /// Details how to call the Delete method of the resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delete: Option<DeleteMethod>,
     /// Details how to call the Export method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub export: Option<ExportMethod>,
@@ -78,10 +81,22 @@ pub enum ManifestSchemaUri {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum ArgKind {
+    /// The argument is a string.
+    String(String),
+    /// The argument accepts the JSON input object.
+    Json{
+        /// The argument that accepts the JSON input object.
+        #[serde(rename = "jsonInputArg")]
+        json_input_arg: String,
+        /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
+        mandatory: Option<bool>,
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum InputKind {
-    /// The input replaces arguments with this token in the command.
-    #[serde(rename = "arg")]
-    Arg(String),
     /// The input is accepted as environmental variables.
     #[serde(rename = "env")]
     Env,
@@ -126,7 +141,7 @@ pub struct GetMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Get.
-    pub args: Option<Vec<String>>,
+    pub args: Option<Vec<ArgKind>>,
     /// How to pass optional input for a Get.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input: Option<InputKind>,
@@ -137,12 +152,15 @@ pub struct SetMethod {
     /// The command to run to set the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Set.
-    pub args: Option<Vec<String>>,
+    pub args: Option<Vec<ArgKind>>,
     /// How to pass required input for a Set.
-    pub input: InputKind,
+    pub input: Option<InputKind>,
     /// Whether to run the Test method before the Set method.  True means the resource will perform its own test before running the Set method.
     #[serde(rename = "implementsPretest", skip_serializing_if = "Option::is_none")]
     pub pre_test: Option<bool>,
+    /// Indicates that the resource directly handles `_exist` as a property.
+    #[serde(rename = "handlesExist", skip_serializing_if = "Option::is_none")]
+    pub handles_exist: Option<bool>,
     /// The type of return value expected from the Set method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
@@ -153,12 +171,22 @@ pub struct TestMethod {
     /// The command to run to test the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Test.
-    pub args: Option<Vec<String>>,
+    pub args: Option<Vec<ArgKind>>,
     /// How to pass required input for a Test.
-    pub input: InputKind,
+    pub input: Option<InputKind>,
     /// The type of return value expected from the Test method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct DeleteMethod {
+    /// The command to run to delete the state of the resource.
+    pub executable: String,
+    /// The arguments to pass to the command to perform a Delete.
+    pub args: Option<Vec<ArgKind>>,
+    /// How to pass required input for a Delete.
+    pub input: Option<InputKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -166,7 +194,9 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Validate.
-    pub args: Option<Vec<String>>,
+    pub args: Option<Vec<ArgKind>>,
+    /// How to pass required input for a Validate.
+    pub input: Option<InputKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -174,7 +204,9 @@ pub struct ExportMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Export.
-    pub args: Option<Vec<String>>,
+    pub args: Option<Vec<ArgKind>>,
+    /// How to pass input for a Export.
+    pub input: Option<InputKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -217,11 +249,29 @@ pub struct ListMethod {
 ///
 /// * `DscError` - The JSON value is invalid or the schema version is not supported.
 pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
+    // TODO: enable schema version validation, if not provided, use the latest
     // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json";
     let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
     // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
     //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));
     // }
-
     Ok(manifest)
+}
+
+/// Validate a semantic version string.
+///
+/// # Arguments
+///
+/// * `version` - The semantic version string to validate.
+///
+/// # Returns
+///
+/// * `Result<(), Error>` - The result of the validation.
+///
+/// # Errors
+///
+/// * `Error` - The version string is not a valid semantic version.
+pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
+    Version::parse(version)?;
+    Ok(())
 }

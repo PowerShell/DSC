@@ -1,17 +1,20 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::config_doc::Metadata;
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
-use crate::dscresources::dscresource::Invoke;
+use crate::dscresources::dscresource::get_diff;
+use crate::dscresources::invoke_result::GetResult;
+use crate::dscresources::{dscresource::{Capability, Invoke}, invoke_result::{SetResult, ResourceSetResponse}};
 use crate::dscresources::resource_manifest::Kind;
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use self::context::Context;
-use self::config_doc::{Configuration, DataType, Metadata, SecurityContextKind};
+use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
-use self::config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ConfigurationExportResult};
+use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
@@ -19,7 +22,6 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, mem};
 use tracing::{debug, info, trace, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
-
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
@@ -170,7 +172,7 @@ fn check_security_context(metadata: &Option<Metadata>) -> Result<(), DscError> {
 
     if let Some(metadata) = &metadata {
         if let Some(microsoft_dsc) = &metadata.microsoft {
-            if let Some(required_security_context) = &microsoft_dsc.required_security_context {
+            if let Some(required_security_context) = &microsoft_dsc.security_context {
                 match required_security_context {
                     SecurityContextKind::Current => {
                         // no check needed
@@ -239,9 +241,21 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
+            let start_datetime = chrono::Local::now();
             let get_result = dsc_resource.get(&filter)?;
+            let end_datetime = chrono::Local::now();
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&get_result)?);
             let resource_result = config_result::ResourceGetResult {
+                metadata: Some(
+                    Metadata {
+                        microsoft: Some(
+                            MicrosoftDscMetadata {
+                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                ..Default::default()
+                            }
+                        )
+                    }
+                ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: get_result,
@@ -249,6 +263,9 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
+        result.metadata = Some(
+            self.get_result_metadata(Operation::Get)
+        );
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
@@ -264,6 +281,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
+    #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
@@ -278,18 +296,96 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
+
+            // see if the properties contains `_exist` and is false
+            let exist = match &properties {
+                Some(property_map) => {
+                    if let Some(exist) = property_map.get("_exist") {
+                        !matches!(exist, Value::Bool(false))
+                    } else {
+                        true
+                    }
+                },
+                _ => {
+                    true
+                }
+            };
+
             let desired = add_metadata(&dsc_resource.kind, properties)?;
             trace!("desired: {desired}");
-            let set_result = dsc_resource.set(&desired, skip_test)?;
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
-            let resource_result = config_result::ResourceSetResult {
-                name: resource.name.clone(),
-                resource_type: resource.resource_type.clone(),
-                result: set_result,
-            };
-            result.results.push(resource_result);
+
+            if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
+                debug!("Resource handles _exist or _exist is true");
+                let start_datetime = chrono::Local::now();
+                let set_result = dsc_resource.set(&desired, skip_test)?;
+                let end_datetime = chrono::Local::now();
+                self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+                let resource_result = config_result::ResourceSetResult {
+                    metadata: Some(
+                        Metadata {
+                            microsoft: Some(
+                                MicrosoftDscMetadata {
+                                    duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                    ..Default::default()
+                                }
+                            )
+                        }
+                    ),
+                    name: resource.name.clone(),
+                    resource_type: resource.resource_type.clone(),
+                    result: set_result,
+                };
+                result.results.push(resource_result);    
+            } else if dsc_resource.capabilities.contains(&Capability::Delete) {
+                debug!("Resource implements delete and _exist is false");
+                let before_result = dsc_resource.get(&desired)?;
+                let start_datetime = chrono::Local::now();
+                dsc_resource.delete(&desired)?;
+                let end_datetime = chrono::Local::now();
+                let after_result = dsc_resource.get(&desired)?;
+                // convert get result to set result                
+                let set_result = match before_result {
+                    GetResult::Resource(before_response) => {
+                        let GetResult::Resource(after_result) = after_result else { 
+                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
+                        };
+                        let before_value = serde_json::to_value(&before_response.actual_state)?;
+                        let after_value = serde_json::to_value(&after_result.actual_state)?;
+                        ResourceSetResponse {
+                            before_state: before_response.actual_state,
+                            after_state: after_result.actual_state,
+                            changed_properties: Some(get_diff(&before_value, &after_value)),
+                        }
+                    },
+                    GetResult::Group(_) => {
+                        return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
+                    },
+                };
+                self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+                let resource_result = config_result::ResourceSetResult {
+                    metadata: Some(
+                        Metadata {
+                            microsoft: Some(
+                                MicrosoftDscMetadata {
+                                    duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                    ..Default::default()
+                                }
+                            )
+                        }
+                    ),
+                    name: resource.name.clone(),
+                    resource_type: resource.resource_type.clone(),
+                    result: SetResult::Resource(set_result),
+                };
+                result.results.push(resource_result);
+            } else {
+                return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
+            }
         }
 
+        result.metadata = Some(
+            self.get_result_metadata(Operation::Set)
+        );
         mem::drop(pb_span_enter);
         mem::drop(pb_span);
         Ok(result)
@@ -321,9 +417,21 @@ impl Configurator {
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("expected: {expected}");
+            let start_datetime = chrono::Local::now();
             let test_result = dsc_resource.test(&expected)?;
+            let end_datetime = chrono::Local::now();
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&test_result)?);
             let resource_result = config_result::ResourceTestResult {
+                metadata: Some(
+                    Metadata {
+                        microsoft: Some(
+                            MicrosoftDscMetadata {
+                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                ..Default::default()
+                            }
+                        )
+                    }
+                ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: test_result,
@@ -331,6 +439,9 @@ impl Configurator {
             result.results.push(resource_result);
         }
 
+        result.metadata = Some(
+            self.get_result_metadata(Operation::Test)
+        );
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
@@ -370,9 +481,10 @@ impl Configurator {
             add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
+        conf.metadata = Some(self.get_result_metadata(Operation::Export));
+        result.result = Some(conf);
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
-        result.result = Some(conf);
         Ok(result)
     }
 
@@ -442,6 +554,24 @@ impl Configurator {
             }
         }
         Ok(())
+    }
+
+    fn get_result_metadata(&self, operation: Operation) -> Metadata {
+        let end_datetime = chrono::Local::now();
+        Metadata {
+            microsoft: Some(
+                MicrosoftDscMetadata {
+                    context: None,
+                    version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                    operation: Some(operation),
+                    execution_type: Some(self.context.execution_type.clone()),
+                    start_datetime: Some(self.context.start_datetime.to_rfc3339()),
+                    end_datetime: Some(end_datetime.to_rfc3339()),
+                    duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
+                    security_context: Some(self.context.security_context.clone()),
+                }
+            )
+        }
     }
 
     fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {

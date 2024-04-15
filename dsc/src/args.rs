@@ -128,6 +128,9 @@ pub enum ResourceSubCommand {
     List {
         /// Optional filter to apply to the list of resources
         resource_name: Option<String>,
+        /// Optional adapter filter to apply to the list of resources
+        #[clap(short = 'a', long = "adapter", help = "Adapter filter to limit the resource search")]
+        adapter_name: Option<String>,
         #[clap(short, long, help = "Description keyword to search for in the resource description")]
         description: Option<String>,
         #[clap(short, long, help = "Tag to search for in the resource tags")]
@@ -169,6 +172,15 @@ pub enum ResourceSubCommand {
         path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
+    },
+    #[clap(name = "delete", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
+    Delete {
+        #[clap(short, long, help = "The name or DscResource JSON of the resource to invoke `delete` on")]
+        resource: String,
+        #[clap(short, long, help = "The input to pass to the resource as JSON or YAML", conflicts_with = "path")]
+        input: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a JSON or YAML file used as input to the configuration or resource", conflicts_with = "input")]
+        path: Option<String>,
     },
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]
     Schema {

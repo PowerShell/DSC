@@ -1,0 +1,87 @@
+#pragma namespace("\\\\.\\root\\default")
+instance of __namespace{ name="ms_409";};
+#pragma namespace("\\\\.\\root\\default\\ms_409")
+
+[Description("Base schema for all configuration providers that will be imported by powershell extension.") : Amended,AMENDMENT, LOCALE("ms_409")] 
+class OMI_BaseResource
+{
+  [Description("Unique Id for a resource instance.") : Amended] string ResourceId;
+  [Description("Source Info to correlate it back to powershell configuration script.") : Amended] string SourceInfo;
+  [Description("List of resources this resource depends on.") : Amended] string DependsOn[];
+  [Description("Name of the module that supports this resource.")] string ModuleName;
+  [Description("Version  of the module that supports this resource.")] string ModuleVersion;
+  [Description("Name of the Partial Configuration that this resource belongs to.")] string ConfiguratioName;
+  [Description("Credentials under which the resource runs. ")] string PsDscRunAsCredential;
+};
+
+[Description("This class represents a key-value pair.") : Amended,AMENDMENT, LOCALE("ms_409")]
+class MSFT_KeyValuePair
+{
+
+};
+
+[Description("Base schema for configuration provider registration that maps a provider to some configuration engine related information.") : Amended,AMENDMENT, LOCALE("ms_409")] 
+class MSFT_BaseConfigurationProviderRegistration
+{
+};
+
+[Description("Base schema for configuration provider registration that maps a cim provider to namespace.") : Amended,AMENDMENT, LOCALE("ms_409")] 
+class MSFT_CimConfigurationProviderRegistration : MSFT_BaseConfigurationProviderRegistration
+{
+};
+
+[Description("Base schema for configuration provider registration that maps a powershell provider to its module.") : Amended,AMENDMENT, LOCALE("ms_409")] 
+class MSFT_PSConfigurationProviderRegistration : MSFT_BaseConfigurationProviderRegistration
+{
+};
+
+[Description("Base schema for configuration document information.") : Amended,AMENDMENT, LOCALE("ms_409")] 
+class OMI_ConfigurationDocument
+{
+  [Description("Configuration document version information, configuration engine can use to log.") : Amended] String Version;
+  [Description("Configuration document Author information.") : Amended] String Author;
+  [Description("Configuration document Copyright information.") : Amended] String Copyright;
+  [Description("Configuration document Help URI.") : Amended] String HelpInfoUri;
+  [Description("Configuration document Content Type. Only PasswordEncrypted and NotEncrypted are supported. Default value is NotEncrypted.") : Amended] String ContentType;
+  [Description("Configuration document generation date.") : Amended] String GenerationDate;
+  [Description("Configuration document generation host.") : Amended] String GenerationHost;
+  [Description("Configuration document name.") : Amended] String Name;
+  [Description("Configuration document minimum version requirement for compatibility with the target DSC version.") : Amended] String MinimumCompatibleVersion;
+  [Description("Additional properties (if any) that are required by the version of this document over 1.0.0 for version compatibility.") : Amended] String CompatibleVersionAdditionalProperties[];
+  [Description("Configuration document is encrypted using Cryptographic Message Syntax format.") : Amended] boolean UseCms;
+};
+
+
+[Description ("Credential to use for DSC configuration providers." ) : Amended,AMENDMENT, LOCALE("ms_409")]
+class MSFT_Credential 
+{   
+  [Description("UserName is the name of the user for an authorization service to map to an identity." ) : Amended] string UserName;
+  [Description("UserPassword property may contain a password used to access resources." ) : Amended] string Password;
+};
+
+
+[Description("Base schema for all Metaconfiguration resources .") : Amended,AMENDMENT, LOCALE("ms_409")] 
+class OMI_MetaConfigurationResource
+{
+};
+
+[Description("Class defining the structure of resource module managers") : Amended,AMENDMENT, LOCALE("MS_409")] 
+class OMI_ResourceModuleManager : OMI_MetaConfigurationResource
+{
+  [Description("Name of the resource module Manager.") : Amended] string Name;
+  [Description("Priority of the resource module manager.") : Amended] uint32 Priority;
+};
+
+[Description("Class defining the configuration download manager") : Amended,AMENDMENT, LOCALE("MS_409")] 
+class OMI_ConfigurationDownloadManager : OMI_MetaConfigurationResource
+{
+  [Description("Name of the configuration download Manager.") : Amended] string Name;
+};
+
+
+[Description("Class defining a report manager") : Amended,AMENDMENT, LOCALE("MS_409")] 
+class OMI_ReportManager : OMI_MetaConfigurationResource
+{
+  [Description("Name of the report manager") : Amended] string Name;
+  [Description("Custom data that is specific to Report Manager.") : Amended] string CustomData[];
+};

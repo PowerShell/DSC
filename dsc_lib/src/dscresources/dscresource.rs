@@ -44,9 +44,17 @@ pub struct DscResource {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum Capability {
+    /// The resource supports retriving configuration.
     Get,
+    /// The resource supports applying configuration.
     Set,
+    /// The resource supports the `_exist` property directly.
+    SetHandlesExist,
+    /// The resource supports validating configuration.
     Test,
+    /// The resource supports deleting configuration.
+    Delete,
+    /// The resource supports exporting configuration.
     Export,
 }
 
@@ -120,6 +128,17 @@ pub trait Invoke {
     ///
     /// This function will return an error if the underlying resource fails.
     fn test(&self, expected: &str) -> Result<TestResult, DscError>;
+
+    /// Invoke the delete operation on the resource.
+    ///
+    /// # Arguments
+    ///
+    /// * `filter` - The filter as JSON to apply to the resource.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying resource fails.
+    fn delete(&self, filter: &str) -> Result<(), DscError>;
 
     /// Invoke the validate operation on the resource.
     ///
@@ -221,6 +240,21 @@ impl Invoke for DscResource {
                 else {
                     command_resource::invoke_test(&resource_manifest, &self.directory, expected)
                 }
+            },
+        }
+    }
+
+    fn delete(&self, filter: &str) -> Result<(), DscError> {
+        match &self.implemented_as {
+            ImplementedAs::Custom(_custom) => {
+                Err(DscError::NotImplemented("set custom resources".to_string()))
+            },
+            ImplementedAs::Command => {
+                let Some(manifest) = &self.manifest else {
+                    return Err(DscError::MissingManifest(self.type_name.clone()));
+                };
+                let resource_manifest = import_manifest(manifest.clone())?;
+                command_resource::invoke_delete(&resource_manifest, &self.directory, filter)
             },
         }
     }

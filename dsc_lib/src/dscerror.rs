@@ -23,6 +23,9 @@ pub enum DscError {
     #[error("Function '{0}' error: {1}")]
     Function(String, String),
 
+    #[error("Function '{0}' error: {1}")]
+    FunctionArg(String, String),
+
     #[error("HTTP: {0}")]
     Http(#[from] reqwest::Error),
 
@@ -68,6 +71,9 @@ pub enum DscError {
     #[error("Not implemented: {0}")]
     NotImplemented(String),
 
+    #[error("Not supported: {0}")]
+    NotSupported(String),
+
     #[error("Number conversion error: {0}")]
     NumberConversion(#[from] std::num::TryFromIntError),
 
@@ -86,7 +92,7 @@ pub enum DscError {
     #[error("Schema: {0}")]
     Schema(String),
 
-    #[error("No Schema: {0}")]
+    #[error("No Schema found and `validate` is not supported: {0}")]
     SchemaNotAvailable(String),
 
     #[error("Security context: {0}")]

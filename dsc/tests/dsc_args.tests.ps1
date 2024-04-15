@@ -54,25 +54,20 @@ Describe 'config argument tests' {
         $env:DSC_RESOURCE_PATH = $oldPath
     }
 
-    It 'input is <type>' -Skip:(!$IsWindows) -TestCases @(
+    It 'input is <type>' -TestCases @(
         @{ type = 'yaml'; text = @'
-            keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
-            valueName: ProductName
+            output: Hello There
 '@ }
         @{ type = 'json'; text = @'
             {
-                "keyPath": "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion",
-                "valueName": "ProductName"
+                "output": "Hello There"
             }
 '@ }
     ) {
         param($text)
-        $output = $text | dsc resource get -r Microsoft.Windows/Registry
+        $output = $text | dsc resource get -r Test/Echo
         $output = $output | ConvertFrom-Json
-        $output.actualState.'$id' | Should -BeExactly 'https://developer.microsoft.com/json-schemas/windows/registry/20230303/Microsoft.Windows.Registry.schema.json'
-        $output.actualState.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
-        $output.actualState.valueName | Should -BeExactly 'ProductName'
-        $output.actualState.valueData.String | Should -Match 'Windows .*'
+        $output.actualState.output | Should -BeExactly 'Hello There'
     }
 
     It '--format <format> is used even when redirected' -TestCases @(
@@ -180,9 +175,9 @@ resources:
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'resource tracing shows up' {
+    It 'resource tracing shows up' -Skip:(!$IsWindows) {
         # Assumption here is that DSC/PowerShellGroup provider is visible
-        dsc -l trace resource list 2> $TestDrive/tracing.txt
+        dsc -l trace resource list * -a *PowerShell* 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'PSModulePath'
         $LASTEXITCODE | Should -Be 0
     }
@@ -214,5 +209,67 @@ resources:
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
+    }
+
+    It 'verify `dsc resource list` and `dsc resource list *`' {
+        # return all native resources, providers, but not adapter-based resources;
+        # results for `dsc resource list` and `dsc resource list *` should be the same
+        $a = dsc resource list -f json
+        $b = dsc resource list '*' -f json
+        $a.Count | Should -Be $b.Count
+        0..($a.Count-1) | %{
+            $a_obj = $a[$_] | ConvertFrom-Json
+            $b_obj = $b[$_] | ConvertFrom-Json
+            $a_obj.type | Should -Be $b_obj.type
+            # adapter-based resources should Not be in the results
+            $a_obj.requireAdapter | Should -BeNullOrEmpty
+            $b_obj.requireAdapter | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'verify `dsc resource list resource_filter`' {
+        # same as previous but also apply resource_filter filter
+        $a = dsc resource list 'Test*' -f json
+        0..($a.Count-1) | %{
+            $a_obj = $a[$_] | ConvertFrom-Json
+            $a_obj.type.StartsWith("Test") | Should -Be $true
+            # adapter-based resources should Not be in the results
+            $a_obj.requireAdapter | Should -BeNullOrEmpty
+        }
+    }
+
+    It 'verify `dsc resource list * -a *`' {
+        # return all adapter-based resources
+        $a = dsc resource list '*' -a '*' -f json
+        0..($a.Count-1) | %{
+            $a_obj = $a[$_] | ConvertFrom-Json
+            $a_obj.requireAdapter | Should -Not -BeNullOrEmpty
+            $a_obj.kind | Should -Be "Resource"
+        }
+    }
+
+    It 'verify `dsc resource list * adapter_filter`' {
+        # return all resources of adapters that match adapter_filter filter
+        $a = dsc resource list '*' -a Test* -f json | ConvertFrom-Json
+        foreach ($r in $a) {
+            $r.requireAdapter.StartsWith("Test") | Should -Be $true
+            $r.kind | Should -Be "Resource"
+        }
+    }
+
+    It 'verify `dsc resource list resource_filter adapter_filter`' {
+        # same as previous but also apply resource_filter filter to resource types
+        $a = dsc resource list *TestResource2 -a *TestGroup -f json | ConvertFrom-Json
+        $a.Count | Should -Be 1
+        $r = $a[0]
+        $r.requireAdapter | Should -Not -BeNullOrEmpty
+        $r.requireAdapter.StartsWith("Test") | Should -Be $true
+        $r.kind | Should -Be "Resource"
+    }
+
+    It 'passing filepath to document arg should error' {
+        $configFile = Resolve-Path $PSScriptRoot/../examples/osinfo.dsc.json
+        $stderr = dsc config get -d $configFile 2>&1
+        $stderr | Should -Match '.*?--path.*?'
     }
 }
