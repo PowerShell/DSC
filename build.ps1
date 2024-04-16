@@ -140,6 +140,7 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
     if ($IsWindows) {
         $projects += $windows_projects
+        Save-Module -Path $target -Name 'PSDesiredStateConfiguration' -RequiredVersion '2.0.7' -Repository PSGallery -Force
     }
 
     $failed = $false
