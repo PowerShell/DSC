@@ -5,11 +5,15 @@
   "description": "Describes the return data for the full result of the `test` operation for a\nresource instance. This data is returned:\n\n- For every instance in a configuration document when you use the\n  `dsc config test` command.\n\n- For nested instances of a group or adapter resource when you use the\n  `dsc resource test` command.",
   "type": "object",
   "required": [
+    "metadata",
     "name",
     "result",
     "type"
   ],
   "properties": {
+    "metadata": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/metadata/resourceInstanceResult.json"
+    },
     "name": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/instanceName.json"
     },

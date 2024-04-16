@@ -30,14 +30,9 @@ properties:
 
     unevaluatedProperties: false
     properties:
-      requiredSecurityContext:
-        type: string
-        enum:
-          - Current
-          - Elevated
-          - Restricted
+      securityContext:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/securityContext.yaml
         default: Current
-        title: Required security context
         description: >-
           This property defines the security context a configuration requires. If you invoke a DSC
           operation against the configuration document in a security context that conflicts with

@@ -39,11 +39,15 @@
       "description": "Describes the return data for the full result of the `get` operation for a\nresource instance. This data is returned:\n\n- For every instance in a configuration document when you use the\n  `dsc config get` command.\n\n- For nested instances of a group or adapter resource when you use the\n  `dsc resource get` command.",
       "type": "object",
       "required": [
+        "metadata",
         "name",
         "result",
         "type"
       ],
       "properties": {
+        "metadata": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/metadata/resourceInstanceResult.json"
+        },
         "name": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/instanceName.json"
         },
@@ -52,6 +56,31 @@
         },
         "result": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/outputs/resource/get.json"
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/metadata/resourceInstanceResult.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/metadata/resourceInstanceResult.json",
+      "title": "Resource instance result metadata",
+      "description": "Defines metadata DSC returns for a DSC configuration operation against a resource instance in a configuration document, as from the `dsc config get` or `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe the context of the operation.",
+      "type": "object",
+      "required": [
+        "Microsoft.DSC"
+      ],
+      "properties": {
+        "Microsoft.DSC": {
+          "title": "DSC context metadata",
+          "description": "The child properties for this metadata describe the context of the DSC operation against a resource instance, including the duration of the operation.",
+          "type": "object",
+          "required": [
+            "duration"
+          ],
+          "properties": {
+            "duration": {
+              "$ref": "/PowerShell/DSC/main/schemas/2024/04/metadata/Microsoft.DSC/duration.json"
+            }
+          }
         }
       }
     },
@@ -88,6 +117,14 @@
           }
         }
       ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/metadata/Microsoft.DSC/duration.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/metadata/Microsoft.DSC/duration.json",
+      "title": "Duration",
+      "description": "Defines the duration of a DSC operation against a configuration document or resource instance as a string following the format defined in ISO8601 ABNF for `duration`. For example, `PT0.611216S` represents a duration of about `0.61` seconds. For more information, see: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A",
+      "type": "string",
+      "format": "duration"
     }
   }
 }

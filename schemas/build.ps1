@@ -335,7 +335,7 @@ begin {
             $RelativeUriReferencePattern = @(
                 '(?m)'
                 '^'
-                '(?<Prefix>\s+\$ref:\s+)'
+                '(?<Prefix>\s*(-\s+)?\$ref:\s+)'
                 '(?<Reference>/.+)'
                 '$'
             ) -join ''
@@ -425,7 +425,8 @@ begin {
                         $RefUri.Trim()
                         "'"
                     ) -join ''
-                    $MungingSchema = $MungingSchema -replace [regex]::Escape($Whole), $NewValue
+                    Write-Verbose "Replacing '$($Whole.Trim())' with '$($NewValue.Trim())'..."
+                    $MungingSchema = $MungingSchema -replace [regex]::Escape($Whole.Trim()), $NewValue.Trim()
                 }
                 $MergedSchema = $MungingSchema | yayaml\ConvertFrom-Yaml
             } else {
@@ -662,6 +663,7 @@ process {
     $RegistryParameters = @{
         SchemaDirectories = @(
             "$OutputDirectory/config"
+            "$OutputDirectory/metadata"
             "$OutputDirectory/definitions"
             "$OutputDirectory/outputs"
             "$OutputDirectory/resource"

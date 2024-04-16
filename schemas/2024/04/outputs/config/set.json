@@ -5,11 +5,15 @@
   "description": "Represents the data structure returned by the `dsc config set` command.",
   "type": "object",
   "required": [
+    "metadata",
     "results",
     "messages",
     "hadErrors"
   ],
   "properties": {
+    "metadata": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/metadata/configurationDocumentResult.json"
+    },
     "results": {
       "title": "Results",
       "description": "The results of the `set` method for every DSC Resource instance in the DSC Configuration Document with the instance's name and type.",
