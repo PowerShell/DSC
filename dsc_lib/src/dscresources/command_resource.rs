@@ -4,9 +4,9 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio}};
-use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
-use crate::configure::config_result::ResourceGetResult;
-use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceSetWhatIfResponse, ResourceTestResponse}};
+use crate::configure::{config_doc::ExecutionKind, config_result::ResourceGetResult};
+use super::{dscresource::{get_diff, get_diff_what_if}, invoke_result::{ExportResult, GetResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
@@ -95,7 +95,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 ///
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
-pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
     let Some(set) = &resource.set else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
@@ -104,19 +104,35 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
         info!("No pretest, invoking test {}", &resource.resource_type);
-        let (in_desired_state, actual_state) = match invoke_test(resource, cwd, desired)? {
+        let (in_desired_state, actual_state, desired_state) = match invoke_test(resource, cwd, desired)? {
             TestResult::Group(group_response) => {
                 let mut result_array: Vec<Value> = Vec::new();
                 for result in group_response.results {
                     result_array.push(serde_json::to_value(result)?);
                 }
-                (group_response.in_desired_state, Value::from(result_array))
+                (group_response.in_desired_state, Value::from(result_array), Value::Null)
             },
             TestResult::Resource(response) => {
-                (response.in_desired_state, response.actual_state)
+                (response.in_desired_state, response.actual_state, response.desired_state)
             }
         };
 
+        if execution_type == &ExecutionKind::WhatIf {
+            if in_desired_state {
+                debug!("what-if: resource is already in desired state, returning null ResourceWhatIf response");
+                return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
+                    what_if_changes: Value::String("none".to_string())
+                }));
+            }
+            debug!("what-if: resource is not in desired state, returning diff ResourceWhatIf response");
+            let diff_properties = get_diff_what_if( &desired_state, &actual_state);
+            println!("desired_state: {:?}", &desired_state);
+            println!("actual_state: {:?}", &actual_state);
+            println!("diff_properties: {:?}", &diff_properties);
+            return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
+                what_if_changes: Value::from_iter(diff_properties)
+            }));
+        }
         if in_desired_state {
             return Ok(SetResult::Resource(ResourceSetResponse{
                 before_state: serde_json::from_str(desired)?,
@@ -490,7 +506,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
     if let Some(input) = input {
         if !input.is_empty() {
             verify_json(resource, cwd, input)?;
-            
+
             command_input = get_command_input(&export.input, input)?;
         }
 

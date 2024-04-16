@@ -15,7 +15,6 @@ pub struct Context {
     pub parameters: HashMap<String, (Value, DataType)>,
     pub security_context: SecurityContextKind,
     _variables: HashMap<String, Value>,
-
     pub start_datetime: DateTime<Local>,
 }
 

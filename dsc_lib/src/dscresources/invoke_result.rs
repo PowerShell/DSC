@@ -66,6 +66,7 @@ impl Default for GroupResourceSetResponse {
 #[serde(untagged)]
 pub enum SetResult {
     Resource(ResourceSetResponse),
+    ResourceWhatIf(ResourceSetWhatIfResponse),
     Group(GroupResourceSetResponse),
 }
 
@@ -81,6 +82,13 @@ pub struct ResourceSetResponse {
     /// The properties that were changed by the Set method from the before state.
     #[serde(rename = "changedProperties")]
     pub changed_properties: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ResourceSetWhatIfResponse {
+    #[serde(rename = "whatIfChanges")]
+    pub what_if_changes: Value
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

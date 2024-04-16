@@ -3,7 +3,7 @@
 
 use crate::args::OutputFormat;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
-use dsc_lib::configure::config_doc::Configuration;
+use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::invoke_result::{GetResult, ResourceGetResponse};
 use dsc_lib::dscerror::DscError;
@@ -117,7 +117,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         };
     }
 
-    match resource.set(input.as_str(), true) {
+    match resource.set(input.as_str(), true, &ExecutionKind::Actual) {
         Ok(result) => {
             // convert to json
             let json = match serde_json::to_string(&result) {

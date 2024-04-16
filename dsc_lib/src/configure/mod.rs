@@ -31,7 +31,7 @@ pub mod parameters;
 
 pub struct Configurator {
     config: String,
-    context: Context,
+    pub context: Context,
     discovery: Discovery,
     statement_parser: Statement,
 }
@@ -317,7 +317,7 @@ impl Configurator {
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("Resource handles _exist or _exist is true");
                 let start_datetime = chrono::Local::now();
-                let set_result = dsc_resource.set(&desired, skip_test)?;
+                let set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
                 let end_datetime = chrono::Local::now();
                 self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
                 let resource_result = config_result::ResourceSetResult {
@@ -335,7 +335,7 @@ impl Configurator {
                     resource_type: resource.resource_type.clone(),
                     result: set_result,
                 };
-                result.results.push(resource_result);    
+                result.results.push(resource_result);
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 debug!("Resource implements delete and _exist is false");
                 let before_result = dsc_resource.get(&desired)?;
@@ -343,10 +343,10 @@ impl Configurator {
                 dsc_resource.delete(&desired)?;
                 let end_datetime = chrono::Local::now();
                 let after_result = dsc_resource.get(&desired)?;
-                // convert get result to set result                
+                // convert get result to set result
                 let set_result = match before_result {
                     GetResult::Resource(before_response) => {
-                        let GetResult::Resource(after_result) = after_result else { 
+                        let GetResult::Resource(after_result) = after_result else {
                             return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
                         };
                         let before_value = serde_json::to_value(&before_response.actual_state)?;

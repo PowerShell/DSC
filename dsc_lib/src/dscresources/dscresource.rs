@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::dscresources::resource_manifest::Kind;
+use crate::{configure::config_doc::ExecutionKind, dscresources::resource_manifest::Kind};
 use dscerror::DscError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -116,7 +116,7 @@ pub trait Invoke {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError>;
+    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError>;
 
     /// Invoke the test operation on the resource.
     ///
@@ -186,7 +186,7 @@ impl Invoke for DscResource {
         }
     }
 
-    fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
+    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -196,7 +196,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test)
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type)
             },
         }
     }
@@ -350,6 +350,65 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                         diff_properties.push(key.to_string());
                     },
                 }
+            }
+        }
+    }
+
+    diff_properties
+}
+
+#[must_use]
+pub fn get_diff_what_if(expected: &Value, actual: &Value) -> HashMap<String, Value> {
+    let mut diff_properties: HashMap<String, Value> = HashMap::new();
+    if expected.is_null() {
+        return diff_properties;
+    }
+
+    let mut expected = expected.clone();
+    let mut actual = actual.clone();
+
+    if let Some(map) = expected.as_object_mut() {
+        // handle well-known optional properties with default values by adding them
+        for (key, value) in get_well_known_properties() {
+            if !map.contains_key(&key) {
+                map.insert(key.clone(), value.clone());
+            }
+
+            if actual.is_object() && actual[&key].is_null() {
+                actual[key.clone()] = value.clone();
+            }
+        }
+
+        for (key, value) in &*map {
+            let mut is_diff = false;
+            if value.is_object() {
+                let sub_diff = get_diff_what_if(value, &actual[key]);
+                if !sub_diff.is_empty() {
+                    is_diff = true;
+                }
+            }
+            else {
+                match actual.as_object() {
+                    Some(actual_object) => {
+                        if actual_object.contains_key(key) {
+                            if value != &actual[key] {
+                                is_diff = true;
+                            }
+                        }
+                        else {
+                            is_diff = true;
+                        }
+                    },
+                    None => {
+                        is_diff = true;
+                    },
+                }
+            }
+            if is_diff {
+                let mut temp_hashmap = HashMap::new();
+                temp_hashmap.insert("to".to_string(), value.clone());
+                temp_hashmap.insert("from".to_string(), actual[key].clone());
+                diff_properties.insert(key.to_string(), Value::from_iter(temp_hashmap));
             }
         }
     }

@@ -6,7 +6,7 @@ use crate::resource_command::{get_resource, self};
 use crate::Stream;
 use crate::tablewriter::Table;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
-use dsc_lib::configure::{Configurator, ErrorAction, config_result::ResourceGetResult};
+use dsc_lib::configure::{Configurator, ErrorAction, config_doc::ExecutionKind, config_result::ResourceGetResult};
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::{
     GroupResourceSetResponse, GroupResourceTestResponse, TestResult
@@ -222,6 +222,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         Err(err) => {
             error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
+        }
+    };
+
+    if let ConfigSubCommand::Set { what_if , .. } = subcommand {
+        if *what_if {
+            configurator.context.execution_type = ExecutionKind::WhatIf;
         }
     };
 
