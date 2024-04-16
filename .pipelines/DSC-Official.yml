@@ -136,13 +136,13 @@ extends:
             TargetFolder: $(ob_outputDirectory)
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            ./build.ps1 -PackageType zip
+            ./build.ps1 -PackageType zip -Architecture $(buildName)
             Copy-Item ./bin/*.zip "$(ob_outputDirectory)"
           displayName: 'Zip $(buildName)'
           condition: succeeded()
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            ./build.ps1 -PackageType msix
+            ./build.ps1 -PackageType msix -Architecture $(buildName)
             Copy-Item ./bin/*.msix "$(ob_outputDirectory)"
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()

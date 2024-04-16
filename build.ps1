@@ -263,8 +263,8 @@ if (!$SkipBuild) {
     }
 }
 
-$relative = Resolve-Path $target -Relative
 if (!$Clippy) {
+    $relative = Resolve-Path $target -Relative
     Write-Host -ForegroundColor Green "`nEXE's are copied to $target ($relative)"
 
     # remove the other target in case switching between them
