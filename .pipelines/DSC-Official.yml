@@ -135,6 +135,7 @@ extends:
             Contents: '*'
             TargetFolder: $(ob_outputDirectory)
         - pwsh: |
+            Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -PackageType zip
             Copy-Item ./bin/*.zip "$(ob_outputDirectory)"
           displayName: 'Zip $(buildName)'
