@@ -5,7 +5,7 @@ resources:
   type: Microsoft.Windows/Registry
   properties:
     keyPath: HKCU\example
-    _ensure: Present
+    _exist: true
   dependsOn:
   - "[resourceId('Microsoft.DSC/Assertion','my assertions')]"
 - name: my assertions
