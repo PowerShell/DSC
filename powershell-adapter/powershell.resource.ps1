@@ -79,7 +79,7 @@ switch ($Operation) {
             } | ConvertTo-Json -Compress
         }
     }
-    'Get' {
+    { @('Get','Set','Test') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
             $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
@@ -104,7 +104,7 @@ switch ($Operation) {
 
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
-            $actualState = $psDscAdapter.invoke( { param($ds, $dscResourceCache) Get-ActualState -DesiredState $ds -dscResourceCache $dscResourceCache }, $ds, $dscResourceCache)
+            $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
             if ($null -eq $actualState) {
                 $trace = @{'Debug' = 'ERROR: Incomplete GET for resource ' + $ds.Name } | ConvertTo-Json -Compress
                 $host.ui.WriteErrorLine($trace)
@@ -118,20 +118,6 @@ switch ($Operation) {
         $trace = @{'Debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
         $host.ui.WriteErrorLine($trace)
         return $result
-    }
-    'Set' {
-        throw 'SET not implemented'
-        
-        # OUTPUT
-        $result += @{}
-        @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
-    }
-    'Test' {
-        throw 'TEST not implemented'
-        
-        # OUTPUT
-        $result += @{}
-        @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
     }
     'Export' {
         throw 'EXPORT not implemented'

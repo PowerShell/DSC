@@ -133,7 +133,7 @@ function Invoke-DscCacheRefresh {
     return $dscResourceCache
 }
 
-# Convert the INPUT to a dscResourceObject object so configuration and resource are standardized as moch as possible
+# Convert the INPUT to a dscResourceObject object so configuration and resource are standardized as much as possible
 function Get-DscResourceObject {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -181,8 +181,11 @@ function Get-DscResourceObject {
 }
 
 # Get the actual state using DSC Get method from any type of DSC resource
-function Get-ActualState {
+function Invoke-DscOperation {
     param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Get', 'Set', 'Test')]
+        [string]$Operation,
         [Parameter(Mandatory, ValueFromPipeline = $true)]
         [dscResourceObject]$DesiredState,
         [Parameter(Mandatory)]
@@ -273,10 +276,20 @@ function Get-ActualState {
                     $DesiredState.properties.psobject.properties | ForEach-Object -Process {
                         $dscResourceInstance.$($_.Name) = $_.Value
                     }
-                    $getResult = $dscResourceInstance.Get()
 
-                    # set the properties of the OUTPUT object from the result of Get-TargetResource
-                    $addToActualState.properties = $getResult
+                    switch ($Operation) {
+                        'Get' {
+                            $Result = $dscResourceInstance.Get()
+                            $addToActualState.properties = $Result
+                        }
+                        'Set' {
+                            $dscResourceInstance.Set()
+                        }
+                        'Test' {
+                            $Result = $dscResourceInstance.Test()
+                            $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
+                        }
+                    }
                 }
                 catch {
                     
