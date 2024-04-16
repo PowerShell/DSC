@@ -7,8 +7,8 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [switch]$Msix,
-    [switch]$MsixBundle,
+    [ValidateSet('msix','msixbundle','tgz','zip')]
+    $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck
@@ -22,6 +22,49 @@ if ($GetPackageVersion) {
 
     return $match.Matches.Groups[1].Value
 }
+
+$filesForWindowsPackage = @(
+    'dsc.exe',
+    'assertion.dsc.resource.json',
+    'group.dsc.resource.json',
+    'powershell.dsc.resource.json',
+    'powershell.resource.ps1',
+    'PSDesiredStateConfiguration/',
+    'psDscAdapter/',
+    'reboot_pending.dsc.resource.json',
+    'reboot_pending.resource.ps1',
+    'registry.dsc.resource.json',
+    'registry.exe',
+    'RunCommandOnSet.dsc.resource.json',
+    'RunCommandOnSet.exe',
+    'windowspowershell.dsc.resource.json',
+    'wmi.dsc.resource.json',
+    'wmi.resource.ps1'
+)
+
+$filesForLinuxPackage = @(
+    'dsc',
+    'assertion.dsc.resource.json',
+    'group.dsc.resource.json',
+    'powershell.dsc.resource.json',
+    'powershell.resource.ps1',
+    'psDscAdapter/',
+    'RunCommandOnSet.dsc.resource.json',
+    'RunCommandOnSet'
+)
+
+$filesForMacPackage = @(
+    'dsc',
+    'assertion.dsc.resource.json',
+    'brew.dsc.resource.json',
+    'brew.dsc.resource.sh',
+    'group.dsc.resource.json',
+    'powershell.dsc.resource.json',
+    'powershell.resource.ps1',
+    'psDscAdapter/',
+    'RunCommandOnSet.dsc.resource.json',
+    'RunCommandOnSet'
+)
 
 ## Test if Rust is installed
 if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
@@ -43,7 +86,6 @@ if ($IsLinux -and (Test-Path /etc/mariner-release)) {
     tdnf install -y openssl-devel
 }
 
-rustup default stable
 $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
 function Find-LinkExe {
@@ -61,8 +103,10 @@ function Find-LinkExe {
     }
 }
 
-if ($Msix -or $MsixBundle) {
+if ($null -ne $packageType) {
     $SkipBuild = $true
+} else {
+    rustup default stable
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -111,36 +155,38 @@ else {
 }
 
 if (!$SkipBuild) {
-        if (Test-Path $target) {
-        Remove-Item $target -Recurse -ErrorAction Stop
+    if (Test-Path $target) {
+        Remove-Item $target -Recurse -ErrorAction Ignore
     }
-    New-Item -ItemType Directory $target > $null
+    New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
-# make sure dependencies are built first so clippy runs correctly
-$windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
+    # make sure dependencies are built first so clippy runs correctly
+    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
 
-# projects are in dependency order
-$projects = @(
-    "tree-sitter-dscexpression",
-    "security_context_lib",
-    "dsc_lib",
-    "dsc",
-    "osinfo",
-    "powershell-adapter",
-    "process",
-    "tools/dsctest",
-    "tools/test_group_resource",
-    "y2j",
-    "resources/brew",
-    "runcommandonset"
-)
-$pedantic_unclean_projects = @()
-$clippy_unclean_projects = @("tree-sitter-dscexpression")
-$skip_test_projects_on_windows = @("tree-sitter-dscexpression")
+    # projects are in dependency order
+    $projects = @(
+        "tree-sitter-dscexpression",
+        "security_context_lib",
+        "dsc_lib",
+        "dsc",
+        "osinfo",
+        "powershell-adapter",
+        "process",
+        "tools/dsctest",
+        "tools/test_group_resource",
+        "y2j",
+        "resources/brew",
+        "runcommandonset"
+    )
+    $pedantic_unclean_projects = @()
+    $clippy_unclean_projects = @("tree-sitter-dscexpression")
+    $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
 
     if ($IsWindows) {
         $projects += $windows_projects
         Save-Module -Path $target -Name 'PSDesiredStateConfiguration' -RequiredVersion '2.0.7' -Repository PSGallery -Force
+        # Need to unhide all the files so that packaging works
+        Get-ChildItem -Path $target -Recurse -Hidden | ForEach-Object { $_.Attributes = 'Normal' }
     }
 
     $failed = $false
@@ -335,24 +381,19 @@ function Find-MakeAppx() {
     $makeappx
 }
 
-if ($MsixBundle) {
-    if ($Msix) {
-        throw "Creating MsixBundle requires all msix packages to already be created"
-    }
+$productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
 
+if ($packageType -eq 'msixbundle') {
     if (!$IsWindows) {
         throw "MsixBundle is only supported on Windows"
     }
 
-    $productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
-    $isPreview = $productVersion -like '*-*'
     $packageName = "DSC-$productVersion-Win"
     $makeappx = Find-MakeAppx
-    & $makeappx bundle /d $PSScriptRoot /p "$PSScriptRoot\$packageName.msixbundle"
+    $msixPath = Join-Path $PSScriptRoot 'bin' 'msix'
+    & $makeappx bundle /d $msixPath /p "$PSScriptRoot\bin\$packageName.msixbundle"
     return
-}
-
-if ($Msix) {
+} elseif ($packageType -eq 'msix') {
     if (!$IsWindows) {
         throw "MSIX is only supported on Windows"
     }
@@ -364,7 +405,6 @@ if ($Msix) {
     $makeappx = Find-MakeAppx
     $makepri = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
     $displayName = "DesiredStateConfiguration"
-    $productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
     $isPreview = $productVersion -like '*-*'
     $productName = "DesiredStateConfiguration"
     if ($isPreview) {
@@ -390,25 +430,18 @@ if ($Msix) {
     $appxManifest = $appxManifest.Replace('$VERSION$', $ProductVersion).Replace('$ARCH$', $Arch).Replace('$PRODUCTNAME$', $productName).Replace('$DISPLAYNAME$', $displayName).Replace('$PUBLISHER$', $releasePublisher)
     $msixTarget = Join-Path $PSScriptRoot 'bin' $architecture 'msix'
     if (Test-Path $msixTarget) {
-        Remove-Item $msixTarget -Recurse -ErrorAction Stop
+        Remove-Item $msixTarget -Recurse -ErrorAction Stop -Force
     }
 
     New-Item -ItemType Directory $msixTarget > $null
     Set-Content -Path "$msixTarget\AppxManifest.xml" -Value $appxManifest -Force
 
-    $filesForMsix = @(
-        'dsc.exe',
-        'assertion.dsc.resource.json',
-        'group.dsc.resource.json',
-        'parallel.dsc.resource.json',
-        'powershellgroup.dsc.resource.json',
-        'powershellgroup.resource.ps1',
-        'wmigroup.dsc.resource.json.optout',
-        'wmigroup.resource.ps1'
-    )
-
-    foreach ($file in $filesForMsix) {
-        Copy-Item "$target\$file" $msixTarget -ErrorAction Stop
+    foreach ($file in $filesForWindowsPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$msixTarget\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $msixTarget -ErrorAction Stop
+        }
     }
 
     # Necessary image assets need to be in source assets folder
@@ -441,12 +474,69 @@ if ($Msix) {
     }
 
     Write-Verbose "Creating msix package" -Verbose
-    $packageName = "$productName-$productVersion-$arch"
-    & $makeappx pack /o /v /h SHA256 /d $msixTarget /p (Join-Path -Path (Get-Location) -ChildPath "$packageName.msix")
+
+    $targetFolder = Join-Path $PSScriptRoot 'bin' 'msix'
+    if (Test-Path $targetFolder) {
+        Remove-Item $targetFolder -Recurse -ErrorAction Stop -Force
+    } else {
+        New-Item -ItemType Directory $targetFolder > $null
+    }
+
+    $packageName = Join-Path $targetFolder "$productName-$productVersion-$arch.msix"
+    & $makeappx pack /o /v /h SHA256 /d $msixTarget /p $packageName
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create msix package"
     }
-    Write-Verbose "Created $packageName.msix" -Verbose
+
+    Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName.msix"
+} elseif ($packageType -eq 'zip') {
+    $zipTarget = Join-Path $PSScriptRoot 'bin' $architecture 'zip'
+    if (Test-Path $zipTarget) {
+        Remove-Item $zipTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $zipTarget > $null
+
+    foreach ($file in $filesForWindowsPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$zipTarget\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $zipTarget -ErrorAction Stop
+        }
+    }
+
+    $packageName = "DSC-$productVersion-$architecture.zip"
+    $zipFile = Join-Path $PSScriptRoot 'bin' $packageName
+    Compress-Archive -Path "$zipTarget/*" -DestinationPath $zipFile -Force
+    Write-Host -ForegroundColor Green "`nZip file is created at $zipFile"
+} elseif ($packageType -eq 'tgz') {
+    $tgzTarget = Join-Path $PSScriptRoot 'bin' $architecture 'tgz'
+    if (Test-Path $tgzTarget) {
+        Remove-Item $tgzTarget -Recurse -ErrorAction Stop -Force
+    }
+
+    New-Item -ItemType Directory $tgzTarget > $null
+
+    if ($IsLinux) {
+        $filesForPackage = $filesForLinuxPackage
+    } elseif ($IsMacOS) {
+        $filesForPackage = $filesForMacPackage
+    } else {
+        Write-Error "Unsupported platform for tgz package"
+    }
+
+    foreach ($file in $filesForPackage) {
+        if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
+            Copy-Item "$target\$file" "$tgzTarget\$file" -Recurse -ErrorAction Stop
+        } else {
+            Copy-Item "$target\$file" $tgzTarget -ErrorAction Stop
+        }
+    }
+
+    $packageName = "DSC-$productVersion-$architecture.tgz"
+    $tgzFile = Join-Path $PSScriptRoot 'bin' $packageName
+    tar cvf $tgzFile -C $tgzTarget .
+    Write-Host -ForegroundColor Green "`nTgz file is created at $tgzFile"
 }
 
 $env:RUST_BACKTRACE=1
