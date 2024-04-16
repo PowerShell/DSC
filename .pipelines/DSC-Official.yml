@@ -187,11 +187,8 @@ extends:
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
-          displayName: 'Build x86_64-unknown-linux-gnu'
-          condition: succeeded()
-        - pwsh: |
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu
-          displayName: 'Compress x86_64-unknown-linux-gnu'
+          displayName: 'Build x86_64-unknown-linux-gnu'
           condition: succeeded()
 
       - job: BuildLinuxArm64
@@ -206,11 +203,8 @@ extends:
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
-          displayName: 'Build aarch64-unknown-linux-gnu'
-          condition: succeeded()
-        - pwsh: |
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu
-          displayName: 'Compress aarch64-unknown-linux-gnu'
+          displayName: 'Build aarch64-unknown-linux-gnu'
           condition: succeeded()
 
       - job: BuildMac
@@ -233,11 +227,8 @@ extends:
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture $(buildName)
-          displayName: 'Build $(buildName)'
-          condition: succeeded()
-        - pwsh: |
             ./build.ps1 -PackageType tgz -Architecture $(buildName)
-          displayName: 'Compress $(buildName)'
+          displayName: 'Build $(buildName)'
           condition: succeeded()
 
     - stage: Release
