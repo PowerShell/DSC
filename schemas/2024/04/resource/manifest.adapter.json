@@ -21,7 +21,12 @@
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
         },
         "args": {
-          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Command arguments",
+          "description": "Defines the list of arguments to pass to the command to return the list of supported DSC Resources."
         }
       }
     },

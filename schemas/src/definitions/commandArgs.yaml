@@ -4,7 +4,92 @@ $id:     <HOST>/<PREFIX>/<VERSION>/definitions/commandArgs.yaml
 
 title: Executable Command Arguments
 description: >-
-  The list of arguments to pass to the command.
+  The list of arguments to pass to the command. The arguments can be any number of strings. If you
+  want to pass the JSON object representing the property bag for the resource to an argument, you
+  can define a single item in the array as a JSON object, indicating the name of the argument with
+  the `jsonInputArg` string property and whether the argument is mandatory for the command with the
+  `mandatory` boolean property.
 type: array
 items:
-  type: string
+  defaultSnippets:
+    - label: String argument
+      markdownDescription: |-
+        Add a string argument to the command, like `config` or `--config`.
+      body: ${1:argument_name}
+    - label: JSON input argument
+      markdownDescription: |-
+        Add a JSON input argument to the command. A command can only define one JSON input argument
+        in the `args` list. When you define a JSON input argument, DSC passes the input data for
+        the command to the specified argument as a string representing the data as a compressed
+        JSON object. The compressed JSON object doesn't have any spaces or newlines between the
+        object properties and values.
+
+        If the command doesn't define the `input` property, it must define a JSON input argument.
+
+        If the command defines both the `input` property and a JSON input argument, DSC sends the
+        input data to the command in both ways. For example, if the command defines `input` as
+        `stdin` and has a JSON input argument in `args`, DSC sends the input data as a compressed
+        JSON object over stdin and to the the specified argument.
+      body:
+        jsonInputArg:  ${1:argument_name}
+        mandatory:     ^$2
+  oneOf:
+    - type: string
+      title: String argument
+      description: >-
+        Any item in the argument array can be a string representing a static argument to pass to
+        the command.
+      markdownDescription: |
+        Any item in the argument array can be a string representing a static argument to pass to
+        the command.
+    - type: object
+      title: JSON input argument
+      description: >-
+        Defines an argument for the command that accepts the JSON input object as a string. DSC
+        passes the JSON input to the named argument when available. You can define the `mandatory`
+        property to indicate whether DSC should always pass the argument to the command, even when
+        there's no JSON input for the command. In that case, DSC passes an empty string to the
+        JSON input argument. You can only define one JSON input argument per arguments array.
+      markdownDescription: |
+        Defines an argument for the command that accepts the JSON input object as a string. DSC
+        passes the JSON input to the named argument when available. You can define the `mandatory`
+        property to indicate whether DSC should always pass the argument to the command, even when
+        there's no JSON input for the command. In that case, DSC passes an empty string to the
+        JSON input argument. You can only define one JSON input argument per arguments array.
+
+        If you define a JSON input argument and an `input` kind for a command, DSC sends the JSON
+        data both ways:
+
+        - If you define `input` as `env` and a JSON input argument, DSC sets an environment variable
+          for each property in the JSON input and passes the JSON input object as a string to the
+          defined argument.
+        - If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over
+          stdin and as a string to the defined argument.
+        - If you define a JSON input argument without defining the `input` property, DSC only passes
+          the JSON input as a string to the defined argument.
+
+        If you don't define the `input` property and don't define a JSON input argument, DSC can't
+        pass the input JSON to the resource. This makes the manifest invalid. You must define the
+        `input` property, a JSON input argument in the `args` property array, or both.
+
+      required:
+        - jsonInputArg
+      unevaluatedProperties: false
+      properties:
+        jsonInputArg:
+          title: JSON input argument name
+          description: >-
+            Defines the argument that accepts the JSON property bag for the resource as input.
+          markdownDescription: |
+            Defines the argument that accepts the JSON property bag for the resource as input.
+          type: string
+        mandatory:
+          title: Mandatory argument
+          description: >-
+            Defines whether the argument is mandatory. If this property is set to `true`, DSC
+            passes an empty string when no JSON input is provided. The default value is `false`.
+          markdownDescription: |
+            Defines whether the argument is mandatory. If this property is set to `true`, DSC
+            passes an empty string when no JSON input is provided. The default value is `false`.
+          type: boolean
+          default: false

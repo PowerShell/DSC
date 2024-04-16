@@ -383,10 +383,57 @@
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
                     "title": "Executable Command Arguments",
-                    "description": "The list of arguments to pass to the command.",
+                    "description": "The list of arguments to pass to the command. The arguments can be any number of strings. If you want to pass the JSON object representing the property bag for the resource to an argument, you can define a single item in the array as a JSON object, indicating the name of the argument with the `jsonInputArg` string property and whether the argument is mandatory for the command with the `mandatory` boolean property.",
                     "type": "array",
                     "items": {
-                      "type": "string"
+                      "defaultSnippets": [
+                        {
+                          "label": "String argument",
+                          "markdownDescription": "Add a string argument to the command, like `config` or `--config`.",
+                          "body": "${1:argument_name}"
+                        },
+                        {
+                          "label": "JSON input argument",
+                          "markdownDescription": "Add a JSON input argument to the command. A command can only define one JSON input argument\nin the `args` list. When you define a JSON input argument, DSC passes the input data for\nthe command to the specified argument as a string representing the data as a compressed\nJSON object. The compressed JSON object doesn't have any spaces or newlines between the\nobject properties and values.\n\nIf the command doesn't define the `input` property, it must define a JSON input argument.\n\nIf the command defines both the `input` property and a JSON input argument, DSC sends the\ninput data to the command in both ways. For example, if the command defines `input` as\n`stdin` and has a JSON input argument in `args`, DSC sends the input data as a compressed\nJSON object over stdin and to the the specified argument.",
+                          "body": {
+                            "jsonInputArg": "${1:argument_name}",
+                            "mandatory": "^$2"
+                          }
+                        }
+                      ],
+                      "oneOf": [
+                        {
+                          "type": "string",
+                          "title": "String argument",
+                          "description": "Any item in the argument array can be a string representing a static argument to pass to the command.",
+                          "markdownDescription": "Any item in the argument array can be a string representing a static argument to pass to\nthe command.\n"
+                        },
+                        {
+                          "type": "object",
+                          "title": "JSON input argument",
+                          "description": "Defines an argument for the command that accepts the JSON input object as a string. DSC passes the JSON input to the named argument when available. You can define the `mandatory` property to indicate whether DSC should always pass the argument to the command, even when there's no JSON input for the command. In that case, DSC passes an empty string to the JSON input argument. You can only define one JSON input argument per arguments array.",
+                          "markdownDescription": "Defines an argument for the command that accepts the JSON input object as a string. DSC\npasses the JSON input to the named argument when available. You can define the `mandatory`\nproperty to indicate whether DSC should always pass the argument to the command, even when\nthere's no JSON input for the command. In that case, DSC passes an empty string to the\nJSON input argument. You can only define one JSON input argument per arguments array.\n\nIf you define a JSON input argument and an `input` kind for a command, DSC sends the JSON\ndata both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n",
+                          "required": [
+                            "jsonInputArg"
+                          ],
+                          "unevaluatedProperties": false,
+                          "properties": {
+                            "jsonInputArg": {
+                              "title": "JSON input argument name",
+                              "description": "Defines the argument that accepts the JSON property bag for the resource as input.",
+                              "markdownDescription": "Defines the argument that accepts the JSON property bag for the resource as input.\n",
+                              "type": "string"
+                            },
+                            "mandatory": {
+                              "title": "Mandatory argument",
+                              "description": "Defines whether the argument is mandatory. If this property is set to `true`, DSC passes an empty string when no JSON input is provided. The default value is `false`.",
+                              "markdownDescription": "Defines whether the argument is mandatory. If this property is set to `true`, DSC\npasses an empty string when no JSON input is provided. The default value is `false`.\n",
+                              "type": "boolean",
+                              "default": false
+                            }
+                          }
+                        }
+                      ]
                     }
                   },
                   "inputKind.json": {
@@ -423,7 +470,7 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.get.json",
                     "title": "Get Method",
                     "description": "Defines how DSC must call the DSC Resource to get the current state of an instance.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to get the current state of an instance.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to get the current state of an instance.\n\nDSC sends data to the command in three ways:\n\n1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed\n   JSON object without spaces or newlines between the object properties.\n1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment\n   variable for each property in the input data object, using the name and value of the property.\n1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string\n   representing the data as a compressed JSON object to the specified argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't pass\nthe input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or\nboth.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
                       "executable"
@@ -435,43 +482,91 @@
                       },
                       "args": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"get\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config get\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true#args\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\",\n  \"args\":       [\"config\", \"get\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config get\n```\n\nIf you want to pass the JSON object representing the property bag for a resource instance to\nan argument, you can define a single item in the array as a JSON object. Indicate the name of\nthe argument with the `jsonInputArg` string property and whether the argument is mandatory\nfor the command with the `mandatory` boolean property. When the `mandatory` property is\ndefined as `true`, DSC passes an empty string to the argument when no JSON input is\navailable. When the `mandatory` property is undefined or defined as `false`, DSC doesn't pass\nthe argument at all when no JSON input is available. The default value for the `mandatory`\nproperty is `false`.\n\nFor example, given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\"\n  \"args\":       [\n    \"config\",\n    \"get\",\n    { \"jsonInputArg\": \"--properties\" }\n  ]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config get --properties <JSON string of instance properties>\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true#args\n"
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. If this value isn't defined, DSC doesn't send the resource any input when\ninvoking the `get` operation.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. This property is optional when you define an object in the `args` list. If\nyou define a JSON input argument and an `input`, DSC sends the JSON data both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true#input\n"
                       }
                     },
-                    "examples": [
+                    "oneOf": [
                       {
-                        "executable": "registry",
-                        "args": [
-                          "config",
-                          "get"
+                        "required": [
+                          "input"
                         ],
-                        "input": "stdin"
+                        "not": {
+                          "properties": {
+                            "args": {
+                              "contains": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
                       },
                       {
-                        "executable": "osinfo"
+                        "not": {
+                          "required": [
+                            "input"
+                          ]
+                        },
+                        "properties": {
+                          "args": {
+                            "errorMessage": "The `get` command doesn't define either the `input` property or a JSON input argument, or it defines more than one JSON input argument. If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or both. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
+                      },
+                      {
+                        "required": [
+                          "input"
+                        ],
+                        "properties": {
+                          "args": {
+                            "errorMessage": "You can only specify one JSON input argument for the `get` command. Remove the extra JSON input argument. When you use the JSON input argument, DSC sends the full JSON object as a string to the named argument.\n\nFor more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
                       }
                     ],
                     "defaultSnippets": [
                       {
                         "label": " Define without arguments",
-                        "markdownDescription": "Define the get command for the resource when no arguments are required.\n",
+                        "markdownDescription": "Define the `get` command for the resource when no arguments are required and the JSON\ninput is sent over stdin or as environment variables.\n",
                         "body": {
                           "input": "${1|stdin,env|}",
                           "executable": "${2:executable_name}"
                         }
                       },
                       {
-                        "label": " Define with arguments",
-                        "markdownDescription": "Define the get command for the resource when at least one argument is required.\n",
+                        "label": " Define with string arguments",
+                        "markdownDescription": "Define the `get` command for the resource when at least one argument is required and the\nJSON input is sent over stdin or as environment variables.",
                         "body": {
                           "input": "${1|stdin,env|}",
                           "executable": "${2:executable_name}",
                           "args": [
                             "${3:--first-argument}"
+                          ]
+                        }
+                      },
+                      {
+                        "label": " Define with a JSON input argument",
+                        "markdownDescription": "Define the `get` command for the resource where the JSON input is passed as a one-line\nJSON object string to the specified argument.",
+                        "body": {
+                          "executable": "${1:executable_name}",
+                          "args": [
+                            {
+                              "jsonInputArg": "${2:argument_name}",
+                              "mandatory": "^$3"
+                            }
                           ]
                         }
                       }
@@ -482,11 +577,10 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json",
                     "title": "Set Method",
                     "description": "Defines how DSC must call the DSC Resource to set the desired state of an instance and how to process the output from the DSC Resource.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to set the desired state of an instance and how to\nprocess the output from the DSC Resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to set the desired state of an instance and how to\nprocess the output from the DSC Resource.\n\nDSC sends data to the command in three ways:\n\n1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed\n   JSON object without spaces or newlines between the object properties.\n1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment\n   variable for each property in the input data object, using the name and value of the property.\n1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string\n   representing the data as a compressed JSON object to the specified argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't pass\nthe input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or\nboth.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
-                      "executable",
-                      "input"
+                      "executable"
                     ],
                     "properties": {
                       "executable": {
@@ -495,11 +589,11 @@
                       },
                       "args": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"set\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config set\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#args\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\",\n  \"args\":       [\"config\", \"set\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config set\n```\n\nIf you want to pass the JSON object representing the property bag for a resource instance to\nan argument, you can define a single item in the array as a JSON object. Indicate the name of\nthe argument with the `jsonInputArg` string property and whether the argument is mandatory\nfor the command with the `mandatory` boolean property.` When the `mandatory` property is\ndefined as `true`, DSC passes an empty string to the argument when no JSON input is\navailable. When the `mandatory` property is undefined or defined as `false`, DSC doesn't pass\nthe argument at all when no JSON input is available. The default value for the `mandatory`\nproperty is `false`.\n\nFor example, given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\"\n  \"args\":       [\n    \"config\",\n    \"set\",\n    { \"jsonInputArg\": \"--properties\" }\n  ]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config set --properties <JSON string of instance properties>\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#args\n"
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. This property is optional when you define an object in the `args` list. If\nyou define a JSON input argument and an `input`, DSC sends the JSON data both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
                       },
                       "implementsPretest": {
                         "title": "Resource Performs Pre-Test",
@@ -525,39 +619,90 @@
                         ]
                       }
                     },
-                    "examples": [
+                    "oneOf": [
                       {
-                        "executable": "registry",
-                        "args": [
-                          "config",
-                          "set"
+                        "required": [
+                          "input"
                         ],
-                        "input": "stdin",
-                        "implementsPretest": true,
-                        "return": "state"
+                        "not": {
+                          "properties": {
+                            "args": {
+                              "contains": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "not": {
+                          "required": [
+                            "input"
+                          ]
+                        },
+                        "properties": {
+                          "args": {
+                            "errorMessage": "The `set` command doesn't define either the `input` property or a JSON input argument, or it defines more than one JSON input argument. If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or both. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
+                      },
+                      {
+                        "required": [
+                          "input"
+                        ],
+                        "properties": {
+                          "args": {
+                            "errorMessage": "You can only specify one JSON input argument for the `set` command. Remove the extra JSON input argument. When you use the JSON input argument, DSC sends the full JSON object as a string to the named argument.\n\nFor more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
                       }
                     ],
                     "defaultSnippets": [
                       {
                         "label": " Define without arguments",
-                        "markdownDescription": "Define the `set` command for the resource when no arguments are required.\n",
+                        "markdownDescription": "Define the `set` command for the resource when no arguments are required and the JSON\ninput is sent over stdin or as environment variables.\n",
                         "body": {
-                          "input": "${1|input,env|}",
+                          "input": "${1|stdin,env|}",
                           "implementsPretest": "^${2|true,false|}",
                           "return": "${3|state,stateAndDiff|}",
                           "executable": "${4:executable_name}"
                         }
                       },
                       {
-                        "label": " Define with arguments",
-                        "markdownDescription": "Define the `set` command for the resource when at least one argument is required.\n",
+                        "label": " Define with string arguments",
+                        "markdownDescription": "Define the `set` command for the resource when at least one argument is required and the\nJSON input is sent over stdin or as environment variables.",
                         "body": {
-                          "input": "${1|input,env|}",
+                          "input": "${1|stdin,env|}",
                           "implementsPretest": "^${2|true,false|}",
                           "return": "${3|state,stateAndDiff|}",
                           "executable": "${4:executable_name}",
                           "args": [
                             "${5:--first-argument}"
+                          ]
+                        }
+                      },
+                      {
+                        "label": " Define with a JSON input argument",
+                        "markdownDescription": "Define the `set` command for the resource where the JSON input is passed as a one-line\nJSON object string to the specified argument.",
+                        "body": {
+                          "implementsPretest": "^${1|true,false|}",
+                          "return": "${2|state,stateAndDiff|}",
+                          "executable": "${3:executable_name}",
+                          "args": [
+                            {
+                              "jsonInputArg": "${4:argument_name}",
+                              "mandatory": "^$5"
+                            }
                           ]
                         }
                       }
@@ -568,24 +713,23 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.test.json",
                     "title": "Test Method",
                     "description": "Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how to process the output from the DSC Resource.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to test if an instance is in the desired state and how\nto process the output from the DSC Resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to test if an instance is in the desired state and how\nto process the output from the DSC Resource.\n\nDSC sends data to the command in three ways:\n\n1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed\n   JSON object without spaces or newlines between the object properties.\n1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment\n   variable for each property in the input data object, using the name and value of the property.\n1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string\n   representing the data as a compressed JSON object to the specified argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't pass\nthe input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or\nboth.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
-                      "executable",
-                      "input"
+                      "executable"
                     ],
                     "properties": {
                       "executable": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#executable\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true#executable\n"
                       },
                       "args": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"test\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config test\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#args\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\",\n  \"args\":       [\"config\", \"test\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config test\n```\n\nIf you want to pass the JSON object representing the property bag for a resource instance to\nan argument, you can define a single item in the array as a JSON object. Indicate the name of\nthe argument with the `jsonInputArg` string property and whether the argument is mandatory\nfor the command with the `mandatory` boolean property.` When the `mandatory` property is\ndefined as `true`, DSC passes an empty string to the argument when no JSON input is\navailable. When the `mandatory` property is undefined or defined as `false`, DSC doesn't pass\nthe argument at all when no JSON input is available. The default value for the `mandatory`\nproperty is `false`.\n\nFor example, given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\"\n  \"args\":       [\n    \"config\",\n    \"test\",\n    { \"jsonInputArg\": \"--properties\" }\n  ]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config test --properties <JSON string of instance properties>\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true#args\n"
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. This property is optional when you define an object in the `args` list. If\nyou define a JSON input argument and an `input`, DSC sends the JSON data both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true#input\n"
                       },
                       "return": {
                         "title": "Test Command Return Type",
@@ -598,36 +742,87 @@
                         ]
                       }
                     },
-                    "examples": [
+                    "oneOf": [
                       {
-                        "executable": "registry",
-                        "args": [
-                          "config",
-                          "test"
+                        "required": [
+                          "input"
                         ],
-                        "input": "stdin",
-                        "return": "state"
+                        "not": {
+                          "properties": {
+                            "args": {
+                              "contains": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "not": {
+                          "required": [
+                            "input"
+                          ]
+                        },
+                        "properties": {
+                          "args": {
+                            "errorMessage": "The `test` command doesn't define either the `input` property or a JSON input argument, or it defines more than one JSON input argument. If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or both. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
+                      },
+                      {
+                        "required": [
+                          "input"
+                        ],
+                        "properties": {
+                          "args": {
+                            "errorMessage": "You can only specify one JSON input argument for the `test` command. Remove the extra JSON input argument. When you use the JSON input argument, DSC sends the full JSON object as a string to the named argument.\n\nFor more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
                       }
                     ],
                     "defaultSnippets": [
                       {
                         "label": " Define without arguments",
-                        "markdownDescription": "Define the `test` command for the resource when no arguments are required.\n",
+                        "markdownDescription": "Define the `test` command for the resource when no arguments are required and the JSON\ninput is sent over stdin or as environment variables.\n",
                         "body": {
-                          "input": "${1|input,env|}",
+                          "input": "${1|stdin,env|}",
                           "return": "${2|state,stateAndDiff|}",
                           "executable": "${3:executable_name}"
                         }
                       },
                       {
-                        "label": " Define with arguments",
-                        "markdownDescription": "Define the `test` command for the resource when at least one argument is required.\n",
+                        "label": " Define with string arguments",
+                        "markdownDescription": "Define the `test` command for the resource when at least one argument is required and the\nJSON input is sent over stdin or as environment variables.",
                         "body": {
-                          "input": "${1|input,env|}",
+                          "input": "${1|stdin,env|}",
                           "return": "${2|state,stateAndDiff|}",
                           "executable": "${3:executable_name}",
                           "args": [
                             "${4:--first-argument}"
+                          ]
+                        }
+                      },
+                      {
+                        "label": " Define with a JSON input argument",
+                        "markdownDescription": "Define the `test` command for the resource where the JSON input is passed as a one-line\nJSON object string to the specified argument.",
+                        "body": {
+                          "return": "${1|state,stateAndDiff|}",
+                          "executable": "${2:executable_name}",
+                          "args": [
+                            {
+                              "jsonInputArg": "${3:argument_name}",
+                              "mandatory": "^$4"
+                            }
                           ]
                         }
                       }
@@ -638,11 +833,10 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json",
                     "title": "Delete method",
                     "description": "Defines how DSC must call the DSC Resource to delete an instance. Define this method for resources as an alternative to handling the `_exist` property in a `set` operation, which can lead to highly complex code. If the `set` operation for the resource is able to handle deleting an instance when `_exist` is `false`, set the `handlesExist` property of the set method definition to `true` instead.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to delete an instance. Define this method for\nresources as an alternative to handling the [`_exist`][02] property in a `set` operation, which\ncan lead to highly complex code. If the `set` method for the resource is able to handle deleting\nan instance when `_exist` is `false`, set the [`handlesExist`][03] property of the set method\ndefinition to `true` instead.\n\nIf you define the delete method in a resource manifest, ensure that you also define the\n[`_exist`][02] property in the [JSON schema for the resource's properties][04].\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/exist?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#handlesExist\n[04]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserve-view=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to delete an instance. Define this method for\nresources as an alternative to handling the [`_exist`][02] property in a `set` operation, which\ncan lead to highly complex code. If the `set` method for the resource is able to handle deleting\nan instance when `_exist` is `false`, set the [`handlesExist`][03] property of the set method\ndefinition to `true` instead.\n\nIf you define the delete method in a resource manifest, ensure that you also define the\n[`_exist`][02] property in the [JSON schema for the resource's properties][04].\n\nDSC sends data to the command in three ways:\n\n1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed\n   JSON object without spaces or newlines between the object properties.\n1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment\n   variable for each property in the input data object, using the name and value of the property.\n1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string\n   representing the data as a compressed JSON object to the specified argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't pass\nthe input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or\nboth.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/exist?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#handlesExist\n[04]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
-                      "executable",
-                      "input"
+                      "executable"
                     ],
                     "properties": {
                       "executable": {
@@ -651,45 +845,92 @@
                       },
                       "args": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"delete\"]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config delete\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true#args\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\",\n  \"args\":       [\"config\", \"delete\"]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config delete\n```\n\nIf you want to pass the JSON object representing the property bag for a resource instance to\nan argument, you can define a single item in the array as a JSON object. Indicate the name of\nthe argument with the `jsonInputArg` string property and whether the argument is mandatory\nfor the command with the `mandatory` boolean property.` When the `mandatory` property is\ndefined as `true`, DSC passes an empty string to the argument when no JSON input is\navailable. When the `mandatory` property is undefined or defined as `false`, DSC doesn't pass\nthe argument at all when no JSON input is available. The default value for the `mandatory`\nproperty is `false`.\n\nFor example, given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\"\n  \"args\":       [\n    \"config\",\n    \"set\",\n    { \"jsonInputArg\": \"--properties\" }\n  ]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config set --properties <JSON string of instance properties>\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true#args\n"
                       },
                       "input": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true#input\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. This property is optional when you define an object in the `args` list. If\nyou define a JSON input argument and an `input`, DSC sends the JSON data both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true#input\n"
                       }
                     },
-                    "examples": [
+                    "oneOf": [
                       {
-                        "executable": "registry",
-                        "args": [
-                          "config",
-                          "delete",
-                          "--input",
-                          "{json}"
+                        "required": [
+                          "input"
                         ],
-                        "input": {
-                          "arg": "{json}"
+                        "not": {
+                          "properties": {
+                            "args": {
+                              "contains": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "not": {
+                          "required": [
+                            "input"
+                          ]
+                        },
+                        "properties": {
+                          "args": {
+                            "errorMessage": "The `delete` command doesn't define either the `input` property or a JSON input argument, or it defines more than one JSON input argument. If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or both. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
+                      },
+                      {
+                        "required": [
+                          "input"
+                        ],
+                        "properties": {
+                          "args": {
+                            "errorMessage": "You can only specify one JSON input argument for the `delete` command. Remove the extra JSON input argument. When you use the JSON input argument, DSC sends the full JSON object as a string to the named argument.\n\nFor more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
                         }
                       }
                     ],
                     "defaultSnippets": [
                       {
                         "label": " Define without arguments",
-                        "markdownDescription": "Define the `validate` command for the resource when no arguments are required.\n",
+                        "markdownDescription": "Define the `delete` command for the resource when no arguments are required and the JSON\ninput is sent over stdin or as environment variables.\n",
                         "body": {
-                          "executable": "${1:executable_name}",
-                          "input": "${2:stdin}"
+                          "input": "${1|stdin,env|}",
+                          "executable": "${2:executable_name}"
                         }
                       },
                       {
-                        "label": " Define with arguments",
-                        "markdownDescription": "Define the `validate` command for the resource when at least one argument is required.\n",
+                        "label": " Define with string arguments",
+                        "markdownDescription": "Define the `delete` command for the resource when at least one argument is required and the\nJSON input is sent over stdin or as environment variables.",
+                        "body": {
+                          "input": "${1|stdin,env|}",
+                          "executable": "${2:executable_name}",
+                          "args": [
+                            "${3:--first-argument}"
+                          ]
+                        }
+                      },
+                      {
+                        "label": " Define with a JSON input argument",
+                        "markdownDescription": "Define the `delete` command for the resource where the JSON input is passed as a one-line\nJSON object string to the specified argument.",
                         "body": {
                           "executable": "${1:executable_name}",
                           "args": [
-                            "${2:--first-argument}"
-                          ],
-                          "input": "${3:stdin}"
+                            {
+                              "jsonInputArg": "${2:argument_name}",
+                              "mandatory": "^$3"
+                            }
+                          ]
                         }
                       }
                     ]
@@ -697,9 +938,9 @@
                   "manifest.export.json": {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json",
-                    "title": "Get Method",
+                    "title": "Export Method",
                     "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to get the current state of every instance.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to get the current state of every instance.\n\nDSC sends data to the command in three ways:\n\n1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed\n   JSON object without spaces or newlines between the object properties.\n1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment\n   variable for each property in the input data object, using the name and value of the property.\n1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string\n   representing the data as a compressed JSON object to the specified argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't pass\nthe input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or\nboth.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
                       "executable"
@@ -711,24 +952,91 @@
                       },
                       "args": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"export\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config export\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true#args\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\",\n  \"args\":       [\"config\", \"export\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config export\n```\n\nIf you want to pass the JSON object representing the property bag for a resource instance to\nan argument, you can define a single item in the array as a JSON object. Indicate the name of\nthe argument with the `jsonInputArg` string property and whether the argument is mandatory\nfor the command with the `mandatory` boolean property.` When the `mandatory` property is\ndefined as `true`, DSC passes an empty string to the argument when no JSON input is\navailable. When the `mandatory` property is undefined or defined as `false`, DSC doesn't pass\nthe argument at all when no JSON input is available. The default value for the `mandatory`\nproperty is `false`.\n\nFor example, given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\"\n  \"args\":       [\n    \"config\",\n    \"export\",\n    { \"jsonInputArg\": \"--properties\" }\n  ]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config export --properties <JSON string of instance properties>\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true#args\n"
+                      },
+                      "input": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. This property is optional when you define an object in the `args` list. If\nyou define a JSON input argument and an `input`, DSC sends the JSON data both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true#input\n"
                       }
                     },
-                    "defaultSnippets": [
+                    "oneOf": [
                       {
-                        "label": " Define without arguments",
-                        "markdownDescription": "Define the export command for the resource when no arguments are required.\n",
-                        "body": {
-                          "executable": "${1:executable_name}"
+                        "required": [
+                          "input"
+                        ],
+                        "not": {
+                          "properties": {
+                            "args": {
+                              "contains": {
+                                "type": "object"
+                              }
+                            }
+                          }
                         }
                       },
                       {
-                        "label": " Define with arguments",
-                        "markdownDescription": "Define the export command for the resource when at least one argument is required.\n",
+                        "not": {
+                          "required": [
+                            "input"
+                          ]
+                        },
+                        "properties": {
+                          "args": {
+                            "errorMessage": "The `export` command doesn't define either the `input` property or a JSON input argument, or it defines more than one JSON input argument. If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or both. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
+                      },
+                      {
+                        "required": [
+                          "input"
+                        ],
+                        "properties": {
+                          "args": {
+                            "errorMessage": "You can only specify one JSON input argument for the `export` command. Remove the extra JSON input argument. When you use the JSON input argument, DSC sends the full JSON object as a string to the named argument.\n\nFor more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
+                      }
+                    ],
+                    "defaultSnippets": [
+                      {
+                        "label": " Define without arguments",
+                        "markdownDescription": "Define the `export` command for the resource when no arguments are required and the JSON\ninput is sent over stdin or as environment variables.\n",
+                        "body": {
+                          "input": "${1|stdin,env|}",
+                          "executable": "${2:executable_name}"
+                        }
+                      },
+                      {
+                        "label": " Define with string arguments",
+                        "markdownDescription": "Define the `export` command for the resource when at least one argument is required and the\nJSON input is sent over stdin or as environment variables.",
+                        "body": {
+                          "input": "${1|stdin,env|}",
+                          "executable": "${2:executable_name}",
+                          "args": [
+                            "${3:--first-argument}"
+                          ]
+                        }
+                      },
+                      {
+                        "label": " Define with a JSON input argument",
+                        "markdownDescription": "Define the `export` command for the resource where the JSON input is passed as a one-line\nJSON object string to the specified argument.",
                         "body": {
                           "executable": "${1:executable_name}",
                           "args": [
-                            "${2:--first-argument}"
+                            {
+                              "jsonInputArg": "${2:argument_name}",
+                              "mandatory": "^3"
+                            }
                           ]
                         }
                       }
@@ -739,7 +1047,7 @@
                     "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json",
                     "title": "Validate Method",
                     "description": "Defines how DSC must call the DSC Resource to validate the state of an instance. This method is mandatory for DSC Group Resources. It's ignored for all other DSC Resources.",
-                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to validate the state of an instance. This method is\nmandatory for DSC Group Resources. It's ignored for all other DSC Resources.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserve-view=true\n",
+                    "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to validate the state of an instance. This method is\nmandatory for DSC Group Resources. It's ignored for all other DSC Resources.\n\nDSC sends data to the command in three ways:\n\n1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed\n   JSON object without spaces or newlines between the object properties.\n1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment\n   variable for each property in the input data object, using the name and value of the property.\n1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string\n   representing the data as a compressed JSON object to the specified argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't pass\nthe input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or\nboth.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserve-view=true\n",
                     "type": "object",
                     "required": [
                       "executable"
@@ -747,37 +1055,95 @@
                     "properties": {
                       "executable": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#executable\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserve-view=true#executable\n"
                       },
                       "args": {
                         "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"config\", \"validate\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry config validate\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#args\n"
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\",\n  \"args\":       [\"config\", \"validate\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config validate\n```\n\nIf you want to pass the JSON object representing the property bag for a resource instance to\nan argument, you can define a single item in the array as a JSON object. Indicate the name of\nthe argument with the `jsonInputArg` string property and whether the argument is mandatory\nfor the command with the `mandatory` boolean property.` When the `mandatory` property is\ndefined as `true`, DSC passes an empty string to the argument when no JSON input is\navailable. When the `mandatory` property is undefined or defined as `false`, DSC doesn't pass\nthe argument at all when no JSON input is available. The default value for the `mandatory`\nproperty is `false`.\n\nFor example, given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\"\n  \"args\":       [\n    \"config\",\n    \"validate\",\n    { \"jsonInputArg\": \"--properties\" }\n  ]\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource config validate --properties <JSON string of instance properties>\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserve-view=true#args\n"
+                      },
+                      "input": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json",
+                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should pass input to the command, either as environment variables or JSON\nover `stdin`. This property is optional when you define an object in the `args` list. If\nyou define a JSON input argument and an `input`, DSC sends the JSON data both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserve-view=true#input\n"
                       }
                     },
-                    "examples": [
+                    "oneOf": [
                       {
-                        "executable": "dsc",
-                        "args": [
-                          "config",
-                          "validate"
-                        ]
+                        "required": [
+                          "input"
+                        ],
+                        "not": {
+                          "properties": {
+                            "args": {
+                              "contains": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "not": {
+                          "required": [
+                            "input"
+                          ]
+                        },
+                        "properties": {
+                          "args": {
+                            "errorMessage": "The `validate` command doesn't define either the `input` property or a JSON input argument, or it defines more than one JSON input argument. If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the input JSON to the resource. You can only define one JSON input argument for a command.\n\nYou must define the `input` property, one JSON input argument in the `args` property array, or both. For more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
+                      },
+                      {
+                        "required": [
+                          "input"
+                        ],
+                        "properties": {
+                          "args": {
+                            "errorMessage": "You can only specify one JSON input argument for the `validate` command. Remove the extra JSON input argument. When you use the JSON input argument, DSC sends the full JSON object as a string to the named argument.\n\nFor more information, see:\n\nhttps://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/validate?view=dsc-3.0&preserve-view=true",
+                            "contains": {
+                              "type": "object"
+                            },
+                            "minContains": 1,
+                            "maxContains": 1
+                          }
+                        }
                       }
                     ],
                     "defaultSnippets": [
                       {
                         "label": " Define without arguments",
-                        "markdownDescription": "Define the `validate` command for the resource when no arguments are required.\n",
+                        "markdownDescription": "Define the `validate` command for the resource when no arguments are required and the JSON\ninput is sent over stdin or as environment variables.\n",
                         "body": {
-                          "executable": "${1:executable_name}"
+                          "input": "${1|stdin,env|}",
+                          "executable": "${2:executable_name}"
                         }
                       },
                       {
-                        "label": " Define with arguments",
-                        "markdownDescription": "Define the `validate` command for the resource when at least one argument is required.\n",
+                        "label": " Define with string arguments",
+                        "markdownDescription": "Define the `validate` command for the resource when at least one argument is required and the\nJSON input is sent over stdin or as environment variables.",
+                        "body": {
+                          "input": "${1|stdin,env|}",
+                          "executable": "${2:executable_name}",
+                          "args": [
+                            "${3:--first-argument}"
+                          ]
+                        }
+                      },
+                      {
+                        "label": " Define with a JSON input argument",
+                        "markdownDescription": "Define the `validate` command for the resource where the JSON input is passed as a one-line\nJSON object string to the specified argument.",
                         "body": {
                           "executable": "${1:executable_name}",
                           "args": [
-                            "${2:--first-argument}"
+                            {
+                              "jsonInputArg": "${2:argument_name}",
+                              "mandatory": "^$3"
+                            }
                           ]
                         }
                       }
@@ -809,7 +1175,12 @@
                             "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/adapter?view=dsc-3.0&preserve-view=true#executable\n"
                           },
                           "args": {
-                            "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "title": "Command arguments",
+                            "description": "Defines the list of arguments to pass to the command to return the list of supported DSC Resources.",
                             "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"resources\", \"list\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry resources list\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/adapter?view=dsc-3.0&preserve-view=true#args\n"
                           }
                         }
@@ -849,7 +1220,7 @@
                         "label": " Define without arguments",
                         "markdownDescription": "Define the adapter config kind and `list` command for the resource when no arguments are\nrequired.\n",
                         "body": {
-                          "config": "$1",
+                          "config": "${1|full,sequence}",
                           "list": {
                             "executable": "${2:executable_name}"
                           }
@@ -859,7 +1230,7 @@
                         "label": " Define with arguments",
                         "markdownDescription": "Define the adapter config kind and `list` command for the resource when at least one\nargument is required.\n",
                         "body": {
-                          "config": "$1",
+                          "config": "${1|full,sequence}",
                           "list": {
                             "executable": "${2:executable_name}",
                             "args": [
@@ -899,11 +1270,16 @@
                         "properties": {
                           "executable": {
                             "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json",
-                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#executable\n"
+                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserve-view=true#executable\n"
                           },
                           "args": {
-                            "$ref": "#/$defs/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
-                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"registry\",\n  \"args\":       [\"schema\", \"resource\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nregistry schema resource\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true#args\n"
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "title": "Command arguments",
+                            "description": "Defines the list of arguments to pass to the command to return the JSON Schema for the resource.",
+                            "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myresource\",\n  \"args\":       [\"schema\", \"show\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyresource schema show\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserve-view=true#args\n"
                           }
                         },
                         "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob\nrepresenting an instance of the DSC Resource.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserve-view=true#command\n",

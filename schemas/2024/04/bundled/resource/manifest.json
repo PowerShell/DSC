@@ -156,17 +156,50 @@
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
         }
       },
-      "examples": [
+      "oneOf": [
         {
-          "executable": "registry",
-          "args": [
-            "config",
-            "get"
+          "required": [
+            "input"
           ],
-          "input": "stdin"
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
         },
         {
-          "executable": "osinfo"
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
         }
       ]
     },
@@ -177,8 +210,7 @@
       "description": "Defines how DSC must call the DSC Resource to set the desired state of an instance and how to process the output from the DSC Resource.",
       "type": "object",
       "required": [
-        "executable",
-        "input"
+        "executable"
       ],
       "properties": {
         "executable": {
@@ -207,16 +239,50 @@
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/returnKind.json"
         }
       },
-      "examples": [
+      "oneOf": [
         {
-          "executable": "registry",
-          "args": [
-            "config",
-            "set"
+          "required": [
+            "input"
           ],
-          "input": "stdin",
-          "implementsPretest": true,
-          "return": "state"
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
         }
       ]
     },
@@ -227,8 +293,7 @@
       "description": "Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how to process the output from the DSC Resource.",
       "type": "object",
       "required": [
-        "executable",
-        "input"
+        "executable"
       ],
       "properties": {
         "executable": {
@@ -246,15 +311,50 @@
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/returnKind.json"
         }
       },
-      "examples": [
+      "oneOf": [
         {
-          "executable": "registry",
-          "args": [
-            "config",
-            "test"
+          "required": [
+            "input"
           ],
-          "input": "stdin",
-          "return": "state"
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
         }
       ]
     },
@@ -265,8 +365,7 @@
       "description": "Defines how DSC must call the DSC Resource to delete an instance. Define this method for resources as an alternative to handling the `_exist` property in a `set` operation, which can lead to highly complex code. If the `set` operation for the resource is able to handle deleting an instance when `_exist` is `false`, set the `handlesExist` property of the set method definition to `true` instead.",
       "type": "object",
       "required": [
-        "executable",
-        "input"
+        "executable"
       ],
       "properties": {
         "executable": {
@@ -279,17 +378,49 @@
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
         }
       },
-      "examples": [
+      "oneOf": [
         {
-          "executable": "registry",
-          "args": [
-            "config",
-            "delete",
-            "--input",
-            "{json}"
+          "required": [
+            "input"
           ],
-          "input": {
-            "arg": "{json}"
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
           }
         }
       ]
@@ -297,7 +428,7 @@
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.export.json",
-      "title": "Get Method",
+      "title": "Export Method",
       "description": "Defines how DSC must call the DSC Resource to get the current state of every instance.",
       "type": "object",
       "required": [
@@ -309,8 +440,57 @@
         },
         "args": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "input"
+          ],
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        }
+      ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -327,15 +507,55 @@
         },
         "args": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
         }
       },
-      "examples": [
+      "oneOf": [
         {
-          "executable": "dsc",
-          "args": [
-            "config",
-            "validate"
-          ]
+          "required": [
+            "input"
+          ],
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
         }
       ]
     },
@@ -362,7 +582,12 @@
               "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
             },
             "args": {
-              "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "title": "Command arguments",
+              "description": "Defines the list of arguments to pass to the command to return the list of supported DSC Resources."
             }
           }
         },
@@ -423,7 +648,12 @@
               "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
             },
             "args": {
-              "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "title": "Command arguments",
+              "description": "Defines the list of arguments to pass to the command to return the JSON Schema for the resource."
             }
           }
         },
@@ -599,10 +829,38 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json",
       "title": "Executable Command Arguments",
-      "description": "The list of arguments to pass to the command.",
+      "description": "The list of arguments to pass to the command. The arguments can be any number of strings. If you want to pass the JSON object representing the property bag for the resource to an argument, you can define a single item in the array as a JSON object, indicating the name of the argument with the `jsonInputArg` string property and whether the argument is mandatory for the command with the `mandatory` boolean property.",
       "type": "array",
       "items": {
-        "type": "string"
+        "oneOf": [
+          {
+            "type": "string",
+            "title": "String argument",
+            "description": "Any item in the argument array can be a string representing a static argument to pass to the command."
+          },
+          {
+            "type": "object",
+            "title": "JSON input argument",
+            "description": "Defines an argument for the command that accepts the JSON input object as a string. DSC passes the JSON input to the named argument when available. You can define the `mandatory` property to indicate whether DSC should always pass the argument to the command, even when there's no JSON input for the command. In that case, DSC passes an empty string to the JSON input argument. You can only define one JSON input argument per arguments array.",
+            "required": [
+              "jsonInputArg"
+            ],
+            "unevaluatedProperties": false,
+            "properties": {
+              "jsonInputArg": {
+                "title": "JSON input argument name",
+                "description": "Defines the argument that accepts the JSON property bag for the resource as input.",
+                "type": "string"
+              },
+              "mandatory": {
+                "title": "Mandatory argument",
+                "description": "Defines whether the argument is mandatory. If this property is set to `true`, DSC passes an empty string when no JSON input is provided. The default value is `false`.",
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        ]
       }
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json": {

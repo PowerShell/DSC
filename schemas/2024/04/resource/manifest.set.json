@@ -5,8 +5,7 @@
   "description": "Defines how DSC must call the DSC Resource to set the desired state of an instance and how to process the output from the DSC Resource.",
   "type": "object",
   "required": [
-    "executable",
-    "input"
+    "executable"
   ],
   "properties": {
     "executable": {
@@ -35,16 +34,50 @@
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/returnKind.json"
     }
   },
-  "examples": [
+  "oneOf": [
     {
-      "executable": "registry",
-      "args": [
-        "config",
-        "set"
+      "required": [
+        "input"
       ],
-      "input": "stdin",
-      "implementsPretest": true,
-      "return": "state"
+      "not": {
+        "properties": {
+          "args": {
+            "contains": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "required": [
+          "input"
+        ]
+      },
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    },
+    {
+      "required": [
+        "input"
+      ],
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
     }
   ]
 }

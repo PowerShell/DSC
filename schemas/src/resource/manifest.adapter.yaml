@@ -51,7 +51,13 @@ properties:
 
           [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>#executable
       args:
-        $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+        type: array
+        items:
+          type: string
+        title: Command arguments
+        description: >-
+          Defines the list of arguments to pass to the command to return the list of supported DSC
+          Resources.
         markdownDescription: |
           ***
           [_Online Documentation_][01]
@@ -128,7 +134,7 @@ defaultSnippets: # VS Code only
       Define the adapter config kind and `list` command for the resource when no arguments are
       required.
     body:
-      config: $1
+      config: ${1|full,sequence}
       list:
         executable: ${2:executable_name}
 
@@ -137,7 +143,7 @@ defaultSnippets: # VS Code only
       Define the adapter config kind and `list` command for the resource when at least one
       argument is required.
     body:
-      config: $1
+      config: ${1|full,sequence}
       list:
         executable: ${2:executable_name}
         args:

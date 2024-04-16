@@ -5,8 +5,7 @@
   "description": "Defines how DSC must call the DSC Resource to delete an instance. Define this method for resources as an alternative to handling the `_exist` property in a `set` operation, which can lead to highly complex code. If the `set` operation for the resource is able to handle deleting an instance when `_exist` is `false`, set the `handlesExist` property of the set method definition to `true` instead.",
   "type": "object",
   "required": [
-    "executable",
-    "input"
+    "executable"
   ],
   "properties": {
     "executable": {
@@ -19,17 +18,49 @@
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
     }
   },
-  "examples": [
+  "oneOf": [
     {
-      "executable": "registry",
-      "args": [
-        "config",
-        "delete",
-        "--input",
-        "{json}"
+      "required": [
+        "input"
       ],
-      "input": {
-        "arg": "{json}"
+      "not": {
+        "properties": {
+          "args": {
+            "contains": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "required": [
+          "input"
+        ]
+      },
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    },
+    {
+      "required": [
+        "input"
+      ],
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
       }
     }
   ]

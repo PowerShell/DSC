@@ -18,17 +18,50 @@
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
     }
   },
-  "examples": [
+  "oneOf": [
     {
-      "executable": "registry",
-      "args": [
-        "config",
-        "get"
+      "required": [
+        "input"
       ],
-      "input": "stdin"
+      "not": {
+        "properties": {
+          "args": {
+            "contains": {
+              "type": "object"
+            }
+          }
+        }
+      }
     },
     {
-      "executable": "osinfo"
+      "not": {
+        "required": [
+          "input"
+        ]
+      },
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    },
+    {
+      "required": [
+        "input"
+      ],
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
     }
   ]
 }
