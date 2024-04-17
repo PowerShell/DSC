@@ -50,7 +50,7 @@ $filesForLinuxPackage = @(
     'powershell.resource.ps1',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'RunCommandOnSet'
+    'runcommandonset'
 )
 
 $filesForMacPackage = @(
@@ -63,7 +63,7 @@ $filesForMacPackage = @(
     'powershell.resource.ps1',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'RunCommandOnSet'
+    'runcommandonset'
 )
 
 ## Test if Rust is installed

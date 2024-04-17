@@ -150,6 +150,7 @@ extends:
             SourceFolder: "$(signSrcPath)"
             Contents: '*'
             TargetFolder: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
+            OverWrite: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -PackageType zip -Architecture $(buildName) -Release
@@ -204,7 +205,6 @@ extends:
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
-            dir -r ./bin
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
           displayName: 'Build x86_64-unknown-linux-gnu'
           condition: succeeded()
