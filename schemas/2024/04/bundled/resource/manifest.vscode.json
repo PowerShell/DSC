@@ -287,11 +287,11 @@
       "description": "This property defines a map of valid exit codes for the DSC Resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC Resource's exit codes.",
       "type": "object",
       "propertyNames": {
-        "pattern": "^[0-9]+$",
-        "patternErrorMessage": "Invalid exit code. Must be a string representing an integer greater than or equal to `0`.\n"
+        "pattern": "^-?[0-9]+$",
+        "patternErrorMessage": "Invalid exit code. Must be a string representing a 32-bit signed integer.\n"
       },
       "patternProperties": {
-        "^[0-9]+$": {
+        "^-?[0-9]+$": {
           "type": "string"
         }
       },
@@ -309,7 +309,7 @@
           "4": "JSON serialization failed"
         }
       ],
-      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThis property defines a map of valid exit codes for the DSC Resource. DSC always interprets\nexit code `0` as a successful operation and any other exit code as an error. Use this\nproperty to indicate human-readable semantic meanings for the DSC Resource's exit codes.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserve-view=true#exitcodes\n",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThis property defines a map of valid exit codes for the DSC Resource. DSC always interprets\nexit code `0` as a successful operation and any other exit code as an error. Use this\nproperty to indicate human-readable semantic meanings for the DSC Resource's exit codes.\n\nDefine the keys in this property as strings representing a valid 32-bit signed integer. You\ncan't use alternate formats for the exit code. For example, instead of the hexadecimal value\n`0x80070005` for \"Access denied\", specify the exit code as `-2147024891`. If you're authoring\nyour resource manifest in yaml, be sure to wrap the exit code in single quotes, like\n`'0': Success` instead of `0: Success` to ensure the YAML file can be parsed correctly.\n\nDefine the value for each key as a string explaining what the exit code indicates.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserve-view=true#exitcodes\n",
       "defaultSnippets": [
         {
           "label": " Defined exit codes",

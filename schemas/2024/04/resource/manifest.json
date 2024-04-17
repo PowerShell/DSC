@@ -80,10 +80,10 @@
       "description": "This property defines a map of valid exit codes for the DSC Resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC Resource's exit codes.",
       "type": "object",
       "propertyNames": {
-        "pattern": "^[0-9]+$"
+        "pattern": "^-?[0-9]+$"
       },
       "patternProperties": {
-        "^[0-9]+$": {
+        "^-?[0-9]+$": {
           "type": "string"
         }
       },
