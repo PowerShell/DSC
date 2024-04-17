@@ -36,7 +36,7 @@ resources:
   - name: Echo 'abc' in base64
     type: Test/Echo
     properties:
-      text: "[base64('abc')]"
+      output: "[base64('abc')]"
 ```
 
 ```bash
@@ -49,7 +49,7 @@ results:
   type: Test/Echo
   result:
     actualState:
-      text: YWJj
+      output: YWJj
 messages: []
 hadErrors: false
 ```
@@ -66,7 +66,7 @@ resources:
   - name: Echo concatenated 'a', 'b', 'c' in base64
     type: Test/Echo
     properties:
-      text: "[base64(concat('a', 'b', 'c'))]"
+      output: "[base64(concat('a', 'b', 'c'))]"
 ```
 
 ```bash
@@ -79,7 +79,7 @@ results:
   type: Test/Echo
   result:
     actualState:
-      text: YWJj
+      output: YWJj
 messages: []
 hadErrors: false
 ```
@@ -88,8 +88,9 @@ hadErrors: false
 
 ### inputString
 
-The value must be a single string. The function converts the value into a base64 representation. If
-the value isn't a string, DSC raises an error when validating the configuration document.
+The `base64()` function expects a single string as input. The function converts the value into a
+base64 representation. If the value isn't a string, DSC raises an error when validating the
+configuration document.
 
 ```yaml
 Type:         string
@@ -100,7 +101,7 @@ MaximumCount: 1
 
 ## Output
 
-The output of the function is the base64 representation of the **inputString** value.
+The `base64()` function returns the base64 representation of the **inputString** value.
 
 ```yaml
 Type: string
