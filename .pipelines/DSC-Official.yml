@@ -145,13 +145,13 @@ extends:
           displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
           inputs:
             SourceFolder: "$(signSrcPath)"
-            Contents: '*'
+            Contents: '**'
             TargetFolder: $(ob_outputDirectory)
         - task: CopyFiles@2
           displayName: "Copy signed files to build target dir"
           inputs:
             SourceFolder: "$(signSrcPath)"
-            Contents: '*'
+            Contents: '**'
             TargetFolder: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
             OverWrite: true
         - pwsh: |
