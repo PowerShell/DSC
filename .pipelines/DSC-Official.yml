@@ -2,10 +2,10 @@ name: DSC-Release-$(Build.BuildId)
 trigger: none
 
 parameters:
-  debugConsole:
-    displayName: 'Enable debug console'
-    type: boolean
-    default: false
+- name: 'debugConsole'
+  displayName: 'Enable debug console'
+  type: boolean
+  default: false
 
 pr:
   branches:
