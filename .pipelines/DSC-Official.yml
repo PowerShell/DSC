@@ -138,8 +138,8 @@ extends:
               *.exe;
               *.json;
               *.ps1;
-              *.psd1;
-              *.psm1;
+              **/*.psd1;
+              **/*.psm1;
             search_root: $(signSrcPath)
         - task: CopyFiles@2
           displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
