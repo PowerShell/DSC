@@ -87,14 +87,14 @@ extends:
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           repoRoot: $(Build.SourcesDirectory)\DSC
-          signSrcPath: $(repoRoot)/out
+          signSrcPath: $(PackageRoot)/out/$(buildName)
           ob_artifactBaseName: 'DSC-$(buildName)'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: false
         pool:
           type: windows
-        displayName: Build
+        displayName: Build Windows
         steps:
         - checkout: self
           target: host
@@ -118,12 +118,12 @@ extends:
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
-            $outPath = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)" -ErrorAction Ignore
+            $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
             # workaround known issue of building in OneBranch copying from TMP folder
             $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
             # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
-            Copy-Item "$env:CARGO_TARGET_DIR/*.exe" "$(signSrcPath)"
-            # Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination $outPath -Verbose -Force
+            Copy-Item "$env:CARGO_TARGET_DIR/*.exe" "$(signSrcPath)" -Verbose
+            Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination "$(signSrcPath)" -Verbose -Force
           displayName: Copy binaries
           condition: succeeded()
         - task: onebranch.pipeline.signing@1
@@ -135,6 +135,8 @@ extends:
               *.exe;
               *.json;
               *.ps1;
+              *.psd1;
+              *.psm1;
             search_root: $(signSrcPath)
         - task: CopyFiles@2
           displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
@@ -227,7 +229,7 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-        displayName: Build
+        displayName: Build macOS
         pool:
           type: linux
           isCustom: true
