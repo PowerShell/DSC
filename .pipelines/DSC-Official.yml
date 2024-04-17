@@ -134,6 +134,12 @@ extends:
             SourceFolder: "$(signSrcPath)"
             Contents: '*'
             TargetFolder: $(ob_outputDirectory)
+        - task: CopyFiles@2
+          displayName: "Copy signed files to build target dir"
+          inputs:
+            SourceFolder: "$(signSrcPath)"
+            Contents: '*'
+            TargetFolder: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -PackageType zip -Architecture $(buildName) -Release

@@ -526,7 +526,6 @@ if ($packageType -eq 'msixbundle') {
     }
 
     foreach ($file in $filesForPackage) {
-        Write-Verbose -Verbose $file
         if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
             Copy-Item "$target\$file" "$tgzTarget\$file" -Recurse -ErrorAction Stop
         } else {
