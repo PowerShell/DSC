@@ -9,6 +9,7 @@ on:
       - "docs/**"
       - "*.md"
       - ".vscode/*.json"
+      - ".github/ISSUE_TEMPLATE/**"
 
 env:
   CARGO_TERM_COLOR: always

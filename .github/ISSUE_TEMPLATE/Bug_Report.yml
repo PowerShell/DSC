@@ -1,0 +1,117 @@
+name: Bug report 🐛
+description: Report errors or unexpected behavior 🤔
+labels:
+  - Issue-Bug
+  - Need-Review
+body:
+- type: checkboxes
+  attributes:
+    label: Prerequisites
+    options:
+    - label: Write a descriptive title.
+      required: true
+    - label: Make sure you are able to repro it on the latest version
+      required: true
+    - label: Search the existing issues.
+      required: true
+- type: textarea
+  attributes:
+    label: Summary
+    description: >-
+      Write a short description of the issue at a high-level.
+    placeholder: >-
+      I am experiencing a problem with X.
+      I think Y should be happening but Z is actually happening.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Steps to reproduce
+    description: >
+      List of steps, sample code, failing test or link to a project that reproduces the behavior.
+      Make sure you place a stack trace inside a code (```) block to avoid linking unrelated issues.
+    placeholder: |-
+      1. Create the following configuration document:
+
+         ```yaml
+         # repro.dsc.config.yaml
+         $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+         resources:
+         - name: repro
+           type: Test/Echo
+           properties:
+             output: expected value
+         ```
+
+      1. Call the `get` operation on the repro document:
+
+         ```sh
+         dsc config get --path ./repro.dsc.config.yaml
+         ```
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Expected behavior
+    render: console
+    placeholder: |
+      dsc config get --path ./repro.dsc.config.yaml
+      
+      results:
+      - name: repro
+        type: Test/Echo
+        result:
+          actualState:
+            output: expected value
+      messages: []
+      hadErrors: false
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Actual behavior
+    render: console
+    placeholder: |
+      # Enable debug tracing, which shouldn't contain any private data
+      dsc -l debug config get --path ./repro.dsc.config.yaml
+      
+      results:
+      - name: repro
+        type: Test/Echo
+        result:
+          actualState:
+            output: other value
+      messages: []
+      hadErrors: false
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Error details
+    description: Paste verbatim output from DSC if it returns an error
+    render: console
+- type: textarea
+  attributes:
+    label: Environment data
+    description: Paste verbatim output from `$PSVersionTable` below.
+    render: PowerShell
+    placeholder: PS> $PSVersionTable
+  validations:
+    required: true
+- type: input
+  validations:
+    required: true
+  attributes:
+    label: Version
+    description: >-
+      Specify the version you're using. Run the `dsc --version` command to get
+      the current version.
+    placeholder: 3.0.0-alpha.5
+
+- type: textarea
+  attributes:
+    label: Visuals
+    description: >
+      Please upload images or animations that can be used to reproduce issues in the area below.
+      Try the [Steps Recorder](https://support.microsoft.com/en-us/windows/record-steps-to-reproduce-a-problem-46582a9b-620f-2e36-00c9-04e25d784e47)
+      on Windows or [Screenshot](https://support.apple.com/en-us/HT208721) on macOS.
