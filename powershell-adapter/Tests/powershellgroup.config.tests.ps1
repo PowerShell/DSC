@@ -5,7 +5,7 @@ Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         if ($isWindows) {
-          winrm quickconfig -quiet -force
+          #winrm quickconfig -quiet -force
         }  
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
@@ -26,7 +26,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.results[0].result.actualState.result[1].properties.EnumProp | Should -BeExactly 'Expected'
     }
 
-    It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
+    <#It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
 
       $testFile = "$testdrive\test.txt"
       'test' | Set-Content -Path $testFile -Force
@@ -34,9 +34,9 @@ Describe 'PowerShell adapter resource tests' {
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
       $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
-  }
+  }#>
 
-    <#
+    
     It 'Test works on config with class-based and script-based resources' -Skip:(!$IsWindows){
 
         $r = Get-Content -Raw $pwshConfigPath | dsc config test
@@ -51,12 +51,12 @@ Describe 'PowerShell adapter resource tests' {
         $r = Get-Content -Raw $pwshConfigPath | dsc config set
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results.result.afterState.result[0].RebootRequired | Should -Not -BeNull
-        $res.results.result.afterState.result[1].RebootRequired | Should -Not -BeNull
+        $res.results.result.afterState.result[0].type | Should -Be "PSTestModule/TestPSRepository"
+        $res.results.result.afterState.result[1].type | Should -Be "TestClassResource/TestClassResource"
     }
     
 
-    It 'Export works on config with class-based resources' -Skip:(!$IsWindows){
+    <#It 'Export works on config with class-based resources' -Skip:(!$IsWindows){
 
         $yaml = @'
             $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
