@@ -5,7 +5,7 @@ Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         if ($isWindows) {
-          #winrm quickconfig -quiet -force
+          winrm quickconfig -quiet -force
         }  
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
@@ -26,7 +26,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.results[0].result.actualState.result[1].properties.EnumProp | Should -BeExactly 'Expected'
     }
 
-    <#It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
+    It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
 
       $testFile = "$testdrive\test.txt"
       'test' | Set-Content -Path $testFile -Force
@@ -34,8 +34,7 @@ Describe 'PowerShell adapter resource tests' {
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
       $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
-  }#>
-
+    }
     
     It 'Test works on config with class-based and script-based resources' -Skip:(!$IsWindows){
 

@@ -5,7 +5,7 @@ Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
         if ($isWindows) {
-            #winrm quickconfig -quiet -force
+            winrm quickconfig -quiet -force
         }    
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
