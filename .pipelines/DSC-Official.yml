@@ -124,7 +124,7 @@ extends:
             # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
             write-host 'Binaries in $(env:CARGO_TARGET_DIR)'
             Copy-Item -Path "$env:CARGO_TARGET_DIR/$(buildName)/$(BuildConfiguration)/*.exe" -Destination "$(signSrcPath)" -Verbose
-            Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination "$(signSrcPath)" -Verbose -Force
+            Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Recurse -Destination "$(signSrcPath)" -Verbose -Force
             write-host 'Binaries in $(signSrcPath)'
             dir -r "$(signSrcPath)"
           displayName: Copy built binaries
