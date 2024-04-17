@@ -94,7 +94,7 @@ extends:
           ob_sdl_codeql_compiled_enabled: false
         pool:
           type: windows
-        displayName: Build Windows
+        displayName: BuildWin
         steps:
         - checkout: self
           target: host
@@ -122,9 +122,13 @@ extends:
             # workaround known issue of building in OneBranch copying from TMP folder
             $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
             # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
-            Copy-Item "$env:CARGO_TARGET_DIR/*.exe" "$(signSrcPath)" -Verbose
+            write-host 'Binaries in $(env:CARGO_TARGET_DIR)'
+            dir -r "$env:CARGO_TARGET_DIR"
+            Copy-Item -Path "$env:CARGO_TARGET_DIR/*.exe" -Destination "$(signSrcPath)" -Verbose
             Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination "$(signSrcPath)" -Verbose -Force
-          displayName: Copy binaries
+            write-host 'Binaries in $(signSrcPath)'
+            dir -r "$(signSrcPath)"
+          displayName: Copy built binaries
           condition: succeeded()
         - task: onebranch.pipeline.signing@1
           displayName: Sign 1st party files
@@ -230,7 +234,7 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-        displayName: Build macOS
+        displayName: BuildMac
         pool:
           type: linux
           isCustom: true
