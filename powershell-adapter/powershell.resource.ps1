@@ -21,6 +21,15 @@ if ('Validate' -ne $Operation) {
     $result = [System.Collections.Generic.List[Object]]::new()
 }
 
+if ($jsonInput) {
+    $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
+    $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
+    if ($new_psmodulepath)
+    {
+        $env:PSModulePath = $ExecutionContext.InvokeCommand.ExpandString($new_psmodulepath)
+    }
+}
+
 # process the operation requested to the script
 switch ($Operation) {
     'List' {
@@ -79,7 +88,7 @@ switch ($Operation) {
             } | ConvertTo-Json -Compress
         }
     }
-    { @('Get','Set','Test') -contains $_ } {
+    { @('Get','Set','Test','Export') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
             $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
@@ -118,13 +127,6 @@ switch ($Operation) {
         $trace = @{'Debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
         $host.ui.WriteErrorLine($trace)
         return $result
-    }
-    'Export' {
-        throw 'EXPORT not implemented'
-        
-        # OUTPUT
-        $result += @{}
-        @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
     }
     'Validate' {
         # VALIDATE not implemented

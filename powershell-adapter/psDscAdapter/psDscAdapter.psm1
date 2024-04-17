@@ -183,7 +183,7 @@ function Get-DscResourceObject {
 function Invoke-DscOperation {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Get', 'Set', 'Test')]
+        [ValidateSet('Get', 'Set', 'Test', 'Export')]
         [string]$Operation,
         [Parameter(Mandatory, ValueFromPipeline = $true)]
         [dscResourceObject]$DesiredState,
@@ -274,9 +274,11 @@ function Invoke-DscOperation {
                     $resource = GetTypeInstanceFromModule -modulename $cachedDscResourceInfo.ModuleName -classname $cachedDscResourceInfo.Name
                     $dscResourceInstance = $resource::New()
 
-                    # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
-                    $DesiredState.properties.psobject.properties | ForEach-Object -Process {
-                        $dscResourceInstance.$($_.Name) = $_.Value
+                    if ($DesiredState.properties) {
+                        # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
+                        $DesiredState.properties.psobject.properties | ForEach-Object -Process {
+                            $dscResourceInstance.$($_.Name) = $_.Value
+                        }
                     }
 
                     switch ($Operation) {
@@ -290,6 +292,12 @@ function Invoke-DscOperation {
                         'Test' {
                             $Result = $dscResourceInstance.Test()
                             $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
+                        }
+                        'Export' {
+                            $t = $dscResourceInstance.GetType()
+                            $method = $t.GetMethod('Export')
+                            $resultArray = $method.Invoke($null,$null)
+                            $addToActualState = $resultArray
                         }
                     }
                 }

@@ -115,15 +115,14 @@ Describe 'PowerShell adapter resource tests' {
         $res.afterState.result.properties.RebootRequired | Should -Not -BeNull
     }
 
-    <#It 'Export works on PS class-based resource' -Skip:(!$IsWindows){
+    It 'Export works on PS class-based resource' -Skip:(!$IsWindows){
 
         $r = dsc resource export -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.resources.count | Should -Be 5
-        $res.resources[0].type | Should -Be "TestClassResource/TestClassResource"
-        $res.resources[0].properties.Name | Should -Be "Object1"
-        $res.resources[0].properties.Prop1 | Should -Be "Property of object1"
+        $res.resources[0].properties.result.count | Should -Be 5
+        $res.resources[0].properties.result[0].Name | Should -Be "Object1"
+        $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
     }
 
     It 'Get --all works on PS class-based resource' -Skip:(!$IsWindows){
@@ -131,8 +130,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource get --all -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.count | Should -Be 5
-        $res | % {$_.actualState | Should -Not -BeNullOrEmpty}
+        $res.actualState.result.count | Should -Be 5
+        $res.actualState.result| % {$_.Name | Should -Not -BeNullOrEmpty}
     }
-    #>
 }
