@@ -11,7 +11,8 @@ param(
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
-    [switch]$SkipLinkCheck
+    [switch]$SkipLinkCheck,
+    [switch]$UseX64MakeAppx
 )
 
 if ($GetPackageVersion) {
@@ -365,7 +366,7 @@ function Find-MakeAppx() {
     $makeappx = Get-Command makeappx -CommandType Application -ErrorAction Ignore
     if ($null -eq $makeappx) {
         # try to find
-        if ($architecture -eq 'aarch64-pc-windows-msvc') {
+        if (!$UseX64MakeAppx -and $architecture -eq 'aarch64-pc-windows-msvc') {
             $arch = 'arm64'
         }
         else {

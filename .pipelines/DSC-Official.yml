@@ -162,7 +162,7 @@ extends:
           condition: succeeded()
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            ./build.ps1 -PackageType msix -Architecture $(buildName) -Release
+            ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
             Copy-Item ./bin/*.msix "$(ob_outputDirectory)"
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()
