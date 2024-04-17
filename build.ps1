@@ -172,11 +172,11 @@ if (!$SkipBuild) {
         "osinfo",
         "powershell-adapter",
         "process",
+        "resources/brew",
+        "runcommandonset",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j",
-        "resources/brew",
-        "runcommandonset"
+        "y2j"
     )
     $pedantic_unclean_projects = @()
     $clippy_unclean_projects = @("tree-sitter-dscexpression")
@@ -526,6 +526,7 @@ if ($packageType -eq 'msixbundle') {
     }
 
     foreach ($file in $filesForPackage) {
+        Write-Verbose -Verbose $file
         if ((Get-Item "$target\$file") -is [System.IO.DirectoryInfo]) {
             Copy-Item "$target\$file" "$tgzTarget\$file" -Recurse -ErrorAction Stop
         } else {
