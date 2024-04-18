@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/metadata/Microsoft.DSC/version.yaml
+# Documentation
+title: DSC Version
+description: >-
+  Defines the version of DSC that ran the command. This value is always the semantic version of the
+  DSC command, like `3.0.0-preview.7`.
+markdownDescription: |-
+  Defines the version of DSC that ran the command. This value is always the semantic version of the
+  DSC command, like `3.0.0-preview.7`.
+# Definition
+$ref: /<PREFIX>/<VERSION>/definitions/semver.yaml

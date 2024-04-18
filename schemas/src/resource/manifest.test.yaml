@@ -14,13 +14,27 @@ markdownDescription: | # VS Code only
   Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how
   to process the output from the DSC Resource.
 
+  DSC sends data to the command in three ways:
+
+  1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed
+     JSON object without spaces or newlines between the object properties.
+  1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment
+     variable for each property in the input data object, using the name and value of the property.
+  1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string
+     representing the data as a compressed JSON object to the specified argument.
+
+  If you don't define the `input` property and don't define a JSON input argument, DSC can't pass
+  the input JSON to the resource. You can only define one JSON input argument for a command.
+
+  You must define the `input` property, one JSON input argument in the `args` property array, or
+  both.
+
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>
 
 
 type: object
 required:
   - executable
-  - input
 properties:
   executable:
     $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
@@ -34,7 +48,7 @@ properties:
       is only required when the command isn't recognizable by the operating system as an
       executable.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#executable
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>#executable
   args:
     $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
     markdownDescription: |
@@ -49,7 +63,7 @@ properties:
 
       ```json
       {
-        "executable": "registry",
+        "executable": "myresource",
         "args":       ["config", "test"],
       }
       ```
@@ -57,10 +71,38 @@ properties:
       DSC invokes the command for the resource as:
 
       ```bash
-      registry config test
+      myresource config test
       ```
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#args
+      If you want to pass the JSON object representing the property bag for a resource instance to
+      an argument, you can define a single item in the array as a JSON object. Indicate the name of
+      the argument with the `jsonInputArg` string property and whether the argument is mandatory
+      for the command with the `mandatory` boolean property.` When the `mandatory` property is
+      defined as `true`, DSC passes an empty string to the argument when no JSON input is
+      available. When the `mandatory` property is undefined or defined as `false`, DSC doesn't pass
+      the argument at all when no JSON input is available. The default value for the `mandatory`
+      property is `false`.
+
+      For example, given the following definition:
+
+      ```json
+      {
+        "executable": "myresource"
+        "args":       [
+          "config",
+          "test",
+          { "jsonInputArg": "--properties" }
+        ]
+      }
+      ```
+
+      DSC invokes the command for the resource as:
+
+      ```bash
+      myresource config test --properties <JSON string of instance properties>
+      ```
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>#args
   input:
     $ref: /<PREFIX>/<VERSION>/definitions/inputKind.yaml
     markdownDescription: |
@@ -69,9 +111,22 @@ properties:
       ***
 
       Defines how DSC should pass input to the command, either as environment variables or JSON
-      over `stdin`.
+      over `stdin`. This property is optional when you define an object in the `args` list. If
+      you define a JSON input argument and an `input`, DSC sends the JSON data both ways:
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#input
+      - If you define `input` as `env` and a JSON input argument, DSC sets an environment variable
+        for each property in the JSON input and passes the JSON input object as a string to the
+        defined argument.
+      - If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over
+        stdin and as a string to the defined argument.
+      - If you define a JSON input argument without defining the `input` property, DSC only passes
+        the JSON input as a string to the defined argument.
+      
+      If you don't define the `input` property and don't define a JSON input argument, DSC can't
+      pass the input JSON to the resource. This makes the manifest invalid. You must define the
+      `input` property, a JSON input argument in the `args` property array, or both.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>#input
   return:
     title: Test Command Return Type
     description: >-
@@ -99,29 +154,75 @@ properties:
           > Indicates that the resource returns the instance's actual state and an array of
           > property names that are out of the desired state.
 
-examples:
-  - executable: registry
-    args:
-      - config
-      - test
-    input:  stdin
-    return: state
+# Need to use a oneOf with three possibilities because YAML extension in VS Code doesn't understand
+# minContains - so we can't use a single if/else/then. Note that JSON, but not YAML, will fail when
+# the manifest defines more than one JSON input argument. If/when the YAML extension is updated to
+# support 2019-09 and later, we can simplify this to two schemas.
+#
+# We use long lines for error messages, which can't use Markdown.
+oneOf:
+  - # Test command with explicit input kind - when `input` is defined and `args` is only strings.
+    # This subschema never triggers an error in testing.
+    required: [input]
+    not:
+      properties: { args: { contains: { type: object } } } 
+  - # Test command with JSON input argument - when `input` isn't defined and `args` doesn't include
+    # a JSON input argument. Only raises an error when `args` has zero JSON input arguments or more
+    # than one.
+    not: { required: [input] }
+    properties:
+      args:
+        errorMessage: |-
+          The `test` command doesn't define either the `input` property or a JSON input argument, or it defines more than one JSON input argument. If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the input JSON to the resource. You can only define one JSON input argument for a command.
+
+          You must define the `input` property, one JSON input argument in the `args` property array, or both. For more information, see:
+
+          <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>
+        contains:  { type: object }
+        minContains: 1
+        maxContains: 1
+  - # Test command with explicit input kind and JSON input argument - when `input` is defined and
+    # args includes a JSON input argument. Only raises an error when `input` is defined and `args`
+    # contains more than one JSON input argument.
+    required: [input]
+    properties:
+      args:
+        errorMessage: |-
+          You can only specify one JSON input argument for the `test` command. Remove the extra JSON input argument. When you use the JSON input argument, DSC sends the full JSON object as a string to the named argument.
+
+          For more information, see:
+
+          <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>
+        contains:  { type: object }
+        minContains: 1
+        maxContains: 1
 
 defaultSnippets: # VS Code only
   - label: ' Define without arguments'
     markdownDescription: |
-      Define the `test` command for the resource when no arguments are required.
+      Define the `test` command for the resource when no arguments are required and the JSON
+      input is sent over stdin or as environment variables.
     body:
-      input:      ${1|input,env|}
+      input:      ${1|stdin,env|}
       return:     ${2|state,stateAndDiff|}
       executable: ${3:executable_name}
-
-  - label: ' Define with arguments'
-    markdownDescription: |
-      Define the `test` command for the resource when at least one argument is required.
+  - label: ' Define with string arguments'
+    markdownDescription: |-
+      Define the `test` command for the resource when at least one argument is required and the
+      JSON input is sent over stdin or as environment variables.
     body:
-      input:      ${1|input,env|}
+      input:      ${1|stdin,env|}
       return:     ${2|state,stateAndDiff|}
       executable: ${3:executable_name}
       args:
         - ${4:--first-argument}
+  - label: ' Define with a JSON input argument'
+    markdownDescription: |-
+      Define the `test` command for the resource where the JSON input is passed as a one-line
+      JSON object string to the specified argument.
+    body:
+      return:     ${1|state,stateAndDiff|}
+      executable: ${2:executable_name}
+      args:
+        - jsonInputArg:  ${3:argument_name}
+          mandatory:    ^$4

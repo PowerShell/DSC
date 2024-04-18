@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/metadata/Microsoft.DSC/operation.yaml
+# Documentation
+title: Operation
+description: >-
+  Defines the operation that DSC applied to the configuration document: `Get`, `Set`, `Test`, or
+  `Export`.
+markdownDescription: |-
+  Defines the operation that DSC applied to the configuration document: `Get`, `Set`, `Test`, or
+  `Export`.
+# Definition
+type: string
+enum:
+  - Get
+  - Set
+  - Test
+  - Export

@@ -89,7 +89,9 @@ hadErrors: false
 
 ### name
 
-The name of the parameter to return.
+The `parameters()` function expects a single string as input, representing the name of the
+parameter to return. If no parameter with the specified name is defined in the configuration
+document, DSC raises an error during validation.
 
 ```yaml
 Type:         string
@@ -100,7 +102,7 @@ MaximumCount: 1
 
 ## Output
 
-The output of the function is the value of the specified parameter.
+The `parameters()` function returns the value of the specified parameter.
 
 ```yaml
 Type: [string, int, bool, object, array]

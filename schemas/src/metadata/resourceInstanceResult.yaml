@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/metadata/resourceInstanceResult.yaml
+# Documentation
+title: Resource instance result metadata
+description: >-
+  Defines metadata DSC returns for a DSC configuration operation against a resource instance in a configuration document, as from the `dsc config get` or
+  `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe
+  the context of the operation.
+markdownDescription: |-
+  Defines metadata DSC returns for a configuration operation, as from the `dsc config get` or
+  `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe
+  the context of the operation.
+# Definition
+type: object
+required: [Microsoft.DSC]
+properties:
+  Microsoft.DSC:
+    title: DSC context metadata
+    description: >-
+      The child properties for this metadata describe the context of the DSC operation against a
+      resource instance, including the duration of the operation.
+    type: object
+    required:
+      - duration
+    properties:
+      duration:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/duration.yaml

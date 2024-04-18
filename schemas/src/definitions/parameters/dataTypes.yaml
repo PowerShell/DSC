@@ -8,11 +8,11 @@ description: >-
 type: string
 enum:
   - string
-  - securestring
+  - secureString
   - int
   - bool
   - object
-  - secureobject
+  - secureObject
   - array
 
 # VS Code only
@@ -30,8 +30,8 @@ markdownDescription: |
   - `int` for integers
   - `object` for objects
   - `string` for strings
-  - `secureobject` for secure objects
-  - `securestring` for secure strings
+  - `secureObject` for secure objects
+  - `secureString` for secure strings
 
   Access parameters in a configuration using this syntax:
 
@@ -56,7 +56,7 @@ markdownEnumDescriptions:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#strings
 
-  - | # securestring
+  - | # secureString
       _Secure strings are text that needs to be handled securely._
 
       > Secure strings are an arbitrary set of text that DSC and integrating tools shouldn't log or
@@ -105,7 +105,7 @@ markdownEnumDescriptions:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/definitions/parameters/datatypes?<DOCS_VERSION_PIN>#objects
 
-  - | # secureobject
+  - | # secureObject
       _Secure objects are key-value pairs that need to be handled securely._
 
       > Secure objects define a set of key-value pairs that DSC and integrating tools shouldn't log

@@ -8,10 +8,13 @@ description: >-
 
 type: object
 required:
+  - metadata
   - results
   - messages
   - hadErrors
 properties:
+  metadata:
+    $ref: /<PREFIX>/<VERSION>/metadata/configurationDocumentResult.yaml
   results:
     title: Results
     description: >-

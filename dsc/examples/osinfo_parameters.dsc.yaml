@@ -1,7 +1,8 @@
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 parameters:
   osFamily:
     type: string
+    # the use of `concat()` here is just an example of using an expression for a defaultValue
     defaultValue: "[concat('Win','dows')]"
     allowedValues:
       - Windows

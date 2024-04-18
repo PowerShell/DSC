@@ -14,10 +14,13 @@ description: |-
 
 type: object
 required:
+  - metadata
   - name
   - result
   - type
 properties:
+  metadata:
+    $ref: /<PREFIX>/<VERSION>/metadata/resourceInstanceResult.yaml
   name:
     $ref: /<PREFIX>/<VERSION>/definitions/instanceName.yaml
   type:

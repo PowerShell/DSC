@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/definitions/resourceKind.yaml
+
+title: Resource kind
+description: >-
+  Defines whether the resource is a normal DSC Resource, a group resource, or an adapter
+  resource. This property is only required for group resources.
+
+type: string
+enum:
+  - Resource
+  - Adapter
+  - Group
+
+# VS Code only
+
+markdownDescription: |
+  ***
+  [_Online Documentation_][01]
+  ***
+
+  Defines whether the resource is a normal DSC Resource, a group resource, or an adapter
+  resource. This property is only required for group resources.
+
+  DSC infers the default value for this property based on whether the [adapter][02] property is
+  defined in the manifest:
+
+  - If the `adapter` property is defined in the manifest, the default `kind` is `Adapter`.
+  - If the `adapter` property is not defined in the manifest, the default `kind` is `Resource`.
+
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#kind
+
+markdownEnumDescriptions:
+  - | # Resource
+      <!-- force a line break -->
+
+      Indicates that the manifest is for a standard command-based DSC Resource.
+  - | # Adapter
+      <!-- force a line break -->
+
+      Indicates that the manifest is for an adapter resource that enables the use of
+      non-command-based resources with DSC.
+  - | # Group
+      <!-- force a line break -->
+
+      Indicates that the manifest is for a group resource that processes an array of nested
+      resource instances.

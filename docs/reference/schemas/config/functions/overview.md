@@ -74,7 +74,7 @@ syntax.
 
 The following configuration document shows the three valid syntaxes for specifying a function in
 a configuration document. In each resource instance, the `text` property is set to the output of
-the [base64()][04] function.
+the [base64()][base64] function.
 
 ```yaml
 # overview.example.1.dsc.config.yaml
@@ -124,7 +124,7 @@ hadErrors: false
 ### Example 2 - Concatenate two strings
 
 The following configuration document sets the `text` property of the resource instance to the
-output of the [concat()][05] function, combining the strings `a` and `b` into `ab`.
+output of the [concat()][concat] function, combining the strings `a` and `b` into `ab`.
 
 ```yaml
 # overview.example.2.dsc.config.yaml
@@ -154,7 +154,7 @@ hadErrors: false
 ### Example 3 - Using nested functions
 
 The following configuration document shows how you can nest functions. The first two resource
-instances use the output of the [concat()][05] function as input to the [base64()][04] function.
+instances use the output of the [concat()][concat] function as input to the [base64()][base64] function.
 The third resource instance uses the output of the nested functions from the first two instances
 as input to the `concat()` function. The last resource instance converts the output of the deeply
 nested functions shown in the third instance to base64.
@@ -220,13 +220,80 @@ hadErrors: false
 
 ## Functions
 
-- [base64()][04]
-- [concat()][05]
-- [resourceId()][06]
+The following sections include the available DSC configuration functions by purpose and input type.
 
+### Array functions
+
+The following list of functions operate on arrays:
+
+- [concat()][concat] - Combine multiple arrays of strings into a single array of strings.
+- [createArray()][createArray] - Create an array of a given type from zero or more values of the
+  same type.
+- [min()][min] - Return the smallest integer value from an array of integers.
+- [max()][max] - Return the largest integer value from an array of integers.
+
+### Data functions
+
+The following list of functions operate on data outside of a resource instance:
+
+- [envvar()][envvar] - Return the value of a specified environment variable.
+- [parameters()][parameters] - Return the value of a specified configuration parameter.
+
+### Mathematics functions
+
+The following list of functions operate on integer values or arrays of integer values:
+
+- [add()][add] - Return the sum of two integers.
+- [div()][div] - Return the dividend of two integers as an integer, dropping the remainder of the
+  result, if any.
+- [int()][int] - Convert a string or number with a fractional part into an integer.
+- [max()][max] - Return the largest value from an array of integers.
+- [min()][min] - Return the smallest value from an array of integers.
+- [mod()][mod] - Return the remainder from the division of two integers.
+- [mul()][mul] - Return the product from multiplying two integers.
+- [sub()][sub] - Return the difference from subtracting one integer from another.
+
+### Resource functions
+
+The following list of functions operate on resource instances:
+
+- [reference()][reference] - Return the result data for another resource instance.
+- [resourceId()][resourceId] - Return the ID of another resource instance to reference or depend
+  on.
+
+### String functions
+
+The following list of functions are for manipulating strings:
+
+- [base64()][base64] - Return the base64 representation of a string.
+- [concat()][concat] - Return a combined string where the input strings are concatenated in the
+  order they're specified.
+
+### Type functions
+
+The following list of functions create or convert values of a given type:
+
+- [createArray()][createArray] - Create an array of a given type from zero or more values of the
+  same type.
+- [int()][int] - Convert a string or number with a fractional part into an integer.
+
+<!-- Link references -->
 [01]: https://yaml.org/spec/1.2.2/#folded-style
 [02]: https://yaml.org/spec/1.2.2/#literal-style
 [03]: https://yaml.org/spec/1.2.2/#block-chomping-indicator
-[04]: base64.md
-[05]: concat.md
-[06]: resourceId.md
+<!-- Function link references -->
+[add]:         ./add.md
+[base64]:      ./base64.md
+[concat]:      ./concat.md
+[createArray]: ./createArray.md
+[div]:         ./div.md
+[envvar]:      ./envvar.md
+[int]:         ./int.md
+[max]:         ./max.md
+[min]:         ./min.md
+[mod]:         ./mod.md
+[mul]:         ./mul.md
+[parameters]:  ./parameters.md
+[reference]:   ./reference.md
+[resourceId]:  ./resourceId.md
+[sub]:         ./sub.md
