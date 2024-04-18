@@ -29,7 +29,6 @@ $filesForWindowsPackage = @(
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
-    'powershell.resource.ps1',
     'PSDesiredStateConfiguration/',
     'psDscAdapter/',
     'reboot_pending.dsc.resource.json',
@@ -48,7 +47,6 @@ $filesForLinuxPackage = @(
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
-    'powershell.resource.ps1',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset'
@@ -61,7 +59,6 @@ $filesForMacPackage = @(
     'brew.dsc.resource.sh',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
-    'powershell.resource.ps1',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset'
