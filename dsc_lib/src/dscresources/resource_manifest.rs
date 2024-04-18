@@ -66,6 +66,12 @@ pub struct ResourceManifest {
 #[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum ManifestSchemaUri {
     #[default]
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.json")]
+    Version2024_04,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json")]
+    Bundled2024_04,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.vscode.json")]
+    VSCode2024_04,
     #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.json")]
     Version2023_10,
     #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.json")]
@@ -250,7 +256,7 @@ pub struct ListMethod {
 /// * `DscError` - The JSON value is invalid or the schema version is not supported.
 pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
     // TODO: enable schema version validation, if not provided, use the latest
-    // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json";
+    // const MANIFEST_SCHEMA_VERSION: &str = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json";
     let manifest = serde_json::from_value::<ResourceManifest>(manifest)?;
     // if !manifest.schema_version.eq(MANIFEST_SCHEMA_VERSION) {
     //     return Err(DscError::InvalidManifestSchemaVersion(manifest.schema_version, MANIFEST_SCHEMA_VERSION.to_string()));

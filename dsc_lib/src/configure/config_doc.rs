@@ -142,6 +142,12 @@ pub struct Resource {
 #[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum DocumentSchemaUri {
     #[default]
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json")]
+    Version2024_04,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/config/document.json")]
+    Bundled2024_04,
+    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/config/document.vscode.json")]
+    VSCode2024_04,
     #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json")]
     Version2023_10,
     #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.json")]
@@ -159,7 +165,7 @@ pub enum DocumentSchemaUri {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            schema: DocumentSchemaUri::Version2023_08,
+            schema: DocumentSchemaUri::Version2024_04,
             parameters: None,
             variables: None,
             resources: Vec::new(),
@@ -172,7 +178,7 @@ impl Configuration {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: DocumentSchemaUri::Version2023_08,
+            schema: DocumentSchemaUri::Version2024_04,
             parameters: None,
             variables: None,
             resources: Vec::new(),

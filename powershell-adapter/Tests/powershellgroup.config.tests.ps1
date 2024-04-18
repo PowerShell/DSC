@@ -58,7 +58,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'Export works on config with class-based resources' -Skip:(!$IsWindows){
 
         $yaml = @'
-            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
@@ -70,7 +70,7 @@ Describe 'PowerShell adapter resource tests' {
         $out = $yaml | dsc config export
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
-        $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
+        $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
         $res.'resources' | Should -Not -BeNullOrEmpty
         $res.resources[0].properties.result.count | Should -Be 5
         $res.resources[0].properties.result[0].Name | Should -Be "Object1"
@@ -85,7 +85,7 @@ Describe 'PowerShell adapter resource tests' {
 
         try {
             $yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
@@ -98,7 +98,7 @@ Describe 'PowerShell adapter resource tests' {
             $out = $yaml | dsc config export
             $LASTEXITCODE | Should -Be 0
             $res = $out | ConvertFrom-Json
-            $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
+            $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
             $res.'resources' | Should -Not -BeNullOrEmpty
             $res.resources[0].properties.result.count | Should -Be 5
             $res.resources[0].properties.result[0].Name | Should -Be "Object1"
@@ -113,7 +113,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'DSCConfigRoot macro is working when config is from a file' -Skip:(!$IsWindows){
 
         $yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
@@ -138,7 +138,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'DSC_CONFIG_ROOT env var does not exist when config is piped from stdin' -Skip:(!$IsWindows){
 
         $yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell

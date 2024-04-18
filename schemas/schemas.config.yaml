@@ -1,6 +1,6 @@
 host:             https://raw.githubusercontent.com
 prefix:           PowerShell/DSC/main/schemas
-version:          2023/10
+version:          2024/04
 docs_base_url:    https://learn.microsoft.com/powershell/dsc
 docs_version_pin: view=dsc-3.0&preserve-view=true
 bundle_schemas:
@@ -20,44 +20,44 @@ bundle_schemas:
   - ConfigFilePath:  outputs/schema.json
     Name:            schema
     OutputDirectory: bundled/outputs
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/config/get.json
     Name:            get
     OutputDirectory: bundled/outputs/config
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/config/set.json
     Name:            set
     OutputDirectory: bundled/outputs/config
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/config/test.json
     Name:            test
     OutputDirectory: bundled/outputs/config
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/resource/get.json
     Name:            get
     OutputDirectory: bundled/outputs/resource
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/resource/list.json
     Name:            list
     OutputDirectory: bundled/outputs/resource
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/resource/schema.json
     Name:            schema
     OutputDirectory: bundled/outputs/resource
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/resource/set.json
     Name:            set
     OutputDirectory: bundled/outputs/resource
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']
 
   - ConfigFilePath:  outputs/resource/test.json
     Name:            test
     OutputDirectory: bundled/outputs/resource
-    OutputFormat:    ['Json']
+    OutputFormat:    ['Json', 'JsonVSCode']

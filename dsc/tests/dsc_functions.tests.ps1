@@ -14,7 +14,7 @@ Describe 'tests for function expressions' {
 
         $escapedText = $text -replace "'", "''"
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Echo
               type: Test/Echo

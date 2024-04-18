@@ -37,9 +37,15 @@ properties:
           is only required when the command isn't recognizable by the operating system as an
           executable.
 
-          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#executable
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#executable
       args:
-        $ref: /<PREFIX>/<VERSION>/definitions/commandArgs.yaml
+        type: array
+        items:
+          type: string
+        title: Command arguments
+        description: >-
+          Defines the list of arguments to pass to the command to return the JSON Schema for the
+          resource.
         markdownDescription: |
           ***
           [_Online Documentation_][01]
@@ -52,18 +58,19 @@ properties:
 
           ```json
           {
-            "executable": "registry",
-            "args":       ["schema", "resource"],
+            "executable": "myresource",
+            "args":       ["schema", "show"],
           }
           ```
 
           DSC invokes the command for the resource as:
 
           ```bash
-          registry schema resource
+          myresource schema show
           ```
 
-          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#args
+          [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#args
+
     # VS Code only
     markdownDescription: |
       ***

@@ -3,6 +3,12 @@ using namespace System.Collections
 
 <#
     .SYNOPSIS
+        Build the DSC schema files from the source YAML files.
+    
+    .DESCRIPTION
+        This build script composes the JSON Schema files from the source YAML files, creating new
+        files in the specified output directory. It creates a schema registry to analyze the source
+        schemas and resolve references for bundling.
 #>
 
 [cmdletbinding(DefaultParameterSetName='ByConfig')]
@@ -329,7 +335,7 @@ begin {
             $RelativeUriReferencePattern = @(
                 '(?m)'
                 '^'
-                '(?<Prefix>\s+\$ref:\s+)'
+                '(?<Prefix>\s*(-\s+)?\$ref:\s+)'
                 '(?<Reference>/.+)'
                 '$'
             ) -join ''
@@ -419,7 +425,8 @@ begin {
                         $RefUri.Trim()
                         "'"
                     ) -join ''
-                    $MungingSchema = $MungingSchema -replace [regex]::Escape($Whole), $NewValue
+                    Write-Verbose "Replacing '$($Whole.Trim())' with '$($NewValue.Trim())'..."
+                    $MungingSchema = $MungingSchema -replace [regex]::Escape($Whole.Trim()), $NewValue.Trim()
                 }
                 $MergedSchema = $MungingSchema | yayaml\ConvertFrom-Yaml
             } else {
@@ -656,6 +663,7 @@ process {
     $RegistryParameters = @{
         SchemaDirectories = @(
             "$OutputDirectory/config"
+            "$OutputDirectory/metadata"
             "$OutputDirectory/definitions"
             "$OutputDirectory/outputs"
             "$OutputDirectory/resource"
