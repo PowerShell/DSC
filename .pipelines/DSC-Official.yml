@@ -135,8 +135,7 @@ extends:
             signing_profile: external_distribution
             files_to_sign: |
               *.exe;
-              *.json;
-              *.ps1;
+              **\*.ps1;
               **\*.psd1;
               **\*.psm1;
             search_root: $(signSrcPath)
