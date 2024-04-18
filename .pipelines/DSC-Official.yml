@@ -87,7 +87,7 @@ extends:
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           repoRoot: $(Build.SourcesDirectory)\DSC
-          signSrcPath: $(PackageRoot)/out/$(buildName)
+          signSrcPath: $(Agent.TempDirectory)/signSrcPath
           ob_artifactBaseName: 'DSC-$(buildName)'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
@@ -104,8 +104,7 @@ extends:
             AnalyzeInPipeline: true
             Language: rust
         - pwsh: |
-            $tmpdir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
-            New-Item -ItemType Directory -Path $tmpdir
+            $tmpdir = "$(Agent.TempDirectory)"
             Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
           displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
         - pwsh: |
@@ -142,12 +141,6 @@ extends:
               **\*.psm1;
             search_root: $(signSrcPath)
         - task: CopyFiles@2
-          displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
-          inputs:
-            SourceFolder: "$(signSrcPath)"
-            Contents: '**'
-            TargetFolder: $(ob_outputDirectory)
-        - task: CopyFiles@2
           displayName: "Copy signed files to build target dir"
           inputs:
             SourceFolder: "$(signSrcPath)"
@@ -163,7 +156,7 @@ extends:
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
-            Copy-Item ./bin/*.msix "$(ob_outputDirectory)"
+            Copy-Item *.msix "$(ob_outputDirectory)" -Verbose
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()
 
@@ -174,10 +167,13 @@ extends:
         pool:
           type: windows
         steps:
+        - download: current
+          patterns: '*.msix'
         - checkout: self
           target: host
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
+            write-host "Contents of $(ob_outputDirectory)"
             dir -r "$(ob_outputDirectory)"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
             Copy-Item "$(ob_outputDirectory)/*.msix" ./bin/msix -Verbose
