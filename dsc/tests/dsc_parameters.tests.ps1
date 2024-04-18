@@ -9,7 +9,7 @@ Describe 'Parameters tests' {
         param($inputType)
 
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               param1:
                 type: string
@@ -43,7 +43,7 @@ Describe 'Parameters tests' {
         param($type, $value)
 
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               param1:
                 type: $type
@@ -69,7 +69,7 @@ Describe 'Parameters tests' {
         param($type, $value)
 
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               param1:
                 type: $type
@@ -95,7 +95,7 @@ Describe 'Parameters tests' {
         param($type, $value)
 
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               param1:
                 type: $type
@@ -122,7 +122,7 @@ Describe 'Parameters tests' {
         param($type, $value, $min, $max)
 
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               param1:
                 type: int
@@ -148,7 +148,7 @@ Describe 'Parameters tests' {
         param($type, $value, $allowed)
 
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               param1:
                 type: $type
@@ -175,7 +175,7 @@ Describe 'Parameters tests' {
         param($type, $value, $constraint)
 
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               param1:
                 type: $type
@@ -195,7 +195,7 @@ Describe 'Parameters tests' {
 
     It 'Default value is used when not provided' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             parameters:
               paramString:
                 type: string
@@ -252,7 +252,7 @@ Describe 'Parameters tests' {
       } | ConvertTo-Json
 
       $config_yaml = @'
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
         parameters:
           osFamily:
             type: string
@@ -293,7 +293,7 @@ Describe 'Parameters tests' {
       param($type, $value)
 
       $config_yaml = @"
-        `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+        `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
         parameters:
           param:
             type: $type

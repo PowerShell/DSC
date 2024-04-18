@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema:     https://json-schema.org/draft/2020-12/schema
+$id:         <HOST>/<PREFIX>/<VERSION>/config/document.metadata.yaml
+
+title: Configuration metadata
+description: >-
+  Defines a set of key-value pairs for the configuration. Except for the `Microsoft.DSC`
+  property, this metadata isn't validated. You can pass any data into this property of a
+  configuration document.
+
+type: object
+properties:
+  Microsoft.DSC:
+    type: object
+    title: DSC metadata
+    description: >-
+      The `Microsoft.DSC` metadata property contains directives and information that DSC itself
+      uses when processing a configuration document. Unlike other metadata key-value pairs, DSC
+      validates these properties.
+    markdownDescription: |
+      ***
+      [_Online Documentation_][01]
+      ***
+
+      The `Microsoft.DSC` metadata property contains directives and information that DSC itself
+      uses when processing a configuration document. Unlike other metadata key-value pairs, DSC
+      validates these properties.
+
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/metadata?<DOCS_VERSION_PIN>#microsoft.dsc
+
+    unevaluatedProperties: false
+    properties:
+      securityContext:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/securityContext.yaml
+        default: Current
+        description: >-
+          This property defines the security context a configuration requires. If you invoke a DSC
+          operation against the configuration document in a security context that conflicts with
+          this metadata, DSC raises an error when it validates the configuration document.
+
+          The default security context is `Current`.
+        markdownDescription: |
+          ***
+          [_Online Documentation_][01]
+          ***
+
+          This property defines the security context a configuration requires. If you invoke a DSC
+          operation against the configuration document in a security context that conflicts with
+          this metadata, DSC raises an error when it validates the configuration document.
+
+          The default security context is `Current`.
+
+          [01]: <DOCS_BASE_URL>/reference/schemas/config/metadata?<DOCS_VERSION_PIN>#microsoft.dsc
+        markdownEnumDescriptions:
+          - | # Current
+            <!-- force a line break -->
+
+            > ### Current security context
+            >
+            > Indicates that the configuration document is usable under any security context. You
+            > can invoke DSC operations against the document when elevated as root or an
+            > administrator and as a normal user or account.
+
+          - | # Elevated
+            <!-- force a line break -->
+
+            > ### Elevated security context
+            >
+            > Indicates that the configuration document is usable only in an elevated security
+            > context. You can invoke DSC operations against the document when elevated as root or
+            > an administrator. When you invoke DSC operations against the document as a
+            > non-elevated user or account, DSC raises an error when it validates the configuration
+            > document.
+
+          - | # Restricted
+            <!-- force a line break -->
+
+            > ### Restricted security context
+            >
+            > Indicates that the configuration document is usable only in a non-elevated security
+            > context. You can invoke DSC operations against the document as a non-elevated user or
+            > account. When you invoke DSC operations against the document as root or an
+            > administrator, DSC raises an error when it validates the configuration document.
+
+# VS Code only
+markdownDescription: |
+  ***
+  [_Online Documentation_][01]
+  ***
+
+  Defines a set of key-value pairs for the configuration. Except for the `Microsoft.DSC`
+  property, this metadata isn't validated. You can pass any data into this property of a
+  configuration document.
+
+  The `Microsoft.DSC` metadata property contains metadata directives and information that DSC
+  itself uses when processing the configuration document. For more information, see
+  [Microsoft.DSC][02]
+
+  [01]: <DOCS_BASE_URL>/reference/schemas/config/metadata?<DOCS_VERSION_PIN>
+  [02]: <DOCS_BASE_URL>/reference/schemas/config/metadata?<DOCS_VERSION_PIN>#microsoft.dsc
+defaultSnippets:
+  - label: ' New metadata property'
+    markdownDescription: |-
+      Defines a key-value pair for the metadata:
+
+      ```yaml
+      metadataName: value
+      ```
+    body:
+      ${1:metadataName}: ${2:value}
+
+  - label: ' New metadata property (object)'
+    markdownDescription: |-
+      Defines a new key-value pair for the metadata where the value is an object.
+
+      ```yaml
+      metadataName:
+        key: value
+      ```
+    body:
+      ${1:metadataName}:
+        ${2:key}: ${3:value}
+
+  - label: ' New metadata property (array)'
+    markdownDescription: |-
+      Defines a new key-value pair for the metadata where the value is an array.
+
+      ```yaml
+      metadataName:
+        - firstValue
+        - secondValue
+      ```
+    body:
+      ${1:metadataName}:
+        - ${2:firstValue}
+        - ${3:secondValue}

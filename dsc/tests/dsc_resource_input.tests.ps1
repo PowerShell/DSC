@@ -5,7 +5,7 @@ Describe 'tests for resource input' {
     BeforeAll {
         $manifest = @'
     {
-        "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
+        "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
         "type": "Test/EnvVarInput",
         "version": "0.1.0",
         "get": {

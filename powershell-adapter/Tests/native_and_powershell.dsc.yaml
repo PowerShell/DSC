@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 # Example configuration mixing native app resources with classic PS resources
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Get info from classic DSC resources
   type: Microsoft.DSC/PowerShell

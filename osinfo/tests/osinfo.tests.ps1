@@ -42,7 +42,7 @@ Describe 'osinfo resource tests' {
 
     It 'should support export' {
         $out = dsc resource export -r Microsoft/osinfo | ConvertFrom-Json
-        $out.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json'
+        $out.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
         if ($IsWindows) {
             $out.resources[0].properties.family | Should -BeExactly 'Windows'
         }

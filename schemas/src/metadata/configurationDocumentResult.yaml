@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/metadata/configurationDocumentResult.yaml
+# Documentation
+title: Configuration result metadata
+description: >-
+  Defines metadata DSC returns for a configuration operation, as from the `dsc config get` or
+  `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe
+  the context of the operation.
+markdownDescription: |-
+  Defines metadata DSC returns for a configuration operation, as from the `dsc config get` or
+  `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe
+  the context of the operation.
+# Definition
+type: object
+required: [Microsoft.DSC]
+properties:
+  Microsoft.DSC:
+    title: DSC context metadata
+    description: >-
+      The child properties for this metadata describe the context of a DSC operation, including
+      the version of DSC used, when the operation started and ended, and the security context the
+      operation was invoked under.
+    type: object
+    required:
+      - version
+      - operation
+      - executionType
+      - startDatetime
+      - endDatetime
+      - duration
+      - securityContext
+    properties:
+      version:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/version.yaml
+      operation:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/operation.yaml
+      executionType:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/executionType.yaml
+      startDatetime:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/startDatetime.yaml
+      endDatetime:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/endDatetime.yaml
+      duration:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/duration.yaml
+      securityContext:
+        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/securityContext.yaml

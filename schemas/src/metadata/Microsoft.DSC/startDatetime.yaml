@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/metadata/Microsoft.DSC/startDatetime.yaml
+# Documentation
+title: Start date and time
+description: >-
+  Defines the start date and time for the DSC operation as a timestamp following the format defined
+  in RFC3339, section 5.6 as `date-time`, like `2024-04-14T08:49:51.395686600-07:00`.
+markdownDescription: |-
+  Defines the start date and time for the DSC operation as a timestamp following the format defined
+  in [RFC3339, section 5.6 (see `date-time`)][01].
+
+  For example: `2024-04-14T08:49:51.395686600-07:00`
+
+  [01]: https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
+# Definition
+type:   string
+format: date-time

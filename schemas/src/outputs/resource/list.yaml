@@ -15,9 +15,28 @@ properties:
     # no prefix. Should we have a different schema for those, or should this
     # be relaxed?
     $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
+  kind:
+    $ref: /<PREFIX>/<VERSION>/definitions/resourceKind.yaml
   version:
     # Only the Test* resources seem to have this field populated.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+  capabilities:
+    title: Resource capabilities
+    description: >-
+      Defines the list of DSC operations the resource is compatible with. If the resource doesn't
+      list a given operation, like `Set` or `Export`, the resource can't be used for those
+      operations. The exception to this is `Test` - DSC uses synthetic testing for resources that
+      don't have the `Test` capability.
+    type: array
+    items:
+      type: string
+      enum:
+        - Get
+        - Set
+        - SetHandlesExist
+        - Test
+        - Delete
+        - Export
   description:
     title: Resource Description
     description: >-
@@ -81,10 +100,10 @@ properties:
     items:
       type: string
       pattern: ^\w+$
-  requires:
-    title: Required DSC Resource Provider
+  requireAdapter:
+    title: Required DSC Resource Adapter
     description: >-
-      Defines the fully qualified type name of the DSC Resource Provider the
+      Defines the fully qualified type name of the DSC Resource Adapter the
       DSC Resource depends on.
     oneOf:
       - $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
