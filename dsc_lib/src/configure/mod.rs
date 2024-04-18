@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::Metadata;
+use crate::configure::config_doc::{ExecutionKind, Metadata};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::get_diff;
@@ -336,7 +336,7 @@ impl Configurator {
                     result: set_result,
                 };
                 result.results.push(resource_result);
-            } else if dsc_resource.capabilities.contains(&Capability::Delete) {
+            } else if dsc_resource.capabilities.contains(&Capability::Delete) && (self.context.execution_type != ExecutionKind::WhatIf) {
                 debug!("Resource implements delete and _exist is false");
                 let before_result = dsc_resource.get(&desired)?;
                 let start_datetime = chrono::Local::now();
@@ -378,6 +378,8 @@ impl Configurator {
                     result: SetResult::Resource(set_result),
                 };
                 result.results.push(resource_result);
+            } else if self.context.execution_type == ExecutionKind::WhatIf {
+                return Err(DscError::NotImplemented(format!("Resource '{}' does not support `what-if flag` with `delete`", resource.resource_type)));
             } else {
                 return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
             }

@@ -110,7 +110,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 for result in group_response.results {
                     result_array.push(serde_json::to_value(result)?);
                 }
-                (group_response.in_desired_state, Value::from(result_array), Value::Null)
+                (group_response.in_desired_state, Value::from(result_array), Value::String("not implemented".to_string()))
             },
             TestResult::Resource(response) => {
                 (response.in_desired_state, response.actual_state, response.desired_state)
@@ -118,6 +118,9 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         };
 
         if execution_type == &ExecutionKind::WhatIf {
+            if desired_state == Value::String("not implemented".to_string()) {
+                return Err(DscError::NotImplemented(format!("Group '{}' does not currently support `what-if flag`", resource.resource_type)));
+            }
             if in_desired_state {
                 debug!("what-if: resource is already in desired state, returning null ResourceWhatIf response");
                 return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
@@ -126,9 +129,6 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             }
             debug!("what-if: resource is not in desired state, returning diff ResourceWhatIf response");
             let diff_properties = get_diff_what_if( &desired_state, &actual_state);
-            println!("desired_state: {:?}", &desired_state);
-            println!("actual_state: {:?}", &actual_state);
-            println!("diff_properties: {:?}", &diff_properties);
             return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
                 what_if_changes: Value::from_iter(diff_properties)
             }));
@@ -140,6 +140,9 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 changed_properties: None,
             }));
         }
+    } else if execution_type == &ExecutionKind::WhatIf {
+        // until resources implement what-if, if we are in what-if mode and there is no pre-test, we can't determine what-if changes
+        return Err(DscError::NotImplemented(format!("Resource '{}' does not currently support `what-if flag` because there is no pre-test", resource.resource_type)));
     }
 
     let args = process_args(&resource.get.args, desired);
