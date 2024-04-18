@@ -16,7 +16,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Discovery includes class-based and script-based resources ' -Skip:(!$IsWindows){
 
-        $r = dsc resource list * -a *PowerShell*
+        $r = dsc resource list * -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
         ($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}).Count | Should -Be 1
@@ -53,7 +53,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on class-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestClassResource1', 'Type':'TestClassResource/TestClassResource'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.Prop1 | Should -BeExactly 'ValueForProp1'
@@ -61,7 +61,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on script-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestPSRepository1','Type':'PSTestModule/TestPSRepository'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestPSRepository1'}" | dsc resource get -r 'PSTestModule/TestPSRepository'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
@@ -69,7 +69,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get uses enum names on class-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestClassResource1','Type':'TestClassResource/TestClassResource'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.EnumProp | Should -BeExactly 'Expected'
@@ -77,16 +77,15 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get uses enum names on script-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestPSRepository1','Type':'PSTestModule/TestPSRepository'}" | dsc resource get -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestPSRepository1'}" | dsc resource get -r 'PSTestModule/TestPSRepository'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.Ensure | Should -BeExactly 'Present'
     }
 
-    <#
     It 'Test works on class-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1','Type':'TestClassResource/TestClassResource'}" | dsc resource test -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.InDesiredState | Should -Be $True
@@ -94,7 +93,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Test works on script-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestPSRepository1','PackageManagementProvider':'NuGet','Type':'PSTestModule/TestPSRepository'}" | dsc resource test -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestPSRepository1','PackageManagementProvider':'NuGet'}" | dsc resource test -r 'PSTestModule/TestPSRepository'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.InDesiredState | Should -Be $True
@@ -102,18 +101,18 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Set works on class-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1','Type':'TestClassResource/TestClassResource'}" | dsc resource set -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.afterState.RebootRequired | Should -Not -BeNull
+        $res.afterState.result | Should -Not -BeNull
     }
 
     It 'Set works on script-based resource' -Skip:(!$IsWindows){
 
-        $r = "{'Name':'TestPSRepository1','Type':'PSTestModule/TestPSRepository'}" | dsc resource set -r 'Microsoft.Dsc/PowerShell'
+        $r = "{'Name':'TestPSRepository1'}" | dsc resource set -r 'PSTestModule/TestPSRepository'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.afterState.RebootRequired | Should -Not -BeNull
+        $res.afterState.result.properties.RebootRequired | Should -Not -BeNull
     }
 
     It 'Export works on PS class-based resource' -Skip:(!$IsWindows){
@@ -121,10 +120,9 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource export -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.resources.count | Should -Be 5
-        $res.resources[0].type | Should -Be "TestClassResource/TestClassResource"
-        $res.resources[0].properties.Name | Should -Be "Object1"
-        $res.resources[0].properties.Prop1 | Should -Be "Property of object1"
+        $res.resources[0].properties.result.count | Should -Be 5
+        $res.resources[0].properties.result[0].Name | Should -Be "Object1"
+        $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
     }
 
     It 'Get --all works on PS class-based resource' -Skip:(!$IsWindows){
@@ -132,8 +130,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource get --all -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.count | Should -Be 5
-        $res | % {$_.actualState | Should -Not -BeNullOrEmpty}
+        $res.actualState.result.count | Should -Be 5
+        $res.actualState.result| % {$_.Name | Should -Not -BeNullOrEmpty}
     }
-    #>
 }

@@ -210,8 +210,6 @@ $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
         }
     }
 
-    Save-PSResource -Path $target -Name 'PSDesiredStateConfiguration' -Version '2.0.7' -Repository PSGallery -TrustRepository
-
     if ($failed) {
         Write-Host -ForegroundColor Red "Build failed"
         exit 1

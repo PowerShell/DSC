@@ -34,9 +34,8 @@ Describe 'PowerShell adapter resource tests' {
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
       $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
-  }
-
-    <#
+    }
+    
     It 'Test works on config with class-based and script-based resources' -Skip:(!$IsWindows){
 
         $r = Get-Content -Raw $pwshConfigPath | dsc config test
@@ -51,8 +50,8 @@ Describe 'PowerShell adapter resource tests' {
         $r = Get-Content -Raw $pwshConfigPath | dsc config set
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results.result.afterState.result[0].RebootRequired | Should -Not -BeNull
-        $res.results.result.afterState.result[1].RebootRequired | Should -Not -BeNull
+        $res.results.result.afterState.result[0].type | Should -Be "PSTestModule/TestPSRepository"
+        $res.results.result.afterState.result[1].type | Should -Be "TestClassResource/TestClassResource"
     }
     
 
@@ -66,51 +65,47 @@ Describe 'PowerShell adapter resource tests' {
               properties:
                 resources:
                 - name: Class-resource Info
-                  type: PSTestModule/TestClassResource
+                  type: TestClassResource/TestClassResource
 '@
         $out = $yaml | dsc config export
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
         $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
         $res.'resources' | Should -Not -BeNullOrEmpty
-        $res.resources.count | Should -Be 5
-        $res.resources[0].properties.Name | Should -Be "Object1"
-        $res.resources[0].properties.Prop1 | Should -Be "Property of object1"
+        $res.resources[0].properties.result.count | Should -Be 5
+        $res.resources[0].properties.result[0].Name | Should -Be "Object1"
+        $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
     }
-
-    #>
 
     It 'Custom psmodulepath in config works' -Skip:(!$IsWindows){
 
         $OldPSModulePath  = $env:PSModulePath
-        Copy-Item -Recurse -Force -Path "$PSScriptRoot/PSTestModule" -Destination $TestDrive
-        Rename-Item -Path "$PSScriptRoot/PSTestModule" -NewName "_PSTestModule"
+        Copy-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource" -Destination $TestDrive
+        Rename-Item -Path "$PSScriptRoot/TestClassResource" -NewName "_TestClassResource"
 
         try {
             $yaml = @"
-                `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: Microsoft.DSC/PowerShell
+              properties:
+                psmodulepath: `$env:PSModulePath;$TestDrive
                 resources:
-                - name: Working with class-based resources
-                  type: Microsoft.DSC/PowerShell
-                  properties:
-                    psmodulepath: `$env:PSModulePath;$TestDrive
-                    resources:
-                    - name: Class-resource Info
-                      type: PSTestModule/TestClassResource
+                - name: Class-resource Info
+                  type: TestClassResource/TestClassResource
 "@
-            <#
             $out = $yaml | dsc config export
             $LASTEXITCODE | Should -Be 0
             $res = $out | ConvertFrom-Json
             $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
             $res.'resources' | Should -Not -BeNullOrEmpty
-            $res.resources.count | Should -Be 5
-            $res.resources[0].properties.Name | Should -Be "Object1"
-            $res.resources[0].properties.Prop1 | Should -Be "Property of object1"
-            #>
+            $res.resources[0].properties.result.count | Should -Be 5
+            $res.resources[0].properties.result[0].Name | Should -Be "Object1"
+            $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
         }
         finally {
-            Rename-Item -Path "$PSScriptRoot/_PSTestModule" -NewName "PSTestModule"
+            Rename-Item -Path "$PSScriptRoot/_TestClassResource" -NewName "TestClassResource"
             $env:PSModulePath = $OldPSModulePath
         }
     }

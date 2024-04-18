@@ -2,12 +2,11 @@
 # Licensed under the MIT License.
 
 # if the version of PowerShell is greater than 5, import the PSDesiredStateConfiguration module
-# this is necessary because the module is not included in the PowerShell 7.0+ releases
-# PSDesiredStateConfiguration 2.0.7 module will be saved in the DSC build
-# in Windows PowerShell, we should always use version 1.1 that ships in Windows
+# this is necessary because the module is not included in the PowerShell 7.0+ releases;
+# In Windows PowerShell, we should always use version 1.1 that ships in Windows.
 if ($PSVersionTable.PSVersion.Major -gt 5) {
-    $parentFolder = (Get-Item (Resolve-Path $PSScriptRoot).Path).Parent
-    $PSDesiredStateConfiguration = Import-Module "$parentFolder/PSDesiredStateConfiguration/2.0.7/PSDesiredStateConfiguration.psd1" -Force -PassThru
+    $m = Get-Module PSDesiredStateConfiguration -ListAvailable | Sort-Object -Descending | Select-Object -First 1
+    $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
 }
 else {
     $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
@@ -133,7 +132,7 @@ function Invoke-DscCacheRefresh {
     return $dscResourceCache
 }
 
-# Convert the INPUT to a dscResourceObject object so configuration and resource are standardized as moch as possible
+# Convert the INPUT to a dscResourceObject object so configuration and resource are standardized as much as possible
 function Get-DscResourceObject {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -181,8 +180,11 @@ function Get-DscResourceObject {
 }
 
 # Get the actual state using DSC Get method from any type of DSC resource
-function Get-ActualState {
+function Invoke-DscOperation {
     param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Get', 'Set', 'Test', 'Export')]
+        [string]$Operation,
         [Parameter(Mandatory, ValueFromPipeline = $true)]
         [dscResourceObject]$DesiredState,
         [Parameter(Mandatory)]
@@ -232,10 +234,13 @@ function Get-ActualState {
                 # imports the .psm1 file for the DSC resource as a PowerShell module and stores the list of parameters
                 Import-Module -Scope Local -Name $cachedDscResourceInfo.path -Force -ErrorAction stop
                 $validParams = (Get-Command -Module $cachedDscResourceInfo.ResourceType -Name 'Get-TargetResource').Parameters.Keys
-                # prune any properties that are not valid parameters of Get-TargetResource
-                $DesiredState.properties.psobject.properties | ForEach-Object -Process {
-                    if ($validParams -notcontains $_.Name) {
-                        $DesiredState.properties.psobject.properties.Remove($_.Name)
+
+                if ($Operation -eq 'Get') {
+                    # prune any properties that are not valid parameters of Get-TargetResource
+                    $DesiredState.properties.psobject.properties | ForEach-Object -Process {
+                        if ($validParams -notcontains $_.Name) {
+                            $DesiredState.properties.psobject.properties.Remove($_.Name)
+                        }
                     }
                 }
 
@@ -244,14 +249,14 @@ function Get-ActualState {
 
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
-                    $getResult = Invoke-DscResource -Method Get -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
 
-                    if ($getResult.GetType().Name -eq 'Hashtable') {
-                        $getResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    if ($invokeResult.GetType().Name -eq 'Hashtable') {
+                        $invokeResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
                     }
                     else {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
-                        $getResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
                     }
                     
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
@@ -269,14 +274,32 @@ function Get-ActualState {
                     $resource = GetTypeInstanceFromModule -modulename $cachedDscResourceInfo.ModuleName -classname $cachedDscResourceInfo.Name
                     $dscResourceInstance = $resource::New()
 
-                    # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
-                    $DesiredState.properties.psobject.properties | ForEach-Object -Process {
-                        $dscResourceInstance.$($_.Name) = $_.Value
+                    if ($DesiredState.properties) {
+                        # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
+                        $DesiredState.properties.psobject.properties | ForEach-Object -Process {
+                            $dscResourceInstance.$($_.Name) = $_.Value
+                        }
                     }
-                    $getResult = $dscResourceInstance.Get()
 
-                    # set the properties of the OUTPUT object from the result of Get-TargetResource
-                    $addToActualState.properties = $getResult
+                    switch ($Operation) {
+                        'Get' {
+                            $Result = $dscResourceInstance.Get()
+                            $addToActualState.properties = $Result
+                        }
+                        'Set' {
+                            $dscResourceInstance.Set()
+                        }
+                        'Test' {
+                            $Result = $dscResourceInstance.Test()
+                            $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
+                        }
+                        'Export' {
+                            $t = $dscResourceInstance.GetType()
+                            $method = $t.GetMethod('Export')
+                            $resultArray = $method.Invoke($null,$null)
+                            $addToActualState = $resultArray
+                        }
+                    }
                 }
                 catch {
                     
