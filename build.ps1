@@ -67,28 +67,6 @@ $filesForMacPackage = @(
     'runcommandonset'
 )
 
-## Test if Rust is installed
-if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
-    Write-Verbose -Verbose "Rust not found, installing..."
-    if (!$IsWindows) {
-        curl https://sh.rustup.rs -sSf | sh -s -- -y
-        $env:PATH += ":$env:HOME/.cargo/bin"
-    }
-    else {
-        Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
-        Write-Verbose -Verbose "Use the default settings to ensure build works"
-        & 'temp:/rustup-init.exe' -y
-        $env:PATH += ";$env:USERPROFILE\.cargo\bin"
-        Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
-    }
-}
-
-if ($IsLinux -and (Test-Path /etc/mariner-release)) {
-    tdnf install -y openssl-devel
-}
-
-$BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
-
 function Find-LinkExe {
     try {
         # this helper may not be needed anymore, but keeping in case the install doesn't work for everyone
@@ -108,6 +86,30 @@ if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
     rustup default stable
+}
+
+if (!$SkipBuild) {
+    ## Test if Rust is installed
+    if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "Rust not found, installing..."
+        if (!$IsWindows) {
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            $env:PATH += ":$env:HOME/.cargo/bin"
+        }
+        else {
+            Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
+            Write-Verbose -Verbose "Use the default settings to ensure build works"
+            & 'temp:/rustup-init.exe' -y
+            $env:PATH += ";$env:USERPROFILE\.cargo\bin"
+            Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
+        }
+    }
+
+    if ($IsLinux -and (Test-Path /etc/mariner-release)) {
+        tdnf install -y openssl-devel
+    }
+
+    $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
