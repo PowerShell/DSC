@@ -178,6 +178,7 @@ extends:
           target: host
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
+            dir -r "$(ob_outputDirectory)"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
             Copy-Item "$(ob_outputDirectory)/*.msix" ./bin/msix -Verbose
             ./build.ps1 -PackageType msixbundle
