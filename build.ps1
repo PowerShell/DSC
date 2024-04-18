@@ -85,10 +85,6 @@ function Find-LinkExe {
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
-    rustup default stable
-}
-
-if (!$SkipBuild) {
     ## Test if Rust is installed
     if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Rust not found, installing..."
@@ -110,6 +106,8 @@ if (!$SkipBuild) {
     }
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+
+    rustup default stable
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
