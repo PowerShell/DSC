@@ -135,6 +135,7 @@ extends:
             signing_profile: external_distribution
             files_to_sign: |
               *.exe;
+              *.ps1;
               **\*.ps1;
               **\*.psd1;
               **\*.psm1;
