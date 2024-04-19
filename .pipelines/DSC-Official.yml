@@ -84,10 +84,10 @@ extends:
               buildName: aarch64-pc-windows-msvc
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          repoRoot: $(Build.SourcesDirectory)\DSC
-          signSrcPath: $(Agent.TempDirectory)\signSrcPath
+          repoRoot: '$(Build.SourcesDirectory)\DSC'
+          signSrcPath: '$(Agent.TempDirectory)\signSrcPath'
           ob_artifactBaseName: 'DSC-$(buildName)'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
