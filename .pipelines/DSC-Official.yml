@@ -87,7 +87,7 @@ extends:
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           repoRoot: $(Build.SourcesDirectory)\DSC
-          signSrcPath: $(Agent.TempDirectory)/signSrcPath
+          signSrcPath: $(Agent.TempDirectory)\signSrcPath
           ob_artifactBaseName: 'DSC-$(buildName)'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
@@ -134,8 +134,7 @@ extends:
             command: 'sign'
             signing_profile: external_distribution
             files_to_sign: |
-              *.exe;
-              *.ps1;
+              **\*.exe;
               **\*.ps1;
               **\*.psd1;
               **\*.psm1;
@@ -255,6 +254,11 @@ extends:
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build $(buildName)'
           condition: succeeded()
+        - task: PublishPipelineArtifact@1
+          displayName: Publish Pipeline Artifact
+          inputs:
+            targetPath: '$(ob_outputDirectory)'
+            artifact: 'DSC-$(buildName)'
 
     - stage: Release
       dependsOn: BuildAndSign
