@@ -155,7 +155,7 @@ extends:
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
-            Copy-Item *.msix "$(ob_outputDirectory)" -Verbose
+            Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()
 
