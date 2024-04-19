@@ -87,8 +87,7 @@ extends:
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           repoRoot: '$(Build.SourcesDirectory)\DSC'
-          signSrcPath: '$(repoRoot)/out'
-          ob_artifactBaseName: 'DSC-$(buildName)'
+          signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: false
