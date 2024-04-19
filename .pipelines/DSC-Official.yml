@@ -39,7 +39,7 @@ extends:
         packageName: Microsoft.DSC
       codeql:
         compiled:
-          enabled: true
+          enabled: false
       asyncSdl: # https://aka.ms/obpipelines/asyncsdl
         enabled: true
         forStages: [Build]
@@ -258,7 +258,7 @@ extends:
           displayName: Publish Pipeline Artifact
           inputs:
             targetPath: '$(ob_outputDirectory)'
-            artifact: 'drop_BuildAndSign_BuildMac'
+            artifact: 'drop_BuildAndSign_BuildMac_$(buildName)'
 
     - stage: Release
       dependsOn: BuildAndSign
