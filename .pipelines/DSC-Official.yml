@@ -252,13 +252,9 @@ extends:
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+            Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]./bin/DSC-$(PackageVersion)-$(buildName).tar.gz"
           displayName: 'Build $(buildName)'
           condition: succeeded()
-        - task: PublishPipelineArtifact@1
-          displayName: Publish Pipeline Artifact
-          inputs:
-            targetPath: '$(ob_outputDirectory)'
-            artifact: 'drop_BuildAndSign_BuildMac_$(buildName)'
 
     - stage: Release
       dependsOn: BuildAndSign
