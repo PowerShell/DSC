@@ -66,7 +66,6 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         steps:
         - checkout: self
-          target: host
         - pwsh: |
             $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
@@ -96,7 +95,6 @@ extends:
         displayName: BuildWin
         steps:
         - checkout: self
-          target: host
           env: 
             ob_restore_phase: true
         - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
@@ -104,6 +102,8 @@ extends:
             Enabled: true
             AnalyzeInPipeline: true
             Language: rust
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             $tmpdir = "$(Agent.TempDirectory)"
             Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
@@ -119,6 +119,8 @@ extends:
           condition: succeeded()
         - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
           condition: always()
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
@@ -176,7 +178,6 @@ extends:
         - download: current
           patterns: '*.msix'
         - checkout: self
-          target: host
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             write-host "Contents of $(ob_outputDirectory)"
