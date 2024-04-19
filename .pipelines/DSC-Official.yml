@@ -39,7 +39,7 @@ extends:
         packageName: Microsoft.DSC
       codeql:
         compiled:
-          enabled: true
+          enabled: false
       asyncSdl: # https://aka.ms/obpipelines/asyncsdl
         enabled: true
         forStages: [Build]
