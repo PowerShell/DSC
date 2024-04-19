@@ -39,7 +39,7 @@ extends:
         packageName: Microsoft.DSC
       codeql:
         compiled:
-          enabled: false
+          enabled: true
       asyncSdl: # https://aka.ms/obpipelines/asyncsdl
         enabled: true
         forStages: [Build]
@@ -87,7 +87,7 @@ extends:
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           repoRoot: '$(Build.SourcesDirectory)\DSC'
-          signSrcPath: '$(Build.SourcesDirectory)\signSrcPath'
+          signSrcPath: '$(repoRoot)/out'
           ob_artifactBaseName: 'DSC-$(buildName)'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
@@ -252,7 +252,7 @@ extends:
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
-            Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]./bin/DSC-$(PackageVersion)-$(buildName).tar.gz"
+            Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"
           displayName: 'Build $(buildName)'
           condition: succeeded()
 
