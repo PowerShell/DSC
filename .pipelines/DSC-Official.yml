@@ -258,7 +258,7 @@ extends:
           displayName: Publish Pipeline Artifact
           inputs:
             targetPath: '$(ob_outputDirectory)'
-            artifact: 'DSC-$(buildName)'
+            artifact: '"drop_BuildAndSign_BuildMac"'
 
     - stage: Release
       dependsOn: BuildAndSign
