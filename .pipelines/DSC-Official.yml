@@ -78,13 +78,16 @@ extends:
         strategy:
           matrix:
             Windows x64:
+              Suffix: x64
               buildName: x86_64-pc-windows-msvc
             Windows x64_arm64:
+              Suffix: arm64
               buildName: aarch64-pc-windows-msvc
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_artifactSuffix: $(Suffix)
           repoRoot: '$(Build.SourcesDirectory)\DSC'
           signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
