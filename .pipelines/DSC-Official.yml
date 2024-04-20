@@ -1,6 +1,12 @@
 name: DSC-Release-$(Build.BuildId)
 trigger: none
 
+parameters:
+- name: 'debugConsole'
+  displayName: 'Enable debug console'
+  type: boolean
+  default: false
+
 pr:
   branches:
     include:
@@ -23,6 +29,8 @@ resources:
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
   parameters:
+    featureFlags:
+      debugConsole: ${{ parameters.debugConsole }}
     customTags: 'ES365AIMigrationTooling'
     globalSdl:
       disableLegacyManifest: true
@@ -58,7 +66,6 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         steps:
         - checkout: self
-          target: host
         - pwsh: |
             $packageVersion = $(repoRoot)/build.ps1 -GetPackageVersion
             $vstsCommandString = "vso[task.setvariable variable=Version;isoutput=true]$packageVersion"
@@ -71,52 +78,67 @@ extends:
         strategy:
           matrix:
             Windows x64:
+              Suffix: x64
               buildName: x86_64-pc-windows-msvc
             Windows x64_arm64:
+              Suffix: arm64
               buildName: aarch64-pc-windows-msvc
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          repoRoot: $(Build.SourcesDirectory)\DSC
-          signSrcPath: $(repoRoot)/out
-          ob_artifactBaseName: 'DSC-$(buildName)'
+          ob_artifactSuffix: $(Suffix)
+          repoRoot: '$(Build.SourcesDirectory)\DSC'
+          signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: false
         pool:
           type: windows
-        displayName: Build
+        displayName: BuildWin
         steps:
         - checkout: self
-          target: host
+          env: 
+            ob_restore_phase: true
         - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
           inputs:
             Enabled: true
             AnalyzeInPipeline: true
             Language: rust
+          env: 
+            ob_restore_phase: true
         - pwsh: |
-            $tmpdir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
-            New-Item -ItemType Directory -Path $tmpdir
+            $tmpdir = "$(Agent.TempDirectory)"
             Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
           displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
+          env: 
+            ob_restore_phase: true
           condition: succeeded()
         - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
           condition: always()
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
-            $outPath = New-Item -ItemType Directory -Path "$(PackageRoot)/out/$(buildName)" -ErrorAction Ignore
+            $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
             # workaround known issue of building in OneBranch copying from TMP folder
             $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
             # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
-            Copy-Item "$env:CARGO_TARGET_DIR/*.exe" "$(signSrcPath)"
-            # Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Destination $outPath -Verbose -Force
-          displayName: Copy binaries
+            write-host 'Binaries in $(env:CARGO_TARGET_DIR)'
+            Copy-Item -Path "$env:CARGO_TARGET_DIR/$(buildName)/$(BuildConfiguration)/*.exe" -Destination "$(signSrcPath)" -Verbose
+            Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Recurse -Destination "$(signSrcPath)" -Verbose -Force
+            write-host 'Binaries in $(signSrcPath)'
+            dir -r "$(signSrcPath)"
+          displayName: Copy built binaries
+          env: 
+            ob_restore_phase: true
           condition: succeeded()
         - task: onebranch.pipeline.signing@1
           displayName: Sign 1st party files
@@ -124,24 +146,28 @@ extends:
             command: 'sign'
             signing_profile: external_distribution
             files_to_sign: |
-              *.exe;
-              *.json;
-              *.ps1;
+              **\*.exe;
+              **\*.ps1;
+              **\*.psd1;
+              **\*.psm1;
             search_root: $(signSrcPath)
         - task: CopyFiles@2
-          displayName: "Copy signed files to ob_outputDirectory - '$(ob_outputDirectory)'"
+          displayName: "Copy signed files to build target dir"
           inputs:
             SourceFolder: "$(signSrcPath)"
-            Contents: '*'
-            TargetFolder: $(ob_outputDirectory)
+            Contents: '**'
+            TargetFolder: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
+            OverWrite: true
         - pwsh: |
-            compress-archive -Path "$(ob_outputDirectory)/*" -DestinationPath "$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).zip"
-          displayName: 'Compress $(buildName)'
+            Set-Location "$(Build.SourcesDirectory)/DSC"
+            ./build.ps1 -PackageType zip -Architecture $(buildName) -Release
+            Copy-Item ./bin/*.zip "$(ob_outputDirectory)"
+          displayName: 'Zip $(buildName)'
           condition: succeeded()
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            ./build.ps1 -msix -skipbuild
-            Copy-Item *.msix "$(ob_outputDirectory)"
+            ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
+            Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()
 
@@ -152,9 +178,20 @@ extends:
         pool:
           type: windows
         steps:
+        - download: current
+          artifact: drop_BuildAndSign_BuildWinx64
+          patterns: '*.msix'
+        - download: current
+          artifact: drop_BuildAndSign_BuildWinarm64
+          patterns: '*.msix'
+        - checkout: self
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            ./build.ps1 -msixbundle
+            $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
+            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWinx64/*.msix" ./bin/msix -Verbose
+            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWinarm64/*.msix" ./bin/msix -Verbose
+            ./build.ps1 -PackageType msixbundle
+            Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
 
@@ -185,11 +222,9 @@ extends:
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
+            ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
+            Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build x86_64-unknown-linux-gnu'
-          condition: succeeded()
-        - pwsh: |
-            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-x86_64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/x86_64-unknown-linux-gnu/$(BuildConfiguration) .
-          displayName: 'Compress x86_64-unknown-linux-gnu'
           condition: succeeded()
 
       - job: BuildLinuxArm64
@@ -204,11 +239,9 @@ extends:
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
+            ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
+            Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-gnu'
-          condition: succeeded()
-        - pwsh: |
-            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-aarch64-unknown-linux-gnu.tar.gz' -C $(Build.SourcesDirectory)/bin/aarch64-unknown-linux-gnu/$(BuildConfiguration) .
-          displayName: 'Compress aarch64-unknown-linux-gnu'
           condition: succeeded()
 
       - job: BuildMac
@@ -216,7 +249,7 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-        displayName: Build
+        displayName: BuildMac
         pool:
           type: linux
           isCustom: true
@@ -231,11 +264,10 @@ extends:
         steps:
         - pwsh: |
             ./build.ps1 -Release -Architecture $(buildName)
+            ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
+            Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+            Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"
           displayName: 'Build $(buildName)'
-          condition: succeeded()
-        - pwsh: |
-            tar czf '$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz' -C $(Build.SourcesDirectory)/bin/$(buildName)/$(BuildConfiguration) .
-          displayName: 'Compress $(buildName)'
           condition: succeeded()
 
     - stage: Release
