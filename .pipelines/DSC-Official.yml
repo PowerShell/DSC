@@ -179,14 +179,17 @@ extends:
           type: windows
         steps:
         - download: current
-          patterns: '**\.msix'
+          artifact: drop_BuildAndSign_BuildWinx64
+          patterns: '*.msix'
+        - download: current
+          artifact: drop_BuildAndSign_BuildWinarm64
+          patterns: '*.msix'
         - checkout: self
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            write-host "Contents of $(ob_outputDirectory)"
-            dir -r "$(ob_outputDirectory)"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
-            Copy-Item "$(ob_outputDirectory)/*.msix" ./bin/msix -Verbose
+            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWinx64/*.msix" ./bin/msix -Verbose
+            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWinarm64/*.msix" ./bin/msix -Verbose
             ./build.ps1 -PackageType msixbundle
             Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
