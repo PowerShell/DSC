@@ -179,7 +179,7 @@ extends:
           type: windows
         steps:
         - download: current
-          patterns: '*.msix'
+          patterns: '**\.msix'
         - checkout: self
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
