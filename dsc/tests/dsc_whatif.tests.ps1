@@ -19,7 +19,7 @@ Describe 'whatif tests' {
         $result.results.Count | Should -Be 1
         $result.results[0].Name | Should -Be 'Hello'
         $result.results[0].type | Should -BeExactly 'Test/Echo'
-        $result.results[0].result.whatIfChanges | Should -Be 'none'
+        $result.results[0].result.changes | Should -Be $null
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
         $LASTEXITCODE | Should -Be 0
     }
@@ -39,13 +39,13 @@ Describe 'whatif tests' {
         $result.results.Count | Should -Be 1
         $result.results[0].Name | Should -Be 'Registry'
         $result.results[0].type | Should -BeExactly 'Microsoft.Windows/Registry'
-        $result.results[0].result.whatIfChanges._exist.from | Should -Be 'false'
-        $result.results[0].result.whatIfChanges._exist.to | Should -Be 'true'
+        $result.results[0].result.changes[0]._exist.from | Should -Be 'false'
+        $result.results[0].result.changes[0]._exist.to | Should -Be 'true'
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'config set whatif for delete is not supported' {
+    It 'config set whatif for delete' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
@@ -54,13 +54,15 @@ Describe 'whatif tests' {
               properties:
                 _exist: false
 "@
-        $result = $config_yaml | dsc config set -w 2>&1
-        $result | Should -Match 'ERROR.*?Not implemented.*?what-if'
-        $LASTEXITCODE | Should -Be 2
+        $result = $config_yaml | dsc config set -w --format pretty-json | ConvertFrom-Json
+        $result.hadErrors | Should -BeFalse
+        $result.results.Count | Should -Be 1
+        $result.results[0].result.changes[0] | Should -Be "delete 'Test/Delete' using 'dsctest'"
+        $LASTEXITCODE | Should -Be 0
     }
 
     It 'config set whatif when there is no pre-test is not supported' {
-        $result = dsc config set -p .\..\examples\groups.dsc.yaml -w 2>&1
+        $result = dsc config set -p $PSScriptRoot/../examples/groups.dsc.yaml -w 2>&1
         $result | Should -Match 'ERROR.*?Not implemented.*?what-if'
         $LASTEXITCODE | Should -Be 2
     }

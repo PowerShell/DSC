@@ -87,8 +87,8 @@ pub struct ResourceSetResponse {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceSetWhatIfResponse {
-    #[serde(rename = "whatIfChanges")]
-    pub what_if_changes: Value
+    #[serde(rename = "changes")]
+    pub what_if_changes: Vec<Value>
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

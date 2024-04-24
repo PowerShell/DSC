@@ -124,13 +124,13 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             if in_desired_state {
                 debug!("what-if: resource is already in desired state, returning null ResourceWhatIf response");
                 return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-                    what_if_changes: Value::String("none".to_string())
+                    what_if_changes: Vec::new()
                 }));
             }
             debug!("what-if: resource is not in desired state, returning diff ResourceWhatIf response");
             let diff_properties = get_diff_what_if( &desired_state, &actual_state);
             return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-                what_if_changes: Value::from_iter(diff_properties)
+                what_if_changes: vec![Value::from_iter(diff_properties)]
             }));
         }
         if in_desired_state {
@@ -385,7 +385,7 @@ fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &str, expected: &str)
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<(), DscError> {
+pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str, execution_type: &ExecutionKind) -> Result<Option<SetResult>, DscError> {
     let Some(delete) = &resource.delete else {
         return Err(DscError::NotImplemented("delete".to_string()));
     };
@@ -395,6 +395,11 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
     let args = process_args(&delete.args, filter);
     let command_input = get_command_input(&delete.input, filter)?;
 
+    if execution_type == &ExecutionKind::WhatIf {
+        return Ok(Some(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
+            what_if_changes: vec![Value::String(format!("delete '{}' using '{}'", &resource.resource_type, &delete.executable))]
+        })));
+    }
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
     let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     log_resource_traces(&stderr);
@@ -402,7 +407,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     }
 
-    Ok(())
+    Ok(None)
 }
 
 /// Invoke the validate operation against a command resource.

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata};
+use crate::configure::config_doc::Metadata;
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::get_diff;
@@ -314,75 +314,62 @@ impl Configurator {
             let desired = add_metadata(&dsc_resource.kind, properties)?;
             trace!("desired: {desired}");
 
+            let start_datetime;
+            let end_datetime;
+            let set_result;
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("Resource handles _exist or _exist is true");
-                let start_datetime = chrono::Local::now();
-                let set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
-                let end_datetime = chrono::Local::now();
-                self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
-                let resource_result = config_result::ResourceSetResult {
-                    metadata: Some(
-                        Metadata {
-                            microsoft: Some(
-                                MicrosoftDscMetadata {
-                                    duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                                    ..Default::default()
-                                }
-                            )
-                        }
-                    ),
-                    name: resource.name.clone(),
-                    resource_type: resource.resource_type.clone(),
-                    result: set_result,
-                };
-                result.results.push(resource_result);
-            } else if dsc_resource.capabilities.contains(&Capability::Delete) && (self.context.execution_type != ExecutionKind::WhatIf) {
+                start_datetime = chrono::Local::now();
+                set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
+                end_datetime = chrono::Local::now();
+            } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 debug!("Resource implements delete and _exist is false");
                 let before_result = dsc_resource.get(&desired)?;
-                let start_datetime = chrono::Local::now();
-                dsc_resource.delete(&desired)?;
-                let end_datetime = chrono::Local::now();
-                let after_result = dsc_resource.get(&desired)?;
-                // convert get result to set result
-                let set_result = match before_result {
-                    GetResult::Resource(before_response) => {
-                        let GetResult::Resource(after_result) = after_result else {
-                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
-                        };
-                        let before_value = serde_json::to_value(&before_response.actual_state)?;
-                        let after_value = serde_json::to_value(&after_result.actual_state)?;
-                        ResourceSetResponse {
-                            before_state: before_response.actual_state,
-                            after_state: after_result.actual_state,
-                            changed_properties: Some(get_diff(&before_value, &after_value)),
-                        }
-                    },
-                    GetResult::Group(_) => {
-                        return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
-                    },
+                start_datetime = chrono::Local::now();
+                let delete_result = dsc_resource.delete(&desired, &self.context.execution_type)?;
+                set_result = if let Some(whatif_result) = delete_result { whatif_result } else {
+                    let after_result = dsc_resource.get(&desired)?;
+                    // convert get result to set result
+                    match before_result {
+                        GetResult::Resource(before_response) => {
+                            let GetResult::Resource(after_result) = after_result else {
+                                return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
+                            };
+                            let before_value = serde_json::to_value(&before_response.actual_state)?;
+                            let after_value = serde_json::to_value(&after_result.actual_state)?;
+                            SetResult::Resource(ResourceSetResponse {
+                                before_state: before_response.actual_state,
+                                after_state: after_result.actual_state,
+                                changed_properties: Some(get_diff(&before_value, &after_value)),
+                            })
+                        },
+                        GetResult::Group(_) => {
+                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
+                        },
+                    }
                 };
-                self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
-                let resource_result = config_result::ResourceSetResult {
-                    metadata: Some(
-                        Metadata {
-                            microsoft: Some(
-                                MicrosoftDscMetadata {
-                                    duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                                    ..Default::default()
-                                }
-                            )
-                        }
-                    ),
-                    name: resource.name.clone(),
-                    resource_type: resource.resource_type.clone(),
-                    result: SetResult::Resource(set_result),
-                };
-                result.results.push(resource_result);
-            } else if self.context.execution_type == ExecutionKind::WhatIf {
-                return Err(DscError::NotImplemented(format!("Resource '{}' does not support `what-if flag` with `delete`", resource.resource_type)));
+                end_datetime = chrono::Local::now();
             } else {
                 return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
             }
+
+            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+            let resource_result = config_result::ResourceSetResult {
+                metadata: Some(
+                    Metadata {
+                        microsoft: Some(
+                            MicrosoftDscMetadata {
+                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                ..Default::default()
+                            }
+                        )
+                    }
+                ),
+                name: resource.name.clone(),
+                resource_type: resource.resource_type.clone(),
+                result: set_result,
+            };
+            result.results.push(resource_result);
         }
 
         result.metadata = Some(

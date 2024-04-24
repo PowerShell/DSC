@@ -138,7 +138,7 @@ pub trait Invoke {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn delete(&self, filter: &str) -> Result<(), DscError>;
+    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<Option<SetResult>, DscError>;
 
     /// Invoke the validate operation on the resource.
     ///
@@ -244,7 +244,7 @@ impl Invoke for DscResource {
         }
     }
 
-    fn delete(&self, filter: &str) -> Result<(), DscError> {
+    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<Option<SetResult>, DscError> {
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -254,7 +254,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_delete(&resource_manifest, &self.directory, filter)
+                command_resource::invoke_delete(&resource_manifest, &self.directory, filter, execution_type)
             },
         }
     }
