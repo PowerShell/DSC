@@ -56,6 +56,9 @@ pub enum SubCommand {
         parameters_file: Option<String>,
         #[clap(long, hide = true)]
         as_group: bool,
+        // Used for the Microsoft.DSC/Include resource
+        #[clap(long, hide = true)]
+        include: Option<String>,
     },
     #[clap(name = "resource", about = "Invoke a specific DSC resource")]
     Resource {

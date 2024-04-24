@@ -16,6 +16,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod include;
 pub mod resource_command;
 pub mod subcommand;
 pub mod tablewriter;
