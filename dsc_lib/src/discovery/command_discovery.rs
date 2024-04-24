@@ -261,6 +261,8 @@ impl ResourceDiscovery for CommandDiscovery {
 
         trace!("Listing resources with type_name_filter/adapter_name_filter: {type_name_filter}/{adapter_name_filter}");
 
+        self.discover_resources(type_name_filter)?;
+
         if !adapter_name_filter.is_empty() {
             self.discover_adapted_resources(adapter_name_filter)?;
         }
