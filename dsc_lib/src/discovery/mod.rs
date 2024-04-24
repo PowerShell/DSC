@@ -27,7 +27,6 @@ impl Discovery {
     }
 
     /// List operation.
-    #[allow(clippy::missing_panics_doc)] // false positive in clippy; this function will never panic
     pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
@@ -45,12 +44,10 @@ impl Discovery {
                 }
             };
 
-            for (_resource_name, resource) in discovered_resources {
-                let Some(resource) = resource.first() else {
-                    continue;
-                };
-
-                resources.push(resource.clone());
+            for (_resource_name, found_resources) in discovered_resources {
+                for resource in found_resources {
+                    resources.push(resource.clone());
+                }
             };
         }
 
