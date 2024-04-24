@@ -190,14 +190,14 @@ impl ResourceDiscovery for CommandDiscovery {
 
         let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
 
-        for (adapter_name, adapters) in self.adapters.iter() {
+        for (adapter_name, adapters) in &self.adapters {
             for adapter in adapters {
                 info!("Enumerating resources for adapter '{}'", adapter_name);
                 let pb_adapter_span = warn_span!("");
                 pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
                     "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
                 )?);
-                pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter '{}'", adapter_name).as_str());
+                pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
                 let _ = pb_adapter_span.enter();
                 let manifest = if let Some(manifest) = &adapter.manifest {
                     if let Ok(manifest) = import_manifest(manifest.clone()) {
@@ -282,7 +282,7 @@ impl ResourceDiscovery for CommandDiscovery {
         let mut found_resources = BTreeMap::<String, DscResource>::new();
         let mut remaining_required_resource_types = required_resource_types.to_owned();
 
-        for (resource_name, resources) in self.resources.iter() {
+        for (resource_name, resources) in &self.resources {
             let Some(resource ) = resources.first() else {
                 // skip if no resources
                 continue;
@@ -302,7 +302,7 @@ impl ResourceDiscovery for CommandDiscovery {
         debug!("Found {} matching non-adapter-based resources", found_resources.len());
 
         // now go through the adapter resources and add them to the list of resources
-        for (adapted_name, adapted_resource) in self.adapted_resources.iter() {
+        for (adapted_name, adapted_resource) in &self.adapted_resources {
             let Some(adapted_resource) = adapted_resource.first() else {
                 // skip if no resources
                 continue;
