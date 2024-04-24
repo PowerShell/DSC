@@ -335,7 +335,7 @@ impl Configurator {
                     resource_type: resource.resource_type.clone(),
                     result: set_result,
                 };
-                result.results.push(resource_result);    
+                result.results.push(resource_result);
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 debug!("Resource implements delete and _exist is false");
                 let before_result = dsc_resource.get(&desired)?;
@@ -343,10 +343,10 @@ impl Configurator {
                 dsc_resource.delete(&desired)?;
                 let end_datetime = chrono::Local::now();
                 let after_result = dsc_resource.get(&desired)?;
-                // convert get result to set result                
+                // convert get result to set result
                 let set_result = match before_result {
                     GetResult::Resource(before_response) => {
-                        let GetResult::Resource(after_result) = after_result else { 
+                        let GetResult::Resource(after_result) = after_result else {
                             return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
                         };
                         let before_value = serde_json::to_value(&before_response.actual_state)?;
@@ -614,7 +614,7 @@ impl Configurator {
         let mut required_resources = config.resources.iter().map(|p| p.resource_type.to_lowercase()).collect::<Vec<String>>();
         required_resources.sort_unstable();
         required_resources.dedup();
-        self.discovery.discover_resources(&required_resources);
+        self.discovery.find_resources(&required_resources);
         Ok(config)
     }
 

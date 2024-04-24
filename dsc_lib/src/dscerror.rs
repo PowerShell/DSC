@@ -98,6 +98,9 @@ pub enum DscError {
     #[error("Security context: {0}")]
     SecurityContext(String),
 
+    #[error("Semver: {0}")]
+    Semver(#[from] semver::Error),
+
     #[error("Utf-8 conversion error: {0}")]
     Utf8Conversion(#[from] Utf8Error),
 
