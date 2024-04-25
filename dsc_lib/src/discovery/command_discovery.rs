@@ -274,20 +274,16 @@ impl ResourceDiscovery for CommandDiscovery {
 
     fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
 
-        trace!("Listing resources with type_name_filter/adapter_name_filter: {type_name_filter}/{adapter_name_filter}");
-
-        self.discover_resources(type_name_filter)?;
-
-        if !adapter_name_filter.is_empty() {
-            self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
-        }
-
+        trace!("Listing resources with type_name_filter '{type_name_filter}' and adapter_name_filter '{adapter_name_filter}'");
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
 
         if adapter_name_filter.is_empty() {
+            self.discover_resources(type_name_filter)?;
             resources.append(&mut self.resources);
             resources.append(&mut self.adapters);
         } else {
+            self.discover_resources("*")?;
+            self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
             resources.append(&mut self.adapted_resources);
         }
 
@@ -353,8 +349,22 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
-            let resource_instance_version = Version::parse(&resource_instance.version)?;
-            let resource_version = Version::parse(&resource.version)?;
+            let resource_instance_version = match Version::parse(&resource_instance.version) {
+                Ok(v) => v,
+                Err(err) => {
+                    // write as info since PowerShell resources tend to have invalid semver
+                    info!("Resource '{}' has invalid version: {err}", resource_instance.type_name);
+                    continue;
+                },
+            };
+            let resource_version = match Version::parse(&resource.version) {
+                Ok(v) => v,
+                Err(err) => {
+                    // write as info since PowerShell resources tend to have invalid semver
+                    info!("Resource '{}' has invalid version: {err}", resource.type_name);
+                    continue;
+                },
+            };
             // if the version already exists, we skip
             if resource_instance_version == resource_version {
                 return Ok(());
