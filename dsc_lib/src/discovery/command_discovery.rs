@@ -203,7 +203,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
         for (adapter_name, adapters) in &self.adapters {
             for adapter in adapters {
-                if !regex.is_match(&adapter_name) {
+                if !regex.is_match(adapter_name) {
                     continue;
                 }
 
