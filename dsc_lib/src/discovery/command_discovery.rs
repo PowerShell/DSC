@@ -148,10 +148,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                         let manifest = import_manifest(manifest.clone())?;
                                         if manifest.kind == Some(Kind::Adapter) {
                                             trace!("Resource adapter {} found", resource.type_name);
-                                            insert_resource(&mut adapters, &resource)?;
+                                            insert_resource(&mut adapters, &resource);
                                         } else {
                                             trace!("Resource {} found", resource.type_name);
-                                            insert_resource(&mut resources, &resource)?;
+                                            insert_resource(&mut resources, &resource);
                                         }
                                     }
                                 }
@@ -253,7 +253,7 @@ impl ResourceDiscovery for CommandDiscovery {
                             }
 
                             if name_regex.is_match(&resource.type_name) {
-                                insert_resource(&mut adapted_resources, &resource)?;
+                                insert_resource(&mut adapted_resources, &resource);
                                 adapter_resources_count += 1;
                             }
                         },
@@ -340,11 +340,11 @@ impl ResourceDiscovery for CommandDiscovery {
 }
 
 // helper to insert a resource into a vector of resources in order of newest to oldest
-fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) -> Result<(), DscError> {
+fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
     if resources.contains_key(&resource.type_name) {
         let Some(resource_versions) = resources.get_mut(&resource.type_name) else {
             resources.insert(resource.type_name.clone(), vec![resource.clone()]);
-            return Ok(());
+            return;
         };
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
@@ -367,7 +367,7 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
             };
             // if the version already exists, we skip
             if resource_instance_version == resource_version {
-                return Ok(());
+                return;
             }
 
             if resource_instance_version < resource_version {
@@ -379,7 +379,6 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
     } else {
         resources.insert(resource.type_name.clone(), vec![resource.clone()]);
     }
-    Ok(())
 }
 
 fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
