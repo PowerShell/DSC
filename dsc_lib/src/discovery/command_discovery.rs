@@ -143,7 +143,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                     },
                                 };
 
-                                if regex.is_match(filter) {
+                                if regex.is_match(&resource.type_name) {
                                     if let Some(ref manifest) = resource.manifest {
                                         let manifest = import_manifest(manifest.clone())?;
                                         if manifest.kind == Some(Kind::Adapter) {
