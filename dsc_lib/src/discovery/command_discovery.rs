@@ -6,7 +6,6 @@ use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
-use crate::dscresources::command_resource::log_resource_traces;
 use crate::dscerror::DscError;
 use indicatif::ProgressStyle;
 use regex::RegexBuilder;
@@ -49,7 +48,7 @@ impl CommandDiscovery {
             trace!("DSC_RESOURCE_PATH not set, trying PATH");
             match env::var_os("PATH") {
                 Some(value) => {
-                    debug!("Using PATH: {:?}", value.to_string_lossy());
+                    trace!("Using PATH: {:?}", value.to_string_lossy());
                     value
                 },
                 None => {
@@ -85,10 +84,6 @@ impl Default for CommandDiscovery {
 impl ResourceDiscovery for CommandDiscovery {
 
     fn discover_resources(&mut self, filter: &str) -> Result<(), DscError> {
-        if !self.resources.is_empty() || !self.adapters.is_empty() {
-            return Ok(());
-        }
-
         info!("Discovering resources using filter: {filter}");
 
         let regex_str = convert_wildcard_to_regex(filter);
@@ -232,11 +227,10 @@ impl ResourceDiscovery for CommandDiscovery {
                     Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
                     Err(e) => {
                         // In case of error, log and continue
-                        warn!("Could not start {}: {}", list_command.executable, e);
+                        warn!("{e}");
                         continue;
                     },
                 };
-                log_resource_traces(&stderr);
 
                 if exit_code != 0 {
                     // in case of failure, log and continue
@@ -331,9 +325,6 @@ impl ResourceDiscovery for CommandDiscovery {
 
             if remaining_required_resource_types.contains(&adapter_name.to_lowercase())
             {
-                // if an adapter is required, we need to find the resources it adapts
-                self.discover_adapted_resources("*", &adapter_name)?;
-
                 // remove the adapter from the list of required resources
                 remaining_required_resource_types.retain(|x| *x != adapter_name.to_lowercase());
                 found_resources.insert(adapter_name.to_lowercase(), adapter.clone());
@@ -341,22 +332,27 @@ impl ResourceDiscovery for CommandDiscovery {
                 {
                     return Ok(found_resources);
                 }
+            }
 
-                // now go through the adapter resources and add them to the list of resources
-                for (adapted_name, adapted_resource) in &self.adapted_resources {
-                    let Some(adapted_resource) = adapted_resource.first() else {
-                        // skip if no resources
-                        continue;
-                    };
+            self.discover_adapted_resources("*", &adapter_name)?;
 
-                    if remaining_required_resource_types.contains(&adapted_name.to_lowercase())
+            // now go through the adapter resources and add them to the list of resources
+            for (adapted_name, adapted_resource) in &self.adapted_resources {
+                let Some(adapted_resource) = adapted_resource.first() else {
+                    // skip if no resources
+                    continue;
+                };
+
+                if remaining_required_resource_types.contains(&adapted_name.to_lowercase())
+                {
+                    remaining_required_resource_types.retain(|x| *x != adapted_name.to_lowercase());
+                    found_resources.insert(adapted_name.to_lowercase(), adapted_resource.clone());
+
+                    // also insert the adapter
+                    found_resources.insert(adapter_name.to_lowercase(), adapter.clone());
+                    if remaining_required_resource_types.is_empty()
                     {
-                        remaining_required_resource_types.retain(|x| *x != adapted_name.to_lowercase());
-                        found_resources.insert(adapted_name.to_lowercase(), adapted_resource.clone());
-                        if remaining_required_resource_types.is_empty()
-                        {
-                            return Ok(found_resources);
-                        }
+                        return Ok(found_resources);
                     }
                 }
             }
