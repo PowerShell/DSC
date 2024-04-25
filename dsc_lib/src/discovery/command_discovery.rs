@@ -129,6 +129,7 @@ impl ResourceDiscovery for CommandDiscovery {
                             if file_name_lowercase.ends_with(".dsc.resource.json") ||
                                 file_name_lowercase.ends_with(".dsc.resource.yaml") ||
                                 file_name_lowercase.ends_with(".dsc.resource.yml") {
+                                trace!("Found resource manifest: {path:?}");
                                 let resource = match load_manifest(&path)
                                 {
                                     Ok(r) => r,
@@ -146,8 +147,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                     if let Some(ref manifest) = resource.manifest {
                                         let manifest = import_manifest(manifest.clone())?;
                                         if manifest.kind == Some(Kind::Adapter) {
+                                            trace!("Resource adapter {} found", resource.type_name);
                                             insert_resource(&mut adapters, &resource)?;
                                         } else {
+                                            trace!("Resource {} found", resource.type_name);
                                             insert_resource(&mut resources, &resource)?;
                                         }
                                     }
@@ -164,7 +167,7 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
-    fn discover_adapted_resources(&mut self, filter: &str) -> Result<(), DscError> {
+    fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError> {
         if self.resources.is_empty() && self.adapters.is_empty() {
             self.discover_resources("*")?;
         }
@@ -173,12 +176,20 @@ impl ResourceDiscovery for CommandDiscovery {
             return Ok(());
         }
 
-        let regex_str = convert_wildcard_to_regex(filter);
+        let regex_str = convert_wildcard_to_regex(adapter_filter);
         debug!("Using regex {regex_str} as filter for adapter name");
         let mut regex_builder = RegexBuilder::new(&regex_str);
         regex_builder.case_insensitive(true);
         let Ok(regex) = regex_builder.build() else {
             return Err(DscError::Operation("Could not build Regex filter for adapter name".to_string()));
+        };
+
+        let name_regex_str = convert_wildcard_to_regex(name_filter);
+        debug!("Using regex {name_regex_str} as filter for resource name");
+        let mut name_regex_builder = RegexBuilder::new(&name_regex_str);
+        name_regex_builder.case_insensitive(true);
+        let Ok(name_regex) = name_regex_builder.build() else {
+            return Err(DscError::Operation("Could not build Regex filter for resource name".to_string()));
         };
 
         let pb_span = warn_span!("");
@@ -192,6 +203,10 @@ impl ResourceDiscovery for CommandDiscovery {
 
         for (adapter_name, adapters) in &self.adapters {
             for adapter in adapters {
+                if !regex.is_match(&adapter_name) {
+                    continue;
+                }
+
                 info!("Enumerating resources for adapter '{}'", adapter_name);
                 let pb_adapter_span = warn_span!("");
                 pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
@@ -237,7 +252,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                 continue;
                             }
 
-                            if regex.is_match(&resource.type_name) {
+                            if name_regex.is_match(&resource.type_name) {
                                 insert_resource(&mut adapted_resources, &resource)?;
                                 adapter_resources_count += 1;
                             }
@@ -264,13 +279,17 @@ impl ResourceDiscovery for CommandDiscovery {
         self.discover_resources(type_name_filter)?;
 
         if !adapter_name_filter.is_empty() {
-            self.discover_adapted_resources(adapter_name_filter)?;
+            self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
         }
 
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
 
-        resources.append(&mut self.resources);
-        resources.append(&mut self.adapted_resources);
+        if adapter_name_filter.is_empty() {
+            resources.append(&mut self.resources);
+            resources.append(&mut self.adapters);
+        } else {
+            resources.append(&mut self.adapted_resources);
+        }
 
         Ok(resources)
     }
