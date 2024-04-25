@@ -138,7 +138,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                         // resource that is requested by resource/config operation
                                         // if it is, then "ResouceNotFound" error will be issued later
                                         // and here we just record the error into debug stream.
-                                        debug!("{e}");
+                                        warn!("{e}");
                                         continue;
                                     },
                                 };
