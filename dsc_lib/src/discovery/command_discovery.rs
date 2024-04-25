@@ -148,10 +148,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                         let manifest = import_manifest(manifest.clone())?;
                                         if manifest.kind == Some(Kind::Adapter) {
                                             trace!("Resource adapter {} found", resource.type_name);
-                                            insert_resource(&mut adapters, &resource);
+                                            insert_resource(&mut adapters, &resource, true);
                                         } else {
                                             trace!("Resource {} found", resource.type_name);
-                                            insert_resource(&mut resources, &resource);
+                                            insert_resource(&mut resources, &resource, true);
                                         }
                                     }
                                 }
@@ -253,7 +253,9 @@ impl ResourceDiscovery for CommandDiscovery {
                             }
 
                             if name_regex.is_match(&resource.type_name) {
-                                insert_resource(&mut adapted_resources, &resource);
+                                // we allow duplicate versions since it can come from different adapters
+                                // like PowerShell vs WindowsPowerShell
+                                insert_resource(&mut adapted_resources, &resource, false);
                                 adapter_resources_count += 1;
                             }
                         },
@@ -300,6 +302,7 @@ impl ResourceDiscovery for CommandDiscovery {
         let mut remaining_required_resource_types = required_resource_types.to_owned();
 
         for (resource_name, resources) in &self.resources {
+            // TODO: handle version requirements
             let Some(resource ) = resources.first() else {
                 // skip if no resources
                 continue;
@@ -318,20 +321,43 @@ impl ResourceDiscovery for CommandDiscovery {
         }
         debug!("Found {} matching non-adapter-based resources", found_resources.len());
 
-        // now go through the adapter resources and add them to the list of resources
-        for (adapted_name, adapted_resource) in &self.adapted_resources {
-            let Some(adapted_resource) = adapted_resource.first() else {
-                // skip if no resources
+        // now go through the adapters
+        for (adapter_name, adapters) in self.adapters.clone() {
+            // TODO: handle version requirements
+            let Some(adapter) = adapters.first() else {
+                // skip if no adapters
                 continue;
             };
 
-            if remaining_required_resource_types.contains(&adapted_name.to_lowercase())
+            if remaining_required_resource_types.contains(&adapter_name.to_lowercase())
             {
-                remaining_required_resource_types.retain(|x| *x != adapted_name.to_lowercase());
-                found_resources.insert(adapted_name.to_lowercase(), adapted_resource.clone());
+                // if an adapter is required, we need to find the resources it adapts
+                self.discover_adapted_resources("*", &adapter_name)?;
+
+                // remove the adapter from the list of required resources
+                remaining_required_resource_types.retain(|x| *x != adapter_name.to_lowercase());
+                found_resources.insert(adapter_name.to_lowercase(), adapter.clone());
                 if remaining_required_resource_types.is_empty()
                 {
                     return Ok(found_resources);
+                }
+
+                // now go through the adapter resources and add them to the list of resources
+                for (adapted_name, adapted_resource) in &self.adapted_resources {
+                    let Some(adapted_resource) = adapted_resource.first() else {
+                        // skip if no resources
+                        continue;
+                    };
+
+                    if remaining_required_resource_types.contains(&adapted_name.to_lowercase())
+                    {
+                        remaining_required_resource_types.retain(|x| *x != adapted_name.to_lowercase());
+                        found_resources.insert(adapted_name.to_lowercase(), adapted_resource.clone());
+                        if remaining_required_resource_types.is_empty()
+                        {
+                            return Ok(found_resources);
+                        }
+                    }
                 }
             }
         }
@@ -340,7 +366,7 @@ impl ResourceDiscovery for CommandDiscovery {
 }
 
 // helper to insert a resource into a vector of resources in order of newest to oldest
-fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
+fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource, skip_duplicate_version: bool) {
     if resources.contains_key(&resource.type_name) {
         let Some(resource_versions) = resources.get_mut(&resource.type_name) else {
             resources.insert(resource.type_name.clone(), vec![resource.clone()]);
@@ -365,8 +391,8 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
                     continue;
                 },
             };
-            // if the version already exists, we skip
-            if resource_instance_version == resource_version {
+            // if the version already exists, we might skip it
+            if !skip_duplicate_version && resource_instance_version == resource_version {
                 return;
             }
 

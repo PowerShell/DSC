@@ -26,7 +26,16 @@ impl Discovery {
         })
     }
 
-    /// List operation.
+    /// List operation for getting available resources based on the filters.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `type_name_filter` - The filter for the resource type name.
+    /// * `adapter_name_filter` - The filter for the adapter name.
+    /// 
+    /// # Returns
+    /// 
+    /// A vector of `DscResource` instances.
     pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
@@ -59,22 +68,25 @@ impl Discovery {
         self.resources.get(type_name)
     }
 
+    /// Find resources based on the required resource types.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[String]) {
-
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
-
         let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
 
             let discovered_resources = match discovery_type.find_resources(&remaining_required_resource_types) {
                 Ok(value) => value,
                 Err(err) => {
-                        error!("{err}");
-                        continue;
-                    }
-                };
+                    error!("{err}");
+                    continue;
+                }
+            };
 
             for resource in discovered_resources {
                 self.resources.insert(resource.0.clone(), resource.1);
