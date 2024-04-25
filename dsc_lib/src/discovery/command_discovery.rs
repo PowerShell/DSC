@@ -137,7 +137,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                         // At this point we can't determine whether or not the bad manifest contains
                                         // resource that is requested by resource/config operation
                                         // if it is, then "ResouceNotFound" error will be issued later
-                                        // and here we just record the error into debug stream.
+                                        // and here we just write as warning
                                         warn!("{e}");
                                         continue;
                                     },
