@@ -115,6 +115,9 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           env: 
@@ -221,6 +224,9 @@ extends:
           type: linux
         steps:
         - pwsh: |
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -238,6 +244,9 @@ extends:
           hostArchitecture: arm64
         steps:
         - pwsh: |
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -263,6 +272,9 @@ extends:
               buildName: aarch64-apple-darwin
         steps:
         - pwsh: |
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"

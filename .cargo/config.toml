@@ -1,4 +1,2 @@
 [registries]
 powershell = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/" }
-[source.crates-io]
-replace-with = "powershell"
