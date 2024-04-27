@@ -20,7 +20,7 @@ use tracing::{debug, info, trace, warn, warn_span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 pub struct CommandDiscovery {
-    // use BTreeMap so that the results are sorted
+    // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
     resources: BTreeMap<String, Vec<DscResource>>,
     adapters: BTreeMap<String, Vec<DscResource>>,
     adapted_resources: BTreeMap<String, Vec<DscResource>>,
