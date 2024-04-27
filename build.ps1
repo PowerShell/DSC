@@ -161,6 +161,8 @@ if (!$SkipBuild) {
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
 
+    $macOS_projects = @("resources/brew")
+
     # projects are in dependency order
     $projects = @(
         "tree-sitter-dscexpression",
@@ -170,7 +172,6 @@ if (!$SkipBuild) {
         "osinfo",
         "powershell-adapter",
         "process",
-        "resources/brew",
         "runcommandonset",
         "tools/dsctest",
         "tools/test_group_resource",
@@ -185,6 +186,10 @@ if (!$SkipBuild) {
         Save-Module -Path $target -Name 'PSDesiredStateConfiguration' -RequiredVersion '2.0.7' -Repository PSGallery -Force
         # Need to unhide all the files so that packaging works
         Get-ChildItem -Path $target -Recurse -Hidden | ForEach-Object { $_.Attributes = 'Normal' }
+    }
+
+    if ($IsMacOS) {
+        $projects += $macOS_projects
     }
 
     $failed = $false
