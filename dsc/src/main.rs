@@ -5,7 +5,11 @@ use args::{Args, SubCommand};
 use atty::Stream;
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
+use dsc_lib::configure::config_doc::Configuration;
+use crate::include::Include;
 use std::io::{self, Read};
+use std::fs::File;
+use std::path::Path;
 use std::process::exit;
 use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
@@ -36,7 +40,7 @@ fn main() {
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
-    let input = if atty::is(Stream::Stdin) {
+    let mut input = if atty::is(Stream::Stdin) {
         None
     } else {
         info!("Reading input from STDIN");
@@ -66,11 +70,15 @@ fn main() {
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
-        SubCommand::Config { subcommand, parameters, parameters_file, as_group } => {
+        SubCommand::Config { subcommand, parameters, parameters_file, as_group, as_include} => {
+            if as_include {
+                input = Some(read_include_file(&input));
+            }
+
             if let Some(file_name) = parameters_file {
                 info!("Reading parameters from file {}", file_name);
                 match std::fs::read_to_string(file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input, &as_group),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input, &as_group, &as_include),
                     Err(err) => {
                         error!("Error: Failed to read parameters file: {err}");
                         exit(util::EXIT_INVALID_INPUT);
@@ -78,7 +86,7 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, &input, &as_group);
+                subcommand::config(&subcommand, &parameters, &input, &as_group, &as_include);
             }
         },
         SubCommand::Resource { subcommand } => {
@@ -98,6 +106,96 @@ fn main() {
     }
 
     exit(util::EXIT_SUCCESS);
+}
+
+fn read_include_file(input: &Option<String>) -> String {
+    let Some(include) = input else {
+        error!("Error: Include requires input from STDIN");
+        exit(util::EXIT_INVALID_INPUT);
+    };
+
+    // deserialize the Include input
+    let include: Include = match serde_json::from_str(include) {
+        Ok(include) => include,
+        Err(err) => {
+            error!("Error: Failed to deserialize Include input: {err}");
+            exit(util::EXIT_INVALID_INPUT);
+        }
+    };
+
+    let path = Path::new(&include.configuration_file);
+    if path.is_absolute() {
+        error!("Error: Include path must be relative: {}", include.configuration_file);
+        exit(util::EXIT_INVALID_INPUT);
+    }
+
+    // check that no components of the path are '..'
+    if path.components().any(|c| c == std::path::Component::ParentDir) {
+        error!("Error: Include path must not contain '..': {}", include.configuration_file);
+        exit(util::EXIT_INVALID_INPUT);
+    }
+
+    // use DSC_CONFIG_ROOT env var as current directory
+    let current_directory = match std::env::var("DSC_CONFIG_ROOT") {
+        Ok(current_directory) => current_directory,
+        Err(err) => {
+            error!("Error: Could not read DSC_CONFIG_ROOT env var: {err}");
+            exit(util::EXIT_INVALID_INPUT);
+        }
+    };
+
+    // combine the current directory with the Include path
+    let include_path = Path::new(&current_directory).join(&include.configuration_file);
+
+    // read the file specified in the Include input
+    let mut buffer: Vec<u8> = Vec::new();
+    match File::open(&include_path) {
+        Ok(mut file) => {
+            match file.read_to_end(&mut buffer) {
+                Ok(_) => (),
+                Err(err) => {
+                    error!("Error: Failed to read file '{include_path:?}': {err}");
+                    exit(util::EXIT_INVALID_INPUT);
+                }
+            }
+        },
+        Err(err) => {
+            error!("Error: Failed to included file '{include_path:?}': {err}");
+            exit(util::EXIT_INVALID_INPUT);
+        }
+    }
+    // convert the buffer to a string
+    let include_content = match String::from_utf8(buffer) {
+        Ok(input) => input,
+        Err(err) => {
+            error!("Error: Invalid UTF-8 sequence in included file '{include_path:?}': {err}");
+            exit(util::EXIT_INVALID_INPUT);
+        }
+    };
+
+    // try to deserialize the Include content as YAML first
+    let configuration: Configuration = match serde_yaml::from_str(&include_content) {
+        Ok(configuration) => configuration,
+        Err(_err) => {
+            // if that fails, try to deserialize it as JSON
+            match serde_json::from_str(&include_content) {
+                Ok(configuration) => configuration,
+                Err(err) => {
+                    error!("Error: Failed to read the configuration file '{include_path:?}' as YAML or JSON: {err}");
+                    exit(util::EXIT_INVALID_INPUT);
+                }
+            }
+        }
+    };
+
+    // serialize the Configuration as JSON
+    match serde_json::to_string(&configuration) {
+        Ok(json) => json,
+        Err(err) => {
+            error!("Error: JSON Error: {err}");
+            exit(util::EXIT_JSON_ERROR);
+        }
+    }
 }
 
 fn ctrlc_handler() {

@@ -1,0 +1,68 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC/Include",
+    "version": "0.1.0",
+    "description": "Allows including a configuration file into current configuration.",
+    "kind": "Group",
+    "get": {
+      "executable": "dsc",
+      "args": [
+        {
+            "traceLevelArg": "--trace-level"
+        },
+        "config",
+        "--as-group",
+        "--as-include",
+        "get"
+      ],
+      "input": "stdin"
+    },
+    "set": {
+      "executable": "dsc",
+      "args": [
+        {
+            "traceLevelArg": "--trace-level"
+        },
+        "config",
+        "--as-group",
+        "--as-include",
+        "set"
+      ],
+      "input": "stdin",
+      "implementsPretest": true,
+      "return": "state"
+    },
+    "test": {
+      "executable": "dsc",
+      "args": [
+        {
+            "traceLevelArg": "--trace-level"
+        },
+        "config",
+        "--as-group",
+        "--as-include",
+        "test"
+      ],
+      "input": "stdin",
+      "return": "state"
+    },
+    "exitCodes": {
+      "0": "Success",
+      "1": "Invalid argument",
+      "2": "Resource error",
+      "3": "JSON Serialization error",
+      "4": "Invalid input format",
+      "5": "Resource instance failed schema validation",
+      "6": "Command cancelled"
+    },
+    "schema": {
+        "command": {
+            "executable": "dsc",
+            "args": [
+                "schema",
+                "--type",
+                "include"
+            ]
+        }
+    }
+  }

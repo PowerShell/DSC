@@ -198,22 +198,27 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool, use_stdin: &bool) {
     let json_string = match subcommand {
         ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
         ConfigSubCommand::Test { document, path, .. } |
         ConfigSubCommand::Validate { document, path, .. } |
         ConfigSubCommand::Export { document, path, .. } => {
-            let mut new_path = path;
-            let opt_new_path;
-            if path.is_some()
-            {
+            let new_path = if path.is_some() {
                 let config_path = path.clone().unwrap_or_default();
-                opt_new_path = Some(set_dscconfigroot(&config_path));
-                new_path = &opt_new_path;
+                Some(set_dscconfigroot(&config_path))
+            } else {
+                // use current working directory
+                let current_directory = std::env::current_dir().unwrap_or_default();
+                Some(current_directory.to_string_lossy().to_string())
+            };
+
+            if *use_stdin {
+                stdin.clone().unwrap_or_default()
+            } else {
+                get_input(document, stdin, &new_path)
             }
-            get_input(document, stdin, new_path)
         }
     };
 
@@ -226,8 +231,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
     };
 
     let parameters: Option<serde_json::Value> = match parameters {
-        None => None,
+        None => {
+            debug!("No parameters specified");
+            None
+        },
         Some(parameters) => {
+            debug!("Parameters specified");
             match serde_json::from_str(parameters) {
                 Ok(json) => Some(json),
                 Err(_) => {

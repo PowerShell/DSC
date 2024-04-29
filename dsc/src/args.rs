@@ -54,11 +54,12 @@ pub enum SubCommand {
         parameters: Option<String>,
         #[clap(short = 'f', long, help = "Parameters to pass to the configuration as a JSON or YAML file", conflicts_with = "parameters")]
         parameters_file: Option<String>,
+        // Used to inform when DSC is used as a group resource to modify it's output
         #[clap(long, hide = true)]
         as_group: bool,
         // Used for the Microsoft.DSC/Include resource
         #[clap(long, hide = true)]
-        include: Option<String>,
+        as_include: bool,
     },
     #[clap(name = "resource", about = "Invoke a specific DSC resource")]
     Resource {
@@ -208,6 +209,7 @@ pub enum DscType {
     TestResult,
     DscResource,
     ResourceManifest,
+    Include,
     Configuration,
     ConfigurationGetResult,
     ConfigurationSetResult,

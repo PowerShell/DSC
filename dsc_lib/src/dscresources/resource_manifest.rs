@@ -92,12 +92,17 @@ pub enum ArgKind {
     /// The argument is a string.
     String(String),
     /// The argument accepts the JSON input object.
-    Json{
+    Json {
         /// The argument that accepts the JSON input object.
         #[serde(rename = "jsonInputArg")]
         json_input_arg: String,
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
+    },
+    TraceLevel {
+        /// The argument that accepts the current directory.
+        #[serde(rename = "traceLevelArg")]
+        trace_level_arg: String,
     }
 }
 

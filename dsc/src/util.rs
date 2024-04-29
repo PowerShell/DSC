@@ -4,6 +4,7 @@
 use crate::args::{DscType, OutputFormat, TraceFormat, TraceLevel};
 
 use atty::Stream;
+use crate::include::Include;
 use dsc_lib::{
     configure::{
         config_doc::Configuration,
@@ -15,13 +16,11 @@ use dsc_lib::{
     },
     dscerror::DscError,
     dscresources::{
-        dscresource::DscResource,
-        invoke_result::{
+        dscresource::DscResource, invoke_result::{
             GetResult,
             SetResult,
             TestResult,
-        },
-        resource_manifest::ResourceManifest
+        }, resource_manifest::ResourceManifest
     }
 };
 use jsonschema::JSONSchema;
@@ -157,6 +156,9 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
         },
         DscType::ResourceManifest => {
             schema_for!(ResourceManifest)
+        },
+        DscType::Include => {
+            schema_for!(Include)
         },
         DscType::Configuration => {
             schema_for!(Configuration)

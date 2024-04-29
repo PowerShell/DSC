@@ -509,7 +509,9 @@ impl Configurator {
         };
 
         for (name, parameter) in parameters {
+            debug!("Processing parameter '{name}'");
             if let Some(default_value) = &parameter.default_value {
+                debug!("Set default parameter '{name}'");
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
@@ -526,15 +528,18 @@ impl Configurator {
         }
 
         let Some(parameters_input) = parameters_input else {
+            debug!("No parameters input");
             return Ok(());
         };
 
+        trace!("parameters_input: {parameters_input}");
         let parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
         let Some(parameters_constraints) = &config.parameters else {
             return Err(DscError::Validation("No parameters defined in configuration".to_string()));
         };
         for (name, value) in parameters {
             if let Some(constraint) = parameters_constraints.get(&name) {
+                debug!("Validating parameter '{name}'");
                 check_length(&name, &value, constraint)?;
                 check_allowed_values(&name, &value, constraint)?;
                 check_number_limits(&name, &value, constraint)?;

@@ -1,0 +1,8 @@
+# This is a simple example of how to Include another configuration into this one
+
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: get os info
+  type: Microsoft.DSC/Include
+  properties:
+    configurationFile: osinfo_parameters.dsc.yaml

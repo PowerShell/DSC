@@ -7,7 +7,7 @@ use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio
 use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
 use crate::configure::config_result::ResourceGetResult;
 use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
-use tracing::{error, warn, info, debug, trace};
+use tracing::{debug, error, info, level_filters::LevelFilter, trace, warn};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -17,6 +17,7 @@ pub fn log_resource_traces(process_name: &str, stderr: &str)
     if !stderr.is_empty()
     {
         for trace_line in stderr.lines() {
+            // TODO: deserialize tracing JSON to have better presentation
             if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
                 if let Some(msg) = json_obj.get("Error") {
                     error!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
@@ -460,7 +461,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
     if let Some(input) = input {
         if !input.is_empty() {
             verify_json(resource, cwd, input)?;
-            
+
             command_input = get_command_input(&export.input, input)?;
         }
 
@@ -529,7 +530,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 
     let mut child = command.spawn()?;
     if let Some(input) = input {
-        trace!("Writing stdin to command: {input}");
+        trace!("Writing to command STDIN: {input}");
         // pipe to child stdin in a scope so that it is dropped before we wait
         // otherwise the pipe isn't closed and the child process waits forever
         let Some(mut child_stdin) = child.stdin.take() else {
@@ -589,6 +590,18 @@ fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>>
 
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(value.to_string());
+            },
+            ArgKind::TraceLevel { trace_level_arg } => {
+                let trace_level = match tracing::level_filters::STATIC_MAX_LEVEL {
+                    LevelFilter::ERROR => "error",
+                    LevelFilter::WARN => "warning",
+                    LevelFilter::INFO => "info",
+                    LevelFilter::DEBUG => "debug",
+                    LevelFilter::TRACE => "trace",
+                    LevelFilter::OFF => continue,
+                };
+                processed_args.push(trace_level_arg.clone());
+                processed_args.push(trace_level.to_string());
             },
         }
     }
