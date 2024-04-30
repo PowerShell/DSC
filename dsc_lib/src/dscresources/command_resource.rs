@@ -12,22 +12,22 @@ use tracing::{error, warn, info, debug, trace};
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
 
-pub fn log_resource_traces(stderr: &str)
+pub fn log_resource_traces(process_name: &str, stderr: &str)
 {
     if !stderr.is_empty()
     {
         for trace_line in stderr.lines() {
             if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
                 if let Some(msg) = json_obj.get("Error") {
-                    error!("{}", msg.as_str().unwrap_or_default());
+                    error!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
                 } else if let Some(msg) = json_obj.get("Warning") {
-                    warn!("{}", msg.as_str().unwrap_or_default());
+                    warn!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
                 } else if let Some(msg) = json_obj.get("Info") {
-                    info!("{}", msg.as_str().unwrap_or_default());
+                    info!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
                 } else if let Some(msg) = json_obj.get("Debug") {
-                    debug!("{}", msg.as_str().unwrap_or_default());
+                    debug!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
                 } else if let Some(msg) = json_obj.get("Trace") {
-                    trace!("{}", msg.as_str().unwrap_or_default());
+                    trace!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
                 };
             };
         }
@@ -54,12 +54,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
     }
 
     info!("Invoking get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
-    log_resource_traces(&stderr);
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-    }
-
+    let (_exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     if resource.kind == Some(Kind::Resource) {
         debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
         verify_json(resource, cwd, &stdout)?;
@@ -150,10 +145,6 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &resource.get.executable);
     let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
-    log_resource_traces(&stderr);
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-    }
 
     if resource.kind == Some(Kind::Resource) {
         debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
@@ -184,10 +175,6 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     info!("Invoking set '{}' using '{}'", &resource.resource_type, &set.executable);
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env)?;
-    log_resource_traces(&stderr);
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-    }
 
     match set.returns {
         Some(ReturnKind::State) => {
@@ -279,10 +266,6 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 
     info!("Invoking test '{}' using '{}'", &resource.resource_type, &test.executable);
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
-    log_resource_traces(&stderr);
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-    }
 
     if resource.kind == Some(Kind::Resource) {
         debug!("Verifying output of test '{}' using '{}'", &resource.resource_type, &test.executable);
@@ -401,11 +384,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str, execu
         })));
     }
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
-    let (exit_code, _stdout, stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
-    log_resource_traces(&stderr);
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-    }
+    let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
 
     Ok(None)
 }
@@ -436,12 +415,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
     let command_input = get_command_input(&validate.input, config)?;
 
     info!("Invoking validate '{}' using '{}'", &resource.resource_type, &validate.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
-    log_resource_traces(&stderr);
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-    }
-
+    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -462,11 +436,7 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 
     match schema_kind {
         SchemaKind::Command(ref command) => {
-            let (exit_code, stdout, stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None)?;
-            log_resource_traces(&stderr);
-            if exit_code != 0 {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-            }
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None)?;
             Ok(stdout)
         },
         SchemaKind::Embedded(ref schema) => {
@@ -523,11 +493,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
         args = process_args(&export.args, "");
     }
 
-    let (exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
-    log_resource_traces(&stderr);
-    if exit_code != 0 {
-        return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
-    }
+    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     let mut instances: Vec<Value> = Vec::new();
     for line in stdout.lines()
     {
@@ -618,7 +584,13 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     }
     if !stderr.is_empty() {
         trace!("STDERR returned: {}", &stderr);
+        log_resource_traces(executable, &stderr);
     }
+
+    if exit_code != 0 {
+        return Err(DscError::Command(executable.to_string(), exit_code, stderr));
+    }
+
     Ok((exit_code, stdout, stderr))
 }
 

@@ -603,7 +603,7 @@ impl Configurator {
         let mut required_resources = config.resources.iter().map(|p| p.resource_type.to_lowercase()).collect::<Vec<String>>();
         required_resources.sort_unstable();
         required_resources.dedup();
-        self.discovery.discover_resources(&required_resources);
+        self.discovery.find_resources(&required_resources);
         Ok(config)
     }
 

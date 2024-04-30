@@ -44,8 +44,8 @@ impl DscManager {
         self.discovery.list_available_resources(type_name_filter, adapter_name_filter)
     }
 
-    pub fn discover_resources(&mut self, required_resource_types: &[String]) {
-        self.discovery.discover_resources(required_resource_types);
+    pub fn find_resources(&mut self, required_resource_types: &[String]) {
+        self.discovery.find_resources(required_resource_types);
     }
     /// Invoke the get operation on a resource.
     ///

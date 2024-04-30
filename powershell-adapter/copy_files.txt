@@ -1,8 +1,3 @@
-powershell.resource.ps1
+./psDscAdapter/powershell.resource.ps1
 ./psDscAdapter/psDscAdapter.psd1
 ./psDscAdapter/psDscAdapter.psm1
-./psDscAdapter/Configuration/BaseRegistration/BaseResource.Schema.mof
-./psDscAdapter/Configuration/BaseRegistration/MSFT_MetaConfigurationExtensionClasses.Schema.mof
-./psDscAdapter/Configuration/BaseRegistration/en-us/BaseResource.Schema.mfl
-./psDscAdapter/Configuration/BaseRegistration/en-us/MSFT_MetaConfigurationExtensionClasses.Schema.mfl
-./psDscAdapter/helpers/DscResourceInfo.psm1

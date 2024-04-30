@@ -27,7 +27,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter {} not found", requires);
+            error!("Adapter '{}' not found", requires);
             return;
         };
     }
@@ -112,7 +112,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter {} not found", requires);
+            error!("Adapter '{}' not found", requires);
             return;
         };
     }
@@ -149,7 +149,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter {} not found", requires);
+            error!("Adapter '{}' not found", requires);
             return;
         };
     }
@@ -186,7 +186,7 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter {} not found", requires);
+            error!("Adapter '{}' not found", requires);
             return;
         };
     }

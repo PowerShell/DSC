@@ -15,7 +15,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "./powershell.resource.ps1 List"
+          "./psDscAdapter/powershell.resource.ps1 List"
         ]
         },
       "config": "full"
@@ -27,7 +27,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershell.resource.ps1 Get"
+        "$Input | ./psDscAdapter/powershell.resource.ps1 Get"
       ],
       "input": "stdin"
       },
@@ -38,7 +38,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershell.resource.ps1 Set"
+        "$Input | ./psDscAdapter/powershell.resource.ps1 Set"
       ],
       "input": "stdin",
       "preTest": true,
@@ -51,7 +51,7 @@
         "-NonInteractive",
         "-NoProfile",
         "-Command",
-        "$Input | ./powershell.resource.ps1 Test"
+        "$Input | ./psDscAdapter/powershell.resource.ps1 Test"
       ],
       "input": "stdin",
       "return": "state"
@@ -63,7 +63,7 @@
           "-NonInteractive",
           "-NoProfile",
           "-Command",
-          "$Input | ./powershell.resource.ps1 Validate"
+          "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
           ]
       },
     "exitCodes": {
