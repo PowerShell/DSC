@@ -113,6 +113,17 @@ extends:
           displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
           env: 
             ob_restore_phase: true
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://msazure.pkgs.visualstudio.com/_packaging/RustTools/nuget/v3/index.json
+            cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
+            additionalTargets: $(buildTarget)
+          displayName: Install Rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: ".cargo/config.toml"
+          displayName: Authenticating cargo crates registry
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             Write-Host "Use 'powershell' CFS"
@@ -223,6 +234,17 @@ extends:
         pool:
           type: linux
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://msazure.pkgs.visualstudio.com/_packaging/RustTools/nuget/v3/index.json
+            cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
+            additionalTargets: $(buildTarget)
+          displayName: Install Rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: ".cargo/config.toml"
+          displayName: Authenticating cargo crates registry
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
@@ -243,6 +265,17 @@ extends:
           type: linux
           hostArchitecture: arm64
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://msazure.pkgs.visualstudio.com/_packaging/RustTools/nuget/v3/index.json
+            cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
+            additionalTargets: $(buildTarget)
+          displayName: Install Rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: ".cargo/config.toml"
+          displayName: Authenticating cargo crates registry
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
@@ -271,6 +304,17 @@ extends:
             macOS arm64:
               buildName: aarch64-apple-darwin
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://msazure.pkgs.visualstudio.com/_packaging/RustTools/nuget/v3/index.json
+            cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
+            additionalTargets: $(buildTarget)
+          displayName: Install Rust
+        - task: CargoAuthenticate@0
+          inputs:
+            configFile: ".cargo/config.toml"
+          displayName: Authenticating cargo crates registry
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
