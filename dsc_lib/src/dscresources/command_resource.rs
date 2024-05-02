@@ -4,7 +4,7 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio}};
-use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceSetWhatIfResponse, ResourceTestResponse}};
+use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceSetWhatIfResponse, ResourceTestResponse, WhatIfResult}};
 use crate::configure::{config_doc::ExecutionKind, config_result::ResourceGetResult};
 use super::{dscresource::{get_diff, get_diff_what_if}, invoke_result::{ExportResult, GetResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
@@ -119,13 +119,13 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             if in_desired_state {
                 debug!("what-if: resource is already in desired state, returning null ResourceWhatIf response");
                 return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-                    what_if_changes: Vec::new()
+                    what_if_changes: WhatIfResult::Diff(Vec::new())
                 }));
             }
             debug!("what-if: resource is not in desired state, returning diff ResourceWhatIf response");
             let diff_properties = get_diff_what_if( &desired_state, &actual_state);
             return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-                what_if_changes: vec![Value::from_iter(diff_properties)]
+                what_if_changes: WhatIfResult::Diff(diff_properties)
             }));
         }
         if in_desired_state {
@@ -380,7 +380,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str, execu
 
     if execution_type == &ExecutionKind::WhatIf {
         return Ok(Some(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-            what_if_changes: vec![Value::String(format!("delete '{}' using '{}'", &resource.resource_type, &delete.executable))]
+            what_if_changes: WhatIfResult::String(format!("delete '{}' using '{}'", &resource.resource_type, &delete.executable))
         })));
     }
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
+use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult, WhatIfChanges}, resource_manifest::import_manifest};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -358,8 +358,8 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
 }
 
 #[must_use]
-pub fn get_diff_what_if(expected: &Value, actual: &Value) -> HashMap<String, Value> {
-    let mut diff_properties: HashMap<String, Value> = HashMap::new();
+pub fn get_diff_what_if(expected: &Value, actual: &Value) -> Vec<WhatIfChanges> {
+    let mut diff_properties: Vec<WhatIfChanges> = Vec::new();
     if expected.is_null() {
         return diff_properties;
     }
@@ -405,10 +405,13 @@ pub fn get_diff_what_if(expected: &Value, actual: &Value) -> HashMap<String, Val
                 }
             }
             if is_diff {
-                let mut temp_hashmap = HashMap::new();
-                temp_hashmap.insert("to".to_string(), value.clone());
-                temp_hashmap.insert("from".to_string(), actual[key].clone());
-                diff_properties.insert(key.to_string(), Value::from_iter(temp_hashmap));
+                diff_properties.push(
+                    WhatIfChanges {
+                        name: key.to_string(),
+                        from: actual[key].clone(),
+                        to: value.clone(),
+                    }
+                );
             }
         }
     }

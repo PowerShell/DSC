@@ -39,8 +39,9 @@ Describe 'whatif tests' {
         $result.results.Count | Should -Be 1
         $result.results[0].Name | Should -Be 'Registry'
         $result.results[0].type | Should -BeExactly 'Microsoft.Windows/Registry'
-        $result.results[0].result.changes[0]._exist.from | Should -Be 'false'
-        $result.results[0].result.changes[0]._exist.to | Should -Be 'true'
+        $result.results[0].result.changes[0].name | Should -Be '_exist'
+        $result.results[0].result.changes[0].from | Should -Be 'false'
+        $result.results[0].result.changes[0].to | Should -Be 'true'
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
         $LASTEXITCODE | Should -Be 0
     }
@@ -57,7 +58,7 @@ Describe 'whatif tests' {
         $result = $config_yaml | dsc config set -w --format pretty-json | ConvertFrom-Json
         $result.hadErrors | Should -BeFalse
         $result.results.Count | Should -Be 1
-        $result.results[0].result.changes[0] | Should -Be "delete 'Test/Delete' using 'dsctest'"
+        $result.results[0].result.changes | Should -Be "delete 'Test/Delete' using 'dsctest'"
         $LASTEXITCODE | Should -Be 0
     }
 

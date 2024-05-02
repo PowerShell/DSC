@@ -88,7 +88,22 @@ pub struct ResourceSetResponse {
 #[serde(deny_unknown_fields)]
 pub struct ResourceSetWhatIfResponse {
     #[serde(rename = "changes")]
-    pub what_if_changes: Vec<Value>
+    pub what_if_changes: WhatIfResult
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum WhatIfResult {
+    Diff(Vec<WhatIfChanges>),
+    String(String)
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WhatIfChanges {
+    pub name: String,
+    pub from: Value,
+    pub to: Value
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
