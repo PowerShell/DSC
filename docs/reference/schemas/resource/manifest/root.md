@@ -229,10 +229,26 @@ information, see the [DSC Resource manifest provider property schema reference][
 The `exitCodes` property defines a set of valid exit codes for the resource and their meaning.
 Define this property as a set of key-value pairs where:
 
-- The key is a string containing an integer that maps to a known exit code for the resource.
+- The key is a string containing a signed integer that maps to a known exit code for the resource.
+  The exit code must be a literal signed integer. You can't use alternate formats for the exit
+  code. For example, instead of the hexadecimal value `0x80070005` for "Access denied", specify the
+  exit code as `-2147024891`.
 - The value is a string describing the semantic meaning of that exit code for a human reader.
 
 DSC interprets exit code `0` as a successful operation and any other exit code as an error.
+
+> [!TIP]
+> If you're authoring your resource manifest in yaml, be sure to wrap the exit code in single
+> quotes to ensure the YAML file can be parsed correctly. For example:
+>
+> ```yaml
+> exitCodes:
+>   '0': Success
+>   '1': Invalid parameter
+>   '2': Invalid input
+>   '3': Registry error
+>   '4': JSON serialization failed
+> ```
 
 ```yaml
 Type:                object
