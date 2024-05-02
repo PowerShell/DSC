@@ -444,11 +444,11 @@ properties:
       property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
     type: object
     propertyNames:
-      pattern: "^[0-9]+$"
+      pattern: "^-?[0-9]+$"
       patternErrorMessage: |
-        Invalid exit code. Must be a string representing an integer greater than or equal to `0`.
+        Invalid exit code. Must be a string representing a 32-bit signed integer.
     patternProperties:
-      "^[0-9]+$":
+      "^-?[0-9]+$":
         type: string
     unevaluatedProperties: false
     default:
@@ -469,6 +469,14 @@ properties:
       This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
       property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+
+      Define the keys in this property as strings representing a valid 32-bit signed integer. You
+      can't use alternate formats for the exit code. For example, instead of the hexadecimal value
+      `0x80070005` for "Access denied", specify the exit code as `-2147024891`. If you're authoring
+      your resource manifest in yaml, be sure to wrap the exit code in single quotes, like
+      `'0': Success` instead of `0: Success` to ensure the YAML file can be parsed correctly.
+
+      Define the value for each key as a string explaining what the exit code indicates.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#exitcodes
     defaultSnippets:
