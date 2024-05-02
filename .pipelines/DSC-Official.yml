@@ -64,6 +64,9 @@ extends:
           repoRoot: $(Build.SourcesDirectory)\DSC
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
         steps:
         - checkout: self
         - pwsh: |
@@ -92,7 +95,7 @@ extends:
           signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
-          ob_sdl_codeql_compiled_enabled: false
+          ob_sdl_codeql_compiled_enabled: true
         pool:
           type: windows
         displayName: BuildWin
