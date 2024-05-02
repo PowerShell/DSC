@@ -242,7 +242,7 @@ extends:
             rustVersion: ms-stable
             toolchainFeed: https://pkgs.dev.azure.com/mscodehub/_packaging/RustTools/nuget/v3/index.json
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
-            additionalTargets: $(buildTarget)
+            additionalTargets: x86_64-unknown-linux-gnu
           displayName: Install Rust
         - task: CargoAuthenticate@0
           inputs:
@@ -273,7 +273,7 @@ extends:
             rustVersion: ms-stable
             toolchainFeed: https://pkgs.dev.azure.com/mscodehub/_packaging/RustTools/nuget/v3/index.json
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
-            additionalTargets: $(buildTarget)
+            additionalTargets: aarch64-unknown-linux-gnu
           displayName: Install Rust
         - task: CargoAuthenticate@0
           inputs:
