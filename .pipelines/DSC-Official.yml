@@ -116,7 +116,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://msazure.pkgs.visualstudio.com/_packaging/RustTools/nuget/v3/index.json
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/_packaging/RustTools/nuget/v3/index.json
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: $(buildTarget)
           displayName: Install Rust
