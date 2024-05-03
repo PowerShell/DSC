@@ -9,6 +9,7 @@ pub enum Schemas {
     Echo,
     Exist,
     Sleep,
+    Trace,
 }
 
 #[derive(Debug, Parser)]
@@ -50,4 +51,7 @@ pub enum SubCommand {
         #[clap(name = "input", short, long, help = "The input to the sleep command as JSON")]
         input: String,
     },
+
+    #[clap(name = "trace", about = "The trace level")]
+    Trace,
 }

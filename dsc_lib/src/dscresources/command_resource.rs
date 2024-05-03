@@ -4,35 +4,28 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio}};
+use crate::{configure::{config_result::ResourceGetResult, parameters, Configurator}, util::parse_input_to_json};
 use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
-use crate::configure::config_result::ResourceGetResult;
-use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
-use tracing::{debug, error, info, level_filters::LevelFilter, trace, warn};
+use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use tracing::{error, warn, info, debug, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
-
-pub fn log_resource_traces(process_name: &str, stderr: &str)
-{
-    if !stderr.is_empty()
-    {
-        for trace_line in stderr.lines() {
-            // TODO: deserialize tracing JSON to have better presentation
-            if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
-                if let Some(msg) = json_obj.get("Error") {
-                    error!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Warning") {
-                    warn!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Info") {
-                    info!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Debug") {
-                    debug!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Trace") {
-                    trace!("Process {process_name}: {}", msg.as_str().unwrap_or_default());
-                };
-            };
-        }
-    }
+fn get_configurator(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<Configurator, DscError> {
+    let resolve_result = invoke_resolve(resource, cwd, filter)?;
+    let configuration = serde_json::to_string(&resolve_result.configuration)?;
+    let configuration_json = parse_input_to_json(&configuration)?;
+    let mut configurator = Configurator::new(&configuration_json)?;
+    let parameters = if let Some(parameters) = resolve_result.parameters {
+        let parameters_input = parameters::Input {
+            parameters,
+        };
+        Some(serde_json::to_value(parameters_input)?)
+    } else {
+        None
+    };
+    configurator.set_parameters(&parameters)?;
+    Ok(configurator)
 }
 
 /// Invoke the get operation on a resource
@@ -46,18 +39,27 @@ pub fn log_resource_traces(process_name: &str, stderr: &str)
 ///
 /// Error returned if the resource does not successfully get the current state
 pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<GetResult, DscError> {
-    let mut command_input = CommandInput { env: None, stdin: None };
-    let args = process_args(&resource.get.args, filter);
-    if !filter.is_empty() {
-        verify_json(resource, cwd, filter)?;
-
-        command_input = get_command_input(&resource.get.input, filter)?;
+    debug!("Invoking get for '{}'", &resource.resource_type);
+    if resource.kind == Some(Kind::Import) {
+        let mut configurator = get_configurator(resource, cwd, filter)?;
+        let config_result = configurator.invoke_get()?;
+        return Ok(GetResult::Group(config_result.results));
     }
 
-    info!("Invoking get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
-    let (_exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
+    let mut command_input = CommandInput { env: None, stdin: None };
+    let Some(get) = &resource.get else {
+        return Err(DscError::NotImplemented("get".to_string()));
+    };
+    let args = process_args(&get.args, filter);
+    if !filter.is_empty() {
+        verify_json(resource, cwd, filter)?;
+        command_input = get_command_input(&get.input, filter)?;
+    }
+
+    info!("Invoking get '{}' using '{}'", &resource.resource_type, &get.executable);
+    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
     if resource.kind == Some(Kind::Resource) {
-        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
+        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &get.executable);
         verify_json(resource, cwd, &stdout)?;
     }
 
@@ -68,7 +70,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
         let result: Value = match serde_json::from_str(&stdout) {
             Ok(r) => {r},
             Err(err) => {
-                return Err(DscError::Operation(format!("Failed to parse JSON from get {}|{}|{} -> {err}", &resource.get.executable, stdout, stderr)))
+                return Err(DscError::Operation(format!("Failed to parse JSON from get {}|{}|{} -> {err}", &get.executable, stdout, stderr)))
             }
         };
         GetResult::Resource(ResourceGetResponse{
@@ -92,6 +94,8 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
+    // TODO: support import resources
+
     let Some(set) = &resource.set else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
@@ -122,14 +126,17 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         }
     }
 
-    let args = process_args(&resource.get.args, desired);
-    let command_input = get_command_input(&resource.get.input, desired)?;
+    let Some(get) = &resource.get else {
+        return Err(DscError::NotImplemented("get".to_string()));
+    };
+    let args = process_args(&get.args, desired);
+    let command_input = get_command_input(&get.input, desired)?;
 
-    info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &resource.get.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&resource.get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
+    info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &get.executable);
+    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
 
     if resource.kind == Some(Kind::Resource) {
-        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &resource.get.executable);
+        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &get.executable);
         verify_json(resource, cwd, &stdout)?;
     }
 
@@ -236,6 +243,8 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
+    // TODO: support import resources
+
     let Some(test) = &resource.test else {
         info!("Resource '{}' does not implement test, performing synthetic test", &resource.resource_type);
         return invoke_synthetic_test(resource, cwd, expected);
@@ -450,11 +459,9 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 ///
 /// Error returned if the resource does not successfully export the current state
 pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>) -> Result<ExportResult, DscError> {
-
     let Some(export) = resource.export.as_ref() else {
         return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
     };
-
 
     let mut command_input: CommandInput = CommandInput { env: None, stdin: None };
     let args: Option<Vec<String>>;
@@ -481,7 +488,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
             }
         };
         if resource.kind == Some(Kind::Resource) {
-            debug!("Verifying output of export '{}' using '{}'", &resource.resource_type, &resource.get.executable);
+            debug!("Verifying output of export '{}' using '{}'", &resource.resource_type, &export.executable);
             verify_json(resource, cwd, line)?;
         }
         instances.push(instance);
@@ -490,6 +497,35 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
     Ok(ExportResult {
         actual_state: instances,
     })
+}
+
+/// Invoke the resolve operation on a resource
+///
+/// # Arguments
+///
+/// * `resource` - The resource manifest
+/// * `cwd` - The current working directory
+/// * `input` - Input to the command
+///
+/// # Returns
+///
+/// * `ResolveResult` - The result of the resolve operation
+///
+/// # Errors
+///
+/// Error returned if the resource does not successfully resolve the input
+pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Result<ResolveResult, DscError> {
+    let Some(resolve) = &resource.resolve else {
+        return Err(DscError::Operation(format!("Resolve is not supported by resource {}", &resource.resource_type)));
+    };
+
+    let args = process_args(&resolve.args, input);
+    let command_input = get_command_input(&resolve.input, input)?;
+
+    info!("Invoking resolve '{}' using '{}'", &resource.resource_type, &resolve.executable);
+    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
+    let result: ResolveResult = serde_json::from_str(&stdout)?;
+    Ok(result)
 }
 
 /// Invoke a command and return the exit code, stdout, and stderr.
@@ -559,16 +595,20 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     if !stdout.is_empty() {
         trace!("STDOUT returned: {}", &stdout);
     }
-    if !stderr.is_empty() {
-        trace!("STDERR returned: {}", &stderr);
-        log_resource_traces(executable, &stderr);
-    }
+    let cleaned_stderr = if stderr.is_empty() {
+        stderr
+    } else {
+        trace!("STDERR returned data to be traced");
+        log_resource_traces(executable, &child.id(), &stderr);
+        // TODO: remove logged traces from STDERR
+        String::new()
+    };
 
     if exit_code != 0 {
-        return Err(DscError::Command(executable.to_string(), exit_code, stderr));
+        return Err(DscError::Command(executable.to_string(), exit_code, cleaned_stderr));
     }
 
-    Ok((exit_code, stdout, stderr))
+    Ok((exit_code, stdout, cleaned_stderr))
 }
 
 fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
@@ -590,18 +630,6 @@ fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>>
 
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(value.to_string());
-            },
-            ArgKind::TraceLevel { trace_level_arg } => {
-                let trace_level = match tracing::level_filters::STATIC_MAX_LEVEL {
-                    LevelFilter::ERROR => "error",
-                    LevelFilter::WARN => "warning",
-                    LevelFilter::INFO => "info",
-                    LevelFilter::DEBUG => "debug",
-                    LevelFilter::TRACE => "trace",
-                    LevelFilter::OFF => continue,
-                };
-                processed_args.push(trace_level_arg.clone());
-                processed_args.push(trace_level.to_string());
             },
         }
     }
@@ -718,4 +746,36 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
         }
     }
     Ok(map)
+}
+
+/// Log output from a process as traces.
+///
+/// # Arguments
+///
+/// * `process_name` - The name of the process
+/// * `process_id` - The ID of the process
+/// * `stderr` - The stderr output from the process
+pub fn log_resource_traces(process_name: &str, process_id: &u32, stderr: &str)
+{
+    if !stderr.is_empty()
+    {
+        for trace_line in stderr.lines() {
+            if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
+                if let Some(msg) = json_obj.get("Error") {
+                    error!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                } else if let Some(msg) = json_obj.get("Warning") {
+                    warn!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                } else if let Some(msg) = json_obj.get("Info") {
+                    info!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                } else if let Some(msg) = json_obj.get("Debug") {
+                    debug!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                } else if let Some(msg) = json_obj.get("Trace") {
+                    trace!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                };
+            } else {
+                // TODO: deserialize tracing JSON to have better presentation
+                trace!("Process '{process_name}' id {process_id} : {trace_line}");
+            }
+        }
+    }
 }

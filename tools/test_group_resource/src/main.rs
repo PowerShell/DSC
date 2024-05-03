@@ -30,20 +30,11 @@ fn main() {
                     resource_type: "Test/TestResource1".to_string(),
                     kind: Some(Kind::Resource),
                     version: "1.0.0".to_string(),
-                    tags: None,
-                    get: GetMethod {
+                    get: Some(GetMethod {
                         executable: String::new(),
-                        args: None,
-                        input: None,
-                    },
-                    set: None,
-                    test: None,
-                    delete: None,
-                    export: None,
-                    validate: None,
-                    adapter: None,
-                    exit_codes: None,
-                    schema: None,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
                 }).unwrap()),
             };
             let resource2 = DscResource {
@@ -64,20 +55,11 @@ fn main() {
                     resource_type: "Test/TestResource2".to_string(),
                     kind: Some(Kind::Resource),
                     version: "1.0.1".to_string(),
-                    tags: None,
-                    get: GetMethod {
+                    get: Some(GetMethod {
                         executable: String::new(),
-                        args: None,
-                        input: None,
-                    },
-                    set: None,
-                    test: None,
-                    delete: None,
-                    export: None,
-                    validate: None,
-                    adapter: None,
-                    exit_codes: None,
-                    schema: None,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
                 }).unwrap()),
             };
             println!("{}", serde_json::to_string(&resource1).unwrap());

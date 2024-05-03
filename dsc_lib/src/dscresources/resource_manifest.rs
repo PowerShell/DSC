@@ -13,10 +13,11 @@ use crate::dscerror::DscError;
 pub enum Kind {
     Adapter,
     Group,
+    Import,
     Resource,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceManifest {
     /// The version of the resource manifest schema.
@@ -35,7 +36,7 @@ pub struct ResourceManifest {
     /// Tags for the resource.
     pub tags: Option<Vec<String>>,
     /// Details how to call the Get method of the resource.
-    pub get: GetMethod,
+    pub get: Option<GetMethod>,
     /// Details how to call the Set method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub set: Option<SetMethod>,
@@ -48,6 +49,9 @@ pub struct ResourceManifest {
     /// Details how to call the Export method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub export: Option<ExportMethod>,
+    /// Details how to call the Resolve method of the resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolve: Option<ResolveMethod>,
     /// Details how to call the Validate method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub validate: Option<ValidateMethod>,
@@ -99,11 +103,6 @@ pub enum ArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
-    TraceLevel {
-        /// The argument that accepts the current directory.
-        #[serde(rename = "traceLevelArg")]
-        trace_level_arg: String,
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -147,7 +146,7 @@ pub enum ReturnKind {
     StateAndDiff,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct GetMethod {
     /// The command to run to get the state of the resource.
     pub executable: String,
@@ -214,6 +213,22 @@ pub struct ValidateMethod { // TODO: enable validation via schema or command
 pub struct ExportMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
+    /// The arguments to pass to the command to perform a Export.
+    pub args: Option<Vec<ArgKind>>,
+    /// How to pass input for a Export.
+    pub input: Option<InputKind>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct ResolveMethod {
+    /// The command to run to enumerate instances of the resource.
+    pub executable: String,
+    /// The resource type to pass execution after resolving.
+    #[serde(rename = "handlingResourceType")]
+    pub handling_resource_type: String,
+    /// The resource version to pass execution after resolving.
+    #[serde(rename = "handlingResourceVersion")]
+    pub handling_resource_version: Option<String>,
     /// The arguments to pass to the command to perform a Export.
     pub args: Option<Vec<ArgKind>>,
     /// How to pass input for a Export.

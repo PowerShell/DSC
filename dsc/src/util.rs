@@ -4,7 +4,7 @@
 use crate::args::{DscType, OutputFormat, TraceFormat, TraceLevel};
 
 use atty::Stream;
-use crate::include::Include;
+use crate::resolve::Include;
 use dsc_lib::{
     configure::{
         config_doc::Configuration,
@@ -20,8 +20,10 @@ use dsc_lib::{
             GetResult,
             SetResult,
             TestResult,
+            ResolveResult,
         }, resource_manifest::ResourceManifest
-    }
+    },
+    util::parse_input_to_json,
 };
 use jsonschema::JSONSchema;
 use path_absolutize::Absolutize;
@@ -48,6 +50,9 @@ pub const EXIT_JSON_ERROR: i32 = 3;
 pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
+
+pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
+pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
 
 /// Get string representation of JSON value.
 ///
@@ -151,6 +156,9 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
         DscType::TestResult => {
             schema_for!(TestResult)
         },
+        DscType::ResolveResult => {
+            schema_for!(ResolveResult)
+        }
         DscType::DscResource => {
             schema_for!(DscResource)
         },
@@ -259,10 +267,33 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     }
 }
 
-pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
+pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceFormat) {
     let tracing_level = match trace_level {
+        Some(level) => level,
+        None => {
+            // use DSC_TRACE_LEVEL env var if set
+            match env::var(DSC_TRACE_LEVEL) {
+                Ok(level) => {
+                    match level.to_ascii_uppercase().as_str() {
+                        "ERROR" => &TraceLevel::Error,
+                        "WARN" => &TraceLevel::Warn,
+                        "INFO" => &TraceLevel::Info,
+                        "DEBUG" => &TraceLevel::Debug,
+                        "TRACE" => &TraceLevel::Trace,
+                        _ => {
+                            warn!("Invalid DSC_TRACE_LEVEL value '{level}', defaulting to 'warn'");
+                            &TraceLevel::Warn
+                        },
+                    }
+                },
+                Err(_) => &TraceLevel::Warn,
+            }
+        }
+    };
+
+    let tracing_level = match tracing_level {
         TraceLevel::Error => Level::ERROR,
-        TraceLevel::Warning => Level::WARN,
+        TraceLevel::Warn => Level::WARN,
         TraceLevel::Info => Level::INFO,
         TraceLevel::Debug => Level::DEBUG,
         TraceLevel::Trace => Level::TRACE,
@@ -308,6 +339,9 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
     }
+
+    // set DSC_TRACE_LEVEL for child processes
+    env::set_var(DSC_TRACE_LEVEL, tracing_level.to_string().to_ascii_lowercase());
 }
 
 /// Validate the JSON against the schema.
@@ -345,29 +379,6 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     };
 
     Ok(())
-}
-
-pub fn parse_input_to_json(value: &str) -> String {
-    match serde_json::from_str(value) {
-        Ok(json) => json,
-        Err(_) => {
-            match serde_yaml::from_str::<Value>(value) {
-                Ok(yaml) => {
-                    match serde_json::to_value(yaml) {
-                        Ok(json) => json.to_string(),
-                        Err(err) => {
-                            error!("Error: Failed to convert YAML to JSON: {err}");
-                            exit(EXIT_DSC_ERROR);
-                        }
-                    }
-                },
-                Err(err) => {
-                    error!("Error: Input is not valid JSON or YAML: {err}");
-                    exit(EXIT_INVALID_INPUT);
-                }
-            }
-        }
-    }
 }
 
 pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> String {
@@ -418,18 +429,25 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
         return String::new();
     }
 
-    parse_input_to_json(&value)
+    match parse_input_to_json(&value) {
+        Ok(json) => json,
+        Err(err) => {
+            error!("Error: Invalid JSON or YAML: {err}");
+            exit(EXIT_INVALID_INPUT);
+        }
+    }
 }
 
 /// Sets `DSC_CONFIG_ROOT` env var and makes path absolute.
 ///
 /// # Arguments
 ///
-/// * `config_path` - Full path to the config file
+/// * `config_path` - Full path to the config file or directory.
 ///
 /// # Returns
 ///
 /// Absolute full path to the config file.
+/// If a directory is provided, the path returned is the directory path.
 pub fn set_dscconfigroot(config_path: &str) -> String
 {
     let path = Path::new(config_path);
@@ -440,24 +458,25 @@ pub fn set_dscconfigroot(config_path: &str) -> String
             exit(EXIT_DSC_ERROR);
     };
 
-    let Some(config_root_path) = full_path.parent() else {
-        // this should never happen because path was absolutized
-        error!("Error reading config path parent");
-        exit(EXIT_DSC_ERROR);
+    let config_root_path = if full_path.is_file() {
+        let Some(config_root_path) = full_path.parent() else {
+            // this should never happen because path was made absolute
+            error!("Error reading config path parent");
+            exit(EXIT_DSC_ERROR);
+        };
+        config_root_path.to_string_lossy().into_owned()
+    } else {
+        config_path.to_string()
     };
 
-    let env_var = "DSC_CONFIG_ROOT";
-
     // warn if env var is already set/used
-    if env::var(env_var).is_ok() {
-        warn!("The current value of '{env_var}' env var will be overridden");
+    if env::var(DSC_CONFIG_ROOT).is_ok() {
+        warn!("The current value of '{DSC_CONFIG_ROOT}' env var will be overridden");
     }
 
     // Set env var so child processes (of resources) can use it
-    let config_root = config_root_path.to_str().unwrap_or_default();
-    debug!("Setting '{env_var}' env var as '{}'", config_root);
-    env::set_var(env_var, config_root);
+    debug!("Setting '{DSC_CONFIG_ROOT}' env var as '{config_root_path}'");
+    env::set_var(DSC_CONFIG_ROOT, config_root_path);
 
-    // return absolutized path
-    full_path.to_str().unwrap_or_default().to_string()
+    full_path.to_string_lossy().into_owned()
 }

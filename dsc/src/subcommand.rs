@@ -2,14 +2,15 @@
 // Licensed under the MIT License.
 
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
+use crate::resolve::get_config;
 use crate::resource_command::{get_resource, self};
 use crate::Stream;
 use crate::tablewriter::Table;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
-use dsc_lib::configure::{Configurator, ErrorAction, config_result::ResourceGetResult};
+use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use dsc_lib::configure::{Configurator, config_result::ResourceGetResult};
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::{
-    GroupResourceSetResponse, GroupResourceTestResponse, TestResult
+    GroupResourceSetResponse, GroupResourceTestResponse, ResolveResult, TestResult
 };
 use dsc_lib::{
     DscManager,
@@ -17,13 +18,13 @@ use dsc_lib::{
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
-use serde_yaml::Value;
+use std::collections::HashMap;
 use std::process::exit;
 use tracing::{debug, error, trace};
 
 pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
 {
-    match configurator.invoke_get(ErrorAction::Continue, || { /* code */ }) {
+    match configurator.invoke_get() {
         Ok(result) => {
             if *as_group {
                 let mut group_result = Vec::<ResourceGetResult>::new();
@@ -62,7 +63,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
 
 pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
 {
-    match configurator.invoke_set(false, ErrorAction::Continue, || { /* code */ }) {
+    match configurator.invoke_set(false) {
         Ok(result) => {
             if *as_group {
                 let group_result = GroupResourceSetResponse {
@@ -100,7 +101,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
 
 pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool)
 {
-    match configurator.invoke_test(ErrorAction::Continue, || { /* code */ }) {
+    match configurator.invoke_test() {
         Ok(result) => {
             if *as_group {
                 let mut in_desired_state = true;
@@ -171,7 +172,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
 
 pub fn config_export(configurator: &mut Configurator, format: &Option<OutputFormat>)
 {
-    match configurator.invoke_export(ErrorAction::Continue, || { /* code */ }) {
+    match configurator.invoke_export() {
         Ok(result) => {
             let json = match serde_json::to_string(&result.result) {
                 Ok(json) => json,
@@ -198,27 +199,44 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool, use_stdin: &bool) {
-    let json_string = match subcommand {
+fn initialize_config_root(path: &Option<String>) -> Option<String> {
+    if path.is_some() {
+        let config_path = path.clone().unwrap_or_default();
+        Some(set_dscconfigroot(&config_path))
+    } else if std::env::var(DSC_CONFIG_ROOT).is_ok() {
+        let config_root = std::env::var(DSC_CONFIG_ROOT).unwrap_or_default();
+        debug!("Using {config_root} for {DSC_CONFIG_ROOT}");
+        None
+    } else {
+        let current_directory = std::env::current_dir().unwrap_or_default();
+        debug!("Using current directory '{current_directory:?}' for {DSC_CONFIG_ROOT}");
+        set_dscconfigroot(&current_directory.to_string_lossy());
+        None
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool) {
+    let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
         ConfigSubCommand::Test { document, path, .. } |
         ConfigSubCommand::Validate { document, path, .. } |
         ConfigSubCommand::Export { document, path, .. } => {
-            let new_path = if path.is_some() {
-                let config_path = path.clone().unwrap_or_default();
-                Some(set_dscconfigroot(&config_path))
-            } else {
-                // use current working directory
-                let current_directory = std::env::current_dir().unwrap_or_default();
-                Some(current_directory.to_string_lossy().to_string())
+            let new_path = initialize_config_root(path);
+            (None, get_input(document, stdin, &new_path))
+        },
+        ConfigSubCommand::Resolve { document, path, .. } => {
+            let new_path = initialize_config_root(path);
+            let input = get_input(document, stdin, &new_path);
+            let (new_parameters, config_json) = match get_config(&input) {
+                Ok((parameters, config_json)) => (parameters, config_json),
+                Err(err) => {
+                    error!("{err}");
+                    exit(EXIT_DSC_ERROR);
+                }
             };
-
-            if *use_stdin {
-                stdin.clone().unwrap_or_default()
-            } else {
-                get_input(document, stdin, &new_path)
-            }
+            (new_parameters, config_json)
         }
     };
 
@@ -230,7 +248,11 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         }
     };
 
-    let parameters: Option<serde_json::Value> = match parameters {
+    let parameters: Option<serde_json::Value> = match if new_parameters.is_some() {
+        &new_parameters
+    } else {
+        parameters
+    } {
         None => {
             debug!("No parameters specified");
             None
@@ -240,7 +262,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
             match serde_json::from_str(parameters) {
                 Ok(json) => Some(json),
                 Err(_) => {
-                    match serde_yaml::from_str::<Value>(parameters) {
+                    match serde_yaml::from_str::<serde_yaml::Value>(parameters) {
                         Ok(yaml) => {
                             match serde_json::to_value(yaml) {
                                 Ok(json) => Some(json),
@@ -303,7 +325,38 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         },
         ConfigSubCommand::Export { format, .. } => {
             config_export(&mut configurator, format);
-        }
+        },
+        ConfigSubCommand::Resolve { format, .. } => {
+            let configuration = match serde_json::from_str(&json_string) {
+                Ok(json) => json,
+                Err(err) => {
+                    error!("Error: Failed to deserialize configuration: {err}");
+                    exit(EXIT_DSC_ERROR);
+                }
+            };
+            // get the parameters out of the configurator
+            let parameters_hashmap = if configurator.context.parameters.is_empty() {
+                None
+            } else {
+                let mut parameters: HashMap<String, serde_json::Value> = HashMap::new();
+                for (key, value) in &configurator.context.parameters {
+                    parameters.insert(key.clone(), value.0.clone());
+                }
+                Some(parameters)
+            };
+            let resolve_result = ResolveResult {
+                configuration,
+                parameters: parameters_hashmap,
+            };
+            let json_string = match serde_json::to_string(&resolve_result) {
+                Ok(json) => json,
+                Err(err) => {
+                    error!("Error: Failed to serialize resolve result: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            write_output(&json_string, format);
+        },
     }
 }
 
@@ -411,15 +464,15 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             list_resources(&mut dsc, resource_name, adapter_name, description, tags, format);
         },
         ResourceSubCommand::Schema { resource , format } => {
-            dsc.find_resources(&[resource.to_lowercase().to_string()]);
+            dsc.find_resources(&[resource.to_string()]);
             resource_command::schema(&dsc, resource, format);
         },
         ResourceSubCommand::Export { resource, format } => {
-            dsc.find_resources(&[resource.to_lowercase().to_string()]);
+            dsc.find_resources(&[resource.to_string()]);
             resource_command::export(&mut dsc, resource, format);
         },
         ResourceSubCommand::Get { resource, input, path, all, format } => {
-            dsc.find_resources(&[resource.to_lowercase().to_string()]);
+            dsc.find_resources(&[resource.to_string()]);
             if *all { resource_command::get_all(&dsc, resource, format); }
             else {
                 let parsed_input = get_input(input, stdin, path);
@@ -427,17 +480,17 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             }
         },
         ResourceSubCommand::Set { resource, input, path, format } => {
-            dsc.find_resources(&[resource.to_lowercase().to_string()]);
+            dsc.find_resources(&[resource.to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::set(&dsc, resource, parsed_input, format);
         },
         ResourceSubCommand::Test { resource, input, path, format } => {
-            dsc.find_resources(&[resource.to_lowercase().to_string()]);
+            dsc.find_resources(&[resource.to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::test(&dsc, resource, parsed_input, format);
         },
         ResourceSubCommand::Delete { resource, input, path } => {
-            dsc.find_resources(&[resource.to_lowercase().to_string()]);
+            dsc.find_resources(&[resource.to_string()]);
             let parsed_input = get_input(input, stdin, path);
             resource_command::delete(&dsc, resource, parsed_input);
         },
@@ -452,7 +505,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
         write_table = true;
     }
     for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
-        let mut capabilities = "------".to_string();
+        let mut capabilities = "-------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
             (Capability::Set, "s"),
@@ -460,6 +513,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
             (Capability::Test, "t"),
             (Capability::Delete, "d"),
             (Capability::Export, "e"),
+            (Capability::Resolve, "r"),
         ];
 
         for (i, (capability, letter)) in capability_types.iter().enumerate() {

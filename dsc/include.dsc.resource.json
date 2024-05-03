@@ -2,49 +2,16 @@
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
     "type": "Microsoft.DSC/Include",
     "version": "0.1.0",
-    "description": "Allows including a configuration file into current configuration.",
-    "kind": "Group",
-    "get": {
+    "description": "Allows including a configuration file contents into current configuration.",
+    "kind": "Import",
+    "resolve": {
       "executable": "dsc",
       "args": [
-        {
-            "traceLevelArg": "--trace-level"
-        },
         "config",
-        "--as-group",
-        "--as-include",
-        "get"
-      ],
-      "input": "stdin"
-    },
-    "set": {
-      "executable": "dsc",
-      "args": [
-        {
-            "traceLevelArg": "--trace-level"
-        },
-        "config",
-        "--as-group",
-        "--as-include",
-        "set"
+        "resolve"
       ],
       "input": "stdin",
-      "implementsPretest": true,
-      "return": "state"
-    },
-    "test": {
-      "executable": "dsc",
-      "args": [
-        {
-            "traceLevelArg": "--trace-level"
-        },
-        "config",
-        "--as-group",
-        "--as-include",
-        "test"
-      ],
-      "input": "stdin",
-      "return": "state"
+      "handlingResourceType": "Microsoft.DSC/Group"
     },
     "exitCodes": {
       "0": "Success",

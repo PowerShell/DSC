@@ -21,7 +21,7 @@ pub enum TraceFormat {
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum TraceLevel {
     Error,
-    Warning,
+    Warn,
     Info,
     Debug,
     Trace
@@ -33,8 +33,8 @@ pub struct Args {
     /// The subcommand to run
     #[clap(subcommand)]
     pub subcommand: SubCommand,
-    #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "warning")]
-    pub trace_level: TraceLevel,
+    #[clap(short = 'l', long, help = "Trace level to use", value_enum)]
+    pub trace_level: Option<TraceLevel>,
     #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
     pub trace_format: TraceFormat,
 }
@@ -57,9 +57,6 @@ pub enum SubCommand {
         // Used to inform when DSC is used as a group resource to modify it's output
         #[clap(long, hide = true)]
         as_group: bool,
-        // Used for the Microsoft.DSC/Include resource
-        #[clap(long, hide = true)]
-        as_include: bool,
     },
     #[clap(name = "resource", about = "Invoke a specific DSC resource")]
     Resource {
@@ -117,6 +114,15 @@ pub enum ConfigSubCommand {
     },
     #[clap(name = "export", about = "Export the current configuration")]
     Export {
+        #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
+        document: Option<String>,
+        #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
+        path: Option<String>,
+        #[clap(short = 'f', long, help = "The output format to use")]
+        format: Option<OutputFormat>,
+    },
+    #[clap(name = "resolve", about = "Resolve the current configuration")]
+    Resolve {
         #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
         document: Option<String>,
         #[clap(short = 'p', long, help = "The path to a file used as input to the configuration or resource", conflicts_with = "document")]
@@ -207,6 +213,7 @@ pub enum DscType {
     GetResult,
     SetResult,
     TestResult,
+    ResolveResult,
     DscResource,
     ResourceManifest,
     Include,
