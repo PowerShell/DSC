@@ -90,7 +90,7 @@ function Find-LinkExe {
 if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
     $rustup = 'rustup'
 } else {
-    $rustup = 'echo rustup'
+    $rustup = 'echo'
 }
 
 if ($null -ne $packageType) {
