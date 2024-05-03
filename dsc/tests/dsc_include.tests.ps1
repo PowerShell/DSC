@@ -112,15 +112,15 @@ Describe 'Include tests' {
 
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $configYaml | Set-Content -Path $configPath
-        $out = dsc config test -p $configPath | ConvertFrom-Json
+        $out = dsc config get -p $configPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
-            $inDesiredState = $false
+            $expectedOS = 'Windows'
         } elseif ($IsLinux) {
-            $inDesiredState = $false
+            $expectedOS = 'Linux'
         } else {
-            $inDesiredState = $true
+            $expectedOS = 'macOS'
         }
-        $out.results[0].result.inDesiredState | Should -Be $inDesiredState
+        $out.results[0].result[0].result.actualState.family | Should -Be $expectedOS
     }
 }

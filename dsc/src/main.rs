@@ -66,7 +66,7 @@ fn main() {
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
-        SubCommand::Config { subcommand, parameters, parameters_file, as_group} => {
+        SubCommand::Config { subcommand, parameters, parameters_file, as_group } => {
             if let Some(file_name) = parameters_file {
                 info!("Reading parameters from file {file_name}");
                 match std::fs::read_to_string(&file_name) {
