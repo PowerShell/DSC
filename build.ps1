@@ -87,6 +87,12 @@ function Find-LinkExe {
     }
 }
 
+if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
+    $rustup = 'rustup'
+} else {
+    $rustup = 'echo rustup'
+}
+
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
@@ -112,7 +118,7 @@ if ($null -ne $packageType) {
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
-    rustup default stable
+    & $rustup default stable
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -153,7 +159,7 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
-    rustup target add $architecture
+    & $rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
