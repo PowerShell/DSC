@@ -10,8 +10,7 @@
         "config",
         "resolve"
       ],
-      "input": "stdin",
-      "handlingResourceType": "Microsoft.DSC/Group"
+      "input": "stdin"
     },
     "exitCodes": {
       "0": "Success",

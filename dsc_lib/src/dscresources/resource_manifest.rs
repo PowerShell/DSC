@@ -223,12 +223,6 @@ pub struct ExportMethod {
 pub struct ResolveMethod {
     /// The command to run to enumerate instances of the resource.
     pub executable: String,
-    /// The resource type to pass execution after resolving.
-    #[serde(rename = "handlingResourceType")]
-    pub handling_resource_type: String,
-    /// The resource version to pass execution after resolving.
-    #[serde(rename = "handlingResourceVersion")]
-    pub handling_resource_version: Option<String>,
     /// The arguments to pass to the command to perform a Export.
     pub args: Option<Vec<ArgKind>>,
     /// How to pass input for a Export.
