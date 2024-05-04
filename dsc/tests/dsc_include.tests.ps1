@@ -173,7 +173,7 @@ Describe 'Include tests' {
                 configurationFile: $nestedIncludeConfigPath
 "@
 
-        $out = $includeConfig | dsc -l trace config get | ConvertFrom-Json
+        $out = $includeConfig | dsc config get | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result[0].result.actualState.output | Should -Be 'one'
         $out.results[1].result[0].name | Should -Be 'nested'
