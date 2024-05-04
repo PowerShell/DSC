@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
-use crate::resolve::get_config;
+use crate::resolve::get_contents;
 use crate::resource_command::{get_resource, self};
 use crate::Stream;
 use crate::tablewriter::Table;
@@ -229,7 +229,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Resolve { document, path, .. } => {
             let new_path = initialize_config_root(path);
             let input = get_input(document, stdin, &new_path);
-            let (new_parameters, config_json) = match get_config(&input) {
+            let (new_parameters, config_json) = match get_contents(&input) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
                     error!("{err}");

@@ -31,15 +31,15 @@ pub struct Include {
 ///
 /// # Returns
 ///
-/// A tuple containing the path to the parameters file specified in the Include input and the content of
-/// the file as a JSON string.
+/// A tuple containing the contents of the parameters file as JSON and the configuration content
+/// as a JSON string.
 ///
 /// # Errors
 ///
 /// This function will return an error if the Include input is not valid JSON, if the file
 /// specified in the Include input cannot be read, or if the content of the file cannot be
 /// deserialized as YAML or JSON.
-pub fn get_config(input: &str) -> Result<(Option<String>, String), String> {
+pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
     debug!("Processing Include input");
 
     // deserialize the Include input
