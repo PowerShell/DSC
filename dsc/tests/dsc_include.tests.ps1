@@ -131,4 +131,52 @@ Describe 'Include tests' {
         }
         $out.results[0].result[0].result.actualState.family | Should -Be $expectedOS
     }
+
+    It 'Multiple includes' {
+        $echoConfig = @'
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: one
+              type: Test/Echo
+              properties:
+                output: one
+'@
+
+        $echoConfigPath = Join-Path $TestDrive 'echo.dsc.yaml'
+        $echoConfig | Set-Content -Path $echoConfigPath
+
+        $nestedIncludeConfig = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: nested
+              type: Microsoft.DSC/Include
+              properties:
+                configurationFile: $echoConfigPath
+"@
+
+        $nestedIncludeConfigPath = Join-Path $TestDrive 'nested_include.dsc.yaml'
+        $nestedIncludeConfig | Set-Content -Path $nestedIncludeConfigPath
+
+        $includeConfig = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: include
+              type: Microsoft.DSC/Include
+              properties:
+                configurationFile: $echoConfigPath
+            - name: include nested
+              type: Microsoft.DSC/Include
+              properties:
+                configurationFile: $nestedIncludeConfigPath
+"@
+
+        $out = $includeConfig | dsc -l trace config get | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result[0].result.actualState.output | Should -Be 'one'
+        $out.results[1].result[0].name | Should -Be 'nested'
+        $out.results[1].result[0].type | Should -Be 'Microsoft.DSC/Include'
+        $out.results[1].result[0].result[0].name | Should -Be 'one'
+        $out.results[1].result[0].result[0].type | Should -Be 'Test/Echo'
+        $out.results[1].result[0].result[0].result[0].actualState.output | Should -Be 'one'
+    }
 }
