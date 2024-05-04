@@ -144,6 +144,9 @@ Describe 'Include tests' {
 
         $echoConfigPath = Join-Path $TestDrive 'echo.dsc.yaml'
         $echoConfig | Set-Content -Path $echoConfigPath
+        $echoConfigPathParent = Split-Path $echoConfigPath -Parent
+        $echoConfigPathLeaf = Split-Path $echoConfigPath -Leaf
+        $directorySeparator = [System.IO.Path]::DirectorySeparatorChar
 
         $nestedIncludeConfig = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
@@ -151,7 +154,7 @@ Describe 'Include tests' {
             - name: nested
               type: Microsoft.DSC/Include
               properties:
-                configurationFile: $echoConfigPath
+                configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
 "@
 
         $nestedIncludeConfigPath = Join-Path $TestDrive 'nested_include.dsc.yaml'
