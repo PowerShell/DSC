@@ -134,43 +134,44 @@ Describe 'Include tests' {
 
     It 'Multiple includes' {
         $echoConfig = @'
-            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
-            resources:
-            - name: one
-              type: Test/Echo
-              properties:
-                output: one
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: one
+  type: Test/Echo
+  properties:
+    output: one
 '@
 
         $echoConfigPath = Join-Path $TestDrive 'echo.dsc.yaml'
-        $echoConfig | Set-Content -Path $echoConfigPath
-        $echoConfigPathParent = Split-Path $echoConfigPath -Parent
-        $echoConfigPathLeaf = Split-Path $echoConfigPath -Leaf
-        $directorySeparator = [System.IO.Path]::DirectorySeparatorChar
+        $echoConfig | Set-Content -Path $echoConfigPath -Encoding utf8
+        # need to escape backslashes for YAML
+        $echoConfigPathParent = (Split-Path $echoConfigPath -Parent).Replace('\', '\\')
+        $echoConfigPathLeaf = (Split-Path $echoConfigPath -Leaf).Replace('\', '\\')
+        $directorySeparator = [System.IO.Path]::DirectorySeparatorChar.ToString().Replace('\', '\\')
 
         $nestedIncludeConfig = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
-            resources:
-            - name: nested
-              type: Microsoft.DSC/Include
-              properties:
-                configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
+`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: nested
+  type: Microsoft.DSC/Include
+  properties:
+    configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
 "@
 
         $nestedIncludeConfigPath = Join-Path $TestDrive 'nested_include.dsc.yaml'
-        $nestedIncludeConfig | Set-Content -Path $nestedIncludeConfigPath
+        $nestedIncludeConfig | Set-Content -Path $nestedIncludeConfigPath -Encoding utf8
 
         $includeConfig = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
-            resources:
-            - name: include
-              type: Microsoft.DSC/Include
-              properties:
-                configurationFile: $echoConfigPath
-            - name: include nested
-              type: Microsoft.DSC/Include
-              properties:
-                configurationFile: $nestedIncludeConfigPath
+`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: include
+  type: Microsoft.DSC/Include
+  properties:
+    configurationFile: $echoConfigPath
+- name: include nested
+  type: Microsoft.DSC/Include
+  properties:
+    configurationFile: $nestedIncludeConfigPath
 "@
 
         $out = $includeConfig | dsc config get | ConvertFrom-Json
