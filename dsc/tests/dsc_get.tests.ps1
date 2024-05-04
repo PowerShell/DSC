@@ -9,7 +9,7 @@ Describe 'resource get tests' {
 
         switch ($type) {
             'string' {
-                $resource = 'Microsoft.Windows/registry'
+                $resource = 'Microsoft.Windows/Registry'
             }
             'json' {
                 $resource = dsc resource list *registry
@@ -44,7 +44,7 @@ Describe 'resource get tests' {
             "Name": "ProductName"
         }
 '@
-        $testError = & {$json | dsc resource get -r Microsoft.Windows/registry get 2>&1}
+        $testError = & {$json | dsc resource get -r Microsoft.Windows/Registry get 2>&1}
         $testError[0] | SHould -match 'error:'
         $LASTEXITCODE | Should -Be 2
     }
