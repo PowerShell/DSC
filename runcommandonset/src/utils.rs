@@ -65,7 +65,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     // originally implemented in dsc/src/util.rs
     let tracing_level = match trace_level {
         TraceLevel::Error => Level::ERROR,
-        TraceLevel::Warning => Level::WARN,
+        TraceLevel::Warn => Level::WARN,
         TraceLevel::Info => Level::INFO,
         TraceLevel::Debug => Level::DEBUG,
         TraceLevel::Trace => Level::TRACE,

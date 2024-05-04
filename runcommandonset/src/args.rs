@@ -13,7 +13,7 @@ pub enum TraceFormat {
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum TraceLevel {
     Error,
-    Warning,
+    Warn,
     Info,
     Debug,
     Trace
@@ -26,7 +26,7 @@ pub struct Arguments {
     #[clap(subcommand)]
     pub subcommand: SubCommand,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "info")]
-    pub trace_level: TraceLevel,
+    pub trace_level: Option<TraceLevel>,
     #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "json")]
     pub trace_format: TraceFormat,
 }

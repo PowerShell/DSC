@@ -771,9 +771,11 @@ pub fn log_resource_traces(process_name: &str, process_id: &u32, stderr: &str)
                     debug!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
                 } else if let Some(msg) = json_obj.get("Trace") {
                     trace!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                } else {
+                    // TODO: deserialize tracing JSON to have better presentation
+                    trace!("Process '{process_name}' id {process_id} : {trace_line}");
                 };
             } else {
-                // TODO: deserialize tracing JSON to have better presentation
                 trace!("Process '{process_name}' id {process_id} : {trace_line}");
             }
         }

@@ -65,13 +65,13 @@ Describe 'tracing tests' {
     }
 
     It 'trace level <level> is passed to resource' -TestCases @(
-        @{ level = 'error'; expectedLevel = 'ERROR' }
-        @{ level = 'warn'; expectedLevel = 'WARN' }
-        @{ level = 'info'; expectedLevel = 'INFO' }
-        @{ level = 'debug'; expectedLevel = 'DEBUG'}
-        @{ level = 'trace'; expectedLevel = 'TRACE'}
+        @{ level = 'error' }
+        @{ level = 'warn' }
+        @{ level = 'info' }
+        @{ level = 'debug' }
+        @{ level = 'trace' }
     ) {
-        param($level, $expectedLevel)
+        param($level)
 
         $configYaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
@@ -83,6 +83,6 @@ Describe 'tracing tests' {
 "@
 
         $out = (dsc -l $level config get -d $configYaml 2> $null) | ConvertFrom-Json
-        $out.results[0].result.actualState.level | Should -BeExactly $expectedLevel
+        $out.results[0].result.actualState.level | Should -BeExactly $level
     }
 }

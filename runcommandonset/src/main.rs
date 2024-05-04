@@ -2,12 +2,12 @@
 // Licensed under the MIT License.
 
 use atty::Stream;
-use clap::{Parser};
+use clap::Parser;
 use std::{io::{self, Read}, process::exit};
 use tracing::{error, warn, debug};
 
-use args::{Arguments, SubCommand};
-use runcommand::{RunCommand};
+use args::{Arguments, SubCommand, TraceLevel};
+use runcommand::RunCommand;
 use utils::{enable_tracing, invoke_command, parse_input, EXIT_INVALID_ARGS};
 
 pub mod args;
@@ -16,7 +16,29 @@ pub mod utils;
 
 fn main() {
     let args = Arguments::parse();
-    enable_tracing(&args.trace_level, &args.trace_format);
+    let trace_level = match args.trace_level {
+        Some(trace_level) => trace_level,
+        None => {
+            // get from DSC_TRACE_LEVEL env var
+            if let Ok(trace_level) = std::env::var("DSC_TRACE_LEVEL") {
+                match trace_level.to_lowercase().as_str() {
+                    "error" => TraceLevel::Error,
+                    "warn" => TraceLevel::Warn,
+                    "info" => TraceLevel::Info,
+                    "debug" => TraceLevel::Debug,
+                    "trace" => TraceLevel::Trace,
+                    _ => {
+                        warn!("Invalid trace level: {trace_level}");
+                        TraceLevel::Info
+                    }
+                }
+            } else {
+                // default to info
+                TraceLevel::Info
+            }
+        }
+    };
+    enable_tracing(&trace_level, &args.trace_format);
     warn!("This resource is not idempotent");
 
     let stdin = if atty::is(Stream::Stdin) {

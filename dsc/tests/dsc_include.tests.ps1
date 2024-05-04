@@ -94,11 +94,19 @@ Describe 'Include tests' {
         $log | Should -BeLike "*ERROR*"
     }
 
-    It 'Valid file path: <test>' -TestCases @(
-        @{ test = 'absolute configuration'; config = (Join-Path $TestDrive 'include/osinfo_parameters.dsc.yaml'); parameters = $null }
-        @{ test = 'absolute parameters'; config = 'include/osinfo_parameters.dsc.yaml'; parameters = (Join-Path $TestDrive 'include/osinfo.parameters.yaml') }
+    It 'Valid absolute file path: <test>' -TestCases @(
+        @{ test = 'configuration'; config = 'include/osinfo_parameters.dsc.yaml'; parameters = $null }
+        @{ test = 'parameters'; config = 'include/osinfo_parameters.dsc.yaml'; parameters = 'include/osinfo.parameters.yaml' }
     ) {
-        param($config, $parameters)
+        param($test, $config, $parameters)
+
+        if ($test -eq 'configuration') {
+            $config = Join-Path $TestDrive $config
+        } elseif ($test -eq 'parameters') {
+            $parameters = Join-Path $TestDrive $parameters
+        } else {
+            throw "Invalid test case: $test"
+        }
 
         $configYaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
