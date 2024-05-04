@@ -121,7 +121,7 @@ pub enum ConfigSubCommand {
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
-    #[clap(name = "resolve", about = "Resolve the current configuration")]
+    #[clap(name = "resolve", about = "Resolve the current configuration", hide = true)]
     Resolve {
         #[clap(short = 'd', long, help = "The document to pass to the configuration or resource", conflicts_with = "path")]
         document: Option<String>,
