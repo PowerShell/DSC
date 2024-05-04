@@ -3,7 +3,7 @@
 
 Describe 'osinfo resource tests' {
     It 'should get osinfo' {
-        $out = dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json
+        $out = dsc resource get -r Microsoft/osInfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $out.actualState.family | Should -BeExactly 'Windows'

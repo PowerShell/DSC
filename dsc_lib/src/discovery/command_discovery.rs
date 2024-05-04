@@ -309,7 +309,7 @@ impl ResourceDiscovery for CommandDiscovery {
             {
                 // remove the resource from the list of required resources
                 remaining_required_resource_types.retain(|x| *x != resource_name.to_lowercase());
-                found_resources.insert(resource_name.clone(), resource.clone());
+                found_resources.insert(resource_name.to_lowercase(), resource.clone());
                 if remaining_required_resource_types.is_empty()
                 {
                     return Ok(found_resources);
@@ -330,7 +330,7 @@ impl ResourceDiscovery for CommandDiscovery {
             {
                 // remove the adapter from the list of required resources
                 remaining_required_resource_types.retain(|x| *x != adapter_name.to_lowercase());
-                found_resources.insert(adapter_name.clone(), adapter.clone());
+                found_resources.insert(adapter_name.to_lowercase(), adapter.clone());
                 if remaining_required_resource_types.is_empty()
                 {
                     return Ok(found_resources);
@@ -349,10 +349,10 @@ impl ResourceDiscovery for CommandDiscovery {
                 if remaining_required_resource_types.contains(&adapted_name.to_lowercase())
                 {
                     remaining_required_resource_types.retain(|x| *x != adapted_name.to_lowercase());
-                    found_resources.insert(adapted_name.clone(), adapted_resource.clone());
+                    found_resources.insert(adapted_name.to_lowercase(), adapted_resource.clone());
 
                     // also insert the adapter
-                    found_resources.insert(adapter_name.clone(), adapter.clone());
+                    found_resources.insert(adapter_name.to_lowercase(), adapter.clone());
                     if remaining_required_resource_types.is_empty()
                     {
                         return Ok(found_resources);
