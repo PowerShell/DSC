@@ -12,10 +12,13 @@ Describe 'PowerShell adapter resource tests' {
         $pwshConfigPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
         $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
 
-        $cacheFilePath = Join-Path $env:LocalAppData "dscv3classcache.json"
         if ($IsLinux -or $IsMacOS) {
             $cacheFilePath = Join-Path $env:HOME ".dsc" "dscv3classcache.json"
-        }   
+        }
+        else
+        {
+            $cacheFilePath = Join-Path $env:LocalAppData "dscv3classcache.json"
+        }
         $cacheFilePath_v5 = Join-Path $env:LocalAppData "dscv3classcache-v5.json"
     }
     AfterAll {
