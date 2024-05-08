@@ -43,7 +43,7 @@ the resource and uses the dot-path notation to access the **bitness** property o
 
 ```yaml
 # reference.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: System
   type: Microsoft/OSInfo

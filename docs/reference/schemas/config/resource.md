@@ -15,7 +15,7 @@ Defines a DSC Resource instance in a configuration document.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.resource.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.resource.json
 Type:          object
 ```
 

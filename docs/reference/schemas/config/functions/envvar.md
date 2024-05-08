@@ -24,10 +24,10 @@ environment variable doesn't exist, DSC raises an error.
 
 ## Examples
 
-### Example 1 - Reference DSCConfigRoot in a configuration
+### Example 1 - Reference DSC_CONFIG_ROOT in a configuration
 
 When you use the `--path` option to specify a configuration document for any of the `dsc config *`
-commands, DSC automatically creates the `DSCConfigRoot` environment variable and sets the value to
+commands, DSC automatically creates the `DSC_CONFIG_ROOT` environment variable and sets the value to
 the parent folder of the specified configuration document. For more information, see
 [dsc config command reference][01].
 
@@ -35,12 +35,12 @@ This configuration echoes that folder with the `Test/Echo` resource.
 
 ```yaml
 # ./examples/envvar.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
-  - name: Echo 'DSCConfigRoot' in envvar
+  - name: Echo 'DSC_CONFIG_ROOT' in envvar
     type: Test/Echo
     properties:
-      output: "[envvar('DSCConfigRoot')]"
+      output: "[envvar('DSC_CONFIG_ROOT')]"
 ```
 
 ```bash
@@ -49,7 +49,7 @@ dsc config get --path ~/dsc/examples/envvar.example.1.dsc.config.yaml
 
 ```yaml
 results:
-- name: Echo DSCConfigRoot
+- name: Echo DSC_CONFIG_ROOT
   type: Test/Echo
   result:
     actualState:

@@ -15,7 +15,7 @@ The result output from the `dsc resource get` command.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/resource/get.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/outputs/resource/get.json
 Type:          object
 ```
 
@@ -68,17 +68,32 @@ data is returned:
 
 ### Required properties
 
+- [metadata](#metadata-1)
 - [name](#name)
 - [type](#type)
 - [result](#result)
 
 ### Properties
 
+#### metadata
+
+Defines metadata DSC returns for a configuration operation. The properties under the
+`Microsoft.DSC` property describe the context of the operation.
+
+- [duration][01] defines the duration of a DSC operation against a configuration document or
+  resource instance as a string following the format defined in [ISO8601 ABNF for `duration`][02].
+  For example, `PT0.611216S` represents a duration of about `0.61` seconds.
+
+```yaml
+Type:     object
+Required: true
+```
+
 #### type
 
 The `type` property identifies the instance's DSC Resource by its fully qualified type name.
 For more information about type names, see
-[DSC Resource fully qualified type name schema reference][01].
+[DSC Resource fully qualified type name schema reference][03].
 
 ```yaml
 Type:     string
@@ -108,4 +123,7 @@ Type: [object, array]
 Required: true
 ```
 
-[01]: ../../definitions/resourceType.md
+<!-- Link reference definitions -->
+[01]: ../../metadata/Microsoft.DSC/properties.md#duration
+[02]: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A
+[03]: ../../definitions/resourceType.md
