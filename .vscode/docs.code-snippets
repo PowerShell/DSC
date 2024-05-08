@@ -137,7 +137,7 @@
 			"  - Issues: [#${2:related issue id}][#${2:related issue id}]",
 			"  - PRs: [#${3:related pull request id}][#${3:related pull request id}]",
 			"",
-			"  <details>",
+			"  </details>",
 			""
 		]
 	}
@@ -155,7 +155,7 @@
 			"  - PRs:",
 			"    - [#${3:related pull request id}][#${3:related pull request id}]",
 			"",
-			"  <details>",
+			"  </details>",
 			""
 		]
 	}
