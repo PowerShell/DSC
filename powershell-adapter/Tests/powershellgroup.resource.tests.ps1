@@ -16,8 +16,8 @@ Describe 'PowerShell adapter resource tests' {
         else
         {
             $cacheFilePath = Join-Path $env:LocalAppData "dscv3classcache.json"
+            $cacheFilePath_v5 = Join-Path $env:LocalAppData "dscv3classcache-v5.json"
         }
-        $cacheFilePath_v5 = Join-Path $env:LocalAppData "dscv3classcache-v5.json"
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
