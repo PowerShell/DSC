@@ -50,9 +50,10 @@ function Invoke-DscCacheRefresh {
         $trace = @{'Debug' = "Reading from Get-DscResource cache file $cacheFilePath"} | ConvertTo-Json -Compress
         $host.ui.WriteErrorLine($trace)
 
-        $dscResourceCache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
+        $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
+        $dscResourceCacheEntries = $cache.ResourceCache
 
-        if ($dscResourceCache.Count -eq 0) {
+        if ($dscResourceCacheEntries.Count -eq 0) {
             # if there is nothing in the cache file - refresh cache
             $refreshCache = $true
 
@@ -64,7 +65,7 @@ function Invoke-DscCacheRefresh {
             $trace = @{'Debug' = "Checking cache for stale entries"} | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
 
-            foreach ($cacheEntry in $dscResourceCache) {
+            foreach ($cacheEntry in $dscResourceCacheEntries) {
                 $trace = @{'Trace' = "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'"} | ConvertTo-Json -Compress
                 $host.ui.WriteErrorLine($trace)
 
@@ -82,6 +83,23 @@ function Invoke-DscCacheRefresh {
 
                 if ($refreshCache) {break}
             }
+
+            $trace = @{'Debug' = "Checking cache for stale PSModulePath"} | ConvertTo-Json -Compress
+            $host.ui.WriteErrorLine($trace)
+
+            $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -ea SilentlyContinue}
+
+            $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+            $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+            $hs_cache.SymmetricExceptWith($hs_live)
+            $diff = $hs_cache
+
+            $trace = @{'Debug' = "PSModulePath diff '$diff'"} | ConvertTo-Json -Compress
+            $host.ui.WriteErrorLine($trace)
+
+            if ($diff.Count -gt 0) {
+                $refreshCache = $true
+            }
         }
     }
     else {
@@ -96,7 +114,7 @@ function Invoke-DscCacheRefresh {
         $host.ui.WriteErrorLine($trace)
 
         # create a list object to store cache of Get-DscResource
-        [dscResourceCacheEntry[]]$dscResourceCache = [System.Collections.Generic.List[Object]]::new()
+        [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
 
         # improve by performance by having the option to only get details for named modules
         # workaround for File and SignatureValidation resources that ship in Windows
@@ -188,21 +206,26 @@ function Invoke-DscCacheRefresh {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
-            $dscResourceCache += [dscResourceCacheEntry]@{
+            $dscResourceCacheEntries += [dscResourceCacheEntry]@{
                 Type            = "$moduleName/$($dscResource.Name)"
                 DscResourceInfo = $DscResourceInfo
                 LastWriteTimes = $lastWriteTimes
             }
         }
 
+        [dscResourceCache]$cache = [dscResourceCache]::new()
+        $cache.ResourceCache = $dscResourceCacheEntries
+        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -ea SilentlyContinue}
+        $cache.PSModulePaths = $m.FullName
+
         # save cache for future use
         # TODO: replace this with a high-performance serializer
         $trace = @{'Debug' = "Saving Get-DscResource cache to '$cacheFilePath'"} | ConvertTo-Json -Compress
         $host.ui.WriteErrorLine($trace)
-        $dscResourceCache | ConvertTo-Json -Depth 90 | Out-File $cacheFilePath
+        $cache | ConvertTo-Json -Depth 90 | Out-File $cacheFilePath
     }
 
-    return $dscResourceCache
+    return $dscResourceCacheEntries
 }
 
 # Convert the INPUT to a dscResourceObject object so configuration and resource are standardized as much as possible
@@ -453,6 +476,11 @@ class dscResourceCacheEntry {
     [string] $Type
     [psobject] $DscResourceInfo
     [PSCustomObject] $LastWriteTimes
+}
+
+class dscResourceCache {
+    [string[]] $PSModulePaths
+    [dscResourceCacheEntry[]] $ResourceCache
 }
 
 # format expected for configuration and resource output
