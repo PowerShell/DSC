@@ -45,7 +45,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.5...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.7...main
 
 <!--
     Unreleased change entry instructions:
@@ -65,10 +65,21 @@ changes since the last release, see the [diff on GitHub][unreleased].
     docs-changelog-release-heading snippet to create the new release heading after this comment and
     before the first H3 for the changes.
 
-    After doing so, rename the unreleased reference links from `ur.##` to `<prefix>.##`, where
+    After doing so, rename the unreleased reference links from `ur-##` to `<prefix>-##`, where
     <prefix> is a two-character prefix for the release. For alpha releases, we use `a#`, like `a5`
     for the `v3.0.0.0-alpha.5` release. Leave the release links under the release section.
 -->
+
+<!-- Unreleased change links -->
+
+## [v3.0.0-preview.7][release-v3.0.0-preview.7] - 2024-04-22
+
+This section includes a summary of changes for the `preview.7` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-preview.7].
+
+<!-- Release links -->
+[release-v3.0.0-preview.7]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-preview.7 "Link to the DSC v3.0.0-preview.7 release on GitHub"
+[compare-v3.0.0-preview.7]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...v3.0.0-preview.7
 
 ### Changed
 
@@ -121,8 +132,8 @@ changes since the last release, see the [diff on GitHub][unreleased].
   they're _adapters_ between DSCv3 and resources defined in a different way.
 
   Beyond using different terminology in the documentation, this change also renamed the resource
-  manifest property `provider` to [adapter][ur-01], and the `requires` property in the output for
-  `dsc resource list` has been renamed to [requireAdapter][ur-02].
+  manifest property `provider` to [adapter][p7-01], and the `requires` property in the output for
+  `dsc resource list` has been renamed to [requireAdapter][p7-02].
 
   <details><summary>Related work items</summary>
 
@@ -133,7 +144,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- <a id="camel-casing-secure-types"></a> Changed the casing for the [parameter type enums][ur-03]
+- <a id="camel-casing-secure-types"></a> Changed the casing for the [parameter type enums][p7-03]
   from `SecureString` to `secureString` and `SecureObject` to `secureObject`, to better match the
   type enumerations in ARM.
 
@@ -170,7 +181,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
   </details>
 
 - Updated the default behavior of the [dsc resource list][cmd-rlist] command and added the new
-  [--adapter][ur-04] option to the command.
+  [--adapter][p7-04] option to the command.
 
   Prior to this release, the command always called the `list` command for any discovered adapters,
   even when searching for a non-adapted resource by name. Enumerating the adapted resources can be
@@ -209,9 +220,9 @@ changes since the last release, see the [diff on GitHub][unreleased].
 ### Added
 
 - <a id="add-delete-operation" /></a> Added the [dsc resource delete][cmd-rdelete] command and the
-  [delete][ur-05] operation property to the resource manifest. Prior to this release, resources had
+  [delete][p7-05] operation property to the resource manifest. Prior to this release, resources had
   to handle deleting resources as part of their `set` operation, and the development guidance was
-  to use the [_exist][ur-06] standard property to indicate whether a resource should exist.
+  to use the [_exist][p7-06] standard property to indicate whether a resource should exist.
 
   Now, resource authors can indicate through the resource manifest whether the resource supports
   the `delete` operation with a separate command or as part of the `set` operation. It can be
@@ -223,18 +234,18 @@ changes since the last release, see the [diff on GitHub][unreleased].
   command, the JSON input defines the filter to pass to the resource for deleting the instance. For
   more information, see [dsc resource delete command reference][cmd-rdelete].
 
-  If your resource handles deleting instances as part of `set`, use the [handlesExist][ur-07]
+  If your resource handles deleting instances as part of `set`, use the [handlesExist][p7-07]
   property to tell DSC so. When this property is `true`, the resource has the
-  [SetHandlesExist capability][ur-08].
+  [SetHandlesExist capability][p7-08].
 
-  If your resource has a separate command for deleting instances, use the [delete][ur-05] property
+  If your resource has a separate command for deleting instances, use the [delete][p7-05] property
   in your resource manifest to tell DSC and other tools how to invoke the operation. When this
-  property is defined, the resource has the [Delete capability][ur-09].
+  property is defined, the resource has the [Delete capability][p7-09].
 
   If your resource handles deleting instances, you should add the `_exist` standard property to the
-  resource's [instance schema][ur-10]. While you can use any property name for this, DSC is only aware of
+  resource's [instance schema][p7-10]. While you can use any property name for this, DSC is only aware of
   deletion operations when you use the `_exist` property. DSC won't know to call the `delete`
-  operation for resources that don't have the [SetHandlesExist][ur-08] capability.
+  operation for resources that don't have the [SetHandlesExist][p7-08] capability.
 
   For resources that implement `delete` but don't handle `_exist` in the `set` operation, DSC can
   now invoke the delete operation as-needed in a configuration whenever it enforces the desired
@@ -267,7 +278,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
       securityContext: restricted
   ```
 
-  For more information, see [DSC Configuration document metadata schema][ur-11].
+  For more information, see [DSC Configuration document metadata schema][p7-11].
 
   <details><summary>Related work items</summary>
 
@@ -280,12 +291,12 @@ changes since the last release, see the [diff on GitHub][unreleased].
   commands. When you define the `args` list for the following commands, you can now define a
   special argument that the command expects to receive the compressed JSON data for:
 
-  - [delete][ur-12]
-  - [export][ur-13]
-  - [get][ur-14]
-  - [set][ur-15]
-  - [test][ur-16]
-  - [validate][ur-17]
+  - [delete][p7-12]
+  - [export][p7-13]
+  - [get][p7-14]
+  - [set][p7-15]
+  - [test][p7-16]
+  - [validate][p7-17]
 
   DSC sends data to these commands in three ways:
 
@@ -319,7 +330,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
     resources, so you can use properties of one resource instance as values for another. The
     `reference()` function only works for resources that DSC has already managed in a
     configuration. You should always add the resource you're referencing with the `reference()`
-    function to the [dependsOn][ur-18] list for the instance using the reference.
+    function to the [dependsOn][p7-18] list for the instance using the reference.
 
   - The [createArray()][createArray()] function enables you to create arrays of a given type from
     values.
@@ -344,11 +355,11 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- <a id="add-kind-property" /></a> Added the [kind][ur-19] property to the resource manifest schema
-  and the [output][ur-20] for the [dsc resource list][cmd-rlist] command. This property indicates
-  whether the resource is a [group resource][ur-21] (`Group`), an [adapter resource][ur-22]
+- <a id="add-kind-property" /></a> Added the [kind][p7-19] property to the resource manifest schema
+  and the [output][p7-20] for the [dsc resource list][cmd-rlist] command. This property indicates
+  whether the resource is a [group resource][p7-21] (`Group`), an [adapter resource][p7-22]
   (`Adapter`), or neither (`Resource`). For more information, see
-  [DSC Resource kind schema reference][ur-23].
+  [DSC Resource kind schema reference][p7-23].
 
   This property is mandatory in the resource manifest for group resources. If your resource
   manifest doesn't define the `kind` property, DSC can infer whether the resource is an adapter
@@ -363,7 +374,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- <a id="add-capabilities" /></a> Added the [capabilities][ur-24] property to the output for the
+- <a id="add-capabilities" /></a> Added the [capabilities][p7-24] property to the output for the
   [dsc resource list][cmd-rlist] command. The `capabilities` property indicates how you can use the
   DSC Resource and how DSC and other higher order tools should handle it.
 
@@ -379,12 +390,12 @@ changes since the last release, see the [diff on GitHub][unreleased].
   and information about the operation. See the output reference for each command for more
   information:
 
-  - [dsc config get][ur-25]
-  - [dsc config test][ur-26]
-  - [dsc config set][ur-27]
-  - [dsc resource get][ur-28]
-  - [dsc resource test][ur-29]
-  - [dsc resource set][ur-30]
+  - [dsc config get][p7-25]
+  - [dsc config test][p7-26]
+  - [dsc config set][p7-27]
+  - [dsc resource get][p7-28]
+  - [dsc resource test][p7-29]
+  - [dsc resource set][p7-30]
 
   <details><summary>Related work items</summary>
 
@@ -393,7 +404,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- Added parsing for [configuration functions][cfuncs] in the [default values][ur-31] of parameters.
+- Added parsing for [configuration functions][cfuncs] in the [default values][p7-31] of parameters.
   Prior to this release, DSC interpreted configuration functions in parameter default values as
   literal strings.
 
@@ -404,8 +415,8 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-- Added type validation for parameter [default values][ur-31]. Prior to this release, DSC didn't
-  validate that the default value for a parameter was valid for the parameter's [type][ur-32].
+- Added type validation for parameter [default values][p7-31]. Prior to this release, DSC didn't
+  validate that the default value for a parameter was valid for the parameter's [type][p7-32].
 
   <details><summary>Related work items</summary>
 
@@ -428,7 +439,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
   DSC emits these messages along with its own messages when the specified trace level for the
   command is equal to or lower than the message's level.
 
-  For more information about trace levels, see the [--trace-level][ur-33] option for the
+  For more information about trace levels, see the [--trace-level][p7-33] option for the
   [dsc][cmd] root command.
 
   <details><summary>Related work items</summary>
@@ -506,40 +517,40 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
-<!-- Unreleased change links -->
-[ur-01]: ./docs/reference/schemas/resource/manifest/adapter.md
-[ur-02]: ./docs/reference/schemas/outputs/resource/list.md#requireadapter
-[ur-03]: ./docs/reference/schemas/definitions/parameters/dataTypes.md
-[ur-04]: ./docs/reference/cli/resource/list.md#-a---adapter
-[ur-05]: ./docs/reference/schemas/resource/manifest/delete.md
-[ur-06]: ./docs/reference/schemas/resource/properties/exist.md
-[ur-07]: ./docs/reference/schemas/resource/manifest/set.md#handlesexist
-[ur-08]: ./docs/reference/schemas/outputs/resource/list.md#capability-sethandlesexist
-[ur-09]: ./docs/reference/schemas/outputs/resource/list.md#capability-delete
-[ur-10]: ./docs/reference/schemas/resource/manifest/root.md#schema-1
-[ur-11]: ./docs/reference/schemas/config/metadata.md
-[ur-12]: ./docs/reference/schemas/resource/manifest/delete.md#json-input-argument
-[ur-13]: ./docs/reference/schemas/resource/manifest/export.md#json-input-argument
-[ur-14]: ./docs/reference/schemas/resource/manifest/get.md#json-input-argument
-[ur-15]: ./docs/reference/schemas/resource/manifest/set.md#json-input-argument
-[ur-16]: ./docs/reference/schemas/resource/manifest/test.md#json-input-argument
-[ur-17]: ./docs/reference/schemas/resource/manifest/validate.md#json-input-argument
-[ur-18]: ./docs/reference/schemas/config/resource.md#dependsOn
-[ur-19]: ./docs/reference/schemas/resource/manifest/root.md#kind
-[ur-20]: ./docs/reference/schemas/outputs/resource/list.md
-[ur-21]: ./docs/reference/schemas/definitions/resourceKind.md#group-resources
-[ur-22]: ./docs/reference/schemas/definitions/resourceKind.md#adapter-resources
-[ur-23]: ./docs/reference/schemas/definitions/resourceKind.md
-[ur-24]: ./docs/reference/schemas/outputs/resource/list.md#capabilities
-[ur-25]: ./docs/reference/schemas/outputs/config/get.md#metadata-1
-[ur-26]: ./docs/reference/schemas/outputs/config/test.md#metadata-1
-[ur-27]: ./docs/reference/schemas/outputs/config/set.md#metadata-1
-[ur-28]: ./docs/reference/schemas/outputs/resource/get.md#metadata-1
-[ur-29]: ./docs/reference/schemas/outputs/resource/test.md#metadata-1
-[ur-30]: ./docs/reference/schemas/outputs/resource/set.md#metadata-1
-[ur-31]: ./docs/reference/schemas/config/parameter.md#defaultvalue
-[ur-32]: ./docs/reference/schemas/config/parameter.md#type
-[ur-33]: ./docs/reference/cli/dsc.md#-l---trace-level
+<!-- preview.7 change links -->
+[p7-01]: ./docs/reference/schemas/resource/manifest/adapter.md
+[p7-02]: ./docs/reference/schemas/outputs/resource/list.md#requireadapter
+[p7-03]: ./docs/reference/schemas/definitions/parameters/dataTypes.md
+[p7-04]: ./docs/reference/cli/resource/list.md#-a---adapter
+[p7-05]: ./docs/reference/schemas/resource/manifest/delete.md
+[p7-06]: ./docs/reference/schemas/resource/properties/exist.md
+[p7-07]: ./docs/reference/schemas/resource/manifest/set.md#handlesexist
+[p7-08]: ./docs/reference/schemas/outputs/resource/list.md#capability-sethandlesexist
+[p7-09]: ./docs/reference/schemas/outputs/resource/list.md#capability-delete
+[p7-10]: ./docs/reference/schemas/resource/manifest/root.md#schema-1
+[p7-11]: ./docs/reference/schemas/config/metadata.md
+[p7-12]: ./docs/reference/schemas/resource/manifest/delete.md#json-input-argument
+[p7-13]: ./docs/reference/schemas/resource/manifest/export.md#json-input-argument
+[p7-14]: ./docs/reference/schemas/resource/manifest/get.md#json-input-argument
+[p7-15]: ./docs/reference/schemas/resource/manifest/set.md#json-input-argument
+[p7-16]: ./docs/reference/schemas/resource/manifest/test.md#json-input-argument
+[p7-17]: ./docs/reference/schemas/resource/manifest/validate.md#json-input-argument
+[p7-18]: ./docs/reference/schemas/config/resource.md#dependsOn
+[p7-19]: ./docs/reference/schemas/resource/manifest/root.md#kind
+[p7-20]: ./docs/reference/schemas/outputs/resource/list.md
+[p7-21]: ./docs/reference/schemas/definitions/resourceKind.md#group-resources
+[p7-22]: ./docs/reference/schemas/definitions/resourceKind.md#adapter-resources
+[p7-23]: ./docs/reference/schemas/definitions/resourceKind.md
+[p7-24]: ./docs/reference/schemas/outputs/resource/list.md#capabilities
+[p7-25]: ./docs/reference/schemas/outputs/config/get.md#metadata-1
+[p7-26]: ./docs/reference/schemas/outputs/config/test.md#metadata-1
+[p7-27]: ./docs/reference/schemas/outputs/config/set.md#metadata-1
+[p7-28]: ./docs/reference/schemas/outputs/resource/get.md#metadata-1
+[p7-29]: ./docs/reference/schemas/outputs/resource/test.md#metadata-1
+[p7-30]: ./docs/reference/schemas/outputs/resource/set.md#metadata-1
+[p7-31]: ./docs/reference/schemas/config/parameter.md#defaultvalue
+[p7-32]: ./docs/reference/schemas/config/parameter.md#type
+[p7-33]: ./docs/reference/cli/dsc.md#-l---trace-level
 
 ## [v3.0.0-alpha.5][release-v3.0.0-alpha.5] - 2024-02-27
 
