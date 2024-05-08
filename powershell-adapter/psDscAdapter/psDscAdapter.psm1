@@ -39,11 +39,14 @@ function Invoke-DscCacheRefresh {
 
     $refreshCache = $false
 
-    if ($IsWindows) {
-        $cacheFilePath = Join-Path $env:LocalAppData "dscv3classcache.json"
+    $cacheFileSuffix = ".json"
+    if ($PSVersionTable.PSVersion.Major -le 5) {
+        $cacheFileSuffix = "-v5.json"
     }
-    else {
-        $cacheFilePath = Join-Path $env:HOME ".dsc" "dscv3classcache.json"
+
+    $cacheFilePath = Join-Path $env:LocalAppData "dscv3classcache$cacheFileSuffix"
+    if ($IsLinux -or $IsMacOS) {
+        $cacheFilePath = Join-Path $env:HOME ".dsc" "dscv3classcache$cacheFileSuffix"
     }
 
     if (Test-Path $cacheFilePath) {
