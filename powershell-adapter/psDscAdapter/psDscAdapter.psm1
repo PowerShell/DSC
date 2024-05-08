@@ -37,98 +37,171 @@ function Invoke-DscCacheRefresh {
         $Module
     )
 
-    # create a list object to store cache of Get-DscResource
-    [dscResourceCache[]]$dscResourceCache = [System.Collections.Generic.List[Object]]::new()
+    $refreshCache = $false
 
-    # improve by performance by having the option to only get details for named modules
-    # workaround for File and SignatureValidation resources that ship in Windows
-    if ($null -ne $module -and 'PSDesiredStateConfiguration' -ne $module) {
-        if ($module.gettype().name -eq 'string') {
-            $module = @($module)
-        }
-        $DscResources = [System.Collections.Generic.List[Object]]::new()
-        $Modules = [System.Collections.Generic.List[Object]]::new()
-        foreach ($m in $module) {
-            $DscResources += Get-DscResource -Module $m
-            $Modules += Get-Module -Name $m -ListAvailable
-        }
-    }
-    elseif ('PSDesiredStateConfiguration' -eq $module -and $PSVersionTable.PSVersion.Major -le 5 ) {
-        # the resources in Windows should only load in Windows PowerShell
-        # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
-        $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" ) }
+    if ($IsWindows) {
+        $cacheFilePath = Join-Path $env:LocalAppData "dscv3classcache.json"
     }
     else {
-        # if no module is specified, get all resources
-        $DscResources = Get-DscResource
-        $Modules = Get-Module -ListAvailable
+        $cacheFilePath = Join-Path $env:HOME ".dsc" "dscv3classcache.json"
     }
 
-    $psdscVersion = Get-Module PSDesiredStateConfiguration | Sort-Object -descending | Select-Object -First 1 | ForEach-Object Version
+    if (Test-Path $cacheFilePath) {
+        $trace = @{'Debug' = "Reading from Get-DscResource cache file $cacheFilePath"} | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
 
-    foreach ($dscResource in $DscResources) {
-        # resources that shipped in Windows should only be used with Windows PowerShell
-        if ($dscResource.ParentPath -like "$env:windir\System32\*" -and $PSVersionTable.PSVersion.Major -gt 5) {
-            continue
+        $dscResourceCache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
+
+        if ($dscResourceCache.Count -eq 0) {
+            # if there is nothing in the cache file - refresh cache
+            $refreshCache = $true
+
+            $trace = @{'Debug' = "Filtered DscResourceCache cache is empty"} | ConvertTo-Json -Compress
+            $host.ui.WriteErrorLine($trace)
+        }
+        else
+        {
+            $trace = @{'Debug' = "Checking cache for stale entries"} | ConvertTo-Json -Compress
+            $host.ui.WriteErrorLine($trace)
+
+            foreach ($cacheEntry in $dscResourceCache) {
+                $trace = @{'Trace' = "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'"} | ConvertTo-Json -Compress
+                $host.ui.WriteErrorLine($trace)
+
+                $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
+                
+                    if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
+                    {
+                        $trace = @{'Debug' = "Detected stale cache entry '$($_.Name)'"} | ConvertTo-Json -Compress
+                        $host.ui.WriteErrorLine($trace)
+
+                        $refreshCache = $true
+                        break
+                    }
+                }
+
+                if ($refreshCache) {break}
+            }
+        }
+    }
+    else {
+        $trace = @{'Debug' = "Cache file not found '$cacheFilePath'"} | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
+
+        $refreshCache = $true
+    }
+    
+    if ($refreshCache) {
+        $trace = @{'Debug' = 'Constructing Get-DscResource cache'} | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
+
+        # create a list object to store cache of Get-DscResource
+        [dscResourceCacheEntry[]]$dscResourceCache = [System.Collections.Generic.List[Object]]::new()
+
+        # improve by performance by having the option to only get details for named modules
+        # workaround for File and SignatureValidation resources that ship in Windows
+        if ($null -ne $module -and 'PSDesiredStateConfiguration' -ne $module) {
+            if ($module.gettype().name -eq 'string') {
+                $module = @($module)
+            }
+            $DscResources = [System.Collections.Generic.List[Object]]::new()
+            $Modules = [System.Collections.Generic.List[Object]]::new()
+            foreach ($m in $module) {
+                $DscResources += Get-DscResource -Module $m
+                $Modules += Get-Module -Name $m -ListAvailable
+            }
+        }
+        elseif ('PSDesiredStateConfiguration' -eq $module -and $PSVersionTable.PSVersion.Major -le 5 ) {
+            # the resources in Windows should only load in Windows PowerShell
+            # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
+            $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" ) }
+        }
+        else {
+            # if no module is specified, get all resources
+            $DscResources = Get-DscResource
+            $Modules = Get-Module -ListAvailable
         }
 
-        # we can't run this check in PSDesiredStateConfiguration 1.1 because the property doesn't exist
-        if ( $psdscVersion -ge '2.0.7' ) {
-            # only support known dscResourceType
-            if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
-                $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
-                $host.ui.WriteErrorLine($trace)
+        $psdscVersion = Get-Module PSDesiredStateConfiguration | Sort-Object -descending | Select-Object -First 1 | ForEach-Object Version
+
+        foreach ($dscResource in $DscResources) {
+            # resources that shipped in Windows should only be used with Windows PowerShell
+            if ($dscResource.ParentPath -like "$env:windir\System32\*" -and $PSVersionTable.PSVersion.Major -gt 5) {
                 continue
             }
+
+            # we can't run this check in PSDesiredStateConfiguration 1.1 because the property doesn't exist
+            if ( $psdscVersion -ge '2.0.7' ) {
+                # only support known dscResourceType
+                if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
+                    $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
+                    $host.ui.WriteErrorLine($trace)
+                    continue
+                }
+            }
+
+            # workaround: if the resource does not have a module name, get it from parent path
+            # workaround: modulename is not settable, so clone the object without being read-only
+            # workaround: we have to special case File and SignatureValidation resources that ship in Windows
+            $binaryBuiltInModulePaths = @(
+                "$env:windir\system32\Configuration\Schema\MSFT_FileDirectoryConfiguration"
+                "$env:windir\system32\Configuration\BaseRegistration"
+            )
+            $DscResourceInfo = [DscResourceInfo]::new()
+            $dscResource.PSObject.Properties | ForEach-Object -Process {
+                if ($null -ne $_.Value) {
+                    $DscResourceInfo.$($_.Name) = $_.Value
+                }
+                else {
+                    $DscResourceInfo.$($_.Name) = ''
+                }
+            }
+
+            if ($dscResource.ModuleName) {
+                $moduleName = $dscResource.ModuleName
+            }
+            elseif ($binaryBuiltInModulePaths -contains $dscResource.ParentPath) {
+                $moduleName = 'PSDesiredStateConfiguration'
+                $DscResourceInfo.Module = 'PSDesiredStateConfiguration'
+                $DscResourceInfo.ModuleName = 'PSDesiredStateConfiguration'
+                $DscResourceInfo.CompanyName = 'Microsoft Corporation'
+                $DscResourceInfo.Version = '1.0.0'
+                if ($PSVersionTable.PSVersion.Major -le 5 -and $DscResourceInfo.ImplementedAs -eq 'Binary') {
+                    $DscResourceInfo.ImplementationDetail = 'Binary'
+                }
+            }
+            elseif ($binaryBuiltInModulePaths -notcontains $dscResource.ParentPath -and $null -ne $dscResource.ParentPath) {
+                # workaround: populate module name from parent path that is three levels up
+                $moduleName = Split-Path $dscResource.ParentPath | Split-Path | Split-Path -Leaf
+                $DscResourceInfo.Module = $moduleName
+                $DscResourceInfo.ModuleName = $moduleName
+                # workaround: populate module version from psmoduleinfo if available
+                if ($moduleInfo = $Modules | Where-Object { $_.Name -eq $moduleName }) {
+                    $moduleInfo = $moduleInfo | Sort-Object -Property Version -Descending | Select-Object -First 1
+                    $DscResourceInfo.Version = $moduleInfo.Version.ToString()
+                }
+            }
+
+            # fill in resource files (and their last-write-times) that will be used for up-do-date checks
+            $lastWriteTimes = @{}
+            Get-ChildItem -Recurse -Path $dscResource.ParentPath | % {
+                $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
+            }
+
+            $dscResourceCache += [dscResourceCacheEntry]@{
+                Type            = "$moduleName/$($dscResource.Name)"
+                DscResourceInfo = $DscResourceInfo
+                LastWriteTimes = $lastWriteTimes
+            }
         }
 
-        # workaround: if the resource does not have a module name, get it from parent path
-        # workaround: modulename is not settable, so clone the object without being read-only
-        # workaround: we have to special case File and SignatureValidation resources that ship in Windows
-        $binaryBuiltInModulePaths = @(
-            "$env:windir\system32\Configuration\Schema\MSFT_FileDirectoryConfiguration"
-            "$env:windir\system32\Configuration\BaseRegistration"
-        )
-        $DscResourceInfo = [DscResourceInfo]::new()
-        $dscResource.PSObject.Properties | ForEach-Object -Process {
-            if ($null -ne $_.Value) {
-                $DscResourceInfo.$($_.Name) = $_.Value
-            }
-            else {
-                $DscResourceInfo.$($_.Name) = ''
-            }
-        }
-
-        if ($dscResource.ModuleName) {
-            $moduleName = $dscResource.ModuleName
-        }
-        elseif ($binaryBuiltInModulePaths -contains $dscResource.ParentPath) {
-            $moduleName = 'PSDesiredStateConfiguration'
-            $DscResourceInfo.Module = 'PSDesiredStateConfiguration'
-            $DscResourceInfo.ModuleName = 'PSDesiredStateConfiguration'
-            $DscResourceInfo.CompanyName = 'Microsoft Corporation'
-            $DscResourceInfo.Version = '1.0.0'
-            if ($PSVersionTable.PSVersion.Major -le 5 -and $DscResourceInfo.ImplementedAs -eq 'Binary') {
-                $DscResourceInfo.ImplementationDetail = 'Binary'
-            }
-        }
-        elseif ($binaryBuiltInModulePaths -notcontains $dscResource.ParentPath -and $null -ne $dscResource.ParentPath) {
-            # workaround: populate module name from parent path that is three levels up
-            $moduleName = Split-Path $dscResource.ParentPath | Split-Path | Split-Path -Leaf
-            $DscResourceInfo.Module = $moduleName
-            $DscResourceInfo.ModuleName = $moduleName
-            # workaround: populate module version from psmoduleinfo if available
-            if ($moduleInfo = $Modules | Where-Object { $_.Name -eq $moduleName }) {
-                $moduleInfo = $moduleInfo | Sort-Object -Property Version -Descending | Select-Object -First 1
-                $DscResourceInfo.Version = $moduleInfo.Version.ToString()
-            }
-        }
-
-        $dscResourceCache += [dscResourceCache]@{
-            Type            = "$moduleName/$($dscResource.Name)"
-            DscResourceInfo = $DscResourceInfo
-        }
+        # save cache for future use
+        # TODO: replace this with a high-performance serializer
+        $trace = @{'Debug' = "Saving Get-DscResource cache to '$cacheFilePath'"} | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
+        $dscResourceCache | ConvertTo-Json -Depth 90 | Out-File $cacheFilePath
     }
+
     return $dscResourceCache
 }
 
@@ -188,7 +261,7 @@ function Invoke-DscOperation {
         [Parameter(Mandatory, ValueFromPipeline = $true)]
         [dscResourceObject]$DesiredState,
         [Parameter(Mandatory)]
-        [dscResourceCache[]]$dscResourceCache
+        [dscResourceCacheEntry[]]$dscResourceCache
     )
 
     $osVersion = [System.Environment]::OSVersion.VersionString
@@ -376,9 +449,10 @@ function GetTypeInstanceFromModule {
 }
 
 # cached resource
-class dscResourceCache {
+class dscResourceCacheEntry {
     [string] $Type
     [psobject] $DscResourceInfo
+    [PSCustomObject] $LastWriteTimes
 }
 
 # format expected for configuration and resource output
