@@ -127,7 +127,7 @@ extends:
             ob_restore_phase: true
         - task: CargoAuthenticate@0
           inputs:
-            configFile: ".cargo/config.toml"
+            configFile: "$(Build.SourcesDirectory)/DSC/.cargo/config.toml"
           displayName: Authenticating cargo crates registry
           env: 
             ob_restore_phase: true
