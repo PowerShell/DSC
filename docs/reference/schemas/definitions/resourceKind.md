@@ -55,8 +55,8 @@ Group resources always operate on nested DSC Resource instances. Group resources
 nested instances are processed, like the `Microsoft.DSC/Assertion` group resource.
 
 Group resources can also be used to bundle sets of resources together for processing, like the
-`Microsoft.DSC/Group` resource. You can use the [dependsOn][03] property for a resource instance in a
-configuration to point to a group resource instead of enumerating each resource in the list.
+`Microsoft.DSC/Group` resource. You can use the [dependsOn][03] property for a resource instance in
+a configuration to point to a group resource instead of enumerating each resource in the list.
 
 ### Nested resource instances
 
@@ -137,12 +137,14 @@ This example configuration defines several valid references and dependencies. It
 instances of the `Microsoft.DSC/Group` resource, one nested inside the other.
 
 The top level instance of the `Test/Echo` resource references and depends on the top-level instance
-of the `Microsoft/OSInfo` resource. The top-level instance of the `Microsoft/OSInfo` resource
-depends on the top-level instance of the `Microsoft.DSC/Group` resource.
+of the `Microsoft/OSInfo` resource. The top-level instances of the `Test/Echo` and
+`Microsoft/OSInfo` resources both depend on the top-level instance of the `Microsoft.DSC/Group`
+resource.
 
 ```yaml
 resources:
 # The top level echo references and depends on the top-level OSInfo.
+# It also depends on the top-level Group.
 - name: Top level echo
   type: Test/Echo
   properties:
@@ -152,6 +154,7 @@ resources:
       ).actualState]
   dependsOn:
     - "[resourceId('Microsoft/OSInfo', 'Top level OSInfo')]"
+    - "[resourceId('Microsoft.DSC/Group', 'Top level group')]"
 # The top level OSInfo depends on the top-level Group.
 - name: Top level OSInfo
   type: Microsoft/OSInfo

@@ -22,9 +22,11 @@ Type:          object
 ## Description
 
 Defines a set of informational key-value pairs for the configuration. Except for the
-`Microsoft.DSC` property, this metadata isn't validated. You can pass any data into your configuration as a property of `metadata`.
+`Microsoft.DSC` property, this metadata isn't validated. You can pass any data into your
+configuration as a property of `metadata`.
 
-For example, you could define information about the configuration used by your teams or internal tools:
+For example, you could define information about the configuration used by your teams or internal
+tools:
 
 ```yaml
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/config/document.vscode.json
@@ -40,7 +42,7 @@ metadata:
 
 The `Microsoft.DSC` metadata property contains directives and information that DSC itself uses when
 processing a configuration document. Unlike other metadata key-value pairs, DSC validates these
-properties.
+properties. This property is reserved and shouldn't contain any custom user-defined metadata.
 
 ### Properties
 

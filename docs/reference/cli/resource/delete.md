@@ -46,7 +46,7 @@ command as a JSON or YAML object. The object can be passed to this command from 
 `--input` option. You can also use the `--path` option to read the object from a JSON or YAML file.
 
 This command returns no output when successful. If it encounters an error, it surfaces the error to
-the caller on stderr.
+the caller on stderr and exits with a non-zero exit code.
 
 ## Examples
 
@@ -155,4 +155,4 @@ Mandatory: false
 ## Output
 
 This command returns no output when successful. When the resource errors, DSC surfaces the error on
-stderr.
+stderr and exits with a non-zero exit code.

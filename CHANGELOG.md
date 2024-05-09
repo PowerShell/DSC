@@ -265,7 +265,8 @@ in this release, see the [diff on GitHub][compare-v3.0.0-preview.7].
   metadata property under the `Microsoft.DSC` namespace in a configuration document to specify
   which security context to use:
 
-  - `Current` - Any security context.
+  - `Current` - Any security context. This is the default if you don't specify this property in a
+    configuration document.
   - `Elevated` - Elevated as root or an administrator.
   - `Restricted` - Not elevated as root or an administrator.
 
@@ -506,8 +507,8 @@ in this release, see the [diff on GitHub][compare-v3.0.0-preview.7].
   </details>
 
 - Added the `Microsoft.DSC.Transitional/RunCommandOnSet` resource, which runs a specified
-  executable with given arguments during a `set` operation. This resource is intended as a
-  temporary transitional resource while migrating to DSCv3 and implementing resources for your
+  executable or script with given arguments during a `set` operation. This resource is intended as
+  a temporary transitional resource while migrating to DSCv3 and implementing resources for your
   needs.
 
   <details><summary>Related work items</summary>
