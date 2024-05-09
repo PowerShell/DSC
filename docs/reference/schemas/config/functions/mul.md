@@ -30,7 +30,7 @@ This example document multiplies two integers to return a product for the output
 
 ```yaml
 # mul.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Multiplying integers
   type: Test/Echo
@@ -59,7 +59,7 @@ This document shows how you can multiply the output of nested configuration func
 
 ```yaml
 # mul.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Multiplying nested function outputs
   type: Test/Echo

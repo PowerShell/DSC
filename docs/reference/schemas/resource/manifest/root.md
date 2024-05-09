@@ -15,7 +15,7 @@ The data file that defines a command-based DSC Resource.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.json
 Type:          object
 ```
 
@@ -78,6 +78,9 @@ Type:        string
 Required:    true
 Format:      URI
 ValidValues: [
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.vscode.json
@@ -121,6 +124,27 @@ Type:     string
 Required: false
 ```
 
+### kind
+
+The `kind` property defines how DSC should handle the resource. DSC supports three kinds of
+command-based DSC Resources: `Resource`, `Group`, and `Adapter`.
+
+When `kind` isn't defined in the resource manifest, DSC infers the value for the property. If the
+`adapter` property is defined in the resource manifest, DSC infers the value of `kind` as
+`Adapter`. If the `adapter` property isn't defined, DSC infers the value of `kind` as `Resource`.
+DSC can't infer whether a manifest is for a group resource.
+
+When defining a group resource, always explicitly define the `kind` property in the manifest as
+`Group`.
+
+For more information, see [DSC Resource kind schema reference][02].
+
+```yaml
+Type:        string
+Required:    false
+ValidValues: [Resource, Adapter, Group]
+```
+
 ### tags
 
 The `tags` property defines a list of searchable terms for the resource. The value of this
@@ -140,16 +164,16 @@ ItemsPattern:      ^\w+$
 The `export` property defines how to call the resource to get the current state of every instance.
 When this property is defined, users can:
 
-- Specify an instance of the resource in the input configuration for the [dsc config export][02]
+- Specify an instance of the resource in the input configuration for the [dsc config export][03]
   command to generate an usable configuration document.
-- Specify the resource with the [dsc resource export][03] command to generate a configuration
+- Specify the resource with the [dsc resource export][04] command to generate a configuration
   document that defines every instance of the resource.
-- Specify the resource with the [dsc resource get][04] command and the [--all][05] option to return
+- Specify the resource with the [dsc resource get][05] command and the [--all][06] option to return
   the current state for every instance of the resource.
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` property is optional. For more
-information, see [DSC Resource manifest export property schema reference][06].
+information, see [DSC Resource manifest export property schema reference][07].
 
 ```yaml
 Type:     object
@@ -163,7 +187,7 @@ property is mandatory for all resources.
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` and `input` properties are optional. For more
-information, see [DSC Resource manifest get property schema reference][07].
+information, see [DSC Resource manifest get property schema reference][08].
 
 ```yaml
 Type:     object
@@ -179,7 +203,7 @@ test whether the instance is in the desired state.
 
 The value of this property must be an object. The `executable` property, defining the name of the
 command to call, is mandatory. The `args` `input`, `implementsPretest`, and `returns` properties
-are optional. For more information, see [DSC Resource manifest set property schema reference][08].
+are optional. For more information, see [DSC Resource manifest set property schema reference][09].
 
 ```yaml
 Type:     object
@@ -194,7 +218,7 @@ property isn't defined, DSC performs a basic synthetic test for instances of the
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` `input`, and `returns` properties are optional.
-For more information, see [DSC Resource manifest test property schema reference][09].
+For more information, see [DSC Resource manifest test property schema reference][10].
 
 ```yaml
 Type:     object
@@ -208,7 +232,7 @@ property is mandatory for DSC Group Resources. DSC ignores this property for all
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` property is optional. For more information, see
-[DSC Resource manifest validate property schema reference][10].
+[DSC Resource manifest validate property schema reference][11].
 
 ```yaml
 Type:     object
@@ -222,7 +246,7 @@ When specified, the `provider` property defines the resource as a DSC Resource P
 The value of this property must be an object. The object's `list` and `config` properties are
 mandatory. The `list` property defines how to call the provider to return the resources that the
 provider can manage. The `config` property defines how the provider expects input. For more
-information, see the [DSC Resource manifest provider property schema reference][11].
+information, see the [DSC Resource manifest provider property schema reference][12].
 
 ### exitCodes
 
@@ -267,7 +291,7 @@ resource. This property must always be an object that defines one of the followi
 - `embedded` - When you specify the `embedded` property, DSC uses the defined value as the JSON
   schema.
 
-For more information, see [DSC Resource manifest schema property reference][12].
+For more information, see [DSC Resource manifest schema property reference][13].
 
 ```yaml
 Type:     object
@@ -275,14 +299,15 @@ Required: true
 ```
 
 [01]: ../../definitions/resourceType.md
-[02]: ../../../cli/config/export.md
-[03]: ../../../cli/resource/export.md
-[04]: ../../../cli/resource/get.md
-[05]: ../../../cli/resource/get.md#-a---all
-[06]: export.md
-[07]: get.md
-[08]: set.md
-[09]: test.md
-[10]: validate.md
-[11]: provider.md
-[12]: schema/property.md
+[02]: ../../definitions/resourceKind.md
+[03]: ../../../cli/config/export.md
+[04]: ../../../cli/resource/export.md
+[05]: ../../../cli/resource/get.md
+[06]: ../../../cli/resource/get.md#-a---all
+[07]: export.md
+[08]: get.md
+[09]: set.md
+[10]: test.md
+[11]: validate.md
+[12]: provider.md
+[13]: schema/property.md

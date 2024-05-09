@@ -30,7 +30,7 @@ division for two integers.
 
 ```yaml
 # mod.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Remainder for integers
   type: Test/Echo
@@ -60,7 +60,7 @@ two other mathematical operations.
 
 ```yaml
 # mod.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Remainder for nested functions
   type: Test/Echo

@@ -110,15 +110,14 @@ Mandatory: false
 
 ## Environment variables
 
-The `dsc config *` subcommands create the `DSCConfigRoot` environment variable when you call a
+The `dsc config *` subcommands create the `DSC_CONFIG_ROOT` environment variable when you call a
 command with the `--path` option to specify the configuration document to use for the command. DSC
-sets the value of the `DSCConfigRoot` environment variable to the folder containing the specified
-configuration document.
+sets the value of the `DSC_CONFIG_ROOT` environment variable to the full path of the folder
+containing the specified configuration document.
 
 > [!NOTE]
-> If you use a relative path, DSC doesn't expand the value into a full path before setting the
-> environment variable. Always specify the full path to the configuration document when you want to
-> use the `DSCConfigRoot` environment variable.
+> If you define the `DSC_CONFIG_ROOT` variable outside of DSC, DSC raises a warning when it
+> overrides the existing environment variable's value for an operation.
 
 You can use the [envvar][08] configuration function to reference that folder path for resource
 instances in the configuration.

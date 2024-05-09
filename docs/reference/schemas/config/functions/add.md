@@ -30,7 +30,7 @@ This example document shows how you can use the `add()` function to return the s
 
 ```yaml
 # add.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Sum of 3 and 5
   type: Test/Echo
@@ -60,7 +60,7 @@ configuration functions that return integer values.
 
 ```yaml
 # add.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Add nested function outputs
   type: Test/Echo

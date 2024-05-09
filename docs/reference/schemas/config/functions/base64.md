@@ -31,7 +31,7 @@ The configuration converts a basic string value with the `base64()` function.
 
 ```yaml
 # base64.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: Echo 'abc' in base64
     type: Test/Echo
@@ -61,7 +61,7 @@ strings `a`, `b`, and `c` into `abc` before returning the base64 representation.
 
 ```yaml
 # base64.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: Echo concatenated 'a', 'b', 'c' in base64
     type: Test/Echo

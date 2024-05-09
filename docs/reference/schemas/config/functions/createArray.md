@@ -33,7 +33,7 @@ example synopsis
 
 ```yaml
 # createArray.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Echo array of integers
   type: Test/Echo
@@ -66,7 +66,7 @@ sub-array contains only integers. The second sub-array contains only strings.
 
 ```yaml
 # createArray.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Create array of arrays
   type: Test/Echo
@@ -102,7 +102,7 @@ strings. It uses YAML's folded multiline string syntax to make the function more
 
 ```yaml
 # createArray.example.3.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Echo flattened array
   type: Test/Echo

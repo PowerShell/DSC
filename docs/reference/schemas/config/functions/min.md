@@ -30,7 +30,7 @@ This configuration returns the smallest number from a list of integers.
 
 ```yaml
 # min.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Echo minimum value
   type: Test/Echo
@@ -61,7 +61,7 @@ function more readable.
 
 ```yaml
 # min.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Echo integer array
   type: Test/Echo

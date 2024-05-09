@@ -15,7 +15,7 @@ Indicates whether an instance should exist.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/exist.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/exist.json
 Type:          boolean
 DefaultValue:  true
 ```
@@ -44,6 +44,6 @@ snippet:
 
 ```json
 "_exist": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/exist.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/exist.json"
 }
 ```

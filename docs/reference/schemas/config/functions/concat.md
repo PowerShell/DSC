@@ -35,7 +35,7 @@ The configuration uses the `concat()` function to join the strings `abc` and `de
 
 ```yaml
 # concat.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: Echo 'abcdef'
     type: Test/Echo
@@ -64,7 +64,7 @@ The configuration uses the `concat()` function to return a combined array of str
 
 ```yaml
 # concat.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Echo ['a', 'b', 'c', 'd', 'e', 'f']
   type: Test/Echo

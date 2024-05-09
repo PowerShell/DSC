@@ -1,40 +1,43 @@
 ---
-description: JSON schema reference for the 'validate' property in a DSC Resource manifest
+description: JSON schema reference for the 'delete' property in a DSC Resource manifest
 ms.date:     01/17/2024
 ms.topic:    reference
-title:       DSC Resource manifest validate property schema reference
+title:       DSC Resource manifest delete property schema reference
 ---
 
-# DSC Resource manifest validate property schema reference
+# DSC Resource manifest delete property schema reference
 
 ## Synopsis
 
-Indicates how to call a group resource to test whether nested instances are valid.
+Indicates how to call the resource to delete a specific instance.
 
 ## Metadata
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.delete.json
 Type:          object
 ```
 
 ## Description
 
-DSC Group Resources must define the `validate` property in their DSC Resource manifest. This
-property defines how DSC can call the group resource to test whether instances in the group
-have valid definitions.
+Defines how DSC must call the DSC Resource to delete an instance. Define this method for resources
+as an alternative to handling the [`_exist`][01] property in a `set` operation, which can lead to
+highly complex code. If the `set` method for the resource is able to handle deleting an instance
+when `_exist` is `false`, set the [`handlesExist`][02] property of the set method definition to
+`true` instead.
 
-Always define the `validate` property for group resources in the DSC Resource manifest.
+If you define the delete method in a resource manifest, ensure that you also define the
+[`_exist`][01] property in the [JSON schema for the resource's properties][03].
 
 DSC sends data to the command in three ways:
 
-  1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed
-     JSON object without spaces or newlines between the object properties.
-  1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment
-     variable for each property in the input data object, using the name and value of the property.
-  1. When the `args` array includes a JSON input argument definition, DSC sends the data as a
-     string representing the data as a compressed JSON object to the specified argument.
+1. When `input` is `stdin`, DSC sends the data as a string representing the data as a compressed
+   JSON object without spaces or newlines between the object properties.
+1. When `input` is `env`, DSC sends the data as environment variables. It creates an environment
+   variable for each property in the input data object, using the name and value of the property.
+1. When the `args` array includes a JSON input argument definition, DSC sends the data as a string
+   representing the data as a compressed JSON object to the specified argument.
 
 If you don't define the `input` property and don't define a JSON input argument, DSC can't pass the
 input JSON to the resource. You can only define one JSON input argument for a command.
@@ -44,32 +47,9 @@ both.
 
 ## Examples
 
-### Example 1 - Full definition
+## Required properties
 
-This example is from the `DSC/AssertionGroup` DSC Group Resource.
-
-```json
-"validate": {
-  "executable": "dsc",
-  "args": [
-    "config",
-    "validate"
-  ]
-}
-```
-
-It defines the executable as `dsc` with the arguments `config` and `validate`. The `validate`
-method always sends the method's input as a JSON blob over `stdin`.
-
-With this definition, DSC calls the `validate` method for this DSC Group Resource by running:
-
-```sh
-{ ... } | dsc config validate
-```
-
-## Required Properties
-
-The `validate` definition must include these properties:
+The `delete` definition must include these properties:
 
 - [executable](#executable)
 
@@ -145,8 +125,9 @@ RequiredProperties: [jsonInputArg]
 
 ### input
 
-The `input` property defines how to pass input to the resource. If this property isn't defined, DSC
-doesn't send any input to the resource when invoking the `validate` operation.
+The `input` property defines how to pass input to the resource. If this property isn't defined and
+the definition doesn't define a [JSON input argument](#json-input-argument), DSC doesn't send any
+input to the resource when invoking the `delete` operation.
 
 The value of this property must be one of the following strings:
 
@@ -178,3 +159,8 @@ Type:        string
 Required:    false
 ValidValues: [env, stdin]
 ```
+
+<!-- Link reference definitions -->
+[01]: ../properties/exist.md
+[02]: set.md#handlesexist
+[03]: schema/property.md

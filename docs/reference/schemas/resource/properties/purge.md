@@ -15,7 +15,7 @@ Indicates that the resource should treat non-defined entries in a list as invali
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/purge.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/purge.json
 Type:          [boolean, 'null']
 WriteOnly:     true
 ```
@@ -44,6 +44,6 @@ snippet:
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/purge.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/purge.json"
 }
 ```

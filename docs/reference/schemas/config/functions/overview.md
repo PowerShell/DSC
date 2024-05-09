@@ -78,7 +78,7 @@ the [base64()][base64] function.
 
 ```yaml
 # overview.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: Double quoted syntax
     type: Test/Echo
@@ -128,7 +128,7 @@ output of the [concat()][concat] function, combining the strings `a` and `b` int
 
 ```yaml
 # overview.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: Echo the concatenated strings 'a' and 'b'
     type: Test/Echo
@@ -161,7 +161,7 @@ nested functions shown in the third instance to base64.
 
 ```yaml
 # overview.example.3.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: Echo the concatenated strings 'a' and 'b' as base64
     type: Test/Echo

@@ -15,7 +15,7 @@ The result output from the `dsc config get` command.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/outputs/config/get.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/outputs/config/get.json
 Type:          object
 ```
 
@@ -28,11 +28,48 @@ in the configuration document.
 
 The output always includes these properties:
 
+- [metadata](#metadata-1)
 - [results](#results)
 - [messages](#messages)
 - [hadErrors](#haderrors)
 
 ## Properties
+
+### metadata
+
+Defines metadata DSC returns for a configuration operation. The properties under the
+`Microsoft.DSC` property describe the context of the operation.
+
+```yaml
+Type:     object
+Required: true
+```
+
+#### Microsoft.DSC
+
+The metadata under this property describes the context of the overall operation:
+
+- [version][01] defines the version of DSC that ran the command. This value is always the semantic
+  version of the DSC command, like `3.0.0-preview.7`.
+- [operation][02] defines the operation that DSC applied to the configuration document: `Get`,
+  `Set`, `Test`, or `Export`.
+- [executionType][03] defines whether DSC actually applied an operation to the configuration or was
+  run in `WhatIf` mode. This property is always `Actual` for `Get`, `Test`, and `Export`
+  operations. For `Set` operations, this value is `WhatIf` when DSC is invoked with the `--whatIf`
+  argument.
+- [startDatetime][04] defines the start date and time for the DSC operation as a timestamp
+  following the format defined in [RFC3339, section 5.6 (see `date-time`)][05], like
+  `2024-04-14T08:49:51.395686600-07:00`.
+- [endDatetime][06] defines the end date and time for the DSC operation as a timestamp
+  following the format defined in [RFC3339, section 5.6 (see `date-time`)][05], like
+  `2024-04-14T08:49:51.395686600-07:00`.
+- [duration][07] defines the duration of a DSC operation against a configuration document or
+  resource instance as a string following the format defined in [ISO8601 ABNF for `duration`][08].
+  For example, `PT0.611216S` represents a duration of about `0.61` seconds.
+- [securityContext][09] defines the security context that DSC was run under. If the value for this
+  metadata property is `Elevated`, DSC was run as `root` (non-Windows) or an elevated session with
+  Administrator privileges (on Windows). If the value is `Restricted`, DSC was run as a normal user
+  or account in a non-elevated session.
 
 ### results
 
@@ -50,7 +87,7 @@ ItemsType: object
 
 An item's `type` property identifies the instance's DSC Resource by its fully qualified type name.
 For more information about type names, see
-[DSC Resource fully qualified type name schema reference][01].
+[DSC Resource fully qualified type name schema reference][10].
 
 ```yaml
 Type:     string
@@ -71,12 +108,12 @@ Required: true
 
 An item's `result` property includes the actual state for the resource instance. The value for this
 property adheres to the same schema as the output for the `dsc resource get` command. For more
-information, see [dsc resource get result schema reference][02].
+information, see [dsc resource get result schema reference][11].
 
 ### messages
 
 Defines the list of structured messages emitted by resources during the get operation. For more
-information, see [Structured message schema reference][03].
+information, see [Structured message schema reference][12].
 
 ```yaml
 Type:     array
@@ -93,6 +130,16 @@ Type:     boolean
 Required: true
 ```
 
-[01]: ../../definitions/resourceType.md
-[02]: ../resource/get.md
-[03]: ../../definitions/message.md
+<!-- Link reference definitions -->
+[01]: ../../metadata/Microsoft.DSC/properties.md#version
+[02]: ../../metadata/Microsoft.DSC/properties.md#operation
+[03]: ../../metadata/Microsoft.DSC/properties.md#executiontype
+[04]: ../../metadata/Microsoft.DSC/properties.md#startdatetime
+[05]: https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
+[06]: ../../metadata/Microsoft.DSC/properties.md#enddatetime
+[07]: ../../metadata/Microsoft.DSC/properties.md#duration
+[08]: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A
+[09]: ../../metadata/Microsoft.DSC/properties.md#securitycontext
+[10]: ../../definitions/resourceType.md
+[11]: ../resource/get.md
+[12]: ../../definitions/message.md
