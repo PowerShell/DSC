@@ -123,10 +123,14 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: $(buildTarget)
           displayName: Install Rust
+          env: 
+            ob_restore_phase: true
         - task: CargoAuthenticate@0
           inputs:
             configFile: ".cargo/config.toml"
           displayName: Authenticating cargo crates registry
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             Write-Host "Use 'powershell' CFS"
@@ -244,10 +248,14 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: x86_64-unknown-linux-gnu
           displayName: Install Rust
+          env: 
+            ob_restore_phase: true
         - task: CargoAuthenticate@0
           inputs:
             configFile: ".cargo/config.toml"
           displayName: Authenticating cargo crates registry
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
@@ -275,10 +283,14 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: aarch64-unknown-linux-gnu
           displayName: Install Rust
+          env: 
+            ob_restore_phase: true
         - task: CargoAuthenticate@0
           inputs:
             configFile: ".cargo/config.toml"
           displayName: Authenticating cargo crates registry
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
@@ -314,10 +326,14 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: $(buildTarget)
           displayName: Install Rust
+          env: 
+            ob_restore_phase: true
         - task: CargoAuthenticate@0
           inputs:
             configFile: ".cargo/config.toml"
           displayName: Authenticating cargo crates registry
+          env: 
+            ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
