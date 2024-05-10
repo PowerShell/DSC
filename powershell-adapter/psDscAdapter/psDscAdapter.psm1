@@ -39,14 +39,12 @@ function Invoke-DscCacheRefresh {
 
     $refreshCache = $false
 
-    $cacheFileSuffix = ".json"
+    $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
     if ($PSVersionTable.PSVersion.Major -le 5) {
-        $cacheFileSuffix = "-v5.json"
+        $cacheFilePath = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
     }
-
-    $cacheFilePath = Join-Path $env:LocalAppData "dscv3classcache$cacheFileSuffix"
     if ($IsLinux -or $IsMacOS) {
-        $cacheFilePath = Join-Path $env:HOME ".dsc" "dscv3classcache$cacheFileSuffix"
+        $cacheFilePath = Join-Path $env:HOME "dsc" "PSAdapterCache.json"
     }
 
     if (Test-Path $cacheFilePath) {
@@ -90,7 +88,7 @@ function Invoke-DscCacheRefresh {
             $trace = @{'Debug' = "Checking cache for stale PSModulePath"} | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
 
-            $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -ea SilentlyContinue}
+            $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
             $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
             $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
@@ -205,7 +203,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -Path $dscResource.ParentPath | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1","*.psd1","*psm1","*.mof" -ea SilentlyContinue | % {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
@@ -218,14 +216,15 @@ function Invoke-DscCacheRefresh {
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -ea SilentlyContinue}
+        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
         $cache.PSModulePaths = $m.FullName
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
         $trace = @{'Debug' = "Saving Get-DscResource cache to '$cacheFilePath'"} | ConvertTo-Json -Compress
         $host.ui.WriteErrorLine($trace)
-        $cache | ConvertTo-Json -Depth 90 | Out-File $cacheFilePath
+        $jsonCache = $cache | ConvertTo-Json -Depth 90
+        New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
     }
 
     return $dscResourceCacheEntries
