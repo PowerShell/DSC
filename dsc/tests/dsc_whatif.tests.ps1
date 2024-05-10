@@ -14,13 +14,14 @@ Describe 'whatif tests' {
               properties:
                 output: hello
 "@
-        $result = $config_yaml | dsc config set -w --format pretty-json | ConvertFrom-Json
-        $result.hadErrors | Should -BeFalse
-        $result.results.Count | Should -Be 1
-        $result.results[0].Name | Should -Be 'Hello'
-        $result.results[0].type | Should -BeExactly 'Test/Echo'
-        $result.results[0].result.changes | Should -Be $null
-        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
+        $what_if_result = $config_yaml | dsc config set -w | ConvertFrom-Json
+        $set_result = $config_yaml | dsc config set | ConvertFrom-Json
+        $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
+        $what_if_result.results.result.beforeState.output | Should -Be $set_result.results.result.beforeState.output
+        $what_if_result.results.result.afterState.output | Should -Be $set_result.results.result.afterState.output
+        $what_if_result.results.result.changedProperties | Should -Be $set_result.results.result.changedProperties
+        $what_if_result.hadErrors | Should -BeFalse
+        $what_if_result.results.Count | Should -Be 1
         $LASTEXITCODE | Should -Be 0
     }
 
@@ -34,19 +35,20 @@ Describe 'whatif tests' {
               properties:
                 keyPath: 'HKCU\1\2'
 "@
-        $result = $config_yaml | dsc config set -w --format pretty-json | ConvertFrom-Json
-        $result.hadErrors | Should -BeFalse
-        $result.results.Count | Should -Be 1
-        $result.results[0].Name | Should -Be 'Registry'
-        $result.results[0].type | Should -BeExactly 'Microsoft.Windows/Registry'
-        $result.results[0].result.changes[0].name | Should -Be '_exist'
-        $result.results[0].result.changes[0].from | Should -Be 'false'
-        $result.results[0].result.changes[0].to | Should -Be 'true'
-        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
+        $what_if_result = $config_yaml | dsc config set -w | ConvertFrom-Json
+        $set_result = $config_yaml | dsc config set | ConvertFrom-Json
+        $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
+        $what_if_result.results.result.beforeState._exist | Should -Be $set_result.results.result.beforeState._exist
+        $what_if_result.results.result.beforeState.keyPath | Should -Be $set_result.results.result.beforeState.keyPath
+        $what_if_result.results.result.afterState.KeyPath | Should -Be $set_result.results.result.afterState.keyPath
+        $what_if_result.results.result.changedProperties | Should -Be $set_result.results.result.changedProperties
+        $what_if_result.hadErrors | Should -BeFalse
+        $what_if_result.results.Count | Should -Be 1
         $LASTEXITCODE | Should -Be 0
+
     }
 
-    It 'config set whatif for delete' {
+    It 'config set whatif for delete is not supported' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
@@ -55,14 +57,12 @@ Describe 'whatif tests' {
               properties:
                 _exist: false
 "@
-        $result = $config_yaml | dsc config set -w --format pretty-json | ConvertFrom-Json
-        $result.hadErrors | Should -BeFalse
-        $result.results.Count | Should -Be 1
-        $result.results[0].result.changes | Should -Be "delete 'Test/Delete' using 'dsctest'"
-        $LASTEXITCODE | Should -Be 0
+        $result = $config_yaml | dsc config set -w 2>&1
+        $result | Should -Match 'ERROR.*?Not supported.*?what-if'
+        $LASTEXITCODE | Should -Be 2
     }
 
-    It 'config set whatif when there is no pre-test is not supported' {
+    It 'config set whatif for group resource' {
         $result = dsc config set -p $PSScriptRoot/../examples/groups.dsc.yaml -w 2>&1
         $result | Should -Match 'ERROR.*?Not implemented.*?what-if'
         $LASTEXITCODE | Should -Be 2
