@@ -66,8 +66,28 @@ impl Default for GroupResourceSetResponse {
 #[serde(untagged)]
 pub enum SetResult {
     Resource(ResourceSetResponse),
-    ResourceWhatIf(ResourceSetWhatIfResponse),
     Group(GroupResourceSetResponse),
+}
+
+impl From<TestResult> for SetResult {
+    fn from(value: TestResult) -> Self {
+        match value {
+            TestResult::Group(group) => {
+                let mut results = Vec::<ResourceSetResult>::new();
+                for result in group.results {
+                    results.push(result.into());
+                }
+                SetResult::Group(GroupResourceSetResponse { results })
+            },
+            TestResult::Resource(resource) => {
+                SetResult::Resource(ResourceSetResponse {
+                    before_state: resource.actual_state,
+                    after_state: resource.desired_state,
+                    changed_properties: if resource.diff_properties.is_empty() { None } else { Some(resource.diff_properties) },
+                })
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -82,28 +102,6 @@ pub struct ResourceSetResponse {
     /// The properties that were changed by the Set method from the before state.
     #[serde(rename = "changedProperties")]
     pub changed_properties: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct ResourceSetWhatIfResponse {
-    #[serde(rename = "changes")]
-    pub what_if_changes: WhatIfResult
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(untagged)]
-pub enum WhatIfResult {
-    Diff(Vec<WhatIfChanges>),
-    String(String)
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct WhatIfChanges {
-    pub name: String,
-    pub from: Value,
-    pub to: Value
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

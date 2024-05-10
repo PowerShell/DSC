@@ -191,8 +191,8 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
         };
     }
 
-    match resource.delete(input.as_str(), &ExecutionKind::Actual) {
-        Ok(_) => {}
+    match resource.delete(input.as_str()) {
+        Ok(()) => {}
         Err(err) => {
             error!("Error: {err}");
             exit(EXIT_DSC_ERROR);

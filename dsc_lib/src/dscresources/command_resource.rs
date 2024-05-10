@@ -4,9 +4,9 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio}};
-use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceSetWhatIfResponse, ResourceTestResponse, WhatIfResult}};
+use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
 use crate::configure::{config_doc::ExecutionKind, config_result::ResourceGetResult};
-use super::{dscresource::{get_diff, get_diff_what_if}, invoke_result::{ExportResult, GetResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
@@ -99,35 +99,23 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
         info!("No pretest, invoking test {}", &resource.resource_type);
-        let (in_desired_state, actual_state, desired_state) = match invoke_test(resource, cwd, desired)? {
+        let test_result = invoke_test(resource, cwd, desired)?;
+        if execution_type == &ExecutionKind::WhatIf {
+            return Ok(test_result.into());
+        }
+        let (in_desired_state, actual_state) = match test_result {
             TestResult::Group(group_response) => {
                 let mut result_array: Vec<Value> = Vec::new();
                 for result in group_response.results {
                     result_array.push(serde_json::to_value(result)?);
                 }
-                (group_response.in_desired_state, Value::from(result_array), Value::String("not implemented".to_string()))
+                (group_response.in_desired_state, Value::from(result_array))
             },
             TestResult::Resource(response) => {
-                (response.in_desired_state, response.actual_state, response.desired_state)
+                (response.in_desired_state, response.actual_state)
             }
         };
 
-        if execution_type == &ExecutionKind::WhatIf {
-            if desired_state == Value::String("not implemented".to_string()) {
-                return Err(DscError::NotImplemented(format!("Group '{}' does not currently support `what-if flag`", resource.resource_type)));
-            }
-            if in_desired_state {
-                debug!("what-if: resource is already in desired state, returning null ResourceWhatIf response");
-                return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-                    what_if_changes: WhatIfResult::Diff(Vec::new())
-                }));
-            }
-            debug!("what-if: resource is not in desired state, returning diff ResourceWhatIf response");
-            let diff_properties = get_diff_what_if( &desired_state, &actual_state);
-            return Ok(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-                what_if_changes: WhatIfResult::Diff(diff_properties)
-            }));
-        }
         if in_desired_state {
             return Ok(SetResult::Resource(ResourceSetResponse{
                 before_state: serde_json::from_str(desired)?,
@@ -135,9 +123,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 changed_properties: None,
             }));
         }
-    } else if execution_type == &ExecutionKind::WhatIf {
-        // until resources implement what-if, if we are in what-if mode and there is no pre-test, we can't determine what-if changes
-        return Err(DscError::NotImplemented(format!("Resource '{}' does not currently support `what-if flag` because there is no pre-test", resource.resource_type)));
+    }
+
+    if ExecutionKind::WhatIf == *execution_type {
+        // until resources implement their own what-if, return an error here
+        return Err(DscError::NotImplemented("what-if not yet supported for resources that implement pre-test".to_string()));
     }
 
     let args = process_args(&resource.get.args, desired);
@@ -368,7 +358,7 @@ fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &str, expected: &str)
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
-pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str, execution_type: &ExecutionKind) -> Result<Option<SetResult>, DscError> {
+pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<(), DscError> {
     let Some(delete) = &resource.delete else {
         return Err(DscError::NotImplemented("delete".to_string()));
     };
@@ -378,15 +368,10 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str, execu
     let args = process_args(&delete.args, filter);
     let command_input = get_command_input(&delete.input, filter)?;
 
-    if execution_type == &ExecutionKind::WhatIf {
-        return Ok(Some(SetResult::ResourceWhatIf(ResourceSetWhatIfResponse{
-            what_if_changes: WhatIfResult::String(format!("delete '{}' using '{}'", &resource.resource_type, &delete.executable))
-        })));
-    }
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
     let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
 
-    Ok(None)
+    Ok(())
 }
 
 /// Invoke the validate operation against a command resource.

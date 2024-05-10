@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::Metadata;
+use crate::configure::config_doc::{ExecutionKind, Metadata};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::dscresource::get_diff;
@@ -323,30 +323,31 @@ impl Configurator {
                 set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
+                if self.context.execution_type == ExecutionKind::WhatIf {
+                    return Err(DscError::NotSupported("What-if execution not supported for delete".to_string()));
+                }
                 debug!("Resource implements delete and _exist is false");
                 let before_result = dsc_resource.get(&desired)?;
                 start_datetime = chrono::Local::now();
-                let delete_result = dsc_resource.delete(&desired, &self.context.execution_type)?;
-                set_result = if let Some(whatif_result) = delete_result { whatif_result } else {
-                    let after_result = dsc_resource.get(&desired)?;
-                    // convert get result to set result
-                    match before_result {
-                        GetResult::Resource(before_response) => {
-                            let GetResult::Resource(after_result) = after_result else {
-                                return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
-                            };
-                            let before_value = serde_json::to_value(&before_response.actual_state)?;
-                            let after_value = serde_json::to_value(&after_result.actual_state)?;
-                            SetResult::Resource(ResourceSetResponse {
-                                before_state: before_response.actual_state,
-                                after_state: after_result.actual_state,
-                                changed_properties: Some(get_diff(&before_value, &after_value)),
-                            })
-                        },
-                        GetResult::Group(_) => {
-                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
-                        },
-                    }
+                dsc_resource.delete(&desired)?;
+                let after_result = dsc_resource.get(&desired)?;
+                // convert get result to set result
+                set_result = match before_result {
+                    GetResult::Resource(before_response) => {
+                        let GetResult::Resource(after_result) = after_result else {
+                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
+                        };
+                        let before_value = serde_json::to_value(&before_response.actual_state)?;
+                        let after_value = serde_json::to_value(&after_result.actual_state)?;
+                        SetResult::Resource(ResourceSetResponse {
+                            before_state: before_response.actual_state,
+                            after_state: after_result.actual_state,
+                            changed_properties: Some(get_diff(&before_value, &after_value)),
+                        })
+                    },
+                    GetResult::Group(_) => {
+                        return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
+                    },
                 };
                 end_datetime = chrono::Local::now();
             } else {

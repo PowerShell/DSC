@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult, WhatIfChanges}, resource_manifest::import_manifest};
+use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -138,7 +138,7 @@ pub trait Invoke {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<Option<SetResult>, DscError>;
+    fn delete(&self, filter: &str) -> Result<(), DscError>;
 
     /// Invoke the validate operation on the resource.
     ///
@@ -244,7 +244,7 @@ impl Invoke for DscResource {
         }
     }
 
-    fn delete(&self, filter: &str, execution_type: &ExecutionKind) -> Result<Option<SetResult>, DscError> {
+    fn delete(&self, filter: &str) -> Result<(), DscError> {
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -254,7 +254,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_delete(&resource_manifest, &self.directory, filter, execution_type)
+                command_resource::invoke_delete(&resource_manifest, &self.directory, filter)
             },
         }
     }
@@ -350,68 +350,6 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                         diff_properties.push(key.to_string());
                     },
                 }
-            }
-        }
-    }
-
-    diff_properties
-}
-
-#[must_use]
-pub fn get_diff_what_if(expected: &Value, actual: &Value) -> Vec<WhatIfChanges> {
-    let mut diff_properties: Vec<WhatIfChanges> = Vec::new();
-    if expected.is_null() {
-        return diff_properties;
-    }
-
-    let mut expected = expected.clone();
-    let mut actual = actual.clone();
-
-    if let Some(map) = expected.as_object_mut() {
-        // handle well-known optional properties with default values by adding them
-        for (key, value) in get_well_known_properties() {
-            if !map.contains_key(&key) {
-                map.insert(key.clone(), value.clone());
-            }
-
-            if actual.is_object() && actual[&key].is_null() {
-                actual[key.clone()] = value.clone();
-            }
-        }
-
-        for (key, value) in &*map {
-            let mut is_diff = false;
-            if value.is_object() {
-                let sub_diff = get_diff_what_if(value, &actual[key]);
-                if !sub_diff.is_empty() {
-                    is_diff = true;
-                }
-            }
-            else {
-                match actual.as_object() {
-                    Some(actual_object) => {
-                        if actual_object.contains_key(key) {
-                            if value != &actual[key] {
-                                is_diff = true;
-                            }
-                        }
-                        else {
-                            is_diff = true;
-                        }
-                    },
-                    None => {
-                        is_diff = true;
-                    },
-                }
-            }
-            if is_diff {
-                diff_properties.push(
-                    WhatIfChanges {
-                        name: key.to_string(),
-                        from: actual[key].clone(),
-                        to: value.clone(),
-                    }
-                );
             }
         }
     }
