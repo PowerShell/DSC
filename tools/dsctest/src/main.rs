@@ -6,6 +6,7 @@ mod delete;
 mod echo;
 mod exist;
 mod sleep;
+mod trace;
 
 use args::{Args, Schemas, SubCommand};
 use clap::Parser;
@@ -14,6 +15,7 @@ use crate::delete::Delete;
 use crate::echo::Echo;
 use crate::exist::{Exist, State};
 use crate::sleep::Sleep;
+use crate::trace::Trace;
 use std::{thread, time::Duration};
 
 fn main() {
@@ -70,6 +72,9 @@ fn main() {
                 Schemas::Sleep => {
                     schema_for!(Sleep)
                 },
+                Schemas::Trace => {
+                    schema_for!(Trace)
+                },
             };
             serde_json::to_string(&schema).unwrap()
         },
@@ -83,6 +88,17 @@ fn main() {
             };
             thread::sleep(Duration::from_secs(sleep.seconds));
             serde_json::to_string(&sleep).unwrap()
+        },
+        SubCommand::Trace => {
+            // get level from DSC_TRACE_LEVEL env var
+            let level = match std::env::var("DSC_TRACE_LEVEL") {
+                Ok(level) => level,
+                Err(_) => "warn".to_string(),
+            };
+            let trace = trace::Trace {
+                level,
+            };
+            serde_json::to_string(&trace).unwrap()
         },
     };
 

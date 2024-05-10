@@ -149,7 +149,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.results.result.actualState.result.properties.Prop1 | Should -Be $TestDrive
     }
 
-    It 'DSC_CONFIG_ROOT env var does not exist when config is piped from stdin' -Skip:(!$IsWindows){
+    It 'DSC_CONFIG_ROOT env var is cwd when config is piped from stdin' -Skip:(!$IsWindows){
 
         $yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
@@ -163,8 +163,8 @@ Describe 'PowerShell adapter resource tests' {
                   properties:
                     Name: "[envvar('DSC_CONFIG_ROOT')]"
 "@
-        $testError = & {$yaml | dsc config get 2>&1}
-        $testError | Select-String 'Environment variable not found' -Quiet | Should -BeTrue
-        $LASTEXITCODE | Should -Be 2
+        $out = $yaml | dsc config get | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.result[0].properties.Name | Should -BeExactly (Get-Location).Path
     }
 }

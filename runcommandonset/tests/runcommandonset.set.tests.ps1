@@ -76,25 +76,13 @@ Describe 'tests for runcommandonset set' {
     }
 
     It 'Executable does not exist' {
-        '{ "executable": "foo" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet 2> $TestDrive/output.txt
-        $actual = Get-Content -Path $TestDrive/output.txt
+        '{ "executable": "foo" }' | dsc -l trace resource set -r Microsoft.DSC.Transitional/RunCommandOnSet 2> $TestDrive/output.txt
+        $actual = Get-Content -Path $TestDrive/output.txt -Raw
         $expected_logging = 'Failed to execute foo: No such file or directory (os error 2)'
         if ($IsWindows) {
             $expected_logging = 'Failed to execute foo: program not found'
         }
-        $found_logging = $false
-        ForEach ($line in $actual) {
-            try {
-                $log = $line | ConvertFrom-Json
-                if ($log.fields.message -eq $expected_logging) {
-                    $found_logging = $true
-                    break
-                }
-            } catch {
-                # skip lines that aren't JSON
-            }
-        }
-        $found_logging | Should -Be $true
+        $actual | Should -BeLike "*$expected_logging*"
         $LASTEXITCODE | Should -Be 2
     }
 }

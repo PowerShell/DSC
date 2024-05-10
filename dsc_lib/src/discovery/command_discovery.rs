@@ -106,7 +106,6 @@ impl ResourceDiscovery for CommandDiscovery {
 
         if let Ok(paths) = CommandDiscovery::get_resource_paths() {
             for path in paths {
-                trace!("Searching in {:?}", path);
                 if path.exists() && path.is_dir() {
                     for entry in path.read_dir().unwrap() {
                         let entry = entry.unwrap();
@@ -142,10 +141,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                     if let Some(ref manifest) = resource.manifest {
                                         let manifest = import_manifest(manifest.clone())?;
                                         if manifest.kind == Some(Kind::Adapter) {
-                                            trace!("Resource adapter {} found", resource.type_name);
+                                            trace!("Resource adapter '{}' found", resource.type_name);
                                             insert_resource(&mut adapters, &resource, true);
                                         } else {
-                                            trace!("Resource {} found", resource.type_name);
+                                            trace!("Resource '{}' found", resource.type_name);
                                             insert_resource(&mut resources, &resource, true);
                                         }
                                     }
@@ -292,8 +291,12 @@ impl ResourceDiscovery for CommandDiscovery {
         debug!("Searching for resources: {:?}", required_resource_types);
         self.discover_resources("*")?;
 
+        // convert required_resource_types to lowercase to handle case-insentiive search
+        let mut remaining_required_resource_types = required_resource_types.iter().map(|x| x.to_lowercase()).collect::<Vec<String>>();
+        remaining_required_resource_types.sort_unstable();
+        remaining_required_resource_types.dedup();
+
         let mut found_resources = BTreeMap::<String, DscResource>::new();
-        let mut remaining_required_resource_types = required_resource_types.to_owned();
 
         for (resource_name, resources) in &self.resources {
             // TODO: handle version requirements
@@ -436,7 +439,11 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     };
 
     // all command based resources are required to support `get`
-    let mut capabilities = vec![Capability::Get];
+    let mut capabilities = if manifest.get.is_some() {
+        vec![Capability::Get]
+    } else {
+        vec![]
+    };
     if let Some(set) = &manifest.set {
         capabilities.push(Capability::Set);
         if set.handles_exist == Some(true) {
@@ -451,6 +458,9 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     }
     if manifest.export.is_some() {
         capabilities.push(Capability::Export);
+    }
+    if manifest.resolve.is_some() {
+        capabilities.push(Capability::Resolve);
     }
 
     let resource = DscResource {

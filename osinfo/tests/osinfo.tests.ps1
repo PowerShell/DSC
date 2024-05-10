@@ -3,7 +3,7 @@
 
 Describe 'osinfo resource tests' {
     It 'should get osinfo' {
-        $out = dsc resource get -r Microsoft/osinfo | ConvertFrom-Json
+        $out = dsc resource get -r Microsoft/osInfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $out.actualState.family | Should -BeExactly 'Windows'
@@ -31,7 +31,7 @@ Describe 'osinfo resource tests' {
         else {
             $invalid = 'Windows'
         }
-        $out = "{`"family`": `"$invalid`"}" | dsc resource test -r 'Microsoft/osinfo' | ConvertFrom-Json
+        $out = "{`"family`": `"$invalid`"}" | dsc resource test -r 'Microsoft/OSInfo' | ConvertFrom-Json
         $actual = dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json
         $out.actualState.family | Should -BeExactly $actual.actualState.family
         $out.actualState.version | Should -BeExactly $actual.actualState.version
@@ -41,7 +41,7 @@ Describe 'osinfo resource tests' {
     }
 
     It 'should support export' {
-        $out = dsc resource export -r Microsoft/osinfo | ConvertFrom-Json
+        $out = dsc resource export -r Microsoft/OSInfo | ConvertFrom-Json
         $out.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
         if ($IsWindows) {
             $out.resources[0].properties.family | Should -BeExactly 'Windows'

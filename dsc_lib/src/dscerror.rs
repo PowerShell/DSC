@@ -112,4 +112,7 @@ pub enum DscError {
 
     #[error("Validation: {0}")]
     Validation(String),
+
+    #[error("YAML: {0}")]
+    Yaml(#[from] serde_yaml::Error),
 }
