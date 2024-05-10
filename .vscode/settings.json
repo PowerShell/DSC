@@ -4,6 +4,7 @@
         "./dsc_lib/Cargo.toml",
         "./osinfo/Cargo.toml",
         "./registry/Cargo.toml",
+        "./runcommandonset/Cargo.toml",
         "./tools/test_group_resource/Cargo.toml",
         "./tools/dsctest/Cargo.toml",
         "./tree-sitter-dscexpression/Cargo.toml",

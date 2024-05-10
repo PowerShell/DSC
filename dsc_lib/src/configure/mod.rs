@@ -31,15 +31,9 @@ pub mod parameters;
 
 pub struct Configurator {
     config: String,
-    context: Context,
+    pub context: Context,
     discovery: Discovery,
     statement_parser: Statement,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum ErrorAction {
-    Continue,
-    Stop,
 }
 
 /// Add the results of an export operation to a configuration.
@@ -217,15 +211,14 @@ impl Configurator {
 
     /// Invoke the get operation on a resource.
     ///
-    /// # Arguments
+    /// # Returns
     ///
-    /// * `error_action` - The error action to use.
-    /// * `progress_callback` - A callback to call when progress is made.
+    /// * `ConfigurationGetResult` - The result of the get operation.
     ///
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_get(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationGetResult, DscError> {
+    pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
@@ -235,7 +228,7 @@ impl Configurator {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -275,14 +268,16 @@ impl Configurator {
     ///
     /// # Arguments
     ///
-    /// * `error_action` - The error action to use.
-    /// * `progress_callback` - A callback to call when progress is made.
+    /// * `skip_test` - Whether to skip the test operation.
+    ///
+    /// # Returns
+    ///
+    /// * `ConfigurationSetResult` - The result of the set operation.
     ///
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    #[allow(clippy::too_many_lines)]
-    pub fn invoke_set(&mut self, skip_test: bool, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationSetResult, DscError> {
+    pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
@@ -292,7 +287,7 @@ impl Configurator {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Set '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -393,15 +388,14 @@ impl Configurator {
 
     /// Invoke the test operation on a resource.
     ///
-    /// # Arguments
+    /// # Returns
     ///
-    /// * `error_action` - The error action to use.
-    /// * `progress_callback` - A callback to call when progress is made.
+    /// * `ConfigurationTestResult` - The result of the test operation.
     ///
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_test(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationTestResult, DscError> {
+    pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
         let config = self.validate_config()?;
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
@@ -411,7 +405,7 @@ impl Configurator {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Test '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
@@ -449,11 +443,6 @@ impl Configurator {
 
     /// Invoke the export operation on a configuration.
     ///
-    /// # Arguments
-    ///
-    /// * `error_action` - The error action to use.
-    /// * `progress_callback` - A callback to call when progress is made.
-    ///
     /// # Returns
     ///
     /// * `ConfigurationExportResult` - The result of the export operation.
@@ -461,7 +450,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    pub fn invoke_export(&mut self, _error_action: ErrorAction, _progress_callback: impl Fn() + 'static) -> Result<ConfigurationExportResult, DscError> {
+    pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let config = self.validate_config()?;
 
         let mut result = ConfigurationExportResult::new();
@@ -473,7 +462,7 @@ impl Configurator {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type.to_lowercase()) else {
+            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             let input = add_metadata(&dsc_resource.kind, properties)?;
@@ -509,7 +498,9 @@ impl Configurator {
         };
 
         for (name, parameter) in parameters {
+            debug!("Processing parameter '{name}'");
             if let Some(default_value) = &parameter.default_value {
+                debug!("Set default parameter '{name}'");
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
@@ -526,15 +517,18 @@ impl Configurator {
         }
 
         let Some(parameters_input) = parameters_input else {
+            debug!("No parameters input");
             return Ok(());
         };
 
+        trace!("parameters_input: {parameters_input}");
         let parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
         let Some(parameters_constraints) = &config.parameters else {
             return Err(DscError::Validation("No parameters defined in configuration".to_string()));
         };
         for (name, value) in parameters {
             if let Some(constraint) = parameters_constraints.get(&name) {
+                debug!("Validating parameter '{name}'");
                 check_length(&name, &value, constraint)?;
                 check_allowed_values(&name, &value, constraint)?;
                 check_number_limits(&name, &value, constraint)?;
@@ -611,9 +605,7 @@ impl Configurator {
         check_security_context(&config.metadata)?;
 
         // Perform discovery of resources used in config
-        let mut required_resources = config.resources.iter().map(|p| p.resource_type.to_lowercase()).collect::<Vec<String>>();
-        required_resources.sort_unstable();
-        required_resources.dedup();
+        let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
         self.discovery.find_resources(&required_resources);
         Ok(config)
     }

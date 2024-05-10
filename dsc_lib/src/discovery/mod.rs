@@ -27,14 +27,14 @@ impl Discovery {
     }
 
     /// List operation for getting available resources based on the filters.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `type_name_filter` - The filter for the resource type name.
     /// * `adapter_name_filter` - The filter for the adapter name.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A vector of `DscResource` instances.
     pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
@@ -65,13 +65,13 @@ impl Discovery {
 
     #[must_use]
     pub fn find_resource(&self, type_name: &str) -> Option<&DscResource> {
-        self.resources.get(type_name)
+        self.resources.get(&type_name.to_lowercase())
     }
 
     /// Find resources based on the required resource types.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[String]) {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![

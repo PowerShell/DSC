@@ -16,6 +16,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod resolve;
 pub mod resource_command;
 pub mod subcommand;
 pub mod tablewriter;
@@ -67,11 +68,11 @@ fn main() {
         },
         SubCommand::Config { subcommand, parameters, parameters_file, as_group } => {
             if let Some(file_name) = parameters_file {
-                info!("Reading parameters from file {}", file_name);
-                match std::fs::read_to_string(file_name) {
+                info!("Reading parameters from file {file_name}");
+                match std::fs::read_to_string(&file_name) {
                     Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input, &as_group),
                     Err(err) => {
-                        error!("Error: Failed to read parameters file: {err}");
+                        error!("Error: Failed to read parameters file '{file_name}': {err}");
                         exit(util::EXIT_INVALID_INPUT);
                     }
                 }
