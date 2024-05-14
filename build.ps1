@@ -45,6 +45,8 @@ $filesForWindowsPackage = @(
 $filesForLinuxPackage = @(
     'dsc',
     'assertion.dsc.resource.json',
+    'apt.dsc.resource.json',
+    'apt.dsc.resource.sh',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
