@@ -7,7 +7,7 @@ Describe 'Apt resource tests' {
     }
 
     Context "export" {
-        It "should have more than 20 resources" {
+        It "should have more than 20 resources" -Skip:$(! $IsLinux) {
             if (-not $aptExists) {
                 Set-ItResult -Skip -Because "Apt not found"
             }
@@ -23,7 +23,7 @@ Describe 'Apt resource tests' {
             $yamlPath = "$PSScriptRoot/assets/apt_${pkgName}.dsc.yaml"
         }
 
-        It 'Config get works' {
+        It 'Config get works' -Skip:$(! $IsLinux) {
             if (-not $aptExists) {
                 Set-ItResult -Skip -Because "Apt not found"
             }
@@ -34,7 +34,7 @@ Describe 'Apt resource tests' {
             $observed | Should -Be $exists
         }
 
-        It 'Config test works' {
+        It 'Config test works' -Skip:$(! $IsLinux) {
             if (-not $aptExists) {
                 Set-ItResult -Skip -Because "Apt not found"
             }
@@ -53,7 +53,7 @@ Describe 'Apt resource tests' {
             $yamlUnInstallPath = "$PSScriptRoot/assets/apt_uninstall_${pkgName}.dsc.yaml"
         }
 
-        It 'Can install a package' {
+        It 'Can install a package' -Skip:$(! $IsLinux) {
             Set-ItResult -Skip -Because "Apt requires sudo"
 
             if (apt list $pkgname 2>&1 | Select-String installed ) {
@@ -65,7 +65,7 @@ Describe 'Apt resource tests' {
             $result.results[1].result.afterstate._exist | Should -Be true
         }
 
-        It 'Can uninstall a package' {
+        It 'Can uninstall a package' -Skip:$(! $IsLinux) {
             Set-ItResult -Skip -Because "Apt requires sudo"
 
             if ($null -eq (apt list $pkgName 2>&1 | Select-String installed)) {
