@@ -54,9 +54,7 @@ Describe 'Apt resource tests' {
         }
 
         It 'Can install a package' {
-            if (-not $aptExists) {
-                Set-ItResult -Skip -Because "Apt not found"
-            }
+            Set-ItResult -Skip -Because "Apt requires sudo"
 
             if (apt list $pkgname 2>&1 | Select-String installed ) {
                 apt remove -y $pkgname
@@ -68,9 +66,7 @@ Describe 'Apt resource tests' {
         }
 
         It 'Can uninstall a package' {
-            if (-not $aptExists) {
-                Set-ItResult -Skip -Because "Apt not found"
-            }
+            Set-ItResult -Skip -Because "Apt requires sudo"
 
             if ($null -eq (apt list $pkgName 2>&1 | Select-String installed)) {
                 apt install -y $pkgname
