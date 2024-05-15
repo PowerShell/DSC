@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
     "type": "DSC.PackageManagement/Apt",
-    "description": "DSC resource to manage Apt packages",
+    "description": "Manage packages with the advanced package tool (APT)",
     "tags": [
         "Linux",
         "apt",
