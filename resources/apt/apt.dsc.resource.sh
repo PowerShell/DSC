@@ -38,7 +38,7 @@ elif [[ "$1" == "get" ]]; then
     check_args
     output="$(get_apt $packageName)"
     if [[ -z $output ]]; then
-	    printf '{ "_exist": "false", "packageName": "%s", "Version": "", "Source": "" }\n' $packageName
+	    printf '{"_exist":"false","packageName":"%s","version":"","source":""}\n' $packageName
     else
 	    echo $output
     fi
