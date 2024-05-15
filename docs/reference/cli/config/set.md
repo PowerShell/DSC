@@ -50,12 +50,12 @@ The command inspects the resource instances defined in the configuration documen
 
 ```yaml
 # example.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Windows only
   type: DSC/AssertionGroup
   properties:
-    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
     resources:
     - name: os
       type: Microsoft/OSInfo

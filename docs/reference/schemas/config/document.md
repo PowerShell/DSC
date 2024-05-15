@@ -15,7 +15,7 @@ The YAML or JSON file that defines a DSC Configuration.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 Type:          object
 ```
 
@@ -57,6 +57,19 @@ The `$schema` property indicates the canonical URL for the version of this schem
 adheres to. DSC uses this property when validating the configuration document before any
 configuration operations.
 
+There are currently 3 published versions of the schema, compatible with different versions of DSC:
+
+- `2024/04` is the latest version of the schema, compatible with DSC version 3.0.0-preview.7 and
+  later.
+- `2023/10` is the previous version of the schema, compatible with DSC versions `3.0.0-alpha.4` and
+  `3.0.0-alpha.5`.
+- `2023/08` is the first version of the schema, compatible with DSC versions `3.0.0-alpha.1` through
+  `3.0.0-alpha.3`.
+
+This documentation is for the latest version of the schema. You should update your configuration
+documents and resource manifests to the latest version of the schema. Prior versions don't work
+with new releases of DSC. The schemas remain published, but won't get any updates.
+
 For every version of the schema, there are three valid urls:
 
 - `.../config/document.json`
@@ -87,6 +100,9 @@ Type:        string
 Required:    true
 Format:      URI
 ValidValues: [
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/config/document.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.vscode.json
@@ -126,7 +142,7 @@ For more information about defining parameters in a configuration, see
 ```yaml
 Type:                object
 Required:            false
-ValidPropertySchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.parameter.json
+ValidPropertySchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.parameter.json
 ```
 
 ### variables
@@ -162,7 +178,7 @@ For more information about defining a valid resource instance in a configuration
 Type:             array
 Required:         true
 MinimumItemCount: 1
-ValidItemSchema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.resource.json
+ValidItemSchema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.resource.json
 ```
 
 <!-- Link reference definitions -->

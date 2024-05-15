@@ -3,7 +3,7 @@
 
 Describe 'config schema tests' {
     It 'return resource schema' -Skip:(!$IsWindows) {
-        $schema = dsc resource schema -r Microsoft.Windows/registry
+        $schema = dsc resource schema -r Microsoft.Windows/Registry
         $LASTEXITCODE | Should -Be 0
         $schema | Should -Not -BeNullOrEmpty
         $schema = $schema | ConvertFrom-Json

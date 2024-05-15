@@ -24,40 +24,46 @@ discovers resources by first searching the `PATH` or `DSC_RESOURCE_PATH` environ
 `.dsc.resource.json`, `.dsc.resource.yml`, and `dsc.resource.yaml` files. For more information
 about the environment variables DSC uses, see [Environment variables][01]
 
-If any of the discovered resources are resource providers, DSC then calls the providers to list
-their resources, too.
+If any of the discovered resources are resource adapters, DSC calls the `list` operation for those
+adapters if the [--adapter](#-a---adapter) option specifies a matching filter. By default, DSC
+doesn't return any adapted resources.
 
 DSC returns the list of discovered resources with their implementation information and metadata. If
 the command includes the `RESOURCE_NAME` argument, DSC filters the list of discovered resources
 before returning them. The **description** and **tags** options filter the results by the
-resource descriptions and tags.
+resource descriptions and tags. Filters are always applied after resource discovery.
 
 ## Examples
 
-### Example 1 - List all resources
+### Example 1 - List all non-adapted resources
 
-Without any filters, the command returns every discovered DSC Resource.
+Without any filters, the command returns every discovered DSC Resource, but doesn't call the `list`
+operation for adapter resources to enumerate any adapted resources.
 
 ```sh
 dsc resource list
 ```
 
 ```Output
-Type                        Version  Methods                 Requires        Description
-----------------------------------------------------------------------------------------------------------------------------------------------------
-DSC.PackageManagement/Brew  0.1.0    get, set, export                        DSC resource to manage Homebrew packages
-DSC/AssertionGroup          0.1.0    get, set, test                          `test` will be invoked for all resources in the supplied configuration.
-DSC/Group                   0.1.0    get, set, test                          All resources in the supplied configuration is treated as a group.     
-DSC/ParallelGroup           0.1.0    get, set, test                          All resources in the supplied configuration run concurrently.
-DSC/PowerShellGroup         0.1.0    get, set, test, export                  Resource provider to classic DSC Powershell resources.
-Microsoft.Windows/Registry  0.1.0    get, set, test                          Registry configuration provider for the Windows Registry
-Microsoft/OSInfo            0.1.0    get, export                             Returns information about the operating system.
-Microsoft/Process           0.1.0    get, set, test, export                  Returns information about running processes.
-Test/Echo                   0.1.0    get, set, test
-Test/Sleep                  0.1.0    get, set, test
-Test/TestGroup              0.1.0    get
-Test/TestResource1          1.0.0    get                     Test/TestGroup  This is a test resource.
-Test/TestResource2          1.0.1    get                     Test/TestGroup  This is a test resource.
+Type                                        Kind      Version  Caps    RequireAdapter  Description
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DSC.PackageManagement/Brew                  Resource  0.1.0    gs---e                  DSC resource to manage Homebrew packages
+Microsoft.DSC.Transitional/RunCommandOnSet  Resource  0.1.0    gs----                  Takes a single-command line to execute on DSC set operation
+Microsoft.DSC/Assertion                     Group     0.1.0    gs-t--                  `test` will be invoked for all resources in the supplied configuration.
+Microsoft.DSC/Group                         Group     0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
+Microsoft.DSC/Parallel                      Group     0.1.0    gs-t--                  All resources in the supplied configuration run concurrently.
+Microsoft.DSC/PowerShell                    Adapter   0.1.0    gs-t-e                  Resource adapter to classic DSC Powershell resources.
+Microsoft.Windows/RebootPending             Resource  0.1.0    g-----                  Returns info about pending reboot.
+Microsoft.Windows/Registry                  Resource  0.1.0    gs--d-                  Manage Windows Registry keys and values
+Microsoft.Windows/WindowsPowerShell         Adapter   0.1.0    gs-t--                  Resource adapter to classic DSC Powershell resources in Windows PowerShell.
+Microsoft.Windows/WMI                       Adapter   0.1.0    g-----                  Resource adapter to WMI resources.
+Microsoft/OSInfo                            Resource  0.1.0    g----e                  Returns information about the operating system.
+Microsoft/Process                           Resource  0.1.0    gs-t-e                  Returns information about running processes.
+Test/Delete                                 Resource  0.1.0    g---d-
+Test/Echo                                   Resource  0.1.0    gs-t--
+Test/Exist                                  Resource  0.1.0    gsx---
+Test/Sleep                                  Resource  0.1.0    gs-t--
+Test/TestGroup                              Adapter   0.1.0    g-----
 ```
 
 ### Example 2 - List a specific resource
@@ -66,13 +72,13 @@ When the `RESOURCE_NAME` argument doesn't include a wildcard, the command return
 with the specified type name.
 
 ```sh
-dsc resource list DSC/Group
+dsc resource list Microsoft.DSC/Group
 ```
 
 ```Output
-Type       Version  Methods         Requires  Description
-----------------------------------------------------------------------------------------------------------------
-DSC/Group  0.1.0    get, set, test            All resources in the supplied configuration is treated as a group.
+Type                 Kind   Version  Caps    RequireAdapter  Description
+-------------------------------------------------------------------------------------------------------------------------------
+Microsoft.DSC/Group  Group  0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
 ```
 
 ### Example 3 - List resources with a matching type name
@@ -81,16 +87,16 @@ When the `RESOURCE_NAME` argument includes a wildcard, the command returns every
 matching type name.
 
 ```sh
-dsc resource list DSC/*
+dsc resource list Microsoft.DSC/*
 ```
 
 ```Output
-Type                 Version  Methods                 Requires  Description
----------------------------------------------------------------------------------------------------------------------------------------
-DSC/AssertionGroup   0.1.0    get, set, test                    `test` will be invoked for all resources in the supplied configuration.
-DSC/Group            0.1.0    get, set, test                    All resources in the supplied configuration is treated as a group.
-DSC/ParallelGroup    0.1.0    get, set, test                    All resources in the supplied configuration run concurrently.
-DSC/PowerShellGroup  0.1.0    get, set, test, export            Resource provider to classic DSC Powershell resources.
+Type                      Kind     Version  Caps    RequireAdapter  Description
+-------------------------------------------------------------------------------------------------------------------------------------------
+Microsoft.DSC/Assertion   Group    0.1.0    gs-t--                  `test` will be invoked for all resources in the supplied configuration.
+Microsoft.DSC/Group       Group    0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
+Microsoft.DSC/Parallel    Group    0.1.0    gs-t--                  All resources in the supplied configuration run concurrently.
+Microsoft.DSC/PowerShell  Adapter  0.1.0    gs-t-e                  Resource adapter to classic DSC Powershell resources.
 ```
 
 ### Example 4 - List resources with a matching description
@@ -103,11 +109,11 @@ dsc resource list --description 'supplied configuration'
 ```
 
 ```Output
-Type                Version  Methods         Requires  Description
-------------------------------------------------------------------------------------------------------------------------------
-DSC/AssertionGroup  0.1.0    get, set, test            `test` will be invoked for all resources in the supplied configuration.
-DSC/Group           0.1.0    get, set, test            All resources in the supplied configuration is treated as a group.
-DSC/ParallelGroup   0.1.0    get, set, test            All resources in the supplied configuration run concurrently.
+Type                     Kind   Version  Caps    RequireAdapter  Description
+----------------------------------------------------------------------------------------------------------------------------------------
+Microsoft.DSC/Assertion  Group  0.1.0    gs-t--                  `test` will be invoked for all resources in the supplied configuration.
+Microsoft.DSC/Group      Group  0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
+Microsoft.DSC/Parallel   Group  0.1.0    gs-t--                  All resources in the supplied configuration run concurrently.
 ```
 
 ### Example 5 - List resources with matching tags
@@ -120,10 +126,54 @@ dsc resource list --tags Windows --tags Linux
 ```
 
 ```output
-Type                        Version  Methods         Requires  Description
------------------------------------------------------------------------------------------------------------------------
-Microsoft.Windows/Registry  0.1.0    get, set, test            Registry configuration provider for the Windows Registry
-Microsoft/OSInfo            0.1.0    get, export               Returns information about the operating system.
+Type                        Kind      Version  Caps    RequireAdapter  Description
+----------------------------------------------------------------------------------------------------------------------
+Microsoft.Windows/Registry  Resource  0.1.0    gs--d-                  Manage Windows Registry keys and values
+Microsoft/OSInfo            Resource  0.1.0    g----e                  Returns information about the operating system.
+```
+
+### Example 6 - List resources for a specific adapter
+
+When the command includes the **adapter** option, DSC checks for any discovered resource adapters
+with a matching name. If it discovers any, it then calls the `list` operation for the adapter and
+adds the returned list of adapted resources to the discovered resource list. DSC applies any
+further filters specified with the command after this enumeration.
+
+```sh
+dsc resource list --adapter Microsoft.DSC/PowerShell
+```
+
+```Output
+Type                                                   Kind      Version   Caps    RequireAdapter            Description
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+PSDscResources/Archive                                 Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Environment                             Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Group                                   Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/MsiPackage                              Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Registry                                Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Script                                  Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Service                                 Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/User                                    Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsFeature                          Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsOptionalFeature                  Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsPackageCab                       Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsProcess                          Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+```
+
+This next command specifies the resource name filter `*Windows*`, limiting the list of returned
+resources:
+
+```sh
+dsc resource list --adapter Microsoft.DSC/PowerShell *Windows*
+```
+
+```Output
+Type                                     Kind      Version   Caps    RequireAdapter            Description
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+PSDscResources/WindowsFeature            Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsOptionalFeature    Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsPackageCab         Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsProcess            Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
 ```
 
 ## Arguments
@@ -146,6 +196,23 @@ Mandatory: false
 ```
 
 ## Options
+
+### -a, --adapter
+
+Specifies a filter to define which adapter resources to enumerate adapted resources for. By
+default, the command doesn't call the `list` command for adapter resources. When you specify this
+option, DSC looks for adapter resources with type names that match the filter. If it discovers any
+adapters matching the filter, it calls the `list` command for those adapters and returns the
+adapted resources. DSC retrieves adapted resources before applying any other filters for the
+command.
+
+If you specify this option with the filter `*`, DSC calls `list` for every adapter resource it
+finds before applying the other filters.
+
+```yaml
+Type:      String
+Mandatory: false
+```
 
 ### -d, --description
 
@@ -206,16 +273,36 @@ a summary table for the returned resources. The summary table includes the follo
 displayed in the listed order:
 
 - **Type** - The fully qualified type name of the resource.
+- **Kind** - Whether the resource is an `Adapter`, `Group`, or typical `Resource`. For more
+  information, see [DSC Resource kind schema reference][03].
 - **Version** - The semantic version of the resource.
-- **Methods** - A comma-separated list of the implemented methods for the resource. Valid methods
-  are `get`, `set`, `test`, and `export`. Resources that don't implement `test` rely on DSC's
-  synthetic test functionality.
-- **Requires** - The fully qualified type name of the provider resource that DSC uses to invoke the
-  returned resource.
+- **Caps** - A display of the resource's [capabilities][04] as flags. The capabilities are
+  displayed in the following order, using a `-` instead of the appropriate letter if the resource
+  doesn't have a specific capability:
+
+  - `g` indicates that the resource has the [Get capability][05].
+  - `s` indicates that the resource has the [Set capability][06]
+  - `x` indicates that the resource has the [SetHandlesExist capability][07]
+  - `t` indicates that the resource has the [Test capability][08]
+  - `d` indicates that the resource has the [Delete capability][09]
+  - `e` indicates that the resource has the [Export capability][10]
+
+  For example, the `Microsoft.Windows/Registry` resource has the following capabilities: `gs--d-`, indicating it has the `Get`, `Set`, and `Delete` capabilities.
+- **RequireAdapter** - The fully qualified type name of the adapter resource that DSC uses to
+  invoke the returned resource.
 - **Description** - The short description of the resource's purpose and usage.
 
 To display the output objects as either JSON or YAML objects in the console, use the
 [--format](#-f---format) option.
 
+<!-- Link reference definitions -->
 [01]: ../dsc.md#environment-variables
 [02]: ../../schemas/outputs/resource/list.md
+[03]: ../../schemas/definitions/resourceKind.md
+[04]: ../../schemas/outputs/resource/list.md#capabilities
+[05]: ../../schemas/outputs/resource/list.md#capability-get
+[06]: ../../schemas/outputs/resource/list.md#capability-set
+[07]: ../../schemas/outputs/resource/list.md#capability-sethandlesexist
+[08]: ../../schemas/outputs/resource/list.md#capability-test
+[09]: ../../schemas/outputs/resource/list.md#capability-delete
+[10]: ../../schemas/outputs/resource/list.md#capability-export

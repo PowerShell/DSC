@@ -47,7 +47,7 @@ Describe 'tracing tests' {
 
     It 'trace level <level> emits source info: <sourceExpected>' -TestCases @(
         @{ level = 'error'; sourceExpected = $false }
-        @{ level = 'warning'; sourceExpected = $false }
+        @{ level = 'warn'; sourceExpected = $false }
         @{ level = 'info'; sourceExpected = $false }
         @{ level = 'debug'; sourceExpected = $true }
         @{ level = 'trace'; sourceExpected = $true }
@@ -62,5 +62,27 @@ Describe 'tracing tests' {
         } else {
             $log | Should -Not -BeLike "*dsc_lib*: *"
         }
+    }
+
+    It 'trace level <level> is passed to resource' -TestCases @(
+        @{ level = 'error' }
+        @{ level = 'warn' }
+        @{ level = 'info' }
+        @{ level = 'debug' }
+        @{ level = 'trace' }
+    ) {
+        param($level)
+
+        $configYaml = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: trace
+              type: Test/Trace
+              properties:
+                level: trace
+"@
+
+        $out = (dsc -l $level config get -d $configYaml 2> $null) | ConvertFrom-Json
+        $out.results[0].result.actualState.level | Should -BeExactly $level
     }
 }

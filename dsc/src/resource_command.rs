@@ -261,6 +261,6 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
 
 #[must_use]
 pub fn get_resource<'a>(dsc: &'a DscManager, resource: &str) -> Option<&'a DscResource> {
-    //TODO: add dinamically generated resource to dsc
-    dsc.find_resource(String::from(resource).to_lowercase().as_str())
+    //TODO: add dynamically generated resource to dsc
+    dsc.find_resource(resource)
 }

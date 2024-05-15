@@ -4,7 +4,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
+use std::collections::HashMap;
 use crate::configure::config_result::{ResourceGetResult, ResourceSetResult, ResourceTestResult};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -167,4 +167,13 @@ pub struct ExportResult {
     /// The state of the resource as it was returned by the Get method.
     #[serde(rename = "actualState")]
     pub actual_state: Vec<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ResolveResult {
+    /// The resolved configuration.
+    pub configuration: Value,
+    /// The optional resolved parameters.
+    pub parameters: Option<HashMap<String, Value>>,
 }

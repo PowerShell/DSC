@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
+use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -56,6 +56,8 @@ pub enum Capability {
     Delete,
     /// The resource supports exporting configuration.
     Export,
+    /// The resource supports resolving imported configuration.
+    Resolve,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -168,6 +170,17 @@ pub trait Invoke {
     ///
     /// This function will return an error if the underlying resource fails.
     fn export(&self, input: &str) -> Result<ExportResult, DscError>;
+
+    /// Invoke the resolve operation on the resource.
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - The input to the operation to be resolved.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the underlying resource fails.
+    fn resolve(&self, input: &str) -> Result<ResolveResult, DscError>;
 }
 
 impl Invoke for DscResource {
@@ -295,6 +308,14 @@ impl Invoke for DscResource {
         };
         let resource_manifest = import_manifest(manifest.clone())?;
         command_resource::invoke_export(&resource_manifest, &self.directory, Some(input))
+    }
+
+    fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
+        let Some(manifest) = &self.manifest else {
+            return Err(DscError::MissingManifest(self.type_name.clone()));
+        };
+        let resource_manifest = import_manifest(manifest.clone())?;
+        command_resource::invoke_resolve(&resource_manifest, &self.directory, input)
     }
 }
 

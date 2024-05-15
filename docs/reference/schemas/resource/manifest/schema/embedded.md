@@ -15,7 +15,7 @@ Defines a JSON Schema that validates a DSC Resource instance.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.schema.json#/properties/embedded
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.schema.json#/properties/embedded
 Type:          object
 ```
 
@@ -107,7 +107,7 @@ If defined, this property must be a reference to the schema for the well-known p
 
 ```json
 "_exist": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/exist.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/exist.json"
 }
 ```
 
@@ -123,7 +123,7 @@ If defined, this property must be a reference to the schema for the well-known p
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/inDesiredState.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/inDesiredState.json"
 }
 ```
 
@@ -139,7 +139,7 @@ If defined, this property must be a reference to the schema for the well-known p
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/purge.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/purge.json"
 }
 ```
 
@@ -155,7 +155,7 @@ If defined, this property must be a reference to the schema for the well-known p
 
 ```json
 "_rebootRequested": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/properties/rebootRequested.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/rebootRequested.json"
 }
 ```
 

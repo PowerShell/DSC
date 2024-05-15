@@ -11,6 +11,7 @@ pub mod dscerror;
 pub mod dscresources;
 pub mod functions;
 pub mod parser;
+pub mod util;
 
 pub struct DscManager {
     discovery: discovery::Discovery,

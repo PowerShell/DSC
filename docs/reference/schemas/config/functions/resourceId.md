@@ -37,7 +37,7 @@ The following configuration uses the `resourceId()` function to reference the in
 
 ```yaml
 # resourceId.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: Tailspin Key
     type: Microsoft.Windows/Registry
@@ -62,12 +62,12 @@ resource instance named 'IsWindows' as a dependency of the `Example Key` resourc
 
 ```yaml
 # resourceId.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
   - name: IsWindows
     type: DSC/AssertionGroup
     properties:
-      $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+      $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
       resources:
         - name: os
           type: Microsoft/OSInfo
