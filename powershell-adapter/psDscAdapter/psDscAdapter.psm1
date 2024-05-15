@@ -44,7 +44,7 @@ function Invoke-DscCacheRefresh {
         $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
     }
     if ($IsLinux -or $IsMacOS) {
-        $cacheFilePath = Join-Path $env:HOME "dsc" "PSAdapterCache.json"
+        $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
     }
 
     if (Test-Path $cacheFilePath) {
