@@ -60,7 +60,8 @@
                 "Source": {
                     "type": "string",
                     "title": "Source",
-                    "description": "Defines the source of the package"
+                    "description": "Indicates the source of the package",
+                    "readOnly": true
                 },
                 "_exist": {
                     "type": "boolean",
