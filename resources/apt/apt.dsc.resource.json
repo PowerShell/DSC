@@ -64,6 +64,8 @@
                     "readOnly": true
                 },
                 "_exist": {
+                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/exist.json"
+                }
                     "type": "boolean",
                     "title": "Exist",
                     "description": "Defines if the package should exist or not"
