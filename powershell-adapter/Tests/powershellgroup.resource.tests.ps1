@@ -11,7 +11,7 @@ Describe 'PowerShell adapter resource tests' {
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
         if ($IsLinux -or $IsMacOS) {
-            $cacheFilePath = Join-Path $env:HOME "dsc" "PSAdapterCache.json"
+            $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
         }
         else
         {

@@ -44,7 +44,7 @@ function Invoke-DscCacheRefresh {
         $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
     }
     if ($IsLinux -or $IsMacOS) {
-        $cacheFilePath = Join-Path $env:HOME "dsc" "PSAdapterCache.json"
+        $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
     }
 
     if (Test-Path $cacheFilePath) {
@@ -203,7 +203,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1","*.psd1","*psm1","*.mof" -ea SilentlyContinue | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1","*.psd1","*psm1","*.mof" -ea Ignore | % {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 

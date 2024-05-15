@@ -13,7 +13,7 @@ Describe 'PowerShell adapter resource tests' {
         $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
 
         if ($IsLinux -or $IsMacOS) {
-            $cacheFilePath = Join-Path $env:HOME "dsc" "PSAdapterCache.json"
+            $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
         }
         else
         {
