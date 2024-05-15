@@ -57,7 +57,7 @@
                     "title": "Version",
                     "description": "Defines the version of the package to install"
                 },
-                "Source": {
+                "source": {
                     "type": "string",
                     "title": "Source",
                     "description": "Indicates the source of the package",
