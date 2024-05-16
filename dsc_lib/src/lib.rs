@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
 use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
 
@@ -75,7 +76,7 @@ impl DscManager {
     /// This function will return an error if the underlying resource fails.
     ///
     pub fn resource_set(&self, resource: &DscResource, input: &str, skip_test: bool) -> Result<SetResult, DscError> {
-        resource.set(input, skip_test)
+        resource.set(input, skip_test, &ExecutionKind::Actual)
     }
 
     /// Invoke the test operation on a resource.

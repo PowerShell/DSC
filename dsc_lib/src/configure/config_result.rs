@@ -99,6 +99,17 @@ pub struct ResourceSetResult {
     pub result: SetResult,
 }
 
+impl From<ResourceTestResult> for ResourceSetResult {
+    fn from(test_result: ResourceTestResult) -> Self {
+        Self {
+            metadata: None,
+            name: test_result.name,
+            resource_type: test_result.resource_type,
+            result: test_result.result.into(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GroupResourceSetResult {

@@ -69,6 +69,27 @@ pub enum SetResult {
     Group(GroupResourceSetResponse),
 }
 
+impl From<TestResult> for SetResult {
+    fn from(value: TestResult) -> Self {
+        match value {
+            TestResult::Group(group) => {
+                let mut results = Vec::<ResourceSetResult>::new();
+                for result in group.results {
+                    results.push(result.into());
+                }
+                SetResult::Group(GroupResourceSetResponse { results })
+            },
+            TestResult::Resource(resource) => {
+                SetResult::Resource(ResourceSetResponse {
+                    before_state: resource.actual_state,
+                    after_state: resource.desired_state,
+                    changed_properties: if resource.diff_properties.is_empty() { None } else { Some(resource.diff_properties) },
+                })
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceSetResponse {

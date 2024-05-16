@@ -91,6 +91,8 @@ pub enum ConfigSubCommand {
         path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
+        #[clap(short = 'w', long, help = "Run as a what-if operation instead of executing the configuration or resource")]
+        what_if: bool,
     },
     #[clap(name = "test", about = "Test the current configuration")]
     Test {
