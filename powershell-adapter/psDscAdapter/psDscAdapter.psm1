@@ -1,6 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+function Write-DscTrace {
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Error', 'Warn', 'Info', 'Debug', 'Trace')]
+        [string]$Operation = 'Debug',
+
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Message
+    )
+
+    $trace = @{$Operation = $Message } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
+}
+
 # if the version of PowerShell is greater than 5, import the PSDesiredStateConfiguration module
 # this is necessary because the module is not included in the PowerShell 7.0+ releases;
 # In Windows PowerShell, we should always use version 1.1 that ships in Windows.
@@ -12,8 +26,7 @@ else {
     $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
     $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru -ErrorAction stop -ErrorVariable $importModuleError
     if (-not [string]::IsNullOrEmpty($importModuleError)) {
-        $trace = @{'Debug' = 'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError } | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace
     }
 }
 
@@ -39,17 +52,20 @@ function Invoke-DscCacheRefresh {
 
     $refreshCache = $false
 
-    $cacheFilePath = Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-    }
-    if ($IsLinux -or $IsMacOS) {
-        $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+    $cacheFilePath = if ($IsWindows) {
+        # PS 6+ on Windows
+        Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
+    } else {
+        # either WinPS or PS 6+ on Linux/Mac
+        if ($PSVersionTable.PSVersion.Major -le 5) {
+            Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+        } else {
+            Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+        }
     }
 
     if (Test-Path $cacheFilePath) {
-        $trace = @{'Debug' = "Reading from Get-DscResource cache file $cacheFilePath"} | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        "Reading from Get-DscResource cache file $cacheFilePath" | Write-DscTrace
 
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
         $dscResourceCacheEntries = $cache.ResourceCache
@@ -58,25 +74,20 @@ function Invoke-DscCacheRefresh {
             # if there is nothing in the cache file - refresh cache
             $refreshCache = $true
 
-            $trace = @{'Debug' = "Filtered DscResourceCache cache is empty"} | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            "Filtered DscResourceCache cache is empty" | Write-DscTrace
         }
         else
         {
-            $trace = @{'Debug' = "Checking cache for stale entries"} | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            "Checking cache for stale entries" | Write-DscTrace
 
             foreach ($cacheEntry in $dscResourceCacheEntries) {
-                $trace = @{'Trace' = "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'"} | ConvertTo-Json -Compress
-                $host.ui.WriteErrorLine($trace)
+                "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
 
                 $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                 
                     if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
                     {
-                        $trace = @{'Debug' = "Detected stale cache entry '$($_.Name)'"} | ConvertTo-Json -Compress
-                        $host.ui.WriteErrorLine($trace)
-
+                        "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
                         $refreshCache = $true
                         break
                     }
@@ -85,8 +96,7 @@ function Invoke-DscCacheRefresh {
                 if ($refreshCache) {break}
             }
 
-            $trace = @{'Debug' = "Checking cache for stale PSModulePath"} | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            "Checking cache for stale PSModulePath" | Write-DscTrace
 
             $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
@@ -95,8 +105,7 @@ function Invoke-DscCacheRefresh {
             $hs_cache.SymmetricExceptWith($hs_live)
             $diff = $hs_cache
 
-            $trace = @{'Debug' = "PSModulePath diff '$diff'"} | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            "PSModulePath diff '$diff'" | Write-DscTrace
 
             if ($diff.Count -gt 0) {
                 $refreshCache = $true
@@ -104,15 +113,12 @@ function Invoke-DscCacheRefresh {
         }
     }
     else {
-        $trace = @{'Debug' = "Cache file not found '$cacheFilePath'"} | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
-
+        "Cache file not found '$cacheFilePath'" | Write-DscTrace
         $refreshCache = $true
     }
     
     if ($refreshCache) {
-        $trace = @{'Debug' = 'Constructing Get-DscResource cache'} | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        'Constructing Get-DscResource cache' | Write-DscTrace
 
         # create a list object to store cache of Get-DscResource
         [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
@@ -153,8 +159,7 @@ function Invoke-DscCacheRefresh {
             if ( $psdscVersion -ge '2.0.7' ) {
                 # only support known dscResourceType
                 if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
-                    $trace = @{'Debug' = 'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
+                    'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail | Write-DscTrace
                     continue
                 }
             }
@@ -221,8 +226,7 @@ function Invoke-DscCacheRefresh {
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
-        $trace = @{'Debug' = "Saving Get-DscResource cache to '$cacheFilePath'"} | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        "Saving Get-DscResource cache to '$cacheFilePath'" | Write-DscTrace
         $jsonCache = $cache | ConvertTo-Json -Depth 90
         New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
     }
@@ -242,8 +246,7 @@ function Get-DscResourceObject {
 
     # catch potential for improperly formatted configuration input
     if ($inputObj.resources -and -not $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        $trace = @{'Debug' = 'WARNING: The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' } | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        'WARNING: The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace
     }
 
     # match adapter to version of powershell
@@ -290,16 +293,13 @@ function Invoke-DscOperation {
     )
 
     $osVersion = [System.Environment]::OSVersion.VersionString
-    $trace = @{'Debug' = 'OS version: ' + $osVersion } | ConvertTo-Json -Compress
-    $host.ui.WriteErrorLine($trace)
+    'OS version: ' + $osVersion | Write-DscTrace
 
     $psVersion = $PSVersionTable.PSVersion.ToString()
-    $trace = @{'Debug' = 'PowerShell version: ' + $psVersion } | ConvertTo-Json -Compress
-    $host.ui.WriteErrorLine($trace)
+    'PowerShell version: ' + $psVersion | Write-DscTrace
 
     $moduleVersion = Get-Module PSDesiredStateConfiguration | ForEach-Object Version
-    $trace = @{'Debug' = 'PSDesiredStateConfiguration module version: ' + $moduleVersion } | ConvertTo-Json -Compress
-    $host.ui.WriteErrorLine($trace)
+    'PSDesiredStateConfiguration module version: ' + $moduleVersion | Write-DscTrace
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo
@@ -315,8 +315,7 @@ function Invoke-DscOperation {
             if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $DesiredState.($_.Name) }
         }
 
-        $trace = @{'Debug' = 'DSC resource implementation: ' + [dscResourceType]$cachedDscResourceInfo.ImplementationDetail } | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        'DSC resource implementation: ' + [dscResourceType]$cachedDscResourceInfo.ImplementationDetail | Write-DscTrace
 
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
         switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
@@ -324,8 +323,7 @@ function Invoke-DscOperation {
 
                 # For Linux/MacOS, only class based resources are supported and are called directly.
                 if ($IsLinux) {
-                    $trace = @{'Debug' = 'ERROR: Script based resources are only supported on Windows.' } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
+                    'ERROR: Script based resources are only supported on Windows.' | Write-DscTrace
                     exit 1
                 }
 
@@ -361,8 +359,7 @@ function Invoke-DscOperation {
                     $addToActualState.properties = $getDscResult
                 }
                 catch {
-                    $trace = @{'Debug' = 'ERROR: ' + $_.Exception.Message } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
+                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
                     exit 1
                 }
             }
@@ -401,21 +398,18 @@ function Invoke-DscOperation {
                 }
                 catch {
                     
-                    $trace = @{'Debug' = 'ERROR: ' + $_.Exception.Message } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
+                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
                     exit 1
                 }
             }
             'Binary' {
                 if ($PSVersionTable.PSVersion.Major -gt 5) {
-                    $trace = @{'Debug' = 'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.Windows/WindowsPowerShell adapter.' } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
+                    'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.Windows/WindowsPowerShell adapter.' | Write-DscTrace
                     exit 1
                 }
 
                 if (-not (($cachedDscResourceInfo.ImplementedAs -eq 'Binary') -and ('File', 'Log', 'SignatureValidation' -contains $cachedDscResourceInfo.Name))) {
-                    $trace = @{'Debug' = 'Only File, Log, and SignatureValidation are supported as Binary resources.' } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
+                    'Only File, Log, and SignatureValidation are supported as Binary resources.' | Write-DscTrace
                     exit 1
                 }
 
@@ -438,14 +432,12 @@ function Invoke-DscOperation {
                     $addToActualState.properties = $getDscResult
                 }
                 catch {
-                    $trace = @{'Debug' = 'ERROR: ' + $_.Exception.Message } | ConvertTo-Json -Compress
-                    $host.ui.WriteErrorLine($trace)
+                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
                     exit 1
                 }
             }
             Default {
-                $trace = @{'Debug' = 'Can not find implementation of type: ' + $cachedDscResourceInfo.ImplementationDetail } | ConvertTo-Json -Compress
-                $host.ui.WriteErrorLine($trace)
+                'Can not find implementation of type: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace
                 exit 1
             }
         }
@@ -455,8 +447,7 @@ function Invoke-DscOperation {
     else {
         $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
         $errmsg = 'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.'
-        $trace = @{'Debug' = 'ERROR: ' + $errmsg } | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        'ERROR: ' + $errmsg | Write-DscTrace
         exit 1
     }
 }

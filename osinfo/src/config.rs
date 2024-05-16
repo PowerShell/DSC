@@ -8,7 +8,7 @@ use std::string::ToString;
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OsInfo {
-    /// Returns the unique ID for the OSInfo instance data type.
+    /// Returns the unique ID for the `OSInfo` instance data type.
     #[serde(rename = "$id")]
     pub id: String,
     family: Family,
