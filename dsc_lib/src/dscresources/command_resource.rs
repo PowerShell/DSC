@@ -131,7 +131,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     }
 
     if ExecutionKind::WhatIf == *execution_type {
-        // until resources implement their own what-if, return an error here
+        // TODO: continue execution when resources can implement what-if; only return an error here temporarily
         return Err(DscError::NotImplemented("what-if not yet supported for resources that implement pre-test".to_string()));
     }
 

@@ -319,6 +319,7 @@ impl Configurator {
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 if self.context.execution_type == ExecutionKind::WhatIf {
+                    // TODO: add delete what-if support
                     return Err(DscError::NotSupported("What-if execution not supported for delete".to_string()));
                 }
                 debug!("Resource implements delete and _exist is false");
