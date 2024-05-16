@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::dscresources::resource_manifest::Kind;
+use crate::{configure::config_doc::ExecutionKind, dscresources::resource_manifest::Kind};
 use dscerror::DscError;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -118,7 +118,7 @@ pub trait Invoke {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError>;
+    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError>;
 
     /// Invoke the test operation on the resource.
     ///
@@ -199,7 +199,7 @@ impl Invoke for DscResource {
         }
     }
 
-    fn set(&self, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
+    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -209,7 +209,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test)
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type)
             },
         }
     }

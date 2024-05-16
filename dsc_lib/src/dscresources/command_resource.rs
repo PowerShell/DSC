@@ -4,9 +4,9 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio}};
-use crate::{configure::{config_result::ResourceGetResult, parameters, Configurator}, util::parse_input_to_json};
-use crate::{dscerror::DscError, dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}};
-use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use crate::{configure::{config_doc::ExecutionKind, {config_result::ResourceGetResult, parameters, Configurator}}, util::parse_input_to_json};
+use crate::dscerror::DscError;
+use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
@@ -93,7 +93,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 ///
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
-pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
     // TODO: support import resources
 
     let Some(set) = &resource.set else {
@@ -104,7 +104,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
         info!("No pretest, invoking test {}", &resource.resource_type);
-        let (in_desired_state, actual_state) = match invoke_test(resource, cwd, desired)? {
+        let test_result = invoke_test(resource, cwd, desired)?;
+        if execution_type == &ExecutionKind::WhatIf {
+            return Ok(test_result.into());
+        }
+        let (in_desired_state, actual_state) = match test_result {
             TestResult::Group(group_response) => {
                 let mut result_array: Vec<Value> = Vec::new();
                 for result in group_response.results {
@@ -124,6 +128,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 changed_properties: None,
             }));
         }
+    }
+
+    if ExecutionKind::WhatIf == *execution_type {
+        // TODO: continue execution when resources can implement what-if; only return an error here temporarily
+        return Err(DscError::NotImplemented("what-if not yet supported for resources that implement pre-test".to_string()));
     }
 
     let Some(get) = &resource.get else {
