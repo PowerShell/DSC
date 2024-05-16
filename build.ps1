@@ -45,6 +45,8 @@ $filesForWindowsPackage = @(
 $filesForLinuxPackage = @(
     'dsc',
     'assertion.dsc.resource.json',
+    'apt.dsc.resource.json',
+    'apt.dsc.resource.sh',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
@@ -62,6 +64,12 @@ $filesForMacPackage = @(
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset'
+)
+
+# the list of files other than the binaries which need to be executable
+$filesToBeExecutable = @(
+    'apt.dsc.resource.sh',
+    'brew.dsc.resource.sh'
 )
 
 function Find-LinkExe {
@@ -162,6 +170,7 @@ if (!$SkipBuild) {
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
 
     $macOS_projects = @("resources/brew")
+    $linux_projects = @("resources/apt")
 
     # projects are in dependency order
     $projects = @(
@@ -190,6 +199,10 @@ if (!$SkipBuild) {
 
     if ($IsMacOS) {
         $projects += $macOS_projects
+    }
+
+    if ($IsLinux) {
+        $projects += $linux_projects
     }
 
     $failed = $false
@@ -254,6 +267,16 @@ if (!$SkipBuild) {
             }
 
             Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+
+            # be sure that the files that should be executable are executable
+            if ($IsLinux -or $IsMacOS) {
+                foreach ($exeFile in $filesToBeExecutable) {
+                    $exePath = "$target/$exeFile"
+                    if (test-path $exePath) {
+                        chmod +x $exePath
+                    }
+                }
+            }
 
         } finally {
             Pop-Location

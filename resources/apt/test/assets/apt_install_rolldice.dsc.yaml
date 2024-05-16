@@ -1,0 +1,19 @@
+# Example to see if PowerShell 7 is installed, install it, or get all installed packages
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: assertions
+  type: Microsoft.DSC/Assertion
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    resources:
+    - name: os_check
+      type: Microsoft/OSInfo
+      properties:
+        family: Linux
+- name: apt_rolldice
+  type: DSC.PackageManagement/Apt
+  properties:
+    packageName: rolldice
+    _exist: true
+  dependsOn:
+  - "[resourceId('Microsoft.DSC/Assertion','assertions')]"

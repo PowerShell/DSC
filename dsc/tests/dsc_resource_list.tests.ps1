@@ -17,7 +17,12 @@ Describe 'Tests for listing resources' {
     }
 
     It 'dsc resource list --tags "<tags>" and --description "<description> work' -TestCases @(
-        @{ tags = 'linux'; description = $null; expectedCount = 1; expectedType = 'Microsoft/OSInfo' }
+        if ($IsLinux) {
+            @{ tags = 'linux'; description = $null; expectedCount = 2; expectedType = @('DSC.PackageManagement/Apt', 'Microsoft/OSInfo') }
+        }
+        else {
+            @{ tags = 'linux'; description = $null; expectedCount = 1; expectedType = 'Microsoft/OSInfo' }
+        }
         @{ tags = $null; description = 'operating system'; expectedCount = 1; expectedType = 'Microsoft/OSInfo' }
         @{ tags = 'linux'; description = 'operating system'; expectedCount = 1; expectedType = 'Microsoft/OSInfo' }
         @{ tags = 'notfound'; description = 'operating system'; expectedCount = 0; expectedType = $null }
