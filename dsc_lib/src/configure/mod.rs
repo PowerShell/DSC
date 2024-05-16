@@ -59,7 +59,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
 
     for (i, instance) in export_result.actual_state.iter().enumerate() {
         let mut r = config_doc::Resource::new();
-        r.resource_type = resource.type_name.clone();
+        r.resource_type.clone_from(&resource.type_name);
         r.name = format!("{}-{i}", r.resource_type);
         let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
         r.properties = escape_property_values(&props)?;
