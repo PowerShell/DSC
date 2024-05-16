@@ -11,9 +11,23 @@ Describe 'PowerShell adapter resource tests' {
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
         $pwshConfigPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
         $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
+
+        if ($IsLinux -or $IsMacOS) {
+            $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+        }
+        else
+        {
+            $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
+            $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
+        }
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
+    }
+
+    BeforeEach {
+        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
+        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath_v5
     }
 
     It 'Get works on config with class-based and script-based resources' -Skip:(!$IsWindows){

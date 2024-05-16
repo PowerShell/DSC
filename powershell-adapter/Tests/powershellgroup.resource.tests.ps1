@@ -9,9 +9,23 @@ Describe 'PowerShell adapter resource tests' {
         }    
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
+
+        if ($IsLinux -or $IsMacOS) {
+            $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+        }
+        else
+        {
+            $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
+            $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
+        }
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
+    }
+
+    BeforeEach {
+        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
+        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath_v5
     }
 
     It 'Discovery includes class-based and script-based resources ' -Skip:(!$IsWindows){
