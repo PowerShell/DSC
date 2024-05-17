@@ -7,10 +7,6 @@ resources:
   type: Microsoft.DSC/PowerShell
   properties:
     resources:
-    - name: Repository Info
-      type: PSTestModule/TestPSRepository
-      properties:
-        Name: TestPSRepository1
     - name: Class-resource Info
       type: TestClassResource/TestClassResource
       properties:
