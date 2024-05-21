@@ -56,7 +56,7 @@ The metadata under this property describes the context of the overall operation:
   `Set`, `Test`, or `Export`.
 - [executionType][03] defines whether DSC actually applied an operation to the configuration or was
   run in `WhatIf` mode. This property is always `Actual` for `Get`, `Test`, and `Export`
-  operations. For `Set` operations, this value is `WhatIf` when DSC is invoked with the `--whatIf`
+  operations. For `Set` operations, this value is `WhatIf` when DSC is invoked with the `--what-if`
   argument.
 - [startDatetime][04] defines the start date and time for the DSC operation as a timestamp
   following the format defined in [RFC3339, section 5.6 (see `date-time`)][05], like

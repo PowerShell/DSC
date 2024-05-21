@@ -70,7 +70,161 @@ changes since the last release, see the [diff on GitHub][unreleased].
     for the `v3.0.0.0-alpha.5` release. Leave the release links under the release section.
 -->
 
+### Added
+
+- Added the [`--what-if` (`-w`)][ur-aa] option to the [dsc config set][cmd-cset] command. When you
+  call `dsc config set` with the `--what-if` option, DSC doesn't actually invoke the resources to
+  enforce the desired state. Instead, it returns the expected output for the command, showing the
+  before and after state for each resource instance.
+
+  The output for the `dsc config set` operation with the `--what-if` operation is the same as an
+  [actual configuration set operation][ur-ab], except that the metadata field
+  [executionType][ur-ac] is set to `WhatIf` instead of `Actual`.
+
+  In this release, the generated output is synthetic, based on the results of the resources' `test`
+  operation. In the future, resources will be able to participate in what-if operations, reporting
+  more specifically how they will change the system. For example, participating resources could
+  indicate whether an actual set operation will require a reboot or whether the current user has
+the correct permissions to manage that resource instance.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#70][#70]
+  - PRs: [#400][#400]
+
+  </details>
+
+- Added support for [importer resources][ur-ad]. These resources resolve external sources to a
+  nested DSC Configuration document. The resolved instances are processed as nested resource
+  instances.
+
+  This required some updates to the schemas, all backwards-compatible:
+
+  - Added a new [resourceKind][ur-ae] named `Import`.
+  - Added the [resolve][ur-af] command to resource manifests.
+  - Added the new [`Resolve`][ur-ag] capability, returned in the output for the
+    [dsc resource list][cmd-rlist] command when DSC discovers an importer resource.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#429][#429]
+  - PRs: [#412][#412]
+
+  </details>
+
+- Added the `Microsoft.DSC/Include` importer resource to resolve instances from an external
+  configuration document. The resolved instances are processed as nested instances for the
+  `Microsoft.DSC/Include` resource instance.
+  
+  You can use this resource to write smaller configuration documents and compose them as needed.
+  For example, you could define a security baseline and a web server configuration separately, then
+  combine them for a given application:
+
+  ```yaml
+  $schema: &schema https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+  resources:
+  # Group of included baseline configurations
+  - name: Baselines
+    type: Microsoft.DSC/Group
+    properties:
+      $schema: *schema
+      resources:
+      - name: Security Baseline
+        type: Microsoft.DSC/Include
+        properties:
+          configurationFile: security_baseline.dsc.yaml
+          parametersFile:    security_baseline.parameters.yaml
+      - name: Web Server Baseline
+        type: Microsoft.DSC/Include
+        properties:
+          configurationFile: web_baseline.dsc.yaml
+          parametersFile:    web_baseline.parameters.yaml
+        dependsOn:
+          - "[resourceId('Microsoft.DSC/Include', 'Security Baseline')]"
+
+  # application configuration instances, all depend on the baselines
+  - name: Application configuration
+    type: MyApp/Settings
+    properties:
+      someSetting: someValue
+    dependsOn:
+      - "[resourceId('Microsoft.DSC/Group', 'Baselines')]"
+  ```
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#429][#429]
+  - PRs: [#412][#412]
+
+  </details>
+
+- Added caching for PowerShell Desired State Configuration (PSDSC) resources when using the
+  `Microsoft.DSC/PowerShell` and `Microsoft.Windows/PowerShell` adapters. The adapters use the
+  cache to speed up resource discovery. The performance improvement reduced the resource list time
+  under tests from eight seconds to two seconds, and reduced invocation operation times by half.
+
+  The adapters cache the resources in the following locations, depending on your platform:
+
+  |            Adapter             | Platform |                      Path                       |
+  | :----------------------------: | :------: | :---------------------------------------------- |
+  |   `Microsoft.DSC/PowerShell`   |  Linux   | `$HOME/.dsc/PSAdapterCache.json`                |
+  |   `Microsoft.DSC/PowerShell`   |  macOS   | `$HOME/.dsc/PSAdapterCache.json`                |
+  |   `Microsoft.DSC/PowerShell`   | Windows  | `%LOCALAPPDATA%\dsc\PSAdapterCache.json`        |
+  | `Microsoft.Windows/PowerShell` | Windows  | `%LOCALAPPDATA%\dsc\WindowsPSAdapterCache.json` |
+
+  The adapters check whether the cache is stale on each run and refresh it if:
+
+  - The `PSModulePath` environmental variable is updated.
+  - Any module is added or removed from the `PSModulePath`.
+  - Any related files in a cached PSDSC resource module has been updated since the cache was
+    written. The adapter watches the `LastWriteTime` of module files with the following extensions:
+    `.ps1`, `.psd1`, `.psm1`, and `.mof`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#371][#371]
+  - PRs: [#432][#432]
+
+  </details>
+
+- Added the `DSC.PackageManagement/Apt` resource for managing software on systems that use the
+  advanced package tool (APT). In this release, you can use the resource to:
+
+  - Install the latest version of a package.
+  - Uninstall a package.
+  - Get the current state of a package.
+  - Export every installed package as a DSC resource instance.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#434][#434]
+
+  </details>
+
+
+### Fixed
+
+- Fixed the JSON Schema for [exit codes][ur-fa] in the resource manifest to support negative
+  integers. Prior to this release, the DSC engine supported negative exit codes but the JSON Schema
+  forbid them.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#407][#407]
+  - PRs: [#410][#410]
+
+  </details>
+
 <!-- Unreleased change links -->
+[ur-aa]: ./docs/reference/cli/config/set.md#-w---what-if
+[ur-ab]: ./docs/reference/schemas/outputs/config/set.md
+[ur-ac]: ./docs/reference/schemas/metadata/Microsoft.DSC/properties.md#executiontype
+[ur-ad]: ./docs/reference/schemas/definitions/resourceKind.md#importer-resources
+[ur-ae]: ./docs/reference/schemas/definitions/resourceKind.md
+[ur-af]: ./docs/reference/schemas/resource/manifest/resolve.md
+[ur-ag]: ./docs/reference/schemas/outputs/resource/list.md#capability-resolve
+[ur-fa]: ./docs/reference/schemas/resource/manifest/root.md#exitcodes
 
 ## [v3.0.0-preview.7][release-v3.0.0-preview.7] - 2024-04-22
 
@@ -1318,6 +1472,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#362]: https://github.com/PowerShell/DSC/issues/362
 [#364]: https://github.com/PowerShell/DSC/issues/364
 [#368]: https://github.com/PowerShell/DSC/issues/368
+[#371]: https://github.com/PowerShell/DSC/issues/371
 [#373]: https://github.com/PowerShell/DSC/issues/373
 [#375]: https://github.com/PowerShell/DSC/issues/375
 [#376]: https://github.com/PowerShell/DSC/issues/376
@@ -1327,11 +1482,19 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#385]: https://github.com/PowerShell/DSC/issues/385
 [#388]: https://github.com/PowerShell/DSC/issues/388
 [#397]: https://github.com/PowerShell/DSC/issues/397
+[#400]: https://github.com/PowerShell/DSC/issues/400
 [#401]: https://github.com/PowerShell/DSC/issues/401
 [#405]: https://github.com/PowerShell/DSC/issues/405
+[#407]: https://github.com/PowerShell/DSC/issues/407
+[#410]: https://github.com/PowerShell/DSC/issues/410
+[#412]: https://github.com/PowerShell/DSC/issues/412
+[#429]: https://github.com/PowerShell/DSC/issues/429
+[#432]: https://github.com/PowerShell/DSC/issues/432
+[#434]: https://github.com/PowerShell/DSC/issues/434
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57
+[#70]:  https://github.com/PowerShell/DSC/issues/70
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#75]:  https://github.com/PowerShell/DSC/issues/75
 [#89]:  https://github.com/PowerShell/DSC/issues/89
