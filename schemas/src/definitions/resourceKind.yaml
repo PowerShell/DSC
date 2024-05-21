@@ -12,6 +12,7 @@ enum:
   - Resource
   - Adapter
   - Group
+  - Import
 
 # VS Code only
 
@@ -46,3 +47,9 @@ markdownEnumDescriptions:
 
       Indicates that the manifest is for a group resource that processes an array of nested
       resource instances.
+  - | # Import
+      <!-- force a line break -->
+
+      Indicates that the manifest is for an import resource that resolves an external source to DSC
+      resource instances. The resolved instances are processed as nested instances for the import
+      resource.
