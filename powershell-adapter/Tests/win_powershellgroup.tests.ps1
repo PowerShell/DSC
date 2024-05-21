@@ -11,14 +11,18 @@ Describe 'PowerShell adapter resource tests' {
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
         $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
-        $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
+        if ($isWindows) {
+            $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
+        }
     }
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
     }
 
     BeforeEach {
-        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath_v5
+        if ($isWindows) {
+            Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath_v5
+        }
     }
 
     It 'Windows PowerShell adapter supports File resource' -Skip:(!$IsWindows){
