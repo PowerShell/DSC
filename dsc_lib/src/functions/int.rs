@@ -68,6 +68,13 @@ mod tests {
     }
 
     #[test]
+    fn float() {
+        let mut parser = Statement::new().unwrap();
+        let err = parser.parse_and_execute("[int(1.2)]", &Context::new()).unwrap_err();
+        assert!(matches!(err, DscError::IntegerConversion(_)));
+    }
+
+    #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[int(int('-1'))]", &Context::new()).unwrap();

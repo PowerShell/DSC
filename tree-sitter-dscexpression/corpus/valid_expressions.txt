@@ -101,3 +101,29 @@ Nested dot-notation
                 (memberName)))))
         (memberAccess
           (memberName))))
+
+=====
+Float input
+=====
+[myFunction(1234.5678)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+              (number)))))
+
+=====
+Quotes float input
+=====
+[myFunction('1234.5678')]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+              (string)))))

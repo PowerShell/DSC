@@ -29,7 +29,7 @@ module.exports = grammar({
     _quotedString: $ => seq('\'', $.string, '\''),
     // ARM strings do not allow to contain single-quote characters
     string: $ => /[^']*/,
-    number: $ => /-?\d+/,
+    number: $ => /[+-]?([0-9]*[.])?[0-9]+/,
     boolean: $ => choice('true', 'false'),
 
     memberAccess: $ => seq('.', $.memberName, repeat(seq('.', $.memberName))),

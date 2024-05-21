@@ -110,3 +110,17 @@ Incomplete expression
         (function
           (functionName)))
       (MISSING "]"))
+
+=====
+Invalid float argument
+=====
+[myFunction(a.1)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR
+            (functionName)
+            (memberName)))))
