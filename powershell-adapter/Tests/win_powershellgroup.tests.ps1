@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'PowerShell adapter resource tests' {
+Describe 'WindowsPowerShell adapter resource tests' {
 
     BeforeAll {
         if ($isWindows) {
