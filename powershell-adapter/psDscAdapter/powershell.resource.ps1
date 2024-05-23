@@ -15,7 +15,13 @@ if ('Validate' -ne $Operation) {
     $host.ui.WriteErrorLine($trace)
 
     # load private functions of psDscAdapter stub module
-    $psDscAdapter = Import-Module "$PSScriptRoot/psDscAdapter.psd1" -Force -PassThru
+    if ($PSVersionTable.PSVersion.Major -le 5) {
+        $psDscAdapter = Import-Module "$PSScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
+    }
+    else {
+        $psDscAdapter = Import-Module "$PSScriptRoot/psDscAdapter.psd1" -Force -PassThru
+    }
+    
 
     # initialize OUTPUT as array
     $result = [System.Collections.Generic.List[Object]]::new()

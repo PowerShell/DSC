@@ -4,13 +4,9 @@
 Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
-        if ($isWindows) {
-          winrm quickconfig -quiet -force
-        }  
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
         $pwshConfigPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
-        $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
 
         if ($IsLinux -or $IsMacOS) {
             $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
@@ -18,7 +14,6 @@ Describe 'PowerShell adapter resource tests' {
         else
         {
             $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
-            $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
         }
     }
     AfterAll {
@@ -27,47 +22,32 @@ Describe 'PowerShell adapter resource tests' {
 
     BeforeEach {
         Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
-        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath_v5
     }
 
-    It 'Get works on config with class-based and script-based resources' -Skip:(!$IsWindows){
+    It 'Get works on config with class-based resources' -Skip:(!$IsWindows){
 
         $r = Get-Content -Raw $pwshConfigPath | dsc config get
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results[0].result.actualState.result[0].properties.PublishLocation | Should -BeExactly 'https://www.powershellgallery.com/api/v2/package/'
-        $res.results[0].result.actualState.result[1].properties.Prop1 | Should -BeExactly 'ValueForProp1'
-        $res.results[0].result.actualState.result[1].properties.EnumProp | Should -BeExactly 'Expected'
-    }
-
-    It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
-
-      $testFile = "$testdrive\test.txt"
-      'test' | Set-Content -Path $testFile -Force
-      $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get
-      $LASTEXITCODE | Should -Be 0
-      $res = $r | ConvertFrom-Json
-      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
+        $res.results[0].result.actualState.result[0].properties.Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.results[0].result.actualState.result[0].properties.EnumProp | Should -BeExactly 'Expected'
     }
     
-    It 'Test works on config with class-based and script-based resources' -Skip:(!$IsWindows){
+    It 'Test works on config with class-based resources' -Skip:(!$IsWindows){
 
         $r = Get-Content -Raw $pwshConfigPath | dsc config test
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState.result[0] | Should -Not -BeNull
-        $res.results[0].result.actualState.result[1] | Should -Not -BeNull
     }
 
-    It 'Set works on config with class-based and script-based resources' -Skip:(!$IsWindows){
+    It 'Set works on config with class-based resources' -Skip:(!$IsWindows){
 
         $r = Get-Content -Raw $pwshConfigPath | dsc config set
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results.result.afterState.result[0].type | Should -Be "PSTestModule/TestPSRepository"
-        $res.results.result.afterState.result[1].type | Should -Be "TestClassResource/TestClassResource"
+        $res.results.result.afterState.result[0].type | Should -Be "TestClassResource/TestClassResource"
     }
-    
 
     It 'Export works on config with class-based resources' -Skip:(!$IsWindows){
 
