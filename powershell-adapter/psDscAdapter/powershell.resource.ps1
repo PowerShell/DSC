@@ -28,7 +28,9 @@ if ('Validate' -ne $Operation) {
 }
 
 if ($jsonInput) {
-    $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
+    if ($jsonInput -ne '@{}') {
+        $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
+    }
     $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
     if ($new_psmodulepath)
     {
@@ -39,10 +41,11 @@ if ($jsonInput) {
 # process the operation requested to the script
 switch ($Operation) {
     'List' {
-        $dscResourceCache = Invoke-DscCacheRefresh
+        Invoke-DscCacheRefresh
+        #$dscResourceCache = Invoke-DscCacheRefresh
 
         # cache was refreshed on script load
-        foreach ($dscResource in $dscResourceCache) {
+        <#foreach ($dscResource in $dscResourceCache) {
         
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
             $DscResourceInfo = $dscResource.DscResourceInfo
@@ -92,7 +95,7 @@ switch ($Operation) {
                 requireAdapter = $requireAdapter
                 description    = $description
             } | ConvertTo-Json -Compress
-        }
+        }#>
     }
     { @('Get','Set','Test','Export') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )

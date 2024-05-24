@@ -20,6 +20,118 @@ function Import-PSDSCModule {
     $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
 }
 
+function Get-DSCResourceModules
+{
+    $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
+    $dscModulePsd1List = [System.Collections.Generic.HashSet[System.String]]::new()
+    foreach ($folder in $listPSModuleFolders)
+    {
+        if (!(Test-Path $folder))
+        {
+            continue
+        }
+
+        foreach($moduleFolder in Get-ChildItem $folder -Directory)
+        {
+            $addModule = $false
+            foreach($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2)
+            {
+                $containsDSCResource = select-string -LiteralPath $psd1 -pattern '^[^#]*\bDscResourcesToExport\b.*'
+                if($null -ne $containsDSCResource)
+                {
+                    $dscModulePsd1List.Add($psd1) | Out-Null
+                    break
+                }
+            }
+        }
+    }
+    
+    return $dscModulePsd1List
+}
+
+function FindAndParseResourceDefinitions
+{
+    [CmdletBinding(HelpUri = '')]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$filePath
+    )
+
+    if (-not (Test-Path $filePath))
+    {
+        return
+    }
+
+    if (([System.IO.Path]::GetExtension($filePath) -ne ".psm1") -and ([System.IO.Path]::GetExtension($filePath) -ne ".ps1"))
+    {
+        return
+    }
+
+    $filePath
+        
+    [System.Management.Automation.Language.Token[]] $tokens = $null
+    [System.Management.Automation.Language.ParseError[]] $errors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($filePath, [ref]$tokens, [ref]$errors)
+    $resourceDefinitions = $ast.FindAll(
+        {
+            $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
+            if ($typeAst)
+            {
+                foreach($a in $typeAst.Attributes)
+                {
+                    if ($a.TypeName.Name -eq 'DscResource')
+                    {
+                        return $true;
+                    }
+                }
+            }
+
+            return $false;
+        },
+        $false);
+
+    $resourceDefinitions.Name
+}
+
+function LoadPowerShellClassResourcesFromModule
+{
+    [CmdletBinding(HelpUri = '')]
+    param(
+        [Parameter(Mandatory = $true)]
+        [PSModuleInfo]$moduleInfo
+    )
+
+    if ($moduleInfo.RootModule)
+    {
+        $scriptPath = Join-Path $moduleInfo.ModuleBase  $moduleInfo.RootModule
+    }
+    else
+    {
+        $scriptPath = $moduleInfo.Path;
+    }
+
+    FindAndParseResourceDefinitions $scriptPath
+
+    if ($moduleInfo.NestedModules)
+    {
+        foreach ($nestedModule in $moduleInfo.NestedModules)
+        {
+            LoadPowerShellClassResourcesFromModule $nestedModule
+        }
+    }
+}
+
+function Invoke-DscCacheRefresh {
+
+    $dscResourceModulePsd1s = Get-DSCResourceModules
+    if($null -ne $dscResourceModulePsd1s) {
+        $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s)
+        foreach ($mod in $modules)
+        {
+            LoadPowerShellClassResourcesFromModule -moduleInfo $mod
+        }
+    }
+}
 <# public function Invoke-DscCacheRefresh
 .SYNOPSIS
     This function caches the results of the Get-DscResource call to optimize performance.
@@ -32,7 +144,7 @@ function Import-PSDSCModule {
 .EXAMPLE
     Invoke-DscCacheRefresh -Module "PSDesiredStateConfiguration"
 #>
-function Invoke-DscCacheRefresh {
+function Invoke-DscCacheRefresh_ORIGINAL {
     [CmdletBinding(HelpUri = '')]
     param(
         [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
