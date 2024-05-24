@@ -78,13 +78,14 @@ Describe 'PowerShell adapter resource tests' {
         Rename-Item -Path "$PSScriptRoot/TestClassResource" -NewName "_TestClassResource"
 
         try {
+            $psmp = "`$env:PSModulePath"+[System.IO.Path]::PathSeparator+$TestDrive
             $yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
               properties:
-                psmodulepath: `$env:PSModulePath;$TestDrive
+                psmodulepath: $psmp
                 resources:
                 - name: Class-resource Info
                   type: TestClassResource/TestClassResource
