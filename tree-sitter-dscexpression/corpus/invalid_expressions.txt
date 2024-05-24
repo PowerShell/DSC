@@ -122,8 +122,9 @@ Invalid float argument
         (function
           (functionName)
           (ERROR
-            (functionName)
-            (memberName)))))
+            (functionName))
+          (arguments
+            (number)))))
 
 =====
 Plus-sign number argument
@@ -136,5 +137,35 @@ Plus-sign number argument
         (function
           (functionName)
           (ERROR
-            (UNEXPECTED '+')
-            (memberName)))))
+            (UNEXPECTED '+'))
+          (arguments
+            (number)))))
+
+=====
+Float input
+=====
+[myFunction(1234.5678)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR
+            (number))
+          (arguments
+              (number)))))
+
+=====
+Float input starting with decimal
+=====
+[myFunction(.1)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR)
+          (arguments
+              (number)))))

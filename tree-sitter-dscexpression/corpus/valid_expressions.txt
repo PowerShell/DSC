@@ -103,19 +103,6 @@ Nested dot-notation
           (memberName))))
 
 =====
-Float input
-=====
-[myFunction(1234.5678)]
----
-
-    (statement
-      (expression
-        (function
-          (functionName)
-          (arguments
-              (number)))))
-
-=====
 Quotes float input
 =====
 [myFunction('1234.5678')]
@@ -127,16 +114,3 @@ Quotes float input
           (functionName)
           (arguments
               (string)))))
-
-=====
-Float input starting with decimal
-=====
-[myFunction(.1)]
----
-
-    (statement
-      (expression
-        (function
-          (functionName)
-          (arguments
-              (number)))))

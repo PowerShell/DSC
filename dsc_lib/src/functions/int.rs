@@ -70,15 +70,15 @@ mod tests {
     #[test]
     fn float() {
         let mut parser = Statement::new().unwrap();
-        let err = parser.parse_and_execute("[int(1.2)]", &Context::new()).unwrap_err();
-        assert!(matches!(err, DscError::IntegerConversion(_)));
+        let err = parser.parse_and_execute("[int(1.0)]", &Context::new()).unwrap_err();
+        assert!(matches!(err, DscError::Parser(_)));
     }
 
     #[test]
     fn incomplete_float() {
         let mut parser = Statement::new().unwrap();
         let err = parser.parse_and_execute("[int(.2)]", &Context::new()).unwrap_err();
-        assert!(matches!(err, DscError::IntegerConversion(_)));
+        assert!(matches!(err, DscError::Parser(_)));
     }
 
     #[test]
