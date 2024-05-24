@@ -15,9 +15,19 @@ function Write-DscTrace {
     $host.ui.WriteErrorLine($trace)
 }
 
-function Import-PSDSCModule {
+# if the version of PowerShell is greater than 5, import the PSDesiredStateConfiguration module
+# this is necessary because the module is not included in the PowerShell 7.0+ releases;
+# In Windows PowerShell, we should always use version 1.1 that ships in Windows.
+if ($PSVersionTable.PSVersion.Major -gt 5) {
     $m = Get-Module PSDesiredStateConfiguration -ListAvailable | Sort-Object -Descending | Select-Object -First 1
     $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
+}
+else {
+    $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
+    $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru -ErrorAction stop -ErrorVariable $importModuleError
+    if (-not [string]::IsNullOrEmpty($importModuleError)) {
+        'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace
+    }
 }
 
 <# public function Invoke-DscCacheRefresh
@@ -113,8 +123,31 @@ function Invoke-DscCacheRefresh {
         # create a list object to store cache of Get-DscResource
         [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
 
-        Import-PSDSCModule
-        $DscResources = Get-DscResource
+        # improve by performance by having the option to only get details for named modules
+        # workaround for File and SignatureValidation resources that ship in Windows
+        if ($null -ne $module -and 'PSDesiredStateConfiguration' -ne $module) {
+            if ($module.gettype().name -eq 'string') {
+                $module = @($module)
+            }
+            $DscResources = [System.Collections.Generic.List[Object]]::new()
+            $Modules = [System.Collections.Generic.List[Object]]::new()
+            foreach ($m in $module) {
+                $DscResources += Get-DscResource -Module $m
+                $Modules += Get-Module -Name $m -ListAvailable
+            }
+        }
+        elseif ('PSDesiredStateConfiguration' -eq $module -and $PSVersionTable.PSVersion.Major -le 5 ) {
+            # the resources in Windows should only load in Windows PowerShell
+            # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
+            $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" ) }
+        }
+        else {
+            # if no module is specified, get all resources
+            $DscResources = Get-DscResource
+            $Modules = Get-Module -ListAvailable
+        }
+
+        $psdscVersion = Get-Module PSDesiredStateConfiguration | Sort-Object -descending | Select-Object -First 1 | ForEach-Object Version
 
         foreach ($dscResource in $DscResources) {
             # resources that shipped in Windows should only be used with Windows PowerShell
@@ -122,7 +155,8 @@ function Invoke-DscCacheRefresh {
                 continue
             }
 
-            if ( $dscResource.ImplementationDetail ) {
+            # we can't run this check in PSDesiredStateConfiguration 1.1 because the property doesn't exist
+            if ( $psdscVersion -ge '2.0.7' ) {
                 # only support known dscResourceType
                 if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
                     'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail | Write-DscTrace
@@ -130,6 +164,13 @@ function Invoke-DscCacheRefresh {
                 }
             }
 
+            # workaround: if the resource does not have a module name, get it from parent path
+            # workaround: modulename is not settable, so clone the object without being read-only
+            # workaround: we have to special case File and SignatureValidation resources that ship in Windows
+            $binaryBuiltInModulePaths = @(
+                "$env:windir\system32\Configuration\Schema\MSFT_FileDirectoryConfiguration"
+                "$env:windir\system32\Configuration\BaseRegistration"
+            )
             $DscResourceInfo = [DscResourceInfo]::new()
             $dscResource.PSObject.Properties | ForEach-Object -Process {
                 if ($null -ne $_.Value) {
@@ -140,7 +181,30 @@ function Invoke-DscCacheRefresh {
                 }
             }
 
-            $moduleName = $dscResource.ModuleName
+            if ($dscResource.ModuleName) {
+                $moduleName = $dscResource.ModuleName
+            }
+            elseif ($binaryBuiltInModulePaths -contains $dscResource.ParentPath) {
+                $moduleName = 'PSDesiredStateConfiguration'
+                $DscResourceInfo.Module = 'PSDesiredStateConfiguration'
+                $DscResourceInfo.ModuleName = 'PSDesiredStateConfiguration'
+                $DscResourceInfo.CompanyName = 'Microsoft Corporation'
+                $DscResourceInfo.Version = '1.0.0'
+                if ($PSVersionTable.PSVersion.Major -le 5 -and $DscResourceInfo.ImplementedAs -eq 'Binary') {
+                    $DscResourceInfo.ImplementationDetail = 'Binary'
+                }
+            }
+            elseif ($binaryBuiltInModulePaths -notcontains $dscResource.ParentPath -and $null -ne $dscResource.ParentPath) {
+                # workaround: populate module name from parent path that is three levels up
+                $moduleName = Split-Path $dscResource.ParentPath | Split-Path | Split-Path -Leaf
+                $DscResourceInfo.Module = $moduleName
+                $DscResourceInfo.ModuleName = $moduleName
+                # workaround: populate module version from psmoduleinfo if available
+                if ($moduleInfo = $Modules | Where-Object { $_.Name -eq $moduleName }) {
+                    $moduleInfo = $moduleInfo | Sort-Object -Property Version -Descending | Select-Object -First 1
+                    $DscResourceInfo.Version = $moduleInfo.Version.ToString()
+                }
+            }
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
@@ -185,7 +249,13 @@ function Get-DscResourceObject {
         'WARNING: The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace
     }
 
-    $adapterName = 'Microsoft.DSC/PowerShell'
+    # match adapter to version of powershell
+    if ($PSVersionTable.PSVersion.Major -le 5) {
+        $adapterName = 'Microsoft.Windows/WindowsPowerShell'
+    }
+    else {
+        $adapterName = 'Microsoft.DSC/PowerShell'
+    }
 
     if ($null -ne $inputObj.metadata -and $null -ne $inputObj.metadata.'Microsoft.DSC' -and $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
         # change the type from pscustomobject to dscResourceObject
@@ -245,9 +315,54 @@ function Invoke-DscOperation {
             if ($_.TypeNameOfValue -EQ 'System.String') { $addToActualState.$($_.Name) = $DesiredState.($_.Name) }
         }
 
+        'DSC resource implementation: ' + [dscResourceType]$cachedDscResourceInfo.ImplementationDetail | Write-DscTrace
+
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
         switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
-  
+            'ScriptBased' {
+
+                # For Linux/MacOS, only class based resources are supported and are called directly.
+                if ($IsLinux) {
+                    'ERROR: Script based resources are only supported on Windows.' | Write-DscTrace
+                    exit 1
+                }
+
+                # imports the .psm1 file for the DSC resource as a PowerShell module and stores the list of parameters
+                Import-Module -Scope Local -Name $cachedDscResourceInfo.path -Force -ErrorAction stop
+                $validParams = (Get-Command -Module $cachedDscResourceInfo.ResourceType -Name 'Get-TargetResource').Parameters.Keys
+
+                if ($Operation -eq 'Get') {
+                    # prune any properties that are not valid parameters of Get-TargetResource
+                    $DesiredState.properties.psobject.properties | ForEach-Object -Process {
+                        if ($validParams -notcontains $_.Name) {
+                            $DesiredState.properties.psobject.properties.Remove($_.Name)
+                        }
+                    }
+                }
+
+                # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
+                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+
+                # using the cmdlet the appropriate dsc module, and handle errors
+                try {
+                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+
+                    if ($invokeResult.GetType().Name -eq 'Hashtable') {
+                        $invokeResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
+                    }
+                    else {
+                        # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
+                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
+                    }
+                    
+                    # set the properties of the OUTPUT object from the result of Get-TargetResource
+                    $addToActualState.properties = $getDscResult
+                }
+                catch {
+                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
+                    exit 1
+                }
+            }
             'ClassBased' {
                 try {
                     # load powershell class from external module
@@ -287,8 +402,42 @@ function Invoke-DscOperation {
                     exit 1
                 }
             }
+            'Binary' {
+                if ($PSVersionTable.PSVersion.Major -gt 5) {
+                    'To use a binary resource such as File, Log, or SignatureValidation, use the Microsoft.Windows/WindowsPowerShell adapter.' | Write-DscTrace
+                    exit 1
+                }
+
+                if (-not (($cachedDscResourceInfo.ImplementedAs -eq 'Binary') -and ('File', 'Log', 'SignatureValidation' -contains $cachedDscResourceInfo.Name))) {
+                    'Only File, Log, and SignatureValidation are supported as Binary resources.' | Write-DscTrace
+                    exit 1
+                }
+
+                # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
+                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+
+                # using the cmdlet from PSDesiredStateConfiguration module in Windows
+                try {
+                    $getResult = $PSDesiredStateConfiguration.invoke({ param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1' } -Property $Property -ErrorAction Stop }, $cachedDscResourceInfo.Name, $property )
+
+                    if ($getResult.GetType().Name -eq 'Hashtable') {
+                        $getResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    }
+                    else {
+                        # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
+                        $getResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    }
+                    
+                    # set the properties of the OUTPUT object from the result of Get-TargetResource
+                    $addToActualState.properties = $getDscResult
+                }
+                catch {
+                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
+                    exit 1
+                }
+            }
             Default {
-                'Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace
+                'Can not find implementation of type: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace
                 exit 1
             }
         }

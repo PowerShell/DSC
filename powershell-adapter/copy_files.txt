@@ -1,3 +1,5 @@
 ./psDscAdapter/powershell.resource.ps1
 ./psDscAdapter/psDscAdapter.psd1
 ./psDscAdapter/psDscAdapter.psm1
+./psDscAdapter/win_psDscAdapter.psd1
+./psDscAdapter/win_psDscAdapter.psm1
