@@ -73,6 +73,11 @@ function FindAndParseResourceDefinitions
     [System.Management.Automation.Language.Token[]] $tokens = $null
     [System.Management.Automation.Language.ParseError[]] $errors = $null
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($filePath, [ref]$tokens, [ref]$errors)
+    foreach($e in $errors)
+    {
+        $e | Out-String | Write-DscTrace -Operation Error
+    }
+
     $resourceDefinitions = $ast.FindAll(
         {
             $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]

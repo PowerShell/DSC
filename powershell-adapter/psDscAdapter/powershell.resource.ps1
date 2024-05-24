@@ -9,6 +9,24 @@ param(
     [string]$jsonInput = '@{}'
 )
 
+function Write-DscTrace {
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Error', 'Warn', 'Info', 'Debug', 'Trace')]
+        [string]$Operation = 'Debug',
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Message
+    )
+
+    $trace = @{$Operation = $Message } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
+}
+
+# Adding some debug info to STDERR
+'PSVersion=' + $PSVersionTable.PSVersion.ToString() | Write-DscTrace
+'PSPath=' + $PSHome | Write-DscTrace
+'PSModulePath=' + $env:PSModulePath | Write-DscTrace
+
 if ('Validate' -ne $Operation) {
     # write $jsonInput to STDERR for debugging
     $trace = @{'Debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
@@ -21,7 +39,6 @@ if ('Validate' -ne $Operation) {
     else {
         $psDscAdapter = Import-Module "$PSScriptRoot/psDscAdapter.psd1" -Force -PassThru
     }
-    
 
     # initialize OUTPUT as array
     $result = [System.Collections.Generic.List[Object]]::new()
@@ -50,6 +67,7 @@ switch ($Operation) {
             $DscResourceInfo = $dscResource.DscResourceInfo
 
             # Provide a way for existing resources to specify their capabilities, or default to Get, Set, Test
+            # TODO: for perf, it is better to take capabilities from psd1 in Invoke-DscCacheRefresh, not by extra call to Get-Module
             if ($DscResourceInfo.ModuleName) {
                 $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
                 if ($module.PrivateData.PSData.DscCapabilities) {
@@ -161,14 +179,3 @@ class resourceOutput {
     [string] $requireAdapter
     [string] $description
 }
-
-# Adding some debug info to STDERR
-$trace = @{'Debug' = 'PSVersion=' + $PSVersionTable.PSVersion.ToString() } | ConvertTo-Json -Compress
-$host.ui.WriteErrorLine($trace)
-$trace = @{'Debug' = 'PSPath=' + $PSHome } | ConvertTo-Json -Compress
-$host.ui.WriteErrorLine($trace)
-$m = Get-Command 'Get-DscResource'
-$trace = @{'Debug' = 'Module=' + $m.Source.ToString() } | ConvertTo-Json -Compress
-$host.ui.WriteErrorLine($trace)
-$trace = @{'Debug' = 'PSModulePath=' + $env:PSModulePath } | ConvertTo-Json -Compress
-$host.ui.WriteErrorLine($trace)

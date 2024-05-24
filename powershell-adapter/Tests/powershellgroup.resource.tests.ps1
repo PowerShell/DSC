@@ -23,7 +23,7 @@ Describe 'PowerShell adapter resource tests' {
         Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
     }
 
-    It 'Discovery includes class-based resources' -Skip:(!$IsWindows){
+    It 'Discovery includes class-based resources' {
 
         $r = dsc resource list * -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
@@ -31,7 +31,7 @@ Describe 'PowerShell adapter resource tests' {
         ($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}).Count | Should -Be 1
     }
 
-    It 'Get works on class-based resource' -Skip:(!$IsWindows){
+    It 'Get works on class-based resource' {
 
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
@@ -39,7 +39,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.actualState.result.properties.Prop1 | Should -BeExactly 'ValueForProp1'
     }
 
-    It 'Get uses enum names on class-based resource' -Skip:(!$IsWindows){
+    It 'Get uses enum names on class-based resource' {
 
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
@@ -47,7 +47,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.actualState.result.properties.EnumProp | Should -BeExactly 'Expected'
     }
 
-    It 'Test works on class-based resource' -Skip:(!$IsWindows){
+    It 'Test works on class-based resource' {
 
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
@@ -55,7 +55,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.actualState.result.properties.InDesiredState | Should -Be $True
     }
 
-    It 'Set works on class-based resource' -Skip:(!$IsWindows){
+    It 'Set works on class-based resource' {
 
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
@@ -63,7 +63,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.afterState.result | Should -Not -BeNull
     }
 
-    It 'Export works on PS class-based resource' -Skip:(!$IsWindows){
+    It 'Export works on PS class-based resource' {
 
         $r = dsc resource export -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
@@ -73,7 +73,7 @@ Describe 'PowerShell adapter resource tests' {
         $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
     }
 
-    It 'Get --all works on PS class-based resource' -Skip:(!$IsWindows){
+    It 'Get --all works on PS class-based resource' {
 
         $r = dsc resource get --all -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
