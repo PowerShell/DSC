@@ -23,13 +23,12 @@ Describe 'PowerShell adapter resource tests' {
         Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
     }
 
-    It 'Discovery includes class-based and script-based resources ' -Skip:(!$IsWindows){
+    It 'Discovery includes class-based resources' -Skip:(!$IsWindows){
 
         $r = dsc resource list * -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
         ($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}).Count | Should -Be 1
-        ($resources | ? {$_.Type -eq 'PSTestModule/TestPSRepository'}).Count | Should -Be 1
     }
 
     It 'Get works on class-based resource' -Skip:(!$IsWindows){

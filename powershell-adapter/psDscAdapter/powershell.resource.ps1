@@ -41,11 +41,10 @@ if ($jsonInput) {
 # process the operation requested to the script
 switch ($Operation) {
     'List' {
-        Invoke-DscCacheRefresh
-        #$dscResourceCache = Invoke-DscCacheRefresh
+        $dscResourceCache = Invoke-DscCacheRefresh
 
         # cache was refreshed on script load
-        <#foreach ($dscResource in $dscResourceCache) {
+        foreach ($dscResource in $dscResourceCache) {
         
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
             $DscResourceInfo = $dscResource.DscResourceInfo
@@ -85,7 +84,7 @@ switch ($Operation) {
             [resourceOutput]@{
                 type           = $dscResource.Type
                 kind           = 'Resource'
-                version        = $DscResourceInfo.version.ToString()
+                version        = [string]$DscResourceInfo.version
                 capabilities   = $capabilities
                 path           = $DscResourceInfo.Path
                 directory      = $DscResourceInfo.ParentPath
@@ -95,7 +94,7 @@ switch ($Operation) {
                 requireAdapter = $requireAdapter
                 description    = $description
             } | ConvertTo-Json -Compress
-        }#>
+        }
     }
     { @('Get','Set','Test','Export') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
