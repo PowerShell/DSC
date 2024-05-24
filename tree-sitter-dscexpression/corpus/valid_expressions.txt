@@ -127,3 +127,16 @@ Quotes float input
           (functionName)
           (arguments
               (string)))))
+
+=====
+Float input starting with decimal
+=====
+[myFunction(.1)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+              (number)))))

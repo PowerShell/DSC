@@ -124,3 +124,17 @@ Invalid float argument
           (ERROR
             (functionName)
             (memberName)))))
+
+=====
+Plus-sign number argument
+=====
+[myFunction(+1)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR
+            (UNEXPECTED '+')
+            (memberName)))))
