@@ -121,7 +121,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             }
         };
 
-        if in_desired_state {
+        if in_desired_state && execution_type == &ExecutionKind::Actual {
             return Ok(SetResult::Resource(ResourceSetResponse{
                 before_state: serde_json::from_str(desired)?,
                 after_state: actual_state,
