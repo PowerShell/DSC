@@ -10,6 +10,7 @@ pub enum Schemas {
     Exist,
     Sleep,
     Trace,
+    WhatIf,
 }
 
 #[derive(Debug, Parser)]
@@ -54,4 +55,10 @@ pub enum SubCommand {
 
     #[clap(name = "trace", about = "The trace level")]
     Trace,
+
+    #[clap(name = "what-if", about = "Check if it is a what-if operation")]
+    WhatIf {
+        #[clap(name = "what-if", short, long, help = "The input to the what-if command as JSON")]
+        what_if: bool,
+    }
 }

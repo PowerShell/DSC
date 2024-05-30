@@ -67,4 +67,40 @@ Describe 'whatif tests' {
         $result | Should -Match 'ERROR.*?Not implemented.*?what-if'
         $LASTEXITCODE | Should -Be 2
     }
+
+    It 'actual execution of WhatIf resource' {
+        $config_yaml = @"
+        `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+        resources:
+        - name: WhatIf
+          type: Test/WhatIf
+          properties:
+            executionType: Actual
+"@
+        $result = $config_yaml | dsc config set | ConvertFrom-Json
+        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
+        $result.results.result.afterState.executionType | Should -BeExactly 'Actual'
+        $result.results.result.changedProperties | Should -Be $null
+        $result.hadErrors | Should -BeFalse
+        $result.results.Count | Should -Be 1
+        $LASTEXITCODE | Should -Be 0
+    }
+
+    It 'what-if execution of WhatIf resource' {
+        $config_yaml = @"
+        `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+        resources:
+        - name: WhatIf
+          type: Test/WhatIf
+          properties:
+            executionType: Actual
+"@
+        $result = $config_yaml | dsc config set -w | ConvertFrom-Json
+        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
+        $result.results.result.afterState.executionType | Should -BeExactly 'WhatIf'
+        $result.results.result.changedProperties | Should -BeExactly 'executionType'
+        $result.hadErrors | Should -BeFalse
+        $result.results.Count | Should -Be 1
+        $LASTEXITCODE | Should -Be 0
+    }
 }

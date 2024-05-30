@@ -105,7 +105,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     if !skip_test && set.pre_test != Some(true) {
         info!("No pretest, invoking test {}", &resource.resource_type);
         let test_result = invoke_test(resource, cwd, desired)?;
-        if execution_type == &ExecutionKind::WhatIf {
+        if execution_type == &ExecutionKind::WhatIf && set.handles_what_if != Some(true) {
             return Ok(test_result.into());
         }
         let (in_desired_state, actual_state) = match test_result {
@@ -130,9 +130,8 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         }
     }
 
-    if ExecutionKind::WhatIf == *execution_type {
-        // TODO: continue execution when resources can implement what-if; only return an error here temporarily
-        return Err(DscError::NotImplemented("what-if not yet supported for resources that implement pre-test".to_string()));
+    if ExecutionKind::WhatIf == *execution_type && set.handles_what_if != Some(true) {
+        return Err(DscError::NotImplemented("cannot process what-if execution type, resource does not implement what-if or pre-test".to_string()));
     }
 
     let Some(get) = &resource.get else {
@@ -158,7 +157,16 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_args(&set.args, desired);
+    let mut args = process_args(&set.args, desired);
+    if ExecutionKind::WhatIf == *execution_type {
+        if let Some(mut arguments) = args {
+            arguments.push("--what-if".to_string());
+            args = Some(arguments);
+        }
+        else {
+            args = Some(vec!["--what-if".to_string()]);
+        }
+    }
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);

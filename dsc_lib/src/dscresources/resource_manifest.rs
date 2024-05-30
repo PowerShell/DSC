@@ -171,6 +171,9 @@ pub struct SetMethod {
     /// Indicates that the resource directly handles `_exist` as a property.
     #[serde(rename = "handlesExist", skip_serializing_if = "Option::is_none")]
     pub handles_exist: Option<bool>,
+    /// Indicates that the resource directly handles `what-if` execution type.
+    #[serde(rename = "handlesWhatIf", skip_serializing_if = "Option::is_none")]
+    pub handles_what_if: Option<bool>,
     /// The type of return value expected from the Set method.
     #[serde(rename = "return", skip_serializing_if = "Option::is_none")]
     pub returns: Option<ReturnKind>,

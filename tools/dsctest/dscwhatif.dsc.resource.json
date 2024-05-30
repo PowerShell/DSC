@@ -1,0 +1,30 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "type": "Test/WhatIf",
+    "version": "0.1.0",
+    "get": {
+        "executable": "dsctest",
+        "args": [
+            "what-if"
+        ]
+    },
+    "set": {
+        "executable": "dsctest",
+        "args": [
+            "what-if"
+        ],
+        "handlesWhatIf": true,
+        "implementsPretest": true,
+        "return": "state"
+    },
+    "schema": {
+        "command": {
+            "executable": "dsctest",
+            "args": [
+                "schema",
+                "-s",
+                "what-if"
+            ]
+        }
+    }
+}
