@@ -136,7 +136,7 @@ extends:
               # Set the access token as a secret, so it doesn't get leaked in the logs
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -270,7 +270,7 @@ extends:
               # Set the access token as a secret, so it doesn't get leaked in the logs
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -314,7 +314,7 @@ extends:
               # Set the access token as a secret, so it doesn't get leaked in the logs
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -366,7 +366,7 @@ extends:
               # Set the access token as a secret, so it doesn't get leaked in the logs
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
