@@ -101,20 +101,20 @@ extends:
         displayName: BuildWin
         steps:
         - checkout: self
-          env: 
+          env:
             ob_restore_phase: true
         - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
           inputs:
             Enabled: true
             AnalyzeInPipeline: true
             Language: rust
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             $tmpdir = "$(Agent.TempDirectory)"
             Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
           displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
-          env: 
+          env:
             ob_restore_phase: true
         - task: RustInstaller@1
           inputs:
@@ -123,14 +123,14 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: $(buildName)
           displayName: Install Rust
-          env: 
+          env:
             ob_restore_phase: true
         - task: CargoAuthenticate@0
           inputs:
             configFile: "$(Build.SourcesDirectory)/DSC/.cargo/config.toml"
             cargoServiceConnections: azDO-Cargo-PowerShell-feed-Ingestion
           displayName: Authenticating cargo crates registry
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
@@ -139,12 +139,12 @@ extends:
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
-          env: 
+          env:
             ob_restore_phase: true
           condition: succeeded()
         - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
           condition: always()
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
@@ -159,7 +159,7 @@ extends:
             write-host 'Binaries in $(signSrcPath)'
             dir -r "$(signSrcPath)"
           displayName: Copy built binaries
-          env: 
+          env:
             ob_restore_phase: true
           condition: succeeded()
         - task: onebranch.pipeline.signing@1
@@ -249,14 +249,22 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: x86_64-unknown-linux-gnu
           displayName: Install Rust
-          env: 
+          env:
             ob_restore_phase: true
-        - task: CargoAuthenticate@0
+        - task: AzureCLI@2
           inputs:
-            configFile: ".cargo/config.toml"
-            cargoServiceConnections: azDO-Cargo-PowerShell-feed-Ingestion
-          displayName: Authenticating cargo crates registry
-          env: 
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = Bearer $accessToken
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
             ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
@@ -285,14 +293,22 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: aarch64-unknown-linux-gnu
           displayName: Install Rust
-          env: 
+          env:
             ob_restore_phase: true
-        - task: CargoAuthenticate@0
+        - task: AzureCLI@2
           inputs:
-            configFile: ".cargo/config.toml"
-            cargoServiceConnections: azDO-Cargo-PowerShell-feed-Ingestion
-          displayName: Authenticating cargo crates registry
-          env: 
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = Bearer $accessToken
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
             ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
@@ -329,14 +345,14 @@ extends:
             cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: $(buildName)
           displayName: Install Rust
-          env: 
+          env:
             ob_restore_phase: true
         - task: CargoAuthenticate@0
           inputs:
             configFile: ".cargo/config.toml"
             cargoServiceConnections: azDO-Cargo-PowerShell-feed-Ingestion
           displayName: Authenticating cargo crates registry
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
