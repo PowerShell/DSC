@@ -125,11 +125,19 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - task: CargoAuthenticate@0
+        - task: AzureCLI@2
           inputs:
-            configFile: "$(Build.SourcesDirectory)/DSC/.cargo/config.toml"
-            cargoServiceConnections: azDO-Cargo-PowerShell-feed-Ingestion
-          displayName: Authenticating cargo crates registry
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+          displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
         - pwsh: |
@@ -261,7 +269,7 @@ extends:
 
               # Set the access token as a secret, so it doesn't get leaked in the logs
               Write-Host "##vso[task.setsecret]$accessToken"
-              $header = Bearer $accessToken
+              $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
           displayName: 'Get Azure DevOps Token'
           env:
@@ -305,7 +313,7 @@ extends:
 
               # Set the access token as a secret, so it doesn't get leaked in the logs
               Write-Host "##vso[task.setsecret]$accessToken"
-              $header = Bearer $accessToken
+              $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
           displayName: 'Get Azure DevOps Token'
           env:
@@ -347,11 +355,19 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - task: CargoAuthenticate@0
+        - task: AzureCLI@2
           inputs:
-            configFile: ".cargo/config.toml"
-            cargoServiceConnections: azDO-Cargo-PowerShell-feed-Ingestion
-          displayName: Authenticating cargo crates registry
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN;issecret=true]$header"
+          displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
         - pwsh: |
