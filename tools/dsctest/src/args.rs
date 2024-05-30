@@ -58,7 +58,7 @@ pub enum SubCommand {
 
     #[clap(name = "what-if", about = "Check if it is a what-if operation")]
     WhatIf {
-        #[clap(name = "what-if", short, long, help = "The input to the what-if command as JSON")]
+        #[clap(name = "what-if", short, long, help = "Run as a what-if executionType instead of actual executionType")]
         what_if: bool,
     }
 }

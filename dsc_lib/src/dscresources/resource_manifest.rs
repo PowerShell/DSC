@@ -103,6 +103,11 @@ pub enum ArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    WhatIf {
+        /// The argument that serves as the what-if switch.
+        #[serde(rename = "whatIfInputArg")]
+        what_if_input_arg: String,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

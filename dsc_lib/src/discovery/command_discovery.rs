@@ -4,7 +4,7 @@
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest};
+use crate::dscresources::resource_manifest::{import_manifest, validate_semver, ArgKind, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use indicatif::ProgressStyle;
@@ -448,6 +448,14 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
         capabilities.push(Capability::Set);
         if set.handles_exist == Some(true) {
             capabilities.push(Capability::SetHandlesExist);
+        }
+        if let Some(arg_values) = &set.args {
+            for arg in arg_values {
+                if let &ArgKind::WhatIf { .. } = arg {
+                    capabilities.push(Capability::SetHandlesWhatIf);
+                    break;
+                }
+            }
         }
     }
     if manifest.test.is_some() {

@@ -211,7 +211,13 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type)
+                let execution = if self.capabilities.contains(&Capability::SetHandlesWhatIf) && execution_type == &ExecutionKind::WhatIfDSC {
+                    ExecutionKind::WhatIfResource
+                }
+                else {
+                    execution_type.clone()
+                };
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, &execution)
             },
         }
     }

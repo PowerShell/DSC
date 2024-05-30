@@ -11,9 +11,11 @@
     "set": {
         "executable": "dsctest",
         "args": [
-            "what-if"
+            "what-if",
+            {
+                "whatIfInputArg": "--what-if"
+            }
         ],
-        "handlesWhatIf": true,
         "implementsPretest": true,
         "return": "state"
     },

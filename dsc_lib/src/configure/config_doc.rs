@@ -30,7 +30,10 @@ pub enum Operation {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum ExecutionKind {
     Actual,
-    WhatIf,
+    #[serde(rename = "WhatIf")]
+    WhatIfDSC,
+    #[serde(rename = "WhatIf")]
+    WhatIfResource,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

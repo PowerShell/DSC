@@ -318,7 +318,7 @@ impl Configurator {
                 set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
-                if self.context.execution_type == ExecutionKind::WhatIf {
+                if self.context.execution_type == ExecutionKind::WhatIfDSC {
                     // TODO: add delete what-if support
                     return Err(DscError::NotSupported("What-if execution not supported for delete".to_string()));
                 }
