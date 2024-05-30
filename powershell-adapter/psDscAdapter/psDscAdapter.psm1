@@ -20,6 +20,170 @@ function Import-PSDSCModule {
     $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
 }
 
+function Get-DSCResourceModules
+{
+    $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
+    $dscModulePsd1List = [System.Collections.Generic.HashSet[System.String]]::new()
+    foreach ($folder in $listPSModuleFolders)
+    {
+        if (!(Test-Path $folder))
+        {
+            continue
+        }
+
+        foreach($moduleFolder in Get-ChildItem $folder -Directory)
+        {
+            $addModule = $false
+            foreach($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2)
+            {
+                $containsDSCResource = select-string -LiteralPath $psd1 -pattern '^[^#]*\bDscResourcesToExport\b.*'
+                if($null -ne $containsDSCResource)
+                {
+                    $dscModulePsd1List.Add($psd1) | Out-Null
+                    break
+                }
+            }
+        }
+    }
+    
+    return $dscModulePsd1List
+}
+
+function FindAndParseResourceDefinitions
+{
+    [CmdletBinding(HelpUri = '')]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$filePath
+    )
+
+    if (-not (Test-Path $filePath))
+    {
+        return
+    }
+
+    if (([System.IO.Path]::GetExtension($filePath) -ne ".psm1") -and ([System.IO.Path]::GetExtension($filePath) -ne ".ps1"))
+    {
+        return
+    }
+    
+    "Loading resources from '$filePath'" | Write-DscTrace -Operation Trace
+    #TODO: Handle class inheritance 
+    #TODO: Ensure embedded instances in properties are working correctly
+    [System.Management.Automation.Language.Token[]] $tokens = $null
+    [System.Management.Automation.Language.ParseError[]] $errors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($filePath, [ref]$tokens, [ref]$errors)
+    foreach($e in $errors)
+    {
+        $e | Out-String | Write-DscTrace -Operation Error
+    }
+
+    $resourceDefinitions = $ast.FindAll(
+        {
+            $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
+            if ($typeAst)
+            {
+                foreach($a in $typeAst.Attributes)
+                {
+                    if ($a.TypeName.Name -eq 'DscResource')
+                    {
+                        return $true;
+                    }
+                }
+            }
+
+            return $false;
+        },
+        $false);
+
+    $resourceList = [System.Collections.Generic.List[DscResourceInfo]]::new()
+
+    foreach($typeDefinitionAst in $resourceDefinitions)
+    {
+        $DscResourceInfo = [DscResourceInfo]::new()
+        $DscResourceInfo.Name = $typeDefinitionAst.Name
+        $DscResourceInfo.ResourceType = $typeDefinitionAst.Name
+        $DscResourceInfo.FriendlyName = $typeDefinitionAst.Name
+        $DscResourceInfo.ImplementationDetail = 'ClassBased'
+        $DscResourceInfo.Module = $filePath
+        $DscResourceInfo.Path = $filePath
+        #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
+        $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
+        $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
+
+        $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
+        foreach ($member in $typeDefinitionAst.Members)
+        {
+            $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
+            if (($property -eq $null) -or ($property.IsStatic))
+            {
+                continue;
+            }
+            $skipProperty = $true
+            $isKeyProperty = $false
+            foreach($attr in $property.Attributes)
+            {
+                if ($attr.TypeName.Name -eq 'DscProperty')
+                {
+                    $skipProperty = $false
+                    foreach($attrArg in $attr.NamedArguments)
+                    {
+                        if ($attrArg.ArgumentName -eq 'Key')
+                        {
+                            $isKeyProperty = $true
+                        }
+                    }
+                }
+            }
+            if ($skipProperty)
+            {
+                continue;
+            }
+
+            [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
+            $prop.Name = $property.Name
+            $prop.PropertyType = $property.PropertyType.TypeName.Name
+            $prop.IsMandatory = $isKeyProperty 
+            $DscResourceInfo.Properties.Add($prop)
+        }
+        
+        $resourceList.Add($DscResourceInfo)
+    }
+
+    return $resourceList
+}
+
+function LoadPowerShellClassResourcesFromModule
+{
+    [CmdletBinding(HelpUri = '')]
+    param(
+        [Parameter(Mandatory = $true)]
+        [PSModuleInfo]$moduleInfo
+    )
+
+    if ($moduleInfo.RootModule)
+    {
+        $scriptPath = Join-Path $moduleInfo.ModuleBase  $moduleInfo.RootModule
+    }
+    else
+    {
+        $scriptPath = $moduleInfo.Path;
+    }
+
+    $Resources = FindAndParseResourceDefinitions $scriptPath
+
+    if ($moduleInfo.NestedModules)
+    {
+        foreach ($nestedModule in $moduleInfo.NestedModules)
+        {
+            $resourcesOfNestedModules = LoadPowerShellClassResourcesFromModule $nestedModule
+            $Resources.AddRange($resourcesOfNestedModules)
+        }
+    }
+
+    return $Resources
+}
+
 <# public function Invoke-DscCacheRefresh
 .SYNOPSIS
     This function caches the results of the Get-DscResource call to optimize performance.
@@ -46,12 +210,8 @@ function Invoke-DscCacheRefresh {
         # PS 6+ on Windows
         Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
     } else {
-        # either WinPS or PS 6+ on Linux/Mac
-        if ($PSVersionTable.PSVersion.Major -le 5) {
-            Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-        } else {
-            Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
-        }
+        # PS 6+ on Linux/Mac
+        Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
     }
 
     if (Test-Path $cacheFilePath) {
@@ -113,33 +273,18 @@ function Invoke-DscCacheRefresh {
         # create a list object to store cache of Get-DscResource
         [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
 
-        Import-PSDSCModule
-        $DscResources = Get-DscResource
+        $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
+        $dscResourceModulePsd1s = Get-DSCResourceModules
+        if($null -ne $dscResourceModulePsd1s) {
+            $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s)
+            foreach ($mod in $modules)
+            {
+                [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $mod
+                $DscResources.AddRange($r)
+            }
+        }
 
         foreach ($dscResource in $DscResources) {
-            # resources that shipped in Windows should only be used with Windows PowerShell
-            if ($dscResource.ParentPath -like "$env:windir\System32\*" -and $PSVersionTable.PSVersion.Major -gt 5) {
-                continue
-            }
-
-            if ( $dscResource.ImplementationDetail ) {
-                # only support known dscResourceType
-                if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
-                    'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail | Write-DscTrace
-                    continue
-                }
-            }
-
-            $DscResourceInfo = [DscResourceInfo]::new()
-            $dscResource.PSObject.Properties | ForEach-Object -Process {
-                if ($null -ne $_.Value) {
-                    $DscResourceInfo.$($_.Name) = $_.Value
-                }
-                else {
-                    $DscResourceInfo.$($_.Name) = ''
-                }
-            }
-
             $moduleName = $dscResource.ModuleName
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
@@ -150,7 +295,7 @@ function Invoke-DscCacheRefresh {
 
             $dscResourceCacheEntries += [dscResourceCacheEntry]@{
                 Type            = "$moduleName/$($dscResource.Name)"
-                DscResourceInfo = $DscResourceInfo
+                DscResourceInfo = $dscResource
                 LastWriteTimes = $lastWriteTimes
             }
         }
@@ -342,6 +487,14 @@ enum dscResourceType {
     Composite
 }
 
+class DscResourcePropertyInfo
+{
+    [string] $Name
+    [string] $PropertyType
+    [bool] $IsMandatory
+    [System.Collections.Generic.List[string]] $Values
+}
+
 # dsc resource type (settable clone)
 class DscResourceInfo {
     [dscResourceType] $ImplementationDetail
@@ -355,5 +508,5 @@ class DscResourceInfo {
     [string] $ParentPath
     [string] $ImplementedAs
     [string] $CompanyName
-    [psobject[]] $Properties
+    [System.Collections.Generic.List[DscResourcePropertyInfo]] $Properties
 }
