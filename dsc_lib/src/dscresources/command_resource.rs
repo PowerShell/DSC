@@ -131,7 +131,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     }
 
     if ExecutionKind::WhatIfDSC == *execution_type {
-        return Err(DscError::NotImplemented("cannot process what-if execution type, resource does not implement what-if or pre-test".to_string()));
+        return Err(DscError::NotImplemented("cannot process what-if execution type, as resource implements pre-test and does not support what-if".to_string()));
     }
 
     let Some(get) = &resource.get else {
@@ -639,7 +639,7 @@ fn process_args(args: &Option<Vec<ArgKind>>, value: &str, execution_type: &Execu
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(value.to_string());
             },
-            ArgKind::WhatIf { what_if_input_arg} => {
+            ArgKind::WhatIf { what_if_input_arg } => {
                 if execution_type == &ExecutionKind::WhatIfResource {
                     processed_args.push(what_if_input_arg.clone());
                 }

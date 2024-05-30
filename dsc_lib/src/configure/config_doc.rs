@@ -30,6 +30,7 @@ pub enum Operation {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum ExecutionKind {
     Actual,
+    // differentiate internally whether what-if should be processed by the resource or dsc engine
     #[serde(rename = "WhatIf")]
     WhatIfDSC,
     #[serde(rename = "WhatIf")]

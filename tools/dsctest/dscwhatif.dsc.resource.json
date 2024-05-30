@@ -16,7 +16,6 @@
                 "whatIfInputArg": "--what-if"
             }
         ],
-        "implementsPretest": true,
         "return": "state"
     },
     "schema": {
