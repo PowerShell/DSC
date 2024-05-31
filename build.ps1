@@ -324,10 +324,13 @@ if (!$Clippy -and !$SkipBuild) {
 if ($Test) {
     $failed = $false
 
-    $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
-    if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
-    {   "Installing module PSDesiredStateConfiguration 2.0.7"
-        Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository PSGallery -TrustRepository
+    if ($IsWindows) {
+        # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
+        $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
+        if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
+        {   "Installing module PSDesiredStateConfiguration 2.0.7"
+            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository PSGallery -TrustRepository
+        }
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
