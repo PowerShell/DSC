@@ -110,3 +110,62 @@ Incomplete expression
         (function
           (functionName)))
       (MISSING "]"))
+
+=====
+Invalid float argument
+=====
+[myFunction(a.1)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR
+            (functionName))
+          (arguments
+            (number)))))
+
+=====
+Plus-sign number argument
+=====
+[myFunction(+1)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR
+            (UNEXPECTED '+'))
+          (arguments
+            (number)))))
+
+=====
+Float input
+=====
+[myFunction(1234.5678)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR
+            (number))
+          (arguments
+              (number)))))
+
+=====
+Float input starting with decimal
+=====
+[myFunction(.1)]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (ERROR)
+          (arguments
+              (number)))))

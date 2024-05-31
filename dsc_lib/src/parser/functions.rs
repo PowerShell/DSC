@@ -36,13 +36,23 @@ impl Function {
     ///
     /// This function will return an error if the function node is not valid.
     pub fn new(statement_bytes: &[u8], function: &Node) -> Result<Self, DscError> {
-        let Some(function_name) = function.child_by_field_name("name") else {
+        let mut function_name = None;
+        let mut function_args = None;
+        let mut cursor = function.walk();
+        for member in function.named_children(&mut cursor) {
+            match member.kind() {
+                "arguments" => function_args = Some(member),
+                "functionName" => function_name = Some(member),
+                "ERROR" => return Err(DscError::Parser("Found error node parsing function".to_string())),
+                _ => {}
+            }
+        }
+        let Some(name) = function_name else {
             return Err(DscError::Parser("Function name node not found".to_string()));
         };
-        let function_args = function.child_by_field_name("args");
         let args = convert_args_node(statement_bytes, &function_args)?;
         Ok(Function{
-            name: function_name.utf8_text(statement_bytes)?.to_string(),
+            name: name.utf8_text(statement_bytes)?.to_string(),
             args})
     }
 
