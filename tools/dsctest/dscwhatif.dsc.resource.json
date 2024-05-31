@@ -13,7 +13,7 @@
         "args": [
             "what-if",
             {
-                "whatIfInputArg": "--what-if"
+                "whatIfSwitchArg": "--what-if"
             }
         ],
         "return": "state"

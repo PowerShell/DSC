@@ -105,7 +105,7 @@ pub enum ArgKind {
     },
     WhatIf {
         /// The argument that serves as the what-if switch.
-        #[serde(rename = "whatIfInputArg")]
+        #[serde(rename = "whatIfSwitchArg")]
         what_if_input_arg: String,
     }
 }
