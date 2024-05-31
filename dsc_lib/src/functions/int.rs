@@ -75,9 +75,16 @@ mod tests {
     }
 
     #[test]
-    fn incomplete_float() {
+    fn incomplete_float_missing_digit() {
         let mut parser = Statement::new().unwrap();
         let err = parser.parse_and_execute("[int(.2)]", &Context::new()).unwrap_err();
+        assert!(matches!(err, DscError::Parser(_)));
+    }
+
+    #[test]
+    fn incomplete_float_missing_decimal() {
+        let mut parser = Statement::new().unwrap();
+        let err = parser.parse_and_execute("[int(2.)]", &Context::new()).unwrap_err();
         assert!(matches!(err, DscError::Parser(_)));
     }
 
