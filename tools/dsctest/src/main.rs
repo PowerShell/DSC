@@ -5,6 +5,7 @@ mod args;
 mod delete;
 mod echo;
 mod exist;
+mod exit_code;
 mod sleep;
 mod trace;
 
@@ -14,6 +15,7 @@ use schemars::schema_for;
 use crate::delete::Delete;
 use crate::echo::Echo;
 use crate::exist::{Exist, State};
+use crate::exit_code::ExitCode;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use std::{thread, time::Duration};
@@ -58,6 +60,20 @@ fn main() {
 
             serde_json::to_string(&exist).unwrap()
         },
+        SubCommand::ExitCode { input } => {
+            let exit_code = match serde_json::from_str::<ExitCode>(&input) {
+                Ok(exit_code) => exit_code,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            if exit_code.exit_code != 0 {
+                eprintln!("Exiting with code: {}", exit_code.exit_code);
+                std::process::exit(exit_code.exit_code);
+            }
+            input
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Delete => {
@@ -68,6 +84,9 @@ fn main() {
                 },
                 Schemas::Exist => {
                     schema_for!(Exist)
+                },
+                Schemas::ExitCode => {
+                    schema_for!(ExitCode)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)

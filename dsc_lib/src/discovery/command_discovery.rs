@@ -221,7 +221,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 let mut adapter_resources_count = 0;
                 // invoke the list command
                 let list_command = manifest.adapter.unwrap().list;
-                let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args, None, Some(&adapter.directory), None)
+                let (exit_code, stdout, stderr) = match invoke_command(&list_command.executable, list_command.args, None, Some(&adapter.directory), None, &manifest.exit_codes)
                 {
                     Ok((exit_code, stdout, stderr)) => (exit_code, stdout, stderr),
                     Err(e) => {

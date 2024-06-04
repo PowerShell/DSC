@@ -8,6 +8,7 @@ pub enum Schemas {
     Delete,
     Echo,
     Exist,
+    ExitCode,
     Sleep,
     Trace,
 }
@@ -37,6 +38,12 @@ pub enum SubCommand {
     #[clap(name = "exist", about = "Check if a resource exists")]
     Exist {
         #[clap(name = "input", short, long, help = "The input to the exist command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "exit-code", about = "Return the exit code specified in the input")]
+    ExitCode {
+        #[clap(name = "input", short, long, help = "The input to the exit code command as JSON")]
         input: String,
     },
 

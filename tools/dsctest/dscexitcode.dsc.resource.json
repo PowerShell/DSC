@@ -1,0 +1,28 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "type": "Test/ExitCode",
+    "version": "0.1.0",
+    "get": {
+        "executable": "dsctest",
+        "args": [
+            "exit-code",
+            {
+                "jsonInputArg": "--input"
+            }
+        ]
+    },
+    "exitCodes": {
+        "0": "Success",
+        "8": "Placeholder from manifest for exit code 8"
+    },
+    "schema": {
+        "command": {
+            "executable": "dsctest",
+            "args": [
+                "schema",
+                "-s",
+                "exit-code"
+            ]
+        }
+    }
+}
