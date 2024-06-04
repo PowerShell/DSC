@@ -68,6 +68,27 @@ mod tests {
     }
 
     #[test]
+    fn float() {
+        let mut parser = Statement::new().unwrap();
+        let err = parser.parse_and_execute("[int(1.0)]", &Context::new()).unwrap_err();
+        assert!(matches!(err, DscError::Parser(_)));
+    }
+
+    #[test]
+    fn incomplete_float_missing_digit() {
+        let mut parser = Statement::new().unwrap();
+        let err = parser.parse_and_execute("[int(.2)]", &Context::new()).unwrap_err();
+        assert!(matches!(err, DscError::Parser(_)));
+    }
+
+    #[test]
+    fn incomplete_float_missing_decimal() {
+        let mut parser = Statement::new().unwrap();
+        let err = parser.parse_and_execute("[int(2.)]", &Context::new()).unwrap_err();
+        assert!(matches!(err, DscError::Parser(_)));
+    }
+
+    #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[int(int('-1'))]", &Context::new()).unwrap();
@@ -77,7 +98,7 @@ mod tests {
     #[test]
     fn error() {
         let mut parser = Statement::new().unwrap();
-        let err = parser.parse_and_execute("[int('foo')]", &Context::new()).unwrap_err();
+        let err = parser.parse_and_execute("[int('foo.1')]", &Context::new()).unwrap_err();
         assert!(matches!(err, DscError::FunctionArg(_, _)));
     }
 }
