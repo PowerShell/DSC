@@ -56,9 +56,9 @@ pub enum SubCommand {
     #[clap(name = "trace", about = "The trace level")]
     Trace,
 
-    #[clap(name = "what-if", about = "Check if it is a what-if operation")]
+    #[clap(name = "whatif", about = "Check if it is a whatif operation")]
     WhatIf {
-        #[clap(name = "what-if", short, long, help = "Run as a what-if executionType instead of actual executionType")]
+        #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
         what_if: bool,
     }
 }

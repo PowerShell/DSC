@@ -50,8 +50,8 @@ pub enum Capability {
     Set,
     /// The resource supports the `_exist` property directly.
     SetHandlesExist,
-    /// The resource supports the `what-if` execution type directly.
-    SetHandlesWhatIf,
+    /// The resource supports simulating configuration directly.
+    WhatIf,
     /// The resource supports validating configuration.
     Test,
     /// The resource supports deleting configuration.
@@ -211,13 +211,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                let execution = if self.capabilities.contains(&Capability::SetHandlesWhatIf) && execution_type == &ExecutionKind::WhatIfDSC {
-                    ExecutionKind::WhatIfResource
-                }
-                else {
-                    execution_type.clone()
-                };
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, &execution)
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type)
             },
         }
     }

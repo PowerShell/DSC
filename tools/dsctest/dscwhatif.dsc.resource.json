@@ -5,16 +5,21 @@
     "get": {
         "executable": "dsctest",
         "args": [
-            "what-if"
+            "whatif"
         ]
     },
     "set": {
         "executable": "dsctest",
         "args": [
-            "what-if",
-            {
-                "whatIfSwitchArg": "--what-if"
-            }
+            "whatif"
+        ],
+        "return": "state"
+    },
+    "whatif": {
+        "executable": "dsctest",
+        "args": [
+            "whatif",
+            "-w"
         ],
         "return": "state"
     },

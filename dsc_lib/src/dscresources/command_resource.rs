@@ -50,7 +50,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let args = process_args(&get.args, filter, &ExecutionKind::Actual);
+    let args = process_args(&get.args, filter);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
         command_input = get_command_input(&get.input, filter)?;
@@ -95,9 +95,22 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 #[allow(clippy::too_many_lines)]
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
     // TODO: support import resources
-
-    let Some(set) = &resource.set else {
-        return Err(DscError::NotImplemented("set".to_string()));
+    let operation_type: String;
+    let mut is_synthetic_what_if = false;
+    let set = match execution_type {
+        ExecutionKind::Actual => {
+            operation_type = "set".to_string();
+            resource.set.clone().ok_or(DscError::NotImplemented("set".to_string()))?
+        },
+        ExecutionKind::WhatIf => {
+            operation_type = "whatif".to_string();
+            if let Some(whatif) = &resource.whatif {
+                whatif.clone()
+            } else {
+                is_synthetic_what_if = true;
+                resource.set.clone().ok_or(DscError::NotImplemented("set".to_string()))?
+            }
+        }
     };
     verify_json(resource, cwd, desired)?;
 
@@ -105,7 +118,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     if !skip_test && set.pre_test != Some(true) {
         info!("No pretest, invoking test {}", &resource.resource_type);
         let test_result = invoke_test(resource, cwd, desired)?;
-        if execution_type == &ExecutionKind::WhatIfDSC {
+        if is_synthetic_what_if {
             return Ok(test_result.into());
         }
         let (in_desired_state, actual_state) = match test_result {
@@ -130,17 +143,17 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         }
     }
 
-    if ExecutionKind::WhatIfDSC == *execution_type {
+    if is_synthetic_what_if {
         return Err(DscError::NotImplemented("cannot process what-if execution type, as resource implements pre-test and does not support what-if".to_string()));
     }
 
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let args = process_args(&get.args, desired, &ExecutionKind::Actual);
+    let args = process_args(&get.args, desired);
     let command_input = get_command_input(&get.input, desired)?;
 
-    info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &get.executable);
+    info!("Getting current state for {} by invoking get {} using {}", operation_type, &resource.resource_type, &get.executable);
     let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
 
     if resource.kind == Some(Kind::Resource) {
@@ -157,7 +170,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_args(&set.args, desired, execution_type);
+    let args = process_args(&set.args, desired);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -170,21 +183,21 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         },
     }
 
-    info!("Invoking set '{}' using '{}'", &resource.resource_type, &set.executable);
+    info!("Invoking {} '{}' using '{}'", operation_type, &resource.resource_type, &set.executable);
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env)?;
 
     match set.returns {
         Some(ReturnKind::State) => {
 
             if resource.kind == Some(Kind::Resource) {
-                debug!("Verifying output of set '{}' using '{}'", &resource.resource_type, &set.executable);
+                debug!("Verifying output of {} '{}' using '{}'", operation_type, &resource.resource_type, &set.executable);
                 verify_json(resource, cwd, &stdout)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
                 Result::Ok(r) => {r},
                 Result::Err(err) => {
-                    return Err(DscError::Operation(format!("Failed to parse json from set {}|{}|{} -> {err}", &set.executable, stdout, stderr)))
+                    return Err(DscError::Operation(format!("Failed to parse json from {} '{}'|'{}'|'{}' -> {err}", operation_type, &set.executable, stdout, stderr)))
                 }
             };
 
@@ -260,7 +273,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 
     verify_json(resource, cwd, expected)?;
 
-    let args = process_args(&test.args, expected, &ExecutionKind::Actual);
+    let args = process_args(&test.args, expected);
     let command_input = get_command_input(&test.input, expected)?;
 
     info!("Invoking test '{}' using '{}'", &resource.resource_type, &test.executable);
@@ -374,7 +387,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
 
     verify_json(resource, cwd, filter)?;
 
-    let args = process_args(&delete.args, filter, &ExecutionKind::Actual);
+    let args = process_args(&delete.args, filter);
     let command_input = get_command_input(&delete.input, filter)?;
 
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
@@ -405,7 +418,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
         return Err(DscError::NotImplemented("validate".to_string()));
     };
 
-    let args = process_args(&validate.args, config, &ExecutionKind::Actual);
+    let args = process_args(&validate.args, config);
     let command_input = get_command_input(&validate.input, config)?;
 
     info!("Invoking validate '{}' using '{}'", &resource.resource_type, &validate.executable);
@@ -480,9 +493,9 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
             command_input = get_command_input(&export.input, input)?;
         }
 
-        args = process_args(&export.args, input, &ExecutionKind::Actual);
+        args = process_args(&export.args, input);
     } else {
-        args = process_args(&export.args, "", &ExecutionKind::Actual);
+        args = process_args(&export.args, "");
     }
 
     let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
@@ -527,7 +540,7 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
         return Err(DscError::Operation(format!("Resolve is not supported by resource {}", &resource.resource_type)));
     };
 
-    let args = process_args(&resolve.args, input, &ExecutionKind::Actual);
+    let args = process_args(&resolve.args, input);
     let command_input = get_command_input(&resolve.input, input)?;
 
     info!("Invoking resolve '{}' using '{}'", &resource.resource_type, &resolve.executable);
@@ -619,7 +632,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     Ok((exit_code, stdout, cleaned_stderr))
 }
 
-fn process_args(args: &Option<Vec<ArgKind>>, value: &str, execution_type: &ExecutionKind) -> Option<Vec<String>> {
+fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("No args to process");
         return None;
@@ -639,11 +652,6 @@ fn process_args(args: &Option<Vec<ArgKind>>, value: &str, execution_type: &Execu
                 processed_args.push(json_input_arg.clone());
                 processed_args.push(value.to_string());
             },
-            ArgKind::WhatIf { what_if_input_arg } => {
-                if execution_type == &ExecutionKind::WhatIfResource {
-                    processed_args.push(what_if_input_arg.clone());
-                }
-            }
         }
     }
 

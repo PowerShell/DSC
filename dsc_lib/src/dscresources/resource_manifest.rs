@@ -40,6 +40,9 @@ pub struct ResourceManifest {
     /// Details how to call the Set method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub set: Option<SetMethod>,
+    /// Details how to call the `WhatIf` method of the resource.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub whatif: Option<SetMethod>,
     /// Details how to call the Test method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<TestMethod>,
@@ -103,11 +106,6 @@ pub enum ArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
-    WhatIf {
-        /// The argument that serves as the what-if switch.
-        #[serde(rename = "whatIfSwitchArg")]
-        what_if_input_arg: String,
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

@@ -250,7 +250,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {
-            configurator.context.execution_type = ExecutionKind::WhatIfDSC;
+            configurator.context.execution_type = ExecutionKind::WhatIf;
         }
     };
 
@@ -516,7 +516,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
             (Capability::Get, "g"),
             (Capability::Set, "s"),
             (Capability::SetHandlesExist, "x"),
-            (Capability::SetHandlesWhatIf, "w"),
+            (Capability::WhatIf, "w"),
             (Capability::Test, "t"),
             (Capability::Delete, "d"),
             (Capability::Export, "e"),
