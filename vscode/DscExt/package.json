@@ -16,7 +16,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onFileSystem:file"
+		"onLanguage:yaml"
 	],
 	"main": "./out/extension.js",
 	"scripts": {

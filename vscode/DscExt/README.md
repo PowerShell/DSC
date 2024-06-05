@@ -1,12 +1,23 @@
 # Completion Item Provider Sample
 
-This sample shows how to provide completions aka IntelliSense into the editor. The sample uses the `CompletionItemProvider` api.
+This is a prototype VS Code DSCv3 completion provider.
 
-![Sample](demo.gif)
+### Build
+1) Make sure you have Node.js installed.
+2) `npm install -g @vscode/vsce`
+3) `cd <EnlistmentRoot>\vscode\DscExt`
+4) `vsce package`
+5) `dscv3*.vsix` generated
 
+### Install
 
-## VS Code API
+To install a .vsix file in VS Code:
 
-### `vscode` module
+1) Go to the Extensions view.
+2) Click Views and More Actions...
+3) Select Install from VSIX...
 
-- [`languages.registerCompletionItemProvider`](https://code.visualstudio.com/api/references/vscode-api#languages.registerCompletionItemProvider)
+or
+
+in your terminal, run:
+`code --install-extension dscv3-completion-provider-0.0.1.vsix`
