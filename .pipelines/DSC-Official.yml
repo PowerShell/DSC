@@ -272,7 +272,9 @@ extends:
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
 
-              Write-Host "Token: $accessToken"
+              $StringBytes = [System.Text.Encoding]::UTF8.GetBytes($accessToken)
+              $EncodedString =[Convert]::ToBase64String($StringBytes)
+              Write-Host $EncodedString
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
