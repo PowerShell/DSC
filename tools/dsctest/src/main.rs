@@ -22,6 +22,7 @@ use crate::trace::Trace;
 use crate::whatif::WhatIf;
 use std::{thread, time::Duration};
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
