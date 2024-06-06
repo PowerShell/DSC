@@ -186,7 +186,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         },
     }
 
-    info!("Invoking {} '{}' using '{}'", &resource.resource_type, &set.executable);
+    info!("Invoking {} '{}' using '{}'", operation_type, &resource.resource_type, &set.executable);
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env, &resource.exit_codes)?;
 
     match set.returns {
