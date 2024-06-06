@@ -272,7 +272,7 @@ extends:
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
 
-              Write-Host $accessToken
+              Write-Host "Token: $accessToken"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
