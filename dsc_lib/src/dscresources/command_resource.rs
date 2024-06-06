@@ -616,7 +616,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     if exit_code != 0 {
         if let Some(exit_codes) = exit_codes {
             if let Some(error_message) = exit_codes.get(&exit_code) {
-                return Err(DscError::Command(executable.to_string(), exit_code, error_message.to_string()));
+                return Err(DscError::CommandExitFromManifest(executable.to_string(), exit_code, error_message.to_string()));
             }
         }
         return Err(DscError::Command(executable.to_string(), exit_code, cleaned_stderr));

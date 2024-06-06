@@ -4,7 +4,7 @@
 Describe 'exit code tests' {
     It 'non-zero exit code in manifest has corresponding message' {
         $result = dsc resource get -r Test/ExitCode --input "{ exitCode: 8 }" 2>&1
-        $result | Should -Match 'ERROR.*?[Exit code 8].*?Placeholder from manifest for exit code 8'
+        $result | Should -Match 'ERROR.*?[Exit code 8].*?manifest description: Placeholder from manifest for exit code 8'
     }
     It 'non-zero exit code not in manifest has generic message' {
         $result = dsc resource get -r Test/ExitCode --input "{ exitCode: 1 }" 2>&1

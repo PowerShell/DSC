@@ -20,6 +20,9 @@ pub enum DscError {
     #[error("Command: Executable '{0}' [Exit code {1}] {2}")]
     CommandExit(String, i32, String),
 
+    #[error("Command: Resource '{0}' [Exit code {1}] manifest description: {2}")]
+    CommandExitFromManifest(String, i32, String),
+
     #[error("CommandOperation: {0} for executable '{1}'")]
     CommandOperation(String, String),
 
