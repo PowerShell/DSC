@@ -1,4 +1,4 @@
-# Completion Item Provider Sample
+# DSCv3 extension
 
 This is a prototype VS Code DSCv3 completion provider.
 Completions are displayed when `type:` is typed in a `*.dsc.yaml` files.
