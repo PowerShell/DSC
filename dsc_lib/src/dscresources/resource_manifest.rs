@@ -41,8 +41,8 @@ pub struct ResourceManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub set: Option<SetMethod>,
     /// Details how to call the `WhatIf` method of the resource.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub whatif: Option<SetMethod>,
+    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<SetMethod>,
     /// Details how to call the Test method of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub test: Option<TestMethod>,

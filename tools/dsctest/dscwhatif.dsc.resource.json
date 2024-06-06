@@ -15,7 +15,7 @@
         ],
         "return": "state"
     },
-    "whatif": {
+    "whatIf": {
         "executable": "dsctest",
         "args": [
             "whatif",

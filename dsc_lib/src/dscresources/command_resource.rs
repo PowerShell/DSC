@@ -97,20 +97,23 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     // TODO: support import resources
     let operation_type: String;
     let mut is_synthetic_what_if = false;
-    let set = match execution_type {
+    let set_method = match execution_type {
         ExecutionKind::Actual => {
             operation_type = "set".to_string();
-            resource.set.clone().ok_or(DscError::NotImplemented("set".to_string()))?
+            &resource.set
         },
         ExecutionKind::WhatIf => {
             operation_type = "whatif".to_string();
-            if let Some(whatif) = &resource.whatif {
-                whatif.clone()
-            } else {
+            if resource.what_if.is_none() {
                 is_synthetic_what_if = true;
-                resource.set.clone().ok_or(DscError::NotImplemented("set".to_string()))?
+                &resource.set
+            } else {
+                &resource.what_if
             }
         }
+    };
+    let Some(set) = set_method else {
+        return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
 
@@ -153,7 +156,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     let args = process_args(&get.args, desired);
     let command_input = get_command_input(&get.input, desired)?;
 
-    info!("Getting current state for {} by invoking get {} using {}", operation_type, &resource.resource_type, &get.executable);
+    info!("Getting current state for {} by invoking get '{}' using '{}'", operation_type, &resource.resource_type, &get.executable);
     let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
 
     if resource.kind == Some(Kind::Resource) {
