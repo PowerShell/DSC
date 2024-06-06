@@ -11,6 +11,7 @@ pub enum Schemas {
     ExitCode,
     Sleep,
     Trace,
+    WhatIf,
 }
 
 #[derive(Debug, Parser)]
@@ -61,4 +62,10 @@ pub enum SubCommand {
 
     #[clap(name = "trace", about = "The trace level")]
     Trace,
+
+    #[clap(name = "whatif", about = "Check if it is a whatif operation")]
+    WhatIf {
+        #[clap(name = "whatif", short, long, help = "Run as a whatif executionType instead of actual executionType")]
+        what_if: bool,
+    }
 }

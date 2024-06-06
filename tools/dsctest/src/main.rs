@@ -8,6 +8,7 @@ mod exist;
 mod exit_code;
 mod sleep;
 mod trace;
+mod whatif;
 
 use args::{Args, Schemas, SubCommand};
 use clap::Parser;
@@ -18,6 +19,7 @@ use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
+use crate::whatif::WhatIf;
 use std::{thread, time::Duration};
 
 fn main() {
@@ -94,6 +96,9 @@ fn main() {
                 Schemas::Trace => {
                     schema_for!(Trace)
                 },
+                Schemas::WhatIf => {
+                    schema_for!(WhatIf)
+                },
             };
             serde_json::to_string(&schema).unwrap()
         },
@@ -118,6 +123,14 @@ fn main() {
                 level,
             };
             serde_json::to_string(&trace).unwrap()
+        },
+        SubCommand::WhatIf { what_if } => {
+            let result: WhatIf = if what_if {
+                WhatIf { execution_type: "WhatIf".to_string() }
+            } else {
+                WhatIf { execution_type: "Actual".to_string() }
+            };
+            serde_json::to_string(&result).unwrap()
         },
     };
 
