@@ -50,6 +50,8 @@ pub enum Capability {
     Set,
     /// The resource supports the `_exist` property directly.
     SetHandlesExist,
+    /// The resource supports simulating configuration directly.
+    WhatIf,
     /// The resource supports validating configuration.
     Test,
     /// The resource supports deleting configuration.

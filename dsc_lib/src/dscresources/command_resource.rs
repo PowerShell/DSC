@@ -95,8 +95,24 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 #[allow(clippy::too_many_lines)]
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
     // TODO: support import resources
-
-    let Some(set) = &resource.set else {
+    let operation_type: String;
+    let mut is_synthetic_what_if = false;
+    let set_method = match execution_type {
+        ExecutionKind::Actual => {
+            operation_type = "set".to_string();
+            &resource.set
+        },
+        ExecutionKind::WhatIf => {
+            operation_type = "whatif".to_string();
+            if resource.what_if.is_none() {
+                is_synthetic_what_if = true;
+                &resource.set
+            } else {
+                &resource.what_if
+            }
+        }
+    };
+    let Some(set) = set_method else {
         return Err(DscError::NotImplemented("set".to_string()));
     };
     verify_json(resource, cwd, desired)?;
@@ -105,7 +121,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     if !skip_test && set.pre_test != Some(true) {
         info!("No pretest, invoking test {}", &resource.resource_type);
         let test_result = invoke_test(resource, cwd, desired)?;
-        if execution_type == &ExecutionKind::WhatIf {
+        if is_synthetic_what_if {
             return Ok(test_result.into());
         }
         let (in_desired_state, actual_state) = match test_result {
@@ -121,7 +137,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             }
         };
 
-        if in_desired_state {
+        if in_desired_state && execution_type == &ExecutionKind::Actual {
             return Ok(SetResult::Resource(ResourceSetResponse{
                 before_state: serde_json::from_str(desired)?,
                 after_state: actual_state,
@@ -130,9 +146,8 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         }
     }
 
-    if ExecutionKind::WhatIf == *execution_type {
-        // TODO: continue execution when resources can implement what-if; only return an error here temporarily
-        return Err(DscError::NotImplemented("what-if not yet supported for resources that implement pre-test".to_string()));
+    if is_synthetic_what_if {
+        return Err(DscError::NotImplemented("cannot process what-if execution type, as resource implements pre-test and does not support what-if".to_string()));
     }
 
     let Some(get) = &resource.get else {
@@ -141,7 +156,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     let args = process_args(&get.args, desired);
     let command_input = get_command_input(&get.input, desired)?;
 
-    info!("Getting current state for set by invoking get {} using {}", &resource.resource_type, &get.executable);
+    info!("Getting current state for {} by invoking get '{}' using '{}'", operation_type, &resource.resource_type, &get.executable);
     let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env)?;
 
     if resource.kind == Some(Kind::Resource) {
@@ -171,21 +186,21 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         },
     }
 
-    info!("Invoking set '{}' using '{}'", &resource.resource_type, &set.executable);
+    info!("Invoking {} '{}' using '{}'", operation_type, &resource.resource_type, &set.executable);
     let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env)?;
 
     match set.returns {
         Some(ReturnKind::State) => {
 
             if resource.kind == Some(Kind::Resource) {
-                debug!("Verifying output of set '{}' using '{}'", &resource.resource_type, &set.executable);
+                debug!("Verifying output of {} '{}' using '{}'", operation_type, &resource.resource_type, &set.executable);
                 verify_json(resource, cwd, &stdout)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
                 Result::Ok(r) => {r},
                 Result::Err(err) => {
-                    return Err(DscError::Operation(format!("Failed to parse json from set {}|{}|{} -> {err}", &set.executable, stdout, stderr)))
+                    return Err(DscError::Operation(format!("Failed to parse json from {} '{}'|'{}'|'{}' -> {err}", operation_type, &set.executable, stdout, stderr)))
                 }
             };
 

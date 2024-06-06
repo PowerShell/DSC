@@ -511,11 +511,12 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
         write_table = true;
     }
     for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
-        let mut capabilities = "-------".to_string();
+        let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
             (Capability::Set, "s"),
             (Capability::SetHandlesExist, "x"),
+            (Capability::WhatIf, "w"),
             (Capability::Test, "t"),
             (Capability::Delete, "d"),
             (Capability::Export, "e"),

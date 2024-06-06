@@ -450,6 +450,9 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
             capabilities.push(Capability::SetHandlesExist);
         }
     }
+    if manifest.what_if.is_some() {
+        capabilities.push(Capability::WhatIf);
+    }
     if manifest.test.is_some() {
         capabilities.push(Capability::Test);
     }
