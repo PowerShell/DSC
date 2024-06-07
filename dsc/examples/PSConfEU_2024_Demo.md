@@ -92,5 +92,6 @@ dsc resource get -r Microsoft/osinfo
 
 ### Editor experience
 
+- JSON schema
 - VSCode extension prototype
 - Bicep coming later
