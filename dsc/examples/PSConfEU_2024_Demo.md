@@ -89,3 +89,8 @@ dsc resource get -r Microsoft/osinfo
 ### Metadata
 
 - securityContext
+
+### Editor experience
+
+- VSCode extension prototype
+- Bicep coming later
