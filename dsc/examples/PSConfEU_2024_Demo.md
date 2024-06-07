@@ -42,6 +42,11 @@ dsc resource get -r Microsoft/osinfo
 
 ### Resource Types
 
+- Resource
+- Group
+- Adapter
+- Import
+
 ## DSC Configuration
 
 ### ARM Template-like
@@ -50,7 +55,14 @@ dsc resource get -r Microsoft/osinfo
 
 ### Expressions
 
-- Reference
+- Functions: Reference
+- Dot-notation
+
+### Group Resources
+
+### PowerShell Adapter
+
+### Include Resource
 
 ### Parameters
 
