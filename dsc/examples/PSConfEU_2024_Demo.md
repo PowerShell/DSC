@@ -32,13 +32,22 @@ dsc resource get -r Microsoft/osinfo
 
 ### Output formats
 
+- YAML
+- JSON
+- Pretty-JSON
+
 ### Tracing
+
+- Error, Warn, Info, Debug, Trace
+- Logging to ETW/Syslog and files
 
 ### WhatIf
 
 ## DSC Resources
 
 ### Resource Manifest
+
+- JSON vs YAML
 
 ### Resource Types
 
@@ -55,12 +64,21 @@ dsc resource get -r Microsoft/osinfo
 
 ### Expressions
 
-- Functions: Reference
+- Functions
+  - reference()
+  - env()
 - Dot-notation
 
 ### Group Resources
 
+- DependsOn scope
+
 ### PowerShell Adapter
+
+- WindowsPowerShell
+- PowerShell 7
+
+### WMI Adapter
 
 ### Include Resource
 
