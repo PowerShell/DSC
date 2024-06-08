@@ -48,6 +48,8 @@ dsc resource get -r Microsoft/osinfo
 ### Resource Manifest
 
 - JSON vs YAML
+- Args, JSON Input, Env Var
+- JSON Schema
 
 ### Resource Types
 
@@ -55,6 +57,10 @@ dsc resource get -r Microsoft/osinfo
 - Group
 - Adapter
 - Import
+
+### Resource Capabilities
+
+- Get, Set, Test, Export, SetSupportsExist, WhatIf, Resolve
 
 ## DSC Configuration
 
