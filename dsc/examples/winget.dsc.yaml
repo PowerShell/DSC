@@ -17,8 +17,8 @@ resources:
       type: Microsoft.WinGet.DSC/WinGetPackage
       properties:
         Id: Microsoft.PowerShell.Preview
-    - name: Calc
+    - name: Calc from Windows Store
       type: Microsoft.WinGet.DSC/WinGetPackage
       properties:
-        Id: Microsoft.WindowsCalculator_8wekyb3d8bbwe
+        Id: "9WZDNCRFHVN5"
         Ensure: "[parameters('ensureCalc')]"
