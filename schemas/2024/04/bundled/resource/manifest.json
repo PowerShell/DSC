@@ -7,8 +7,7 @@
   "required": [
     "$schema",
     "type",
-    "version",
-    "get"
+    "version"
   ],
   "properties": {
     "$schema": {
@@ -72,6 +71,9 @@
     "validate": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json"
     },
+    "resolve": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.resolve.json"
+    },
     "adapter": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.adapter.json"
     },
@@ -106,6 +108,47 @@
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.schema.json"
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Adapter"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "adapter"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Import"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "resolve"
+        ]
+      },
+      "else": {
+        "required": [
+          "get"
+        ]
+      }
+    }
+  ],
   "$defs": {
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/resourceType.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -133,7 +176,8 @@
       "enum": [
         "Resource",
         "Adapter",
-        "Group"
+        "Group",
+        "Import"
       ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.get.json": {
@@ -497,6 +541,73 @@
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json",
       "title": "Validate Method",
       "description": "Defines how DSC must call the DSC Resource to validate the state of an instance. This method is mandatory for DSC Group Resources. It's ignored for all other DSC Resources.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "input"
+          ],
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.resolve.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.resolve.json",
+      "title": "Resolve method",
+      "description": "Defines how DSC must call the DSC Resource to resolve a nested configuration document from an external source. Define this method for importer resources where the resource kind is set to `Import`.",
       "type": "object",
       "required": [
         "executable"

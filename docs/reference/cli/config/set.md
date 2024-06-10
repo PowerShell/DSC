@@ -125,6 +125,20 @@ Type:      String
 Mandatory: false
 ```
 
+### -w, --what-if
+
+When you specify this flag option, DSC doesn't actually change the system state with the `set`
+operation. Instead, it returns output indicating _how_ the operation will change system state when
+called without this option. Use this option to preview the changes DSC will make to a system.
+
+The output for the command when you use this option is the same as without, except that the
+`ExecutionType` metadata field is set to `WhatIf` instead of `Actual`.
+
+```yaml
+Type:      Boolean
+Mandatory: false
+```
+
 ### -f, --format
 
 The `--format` option controls the console output format for the command. If the command output is

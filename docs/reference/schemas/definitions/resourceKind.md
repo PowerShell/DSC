@@ -17,7 +17,7 @@ Identifies whether a resource is an adapter resource, a group resource, or a nor
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
 SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/resourceKind.json
 Type:          string
-ValidValues:  [Resource, Adapter, Group]
+ValidValues:  [Resource, Adapter, Group, Import]
 ```
 
 ## Description
@@ -27,6 +27,7 @@ DSC supports three kinds of command-based DSC Resources:
 - `Resource` - Indicates that the manifest isn't for a group or adapter resource.
 - `Group` - Indicates that the manifest is for a [group resource](#group-resources).
 - `Adapter` - Indicates that the manifest is for an [adapter resource](#adapter-resources).
+- `Import` - Indicates that the manifest is for an [importer resource](#importer-resources).
 
 When `kind` isn't defined in the resource manifest, DSC infers the value for the property. If the
 `adapter` property is defined in the resource manifest, DSC infers the value of `kind` as
@@ -54,16 +55,39 @@ modules. They don't define resource manifests.
 Group resources always operate on nested DSC Resource instances. Group resources can change how the
 nested instances are processed, like the `Microsoft.DSC/Assertion` group resource.
 
+A group resource must always define the [kind][aa] property in the resource manifest.
+
 Group resources can also be used to bundle sets of resources together for processing, like the
 `Microsoft.DSC/Group` resource. You can use the [dependsOn][03] property for a resource instance in
 a configuration to point to a group resource instead of enumerating each resource in the list.
 
+### Importer resources
+
+Importer resources resolve an external source to a set of nested DSC Resource instances. The
+properties of an importer resource define how to find and resolve the external source.
+
+An importer resource must always define the [kind][aa] and [resolve][ab] properties in the resource
+manifest.
+
+For example, the `Microsoft.DSC/Import` importer resource resolves instances from an external
+configuration document, enabling you to compose configurations from multiple files.
+
 ### Nested resource instances
 
-The resource instances declared in both adapter and group resources are called _nested resource
-instances_. For nested instances, a resource instance is _adjacent_ if it's declared in the same
-group or adapter instance. A resource instance is _external_ to a nested instance if it's declared
-outside of the group or adapter instance, or nested inside an adjacent group or adapter instance.
+The resource instances declared in adapter and group resources or resolved by importer resources
+are called _nested resource instances_.
+
+For nested instances, a resource instance is _adjacent_ if:
+
+- It's declared in the same group or adapter instance.
+- It's resolved by the same importer instance.
+
+A resource instance is _external_ to a nested instance if:
+
+- It's declared outside of the group or adapter instance
+- It's resolved by a different importer instance
+- It's nested inside an adjacent group, adapter, or importer instance.
+
 For top-level instances, other instances at the top-level are adjacent. All other instances are
 external.
 
@@ -122,14 +146,14 @@ Nested resource instances have limitations for the [dependsOn][03] property and 
 [reference()][04] configuration function.
 
 1. You can only reference adjacent instances. You can't reference a nested instance from outside of
-   the group or adapter that declares it. You can't use a reference to a resource outside of the
-   group or adapter resource for a nested instance.
+   the instance that declares or resolves it. You can't use a reference to a resource outside of the
+   group, adapter, or importer resource for a nested instance.
 1. You can only use the `dependsOn` property for adjacent instances. You must add a dependency on
-   the group or adapter instance, not a nested instance of the group or adapter. Nested instances
-   can't depend on external instances.
+   the group, adapter, or importer instance, not a nested instance. Nested instances can't depend
+   on external instances.
 
 The following examples show valid and invalid references and dependencies. The examples use the
-`Microsoft.DSC/Group` resource, but the functionality is the same for adapter resources.
+`Microsoft.DSC/Group` resource, but the functionality is the same for adapter and import resources.
 
 #### Example 1 - Valid references and dependencies
 
@@ -357,5 +381,7 @@ resources:
 
 [01]: ../resource/manifest/adapter.md
 [02]: ../resource/manifest/validate.md
+[aa]: ../resource/manifest/root.md#kind
 [03]: ../config/resource.md#dependson
+[ab]: ../resource/manifest/resolve.md
 [04]: ../config/functions/reference.md

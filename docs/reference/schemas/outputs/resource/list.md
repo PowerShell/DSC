@@ -124,6 +124,10 @@ The following list describes the available capabilities for a resource:
   resource. A resource has this capability when it defines the [export][17] property in its resource
   manifest. Only resources with this capability are usable with the [dsc resource export][18] and
   [dsc config export][19] commands.
+- <a id="capability-resolve" /> `Resolve` - The resource supports resolving nested resource
+  instances from an external source. A resource has this capability when it defines the
+  [resolve][20] property in its resource manifest. This functionality is primarily used by
+  [importer resources][21].
 
 ```yaml
 Type:              array
@@ -211,7 +215,7 @@ Required: true
 
 Represents the values defined in the resource's manifest. This value is `null` for resources that
 aren't command-based. For more information on the value for this property, see
-[Command-based DSC Resource manifest schema reference][20].
+[Command-based DSC Resource manifest schema reference][22].
 
 ```yaml
 Type:     [object, 'null']
@@ -238,4 +242,6 @@ Required: true
 [17]: ../../resource/manifest/export.md
 [18]: ../../../cli/resource/export.md
 [19]: ../../../cli/config/export.md
-[20]: ../../resource/manifest/root.md
+[20]: ../../resource/manifest/resolve.md
+[21]: ../../definitions/resourceKind.md#importer-resources
+[22]: ../../resource/manifest/root.md

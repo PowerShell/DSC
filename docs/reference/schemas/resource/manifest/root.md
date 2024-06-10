@@ -277,7 +277,7 @@ DSC interprets exit code `0` as a successful operation and any other exit code a
 ```yaml
 Type:                object
 Required:            false
-PropertyNamePattern: ^[0-9]+#
+PropertyNamePattern: ^-?[0-9]+#
 PropertyValueType:   string
 ```
 

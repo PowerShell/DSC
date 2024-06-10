@@ -7,8 +7,7 @@
   "required": [
     "$schema",
     "type",
-    "version",
-    "get"
+    "version"
   ],
   "properties": {
     "$schema": {
@@ -72,6 +71,9 @@
     "validate": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.validate.json"
     },
+    "resolve": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.resolve.json"
+    },
     "adapter": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.adapter.json"
     },
@@ -105,5 +107,46 @@
     "schema": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.schema.json"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Adapter"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "adapter"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "Import"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "resolve"
+        ]
+      },
+      "else": {
+        "required": [
+          "get"
+        ]
+      }
+    }
+  ]
 }

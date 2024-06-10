@@ -37,6 +37,7 @@ properties:
         - Test
         - Delete
         - Export
+        - Resolve
   description:
     title: Resource Description
     description: >-

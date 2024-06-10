@@ -30,10 +30,10 @@ defaultSnippets:
       - Relies on DSC's synthetic testing to determine whether an instance is in the desired state
       - Defines an embedded JSON schema.
     body:
-      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
-      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
-      version:         '${3:0.1.0}'
-      description:      ${4:Synopsis for the resource's purpose}
+      ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:                  '${3:0.1.0}'
+      description:               ${4:Synopsis for the resource's purpose}
       get:
         executable:   ${5:executable name}
         args:       ['${6:argument}']
@@ -58,10 +58,10 @@ defaultSnippets:
     markdownDescription: |-
       Defines a group resource that expects a list of resource instances and operates on them.
     body:
-      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
-      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
-      version:         '${3:0.1.0}'
-      description:      ${4:Synopsis for the resource's purpose}
+      ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:                  '${3:0.1.0}'
+      description:               ${4:Synopsis for the resource's purpose}
       get:
         executable:   ${5:executable name}
         args:       ['${6:argument}']
@@ -98,10 +98,10 @@ defaultSnippets:
       Defines an adapter resource that enables users to define non-command-based DSC Resources in
       the configuration.
     body:
-      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
-      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
-      version:         '${3:0.1.0}'
-      description:      ${4:Synopsis for the resource's purpose}
+      ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:                  '${3:0.1.0}'
+      description:               ${4:Synopsis for the resource's purpose}
       get:
         executable:   ${5:executable name}
         args:       ['${6:argument}']
@@ -138,16 +138,40 @@ defaultSnippets:
               description: ${28:explanation of property purpose and usage}
               type:        ${29|string,integer,number,array,object,null|}
 
+  - label: ' Define a resource (importer)'
+    markdownDescription: |-
+      Defines an importer resource that can resolve an external source to nested resource
+      instances.
+    body:
+      ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      kind:                      Import
+      version:                  '${3:0.1.0}'
+      description:               ${4:Synopsis for the resource's purpose}
+      resolve:
+        executable:   ${5:executable name}
+        args:       ['${6:argument}']
+        input:        ${7:stdin}
+      schema:
+        embedded:
+          ${escape_dollar:$}schema: ${13|https://json-schema.org/draft/2020-12/schema,https://json-schema.org/draft/2019-09/schema,http://json-schema.org/draft-07/schema#|}
+          type:                     object
+          properties:
+            ${14:name}:
+              title:       ${15:property title}
+              description: ${16:explanation of property purpose and usage}
+              type:        ${17|string,integer,number,array,object,null|}
+
   - label: ' Define a resource (assertion-only)'
     markdownDescription: |-
       Defines an assertion resource that can get the current state of an instance but not configure
       it. By default, the resource relies on DSC's synthetic testing feature. If the resource
       implements the `test` operation itself, define the `test` property.
     body:
-      $schema:          <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
-      type:            '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
-      version:         '${3:0.1.0}'
-      description:      ${4:Synopsis for the resource's purpose}
+      ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+      type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      version:                  '${3:0.1.0}'
+      description:               ${4:Synopsis for the resource's purpose}
       get:
         executable:   ${5:executable name}
         args:       ['${6:argument}']
@@ -167,7 +191,6 @@ required:
   - $schema
   - type
   - version
-  - get
 properties:
   $schema:
     title: Manifest Schema
@@ -430,6 +453,8 @@ properties:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.export.yaml
   validate:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.validate.yaml
+  resolve:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.resolve.yaml
   adapter:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.adapter.yaml
   exitCodes:
@@ -488,3 +513,19 @@ properties:
           ${3:second exit code number}: ${4:second exit code meaning}
   schema:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.schema.yaml
+
+allOf:
+  # Adapter resources must define the adapter command
+  - if:
+      properties: { kind: { const: Adapter } }
+      required: [kind]
+    then:
+      required: [adapter]
+  # Importer resources must define resolve, all others must define get
+  - if:
+      properties: { kind: { const: Import } }
+      required: [kind]
+    then:
+      required: [resolve]
+    else:
+      required: [get]

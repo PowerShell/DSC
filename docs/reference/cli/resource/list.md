@@ -45,25 +45,26 @@ dsc resource list
 ```
 
 ```Output
-Type                                        Kind      Version  Caps    RequireAdapter  Description
-------------------------------------------------------------------------------------------------------------------------------------------------------------------
-DSC.PackageManagement/Brew                  Resource  0.1.0    gs---e                  DSC resource to manage Homebrew packages
-Microsoft.DSC.Transitional/RunCommandOnSet  Resource  0.1.0    gs----                  Takes a single-command line to execute on DSC set operation
-Microsoft.DSC/Assertion                     Group     0.1.0    gs-t--                  `test` will be invoked for all resources in the supplied configuration.
-Microsoft.DSC/Group                         Group     0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
-Microsoft.DSC/Parallel                      Group     0.1.0    gs-t--                  All resources in the supplied configuration run concurrently.
-Microsoft.DSC/PowerShell                    Adapter   0.1.0    gs-t-e                  Resource adapter to classic DSC Powershell resources.
-Microsoft.Windows/RebootPending             Resource  0.1.0    g-----                  Returns info about pending reboot.
-Microsoft.Windows/Registry                  Resource  0.1.0    gs--d-                  Manage Windows Registry keys and values
-Microsoft.Windows/WindowsPowerShell         Adapter   0.1.0    gs-t--                  Resource adapter to classic DSC Powershell resources in Windows PowerShell.
-Microsoft.Windows/WMI                       Adapter   0.1.0    g-----                  Resource adapter to WMI resources.
-Microsoft/OSInfo                            Resource  0.1.0    g----e                  Returns information about the operating system.
-Microsoft/Process                           Resource  0.1.0    gs-t-e                  Returns information about running processes.
-Test/Delete                                 Resource  0.1.0    g---d-
-Test/Echo                                   Resource  0.1.0    gs-t--
-Test/Exist                                  Resource  0.1.0    gsx---
-Test/Sleep                                  Resource  0.1.0    gs-t--
-Test/TestGroup                              Adapter   0.1.0    g-----
+Type                                        Kind      Version  Caps     RequireAdapter  Description
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Microsoft.DSC.Transitional/RunCommandOnSet  Resource  0.1.0    gs-----                  Takes a single-command line to execute on DSC set operation
+Microsoft.DSC/Assertion                     Group     0.1.0    gs-t---                  `test` will be invoked for all resources in the supplied configuration.
+Microsoft.DSC/Group                         Group     0.1.0    gs-t---                  All resources in the supplied configuration is treated as a group.
+Microsoft.DSC/Include                       Import    0.1.0    ------r                  Allows including a configuration file contents into current configuration.
+Microsoft.DSC/Parallel                      Group     0.1.0    gs-t---                  All resources in the supplied configuration run concurrently.
+Microsoft.DSC/PowerShell                    Adapter   0.1.0    gs-t-e-                  Resource adapter to classic DSC Powershell resources.
+Microsoft.Windows/RebootPending             Resource  0.1.0    g------                  Returns info about pending reboot.
+Microsoft.Windows/Registry                  Resource  0.1.0    gs--d--                  Manage Windows Registry keys and values
+Microsoft.Windows/WMI                       Adapter   0.1.0    g------                  Resource adapter to WMI resources.
+Microsoft.Windows/WindowsPowerShell         Adapter   0.1.0    gs-t---                  Resource adapter to classic DSC Powershell resources in Windows PowerShell.
+Microsoft/OSInfo                            Resource  0.1.0    g----e-                  Returns information about the operating system.
+Microsoft/Process                           Resource  0.1.0    gs-t-e-                  Returns information about running processes.
+Test/Delete                                 Resource  0.1.0    g---d--
+Test/Echo                                   Resource  0.1.0    gs-t---
+Test/Exist                                  Resource  0.1.0    gsx----
+Test/Sleep                                  Resource  0.1.0    gs-t---
+Test/TestGroup                              Adapter   0.1.0    g------
+Test/Trace                                  Resource  0.1.0    gs-t---
 ```
 
 ### Example 2 - List a specific resource
@@ -76,9 +77,9 @@ dsc resource list Microsoft.DSC/Group
 ```
 
 ```Output
-Type                 Kind   Version  Caps    RequireAdapter  Description
--------------------------------------------------------------------------------------------------------------------------------
-Microsoft.DSC/Group  Group  0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
+Type                 Kind   Version  Caps     RequireAdapter  Description
+--------------------------------------------------------------------------------------------------------------------------------
+Microsoft.DSC/Group  Group  0.1.0    gs-t---                  All resources in the supplied configuration is treated as a group.
 ```
 
 ### Example 3 - List resources with a matching type name
@@ -91,12 +92,13 @@ dsc resource list Microsoft.DSC/*
 ```
 
 ```Output
-Type                      Kind     Version  Caps    RequireAdapter  Description
--------------------------------------------------------------------------------------------------------------------------------------------
-Microsoft.DSC/Assertion   Group    0.1.0    gs-t--                  `test` will be invoked for all resources in the supplied configuration.
-Microsoft.DSC/Group       Group    0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
-Microsoft.DSC/Parallel    Group    0.1.0    gs-t--                  All resources in the supplied configuration run concurrently.
-Microsoft.DSC/PowerShell  Adapter  0.1.0    gs-t-e                  Resource adapter to classic DSC Powershell resources.
+Type                      Kind     Version  Caps     RequireAdapter  Description
+-----------------------------------------------------------------------------------------------------------------------------------------------
+Microsoft.DSC/Assertion   Group    0.1.0    gs-t---                  `test` will be invoked for all resources in the supplied configuration.
+Microsoft.DSC/Group       Group    0.1.0    gs-t---                  All resources in the supplied configuration is treated as a group.
+Microsoft.DSC/Include     Import   0.1.0    ------r                  Allows including a configuration file contents into current configuration.
+Microsoft.DSC/Parallel    Group    0.1.0    gs-t---                  All resources in the supplied configuration run concurrently.
+Microsoft.DSC/PowerShell  Adapter  0.1.0    gs-t-e-                  Resource adapter to classic DSC Powershell resources.
 ```
 
 ### Example 4 - List resources with a matching description
@@ -109,11 +111,11 @@ dsc resource list --description 'supplied configuration'
 ```
 
 ```Output
-Type                     Kind   Version  Caps    RequireAdapter  Description
-----------------------------------------------------------------------------------------------------------------------------------------
-Microsoft.DSC/Assertion  Group  0.1.0    gs-t--                  `test` will be invoked for all resources in the supplied configuration.
-Microsoft.DSC/Group      Group  0.1.0    gs-t--                  All resources in the supplied configuration is treated as a group.
-Microsoft.DSC/Parallel   Group  0.1.0    gs-t--                  All resources in the supplied configuration run concurrently.
+Type                     Kind   Version  Caps     RequireAdapter  Description
+-----------------------------------------------------------------------------------------------------------------------------------------
+Microsoft.DSC/Assertion  Group  0.1.0    gs-t---                  `test` will be invoked for all resources in the supplied configuration.
+Microsoft.DSC/Group      Group  0.1.0    gs-t---                  All resources in the supplied configuration is treated as a group.
+Microsoft.DSC/Parallel   Group  0.1.0    gs-t---                  All resources in the supplied configuration run concurrently.
 ```
 
 ### Example 5 - List resources with matching tags
@@ -126,10 +128,10 @@ dsc resource list --tags Windows --tags Linux
 ```
 
 ```output
-Type                        Kind      Version  Caps    RequireAdapter  Description
-----------------------------------------------------------------------------------------------------------------------
-Microsoft.Windows/Registry  Resource  0.1.0    gs--d-                  Manage Windows Registry keys and values
-Microsoft/OSInfo            Resource  0.1.0    g----e                  Returns information about the operating system.
+Type                        Kind      Version  Caps     RequireAdapter  Description
+-----------------------------------------------------------------------------------------------------------------------
+Microsoft.Windows/Registry  Resource  0.1.0    gs--d--                  Manage Windows Registry keys and values
+Microsoft/OSInfo            Resource  0.1.0    g----e-                  Returns information about the operating system.
 ```
 
 ### Example 6 - List resources for a specific adapter
@@ -144,20 +146,20 @@ dsc resource list --adapter Microsoft.DSC/PowerShell
 ```
 
 ```Output
-Type                                                   Kind      Version   Caps    RequireAdapter            Description
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-PSDscResources/Archive                                 Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/Environment                             Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/Group                                   Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/MsiPackage                              Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/Registry                                Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/Script                                  Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/Service                                 Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/User                                    Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/WindowsFeature                          Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/WindowsOptionalFeature                  Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/WindowsPackageCab                       Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/WindowsProcess                          Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+Type                                   Kind      Version   Caps     RequireAdapter            Description
+----------------------------------------------------------------------------------------------------------------------------------------------
+PSDscResources/Archive                 Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Environment             Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Group                   Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/MsiPackage              Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Registry                Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Script                  Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/Service                 Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/User                    Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsFeature          Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsOptionalFeature  Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsPackageCab       Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsProcess          Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
 ```
 
 This next command specifies the resource name filter `*Windows*`, limiting the list of returned
@@ -168,12 +170,12 @@ dsc resource list --adapter Microsoft.DSC/PowerShell *Windows*
 ```
 
 ```Output
-Type                                     Kind      Version   Caps    RequireAdapter            Description
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-PSDscResources/WindowsFeature            Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/WindowsOptionalFeature    Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/WindowsPackageCab         Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
-PSDscResources/WindowsProcess            Resource  2.12.0.0  gs-t--  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+Type                                   Kind      Version   Caps     RequireAdapter            Description
+----------------------------------------------------------------------------------------------------------------------------------------------
+PSDscResources/WindowsFeature          Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsOptionalFeature  Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsPackageCab       Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
+PSDscResources/WindowsProcess          Resource  2.12.0.0  gs-t---  Microsoft.DSC/PowerShell  This module contains the standard DSC resources.
 ```
 
 ## Arguments
@@ -286,8 +288,10 @@ displayed in the listed order:
   - `t` indicates that the resource has the [Test capability][08]
   - `d` indicates that the resource has the [Delete capability][09]
   - `e` indicates that the resource has the [Export capability][10]
+  - `r` indicates that the resource has the [Resolve capability][11]
 
-  For example, the `Microsoft.Windows/Registry` resource has the following capabilities: `gs--d-`, indicating it has the `Get`, `Set`, and `Delete` capabilities.
+  For example, the `Microsoft.Windows/Registry` resource has the following capabilities: `gs--d-`,
+  indicating it has the `Get`, `Set`, and `Delete` capabilities.
 - **RequireAdapter** - The fully qualified type name of the adapter resource that DSC uses to
   invoke the returned resource.
 - **Description** - The short description of the resource's purpose and usage.
@@ -306,3 +310,4 @@ To display the output objects as either JSON or YAML objects in the console, use
 [08]: ../../schemas/outputs/resource/list.md#capability-test
 [09]: ../../schemas/outputs/resource/list.md#capability-delete
 [10]: ../../schemas/outputs/resource/list.md#capability-export
+[11]: ../../schemas/outputs/resource/list.md#capability-resolve

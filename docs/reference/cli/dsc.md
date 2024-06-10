@@ -162,6 +162,11 @@ execution of the command.
 |    `5`    | The command failed because a resource definition or instance value was invalid against its JSON schema. |
 |    `6`    | The command was cancelled by a <kbd>Ctrl</kbd>+<kbd>C</kbd> interruption.                               |
 
+## Notes
+
+DSC expects input strings to use UTF-8 encoding. When you pass input from stdin or the path to a
+file, ensure that the input is encoded as UTF-8.
+
 [01]: completer/command.md
 [02]: config/command.md
 [03]: resource/command.md
