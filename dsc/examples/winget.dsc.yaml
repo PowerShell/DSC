@@ -1,0 +1,24 @@
+# The `Microsoft.Winget.DSC` resources needs to be installed: install-psresource Microsoft.Winget.DSC -Prerelease
+
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+parameters:
+  ensureCalc:
+    type: string
+    defaultValue: Present
+    allowedValues:
+      - Present
+      - Absent
+resources:
+- name: Use class PowerShell resources
+  type: Microsoft.DSC/PowerShell
+  properties:
+    resources:
+    - name: PowerShell 7 Preview
+      type: Microsoft.WinGet.DSC/WinGetPackage
+      properties:
+        Id: Microsoft.PowerShell.Preview
+    - name: Calc
+      type: Microsoft.WinGet.DSC/WinGetPackage
+      properties:
+        Id: Microsoft.WindowsCalculator_8wekyb3d8bbwe
+        Ensure: "[parameters('ensureCalc')]"

@@ -84,11 +84,19 @@ dsc resource get -r Microsoft/osinfo
 - WindowsPowerShell
 - PowerShell 7
 
+Winget example
+
 ### WMI Adapter
 
 ### Include Resource
 
 ### Parameters
+
+- Winget
+
+```powershell
+dsc config -p '{"parameters":{"ensureCalc":"Absent"}}' set -p .\dsc\examples\winget.dsc.yaml
+```
 
 - Secure paramters
 
