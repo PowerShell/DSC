@@ -10,10 +10,11 @@
 dsc resource list
 ```
 
-- List PowerShell Adapted DSC resources
+- List adapted PowerShell DSC resources
 
 ```powershell
 dsc resource list --adapter Microsoft.DSC/PowerShell
+dsc resource list --adapter Microsoft.Windows/PowerShell
 ```
 
 - Find DSC resources
@@ -22,6 +23,10 @@ dsc resource list --adapter Microsoft.DSC/PowerShell
 dsc resource list '*DSC*'
 ```
 
+- Find specific adapted PSDSC resources
+
+```powershell
+dsc resource list --adapter Microsoft.DSC/PowerShell PSDscResources/*
 ### DSC Resource Invocation
 
 - Invoke OSInfo DSC resource
@@ -51,7 +56,7 @@ dsc resource get -r Microsoft/osinfo
 - Args, JSON Input, Env Var
 - JSON Schema
 
-### Resource Types
+### Resource Kinds
 
 - Resource
 - Group
