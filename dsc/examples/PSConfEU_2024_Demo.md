@@ -82,7 +82,9 @@ dsc resource get -r Microsoft/osinfo
 
 ### Group Resources
 
-- DependsOn scope
+- Scope, examples:
+  - DependsOn
+  - Reference
 
 ### PowerShell Adapter
 
