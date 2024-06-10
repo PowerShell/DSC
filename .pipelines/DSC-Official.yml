@@ -269,11 +269,9 @@ extends:
 
               # Set the access token as a secret, so it doesn't get leaked in the logs
               Write-Host "##vso[task.setsecret]$accessToken"
-              $header = "Bearer $accessToken"
+              #$header = "Bearer $accessToken"
+              $header = "$accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-              $token = ConvertTo-SecureString $accessToken -AsPlainText -Force
-              $out = invoke-webrequest -uri "https://pkgs.dev.azure.com/powershell/PowerShell/_apis/packaging/feeds/powershell/cargo/packages/atty/versions/0.2.0?api-version=7.2-preview.1" -Token $token -Authentication Bearer -SkipHttpErrorCheck
-              Write-Host ($out | Out-String)
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
