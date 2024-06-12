@@ -22,6 +22,8 @@ pub enum ConfigSubCommand {
     Set {
         #[clap(short, long, required = true, help = "The registry JSON input.")]
         input: String,
+        #[clap(short = 'w', long, help = "Run as a what-if operation instead of applying the registry configuration")]
+        what_if: bool,
     },
     #[clap(name = "delete", about = "Delete registry configuration.")]
     Delete {

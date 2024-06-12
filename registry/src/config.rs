@@ -14,12 +14,15 @@ pub enum RegistryValueData {
     QWord(u64),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "Registry", deny_unknown_fields)]
 pub struct Registry {
     /// The path to the registry key.
     #[serde(rename = "keyPath")]
     pub key_path: String,
+    /// The information from a config set --what-if operation.
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<WhatIf>,
     /// The name of the registry value.
     #[serde(rename = "valueName", skip_serializing_if = "Option::is_none")]
     pub value_name: Option<String>,
@@ -28,4 +31,28 @@ pub struct Registry {
     pub value_data: Option<RegistryValueData>,
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WhatIf {
+    #[serde(rename = "changeType")]
+    pub change_type: Action,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub depth: Option<usize>,
+    #[serde(rename = "proposedValueData", skip_serializing_if = "Option::is_none")]
+    pub proposed_data: Option<RegistryValueData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub enum Action {
+    #[serde(rename = "clobber")]
+    Clobber,
+    #[serde(rename = "error")]
+    Error,
+    #[serde(rename = "new")]
+    New
 }

@@ -63,16 +63,21 @@ fn main() {
                         }
                     }
                 },
-                args::ConfigSubCommand::Set{input} => {
+                args::ConfigSubCommand::Set{input, what_if} => {
                     let reg_helper = match RegistryHelper::new(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
-                            eprintln!("Error: {err}");
+                            eprintln!("{err}");
                             exit(EXIT_INVALID_INPUT);
                         }
                     };
-                    match reg_helper.set() {
-                        Ok(()) => {},
+                    match reg_helper.set(what_if) {
+                        Ok(reg_config) => {
+                            if let Some(config) = reg_config {
+                                let json = serde_json::to_string(&config).unwrap();
+                                println!("{json}");
+                            }
+                        },
                         Err(err) => {
                             eprintln!("Error: {err}");
                             exit(EXIT_REGISTRY_ERROR);
