@@ -453,17 +453,6 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
             let json = serde_json::to_string(schema)?;
             Ok(json)
         },
-        SchemaKind::Url(ref url) => {
-            // TODO: cache downloaded schemas so we don't have to download them every time
-            let mut response = reqwest::blocking::get(url)?;
-            if !response.status().is_success() {
-                return Err(DscError::HttpStatus(response.status()));
-            }
-
-            let mut body = String::new();
-            response.read_to_string(&mut body)?;
-            Ok(body)
-        },
     }
 }
 
