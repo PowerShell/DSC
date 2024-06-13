@@ -81,28 +81,33 @@ changes since the last release, see the [diff on GitHub][unreleased].
   [actual configuration set operation][ur-ab], except that the metadata field
   [executionType][ur-ac] is set to `WhatIf` instead of `Actual`.
 
-  In this release, the generated output is synthetic, based on the results of the resources' `test`
-  operation. In the future, resources will be able to participate in what-if operations, reporting
-  more specifically how they will change the system. For example, participating resources could
-  indicate whether an actual set operation will require a reboot or whether the current user has
-the correct permissions to manage that resource instance.
+  By default, the generated output is synthetic, based on the results of the resources' `test`
+  operation. Resources can define the [whatIf][ur-ad] property in their resource manifest to
+  participate in what-if operations, reporting more specifically how they will change the system.
+  For example, participating resources could indicate whether an actual set operation will require
+  a reboot or whether the current user has the correct permissions to manage that resource
+  instance.
+
+  Participating resources have the [WhatIf capability][ur-ae].
 
   <details><summary>Related work items</summary>
 
   - Issues: [#70][#70]
-  - PRs: [#400][#400]
+  - PRs:
+    - [#400][#400]
+    - [#441][#441]
 
   </details>
 
-- Added support for [importer resources][ur-ad]. These resources resolve external sources to a
+- Added support for [importer resources][ur-af]. These resources resolve external sources to a
   nested DSC Configuration document. The resolved instances are processed as nested resource
   instances.
 
   This required some updates to the schemas, all backwards-compatible:
 
-  - Added a new [resourceKind][ur-ae] named `Import`.
-  - Added the [resolve][ur-af] command to resource manifests.
-  - Added the new [`Resolve`][ur-ag] capability, returned in the output for the
+  - Added a new [resourceKind][ur-ag] named `Import`.
+  - Added the [resolve][ur-ah] command to resource manifests.
+  - Added the new [`Resolve`][ur-ai] capability, returned in the output for the
     [dsc resource list][cmd-rlist] command when DSC discovers an importer resource.
 
   <details><summary>Related work items</summary>
@@ -232,10 +237,12 @@ the correct permissions to manage that resource instance.
 [ur-aa]: ./docs/reference/cli/config/set.md#-w---what-if
 [ur-ab]: ./docs/reference/schemas/outputs/config/set.md
 [ur-ac]: ./docs/reference/schemas/metadata/Microsoft.DSC/properties.md#executiontype
-[ur-ad]: ./docs/reference/schemas/definitions/resourceKind.md#importer-resources
-[ur-ae]: ./docs/reference/schemas/definitions/resourceKind.md
-[ur-af]: ./docs/reference/schemas/resource/manifest/resolve.md
-[ur-ag]: ./docs/reference/schemas/outputs/resource/list.md#capability-resolve
+[ur-ad]: ./docs/reference/schemas/resource/manifest/whatif.md
+[ur-ae]: ./docs/reference/schemas/outputs/resource/list.md#capability-whatif
+[ur-af]: ./docs/reference/schemas/definitions/resourceKind.md#importer-resources
+[ur-ag]: ./docs/reference/schemas/definitions/resourceKind.md
+[ur-ah]: ./docs/reference/schemas/resource/manifest/resolve.md
+[ur-ai]: ./docs/reference/schemas/outputs/resource/list.md#capability-resolve
 [ur-fa]: ./docs/reference/schemas/resource/manifest/root.md#exitcodes
 
 ## [v3.0.0-preview.7][release-v3.0.0-preview.7] - 2024-04-22
@@ -1505,6 +1512,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#432]: https://github.com/PowerShell/DSC/issues/432
 [#434]: https://github.com/PowerShell/DSC/issues/434
 [#438]: https://github.com/PowerShell/DSC/issues/438
+[#441]: https://github.com/PowerShell/DSC/issues/441
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57
