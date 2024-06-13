@@ -202,7 +202,6 @@ the correct permissions to manage that resource instance.
 
   </details>
 
-
 ### Fixed
 
 - Fixed the JSON Schema for [exit codes][ur-fa] in the resource manifest to support negative
@@ -213,6 +212,19 @@ the correct permissions to manage that resource instance.
 
   - Issues: [#407][#407]
   - PRs: [#410][#410]
+
+  </details>
+
+- Fixed the behavior of the [int()][int()] configuration function to error when given an input
+  value other than a string or integer. Prior to this release, when you specified a number with
+  a fractional part as input for the function, it coerced the input value to an integer representing
+  the fractional part. Starting with this release, the `int()` function raises an invalid input
+  error when the input value isn't a string or an integer.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#390][#390]
+  - PRs: [#438][#438]
 
   </details>
 
@@ -1481,6 +1493,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#382]: https://github.com/PowerShell/DSC/issues/382
 [#385]: https://github.com/PowerShell/DSC/issues/385
 [#388]: https://github.com/PowerShell/DSC/issues/388
+[#390]: https://github.com/PowerShell/DSC/issues/390
 [#397]: https://github.com/PowerShell/DSC/issues/397
 [#400]: https://github.com/PowerShell/DSC/issues/400
 [#401]: https://github.com/PowerShell/DSC/issues/401
@@ -1491,6 +1504,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#429]: https://github.com/PowerShell/DSC/issues/429
 [#432]: https://github.com/PowerShell/DSC/issues/432
 [#434]: https://github.com/PowerShell/DSC/issues/434
+[#438]: https://github.com/PowerShell/DSC/issues/438
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57
