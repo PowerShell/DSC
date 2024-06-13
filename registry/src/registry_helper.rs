@@ -78,6 +78,7 @@ impl RegistryHelper {
 
     pub fn set(&self, is_what_if: bool) -> Result<Option<Registry>, RegistryError> {
         let mut depth = None;
+        let mut proposed_data: Option<RegistryValueData> = None;
         let reg_key = match self.open(Security::Write) {
             Ok((reg_key, _subkey)) => reg_key,
             // handle NotFound error
@@ -98,24 +99,24 @@ impl RegistryHelper {
 
                 self.open(Security::Write)?.0
             },
-            Err(e) => return self.handle_what_if_error(e, is_what_if)
+            Err(e) => return self.handle_error_or_what_if(e, is_what_if)
         };
 
         if let Some(value_data) = &self.config.value_data {
             let Ok(value_name) = U16CString::from_str(self.config.value_name.as_ref().unwrap()) else {
-                return self.handle_what_if_error(RegistryError::Utf16Conversion("valueName".to_string()), is_what_if);
+                return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueName".to_string()), is_what_if);
             };
 
             let data = match value_data {
                 RegistryValueData::String(s) => {
                     let Ok(utf16) = U16CString::from_str(s) else {
-                        return self.handle_what_if_error(RegistryError::Utf16Conversion("valueData".to_string()), is_what_if);
+                        return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()), is_what_if);
                     };
                     Data::String(utf16)
                 },
                 RegistryValueData::ExpandString(s) => {
                     let Ok(utf16) = U16CString::from_str(s) else {
-                        return self.handle_what_if_error(RegistryError::Utf16Conversion("valueData".to_string()), is_what_if);
+                        return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()), is_what_if);
                     };
                     Data::ExpandString(utf16)
                 },
@@ -129,7 +130,7 @@ impl RegistryHelper {
                     let mut m16: Vec<UCString<u16>> = Vec::<UCString<u16>>::new();
                     for s in m {
                         let Ok(utf16) = U16CString::from_str(s) else {
-                            return self.handle_what_if_error(RegistryError::Utf16Conversion("valueData".to_string()), is_what_if);
+                            return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()), is_what_if);
                         };
                         m16.push(utf16);
                     }
@@ -141,22 +142,11 @@ impl RegistryHelper {
             };
 
             if is_what_if {
-                let change_type = if let Some(name_exists) = self.get()?.exist {
-                    if name_exists { Action::Clobber }
-                    else { Action::New }
-                } else { Action::Clobber };
-                return Ok(Some(Registry {
-                    key_path: self.config.key_path.clone(),
-                    what_if: Some(WhatIf {
-                        change_type,
-                        proposed_data: Some(convert_reg_value(&data)?),
-                        depth,
-                        message: None
-                    }),
-                    ..Default::default()
-                }));
+                proposed_data = Some(convert_reg_value(&data)?);
             }
-            reg_key.set_value(&value_name, &data)?;
+            else {
+                reg_key.set_value(&value_name, &data)?;
+            }
         }
 
         if is_what_if {
@@ -168,13 +158,14 @@ impl RegistryHelper {
                 key_path: self.config.key_path.clone(),
                 what_if: Some(WhatIf {
                     change_type,
-                    proposed_data: None,
+                    proposed_data,
                     depth,
                     message: None
                 }),
                 ..Default::default()
             }));
         }
+
         Ok(None)
     }
 
@@ -249,7 +240,7 @@ impl RegistryHelper {
         Ok((parent_key, subkeys))
     }
 
-    fn handle_what_if_error(&self, error: RegistryError, is_what_if: bool) -> Result<Option<Registry>, RegistryError> {
+    fn handle_error_or_what_if(&self, error: RegistryError, is_what_if: bool) -> Result<Option<Registry>, RegistryError> {
         if is_what_if {
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),

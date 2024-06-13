@@ -67,7 +67,7 @@ fn main() {
                     let reg_helper = match RegistryHelper::new(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
-                            eprintln!("{err}");
+                            eprintln!("Error: {err}");
                             exit(EXIT_INVALID_INPUT);
                         }
                     };
