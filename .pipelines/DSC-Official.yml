@@ -137,6 +137,9 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+
+              $credentialProvider = "cargo:token"
+              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -272,6 +275,9 @@ extends:
               #$header = "Bearer $accessToken"
               $header = "$accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+
+              $credentialProvider = "cargo:token"
+              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -316,6 +322,9 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+
+              $credentialProvider = "cargo:token"
+              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -368,6 +377,9 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+
+              $credentialProvider = "cargo:token"
+              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
