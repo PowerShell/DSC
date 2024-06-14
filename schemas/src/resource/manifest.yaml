@@ -445,6 +445,8 @@ properties:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.get.yaml
   set:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.set.yaml
+  whatIf:
+    $ref: /<PREFIX>/<VERSION>/resource/manifest.whatIf.yaml
   test:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.test.yaml
   delete:
