@@ -4,7 +4,7 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'Microsoft.DSC.Experimental.psm1'
+RootModule = 'Microsoft.DSC.Experimental.Systemctl.psm1'
 
 # Version number of this module.
 ModuleVersion = '0.0.1'
