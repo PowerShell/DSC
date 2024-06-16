@@ -67,7 +67,7 @@ function FindAndParseResourceDefinitions
         return
     }
     
-    "Loading resources from '$filePath'" | Write-DscTrace -Operation Trace
+    "Loading resources from file '$filePath'" | Write-DscTrace -Operation Trace
     #TODO: Handle class inheritance 
     #TODO: Ensure embedded instances in properties are working correctly
     [System.Management.Automation.Language.Token[]] $tokens = $null
@@ -161,8 +161,18 @@ function LoadPowerShellClassResourcesFromModule
         [PSModuleInfo]$moduleInfo
     )
 
+    "Loading resources from module '$($moduleInfo.Path)'" | Write-DscTrace -Operation Trace
+    
     if ($moduleInfo.RootModule)
     {
+        if  (([System.IO.Path]::GetExtension($moduleInfo.RootModule) -ne ".psm1") -and
+            ([System.IO.Path]::GetExtension($moduleInfo.RootModule) -ne ".ps1") -and
+            (-not $z.NestedModules))
+        {
+            "RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'" | Write-DscTrace -Operation Trace
+            return [System.Collections.Generic.List[DscResourceInfo]]::new()
+        }
+
         $scriptPath = Join-Path $moduleInfo.ModuleBase  $moduleInfo.RootModule
     }
     else
@@ -177,7 +187,9 @@ function LoadPowerShellClassResourcesFromModule
         foreach ($nestedModule in $moduleInfo.NestedModules)
         {
             $resourcesOfNestedModules = LoadPowerShellClassResourcesFromModule $nestedModule
-            $Resources.AddRange($resourcesOfNestedModules)
+            if ($resourcesOfNestedModules) {
+                $Resources.AddRange($resourcesOfNestedModules)
+            }
         }
     }
 
@@ -280,7 +292,9 @@ function Invoke-DscCacheRefresh {
             foreach ($mod in $modules)
             {
                 [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $mod
-                $DscResources.AddRange($r)
+                if ($r) {
+                    $DscResources.AddRange($r)
+                }
             }
         }
 
