@@ -90,10 +90,11 @@ pub enum TestResult {
     Group(Vec<ResourceTestResult>),
 }
 
+#[must_use]
 pub fn get_in_desired_state(test_result: &TestResult) -> bool {
     match test_result {
         TestResult::Resource(ref resource_test_result) => {
-            return resource_test_result.in_desired_state;
+            resource_test_result.in_desired_state
         },
         TestResult::Group(ref group_test_result) => {
             for result in group_test_result {
