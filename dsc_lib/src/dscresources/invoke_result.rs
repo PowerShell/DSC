@@ -19,7 +19,7 @@ impl From<TestResult> for GetResult {
         match value {
             TestResult::Group(group) => {
                 let mut results = Vec::<ResourceGetResult>::new();
-                for result in group.results {
+                for result in group {
                     results.push(result.into());
                 }
                 GetResult::Group(results)
@@ -42,31 +42,10 @@ pub struct ResourceGetResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct GroupResourceSetResponse {
-    pub results: Vec<ResourceSetResult>,
-}
-
-impl GroupResourceSetResponse {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            results: Vec::new(),
-        }
-    }
-}
-
-impl Default for GroupResourceSetResponse {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum SetResult {
     Resource(ResourceSetResponse),
-    Group(GroupResourceSetResponse),
+    Group(Vec<ResourceSetResult>),
 }
 
 impl From<TestResult> for SetResult {
@@ -74,10 +53,10 @@ impl From<TestResult> for SetResult {
         match value {
             TestResult::Group(group) => {
                 let mut results = Vec::<ResourceSetResult>::new();
-                for result in group.results {
+                for result in group {
                     results.push(result.into());
                 }
-                SetResult::Group(GroupResourceSetResponse { results })
+                SetResult::Group(results)
             },
             TestResult::Resource(resource) => {
                 SetResult::Resource(ResourceSetResponse {
@@ -105,34 +84,26 @@ pub struct ResourceSetResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct GroupResourceTestResponse {
-    pub results: Vec<ResourceTestResult>,
-    #[serde(rename = "inDesiredState")]
-    pub in_desired_state: bool,
-}
-
-impl GroupResourceTestResponse {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            results: Vec::new(),
-            in_desired_state: false,
-        }
-    }
-}
-
-impl Default for GroupResourceTestResponse {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum TestResult {
     Resource(ResourceTestResponse),
-    Group(GroupResourceTestResponse),
+    Group(Vec<ResourceTestResult>),
+}
+
+pub fn get_in_desired_state(test_result: &TestResult) -> bool {
+    match test_result {
+        TestResult::Resource(ref resource_test_result) => {
+            return resource_test_result.in_desired_state;
+        },
+        TestResult::Group(ref group_test_result) => {
+            for result in group_test_result {
+                if !get_in_desired_state(&(result.result)) {
+                    return false;
+                }
+            }
+            true
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

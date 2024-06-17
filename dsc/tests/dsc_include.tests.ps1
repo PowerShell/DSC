@@ -10,15 +10,6 @@ Describe 'Include tests' {
         $osinfoParametersConfigPath = Get-Item (Join-Path $includePath 'osinfo.parameters.yaml')
 
         $logPath = Join-Path $TestDrive 'stderr.log'
-
-        $includeConfig = @'
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
-            resources:
-            - name: Echo
-              type: Test/Echo
-              properties:
-                output: Hello World
-'@
     }
 
     It 'Include config with default parameters' {
@@ -182,5 +173,39 @@ resources:
         $out.results[1].result[0].result[0].name | Should -Be 'one'
         $out.results[1].result[0].result[0].type | Should -Be 'Test/Echo'
         $out.results[1].result[0].result[0].result[0].actualState.output | Should -Be 'one'
+    }
+
+    It 'Set with include works' {
+        $echoConfig = @'
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: one
+  type: Test/Echo
+  properties:
+    output: Hello World
+'@
+
+        $echoConfigPath = Join-Path $TestDrive 'echo.dsc.yaml'
+        $echoConfig | Set-Content -Path $echoConfigPath -Encoding utf8
+        # need to escape backslashes for YAML
+        $echoConfigPathParent = (Split-Path $echoConfigPath -Parent).Replace('\', '\\')
+        $echoConfigPathLeaf = (Split-Path $echoConfigPath -Leaf).Replace('\', '\\')
+        $directorySeparator = [System.IO.Path]::DirectorySeparatorChar.ToString().Replace('\', '\\')
+
+        $includeConfig = @"
+`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: nested
+  type: Microsoft.DSC/Include
+  properties:
+    configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
+"@
+
+        $out = dsc config set -d $includeConfig | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result[0].name | Should -Be 'one'
+        $out.results[0].result[0].type | Should -Be 'Test/Echo'
+        $out.results[0].result[0].result.afterState.output | Should -Be 'Hello World'
+        $out.hadErrors | Should -Be $false
     }
 }

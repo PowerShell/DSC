@@ -95,6 +95,9 @@ pub enum DscError {
     #[error("Resource not found: {0}")]
     ResourceNotFound(String),
 
+    #[error("Resource manifest not found: {0}")]
+    ResourceManifestNotFound(String),
+
     #[error("Schema: {0}")]
     Schema(String),
 
