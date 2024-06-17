@@ -150,14 +150,14 @@ impl RegistryHelper {
         }
 
         if is_what_if {
-            let change_type = if let Some(name_exists) = self.get()?.exist {
+            let category = if let Some(name_exists) = self.get()?.exist {
                 if name_exists { Action::Clobber }
                 else { Action::New }
             } else { Action::Clobber };
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
                 what_if: Some(WhatIf {
-                    change_type,
+                    category,
                     proposed_data,
                     depth,
                     message: None
@@ -245,7 +245,7 @@ impl RegistryHelper {
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
                 what_if: Some(WhatIf {
-                    change_type: Action::Error,
+                    category: Action::Error,
                     depth: None,
                     proposed_data: None,
                     message: Some(error.to_string())
