@@ -4,10 +4,11 @@
 use crate::configure::config_doc::{ExecutionKind, Metadata};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
-use crate::dscresources::dscresource::get_diff;
-use crate::dscresources::invoke_result::GetResult;
-use crate::dscresources::{dscresource::{Capability, Invoke}, invoke_result::{SetResult, ResourceSetResponse}};
-use crate::dscresources::resource_manifest::Kind;
+use crate::dscresources::{
+    {dscresource::{Capability, Invoke, get_diff}, invoke_result::{SetResult, ResourceSetResponse}},
+    invoke_result::GetResult,
+    resource_manifest::Kind,
+};
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;

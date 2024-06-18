@@ -7,6 +7,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use tracing::debug;
 
 use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
@@ -187,6 +188,7 @@ pub trait Invoke {
 
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
+        debug!("Invoking get for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("get custom resources".to_string()))
@@ -202,6 +204,7 @@ impl Invoke for DscResource {
     }
 
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+        debug!("Invoking set for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -217,6 +220,7 @@ impl Invoke for DscResource {
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+        debug!("Invoking test for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("test custom resources".to_string()))
@@ -230,7 +234,15 @@ impl Invoke for DscResource {
                 let resource_manifest = import_manifest(manifest.clone())?;
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
-                    let desired_state = serde_json::from_str(expected)?;
+                    let desired_state = if self.kind == Kind::Import {
+                        let config = self.resolve(expected)?.configuration;
+                        // TODO: implement way to resolve entire config doc including expressions and parameters
+                        // as the raw configuration (desired state) won't match the result, also convert the desired
+                        // state to a TestResult so the comparison is consistent
+                        serde_json::to_value(config["resources"].clone())?
+                    } else {
+                        serde_json::from_str(expected)?
+                    };
                     let actual_state = match get_result {
                         GetResult::Group(results) => {
                             let mut result_array: Vec<Value> = Vec::new();
@@ -245,7 +257,7 @@ impl Invoke for DscResource {
                     };
                     let diff_properties = get_diff( &desired_state, &actual_state);
                     let test_result = TestResult::Resource(ResourceTestResponse {
-                        desired_state: serde_json::from_str(expected)?,
+                        desired_state,
                         actual_state,
                         in_desired_state: diff_properties.is_empty(),
                         diff_properties,
@@ -260,6 +272,7 @@ impl Invoke for DscResource {
     }
 
     fn delete(&self, filter: &str) -> Result<(), DscError> {
+        debug!("Invoking delete for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("set custom resources".to_string()))
@@ -275,6 +288,7 @@ impl Invoke for DscResource {
     }
 
     fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
+        debug!("Invoking validate for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("validate custom resources".to_string()))
@@ -290,6 +304,7 @@ impl Invoke for DscResource {
     }
 
     fn schema(&self) -> Result<String, DscError> {
+        debug!("Invoking schema for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented("schema custom resources".to_string()))
@@ -305,6 +320,7 @@ impl Invoke for DscResource {
     }
 
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
+        debug!("Invoking export for resource: {}", self.type_name);
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
@@ -313,6 +329,7 @@ impl Invoke for DscResource {
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
+        debug!("Invoking resolve for resource: {}", self.type_name);
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };

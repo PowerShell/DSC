@@ -9,9 +9,7 @@ use crate::tablewriter::Table;
 use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
 use dsc_lib::configure::{Configurator, config_doc::ExecutionKind, config_result::ResourceGetResult};
 use dsc_lib::dscerror::DscError;
-use dsc_lib::dscresources::invoke_result::{
-    GroupResourceSetResponse, GroupResourceTestResponse, ResolveResult, TestResult
-};
+use dsc_lib::dscresources::invoke_result::ResolveResult;
 use dsc_lib::{
     DscManager,
     dscresources::invoke_result::ValidateResult,
@@ -27,11 +25,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
     match configurator.invoke_get() {
         Ok(result) => {
             if *as_group {
-                let mut group_result = Vec::<ResourceGetResult>::new();
-                for result in result.results {
-                    group_result.push(result);
-                };
-                let json = match serde_json::to_string(&group_result) {
+                let json = match serde_json::to_string(&(result.results)) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
@@ -66,10 +60,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     match configurator.invoke_set(false) {
         Ok(result) => {
             if *as_group {
-                let group_result = GroupResourceSetResponse {
-                    results: result.results
-                };
-                let json = match serde_json::to_string(&group_result) {
+                let json = match serde_json::to_string(&(result.results)) {
                     Ok(json) => json,
                     Err(err) => {
                         error!("JSON Error: {err}");
@@ -104,23 +95,6 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
     match configurator.invoke_test() {
         Ok(result) => {
             if *as_group {
-                let mut in_desired_state = true;
-                for test_result in &result.results {
-                    match &test_result.result {
-                        TestResult::Resource(resource_test_result) => {
-                            if !resource_test_result.in_desired_state {
-                                in_desired_state = false;
-                                break;
-                            }
-                        },
-                        TestResult::Group(group_resource_test_result) => {
-                            if !group_resource_test_result.in_desired_state {
-                                in_desired_state = false;
-                                break;
-                            }
-                        }
-                    }
-                }
                 let json = if *as_get {
                     let mut group_result = Vec::<ResourceGetResult>::new();
                     for test_result in result.results {
@@ -135,11 +109,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                     }
                 }
                 else {
-                    let group_result = GroupResourceTestResponse {
-                        results: result.results,
-                        in_desired_state
-                    };
-                    match serde_json::to_string(&group_result) {
+                    match serde_json::to_string(&(result.results)) {
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON Error: {err}");

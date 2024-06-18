@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio}};
 use crate::{configure::{config_doc::ExecutionKind, {config_result::ResourceGetResult, parameters, Configurator}}, util::parse_input_to_json};
 use crate::dscerror::DscError;
-use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
@@ -94,7 +94,13 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
-    // TODO: support import resources
+    debug!("Invoking set for '{}'", &resource.resource_type);
+    if resource.kind == Some(Kind::Import) {
+        let mut configurator = get_configurator(resource, cwd, desired)?;
+        let config_result = configurator.invoke_set(skip_test)?;
+        return Ok(SetResult::Group(config_result.results));
+    }
+
     let operation_type: String;
     let mut is_synthetic_what_if = false;
     let set_method = match execution_type {
@@ -124,16 +130,17 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         if is_synthetic_what_if {
             return Ok(test_result.into());
         }
-        let (in_desired_state, actual_state) = match test_result {
+        let (in_desired_state, actual_state) = match &test_result {
             TestResult::Group(group_response) => {
+                let in_desired_state = get_in_desired_state(&test_result);
                 let mut result_array: Vec<Value> = Vec::new();
-                for result in group_response.results {
+                for result in group_response {
                     result_array.push(serde_json::to_value(result)?);
                 }
-                (group_response.in_desired_state, Value::from(result_array))
+                (in_desired_state, Value::from(result_array))
             },
             TestResult::Resource(response) => {
-                (response.in_desired_state, response.actual_state)
+                (response.in_desired_state, response.actual_state.clone())
             }
         };
 
@@ -267,7 +274,12 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
-    // TODO: support import resources
+    debug!("Invoking test for '{}'", &resource.resource_type);
+    if resource.kind == Some(Kind::Import) {
+        let mut configurator = get_configurator(resource, cwd, expected)?;
+        let config_result = configurator.invoke_test()?;
+        return Ok(TestResult::Group(config_result.results));
+    }
 
     let Some(test) = &resource.test else {
         info!("Resource '{}' does not implement test, performing synthetic test", &resource.resource_type);
