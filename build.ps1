@@ -570,7 +570,7 @@ if ($packageType -eq 'msixbundle') {
 
     $packageName = "DSC-$productVersion-$architecture.tar"
     $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
-    tar cvf $tgzFile -C $tgzTarget .
+    tar cvf $tarFile -C $tgzTarget .
     Write-Host -ForegroundColor Green "`nTar file is created at $tarFile"
 
     $gzFile = "$tarFile.gz"
