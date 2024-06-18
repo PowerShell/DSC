@@ -59,6 +59,9 @@
     "set": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json"
     },
+    "whatIf": {
+      "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.whatIf.json"
+    },
     "test": {
       "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.test.json"
     },

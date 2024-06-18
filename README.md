@@ -65,6 +65,14 @@ DSCv3 uses JSON schemas to define the structure of resources, configuration docu
 outputs that DSCv3 returns. These schemas make it easier to integrate DSCv3 with other tools,
 because they standardize and document how to interface with DSCv3.
 
+## Code of Conduct
+
+Please see our [Code of Conduct](CODE_OF_CONDUCT.md) before participating in this project.
+
+## Security Policy
+
+For any security issues, please see our [Security Policy](SECURITY.md).
+
 [00]: https://github.com/powershell/psdesiredstateconfiguration
 [01]: https://github.com/PowerShell/DSC/releases/latest
 [02]: https://learn.microsoft.com/powershell/dsc/overview?view=dsc-3.0&preserve-view=true

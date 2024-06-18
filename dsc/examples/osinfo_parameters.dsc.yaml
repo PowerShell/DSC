@@ -13,3 +13,7 @@ resources:
   type: Microsoft/OSInfo
   properties:
     family: "[parameters('osFamily')]"
+- name: another os instance
+  type: Microsoft/OSInfo
+  properties:
+    family: macOS

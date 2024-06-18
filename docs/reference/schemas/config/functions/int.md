@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'int' DSC configuration document function
-ms.date:     04/09/2024
+ms.date:     06/13/2024
 ms.topic:    reference
 title:       int
 ---
@@ -9,7 +9,7 @@ title:       int
 
 ## Synopsis
 
-Returns an integer from an input string or non-integer number.
+Returns an integer from an input string or integer.
 
 ## Syntax
 
@@ -19,8 +19,9 @@ int(<inputValue>)
 
 ## Description
 
-The `int()` function returns an integer, converting an input string or non-integer number into an
-integer. It truncates the fractional part of the input number, it doesn't round up.
+The `int()` function returns an integer, converting an input string into an integer. If you pass an
+integer, it returns the integer. If you pass any other value, including a non-integer number, the
+function raises an invalid input error.
 
 ## Examples
 
@@ -57,17 +58,12 @@ hadErrors: false
 
 ### inputValue
 
-The `int()` function expects input as either a string or a number. If the value is a string that
-can't be parsed as a number, DSC returns an error for the function.
-
-> [!NOTE]
-> There is an open bug (see [GitHub issue #390][#390]) for this function when operating on numbers.
-> The function correctly returns the expected value for string representations of numbers with
-> fractional parts, but returns the fractional part instead of the integer for actual numbers.
-> Specify the input value for this function as a string instead of a number.
+The `int()` function expects input as either a string or an integer. If the value is a string that
+can't be parsed as a number DSC returns an error for the function. If the value isn't a string or
+integer, DSC returns an invalid input error for the function.
 
 ```yaml
-Type:         [String, Number]
+Type:         [String, Integer]
 Required:     true
 MinimumCount: 1
 MaximumCount: 1
@@ -84,4 +80,3 @@ Type: integer
 ```
 
 <!-- Link reference definitions -->
-[#390]: https://github.com/PowerShell/DSC/issues/390

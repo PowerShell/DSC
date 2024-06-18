@@ -24,6 +24,7 @@
           "Get",
           "Set",
           "SetHandlesExist",
+          "WhatIf",
           "Test",
           "Delete",
           "Export",
