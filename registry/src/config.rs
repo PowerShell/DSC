@@ -36,22 +36,6 @@ pub struct Registry {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct WhatIf {
-    pub category: Action,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub depth: Option<usize>,
-    #[serde(rename = "proposedValueData", skip_serializing_if = "Option::is_none")]
-    pub proposed_data: Option<RegistryValueData>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub enum Action {
-    #[serde(rename = "clobber")]
-    Clobber,
-    #[serde(rename = "error")]
-    Error,
-    #[serde(rename = "new")]
-    New
 }

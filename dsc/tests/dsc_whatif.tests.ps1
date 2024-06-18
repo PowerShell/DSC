@@ -41,7 +41,7 @@ Describe 'whatif tests' {
         $what_if_result.results.result.beforeState._exist | Should -Be $false
         $what_if_result.results.result.beforeState.keyPath | Should -Be $set_result.results.result.beforeState.keyPath
         $what_if_result.results.result.afterState.KeyPath | Should -Be $set_result.results.result.afterState.keyPath
-        $what_if_result.results.result.changedProperties | Should -Be @('changeType', 'depth', '_exist')
+        $what_if_result.results.result.changedProperties | Should -Be @('_exist')
         $what_if_result.hadErrors | Should -BeFalse
         $what_if_result.results.Count | Should -Be 1
         $LASTEXITCODE | Should -Be 0

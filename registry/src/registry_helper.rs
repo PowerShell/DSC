@@ -3,7 +3,7 @@
 
 use registry::{Data, Hive, RegKey, Security, key, value};
 use utfx::{U16CString, UCString};
-use crate::config::{Action, Registry, RegistryValueData, WhatIf};
+use crate::config::{Registry, RegistryValueData, WhatIf};
 use crate::error::RegistryError;
 
 pub struct RegistryHelper {
@@ -77,27 +77,29 @@ impl RegistryHelper {
     }
 
     pub fn set(&self, is_what_if: bool) -> Result<Option<Registry>, RegistryError> {
-        let mut depth = None;
-        let mut proposed_data: Option<RegistryValueData> = None;
         let reg_key = match self.open(Security::Write) {
-            Ok((reg_key, _subkey)) => reg_key,
+            Ok((reg_key, _subkey)) => Some(reg_key),
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
                 // if the key doesn't exist, some of the parent keys may
                 // not exist either, so we need to find the valid parent key
                 // and then create the subkeys that don't exist
-                let (parent_key, subkeys) = self.get_valid_parent_key_and_subkeys()?;
-                depth = Some(subkeys.len());
-                let mut reg_key = parent_key;
-                for subkey in subkeys {
-                    let Ok(path) = UCString::<u16>::from_str(subkey) else {
-                        return Err(RegistryError::Utf16Conversion("subkey".to_string()));
-                    };
-
-                    reg_key = reg_key.create(path, Security::CreateSubKey)?;
+                if is_what_if {
+                    None
                 }
+                else {
+                    let (parent_key, subkeys) = self.get_valid_parent_key_and_subkeys()?;
+                    let mut reg_key = parent_key;
+                    for subkey in subkeys {
+                        let Ok(path) = UCString::<u16>::from_str(subkey) else {
+                            return Err(RegistryError::Utf16Conversion("subkey".to_string()));
+                        };
 
-                self.open(Security::Write)?.0
+                        reg_key = reg_key.create(path, Security::CreateSubKey)?;
+                    }
+
+                    Some(self.open(Security::Write)?.0)
+                }
             },
             Err(e) => return self.handle_error_or_what_if(e, is_what_if)
         };
@@ -142,26 +144,24 @@ impl RegistryHelper {
             };
 
             if is_what_if {
-                proposed_data = Some(convert_reg_value(&data)?);
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    value_data: Some(convert_reg_value(&data)?),
+                    value_name: self.config.value_name.clone(),
+                    what_if: Some(WhatIf { message: None }),
+                    ..Default::default()
+                }));
             }
-            else {
+
+            if let Some(reg_key) = reg_key {
                 reg_key.set_value(&value_name, &data)?;
-            }
+            };
         }
 
         if is_what_if {
-            let category = if let Some(name_exists) = self.get()?.exist {
-                if name_exists { Action::Clobber }
-                else { Action::New }
-            } else { Action::Clobber };
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
-                what_if: Some(WhatIf {
-                    category,
-                    proposed_data,
-                    depth,
-                    message: None
-                }),
+                what_if: Some(WhatIf { message: None }),
                 ..Default::default()
             }));
         }
@@ -241,15 +241,11 @@ impl RegistryHelper {
     }
 
     fn handle_error_or_what_if(&self, error: RegistryError, is_what_if: bool) -> Result<Option<Registry>, RegistryError> {
+        // TODO: return error message via metadata instead of as property within set state
         if is_what_if {
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
-                what_if: Some(WhatIf {
-                    category: Action::Error,
-                    depth: None,
-                    proposed_data: None,
-                    message: Some(error.to_string())
-                }),
+                what_if: Some(WhatIf { message: Some(error.to_string()) }),
                 ..Default::default()
             }));
         }
