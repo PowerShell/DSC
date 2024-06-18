@@ -37,5 +37,5 @@ pub struct Registry {
 #[serde(deny_unknown_fields)]
 pub struct WhatIf {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>
+    pub error: Option<String>
 }

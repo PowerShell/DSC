@@ -148,7 +148,7 @@ impl RegistryHelper {
                     key_path: self.config.key_path.clone(),
                     value_data: Some(convert_reg_value(&data)?),
                     value_name: self.config.value_name.clone(),
-                    what_if: Some(WhatIf { message: None }),
+                    what_if: Some(WhatIf { error: None }),
                     ..Default::default()
                 }));
             }
@@ -161,7 +161,7 @@ impl RegistryHelper {
         if is_what_if {
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
-                what_if: Some(WhatIf { message: None }),
+                what_if: Some(WhatIf { error: None }),
                 ..Default::default()
             }));
         }
@@ -245,7 +245,7 @@ impl RegistryHelper {
         if is_what_if {
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
-                what_if: Some(WhatIf { message: Some(error.to_string()) }),
+                what_if: Some(WhatIf { error: Some(error.to_string()) }),
                 ..Default::default()
             }));
         }
