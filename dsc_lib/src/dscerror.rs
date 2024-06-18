@@ -19,6 +19,9 @@ pub enum DscError {
     #[error("Command: Executable '{0}' [Exit code {1}] {2}")]
     CommandExit(String, i32, String),
 
+    #[error("Command: Resource '{0}' [Exit code {1}] manifest description: {2}")]
+    CommandExitFromManifest(String, i32, String),
+
     #[error("CommandOperation: {0} for executable '{1}'")]
     CommandOperation(String, String),
 
@@ -84,6 +87,9 @@ pub enum DscError {
 
     #[error("Resource not found: {0}")]
     ResourceNotFound(String),
+
+    #[error("Resource manifest not found: {0}")]
+    ResourceManifestNotFound(String),
 
     #[error("Schema: {0}")]
     Schema(String),

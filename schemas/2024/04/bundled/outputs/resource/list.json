@@ -24,6 +24,7 @@
           "Get",
           "Set",
           "SetHandlesExist",
+          "WhatIf",
           "Test",
           "Delete",
           "Export",
@@ -199,6 +200,9 @@
         },
         "set": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.set.json"
+        },
+        "whatIf": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.whatIf.json"
         },
         "test": {
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/resource/manifest.test.json"
@@ -391,6 +395,89 @@
         },
         "return": {
           "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/returnKind.json"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "input"
+          ],
+          "not": {
+            "properties": {
+              "args": {
+                "contains": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "not": {
+            "required": [
+              "input"
+            ]
+          },
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "input"
+          ],
+          "properties": {
+            "args": {
+              "contains": {
+                "type": "object"
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          }
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.whatIf.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.whatIf.json",
+      "title": "What-if method",
+      "description": "Defines how DSC must call the DSC Resource to indicate whether and how the set command will modify an instance and how to process the output from the DSC Resource.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/commandArgs.json"
+        },
+        "input": {
+          "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/inputKind.json"
+        },
+        "implementsPretest": {
+          "title": "Resource Performs Pre-Test",
+          "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set --what-if` command. Set this value to `true` if the DSC Resource tests input before processing how it will modify system state.",
+          "type": "boolean",
+          "default": false
+        },
+        "handlesExist": {
+          "title": "Resource handles _exist property",
+          "description": "Defines whether the DSC Resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC Resource handles instance deletion internally when receiving a `set --what-if` command where the instance defines the `_exist` property as `false`.",
+          "type": "boolean",
+          "default": false
+        },
+        "return": {
+          "description": "Defines whether the command returns a JSON blob of the DSC Resource's expected state after a set operation in what-if mode or the state and an array of the properties the DSC Resource would modify.",
           "$ref": "/PowerShell/DSC/main/schemas/2024/04/definitions/returnKind.json"
         }
       },
