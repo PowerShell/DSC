@@ -284,6 +284,8 @@ extends:
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-provider = ["cargo:token"]'
 
             $env:CARGO_HTTP_DEBUG=true
             $env:CARGO_LOG='network=trace'
