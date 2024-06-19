@@ -84,19 +84,19 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Verify that ClearCache works in PSAdapter' {
         # generate the cache
-        $null = dsc resource list * -a Microsoft.DSC/PowerShell
+        $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
         # call the ClearCache operation
         $scriptPath = Join-Path $PSScriptRoot '..' 'psDscAdapter' 'powershell.resource.ps1'
-        $null = & $scriptPath -Operation ClearCache 2
+        $null = & $scriptPath -Operation ClearCache
         # verify that PSAdapter does not find the cache
-        dsc -l debug resource list * -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        dsc -l debug resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 0
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Cache file not found'
     }
 
     It 'Verify that a new PS Cache version results in cache rebuid' {
         # generate the cache
-        $null = dsc resource list * -a Microsoft.DSC/PowerShell
+        $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
         # update the version in the cache file
         $cacheFilePath = if ($IsWindows) {
             # PS 6+ on Windows
@@ -115,7 +115,7 @@ Describe 'PowerShell adapter resource tests' {
         New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
 
         # verify that a new PS Cache version results in cache rebuid
-        dsc -l debug resource list * -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        dsc -l debug resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 0
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Incompartible version of cache in file'
     }
