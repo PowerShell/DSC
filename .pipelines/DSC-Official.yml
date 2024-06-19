@@ -146,8 +146,8 @@ extends:
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             Write-Host "Use 'powershell' CFS"
-            #Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            #Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           env:
@@ -282,8 +282,12 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
-            #Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            #Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+
+            $env:CARGO_HTTP_DEBUG=true
+            $env:CARGO_LOG='network=trace'
+
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -329,8 +333,8 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
-            #Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            #Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -384,8 +388,8 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
-            #Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            #Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
