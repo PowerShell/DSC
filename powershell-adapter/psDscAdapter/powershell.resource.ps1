@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate.')]
-    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate')]
+    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
     [string]$jsonInput = '@{}'
@@ -26,6 +26,24 @@ function Write-DscTrace {
 'PSVersion=' + $PSVersionTable.PSVersion.ToString() | Write-DscTrace
 'PSPath=' + $PSHome | Write-DscTrace
 'PSModulePath=' + $env:PSModulePath | Write-DscTrace
+
+if ($Operation -eq 'ClearCache') {
+    $cacheFilePath = if ($IsWindows) {
+        # PS 6+ on Windows
+        Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
+    } else {
+        # either WinPS or PS 6+ on Linux/Mac
+        if ($PSVersionTable.PSVersion.Major -le 5) {
+            Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+        } else {
+            Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+        }
+    }
+
+    'Deleting cache file ' + $cacheFilePath | Write-DscTrace
+    Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
+    exit 0
+}
 
 if ('Validate' -ne $Operation) {
     # write $jsonInput to STDERR for debugging
