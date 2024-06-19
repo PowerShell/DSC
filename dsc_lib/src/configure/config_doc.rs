@@ -59,6 +59,9 @@ pub struct MicrosoftDscMetadata {
     /// Identifies if the operation is part of a configuration
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context: Option<ContextKind>,
+    /// The messages returned from a resource
+    #[serde(rename = "_messages", skip_serializing_if = "Option::is_none")]
+    pub messages: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

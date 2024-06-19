@@ -313,10 +313,11 @@ impl Configurator {
             let start_datetime;
             let end_datetime;
             let set_result;
+            let messages;
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("Resource handles _exist or _exist is true");
                 start_datetime = chrono::Local::now();
-                set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
+                (set_result, messages) = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 if self.context.execution_type == ExecutionKind::WhatIf {
@@ -347,6 +348,7 @@ impl Configurator {
                     },
                 };
                 end_datetime = chrono::Local::now();
+                messages = None;
             } else {
                 return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
             }
@@ -358,6 +360,7 @@ impl Configurator {
                         microsoft: Some(
                             MicrosoftDscMetadata {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                                messages,
                                 ..Default::default()
                             }
                         )
@@ -547,7 +550,6 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    context: None,
                     version: Some(env!("CARGO_PKG_VERSION").to_string()),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),
@@ -555,6 +557,7 @@ impl Configurator {
                     end_datetime: Some(end_datetime.to_rfc3339()),
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
+                    ..Default::default()
                 }
             )
         }

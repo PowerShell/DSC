@@ -93,12 +93,12 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 ///
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
-pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<(SetResult, Option<Vec<String>>), DscError> {
     debug!("Invoking set for '{}'", &resource.resource_type);
     if resource.kind == Some(Kind::Import) {
         let mut configurator = get_configurator(resource, cwd, desired)?;
         let config_result = configurator.invoke_set(skip_test)?;
-        return Ok(SetResult::Group(config_result.results));
+        return Ok((SetResult::Group(config_result.results), None));
     }
 
     let operation_type: String;
@@ -128,7 +128,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         info!("No pretest, invoking test {}", &resource.resource_type);
         let test_result = invoke_test(resource, cwd, desired)?;
         if is_synthetic_what_if {
-            return Ok(test_result.into());
+            return Ok((test_result.into(), None));
         }
         let (in_desired_state, actual_state) = match &test_result {
             TestResult::Group(group_response) => {
@@ -145,11 +145,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         };
 
         if in_desired_state && execution_type == &ExecutionKind::Actual {
-            return Ok(SetResult::Resource(ResourceSetResponse{
+            return Ok((SetResult::Resource(ResourceSetResponse{
                 before_state: serde_json::from_str(desired)?,
                 after_state: actual_state,
                 changed_properties: None,
-            }));
+            }), None));
         }
     }
 
@@ -213,11 +213,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &actual_value, &pre_state);
-            Ok(SetResult::Resource(ResourceSetResponse{
+            Ok((SetResult::Resource(ResourceSetResponse{
                 before_state: pre_state,
                 after_state: actual_value,
                 changed_properties: Some(diff_properties),
-            }))
+            }), None))
         },
         Some(ReturnKind::StateAndDiff) => {
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
@@ -230,12 +230,15 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             let Some(diff_line) = lines.next() else {
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, "Command did not return expected diff output".to_string()));
             };
-            let diff_properties: Vec<String> = serde_json::from_str(diff_line)?;
-            Ok(SetResult::Resource(ResourceSetResponse {
+            // let diff_properties: Vec<String> = serde_json::from_str(diff_line)?;
+            // temp change for prototyping metadata from resource
+            let messages: Vec<String> = serde_json::from_str(diff_line)?;
+            let diff_properties = get_diff( &actual_value, &pre_state);
+            Ok((SetResult::Resource(ResourceSetResponse {
                 before_state: pre_state,
                 after_state: actual_value,
                 changed_properties: Some(diff_properties),
-            }))
+            }), Some(messages)))
         },
         None => {
             // perform a get and compare the result to the expected state
@@ -254,11 +257,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 }
             };
             let diff_properties = get_diff( &actual_state, &pre_state);
-            Ok(SetResult::Resource(ResourceSetResponse {
+            Ok((SetResult::Resource(ResourceSetResponse {
                 before_state: pre_state,
                 after_state: actual_state,
                 changed_properties: Some(diff_properties),
-            }))
+            }), None))
         },
     }
 }
