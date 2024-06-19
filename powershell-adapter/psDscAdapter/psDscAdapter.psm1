@@ -49,6 +49,56 @@ function Get-DSCResourceModules
     return $dscModulePsd1List
 }
 
+function Add-AstMembers {
+    param(
+        $AllTypeDefinitions,
+        $TypeAst,
+        $Properties
+    )
+
+    foreach($TypeConstraint in $TypeAst.BaseTypes) {
+        $t = $AllTypeDefinitions | Where-Object {$_.Name -eq $TypeConstraint.TypeName.Name}
+        if ($t) {
+            Add-AstMembers $AllTypeDefinitions $t $Properties
+        }
+    }
+
+    foreach ($member in $TypeAst.Members)
+    {
+        $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
+        if (($property -eq $null) -or ($property.IsStatic))
+        {
+            continue;
+        }
+        $skipProperty = $true
+        $isKeyProperty = $false
+        foreach($attr in $property.Attributes)
+        {
+            if ($attr.TypeName.Name -eq 'DscProperty')
+            {
+                $skipProperty = $false
+                foreach($attrArg in $attr.NamedArguments)
+                {
+                    if ($attrArg.ArgumentName -eq 'Key')
+                    {
+                        $isKeyProperty = $true
+                    }
+                }
+            }
+        }
+        if ($skipProperty)
+        {
+            continue;
+        }
+
+        [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
+        $prop.Name = $property.Name
+        $prop.PropertyType = $property.PropertyType.TypeName.Name
+        $prop.IsMandatory = $isKeyProperty 
+        $Properties.Add($prop)
+    }
+}
+
 function FindAndParseResourceDefinitions
 {
     [CmdletBinding(HelpUri = '')]
@@ -68,7 +118,6 @@ function FindAndParseResourceDefinitions
     }
     
     "Loading resources from file '$filePath'" | Write-DscTrace -Operation Trace
-    #TODO: Handle class inheritance 
     #TODO: Ensure embedded instances in properties are working correctly
     [System.Management.Automation.Language.Token[]] $tokens = $null
     [System.Management.Automation.Language.ParseError[]] $errors = $null
@@ -78,76 +127,38 @@ function FindAndParseResourceDefinitions
         $e | Out-String | Write-DscTrace -Operation Error
     }
 
-    $resourceDefinitions = $ast.FindAll(
+    $typeDefinitions = $ast.FindAll(
         {
             $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
-            if ($typeAst)
-            {
-                foreach($a in $typeAst.Attributes)
-                {
-                    if ($a.TypeName.Name -eq 'DscResource')
-                    {
-                        return $true;
-                    }
-                }
-            }
-
-            return $false;
+            return $typeAst -ne $null;
         },
         $false);
 
     $resourceList = [System.Collections.Generic.List[DscResourceInfo]]::new()
 
-    foreach($typeDefinitionAst in $resourceDefinitions)
+    foreach($typeDefinitionAst in $typeDefinitions)
     {
-        $DscResourceInfo = [DscResourceInfo]::new()
-        $DscResourceInfo.Name = $typeDefinitionAst.Name
-        $DscResourceInfo.ResourceType = $typeDefinitionAst.Name
-        $DscResourceInfo.FriendlyName = $typeDefinitionAst.Name
-        $DscResourceInfo.ImplementationDetail = 'ClassBased'
-        $DscResourceInfo.Module = $filePath
-        $DscResourceInfo.Path = $filePath
-        #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
-        $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
-        $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
-
-        $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
-        foreach ($member in $typeDefinitionAst.Members)
+        foreach($a in $typeDefinitionAst.Attributes)
         {
-            $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
-            if (($property -eq $null) -or ($property.IsStatic))
+            if ($a.TypeName.Name -eq 'DscResource')
             {
-                continue;
-            }
-            $skipProperty = $true
-            $isKeyProperty = $false
-            foreach($attr in $property.Attributes)
-            {
-                if ($attr.TypeName.Name -eq 'DscProperty')
-                {
-                    $skipProperty = $false
-                    foreach($attrArg in $attr.NamedArguments)
-                    {
-                        if ($attrArg.ArgumentName -eq 'Key')
-                        {
-                            $isKeyProperty = $true
-                        }
-                    }
-                }
-            }
-            if ($skipProperty)
-            {
-                continue;
-            }
+                $DscResourceInfo = [DscResourceInfo]::new()
+                $DscResourceInfo.Name = $typeDefinitionAst.Name
+                $DscResourceInfo.ResourceType = $typeDefinitionAst.Name
+                $DscResourceInfo.FriendlyName = $typeDefinitionAst.Name
+                $DscResourceInfo.ImplementationDetail = 'ClassBased'
+                $DscResourceInfo.Module = $filePath
+                $DscResourceInfo.Path = $filePath
+                #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
+                $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
+                $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
 
-            [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
-            $prop.Name = $property.Name
-            $prop.PropertyType = $property.PropertyType.TypeName.Name
-            $prop.IsMandatory = $isKeyProperty 
-            $DscResourceInfo.Properties.Add($prop)
+                $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
+                Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
+                
+                $resourceList.Add($DscResourceInfo)
+            }
         }
-        
-        $resourceList.Add($DscResourceInfo)
     }
 
     return $resourceList
