@@ -82,6 +82,7 @@ function Add-AstMembers {
                     if ($attrArg.ArgumentName -eq 'Key')
                     {
                         $isKeyProperty = $true
+                        break
                     }
                 }
             }
