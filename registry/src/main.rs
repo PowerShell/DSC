@@ -45,7 +45,7 @@ fn main() {
         args::SubCommand::Config { subcommand } => {
             match subcommand {
                 args::ConfigSubCommand::Get{input} => {
-                    let reg_helper = match RegistryHelper::new(&input) {
+                    let reg_helper = match RegistryHelper::new(&input, false) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             eprintln!("Error: {err}");
@@ -64,14 +64,14 @@ fn main() {
                     }
                 },
                 args::ConfigSubCommand::Set{input, what_if} => {
-                    let reg_helper = match RegistryHelper::new(&input) {
+                    let reg_helper = match RegistryHelper::new(&input, what_if) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             eprintln!("Error: {err}");
                             exit(EXIT_INVALID_INPUT);
                         }
                     };
-                    match reg_helper.set(what_if) {
+                    match reg_helper.set() {
                         Ok(reg_config) => {
                             if let Some(config) = reg_config {
                                 let json = serde_json::to_string(&config).unwrap();
@@ -85,7 +85,7 @@ fn main() {
                     }
                 },
                 args::ConfigSubCommand::Delete{input} => {
-                    let reg_helper = match RegistryHelper::new(&input) {
+                    let reg_helper = match RegistryHelper::new(&input, false) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             eprintln!("Error: {err}");

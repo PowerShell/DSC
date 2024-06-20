@@ -21,8 +21,8 @@ pub struct Registry {
     #[serde(rename = "keyPath")]
     pub key_path: String,
     /// The information from a config set --what-if operation.
-    #[serde(flatten, skip_serializing_if = "Option::is_none")]
-    pub what_if: Option<WhatIf>,
+    #[serde(rename = "_metadata", skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Metadata>,
     /// The name of the registry value.
     #[serde(rename = "valueName", skip_serializing_if = "Option::is_none")]
     pub value_name: Option<String>,
@@ -35,7 +35,7 @@ pub struct Registry {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct WhatIf {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>
+pub struct Metadata {
+    #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
+    pub what_if: Option<Vec<String>>
 }
