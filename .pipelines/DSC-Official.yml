@@ -120,7 +120,6 @@ extends:
           inputs:
             rustVersion: ms-stable
             toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: $(buildName)
           displayName: Install Rust
           env:
@@ -257,7 +256,6 @@ extends:
           inputs:
             rustVersion: ms-stable
             toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: x86_64-unknown-linux-gnu
           displayName: Install Rust
           env:
@@ -304,7 +302,6 @@ extends:
           inputs:
             rustVersion: ms-stable
             toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: aarch64-unknown-linux-gnu
           displayName: Install Rust
           env:
@@ -359,7 +356,6 @@ extends:
           inputs:
             rustVersion: ms-stable
             toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
             additionalTargets: $(buildName)
           displayName: Install Rust
           env:
