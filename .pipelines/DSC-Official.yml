@@ -137,9 +137,6 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-
-              $credentialProvider = "cargo:token"
-              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -148,6 +145,9 @@ extends:
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
+
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           env:
@@ -274,9 +274,6 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-
-              $credentialProvider = "cargo:token"
-              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -284,6 +281,8 @@ extends:
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
 
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
@@ -322,9 +321,6 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-
-              $credentialProvider = "cargo:token"
-              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -332,6 +328,9 @@ extends:
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
+
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -377,9 +376,6 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-
-              #$credentialProvider = "cargo:token"
-              #Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
