@@ -378,8 +378,8 @@ extends:
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
 
-              $credentialProvider = "cargo:token"
-              Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
+              #$credentialProvider = "cargo:token"
+              #Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
@@ -388,7 +388,7 @@ extends:
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
             Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-provider = ["cargo:token"]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
 
             $c = get-content "./.cargo/config.toml" | Out-String
             Write-Host $c
