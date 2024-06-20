@@ -29,7 +29,6 @@ $filesForWindowsPackage = @(
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
-    'PSDesiredStateConfiguration/',
     'psDscAdapter/',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
@@ -198,9 +197,6 @@ if (!$SkipBuild) {
 
     if ($IsWindows) {
         $projects += $windows_projects
-        Save-Module -Path $target -Name 'PSDesiredStateConfiguration' -RequiredVersion '2.0.7' -Repository PSGallery -Force
-        # Need to unhide all the files so that packaging works
-        Get-ChildItem -Path $target -Recurse -Hidden | ForEach-Object { $_.Attributes = 'Normal' }
     }
 
     if ($IsMacOS) {
