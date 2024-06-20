@@ -116,6 +116,15 @@ extends:
           displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
           env:
             ob_restore_phase: true
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
+            additionalTargets: $(buildName)
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
         - task: AzureCLI@2
           inputs:
             azureSubscription: az-PowerShell-feed-ingestion
@@ -132,15 +141,6 @@ extends:
               $credentialProvider = "cargo:token"
               Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
-          env:
-            ob_restore_phase: true
-        - task: RustInstaller@1
-          inputs:
-            rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
-            additionalTargets: $(buildName)
-          displayName: Install Rust
           env:
             ob_restore_phase: true
         - pwsh: |
@@ -284,11 +284,6 @@ extends:
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
-            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-provider = ["cargo:token"]'
-
-            $env:CARGO_HTTP_DEBUG=true
-            $env:CARGO_LOG='network=trace'
 
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
@@ -306,6 +301,15 @@ extends:
           type: linux
           hostArchitecture: arm64
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
+            additionalTargets: aarch64-unknown-linux-gnu
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
         - task: AzureCLI@2
           inputs:
             azureSubscription: az-PowerShell-feed-ingestion
@@ -322,15 +326,6 @@ extends:
               $credentialProvider = "cargo:token"
               Write-Host "##[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER]$credentialProvider"
           displayName: 'Get Azure DevOps Token'
-          env:
-            ob_restore_phase: true
-        - task: RustInstaller@1
-          inputs:
-            rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
-            additionalTargets: aarch64-unknown-linux-gnu
-          displayName: Install Rust
           env:
             ob_restore_phase: true
         - pwsh: |
@@ -361,6 +356,15 @@ extends:
             macOS arm64:
               buildName: aarch64-apple-darwin
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
+            additionalTargets: $(buildName)
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
         - task: AzureCLI@2
           inputs:
             azureSubscription: az-PowerShell-feed-ingestion
@@ -379,19 +383,18 @@ extends:
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
-        - task: RustInstaller@1
-          inputs:
-            rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-            #cratesIoFeedOverride: sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/
-            additionalTargets: $(buildName)
-          displayName: Install Rust
-          env:
-            ob_restore_phase: true
         - pwsh: |
             Write-Host "Use 'powershell' CFS"
             Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
             Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-provider = ["cargo:token"]'
+
+            $c = get-content "./.cargo/config.toml" | Out-String
+            Write-Host $c
+
+            $env:CARGO_HTTP_DEBUG=true
+            $env:CARGO_LOG='network=trace'
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
