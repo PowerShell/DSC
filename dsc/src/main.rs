@@ -7,7 +7,7 @@ use clap::{CommandFactory, Parser};
 use clap_complete::generate;
 use std::io::{self, Read};
 use std::process::exit;
-use sysinfo::{Process, ProcessExt, RefreshKind, System, SystemExt, get_current_pid, ProcessRefreshKind};
+use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
 
 #[cfg(debug_assertions)]
