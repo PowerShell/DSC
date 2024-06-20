@@ -16,13 +16,14 @@ Describe 'registry config whatif tests' {
             "keyPath": "HKCU\\1\\2\\3"
         }
 '@
+        registry config set -w --input $json | Write-Host
         $get_before = registry config get --input $json
         $result = registry config set -w --input $json | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2\3'
-        $result.metadata.whatIf[0] | Should -Match '.*1.*'
-        $result.metadata.whatIf[1] | Should -Match '.*2.*'
-        $result.metadata.whatIf[2] | Should -Match '.*3.*'
+        $result._metadata.whatIf[0] | Should -Match '.*1.*'
+        $result._metadata.whatIf[1] | Should -Match '.*2.*'
+        $result._metadata.whatIf[2] | Should -Match '.*3.*'
         $get_after = registry config get --input $json
         $get_before | Should -EQ $get_after
     }
@@ -42,9 +43,9 @@ Describe 'registry config whatif tests' {
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result.valueName | Should -Be 'Hello'
         $result.valueData.String | Should -Be 'World'
-        $result.metadata.whatIf[0] | Should -Match '.*1.*'
-        $result.metadata.whatIf[1] | Should -Match '.*2.*'
-        $result.metadata.whatIf[2] | Should -Match '.*3.*'
+        $result._metadata.whatIf[0] | Should -Match '.*1.*'
+        $result._metadata.whatIf[1] | Should -Match '.*2.*'
+        $result._metadata.whatIf[2] | Should -Match '.*3.*'
     }
 
     It 'Can whatif an existing key with new value' -Skip:(!$IsWindows) {
