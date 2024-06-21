@@ -117,6 +117,6 @@ Describe 'PowerShell adapter resource tests' {
         # verify that a new PS Cache version results in cache rebuid
         dsc -l debug resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 0
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Incompartible version of cache in file'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Incompatible version of cache in file'
     }
 }

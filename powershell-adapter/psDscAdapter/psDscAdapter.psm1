@@ -235,7 +235,7 @@ function Invoke-DscCacheRefresh {
 
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            "Incompartible version of cache in file '"+$cache.CacheSchemaVersion+"' (expected '"+$script:CurrentCacheSchemaVersion+"')" | Write-DscTrace
+            "Incompatible version of cache in file '"+$cache.CacheSchemaVersion+"' (expected '"+$script:CurrentCacheSchemaVersion+"')" | Write-DscTrace
         } else {
             $dscResourceCacheEntries = $cache.ResourceCache
 
