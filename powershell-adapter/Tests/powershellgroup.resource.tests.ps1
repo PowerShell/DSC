@@ -119,4 +119,13 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Incompatible version of cache in file'
     }
+
+    It 'Verify inheritance works in class-based resources' {
+
+        $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
+        $LASTEXITCODE | Should -Be 0
+        $resources = $r | ConvertFrom-Json
+        $t = $resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}
+        $t.properties | Should -Contain "BaseProperty"
+    }
 }

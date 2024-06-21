@@ -8,8 +8,14 @@ enum EnumPropEnumeration {
     Expected
 }
 
+class BaseTestClass
+{
+    [DscProperty()]
+    [string] $BaseProperty
+}
+
 [DscResource()]
-class TestClassResource
+class TestClassResource : BaseTestClass
 {
     [DscProperty(Key)]
     [string] $Name
