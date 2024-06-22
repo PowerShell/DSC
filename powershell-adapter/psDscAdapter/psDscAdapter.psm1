@@ -255,7 +255,7 @@ function Invoke-DscCacheRefresh {
             "Checking cache for stale entries" | Write-DscTrace
 
             foreach ($cacheEntry in $dscResourceCacheEntries) {
-                "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
+                #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
 
                 $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                 
