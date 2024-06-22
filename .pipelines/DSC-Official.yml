@@ -64,6 +64,9 @@ extends:
           repoRoot: $(Build.SourcesDirectory)\DSC
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
         steps:
         - checkout: self
         - pwsh: |
@@ -92,37 +95,66 @@ extends:
           signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
-          ob_sdl_codeql_compiled_enabled: false
+          ob_sdl_codeql_compiled_enabled: true
         pool:
           type: windows
         displayName: BuildWin
         steps:
         - checkout: self
-          env: 
+          env:
             ob_restore_phase: true
         - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
           inputs:
             Enabled: true
             AnalyzeInPipeline: true
             Language: rust
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             $tmpdir = "$(Agent.TempDirectory)"
             Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
           displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
-          env: 
+          env:
+            ob_restore_phase: true
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: $(buildName)
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
+
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
-          env: 
+          env:
             ob_restore_phase: true
           condition: succeeded()
         - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
           condition: always()
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
@@ -137,7 +169,7 @@ extends:
             write-host 'Binaries in $(signSrcPath)'
             dir -r "$(signSrcPath)"
           displayName: Copy built binaries
-          env: 
+          env:
             ob_restore_phase: true
           condition: succeeded()
         - task: onebranch.pipeline.signing@1
@@ -201,6 +233,9 @@ extends:
           signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
         pool:
           type: windows
         steps:
@@ -220,7 +255,36 @@ extends:
         pool:
           type: linux
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: x86_64-unknown-linux-gnu
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
+            ob_restore_phase: true
         - pwsh: |
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
+
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -237,7 +301,36 @@ extends:
           type: linux
           hostArchitecture: arm64
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: aarch64-unknown-linux-gnu
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
+            ob_restore_phase: true
         - pwsh: |
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
+
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -262,7 +355,41 @@ extends:
             macOS arm64:
               buildName: aarch64-apple-darwin
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: $(buildName)
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
+            ob_restore_phase: true
         - pwsh: |
+            Write-Host "Use 'powershell' CFS"
+            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
+            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
+            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
+
+            $c = get-content "./.cargo/config.toml" | Out-String
+            Write-Host $c
+
+            $env:CARGO_HTTP_DEBUG=true
+            $env:CARGO_LOG='network=trace'
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"

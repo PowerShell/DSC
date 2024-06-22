@@ -1,0 +1,13 @@
+# CFS/ADO crate feed is currently only working with unstable features.
+[unstable]
+registry-auth = true
+
+[registries]
+powershell = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/" }
+
+# Enable Control Flow Guard (needed for OneBranch's post-build analysis).
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-args=/DYNAMICBASE /CETCOMPAT"]
+
+[target.aarch64-windows-msvc]
+rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-args=/DYNAMICBASE"]
