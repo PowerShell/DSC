@@ -15,6 +15,7 @@ dsc resource list
 ```powershell
 dsc resource list --adapter Microsoft.DSC/PowerShell
 dsc resource list --adapter Microsoft.Windows/PowerShell
+dsc resource list --adapter Microsoft.Windows/WMI *computer*
 ```
 
 - Find DSC resources
@@ -98,6 +99,10 @@ dsc resource schema -r Test/Echo
 Winget example
 
 ### WMI Adapter
+
+```powershell
+dsc resource get -r root.cimv2/Win32_ComputerSystem
+```
 
 ### Include Resource
 
