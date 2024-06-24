@@ -233,6 +233,16 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
   </details>
 
+- Fixed the implementation to retrieve non-zero exit code descriptions for resource errors from the
+  resource manifest, if defined. Prior to this release, these error descriptions weren't surfaced.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#431][#431]
+  - PRs: [#444][#444]
+
+  </details>
+
 <!-- Unreleased change links -->
 [ur-aa]: ./docs/reference/cli/config/set.md#-w---what-if
 [ur-ab]: ./docs/reference/schemas/outputs/config/set.md
@@ -1509,10 +1519,12 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#410]: https://github.com/PowerShell/DSC/issues/410
 [#412]: https://github.com/PowerShell/DSC/issues/412
 [#429]: https://github.com/PowerShell/DSC/issues/429
+[#431]: https://github.com/PowerShell/DSC/issues/431
 [#432]: https://github.com/PowerShell/DSC/issues/432
 [#434]: https://github.com/PowerShell/DSC/issues/434
 [#438]: https://github.com/PowerShell/DSC/issues/438
 [#441]: https://github.com/PowerShell/DSC/issues/441
+[#444]: https://github.com/PowerShell/DSC/issues/444
 [#45]:  https://github.com/PowerShell/DSC/issues/45
 [#49]:  https://github.com/PowerShell/DSC/issues/49
 [#57]:  https://github.com/PowerShell/DSC/issues/57
