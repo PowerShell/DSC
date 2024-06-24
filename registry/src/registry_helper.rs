@@ -14,7 +14,7 @@ pub struct RegistryHelper {
 }
 
 impl RegistryHelper {
-    pub fn new(config: &str, what_if: bool) -> Result<Self, RegistryError> {
+    pub fn new(config: &str) -> Result<Self, RegistryError> {
         let registry: Registry = match serde_json::from_str(config) {
             Ok(config) => config,
             Err(e) => return Err(RegistryError::Json(e)),
@@ -27,9 +27,13 @@ impl RegistryHelper {
                 config: registry,
                 hive,
                 subkey: subkey.to_string(),
-                what_if
+                what_if: false
             }
         )
+    }
+
+    pub fn enable_what_if(&mut self) {
+        self.what_if = true;
     }
 
     pub fn get(&self) -> Result<Registry, RegistryError> {
@@ -248,7 +252,6 @@ impl RegistryHelper {
     }
 
     fn handle_error_or_what_if(&self, error: RegistryError) -> Result<Option<Registry>, RegistryError> {
-        // TODO: return error message via metadata instead of as property within set state
         if self.what_if {
             return Ok(Some(Registry {
                 key_path: self.config.key_path.clone(),
@@ -317,7 +320,7 @@ fn convert_reg_value(value: &Data) -> Result<RegistryValueData, RegistryError> {
 
 #[test]
 fn get_hklm_key() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKEY_LOCAL_MACHINE"}"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKEY_LOCAL_MACHINE"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKEY_LOCAL_MACHINE"#);
     assert_eq!(reg_config.value_name, None);
@@ -326,7 +329,7 @@ fn get_hklm_key() {
 
 #[test]
 fn get_product_name() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion","valueName":"ProductName"}"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion","valueName":"ProductName"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion"#);
     assert_eq!(reg_config.value_name, Some("ProductName".to_string()));
@@ -335,7 +338,7 @@ fn get_product_name() {
 
 #[test]
 fn get_nonexisting_key() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DoesNotExist"}"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DoesNotExist"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKCU\DoesNotExist"#);
     assert_eq!(reg_config.value_name, None);
@@ -345,7 +348,7 @@ fn get_nonexisting_key() {
 
 #[test]
 fn get_nonexisting_value() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\Software","valueName":"DoesNotExist"}"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\Software","valueName":"DoesNotExist"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKCU\Software"#);
     assert_eq!(reg_config.value_name, Some("DoesNotExist".to_string()));
@@ -355,7 +358,7 @@ fn get_nonexisting_value() {
 
 #[test]
 fn set_and_remove_test_value() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
     reg_helper.set().unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest\DSCSubKey"#);
@@ -367,7 +370,7 @@ fn set_and_remove_test_value() {
     assert_eq!(result.value_name, Some("TestValue".to_string()));
     assert_eq!(result.value_data, None);
     assert_eq!(result.exist, Some(false));
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest"}"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest"}"#).unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest"#);
     assert_eq!(result.value_name, None);
@@ -382,13 +385,13 @@ fn set_and_remove_test_value() {
 
 #[test]
 fn delete_tree() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest2\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest2\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
     reg_helper.set().unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest2\DSCSubKey"#);
     assert_eq!(result.value_name, Some("TestValue".to_string()));
     assert_eq!(result.value_data, Some(RegistryValueData::String("Hello".to_string())));
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest2"}"#, false).unwrap();
+    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest2"}"#).unwrap();
     reg_helper.remove().unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest2"#);
