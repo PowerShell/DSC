@@ -81,4 +81,51 @@ Describe 'PowerShell adapter resource tests' {
         $res.actualState.result.count | Should -Be 5
         $res.actualState.result| % {$_.Name | Should -Not -BeNullOrEmpty}
     }
+
+    It 'Verify that ClearCache works in PSAdapter' {
+        # generate the cache
+        $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
+        # call the ClearCache operation
+        $scriptPath = Join-Path $PSScriptRoot '..' 'psDscAdapter' 'powershell.resource.ps1'
+        $null = & $scriptPath -Operation ClearCache
+        # verify that PSAdapter does not find the cache
+        dsc -l debug resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        $LASTEXITCODE | Should -Be 0
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Cache file not found'
+    }
+
+    It 'Verify that a new PS Cache version results in cache rebuid' {
+        # generate the cache
+        $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
+        # update the version in the cache file
+        $cacheFilePath = if ($IsWindows) {
+            # PS 6+ on Windows
+            Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
+        } else {
+            # either WinPS or PS 6+ on Linux/Mac
+            if ($PSVersionTable.PSVersion.Major -le 5) {
+                Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+            } else {
+                Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+            }
+        }
+        $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
+        $cache.CacheSchemaVersion = 0
+        $jsonCache = $cache | ConvertTo-Json -Depth 90
+        New-Item -Force -Path $cacheFilePath -Value $jsonCache -Type File | Out-Null
+
+        # verify that a new PS Cache version results in cache rebuid
+        dsc -l debug resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        $LASTEXITCODE | Should -Be 0
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Incompatible version of cache in file'
+    }
+
+    It 'Verify inheritance works in class-based resources' {
+
+        $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
+        $LASTEXITCODE | Should -Be 0
+        $resources = $r | ConvertFrom-Json
+        $t = $resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}
+        $t.properties | Should -Contain "BaseProperty"
+    }
 }

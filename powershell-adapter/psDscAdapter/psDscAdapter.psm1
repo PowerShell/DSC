@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+$script:CurrentCacheSchemaVersion = 1
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
@@ -49,6 +51,57 @@ function Get-DSCResourceModules
     return $dscModulePsd1List
 }
 
+function Add-AstMembers {
+    param(
+        $AllTypeDefinitions,
+        $TypeAst,
+        $Properties
+    )
+
+    foreach($TypeConstraint in $TypeAst.BaseTypes) {
+        $t = $AllTypeDefinitions | Where-Object {$_.Name -eq $TypeConstraint.TypeName.Name}
+        if ($t) {
+            Add-AstMembers $AllTypeDefinitions $t $Properties
+        }
+    }
+
+    foreach ($member in $TypeAst.Members)
+    {
+        $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
+        if (($property -eq $null) -or ($property.IsStatic))
+        {
+            continue;
+        }
+        $skipProperty = $true
+        $isKeyProperty = $false
+        foreach($attr in $property.Attributes)
+        {
+            if ($attr.TypeName.Name -eq 'DscProperty')
+            {
+                $skipProperty = $false
+                foreach($attrArg in $attr.NamedArguments)
+                {
+                    if ($attrArg.ArgumentName -eq 'Key')
+                    {
+                        $isKeyProperty = $true
+                        break
+                    }
+                }
+            }
+        }
+        if ($skipProperty)
+        {
+            continue;
+        }
+
+        [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
+        $prop.Name = $property.Name
+        $prop.PropertyType = $property.PropertyType.TypeName.Name
+        $prop.IsMandatory = $isKeyProperty 
+        $Properties.Add($prop)
+    }
+}
+
 function FindAndParseResourceDefinitions
 {
     [CmdletBinding(HelpUri = '')]
@@ -68,7 +121,6 @@ function FindAndParseResourceDefinitions
     }
     
     "Loading resources from file '$filePath'" | Write-DscTrace -Operation Trace
-    #TODO: Handle class inheritance 
     #TODO: Ensure embedded instances in properties are working correctly
     [System.Management.Automation.Language.Token[]] $tokens = $null
     [System.Management.Automation.Language.ParseError[]] $errors = $null
@@ -78,76 +130,38 @@ function FindAndParseResourceDefinitions
         $e | Out-String | Write-DscTrace -Operation Error
     }
 
-    $resourceDefinitions = $ast.FindAll(
+    $typeDefinitions = $ast.FindAll(
         {
             $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
-            if ($typeAst)
-            {
-                foreach($a in $typeAst.Attributes)
-                {
-                    if ($a.TypeName.Name -eq 'DscResource')
-                    {
-                        return $true;
-                    }
-                }
-            }
-
-            return $false;
+            return $typeAst -ne $null;
         },
         $false);
 
     $resourceList = [System.Collections.Generic.List[DscResourceInfo]]::new()
 
-    foreach($typeDefinitionAst in $resourceDefinitions)
+    foreach($typeDefinitionAst in $typeDefinitions)
     {
-        $DscResourceInfo = [DscResourceInfo]::new()
-        $DscResourceInfo.Name = $typeDefinitionAst.Name
-        $DscResourceInfo.ResourceType = $typeDefinitionAst.Name
-        $DscResourceInfo.FriendlyName = $typeDefinitionAst.Name
-        $DscResourceInfo.ImplementationDetail = 'ClassBased'
-        $DscResourceInfo.Module = $filePath
-        $DscResourceInfo.Path = $filePath
-        #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
-        $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
-        $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
-
-        $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
-        foreach ($member in $typeDefinitionAst.Members)
+        foreach($a in $typeDefinitionAst.Attributes)
         {
-            $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
-            if (($property -eq $null) -or ($property.IsStatic))
+            if ($a.TypeName.Name -eq 'DscResource')
             {
-                continue;
-            }
-            $skipProperty = $true
-            $isKeyProperty = $false
-            foreach($attr in $property.Attributes)
-            {
-                if ($attr.TypeName.Name -eq 'DscProperty')
-                {
-                    $skipProperty = $false
-                    foreach($attrArg in $attr.NamedArguments)
-                    {
-                        if ($attrArg.ArgumentName -eq 'Key')
-                        {
-                            $isKeyProperty = $true
-                        }
-                    }
-                }
-            }
-            if ($skipProperty)
-            {
-                continue;
-            }
+                $DscResourceInfo = [DscResourceInfo]::new()
+                $DscResourceInfo.Name = $typeDefinitionAst.Name
+                $DscResourceInfo.ResourceType = $typeDefinitionAst.Name
+                $DscResourceInfo.FriendlyName = $typeDefinitionAst.Name
+                $DscResourceInfo.ImplementationDetail = 'ClassBased'
+                $DscResourceInfo.Module = $filePath
+                $DscResourceInfo.Path = $filePath
+                #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
+                $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
+                $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
 
-            [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
-            $prop.Name = $property.Name
-            $prop.PropertyType = $property.PropertyType.TypeName.Name
-            $prop.IsMandatory = $isKeyProperty 
-            $DscResourceInfo.Properties.Add($prop)
+                $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
+                Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
+                
+                $resourceList.Add($DscResourceInfo)
+            }
         }
-        
-        $resourceList.Add($DscResourceInfo)
     }
 
     return $resourceList
@@ -230,47 +244,53 @@ function Invoke-DscCacheRefresh {
         "Reading from Get-DscResource cache file $cacheFilePath" | Write-DscTrace
 
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
-        $dscResourceCacheEntries = $cache.ResourceCache
 
-        if ($dscResourceCacheEntries.Count -eq 0) {
-            # if there is nothing in the cache file - refresh cache
+        if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
+            "Incompatible version of cache in file '"+$cache.CacheSchemaVersion+"' (expected '"+$script:CurrentCacheSchemaVersion+"')" | Write-DscTrace
+        } else {
+            $dscResourceCacheEntries = $cache.ResourceCache
 
-            "Filtered DscResourceCache cache is empty" | Write-DscTrace
-        }
-        else
-        {
-            "Checking cache for stale entries" | Write-DscTrace
+            if ($dscResourceCacheEntries.Count -eq 0) {
+                # if there is nothing in the cache file - refresh cache
+                $refreshCache = $true
 
-            foreach ($cacheEntry in $dscResourceCacheEntries) {
-                "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
+                "Filtered DscResourceCache cache is empty" | Write-DscTrace
+            }
+            else
+            {
+                "Checking cache for stale entries" | Write-DscTrace
 
-                $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
-                
-                    if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                    {
-                        "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
-                        $refreshCache = $true
-                        break
+                foreach ($cacheEntry in $dscResourceCacheEntries) {
+                    #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
+
+                    $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
+                    
+                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
+                        {
+                            "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                            $refreshCache = $true
+                            break
+                        }
                     }
+
+                    if ($refreshCache) {break}
                 }
 
-                if ($refreshCache) {break}
-            }
+                "Checking cache for stale PSModulePath" | Write-DscTrace
 
-            "Checking cache for stale PSModulePath" | Write-DscTrace
+                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
-            $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                $hs_cache.SymmetricExceptWith($hs_live)
+                $diff = $hs_cache
 
-            $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-            $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-            $hs_cache.SymmetricExceptWith($hs_live)
-            $diff = $hs_cache
+                "PSModulePath diff '$diff'" | Write-DscTrace
 
-            "PSModulePath diff '$diff'" | Write-DscTrace
-
-            if ($diff.Count -gt 0) {
-                $refreshCache = $true
+                if ($diff.Count -gt 0) {
+                    $refreshCache = $true
+                }
             }
         }
     }
@@ -318,6 +338,7 @@ function Invoke-DscCacheRefresh {
         $cache.ResourceCache = $dscResourceCacheEntries
         $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
         $cache.PSModulePaths = $m.FullName
+        $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
@@ -482,6 +503,7 @@ class dscResourceCacheEntry {
 }
 
 class dscResourceCache {
+    [int] $CacheSchemaVersion
     [string[]] $PSModulePaths
     [dscResourceCacheEntry[]] $ResourceCache
 }
