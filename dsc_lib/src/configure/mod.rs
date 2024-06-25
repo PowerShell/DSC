@@ -247,7 +247,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        resource: None
                     }
                 ),
                 name: resource.name.clone(),
@@ -313,11 +314,10 @@ impl Configurator {
             let start_datetime;
             let end_datetime;
             let set_result;
-            let messages;
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("Resource handles _exist or _exist is true");
                 start_datetime = chrono::Local::now();
-                (set_result, messages) = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
+                set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 if self.context.execution_type == ExecutionKind::WhatIf {
@@ -348,27 +348,28 @@ impl Configurator {
                     },
                 };
                 end_datetime = chrono::Local::now();
-                messages = None;
             } else {
                 return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
             }
 
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+            // Process SetResult by checking for _metadata field
+            let (set_result_parsed, resource_metadata) = Configurator::parse_metadata(set_result)?;
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(
                     Metadata {
                         microsoft: Some(
                             MicrosoftDscMetadata {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                                messages,
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        resource: resource_metadata
                     }
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: set_result,
+                result: set_result_parsed,
             };
             result.results.push(resource_result);
         }
@@ -418,7 +419,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        resource: None
                     }
                 ),
                 name: resource.name.clone(),
@@ -559,7 +561,8 @@ impl Configurator {
                     security_context: Some(self.context.security_context.clone()),
                     ..Default::default()
                 }
-            )
+            ),
+            resource: None
         }
     }
 
@@ -670,5 +673,35 @@ impl Configurator {
             }
         }
         Ok(Some(result))
+    }
+
+    fn parse_metadata(set_result: SetResult) -> Result<(SetResult, Option<Value>), DscError> {
+        match set_result {
+            SetResult::Resource(mut result) => {
+                if let Value::Object(mut map) = result.after_state.take() {
+                    if let Some(removed_value) = map.remove("_metadata") {
+                        let modified_value = Value::Object(map);
+                        let set_result_parsed = SetResult::Resource(ResourceSetResponse {
+                            before_state: result.before_state,
+                            after_state: modified_value,
+                            changed_properties: result.changed_properties
+                        });
+                        Ok((set_result_parsed, Some(removed_value)))
+                    } else {
+                        let set_result_copy = SetResult::Resource(ResourceSetResponse {
+                            before_state: result.before_state,
+                            after_state: result.after_state,
+                            changed_properties: result.changed_properties
+                        });
+                        Ok((set_result_copy, None))
+                    }
+                } else {
+                    Err(DscError::Operation("Invalid serde value. Expected an object.".to_string()))
+                }
+            },
+            SetResult::Group(results) => {
+                Err(DscError::NotImplemented("group resources not implemented yet".to_string()))
+            }
+        }
     }
 }

@@ -77,15 +77,6 @@ fn main() {
             }
             input
         },
-        SubCommand::Metadata { input , metadata } => {
-            if metadata {
-                let metadata = r#"["first message", "second message"]"#;
-                format!("{input}\n{metadata}")
-            }
-            else {
-                input
-            }
-        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Delete => {

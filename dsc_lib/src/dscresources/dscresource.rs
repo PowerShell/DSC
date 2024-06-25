@@ -121,7 +121,7 @@ pub trait Invoke {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
-    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<(SetResult, Option<Vec<String>>), DscError>;
+    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError>;
 
     /// Invoke the test operation on the resource.
     ///
@@ -203,7 +203,7 @@ impl Invoke for DscResource {
         }
     }
 
-    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<(SetResult, Option<Vec<String>>), DscError> {
+    fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         debug!("Invoking set for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {

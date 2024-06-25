@@ -49,14 +49,6 @@ pub enum SubCommand {
         input: String,
     },
 
-    #[clap(name = "metadata", about = "Return metadata from the resource in addition to input")]
-    Metadata {
-        #[clap(name = "input", short, long, help = "The input to the metadata command as JSON")]
-        input: String,
-        #[clap(name = "metadata", short, long, help = "Return metadata in addition to input")]
-        metadata: bool,
-    },
-
     #[clap(name = "schema", about = "Get the JSON schema for a subcommand")]
     Schema {
         #[clap(name = "subcommand", short, long, help = "The subcommand to get the schema for")]
