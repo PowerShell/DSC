@@ -22,7 +22,7 @@
                 "mandatory": true
             }
         ],
-        "return": "stateAndDiff"
+        "return": "state"
     },
     "schema": {
         "command": {

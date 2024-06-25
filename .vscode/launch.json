@@ -8,12 +8,15 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug config",
-            "program": "${workspaceFolder}/config/target/debug/config",
+            "program": "C:\\dsc\\dsc\\target\\debug\\dsc.exe",
             "args": [
-                "list",
-                "r*"
+                "config",
+                "set",
+                "-w",
+                "-d",
+                "$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json\nresources:\n- name: Registry\n     type: Microsoft.Windows/Registry\n     properties:\n          keyPath: 'HKCU\\1\\2'"
             ],
-            "cwd": "${workspaceFolder}"
+            "cwd": "C:\\dsc"
         },
         {
             "name": "(macOS) Attach",
