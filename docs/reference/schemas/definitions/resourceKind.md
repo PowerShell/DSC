@@ -1,6 +1,6 @@
 ---
-description: JSON schema reference for a resource instance type name
-ms.date:     04/22/2024
+description: JSON schema reference for resource kind
+ms.date:     06/24/2024
 ms.topic:    reference
 title:       DSC Resource kind schema reference
 ---
@@ -55,10 +55,10 @@ modules. They don't define resource manifests.
 Group resources always operate on nested DSC Resource instances. Group resources can change how the
 nested instances are processed, like the `Microsoft.DSC/Assertion` group resource.
 
-A group resource must always define the [kind][aa] property in the resource manifest.
+A group resource must always define the [kind][03] property in the resource manifest.
 
 Group resources can also be used to bundle sets of resources together for processing, like the
-`Microsoft.DSC/Group` resource. You can use the [dependsOn][03] property for a resource instance in
+`Microsoft.DSC/Group` resource. You can use the [dependsOn][04] property for a resource instance in
 a configuration to point to a group resource instead of enumerating each resource in the list.
 
 ### Importer resources
@@ -66,7 +66,7 @@ a configuration to point to a group resource instead of enumerating each resourc
 Importer resources resolve an external source to a set of nested DSC Resource instances. The
 properties of an importer resource define how to find and resolve the external source.
 
-An importer resource must always define the [kind][aa] and [resolve][ab] properties in the resource
+An importer resource must always define the [kind][03] and [resolve][05] properties in the resource
 manifest.
 
 For example, the `Microsoft.DSC/Import` importer resource resolves instances from an external
@@ -142,8 +142,8 @@ The following matrix defines the relations of each instance in the configuration
 
 ### Referencing nested instances
 
-Nested resource instances have limitations for the [dependsOn][03] property and the
-[reference()][04] configuration function.
+Nested resource instances have limitations for the [dependsOn][04] property and the
+[reference()][06] configuration function.
 
 1. You can only reference adjacent instances. You can't reference a nested instance from outside of
    the instance that declares or resolves it. You can't use a reference to a resource outside of the
@@ -381,7 +381,7 @@ resources:
 
 [01]: ../resource/manifest/adapter.md
 [02]: ../resource/manifest/validate.md
-[aa]: ../resource/manifest/root.md#kind
-[03]: ../config/resource.md#dependson
-[ab]: ../resource/manifest/resolve.md
-[04]: ../config/functions/reference.md
+[03]: ../resource/manifest/root.md#kind
+[04]: ../config/resource.md#dependson
+[05]: ../resource/manifest/resolve.md
+[06]: ../config/functions/reference.md
