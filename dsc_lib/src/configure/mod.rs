@@ -678,7 +678,6 @@ impl Configurator {
     fn parse_metadata(set_result: SetResult) -> Result<(SetResult, Option<Value>), DscError> {
         match set_result {
             SetResult::Resource(mut result) => {
-                println!("in resource parse_metadata");
                 if let Value::Object(mut map) = result.after_state.take() {
                     if let Some(removed_value) = map.remove("_metadata") {
                         let modified_value = Value::Object(map);
@@ -697,13 +696,17 @@ impl Configurator {
                         Ok((set_result_copy, None))
                     }
                 } else {
-                    Err(DscError::Operation("Invalid serde value. Expected an object.".to_string()))
+                    let set_result_copy = SetResult::Resource(ResourceSetResponse {
+                        before_state: result.before_state,
+                        after_state: result.after_state,
+                        changed_properties: result.changed_properties
+                    });
+                    Ok((set_result_copy, None))
                 }
             },
-            SetResult::Group(results) => {
-                println!("in group parse_metadata");
-                Ok((SetResult::Group(results.clone()), None))
-                //Err(DscError::NotImplemented("group resources not implemented yet".to_string()))
+            SetResult::Group(_results) => {
+                //Ok((SetResult::Group(results.clone()), None))
+                Err(DscError::NotImplemented("group resources not implemented yet".to_string()))
             }
         }
     }
