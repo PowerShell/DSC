@@ -39,6 +39,19 @@
             }
         ]
     },
+    "whatIf": {
+        "executable": "registry",
+        "args": [
+            "config",
+            "set",
+            "-w",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "return": "state"
+    },
     "exitCodes": {
         "0": "Success",
         "1": "Invalid parameter",

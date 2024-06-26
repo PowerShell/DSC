@@ -3,13 +3,14 @@
 
 use registry::{Data, Hive, RegKey, Security, key, value};
 use utfx::{U16CString, UCString};
-use crate::config::{Registry, RegistryValueData};
+use crate::config::{Metadata, Registry, RegistryValueData};
 use crate::error::RegistryError;
 
 pub struct RegistryHelper {
     config: Registry,
     hive: Hive,
     subkey: String,
+    what_if: bool,
 }
 
 impl RegistryHelper {
@@ -26,8 +27,13 @@ impl RegistryHelper {
                 config: registry,
                 hive,
                 subkey: subkey.to_string(),
+                what_if: false
             }
         )
+    }
+
+    pub fn enable_what_if(&mut self) {
+        self.what_if = true;
     }
 
     pub fn get(&self) -> Result<Registry, RegistryError> {
@@ -40,9 +46,8 @@ impl RegistryHelper {
                 exist = false;
                 return Ok(Registry {
                     key_path: self.config.key_path.clone(),
-                    value_name: None,
-                    value_data: None,
                     exist: Some(exist),
+                    ..Default::default()
                 });
             },
             Err(e) => return Err(e),
@@ -56,8 +61,8 @@ impl RegistryHelper {
                     return Ok(Registry {
                         key_path: self.config.key_path.clone(),
                         value_name: Some(value_name.clone()),
-                        value_data: None,
                         exist: Some(exist),
+                        ..Default::default()
                     });
                 },
                 Err(e) => return Err(RegistryError::RegistryValue(e)),
@@ -67,21 +72,20 @@ impl RegistryHelper {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
                 value_data: Some(convert_reg_value(&value)?),
-                exist: None,
+                ..Default::default()
             })
         } else {
             Ok(Registry {
                 key_path: self.config.key_path.clone(),
-                value_name: None,
-                value_data: None,
-                exist: None,
+                ..Default::default()
             })
         }
     }
 
-    pub fn set(&self) -> Result<(), RegistryError> {
+    pub fn set(&self) -> Result<Option<Registry>, RegistryError> {
+        let mut what_if_metadata: Vec<String> = Vec::new();
         let reg_key = match self.open(Security::Write) {
-            Ok((reg_key, _subkey)) => reg_key,
+            Ok((reg_key, _subkey)) => Some(reg_key),
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
                 // if the key doesn't exist, some of the parent keys may
@@ -91,58 +95,89 @@ impl RegistryHelper {
                 let mut reg_key = parent_key;
                 for subkey in subkeys {
                     let Ok(path) = UCString::<u16>::from_str(subkey) else {
-                        return Err(RegistryError::Utf16Conversion("subkey".to_string()));
+                        return self.handle_error_or_what_if(RegistryError::Utf16Conversion("subkey".to_string()));
                     };
 
-                    reg_key = reg_key.create(path, Security::CreateSubKey)?;
+                    if self.what_if {
+                        what_if_metadata.push(format!("key: {subkey} not found, would create it"));
+                    }
+                    else {
+                        reg_key = reg_key.create(path, Security::CreateSubKey)?;
+                    }
                 }
-
-                self.open(Security::Write)?.0
+                if self.what_if {
+                    None
+                }
+                else {
+                    Some(self.open(Security::Write)?.0)
+                }
             },
-            Err(e) => return Err(e),
+            Err(e) => return self.handle_error_or_what_if(e)
         };
 
         if let Some(value_data) = &self.config.value_data {
             let Ok(value_name) = U16CString::from_str(self.config.value_name.as_ref().unwrap()) else {
-                return Err(RegistryError::Utf16Conversion("valueName".to_string()));
+                return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueName".to_string()));
             };
 
-            match value_data {
+            let data = match value_data {
                 RegistryValueData::String(s) => {
                     let Ok(utf16) = U16CString::from_str(s) else {
-                        return Err(RegistryError::Utf16Conversion("valueData".to_string()));
+                        return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
                     };
-                    reg_key.set_value(&value_name, &Data::String(utf16))?;
+                    Data::String(utf16)
                 },
                 RegistryValueData::ExpandString(s) => {
                     let Ok(utf16) = U16CString::from_str(s) else {
-                        return Err(RegistryError::Utf16Conversion("valueData".to_string()));
+                        return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
                     };
-                    reg_key.set_value(&value_name, &Data::ExpandString(utf16))?;  
+                    Data::ExpandString(utf16)
                 },
                 RegistryValueData::Binary(b) => {
-                    reg_key.set_value(&value_name, &Data::Binary(b.clone()))?;
+                    Data::Binary(b.clone())
                 },
                 RegistryValueData::DWord(d) => {
-                    reg_key.set_value(&value_name, &Data::U32(*d))?;
+                    Data::U32(*d)
                 },
                 RegistryValueData::MultiString(m) => {
                     let mut m16: Vec<UCString<u16>> = Vec::<UCString<u16>>::new();
                     for s in m {
                         let Ok(utf16) = U16CString::from_str(s) else {
-                            return Err(RegistryError::Utf16Conversion("valueData".to_string()));
+                            return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
                         };
                         m16.push(utf16);
                     }
-                    reg_key.set_value(&value_name, &Data::MultiString(m16))?;
+                    Data::MultiString(m16)
                 },
                 RegistryValueData::QWord(q) => {
-                    reg_key.set_value(&value_name, &Data::U64(*q))?;
+                    Data::U64(*q)
                 },
+            };
+
+            if self.what_if {
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    value_data: Some(convert_reg_value(&data)?),
+                    value_name: self.config.value_name.clone(),
+                    metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
+                    ..Default::default()
+                }));
             }
+
+            if let Some(reg_key) = reg_key {
+                reg_key.set_value(&value_name, &data)?;
+            };
         }
 
-        Ok(())
+        if self.what_if {
+            return Ok(Some(Registry {
+                key_path: self.config.key_path.clone(),
+                metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
+                ..Default::default()
+            }));
+        }
+
+        Ok(None)
     }
 
     pub fn remove(&self) -> Result<(), RegistryError> {
@@ -214,6 +249,17 @@ impl RegistryHelper {
         }
 
         Ok((parent_key, subkeys))
+    }
+
+    fn handle_error_or_what_if(&self, error: RegistryError) -> Result<Option<Registry>, RegistryError> {
+        if self.what_if {
+            return Ok(Some(Registry {
+                key_path: self.config.key_path.clone(),
+                metadata: Some(Metadata { what_if: Some(vec![error.to_string()]) }),
+                ..Default::default()
+            }));
+        }
+        Err(error)
     }
 }
 
