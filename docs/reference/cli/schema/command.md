@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc schema' command
-ms.date:     08/04/2023
+ms.date:     06/24/2024
 ms.topic:    reference
 title:       dsc schema
 ---
@@ -37,13 +37,117 @@ dsc schema --type get-result
 ```yaml
 $schema: http://json-schema.org/draft-07/schema#
 title: GetResult
-type: object
-required:
-- actualState
-properties:
-  actualState:
-    description: The state of the resource as it was returned by the Get method.
-additionalProperties: false
+anyOf:
+- $ref: '#/definitions/ResourceGetResponse'
+- type: array
+  items:
+    $ref: '#/definitions/ResourceGetResult'
+definitions:
+  ResourceGetResponse:
+    type: object
+    required:
+    - actualState
+    properties:
+      actualState:
+        description: The state of the resource as it was returned by the Get method.
+    additionalProperties: false
+  ResourceGetResult:
+    type: object
+    required:
+    - name
+    - result
+    - type
+    properties:
+      metadata:
+        anyOf:
+        - $ref: '#/definitions/Metadata'
+        - type: 'null'
+      name:
+        type: string
+      type:
+        type: string
+      result:
+        $ref: '#/definitions/GetResult'
+    additionalProperties: false
+  Metadata:
+    type: object
+    properties:
+      Microsoft.DSC:
+        anyOf:
+        - $ref: '#/definitions/MicrosoftDscMetadata'
+        - type: 'null'
+  MicrosoftDscMetadata:
+    type: object
+    properties:
+      version:
+        description: Version of DSC
+        type:
+        - string
+        - 'null'
+      operation:
+        description: The operation being performed
+        anyOf:
+        - $ref: '#/definitions/Operation'
+        - type: 'null'
+      executionType:
+        description: The type of execution
+        anyOf:
+        - $ref: '#/definitions/ExecutionKind'
+        - type: 'null'
+      startDatetime:
+        description: The start time of the configuration operation
+        type:
+        - string
+        - 'null'
+      endDatetime:
+        description: The end time of the configuration operation
+        type:
+        - string
+        - 'null'
+      duration:
+        description: The duration of the configuration operation
+        type:
+        - string
+        - 'null'
+      securityContext:
+        description: The security context of the configuration operation, can be specified to be required
+        anyOf:
+        - $ref: '#/definitions/SecurityContextKind'
+        - type: 'null'
+      context:
+        description: Identifies if the operation is part of a configuration
+        anyOf:
+        - $ref: '#/definitions/ContextKind'
+        - type: 'null'
+  Operation:
+    type: string
+    enum:
+    - Get
+    - Set
+    - Test
+    - Export
+  ExecutionKind:
+    type: string
+    enum:
+    - Actual
+    - WhatIf
+  SecurityContextKind:
+    type: string
+    enum:
+    - Current
+    - Elevated
+    - Restricted
+  ContextKind:
+    type: string
+    enum:
+    - Configuration
+    - Resource
+  GetResult:
+    anyOf:
+    - $ref: '#/definitions/ResourceGetResponse'
+    - type: array
+      items:
+        $ref: '#/definitions/ResourceGetResult'
 ```
 
 ## Options

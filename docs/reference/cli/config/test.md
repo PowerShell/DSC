@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc config test' command
-ms.date:     01/17/2024
+ms.date:     06/24/2024
 ms.topic:    reference
 title:       dsc config test
 ---
@@ -52,7 +52,7 @@ resource instances defined in the configuration document saved as `example.dsc.c
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: Windows only
-  type: DSC/AssertionGroup
+  type: Microsoft.DSC/Assertion
   properties:
     $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
     resources:
@@ -64,9 +64,9 @@ resources:
   type: Microsoft.Windows/Registry
   properties:
     keyPath: HKCU\example
-    _ensure: Present
+    _exist: true
   dependsOn:
-    - '[DSC/Assertion]Windows only'
+    - "[resourceId('Microsoft.DSC/Assertion', 'Windows only')"
 ```
 
 ```sh
