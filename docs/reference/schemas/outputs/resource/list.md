@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc resource list' command.
-ms.date:     01/17/2024
+ms.date:     06/24/2024
 ms.topic:    reference
 title:       dsc resource list result schema reference
 ---
@@ -91,24 +91,24 @@ The following list describes the available capabilities for a resource:
 - <a id="capability-set" ></a> `Set` - The resource supports enforcing the desired state of an
   instance. A resource has this capability when it defines the [set][08] property in its resource
   manifest. Resources without this capability can't be used with the [dsc resource set][09] or
-  [dsc config set][10] commands unless they're in a [Microsoft.DSC/Assertion][11] group as a nested
+  [dsc config set][10] commands unless they're in a Microsoft.DSC/Assertion group as a nested
   instance.
 - <a id="capability-sethandlesexist" ></a> `SetHandlesExist` - The resource supports the
-  [_exist property][12] directly. A resource has this capability when it defines the
-  [handlesExist][13] property as `true` in the definition of the [set][08] command property in its
+  [_exist property][11] directly. A resource has this capability when it defines the
+  [handlesExist][12] property as `true` in the definition of the [set][08] command property in its
   resource manifest.
 
   When a resource has this capability, the `_exist` property is part of the resource's instance
   schema and the resource handles deleting instances of the resource in its `set` command.
 
   When a resource doesn't have this capability, when DSC finds an instance of the resource with
-  `_exist` set to `false`, it handles calling the [delete][14] operation for the resource.
+  `_exist` set to `false`, it handles calling the [delete][13] operation for the resource.
 
   If the resource doesn't have this capability or the `Delete` capability, DSC raises an error when
   an instance defines `_exist` as `false`.
 - <a id="capability-whatif" ></a> `WhatIf` - The resource supports returning explicit information
-  about how it will modify state when a user calls [dsc config set][10] with the [--what-if][15]
-  option. A resource has this capability when it defines the [What-if method][16] in its resource
+  about how it will modify state when a user calls [dsc config set][10] with the [--what-if][14]
+  option. A resource has this capability when it defines the [What-if method][15] in its resource
   manifest.
 
   When a resource has this capability, DSC calls the defined command with its arguments when a
@@ -123,7 +123,7 @@ The following list describes the available capabilities for a resource:
   the resource will change system state.
 - <a id="capability-test" ></a> `Test` - The resource supports validating the desired state of an
   instance against the current state of the instance. A resource has this capability when it
-  defines the [test][17] property in its resource manifest.
+  defines the [test][16] property in its resource manifest.
 
   If a resource doesn't have the `Test` capability, DSC uses a synthetic test for instances of the
   resource. The synthetic test compares each property for the desired state of an instance against
@@ -131,18 +131,18 @@ The following list describes the available capabilities for a resource:
   state for a property and the actual state aren't the same, DSC marks the property as out of the
   desired state.
 - <a id="capability-delete" ></a> `Delete` - The resource supports removing an instance. A resource
-  has this capability when it defines the [delete][14] property in its resource manifest. This
+  has this capability when it defines the [delete][13] property in its resource manifest. This
   capability isn't mutually exclusive with the `SetHandlesExist` property. A resource can handle
-  the `_exist` property in set operations and be called directly with [dsc resource delete][18] to
+  the `_exist` property in set operations and be called directly with [dsc resource delete][17] to
   remove an instance.
 - <a id="capability-export" ></a> `Export` - The resource supports enumerating every instance of
-  the resource. A resource has this capability when it defines the [export][19] property in its
+  the resource. A resource has this capability when it defines the [export][18] property in its
   resource manifest. Only resources with this capability are usable with the
-  [dsc resource export][20] and [dsc config export][21] commands.
+  [dsc resource export][19] and [dsc config export][20] commands.
 - <a id="capability-resolve" ></a> `Resolve` - The resource supports resolving nested resource
   instances from an external source. A resource has this capability when it defines the
-  [resolve][22] property in its resource manifest. This functionality is primarily used by
-  [importer resources][23].
+  [resolve][21] property in its resource manifest. This functionality is primarily used by
+  [importer resources][22].
 
 ```yaml
 Type:              array
@@ -230,7 +230,7 @@ Required: true
 
 Represents the values defined in the resource's manifest. This value is `null` for resources that
 aren't command-based. For more information on the value for this property, see
-[Command-based DSC Resource manifest schema reference][24].
+[Command-based DSC Resource manifest schema reference][23].
 
 ```yaml
 Type:     [object, 'null']
@@ -248,17 +248,16 @@ Required: true
 [08]: ../../resource/manifest/set.md
 [09]: ../../../cli/resource/set.md
 [10]: ../../../cli/config/set.md
-[11]: ../../../microsoft.dsc/Assertion/resource.md
-[12]: ../../resource/properties/exist.md
-[13]: ../../resource/manifest/set.md#handlesexist
-[14]: ../../resource/manifest/delete.md
-[15]: ../../../cli/config/set.md#-w---what-if
-[16]: ../../resource/manifest/whatif.md
-[17]: ../../resource/manifest/test.md
-[18]: ../../../cli/resource/delete.md
-[19]: ../../resource/manifest/export.md
-[20]: ../../../cli/resource/export.md
-[21]: ../../../cli/config/export.md
-[22]: ../../resource/manifest/resolve.md
-[23]: ../../definitions/resourceKind.md#importer-resources
-[24]: ../../resource/manifest/root.md
+[11]: ../../resource/properties/exist.md
+[12]: ../../resource/manifest/set.md#handlesexist
+[13]: ../../resource/manifest/delete.md
+[14]: ../../../cli/config/set.md#-w---what-if
+[15]: ../../resource/manifest/whatif.md
+[16]: ../../resource/manifest/test.md
+[17]: ../../../cli/resource/delete.md
+[18]: ../../resource/manifest/export.md
+[19]: ../../../cli/resource/export.md
+[20]: ../../../cli/config/export.md
+[21]: ../../resource/manifest/resolve.md
+[22]: ../../definitions/resourceKind.md#importer-resources
+[23]: ../../resource/manifest/root.md
