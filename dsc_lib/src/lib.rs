@@ -76,8 +76,7 @@ impl DscManager {
     /// This function will return an error if the underlying resource fails.
     ///
     pub fn resource_set(&self, resource: &DscResource, input: &str, skip_test: bool) -> Result<SetResult, DscError> {
-        let set_result = resource.set(input, skip_test, &ExecutionKind::Actual)?;
-        Ok(set_result)
+        resource.set(input, skip_test, &ExecutionKind::Actual)
     }
 
     /// Invoke the test operation on a resource.

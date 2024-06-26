@@ -6,6 +6,7 @@ mod delete;
 mod echo;
 mod exist;
 mod exit_code;
+mod metadata;
 mod sleep;
 mod trace;
 mod whatif;
@@ -17,6 +18,7 @@ use crate::delete::Delete;
 use crate::echo::Echo;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
+use crate::metadata::Metadata;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::whatif::WhatIf;
@@ -77,12 +79,22 @@ fn main() {
             }
             input
         },
+        SubCommand::Metadata { input } => {
+            let metadata = match serde_json::from_str::<Metadata>(&input) {
+                Ok(metadata) => metadata,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            serde_json::to_string(&metadata).unwrap()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Delete => {
                     schema_for!(Delete)
                 },
-                Schemas::Echo | Schemas::Metadata => {
+                Schemas::Echo => {
                     schema_for!(Echo)
                 },
                 Schemas::Exist => {
@@ -90,6 +102,9 @@ fn main() {
                 },
                 Schemas::ExitCode => {
                     schema_for!(ExitCode)
+                },
+                Schemas::Metadata => {
+                    schema_for!(Metadata)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)

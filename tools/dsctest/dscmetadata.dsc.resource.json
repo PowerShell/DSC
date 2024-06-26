@@ -12,11 +12,10 @@
             }
         ]
     },
-    "whatIf": {
+    "set": {
         "executable": "dsctest",
         "args": [
             "metadata",
-            "-m",
             {
                 "jsonInputArg": "--input",
                 "mandatory": true

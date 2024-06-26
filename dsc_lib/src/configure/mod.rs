@@ -552,6 +552,7 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
+                    context: None,
                     version: Some(env!("CARGO_PKG_VERSION").to_string()),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),
@@ -559,7 +560,6 @@ impl Configurator {
                     end_datetime: Some(end_datetime.to_rfc3339()),
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
-                    ..Default::default()
                 }
             ),
             resource: None
@@ -678,6 +678,7 @@ impl Configurator {
     fn parse_metadata(set_result: SetResult) -> Result<(SetResult, Option<Value>), DscError> {
         match set_result {
             SetResult::Resource(mut result) => {
+                println!("in resource parse_metadata");
                 if let Value::Object(mut map) = result.after_state.take() {
                     if let Some(removed_value) = map.remove("_metadata") {
                         let modified_value = Value::Object(map);
@@ -700,7 +701,9 @@ impl Configurator {
                 }
             },
             SetResult::Group(results) => {
-                Err(DscError::NotImplemented("group resources not implemented yet".to_string()))
+                println!("in group parse_metadata");
+                Ok((SetResult::Group(results.clone()), None))
+                //Err(DscError::NotImplemented("group resources not implemented yet".to_string()))
             }
         }
     }

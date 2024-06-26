@@ -40,13 +40,4 @@ pub enum Output {
 #[serde(deny_unknown_fields)]
 pub struct Echo {
     pub output: Output,
-    #[serde(rename="_metadata", skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(deny_unknown_fields)]
-pub struct Metadata {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub messages: Option<Vec<String>>
 }
