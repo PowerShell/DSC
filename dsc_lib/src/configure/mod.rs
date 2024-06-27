@@ -678,32 +678,17 @@ impl Configurator {
     fn parse_metadata(set_result: SetResult) -> Result<(SetResult, Option<Value>), DscError> {
         match set_result {
             SetResult::Resource(mut result) => {
+                let mut set_result_parsed = result.clone();
                 if let Value::Object(mut map) = result.after_state.take() {
                     if let Some(removed_value) = map.remove("_metadata") {
                         let modified_value = Value::Object(map);
-                        let set_result_parsed = SetResult::Resource(ResourceSetResponse {
-                            before_state: result.before_state,
-                            after_state: modified_value,
-                            changed_properties: result.changed_properties
-                        });
-                        Ok((set_result_parsed, Some(removed_value)))
-                    } else {
-                        let set_result_copy = SetResult::Resource(ResourceSetResponse {
-                            before_state: result.before_state,
-                            after_state: result.after_state,
-                            changed_properties: result.changed_properties
-                        });
-                        Ok((set_result_copy, None))
+                        set_result_parsed.after_state = modified_value;
+                        return Ok((SetResult::Resource(set_result_parsed), Some(removed_value)))
                     }
-                } else {
-                    //println!("{:?}", result);
-                    let set_result_copy = SetResult::Resource(ResourceSetResponse {
-                        before_state: result.before_state,
-                        after_state: result.after_state,
-                        changed_properties: result.changed_properties
-                    });
-                    Ok((set_result_copy, None))
                 }
+                // if the after_state can't be parsed as a map, it may be because it's nested in a group like - afterState.result.afterState?
+                // return original for now
+                Ok((SetResult::Resource(set_result_parsed), None))
             },
             SetResult::Group(_results) => {
                 //Ok((SetResult::Group(results.clone()), None))
