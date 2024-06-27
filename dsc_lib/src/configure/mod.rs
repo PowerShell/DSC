@@ -696,6 +696,7 @@ impl Configurator {
                         Ok((set_result_copy, None))
                     }
                 } else {
+                    //println!("{:?}", result);
                     let set_result_copy = SetResult::Resource(ResourceSetResponse {
                         before_state: result.before_state,
                         after_state: result.after_state,
