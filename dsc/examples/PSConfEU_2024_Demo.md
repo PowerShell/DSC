@@ -44,7 +44,6 @@ dsc resource get -r Microsoft/osinfo
 ### Tracing
 
 - Error, Warn, Info, Debug, Trace
-- Logging to ETW/Syslog and files
 
 ### WhatIf
 
@@ -55,6 +54,10 @@ dsc resource get -r Microsoft/osinfo
 - JSON vs YAML
 - Args, JSON Input, Env Var
 - JSON Schema
+
+```powershell
+dsc resource schema -r Test/Echo
+```
 
 ### Resource Kinds
 
@@ -77,7 +80,7 @@ dsc resource get -r Microsoft/osinfo
 
 - Functions
   - reference()
-  - env()
+  - envvar()
 - Dot-notation
 
 ### Group Resources
@@ -85,6 +88,7 @@ dsc resource get -r Microsoft/osinfo
 - Scope, examples:
   - DependsOn
   - Reference
+- AssertionGroup
 
 ### PowerShell Adapter
 
