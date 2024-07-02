@@ -251,6 +251,7 @@ function Invoke-DscCacheRefresh {
         } else {
             $dscResourceCacheEntries = $cache.ResourceCache
 
+
             if ($dscResourceCacheEntries.Count -eq 0) {
                 # if there is nothing in the cache file - refresh cache
                 $refreshCache = $true
