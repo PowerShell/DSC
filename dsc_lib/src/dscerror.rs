@@ -4,7 +4,6 @@
 use std::str::Utf8Error;
 
 use indicatif::style::TemplateError;
-use reqwest::StatusCode;
 use thiserror::Error;
 use tracing::error;
 use tree_sitter::LanguageError;
@@ -31,12 +30,6 @@ pub enum DscError {
 
     #[error("Function '{0}' error: {1}")]
     FunctionArg(String, String),
-
-    #[error("HTTP: {0}")]
-    Http(#[from] reqwest::Error),
-
-    #[error("HTTP status: {0}")]
-    HttpStatus(StatusCode),
 
     #[error("Function integer argument conversion error: {0}")]
     IntegerConversion(#[from] std::num::ParseIntError),

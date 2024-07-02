@@ -126,9 +126,6 @@ pub enum SchemaKind {
     /// The schema is embedded in the manifest.
     #[serde(rename = "embedded")]
     Embedded(Value),
-    /// The schema is retrieved from a URL.  Required for intellisense support.
-    #[serde(rename = "url")]
-    Url(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
