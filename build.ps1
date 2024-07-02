@@ -7,7 +7,7 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix','msixbundle','tgz','zip')]
+    [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
@@ -422,7 +422,7 @@ if ($packageType -eq 'msixbundle') {
     $msixPath = Join-Path $PSScriptRoot 'bin' 'msix'
     & $makeappx bundle /d $msixPath /p "$PSScriptRoot\bin\$packageName.msixbundle"
     return
-} elseif ($packageType -eq 'msix') {
+} elseif ($packageType -eq 'msix' -or $packageType -eq 'msix-private') {
     if (!$IsWindows) {
         throw "MSIX is only supported on Windows"
     }
@@ -431,6 +431,8 @@ if ($packageType -eq 'msixbundle') {
         throw 'MSIX requires a specific architecture'
     }
 
+    $isPrivate = $packageType -eq 'msix-private'
+
     $makeappx = Find-MakeAppx
     $makepri = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
     $displayName = "DesiredStateConfiguration"
@@ -438,14 +440,25 @@ if ($packageType -eq 'msixbundle') {
     $productName = "DesiredStateConfiguration"
     if ($isPreview) {
         Write-Verbose -Verbose "Preview version detected"
-        $productName += "-Preview"
+        if ($isPrivate) {
+            $productName += "-Private"
+        }
+        else {
+            $productName += "-Preview"
+        }
         # save preview number
         $previewNumber = $productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1'
         # remove label from version
         $productVersion = $productVersion.Split('-')[0]
         # replace revision number with preview number
         $productVersion = $productVersion -replace '(\d+)$', "$previewNumber.0"
-        $displayName += "-Preview"
+
+        if ($isPrivate) {
+            $displayName += "-Private"
+        }
+        else {
+            $displayName += "-Preview"
+        }
     }
     Write-Verbose -Verbose "Product version is $productVersion"
     $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
@@ -517,7 +530,7 @@ if ($packageType -eq 'msixbundle') {
         throw "Failed to create msix package"
     }
 
-    Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName.msix"
+    Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName"
 } elseif ($packageType -eq 'zip') {
     $zipTarget = Join-Path $PSScriptRoot 'bin' $architecture 'zip'
     if (Test-Path $zipTarget) {
