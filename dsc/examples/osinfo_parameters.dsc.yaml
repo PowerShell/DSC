@@ -17,3 +17,7 @@ resources:
   type: Microsoft/OSInfo
   properties:
     family: macOS
+- name: path
+  type: Test/Echo
+  properties:
+    output: "[envvar('PATH')]"
