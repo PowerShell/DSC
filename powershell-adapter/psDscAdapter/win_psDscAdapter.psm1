@@ -80,32 +80,13 @@ function Invoke-DscCacheRefresh {
                 # if there is nothing in the cache file - refresh cache
                 $refreshCache = $true
                "Filtered DscResourceCache cache is empty" | Write-DscTrace
-        }
-        else
-        {
-            "Checking cache for stale entries" | Write-DscTrace
-
-            foreach ($cacheEntry in $dscResourceCacheEntries) {
-                #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
-
-                $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
-                
-                    if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                    {
-                        "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
-                        $refreshCache = $true
-                        break
-                    }
-                }
-
-                "Filtered DscResourceCache cache is empty" | Write-DscTrace
             }
             else
             {
                 "Checking cache for stale entries" | Write-DscTrace
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
-                    "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
+                    #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                     
