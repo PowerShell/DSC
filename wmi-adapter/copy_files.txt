@@ -1,2 +1,2 @@
 wmi.resource.ps1
-wmi.dsc.resource.json.optout
+wmi.dsc.resource.json
