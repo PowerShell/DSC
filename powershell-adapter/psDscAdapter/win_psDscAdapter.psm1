@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+$script:CurrentCacheSchemaVersion = 1
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
@@ -68,47 +70,51 @@ function Invoke-DscCacheRefresh {
         "Reading from Get-DscResource cache file $cacheFilePath" | Write-DscTrace
 
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
-        $dscResourceCacheEntries = $cache.ResourceCache
-
-        if ($dscResourceCacheEntries.Count -eq 0) {
-            # if there is nothing in the cache file - refresh cache
+        if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
+            "Incompartible version of cache in file '"+$cache.CacheSchemaVersion+"' (expected '"+$script:CurrentCacheSchemaVersion+"')" | Write-DscTrace
+        } else {
+            $dscResourceCacheEntries = $cache.ResourceCache
 
-            "Filtered DscResourceCache cache is empty" | Write-DscTrace
-        }
-        else
-        {
-            "Checking cache for stale entries" | Write-DscTrace
+            if ($dscResourceCacheEntries.Count -eq 0) {
+                # if there is nothing in the cache file - refresh cache
+                $refreshCache = $true
+               "Filtered DscResourceCache cache is empty" | Write-DscTrace
+            }
+            else
+            {
+                "Checking cache for stale entries" | Write-DscTrace
 
-            foreach ($cacheEntry in $dscResourceCacheEntries) {
-                #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
+                foreach ($cacheEntry in $dscResourceCacheEntries) {
+                    #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
 
-                $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
-                
-                    if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                    {
-                        "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
-                        $refreshCache = $true
-                        break
+                    $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
+                    
+                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
+                        {
+                            "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                            $refreshCache = $true
+                            break
+                        }
                     }
+
+                    if ($refreshCache) {break}
                 }
 
-                if ($refreshCache) {break}
-            }
+                "Checking cache for stale PSModulePath" | Write-DscTrace
 
-            "Checking cache for stale PSModulePath" | Write-DscTrace
+                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
-            $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                $hs_cache.SymmetricExceptWith($hs_live)
+                $diff = $hs_cache
 
-            $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-            $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-            $hs_cache.SymmetricExceptWith($hs_live)
-            $diff = $hs_cache
+                "PSModulePath diff '$diff'" | Write-DscTrace
 
-            "PSModulePath diff '$diff'" | Write-DscTrace
-
-            if ($diff.Count -gt 0) {
-                $refreshCache = $true
+                if ($diff.Count -gt 0) {
+                    $refreshCache = $true
+                }
             }
         }
     }
@@ -223,6 +229,7 @@ function Invoke-DscCacheRefresh {
         $cache.ResourceCache = $dscResourceCacheEntries
         $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
         $cache.PSModulePaths = $m.FullName
+        $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
@@ -472,6 +479,7 @@ class dscResourceCacheEntry {
 }
 
 class dscResourceCache {
+    [int] $CacheSchemaVersion
     [string[]] $PSModulePaths
     [dscResourceCacheEntry[]] $ResourceCache
 }
