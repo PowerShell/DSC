@@ -408,11 +408,8 @@ function Invoke-DscOperation {
     $psVersion = $PSVersionTable.PSVersion.ToString()
     'PowerShell version: ' + $psVersion | Write-DscTrace
 
-    $moduleVersion = Get-Module PSDesiredStateConfiguration | ForEach-Object Version
-    'PSDesiredStateConfiguration module version: ' + $moduleVersion | Write-DscTrace
-
     # get details from cache about the DSC resource, if it exists
-    $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.adapted_dsc_type | ForEach-Object DscResourceInfo
+    $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo
 
     # if the resource is found in the cache, get the actual state
     if ($cachedDscResourceInfo) {
@@ -477,7 +474,7 @@ function Invoke-DscOperation {
     }
     else {
         $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
-        $errmsg = 'Can not find type "' + $DesiredState.adapted_dsc_type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.'
+        $errmsg = 'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.'
         'ERROR: ' + $errmsg | Write-DscTrace
         exit 1
     }
