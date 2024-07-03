@@ -186,7 +186,8 @@ Press any key to close this window
         return;
     };
 
-    if parent_process.name().to_lowercase() == "winstore.app.exe" || parent_process.name().to_lowercase() == "explorer.exe"{
+    // MS Store runs app using `sihost.exe`
+    if parent_process.name().to_lowercase() == "sihost.exe" || parent_process.name().to_lowercase() == "explorer.exe"{
         eprintln!("{message}");
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
