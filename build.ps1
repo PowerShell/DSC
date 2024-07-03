@@ -29,7 +29,6 @@ $filesForWindowsPackage = @(
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
-    'PSDesiredStateConfiguration/',
     'psDscAdapter/',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
@@ -87,6 +86,12 @@ function Find-LinkExe {
     }
 }
 
+if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
+    $rustup = 'rustup'
+} else {
+    $rustup = 'echo'
+}
+
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
@@ -112,7 +117,7 @@ if ($null -ne $packageType) {
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
-    rustup default stable
+    & $rustup default stable
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -153,7 +158,7 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
-    rustup target add $architecture
+    & $rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -192,9 +197,6 @@ if (!$SkipBuild) {
 
     if ($IsWindows) {
         $projects += $windows_projects
-        Save-Module -Path $target -Name 'PSDesiredStateConfiguration' -RequiredVersion '2.0.7' -Repository PSGallery -Force
-        # Need to unhide all the files so that packaging works
-        Get-ChildItem -Path $target -Recurse -Hidden | ForEach-Object { $_.Attributes = 'Normal' }
     }
 
     if ($IsMacOS) {
@@ -562,10 +564,20 @@ if ($packageType -eq 'msixbundle') {
         }
     }
 
-    $packageName = "DSC-$productVersion-$architecture.tar.gz"
-    $tgzFile = Join-Path $PSScriptRoot 'bin' $packageName
-    tar cvf $tgzFile -C $tgzTarget .
-    Write-Host -ForegroundColor Green "`nTgz file is created at $tgzFile"
+    $packageName = "DSC-$productVersion-$architecture.tar"
+    $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
+    tar cvf $tarFile -C $tgzTarget .
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create tar file"
+    }
+    Write-Host -ForegroundColor Green "`nTar file is created at $tarFile"
+
+    $gzFile = "$tarFile.gz"
+    gzip -c $tarFile > $gzFile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create gz file"
+    }
+    Write-Host -ForegroundColor Green "`nGz file is created at $gzFile"
 }
 
 $env:RUST_BACKTRACE=1
