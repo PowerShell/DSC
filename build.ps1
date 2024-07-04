@@ -12,7 +12,8 @@ param(
     [switch]$Test,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
-    [switch]$UseX64MakeAppx
+    [switch]$UseX64MakeAppx,
+    [switch]$UseCFS
 )
 
 if ($GetPackageVersion) {
@@ -171,6 +172,15 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
+    if (!$UseCFS) {
+        # this will override the config.toml
+        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'cratesio'
+    } else {
+        Write-Host "Using CFS for cargo source replacement"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
+    }
+
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
 
@@ -240,6 +250,7 @@ if (!$SkipBuild) {
 
             if ($LASTEXITCODE -ne 0) {
                 $failed = $true
+                break
             }
 
             $binary = Split-Path $project -Leaf

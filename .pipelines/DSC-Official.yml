@@ -141,13 +141,7 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            Write-Host "Use 'powershell' CFS"
-            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
-            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
-
-            ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
+            ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck -UseCFS
           displayName: 'Build $(buildName)'
           env:
             ob_restore_phase: true
@@ -279,13 +273,7 @@ extends:
           env:
             ob_restore_phase: true
         - pwsh: |
-            Write-Host "Use 'powershell' CFS"
-            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
-            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
-
-            ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
+            ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu -UseCFS
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build x86_64-unknown-linux-gnu'
@@ -325,13 +313,7 @@ extends:
           env:
             ob_restore_phase: true
         - pwsh: |
-            Write-Host "Use 'powershell' CFS"
-            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
-            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
-
-            ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
+            ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu -UseCFS
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-gnu'
@@ -379,18 +361,7 @@ extends:
           env:
             ob_restore_phase: true
         - pwsh: |
-            Write-Host "Use 'powershell' CFS"
-            Add-Content -Path "./.cargo/config.toml" -Value '[source.crates-io]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'replace-with = "powershell"'
-            Add-Content -Path "./.cargo/config.toml" -Value '[registry]'
-            Add-Content -Path "./.cargo/config.toml" -Value 'global-credential-providers = ["cargo:token"]'
-
-            $c = get-content "./.cargo/config.toml" | Out-String
-            Write-Host $c
-
-            $env:CARGO_HTTP_DEBUG=true
-            $env:CARGO_LOG='network=trace'
-            ./build.ps1 -Release -Architecture $(buildName)
+            ./build.ps1 -Release -Architecture $(buildName) -UseCFS
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"
