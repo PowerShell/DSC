@@ -26,6 +26,9 @@ fn main() {
     #[cfg(debug_assertions)]
     check_debug();
 
+    #[cfg(windows)]
+    check_store();
+
     if ctrlc::set_handler(ctrlc_handler).is_err() {
         error!("Error: Failed to set Ctrl-C handler");
     }
@@ -154,5 +157,40 @@ fn check_debug() {
                 continue;
             }
         }
+    }
+}
+
+// Check if the dsc binary parent process is WinStore.App or Exploerer.exe
+#[cfg(windows)]
+fn check_store() {
+    let message = r"
+DSC.exe is a command-line tool and cannot be run directly from the Windows Store or Explorer.
+Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
+
+Press any key to close this window
+";
+    let sys = System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new()));
+    // get current process
+    let Ok(current_pid) = get_current_pid() else {
+        return;
+    };
+
+    // get parent process
+    let Some(current_process) = sys.process(current_pid) else {
+        return;
+    };
+    let Some(parent_process_pid) = current_process.parent() else {
+        return;
+    };
+    let Some(parent_process) = sys.process(parent_process_pid) else {
+        return;
+    };
+
+    // MS Store runs app using `sihost.exe`
+    if parent_process.name().to_lowercase() == "sihost.exe" || parent_process.name().to_lowercase() == "explorer.exe"{
+        eprintln!("{message}");
+        // wait for keypress
+        let _ = io::stdin().read(&mut [0u8]).unwrap();
+        exit(util::EXIT_INVALID_ARGS);
     }
 }
