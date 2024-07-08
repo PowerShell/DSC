@@ -4,7 +4,6 @@ registry-auth = true
 
 [registries]
 powershell = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/" }
-cratesio = { index = "sparse+https://index.crates.io/"}
 
 [registry]
 global-credential-providers = ["cargo:token"]
