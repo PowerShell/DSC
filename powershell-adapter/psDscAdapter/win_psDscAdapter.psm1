@@ -355,15 +355,15 @@ function Invoke-DscOperation {
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
-                        $invokeResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
+                        $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     else {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
-                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
+                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
-                    $addToActualState.properties = $getDscResult
+                    $addToActualState.properties = $ResultProperties
                 }
                 catch {
                     'ERROR: ' + $_.Exception.Message | Write-DscTrace
@@ -422,21 +422,19 @@ function Invoke-DscOperation {
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
-
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    $getResult = $PSDesiredStateConfiguration.invoke({ param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1' } -Property $Property -ErrorAction Stop }, $cachedDscResourceInfo.Name, $property )
-
-                    if ($getResult.GetType().Name -eq 'Hashtable') {
-                        $getResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+                    if ($invokeResult.GetType().Name -eq 'Hashtable') {
+                        $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     else {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
-                        $getResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
-                    $addToActualState.properties = $getDscResult
+                    $addToActualState.properties = $ResultProperties
                 }
                 catch {
                     'ERROR: ' + $_.Exception.Message | Write-DscTrace

@@ -43,6 +43,14 @@ Describe 'WindowsPowerShell adapter resource tests' {
         $res.actualState.result.properties.DestinationPath | Should -Be "$testFile"
     }
 
+    It 'Set works on Binary "File" resource' -Skip:(!$IsWindows){
+
+        $testFile = "$testdrive\test.txt"
+        $r = '{"DestinationPath":"' + $testFile.replace('\','\\') + '", type: File, contents: HelloWorld, Ensure: present}' | dsc resource set -r 'PSDesiredStateConfiguration/File'
+        $LASTEXITCODE | Should -Be 0
+        Get-Content -Raw -Path $testFile | Should -Be "HelloWorld"
+    }
+
     It 'Get works on traditional "Script" resource' -Skip:(!$IsWindows){
 
         $testFile = "$testdrive\test.txt"
