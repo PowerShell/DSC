@@ -130,31 +130,67 @@ Describe 'PowerShell adapter resource tests' {
     }
 
     It 'Verify adapted_dsc_type field in Get' {
-        $r = '{TestCaseId: 1}'| dsc resource get -r 'Test/TestCase'
-        $LASTEXITCODE | Should -Be 0
-        $resources = $r | ConvertFrom-Json
-        $resources.actualState.result | Should -Be $True
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = '{TestCaseId: 1}'| dsc resource get -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.actualState.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
     }
 
     It 'Verify adapted_dsc_type field in Set' {
-        $r = '{TestCaseId: 1}'| dsc resource set -r 'Test/TestCase'
-        $LASTEXITCODE | Should -Be 0
-        $resources = $r | ConvertFrom-Json
-        $resources.beforeState.result | Should -Be $True
-        $resources.afterState.result | Should -Be $True
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = '{TestCaseId: 1}'| dsc resource set -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.beforeState.result | Should -Be $True
+            $resources.afterState.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
     }
 
     It 'Verify adapted_dsc_type field in Test' {
-        $r = '{TestCaseId: 1}'| dsc resource test -r 'Test/TestCase'
-        $LASTEXITCODE | Should -Be 0
-        $resources = $r | ConvertFrom-Json
-        $resources.actualState.result | Should -Be $True
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = '{TestCaseId: 1}'| dsc resource test -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.actualState.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
     }
 
     It 'Verify adapted_dsc_type field in Export' {
-        $r = dsc resource export -r 'Test/TestCase'
-        $LASTEXITCODE | Should -Be 0
-        $resources = $r | ConvertFrom-Json
-        $resources.resources[0].properties.result | Should -Be $True
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = dsc resource export -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.resources[0].properties.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
     }
 }
