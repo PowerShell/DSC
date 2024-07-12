@@ -276,8 +276,8 @@ function Get-DscResourceObject {
     }
     else {
         # mimic a config object with a single resource
-        $type = $inputObj.type
-        $inputObj.psobject.properties.Remove('type')
+        $type = $inputObj.adapted_dsc_type
+        $inputObj.psobject.properties.Remove('adapted_dsc_type')
         $desiredState += [dscResourceObject]@{
             name       = $adapterName
             type       = $type

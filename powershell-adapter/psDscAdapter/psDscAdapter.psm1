@@ -379,8 +379,8 @@ function Get-DscResourceObject {
     }
     else {
         # mimic a config object with a single resource
-        $type = $inputObj.type
-        $inputObj.psobject.properties.Remove('type')
+        $type = $inputObj.adapted_dsc_type
+        $inputObj.psobject.properties.Remove('adapted_dsc_type')
         $desiredState += [dscResourceObject]@{
             name       = $adapterName
             type       = $type
@@ -407,9 +407,6 @@ function Invoke-DscOperation {
 
     $psVersion = $PSVersionTable.PSVersion.ToString()
     'PowerShell version: ' + $psVersion | Write-DscTrace
-
-    $moduleVersion = Get-Module PSDesiredStateConfiguration | ForEach-Object Version
-    'PSDesiredStateConfiguration module version: ' + $moduleVersion | Write-DscTrace
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo
