@@ -138,7 +138,7 @@ DSC Resources and integrating tools, but doesn't enable any built-in processing 
 If defined, this property must be a reference to the schema for the well-known property:
 
 ```json
-"_inDesiredState": {
+"_purge": {
   "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/purge.json"
 }
 ```
