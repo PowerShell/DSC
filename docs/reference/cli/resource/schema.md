@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource schema' command
-ms.date:     08/04/2023
+ms.date:     06/24/2024
 ms.topic:    reference
 title:       dsc resource schema
 ---
@@ -40,44 +40,124 @@ dsc resource schema --resource Microsoft/OSInfo
 
 ```yaml
 $schema: http://json-schema.org/draft-07/schema#
+$id: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft/OSInfo/v0.1.0/schema.json
 title: OsInfo
+description: |
+  Returns information about the operating system.
+
+  https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource
+markdownDescription: |
+  The `Microsoft/OSInfo` resource enables you to assert whether a machine meets criteria related to
+  the operating system. The resource is only capable of assertions. It doesn't implement the set
+  operation and can't configure the operating system.
+
+  [Online documentation][01]
+
+  [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource
 type: object
 required: []
+additionalProperties: false
 properties:
   $id:
     type: string
+    readOnly: true
+    title: Data Type ID
+    description: |
+      Returns the unique ID for the OSInfo instance data type.
+
+      https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#id
+    markdownDescription: |
+      Returns the unique ID for the OSInfo instance data type.
+
+      [Online documentation][01]
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#id
   architecture:
-    type:
-    - string
-    - 'null'
-  bitness:
-    $ref: '#/definitions/Bitness'
-  codename:
-    type:
-    - string
-    - 'null'
-  edition:
-    type:
-    - string
-    - 'null'
-  family:
-    $ref: '#/definitions/Family'
-  version:
     type: string
-additionalProperties: false
-definitions:
-  Bitness:
+    title: Processor architecture
+    description: |
+      Defines the processor architecture as reported by 'uname -m' on the operating system.
+
+      https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#architecture
+    markdownDescription: |
+      Defines the processor architecture as reported by `uname -m` on the operating system.
+
+      [Online documentation][01]
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#architecture
+  bitness:
     type: string
     enum:
     - '32'
     - '64'
     - unknown
-  Family:
+    title: Operating system bitness
+    description: |
+      Defines whether the operating system is a 32-bit or 64-bit operating system.
+
+      https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#bitness
+    markdownDescription: |
+      Defines whether the operating system is a 32-bit or 64-bit operating system.
+
+      [Online documentation][01]
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#bitness
+  codename:
+    type: string
+    title: Linux codename
+    description: |
+      Defines the codename for the operating system as returned from 'lsb_release --codename'.
+
+      https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#codename
+    markdownDescription: |
+      Defines the codename for the operating system as returned from `lsb_release --codename`.
+
+      [Online documentation][01]
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#codename
+  edition:
+    type: string
+    title: Windows edition
+    description: |
+      Defines the operating system edition, like 'Windows 11' or 'Windows Server 2016'.
+
+      https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#edition
+    markdownDescription: |
+      Defines the operating system edition, like `Windows 11` or `Windows Server 2016`.
+
+      [Online documentation][01]
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#edition
+  family:
     type: string
     enum:
     - Linux
-    - MacOS
+    - macOS
     - Windows
+    title: Operating system family
+    description: |
+      Defines whether the operating system is Linux, macOS, or Windows.
+
+      https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#family
+    markdownDescription: |
+      Defines whether the operating system is Linux, macOS, or Windows.
+
+      [Online documentation][01]
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#family
+  version:
+    type: string
+    title: Operating system version
+    description: |
+      Defines the version of the operating system as a string.
+
+      https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version
+    markdownDescription: |
+      Defines the version of the operating system as a string.
+
+      [Online documentation][01]
+
+      [01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#version
 ```
 
 ## Options

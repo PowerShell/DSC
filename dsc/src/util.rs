@@ -118,7 +118,7 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 pub fn add_type_name_to_json(json: String, type_name: String) -> String
 {
     let mut map:HashMap<String,String> = HashMap::new();
-    map.insert(String::from("type"), type_name);
+    map.insert(String::from("adapted_dsc_type"), type_name);
 
     let mut j = json;
     if j.is_empty()
