@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 1
+$script:CurrentCacheSchemaVersion = 2
 
 function Write-DscTrace {
     param(
@@ -42,7 +42,6 @@ function Get-DSCResourceModules
                 if($null -ne $containsDSCResource)
                 {
                     $dscModulePsd1List.Add($psd1) | Out-Null
-                    break
                 }
             }
         }
@@ -107,7 +106,9 @@ function FindAndParseResourceDefinitions
     [CmdletBinding(HelpUri = '')]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$filePath
+        [string]$filePath,
+        [Parameter(Mandatory = $true)]
+        [string]$moduleVersion
     )
 
     if (-not (Test-Path $filePath))
@@ -155,6 +156,7 @@ function FindAndParseResourceDefinitions
                 #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
                 $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
                 $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
+                $DscResourceInfo.Version = $moduleVersion
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
                 Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
@@ -194,7 +196,7 @@ function LoadPowerShellClassResourcesFromModule
         $scriptPath = $moduleInfo.Path;
     }
 
-    $Resources = FindAndParseResourceDefinitions $scriptPath
+    $Resources = FindAndParseResourceDefinitions $scriptPath $moduleInfo.Version
 
     if ($moduleInfo.NestedModules)
     {
@@ -309,11 +311,23 @@ function Invoke-DscCacheRefresh {
         $dscResourceModulePsd1s = Get-DSCResourceModules
         if($null -ne $dscResourceModulePsd1s) {
             $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s)
+            $processedModuleNames = @{}
             foreach ($mod in $modules)
             {
-                [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $mod
-                if ($r) {
-                    $DscResources.AddRange($r)
+                if (-not ($processedModuleNames.ContainsKey($mod.Name))) {
+                    $processedModuleNames.Add($mod.Name, $true)
+
+                    # from several modules with the same name select the one with the highest version
+                    $selectedMod = $modules | Where-Object Name -EQ $mod.Name 
+                    if ($selectedMod.Count -gt 1) {
+                        "Found $($selectedMod.Count) modules with name '$($mod.Name)'" | Write-DscTrace -Operation Trace
+                        $selectedMod = $selectedMod | Sort-Object -Property Version -Descending | Select-Object -First 1
+                    }
+
+                    [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $selectedMod
+                    if ($r) {
+                        $DscResources.AddRange($r)
+                    }
                 }
             }
         }
