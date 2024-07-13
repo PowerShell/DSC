@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a DSC Resource manifest
-ms.date:     01/17/2024
+ms.date:     06/24/2024
 ms.topic:    reference
 title:       Command-based DSC Resource manifest schema reference
 ---
@@ -210,6 +210,18 @@ Type:     object
 Required: false
 ```
 
+### whatIf
+
+Defines how DSC must call the DSC Resource to indicate whether and how the set command will modify
+an instance and how to process the output from the DSC Resource. If a resource doesn't define this
+method in the manifest, DSC synthesizes this behavior by converting the result of the test
+operation for the resource into the set result.
+
+The value of this property must be an object. The `executable` property, defining the name of the
+command to call, is mandatory. The `args` `input`, `implementsPretest`, and `returns` properties
+are optional. For more information, see
+[DSC Resource manifest whatIf property schema reference][10].
+
 ### test
 
 The `test` property defines how to call the resource to test whether an instance is in the desired
@@ -218,7 +230,7 @@ property isn't defined, DSC performs a basic synthetic test for instances of the
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` `input`, and `returns` properties are optional.
-For more information, see [DSC Resource manifest test property schema reference][10].
+For more information, see [DSC Resource manifest test property schema reference][11].
 
 ```yaml
 Type:     object
@@ -232,7 +244,7 @@ property is mandatory for DSC Group Resources. DSC ignores this property for all
 
 The value of this property must be an object. The object's `executable` property, defining the name
 of the command to call, is mandatory. The `args` property is optional. For more information, see
-[DSC Resource manifest validate property schema reference][11].
+[DSC Resource manifest validate property schema reference][12].
 
 ```yaml
 Type:     object
@@ -246,7 +258,7 @@ When specified, the `provider` property defines the resource as a DSC Resource P
 The value of this property must be an object. The object's `list` and `config` properties are
 mandatory. The `list` property defines how to call the provider to return the resources that the
 provider can manage. The `config` property defines how the provider expects input. For more
-information, see the [DSC Resource manifest provider property schema reference][12].
+information, see the [DSC Resource manifest provider property schema reference][13].
 
 ### exitCodes
 
@@ -291,7 +303,7 @@ resource. This property must always be an object that defines one of the followi
 - `embedded` - When you specify the `embedded` property, DSC uses the defined value as the JSON
   schema.
 
-For more information, see [DSC Resource manifest schema property reference][13].
+For more information, see [DSC Resource manifest schema property reference][14].
 
 ```yaml
 Type:     object
@@ -307,7 +319,8 @@ Required: true
 [07]: export.md
 [08]: get.md
 [09]: set.md
-[10]: test.md
-[11]: validate.md
-[12]: provider.md
-[13]: schema/property.md
+[10]: whatif.md
+[11]: test.md
+[12]: validate.md
+[13]: provider.md
+[14]: schema/property.md

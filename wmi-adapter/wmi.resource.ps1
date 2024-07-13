@@ -105,7 +105,7 @@ elseif ($Operation -eq 'Get')
     }
     else # we are processing an individual resource call
     {
-        $type_fields = $inputobj_pscustomobj.type -split "/"
+        $type_fields = $inputobj_pscustomobj.adapted_dsc_type -split "/"
         $wmi_namespace = $type_fields[0].Replace('.','\')
         $wmi_classname = $type_fields[1]
 
