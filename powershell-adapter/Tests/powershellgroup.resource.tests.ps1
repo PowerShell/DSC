@@ -129,6 +129,54 @@ Describe 'PowerShell adapter resource tests' {
         $t.properties | Should -Contain "BaseProperty"
     }
 
+    It 'Verify highest module version is loaded' {
+
+        $srcPath = Join-Path $PSScriptRoot 'TestClassResource'
+        $pathRoot1 = Join-Path $TestDrive 'A'
+        $pathRoot2 = Join-Path $TestDrive 'B'
+        $path1 = Join-Path $pathRoot1 'TestClassResource' '1.0'
+        $path2 = Join-Path $pathRoot1 'TestClassResource' '1.1'
+        $path3 = Join-Path $pathRoot2 'TestClassResource' '2.0'
+        $path4 = Join-Path $pathRoot2 'TestClassResource' '2.0.1'
+
+        New-Item -ItemType Directory -Force -Path $path1 | Out-Null
+        New-Item -ItemType Directory -Force -Path $path2 | Out-Null
+        New-Item -ItemType Directory -Force -Path $path3 | Out-Null
+        New-Item -ItemType Directory -Force -Path $path4 | Out-Null
+
+        $files = Get-ChildItem -Recurse -File -Path $srcPath
+        $files | Copy-Item -Destination $path1
+        $files | Copy-Item -Destination $path2
+        $files | Copy-Item -Destination $path3
+        $files | Copy-Item -Destination $path4
+
+        $filePath = Join-Path $path1 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.0`'") | Set-Content $filePath
+        $filePath = Join-Path $path2 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.1`'") | Set-Content $filePath
+        $filePath = Join-Path $path3 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0`'") | Set-Content $filePath
+        $filePath = Join-Path $path4 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0.1`'") | Set-Content $filePath
+
+
+        $oldPath = $env:PSModulePath
+        try {
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + $pathRoot1
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + $pathRoot2
+
+            $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $r = @($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'})
+            $r.Count | Should -Be 1
+            $r[0].Version | Should -Be '2.0.1'
+        }
+        finally {
+            $env:PSModulePath = $oldPath
+        }
+    }
+
     It 'Verify adapted_dsc_type field in Get' {
         $oldPath = $env:PATH
         try {
