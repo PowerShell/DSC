@@ -1,34 +1,55 @@
 {
-    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
-    "type": "Microsoft.DSC/Include",
-    "version": "0.1.0",
-    "description": "Allows including a configuration file contents into current configuration.",
-    "kind": "Import",
-    "resolve": {
-      "executable": "dsc",
-      "args": [
-        "config",
-        "resolve"
-      ],
-      "input": "stdin"
-    },
-    "exitCodes": {
-      "0": "Success",
-      "1": "Invalid argument",
-      "2": "Resource error",
-      "3": "JSON Serialization error",
-      "4": "Invalid input format",
-      "5": "Resource instance failed schema validation",
-      "6": "Command cancelled"
-    },
-    "schema": {
-        "command": {
-            "executable": "dsc",
-            "args": [
-                "schema",
-                "--type",
-                "include"
-            ]
-        }
-    }
+  "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+  "type": "Microsoft.DSC/Include",
+  "version": "0.1.0",
+  "description": "Allows including a configuration file with optional parameter file.",
+  "kind": "Group",
+  "get": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "--as-include",
+      "get"
+    ],
+    "input": "stdin"
+  },
+  "set": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "--as-include",
+      "set"
+    ],
+    "input": "stdin",
+    "implementsPretest": true,
+    "return": "state"
+  },
+  "test": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "--as-include",
+      "test"
+    ],
+    "input": "stdin",
+    "return": "state"
+  },
+  "exitCodes": {
+    "0": "Success",
+    "1": "Invalid argument",
+    "2": "Resource error",
+    "3": "JSON Serialization error",
+    "4": "Invalid input format",
+    "5": "Resource instance failed schema validation",
+    "6": "Command cancelled"
+  },
+  "validate": {
+    "executable": "dsc",
+    "args": [
+      "config",
+      "--as-include",
+      "validate"
+    ],
+    "input": "stdin"
   }
+}

@@ -7,7 +7,7 @@ use crate::resource_command::{get_resource, self};
 use crate::Stream;
 use crate::tablewriter::Table;
 use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
-use dsc_lib::configure::{Configurator, config_doc::ExecutionKind, config_result::ResourceGetResult};
+use dsc_lib::configure::{Configurator, config_doc::{Configuration, ExecutionKind}, config_result::ResourceGetResult};
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::ResolveResult;
 use dsc_lib::{
@@ -186,7 +186,7 @@ fn initialize_config_root(path: &Option<String>) -> Option<String> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool, as_include: &bool) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
@@ -194,7 +194,19 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Validate { document, path, .. } |
         ConfigSubCommand::Export { document, path, .. } => {
             let new_path = initialize_config_root(path);
-            (None, get_input(document, stdin, &new_path))
+            let input = get_input(document, stdin, &new_path);
+            if *as_include {
+                let (new_parameters, config_json) = match get_contents(&input) {
+                    Ok((parameters, config_json)) => (parameters, config_json),
+                    Err(err) => {
+                        error!("{err}");
+                        exit(EXIT_DSC_ERROR);
+                    }
+                };
+                (new_parameters, config_json)
+            } else {
+                (None, input)
+            }
         },
         ConfigSubCommand::Resolve { document, path, .. } => {
             let new_path = initialize_config_root(path);
@@ -278,7 +290,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
                 valid: true,
                 reason: None,
             };
-            let valid = match validate_config(&json_string) {
+            let valid = match validate_config(&configurator.get_config()) {
                 Ok(()) => {
                     true
                 },
@@ -349,11 +361,11 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
 /// # Errors
 ///
 /// * `DscError` - The error that occurred.
-pub fn validate_config(config: &str) -> Result<(), DscError> {
+pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("Validating configuration against schema");
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
-    let config_value = serde_json::from_str(config)?;
+    let config_value = serde_json::to_value(config)?;
     validate_json("Configuration", &schema, &config_value)?;
     let mut dsc = DscManager::new()?;
 

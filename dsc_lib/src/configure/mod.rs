@@ -31,7 +31,8 @@ pub mod depends_on;
 pub mod parameters;
 
 pub struct Configurator {
-    config: String,
+    json: String,
+    config: Configuration,
     pub context: Context,
     discovery: Discovery,
     statement_parser: Statement,
@@ -200,14 +201,26 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new(config: &str) -> Result<Configurator, DscError> {
+    pub fn new(json: &str) -> Result<Configurator, DscError> {
         let discovery = Discovery::new()?;
-        Ok(Configurator {
-            config: config.to_owned(),
+        let mut config = Configurator {
+            json: json.to_owned(),
+            config: Configuration::new(),
             context: Context::new(),
             discovery,
             statement_parser: Statement::new()?,
-        })
+        };
+        config.validate_config()?;
+        Ok(config)
+    }
+
+    /// Get the configuration.
+    ///
+    /// # Returns
+    ///
+    /// * `&Configuration` - The configuration.
+    pub fn get_config(&self) -> &Configuration {
+        &self.config
     }
 
     /// Invoke the get operation on a resource.
@@ -220,9 +233,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
-        let config = self.validate_config()?;
         let mut result = ConfigurationGetResult::new();
-        let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
+        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let pb_span = get_progress_bar_span(resources.len() as u64)?;
         let pb_span_enter = pb_span.enter();
         for resource in resources {
@@ -279,9 +291,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
-        let config = self.validate_config()?;
         let mut result = ConfigurationSetResult::new();
-        let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
+        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let pb_span = get_progress_bar_span(resources.len() as u64)?;
         let pb_span_enter = pb_span.enter();
         for resource in resources {
@@ -388,9 +399,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
-        let config = self.validate_config()?;
         let mut result = ConfigurationTestResult::new();
-        let resources = get_resource_invocation_order(&config, &mut self.statement_parser, &self.context)?;
+        let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let pb_span = get_progress_bar_span(resources.len() as u64)?;
         let pb_span_enter = pb_span.enter();
         for resource in resources {
@@ -443,14 +453,13 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
-        let config = self.validate_config()?;
-
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        let pb_span = get_progress_bar_span(config.resources.len() as u64)?;
+        let pb_span = get_progress_bar_span(self.config.resources.len() as u64)?;
         let pb_span_enter = pb_span.enter();
-        for resource in config.resources {
+        let resources = self.config.resources.clone();
+        for resource in &resources {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(&resource.properties)?;
@@ -480,7 +489,7 @@ impl Configurator {
     /// This function will return an error if the parameters are invalid.
     pub fn set_parameters(&mut self, parameters_input: &Option<Value>) -> Result<(), DscError> {
         // set default parameters first
-        let config = serde_json::from_str::<Configuration>(self.config.as_str())?;
+        let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
                 debug!("No parameters defined in configuration and no parameters input");
@@ -534,6 +543,12 @@ impl Configurator {
                     info!("Set parameter '{name}' to '{value}'");
                 }
                 self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
+                // also update the configuration with the parameter value
+                if let Some(parameters) = &mut self.config.parameters {
+                    if let Some(parameter) = parameters.get_mut(&name) {
+                        parameter.default_value = Some(value);
+                    }
+                }
             }
             else {
                 return Err(DscError::Validation(format!("Parameter '{name}' not defined in configuration")));
@@ -592,14 +607,15 @@ impl Configurator {
         Ok(())
     }
 
-    fn validate_config(&mut self) -> Result<Configuration, DscError> {
-        let config: Configuration = serde_json::from_str(self.config.as_str())?;
+    fn validate_config(&mut self) -> Result<(), DscError> {
+        let config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(&config.metadata)?;
 
         // Perform discovery of resources used in config
         let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
         self.discovery.find_resources(&required_resources);
-        Ok(config)
+        self.config = config;
+        Ok(())
     }
 
     fn invoke_property_expressions(&mut self, properties: &Option<Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
