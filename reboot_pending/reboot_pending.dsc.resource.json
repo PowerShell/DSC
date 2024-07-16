@@ -19,7 +19,8 @@
       "type": "null",
       "properties": {
         "RebootPending": {
-            "type": "boolean"
+            "type": "boolean",
+            "readOnly": true
         }
       }
     }
