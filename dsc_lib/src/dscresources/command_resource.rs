@@ -628,25 +628,22 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     let stdout_result = stdout_task.await.unwrap();
     let stderr_result = stderr_task.await.unwrap();
 
-    match exit_code {
-        Some(code) => {
-            debug!("Process '{executable}' id {child_id} exited with code {code}");
+    if let Some(code) = exit_code {
+        debug!("Process '{executable}' id {child_id} exited with code {code}");
 
-            if code != 0 {
-                if let Some(exit_codes) = exit_codes {
-                    if let Some(error_message) = exit_codes.get(&code) {
-                        return Err(DscError::CommandExitFromManifest(executable.to_string(), code, error_message.to_string()));
-                    }
+        if code != 0 {
+            if let Some(exit_codes) = exit_codes {
+                if let Some(error_message) = exit_codes.get(&code) {
+                    return Err(DscError::CommandExitFromManifest(executable.to_string(), code, error_message.to_string()));
                 }
-                return Err(DscError::Command(executable.to_string(), code, stderr_result));
             }
-
-            Ok((code, stdout_result, stderr_result))
-        },
-        None => {
-            debug!("Process '{executable}' id {child_id} terminated by signal");
-            Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()))
+            return Err(DscError::Command(executable.to_string(), code, stderr_result));
         }
+
+        Ok((code, stdout_result, stderr_result))
+    } else {
+        debug!("Process '{executable}' id {child_id} terminated by signal");
+        Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()))
     }
 }
 /// Invoke a command and return the exit code, stdout, and stderr.
@@ -661,6 +658,10 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 /// # Errors
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
+/// # Panics
+///
+/// Will panic if tokio runtime can't be created.
+///
 #[allow(clippy::implicit_hasher)]
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
     debug!("Invoking command '{}' with args {:?}", executable, args);
