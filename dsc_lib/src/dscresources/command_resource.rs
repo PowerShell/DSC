@@ -588,7 +588,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     if let Some(input) = input {
         trace!("Writing to command STDIN: {input}");
         let mut stdin = child.stdin.take().expect("child did not have a handle to stdin");
-        stdin.write(input.as_bytes()).await.expect("could not write to stdin");
+        stdin.write_all(input.as_bytes()).await.expect("could not write to stdin");
         drop(stdin);
     }
 
@@ -609,7 +609,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
             stdout_result.push_str(&line);
             stdout_result.push('\n');
         }
-        return stdout_result
+        stdout_result
     });
 
     let stderr_task = tokio::spawn(async move {
@@ -621,7 +621,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
                 filtered_stderr.push('\n');
             }
         }
-        return filtered_stderr
+        filtered_stderr
     });
     
     let exit_code = child_task.await.unwrap()?.code();
@@ -641,10 +641,11 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
                 return Err(DscError::Command(executable.to_string(), code, stderr_result));
             }
 
-            Ok((code, stdout_result, stderr_result)) },
+            Ok((code, stdout_result, stderr_result))
+        },
         None => {
             debug!("Process '{executable}' id {child_id} terminated by signal");
-            return Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()));
+            Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()))
         }
     }
 }
@@ -840,5 +841,5 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
         }
     };
 
-    return "";
+    ""
 }
