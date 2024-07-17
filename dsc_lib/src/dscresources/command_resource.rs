@@ -615,7 +615,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     let stderr_task = tokio::spawn(async move {
         let mut filtered_stderr = String::with_capacity(1024*1024);
         while let Ok(Some(stderr_line)) = stderr_reader.next_line().await {
-            let filtered_stderr_line = log_stderr_line("pn", &child_id, &stderr_line);
+            let filtered_stderr_line = log_stderr_line(&child_id, &stderr_line);
             if !filtered_stderr_line.is_empty() {
                 filtered_stderr.push_str(filtered_stderr_line);
                 filtered_stderr.push('\n');
@@ -815,21 +815,21 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
 /// * `process_name` - The name of the process
 /// * `process_id` - The ID of the process
 /// * `trace_line` - The stderr line from the process
-pub fn log_stderr_line<'a>(process_name: &str, process_id: &u32, trace_line: &'a str) -> &'a str
+pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
 {
     if !trace_line.is_empty()
     {
         if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
             if let Some(msg) = json_obj.get("Error") {
-                error!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                error!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Warning") {
-                warn!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                warn!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Info") {
-                info!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                info!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Debug") {
-                debug!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                debug!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Trace") {
-                trace!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+                trace!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
                 return trace_line;
