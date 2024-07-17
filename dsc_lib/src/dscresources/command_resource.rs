@@ -3,11 +3,16 @@
 
 use jsonschema::JSONSchema;
 use serde_json::Value;
-use std::{collections::HashMap, env, io::{Read, Write}, process::{Command, Stdio}};
+use std::{collections::HashMap, env, io::{Read, Write}};
 use crate::{configure::{config_doc::ExecutionKind, {config_result::ResourceGetResult, parameters, Configurator}}, util::parse_input_to_json};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
+use tokio::process::Command;
+use std::process::Stdio;
+use std::process::ExitStatus;
+use tokio::io::{BufReader, AsyncBufReadExt, AsyncWriteExt};
+use tokio::task::JoinError;
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -553,21 +558,8 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
     Ok(result)
 }
 
-/// Invoke a command and return the exit code, stdout, and stderr.
-///
-/// # Arguments
-///
-/// * `executable` - The command to execute
-/// * `args` - Optional arguments to pass to the command
-/// * `input` - Optional input to pass to the command
-/// * `cwd` - Optional working directory to execute the command in
-///
-/// # Errors
-///
-/// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
-#[allow(clippy::implicit_hasher)]
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
-    debug!("Invoking command '{}' with args {:?}", executable, args);
+async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+
     let mut command = Command::new(executable);
     if input.is_some() {
         command.stdin(Stdio::piped());
@@ -583,62 +575,96 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
     if let Some(env) = env {
         command.envs(env);
     }
-
     if executable == "dsc" && env::var("DEBUG_DSC").is_ok() {
         // remove this env var from child process as it will fail reading from keyboard to allow attaching
         command.env_remove("DEBUG_DSC");
     }
 
-    let mut child = command.spawn()?;
+    let mut child = command.spawn().expect("failed to spawn command");
+
+    let stdout = child.stdout.take().expect("child did not have a handle to stdout");
+    let stderr = child.stderr.take().expect("child did not have a handle to stderr");
+    let mut stdout_reader = BufReader::new(stdout).lines();
+    let mut stderr_reader = BufReader::new(stderr).lines();
+
     if let Some(input) = input {
         trace!("Writing to command STDIN: {input}");
-        // pipe to child stdin in a scope so that it is dropped before we wait
-        // otherwise the pipe isn't closed and the child process waits forever
-        let Some(mut child_stdin) = child.stdin.take() else {
-            return Err(DscError::CommandOperation("Failed to open stdin".to_string(), executable.to_string()));
-        };
-        child_stdin.write_all(input.as_bytes())?;
-        child_stdin.flush()?;
+        let mut stdin = child.stdin.take().expect("child did not have a handle to stdin");
+        stdin.write(input.as_bytes()).await.expect("could not write to stdin");
+        drop(stdin);
     }
-
-    let Some(mut child_stdout) = child.stdout.take() else {
-        return Err(DscError::CommandOperation("Failed to open stdout".to_string(), executable.to_string()));
-    };
-    let mut stdout_buf = Vec::new();
-    child_stdout.read_to_end(&mut stdout_buf)?;
-
-    let Some(mut child_stderr) = child.stderr.take() else {
-        return Err(DscError::CommandOperation("Failed to open stderr".to_string(), executable.to_string()));
-    };
-    let mut stderr_buf = Vec::new();
-    child_stderr.read_to_end(&mut stderr_buf)?;
-
-    let exit_status = child.wait()?;
-    let exit_code = exit_status.code().unwrap_or(EXIT_PROCESS_TERMINATED);
-    let stdout = String::from_utf8_lossy(&stdout_buf).to_string();
-    let stderr = String::from_utf8_lossy(&stderr_buf).to_string();
-    if !stdout.is_empty() {
-        trace!("STDOUT returned: {}", &stdout);
-    }
-    let cleaned_stderr = if stderr.is_empty() {
-        stderr
-    } else {
-        trace!("STDERR returned data to be traced");
-        log_resource_traces(executable, &child.id(), &stderr);
-        // TODO: remove logged traces from STDERR
-        String::new()
-    };
-
-    if exit_code != 0 {
-        if let Some(exit_codes) = exit_codes {
-            if let Some(error_message) = exit_codes.get(&exit_code) {
-                return Err(DscError::CommandExitFromManifest(executable.to_string(), exit_code, error_message.to_string()));
-            }
+    
+    let child_id: u32 = match child.id() {
+        Some(id) => id,
+        None => {
+            return Err(DscError::CommandOperation("Can't get child process id".to_string(), executable.to_string()));
         }
-        return Err(DscError::Command(executable.to_string(), exit_code, cleaned_stderr));
+    };
+
+    // Ensure the child process is spawned in the runtime so it can
+    // make progress on its own while we await for any output.
+    let child_result:Result<ExitStatus, JoinError> = tokio::spawn(async {
+        let status = child.wait_with_output().await;
+        return status.unwrap().status
+    }).await;
+
+    let mut stdout_result = String::with_capacity(1024*1024);
+    while let Some(line) = stdout_reader.next_line().await? {
+        stdout_result.push_str(&line);
+        stdout_result.push('\n');
     }
 
-    Ok((exit_code, stdout, cleaned_stderr))
+    let mut filtered_stderr = String::with_capacity(1024*1024);
+    while let Some(stderr_line) = stderr_reader.next_line().await? {
+        let filtered_stderr_line = log_stderr_line(executable, &child_id, &stderr_line);
+        if !filtered_stderr_line.is_empty() {
+            filtered_stderr.push_str(filtered_stderr_line);
+            filtered_stderr.push('\n');
+        }
+    }
+
+    let exit_code = child_result.unwrap().code();
+    match exit_code {
+        Some(code) => {
+            debug!("Process '{executable}' id {child_id} exited with code {code}");
+
+            if code != 0 {
+                if let Some(exit_codes) = exit_codes {
+                    if let Some(error_message) = exit_codes.get(&code) {
+                        return Err(DscError::CommandExitFromManifest(executable.to_string(), code, error_message.to_string()));
+                    }
+                }
+                return Err(DscError::Command(executable.to_string(), code, filtered_stderr));
+            }
+
+            Ok((code, stdout_result, filtered_stderr)) },
+        None => {
+            debug!("Process '{executable}' id {child_id} terminated by signal");
+            return Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()));
+        }
+    }
+}
+/// Invoke a command and return the exit code, stdout, and stderr.
+///
+/// # Arguments
+///
+/// * `executable` - The command to execute
+/// * `args` - Optional arguments to pass to the command
+/// * `input` - Optional input to pass to the command
+/// * `cwd` - Optional working directory to execute the command in
+///
+/// # Errors
+///
+/// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
+#[allow(clippy::implicit_hasher)]
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+    debug!("Invoking command '{}' with args {:?}", executable, args);
+
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(run_process_async(executable, args, input, cwd, env, exit_codes))
 }
 
 fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
@@ -784,30 +810,31 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
 ///
 /// * `process_name` - The name of the process
 /// * `process_id` - The ID of the process
-/// * `stderr` - The stderr output from the process
-pub fn log_resource_traces(process_name: &str, process_id: &u32, stderr: &str)
+/// * `trace_line` - The stderr line from the process
+pub fn log_stderr_line<'a>(process_name: &str, process_id: &u32, trace_line: &'a str) -> &'a str
 {
-    if !stderr.is_empty()
+    if !trace_line.is_empty()
     {
-        for trace_line in stderr.lines() {
-            if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
-                if let Some(msg) = json_obj.get("Error") {
-                    error!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Warning") {
-                    warn!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Info") {
-                    info!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Debug") {
-                    debug!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
-                } else if let Some(msg) = json_obj.get("Trace") {
-                    trace!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
-                } else {
-                    // TODO: deserialize tracing JSON to have better presentation
-                    trace!("Process '{process_name}' id {process_id} : {trace_line}");
-                };
+        if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
+            if let Some(msg) = json_obj.get("Error") {
+                error!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+            } else if let Some(msg) = json_obj.get("Warning") {
+                warn!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+            } else if let Some(msg) = json_obj.get("Info") {
+                info!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+            } else if let Some(msg) = json_obj.get("Debug") {
+                debug!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
+            } else if let Some(msg) = json_obj.get("Trace") {
+                trace!("Process '{process_name}' id {process_id} : {}", msg.as_str().unwrap_or_default());
             } else {
-                trace!("Process '{process_name}' id {process_id} : {trace_line}");
-            }
+                // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
+                return trace_line;
+            };
+        } else {
+            // the line is not a valid json - return it as filtered stderr_line
+            return trace_line;
         }
-    }
+    };
+
+    return "";
 }
