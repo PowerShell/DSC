@@ -3,16 +3,14 @@
 
 use jsonschema::JSONSchema;
 use serde_json::Value;
-use std::{collections::HashMap, env, io::{Read, Write}};
+use std::{collections::HashMap, env};
 use crate::{configure::{config_doc::ExecutionKind, {config_result::ResourceGetResult, parameters, Configurator}}, util::parse_input_to_json};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::process::Command;
 use std::process::Stdio;
-use std::process::ExitStatus;
 use tokio::io::{BufReader, AsyncBufReadExt, AsyncWriteExt};
-use tokio::task::JoinError;
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -593,7 +591,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         stdin.write(input.as_bytes()).await.expect("could not write to stdin");
         drop(stdin);
     }
-    
+
     let child_id: u32 = match child.id() {
         Some(id) => id,
         None => {
@@ -601,29 +599,35 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         }
     };
 
-    // Ensure the child process is spawned in the runtime so it can
-    // make progress on its own while we await for any output.
-    let child_result:Result<ExitStatus, JoinError> = tokio::spawn(async {
-        let status = child.wait_with_output().await;
-        return status.unwrap().status
-    }).await;
+    let child_task = tokio::spawn(async move {
+        child.wait().await
+    });
 
-    let mut stdout_result = String::with_capacity(1024*1024);
-    while let Some(line) = stdout_reader.next_line().await? {
-        stdout_result.push_str(&line);
-        stdout_result.push('\n');
-    }
-
-    let mut filtered_stderr = String::with_capacity(1024*1024);
-    while let Some(stderr_line) = stderr_reader.next_line().await? {
-        let filtered_stderr_line = log_stderr_line(executable, &child_id, &stderr_line);
-        if !filtered_stderr_line.is_empty() {
-            filtered_stderr.push_str(filtered_stderr_line);
-            filtered_stderr.push('\n');
+    let stdout_task = tokio::spawn(async move {
+        let mut stdout_result = String::with_capacity(1024*1024);
+        while let Ok(Some(line)) = stdout_reader.next_line().await {
+            stdout_result.push_str(&line);
+            stdout_result.push('\n');
         }
-    }
+        return stdout_result
+    });
 
-    let exit_code = child_result.unwrap().code();
+    let stderr_task = tokio::spawn(async move {
+        let mut filtered_stderr = String::with_capacity(1024*1024);
+        while let Ok(Some(stderr_line)) = stderr_reader.next_line().await {
+            let filtered_stderr_line = log_stderr_line("pn", &child_id, &stderr_line);
+            if !filtered_stderr_line.is_empty() {
+                filtered_stderr.push_str(filtered_stderr_line);
+                filtered_stderr.push('\n');
+            }
+        }
+        return filtered_stderr
+    });
+    
+    let exit_code = child_task.await.unwrap()?.code();
+    let stdout_result = stdout_task.await.unwrap();
+    let stderr_result = stderr_task.await.unwrap();
+
     match exit_code {
         Some(code) => {
             debug!("Process '{executable}' id {child_id} exited with code {code}");
@@ -634,10 +638,10 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
                         return Err(DscError::CommandExitFromManifest(executable.to_string(), code, error_message.to_string()));
                     }
                 }
-                return Err(DscError::Command(executable.to_string(), code, filtered_stderr));
+                return Err(DscError::Command(executable.to_string(), code, stderr_result));
             }
 
-            Ok((code, stdout_result, filtered_stderr)) },
+            Ok((code, stdout_result, stderr_result)) },
         None => {
             debug!("Process '{executable}' id {child_id} terminated by signal");
             return Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()));
