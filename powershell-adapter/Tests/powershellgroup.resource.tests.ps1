@@ -241,4 +241,15 @@ Describe 'PowerShell adapter resource tests' {
             $env:PATH = $oldPath
         }
     }
+
+    It 'Dsc can process large resource output' -Tag z1{
+        $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
+
+        $r = dsc resource export -r TestClassResource/TestClassResource
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.resources[0].properties.result.count | Should -Be 5000
+
+        $env:TestClassResourceResultCount = $null
+    }
 }
