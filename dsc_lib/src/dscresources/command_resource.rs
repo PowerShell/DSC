@@ -578,7 +578,12 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         command.env_remove("DEBUG_DSC");
     }
 
-    let mut child = command.spawn().expect("failed to spawn command");
+    let mut child = match command.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            return Err(DscError::CommandOperation(e.to_string(), executable.to_string()))
+        }
+    };
 
     let stdout = child.stdout.take().expect("child did not have a handle to stdout");
     let stderr = child.stderr.take().expect("child did not have a handle to stderr");
@@ -646,6 +651,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()))
     }
 }
+
 /// Invoke a command and return the exit code, stdout, and stderr.
 ///
 /// # Arguments
