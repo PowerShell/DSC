@@ -3,14 +3,12 @@
 
 use jsonschema::JSONSchema;
 use serde_json::Value;
-use std::{collections::HashMap, env};
+use std::{collections::HashMap, env, process::Stdio};
 use crate::{configure::{config_doc::ExecutionKind, {config_result::ResourceGetResult, parameters, Configurator}}, util::parse_input_to_json};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
-use tokio::process::Command;
-use std::process::Stdio;
-use tokio::io::{BufReader, AsyncBufReadExt, AsyncWriteExt};
+use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 
@@ -556,6 +554,21 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
     Ok(result)
 }
 
+/// Asynchronously invoke a command and return the exit code, stdout, and stderr.
+///
+/// # Arguments
+///
+/// * `executable` - The command to execute
+/// * `args` - Optional arguments to pass to the command
+/// * `input` - Optional input to pass to the command
+/// * `cwd` - Optional working directory to execute the command in
+/// * `env` - Optional environment variable mappings to add or update
+/// * `exit_codes` - Optional descriptions of exit codes
+///
+/// # Errors
+///
+/// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
+///
 async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
 
     let mut command = Command::new(executable);
@@ -597,19 +610,20 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         drop(stdin);
     }
 
-    let child_id: u32 = match child.id() {
-        Some(id) => id,
-        None => {
-            return Err(DscError::CommandOperation("Can't get child process id".to_string(), executable.to_string()));
-        }
+    let Some(child_id) = child.id() else {
+        return Err(DscError::CommandOperation("Can't get child process id".to_string(), executable.to_string()));
     };
 
     let child_task = tokio::spawn(async move {
         child.wait().await
     });
 
+    // use somewhat large initial buffer to avoid early string reallocations;
+    // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
+    const INITIAL_BUFFER_CAPACITY: usize = 1024*1024;
+
     let stdout_task = tokio::spawn(async move {
-        let mut stdout_result = String::with_capacity(1024*1024);
+        let mut stdout_result = String::with_capacity(INITIAL_BUFFER_CAPACITY);
         while let Ok(Some(line)) = stdout_reader.next_line().await {
             stdout_result.push_str(&line);
             stdout_result.push('\n');
@@ -618,7 +632,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     });
 
     let stderr_task = tokio::spawn(async move {
-        let mut filtered_stderr = String::with_capacity(1024*1024);
+        let mut filtered_stderr = String::with_capacity(INITIAL_BUFFER_CAPACITY);
         while let Ok(Some(stderr_line)) = stderr_reader.next_line().await {
             let filtered_stderr_line = log_stderr_line(&child_id, &stderr_line);
             if !filtered_stderr_line.is_empty() {
@@ -660,10 +674,13 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 /// * `args` - Optional arguments to pass to the command
 /// * `input` - Optional input to pass to the command
 /// * `cwd` - Optional working directory to execute the command in
-///
+/// * `env` - Optional environment variable mappings to add or update
+/// * `exit_codes` - Optional descriptions of exit codes
+/// 
 /// # Errors
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
+///
 /// # Panics
 ///
 /// Will panic if tokio runtime can't be created.
