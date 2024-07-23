@@ -571,6 +571,10 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
 ///
 async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
 
+    // use somewhat large initial buffer to avoid early string reallocations;
+    // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
+    const INITIAL_BUFFER_CAPACITY: usize = 1024*1024;
+
     let mut command = Command::new(executable);
     if input.is_some() {
         command.stdin(Stdio::piped());
@@ -617,10 +621,6 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     let child_task = tokio::spawn(async move {
         child.wait().await
     });
-
-    // use somewhat large initial buffer to avoid early string reallocations;
-    // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
-    const INITIAL_BUFFER_CAPACITY: usize = 1024*1024;
 
     let stdout_task = tokio::spawn(async move {
         let mut stdout_result = String::with_capacity(INITIAL_BUFFER_CAPACITY);
