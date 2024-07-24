@@ -66,7 +66,9 @@ impl CommandDiscovery {
         if !using_custom_path {
             if let Some(exe_home) = env::current_exe()?.parent() {
                 let exe_home_pb = exe_home.to_path_buf();
-                if !paths.contains(&exe_home_pb) {
+                if paths.contains(&exe_home_pb) {
+                    trace!("Exe home is already in path: {}", exe_home.to_string_lossy());
+                } else {
                     trace!("Adding exe home to path: {}", exe_home.to_string_lossy());
                     paths.push(exe_home_pb);
 
@@ -74,8 +76,6 @@ impl CommandDiscovery {
                         debug!("Using PATH: {:?}", new_path.to_string_lossy());
                         env::set_var("PATH", &new_path);
                     }
-                } else {
-                    trace!("Exe home is already in path: {}", exe_home.to_string_lossy());
                 }
             }
         };
