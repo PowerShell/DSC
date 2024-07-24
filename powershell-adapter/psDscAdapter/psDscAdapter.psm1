@@ -268,9 +268,15 @@ function Invoke-DscCacheRefresh {
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                     
-                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                        {
-                            "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                        if (Test-Path $_.Name) {
+                            if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
+                            {
+                                "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                                $refreshCache = $true
+                                break
+                            }
+                        } else {
+                            "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
                             $refreshCache = $true
                             break
                         }
@@ -279,19 +285,21 @@ function Invoke-DscCacheRefresh {
                     if ($refreshCache) {break}
                 }
 
-                "Checking cache for stale PSModulePath" | Write-DscTrace
+                if (-not $refreshCache) {
+                    "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
-                $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-                $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-                $hs_cache.SymmetricExceptWith($hs_live)
-                $diff = $hs_cache
+                    $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                    $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                    $hs_cache.SymmetricExceptWith($hs_live)
+                    $diff = $hs_cache
 
-                "PSModulePath diff '$diff'" | Write-DscTrace
+                    "PSModulePath diff '$diff'" | Write-DscTrace
 
-                if ($diff.Count -gt 0) {
-                    $refreshCache = $true
+                    if ($diff.Count -gt 0) {
+                        $refreshCache = $true
+                    }
                 }
             }
         }
