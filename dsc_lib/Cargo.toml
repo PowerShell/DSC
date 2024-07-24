@@ -18,6 +18,7 @@ serde_yaml = { version = "0.9.3" }
 thiserror = "1.0"
 security_context_lib = { path = "../security_context_lib" }
 semver = "1.0"
+tokio = { version = "1.38.1", features = ["full"] }
 tracing = "0.1.37"
 tracing-indicatif = { version = "0.3.6" }
 tree-sitter = "0.22"

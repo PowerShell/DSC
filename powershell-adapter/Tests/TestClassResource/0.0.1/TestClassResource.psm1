@@ -59,7 +59,11 @@ class TestClassResource : BaseTestClass
     static [TestClassResource[]] Export()
     {
         $resultList = [List[TestClassResource]]::new()
-        1..5 | %{
+        $resultCount = 5
+        if ($env:TestClassResourceResultCount) {
+            $resultCount = $env:TestClassResourceResultCount
+        }
+        1..$resultCount | %{
             $obj = New-Object TestClassResource
             $obj.Name = "Object$_"
             $obj.Prop1 = "Property of object$_"
