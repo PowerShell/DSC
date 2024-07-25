@@ -319,6 +319,85 @@ extends:
           displayName: 'Build aarch64-unknown-linux-gnu'
           condition: succeeded()
 
+      - job: BuildLinuxMusl
+        dependsOn: SetPackageVersion
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-x64-musl
+        pool:
+          type: linux
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: x86_64-unknown-linux-musl
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
+            ob_restore_phase: true
+        - pwsh: |
+            ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl -UseCFS
+            ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
+            Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+          displayName: 'Build x86_64-unknown-linux-musl'
+          condition: succeeded()
+
+      - job: BuildLinuxArm64Musl
+        dependsOn: SetPackageVersion
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-ARM64-musl
+        pool:
+          type: linux
+          hostArchitecture: arm64
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: aarch64-unknown-linux-musl
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: az-PowerShell-feed-ingestion
+            scriptType: 'pscore'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+
+              # Set the access token as a secret, so it doesn't get leaked in the logs
+              Write-Host "##vso[task.setsecret]$accessToken"
+              $header = "Bearer $accessToken"
+              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+          displayName: 'Get Azure DevOps Token'
+          env:
+            ob_restore_phase: true
+        - pwsh: |
+            ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl -UseCFS
+            ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
+            Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+          displayName: 'Build aarch64-unknown-linux-musl'
+          condition: succeeded()
+
       - job: BuildMac
         dependsOn: SetPackageVersion
         variables:
