@@ -425,8 +425,8 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     };
 
     if value.trim().is_empty() {
-        debug!("Provided input is empty");
-        return String::new();
+        error!("Provided input is empty");
+        exit(EXIT_INVALID_INPUT);
     }
 
     match parse_input_to_json(&value) {
