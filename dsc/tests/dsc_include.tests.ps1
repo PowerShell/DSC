@@ -229,13 +229,13 @@ resources:
         }
 
         $out.results[0].result[0].result.actualState.family | Should -BeExactly $family
-        $expectedState = if ($IsMacOS) {
-            $true
+        ($expectedState, $expectedDiff) = if ($IsMacOS) {
+            $true, 0
         } else {
-            $false
+            $false, 1
         }
 
         $out.results[0].result[0].result.inDesiredState | Should -Be $expectedState
-        $out.results[0].result[0].result.differingProperties.Count | Should -Be 0
+        $out.results[0].result[0].result.differingProperties.Count | Should -Be $expectedDiff
     }
 }
