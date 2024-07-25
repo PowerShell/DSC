@@ -219,6 +219,7 @@ impl Configurator {
     /// # Returns
     ///
     /// * `&Configuration` - The configuration.
+    #[must_use]
     pub fn get_config(&self) -> &Configuration {
         &self.config
     }

@@ -4,30 +4,13 @@
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use std::{collections::HashMap, env, process::Stdio};
-use crate::{configure::{config_doc::ExecutionKind, {config_result::ResourceGetResult, parameters, Configurator}}, util::parse_input_to_json};
+use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
 use crate::dscerror::DscError;
 use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
 pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
-
-fn get_configurator(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<Configurator, DscError> {
-    let resolve_result = invoke_resolve(resource, cwd, filter)?;
-    let configuration = serde_json::to_string(&resolve_result.configuration)?;
-    let configuration_json = parse_input_to_json(&configuration)?;
-    let mut configurator = Configurator::new(&configuration_json)?;
-    let parameters = if let Some(parameters) = resolve_result.parameters {
-        let parameters_input = parameters::Input {
-            parameters,
-        };
-        Some(serde_json::to_value(parameters_input)?)
-    } else {
-        None
-    };
-    configurator.set_parameters(&parameters)?;
-    Ok(configurator)
-}
 
 /// Invoke the get operation on a resource
 ///
@@ -41,12 +24,6 @@ fn get_configurator(resource: &ResourceManifest, cwd: &str, filter: &str) -> Res
 /// Error returned if the resource does not successfully get the current state
 pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<GetResult, DscError> {
     debug!("Invoking get for '{}'", &resource.resource_type);
-    if resource.kind == Some(Kind::Import) {
-        let mut configurator = get_configurator(resource, cwd, filter)?;
-        let config_result = configurator.invoke_get()?;
-        return Ok(GetResult::Group(config_result.results));
-    }
-
     let mut command_input = CommandInput { env: None, stdin: None };
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
@@ -96,12 +73,6 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 #[allow(clippy::too_many_lines)]
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
     debug!("Invoking set for '{}'", &resource.resource_type);
-    if resource.kind == Some(Kind::Import) {
-        let mut configurator = get_configurator(resource, cwd, desired)?;
-        let config_result = configurator.invoke_set(skip_test)?;
-        return Ok(SetResult::Group(config_result.results));
-    }
-
     let operation_type: String;
     let mut is_synthetic_what_if = false;
     let set_method = match execution_type {
@@ -276,12 +247,6 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
     debug!("Invoking test for '{}'", &resource.resource_type);
-    if resource.kind == Some(Kind::Import) {
-        let mut configurator = get_configurator(resource, cwd, expected)?;
-        let config_result = configurator.invoke_test()?;
-        return Ok(TestResult::Group(config_result.results));
-    }
-
     let Some(test) = &resource.test else {
         info!("Resource '{}' does not implement test, performing synthetic test", &resource.resource_type);
         return invoke_synthetic_test(resource, cwd, expected);
@@ -298,6 +263,12 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     if resource.kind == Some(Kind::Resource) {
         debug!("Verifying output of test '{}' using '{}'", &resource.resource_type, &test.executable);
         verify_json(resource, cwd, &stdout)?;
+    }
+
+    if resource.kind == Some(Kind::Import) {
+        debug!("Import resource kind, returning group test response");
+        let group_test_response: Vec<ResourceTestResult> = serde_json::from_str(&stdout)?;
+        return Ok(TestResult::Group(group_test_response));
     }
 
     let expected_value: Value = serde_json::from_str(expected)?;
@@ -642,7 +613,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         }
         filtered_stderr
     });
-    
+
     let exit_code = child_task.await.unwrap()?.code();
     let stdout_result = stdout_task.await.unwrap();
     let stderr_result = stderr_task.await.unwrap();
@@ -676,7 +647,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 /// * `cwd` - Optional working directory to execute the command in
 /// * `env` - Optional environment variable mappings to add or update
 /// * `exit_codes` - Optional descriptions of exit codes
-/// 
+///
 /// # Errors
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.

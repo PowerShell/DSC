@@ -2,11 +2,11 @@
 // Licensed under the MIT License.
 
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
-use crate::resolve::get_contents;
+use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::Stream;
 use crate::tablewriter::Table;
-use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, EXIT_VALIDATION_FAILED, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
 use dsc_lib::configure::{Configurator, config_doc::{Configuration, ExecutionKind}, config_result::ResourceGetResult};
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::ResolveResult;
@@ -285,21 +285,34 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         ConfigSubCommand::Test { format, as_get, .. } => {
             config_test(&mut configurator, format, as_group, as_get);
         },
-        ConfigSubCommand::Validate { format, .. } => {
+        ConfigSubCommand::Validate { document, path, format} => {
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,
             };
-            let valid = match validate_config(&configurator.get_config()) {
-                Ok(()) => {
-                    true
-                },
-                Err(err) => {
-                    error!("{err}");
-                    result.valid = false;
-                    false
+            if *as_include {
+                let new_path = initialize_config_root(path);
+                let input = get_input(document, stdin, &new_path);
+                match serde_json::from_str::<Include>(&input) {
+                    Ok(_) => {
+                        // valid, so do nothing
+                    },
+                    Err(err) => {
+                        error!("Error: Failed to deserialize Include input: {err}");
+                        result.valid = false;
+                    }
                 }
-            };
+            } else {
+                match validate_config(configurator.get_config()) {
+                    Ok(()) => {
+                        // valid, so do nothing
+                    },
+                    Err(err) => {
+                        error!("{err}");
+                        result.valid = false;
+                    }
+                };
+            }
 
             let Ok(json) = serde_json::to_string(&result) else {
                 error!("Failed to convert validation result to JSON");
@@ -307,9 +320,6 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
             };
 
             write_output(&json, format);
-            if !valid {
-                exit(EXIT_VALIDATION_FAILED);
-            }
         },
         ConfigSubCommand::Export { format, .. } => {
             config_export(&mut configurator, format);

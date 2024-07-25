@@ -3,12 +3,13 @@
   "type": "Microsoft.DSC/Include",
   "version": "0.1.0",
   "description": "Allows including a configuration file with optional parameter file.",
-  "kind": "Group",
+  "kind": "Import",
   "get": {
     "executable": "dsc",
     "args": [
       "config",
       "--as-include",
+      "--as-group",
       "get"
     ],
     "input": "stdin"
@@ -18,6 +19,7 @@
     "args": [
       "config",
       "--as-include",
+      "--as-group",
       "set"
     ],
     "input": "stdin",
@@ -29,10 +31,10 @@
     "args": [
       "config",
       "--as-include",
+      "--as-group",
       "test"
     ],
-    "input": "stdin",
-    "return": "state"
+    "input": "stdin"
   },
   "exitCodes": {
     "0": "Success",
