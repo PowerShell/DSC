@@ -22,25 +22,19 @@ function Import-PSDSCModule {
     $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
 }
 
-function Get-DSCResourceModules
-{
+function Get-DSCResourceModules {
     $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
     $dscModulePsd1List = [System.Collections.Generic.HashSet[System.String]]::new()
-    foreach ($folder in $listPSModuleFolders)
-    {
-        if (!(Test-Path $folder))
-        {
+    foreach ($folder in $listPSModuleFolders) {
+        if (!(Test-Path $folder)) {
             continue
         }
 
-        foreach($moduleFolder in Get-ChildItem $folder -Directory)
-        {
+        foreach ($moduleFolder in Get-ChildItem $folder -Directory) {
             $addModule = $false
-            foreach($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2)
-            {
+            foreach ($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2) {
                 $containsDSCResource = select-string -LiteralPath $psd1 -pattern '^[^#]*\bDscResourcesToExport\b.*'
-                if($null -ne $containsDSCResource)
-                {
+                if ($null -ne $containsDSCResource) {
                     $dscModulePsd1List.Add($psd1) | Out-Null
                 }
             }
@@ -57,39 +51,32 @@ function Add-AstMembers {
         $Properties
     )
 
-    foreach($TypeConstraint in $TypeAst.BaseTypes) {
-        $t = $AllTypeDefinitions | Where-Object {$_.Name -eq $TypeConstraint.TypeName.Name}
+    foreach ($TypeConstraint in $TypeAst.BaseTypes) {
+        $t = $AllTypeDefinitions | Where-Object { $_.Name -eq $TypeConstraint.TypeName.Name }
         if ($t) {
             Add-AstMembers $AllTypeDefinitions $t $Properties
         }
     }
 
-    foreach ($member in $TypeAst.Members)
-    {
+    foreach ($member in $TypeAst.Members) {
         $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
-        if (($property -eq $null) -or ($property.IsStatic))
-        {
+        if (($property -eq $null) -or ($property.IsStatic)) {
             continue;
         }
         $skipProperty = $true
         $isKeyProperty = $false
-        foreach($attr in $property.Attributes)
-        {
-            if ($attr.TypeName.Name -eq 'DscProperty')
-            {
+        foreach ($attr in $property.Attributes) {
+            if ($attr.TypeName.Name -eq 'DscProperty') {
                 $skipProperty = $false
-                foreach($attrArg in $attr.NamedArguments)
-                {
-                    if ($attrArg.ArgumentName -eq 'Key')
-                    {
+                foreach ($attrArg in $attr.NamedArguments) {
+                    if ($attrArg.ArgumentName -eq 'Key') {
                         $isKeyProperty = $true
                         break
                     }
                 }
             }
         }
-        if ($skipProperty)
-        {
+        if ($skipProperty) {
             continue;
         }
 
@@ -101,8 +88,7 @@ function Add-AstMembers {
     }
 }
 
-function FindAndParseResourceDefinitions
-{
+function FindAndParseResourceDefinitions {
     [CmdletBinding(HelpUri = '')]
     param(
         [Parameter(Mandatory = $true)]
@@ -111,13 +97,11 @@ function FindAndParseResourceDefinitions
         [string]$moduleVersion
     )
 
-    if (-not (Test-Path $filePath))
-    {
+    if (-not (Test-Path $filePath)) {
         return
     }
 
-    if (([System.IO.Path]::GetExtension($filePath) -ne ".psm1") -and ([System.IO.Path]::GetExtension($filePath) -ne ".ps1"))
-    {
+    if (([System.IO.Path]::GetExtension($filePath) -ne ".psm1") -and ([System.IO.Path]::GetExtension($filePath) -ne ".ps1")) {
         return
     }
     
@@ -126,8 +110,7 @@ function FindAndParseResourceDefinitions
     [System.Management.Automation.Language.Token[]] $tokens = $null
     [System.Management.Automation.Language.ParseError[]] $errors = $null
     $ast = [System.Management.Automation.Language.Parser]::ParseFile($filePath, [ref]$tokens, [ref]$errors)
-    foreach($e in $errors)
-    {
+    foreach ($e in $errors) {
         $e | Out-String | Write-DscTrace -Operation Error
     }
 
@@ -140,12 +123,9 @@ function FindAndParseResourceDefinitions
 
     $resourceList = [System.Collections.Generic.List[DscResourceInfo]]::new()
 
-    foreach($typeDefinitionAst in $typeDefinitions)
-    {
-        foreach($a in $typeDefinitionAst.Attributes)
-        {
-            if ($a.TypeName.Name -eq 'DscResource')
-            {
+    foreach ($typeDefinitionAst in $typeDefinitions) {
+        foreach ($a in $typeDefinitionAst.Attributes) {
+            if ($a.TypeName.Name -eq 'DscResource') {
                 $DscResourceInfo = [DscResourceInfo]::new()
                 $DscResourceInfo.Name = $typeDefinitionAst.Name
                 $DscResourceInfo.ResourceType = $typeDefinitionAst.Name
@@ -157,8 +137,10 @@ function FindAndParseResourceDefinitions
                 $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
                 $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
                 $DscResourceInfo.Version = $moduleVersion
+                $DscResourceInfo.Operations = GetResourceOperationMethods -resourceName $typeDefinitionAst.Name -filePath $filePath
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
+                
                 Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
                 
                 $resourceList.Add($DscResourceInfo)
@@ -169,8 +151,7 @@ function FindAndParseResourceDefinitions
     return $resourceList
 }
 
-function LoadPowerShellClassResourcesFromModule
-{
+function LoadPowerShellClassResourcesFromModule {
     [CmdletBinding(HelpUri = '')]
     param(
         [Parameter(Mandatory = $true)]
@@ -179,29 +160,24 @@ function LoadPowerShellClassResourcesFromModule
 
     "Loading resources from module '$($moduleInfo.Path)'" | Write-DscTrace -Operation Trace
     
-    if ($moduleInfo.RootModule)
-    {
-        if  (([System.IO.Path]::GetExtension($moduleInfo.RootModule) -ne ".psm1") -and
+    if ($moduleInfo.RootModule) {
+        if (([System.IO.Path]::GetExtension($moduleInfo.RootModule) -ne ".psm1") -and
             ([System.IO.Path]::GetExtension($moduleInfo.RootModule) -ne ".ps1") -and
-            (-not $z.NestedModules))
-        {
+            (-not $z.NestedModules)) {
             "RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'" | Write-DscTrace -Operation Trace
             return [System.Collections.Generic.List[DscResourceInfo]]::new()
         }
 
         $scriptPath = Join-Path $moduleInfo.ModuleBase  $moduleInfo.RootModule
     }
-    else
-    {
+    else {
         $scriptPath = $moduleInfo.Path;
     }
 
     $Resources = FindAndParseResourceDefinitions $scriptPath $moduleInfo.Version
 
-    if ($moduleInfo.NestedModules)
-    {
-        foreach ($nestedModule in $moduleInfo.NestedModules)
-        {
+    if ($moduleInfo.NestedModules) {
+        foreach ($nestedModule in $moduleInfo.NestedModules) {
             $resourcesOfNestedModules = LoadPowerShellClassResourcesFromModule $nestedModule
             if ($resourcesOfNestedModules) {
                 $Resources.AddRange($resourcesOfNestedModules)
@@ -210,6 +186,153 @@ function LoadPowerShellClassResourcesFromModule
     }
 
     return $Resources
+}
+
+function GetResourceOperationMethods {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $resourceName,
+
+        [Parameter(Mandatory = $true)]
+        [string] $filePath
+    )
+
+    # dot source scope
+    try {
+        . (LoadClassAndEnumsFromModuleFile -filePath $filePath)
+    } catch {
+        ("Module: '{0}' not loaded for resource operation discovery."-f $filePath) | Write-DscTrace
+    }
+
+    $inputObject = ReturnTypeNameObject -TypeName $resourceName
+
+    if (-not $inputObject) {
+        return @(
+            'Get',
+            'Test',
+            'Set'
+        )
+    }
+
+    # TODO: There might be more properties available
+    $knownMemberTypes = @('Equals', 'GetHashCode', 'GetType', 'ToString')
+    return ($inputObject | Get-Member | Where-Object { $_.MemberType -eq 'Method' -and $_.Name -notin $knownMemberTypes }).Name
+}
+
+function ReturnTypeNameObject {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $TypeName
+    )
+
+    try {
+        $inputObject = New-Object -TypeName $TypeName -ErrorAction Stop
+    }
+    catch {
+        "Could not create: $TypeName" | Write-DscTrace
+    }
+
+    return $inputObject
+}
+
+function LoadClassAndEnumsFromModuleFile {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $filePath
+    )
+
+    if (-not (Test-Path $filePath -ErrorAction SilentlyContinue)) {
+        return
+    }
+
+    $ctx = Get-Content $filePath
+
+    $string = @(
+        'using namespace System.Collections.Generic', # TODO: Figure away out to get using statements included
+        (GetEnumCodeBlock -Content $ctx),
+        (GetClassCodeBlock -Content $ctx)
+    )
+
+    # TODO: Might have to do something with the path
+    $outPath = Join-Path -Path $env:TEMP -ChildPath ("{0}.ps1" -f [System.Guid]::NewGuid().Guid)
+    $string | Out-File -FilePath $outPath
+
+    return $outPath
+}
+
+function GetClassCodeBlock {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [array] $Content
+    )
+
+    $ctx = $Content
+
+    $lines = ($ctx | Select-String -Pattern '\[DSCResource\(\)]').LineNumber
+    if ($lines.Count -eq 0 ) {
+        return
+    }
+
+    $lastLineNumber = $lines[-1]
+    $index = 1
+    # Bring all class strings together after the last one 
+    $classStrings = foreach ($line in $lines) {
+        if ($line -eq $lastLineNumber) {
+            $lastModuleLine = $ctx.Length
+
+            $line = $line - 1
+            $block = $ctx[$line..$lastModuleLine]
+            $block
+            break
+        }
+
+        $line = $line - 1
+        $curlyBracketLine = FindCurlyBracket -Content $ctx -LineNumber $lines[$index]
+        $block = $ctx[$line..$curlyBracketLine]
+
+        $index++
+        $block
+    }
+
+    return $classStrings
+}
+
+function GetEnumCodeBlock {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [array] $Content
+    )
+
+    # Build regex to catch enum blocks
+    $regex = [regex]::new('enum\s+(\w+)\s*\{([^}]+)\}')
+
+    $hits = $regex.Matches($Content)
+
+    # return as single lines
+    return ($hits.Value -Split " ")
+}
+
+function FindCurlyBracket {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [array] $Content,
+
+        [Parameter(Mandatory = $true)]
+        [int] $LineNumber
+    )
+    do {
+        if ($Content[$LineNumber] -eq "}") {
+            return $LineNumber
+        }
+
+        $LineNumber--
+    } while ($LineNumber -ne 0)
 }
 
 <# public function Invoke-DscCacheRefresh
@@ -237,7 +360,8 @@ function Invoke-DscCacheRefresh {
     $cacheFilePath = if ($IsWindows) {
         # PS 6+ on Windows
         Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-    } else {
+    }
+    else {
         # PS 6+ on Linux/Mac
         Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
     }
@@ -249,8 +373,9 @@ function Invoke-DscCacheRefresh {
 
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            "Incompatible version of cache in file '"+$cache.CacheSchemaVersion+"' (expected '"+$script:CurrentCacheSchemaVersion+"')" | Write-DscTrace
-        } else {
+            "Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')" | Write-DscTrace
+        }
+        else {
             $dscResourceCacheEntries = $cache.ResourceCache
 
             if ($dscResourceCacheEntries.Count -eq 0) {
@@ -259,8 +384,7 @@ function Invoke-DscCacheRefresh {
 
                 "Filtered DscResourceCache cache is empty" | Write-DscTrace
             }
-            else
-            {
+            else {
                 "Checking cache for stale entries" | Write-DscTrace
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
@@ -268,20 +392,19 @@ function Invoke-DscCacheRefresh {
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                     
-                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                        {
+                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value))) {
                             "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
                             $refreshCache = $true
                             break
                         }
                     }
 
-                    if ($refreshCache) {break}
+                    if ($refreshCache) { break }
                 }
 
                 "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
 
                 $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
                 $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
@@ -309,11 +432,10 @@ function Invoke-DscCacheRefresh {
 
         $DscResources = [System.Collections.Generic.List[DscResourceInfo]]::new()
         $dscResourceModulePsd1s = Get-DSCResourceModules
-        if($null -ne $dscResourceModulePsd1s) {
+        if ($null -ne $dscResourceModulePsd1s) {
             $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s)
             $processedModuleNames = @{}
-            foreach ($mod in $modules)
-            {
+            foreach ($mod in $modules) {
                 if (-not ($processedModuleNames.ContainsKey($mod.Name))) {
                     $processedModuleNames.Add($mod.Name, $true)
 
@@ -337,20 +459,20 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1","*.psd1","*psm1","*.mof" -ea Ignore | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*psm1", "*.mof" -ea Ignore | % {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
             $dscResourceCacheEntries += [dscResourceCacheEntry]@{
                 Type            = "$moduleName/$($dscResource.Name)"
                 DscResourceInfo = $dscResource
-                LastWriteTimes = $lastWriteTimes
+                LastWriteTimes  = $lastWriteTimes
             }
         }
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
@@ -462,12 +584,12 @@ function Invoke-DscOperation {
                         }
                         'Test' {
                             $Result = $dscResourceInstance.Test()
-                            $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
+                            $addToActualState.properties = [psobject]@{'InDesiredState' = $Result } 
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
                             $method = $t.GetMethod('Export')
-                            $resultArray = $method.Invoke($null,$null)
+                            $resultArray = $method.Invoke($null, $null)
                             $addToActualState = $resultArray
                         }
                     }
@@ -534,8 +656,7 @@ enum dscResourceType {
     Composite
 }
 
-class DscResourcePropertyInfo
-{
+class DscResourcePropertyInfo {
     [string] $Name
     [string] $PropertyType
     [bool] $IsMandatory
@@ -556,4 +677,5 @@ class DscResourceInfo {
     [string] $ImplementedAs
     [string] $CompanyName
     [System.Collections.Generic.List[DscResourcePropertyInfo]] $Properties
+    [System.String[]] $Operations
 }
