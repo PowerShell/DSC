@@ -19,19 +19,22 @@ Describe 'Tests for osinfo examples' {
         $out.results[0].result.inDesiredState | Should -Be $IsMacOS
     }
 
-    It 'Verify dsc home directory is added to PATH to find included resources' {
+    It 'Verify dsc home directory is added to PATH to find included resources' -Tag z1{
         $oldPath = $env:PATH
+        $oldLocation = Get-Location
         try {
-            $exe_path = Resolve-Path "$PSScriptRoot/../../bin/debug"
-            # Remove unwanted elements
+            $exe_path = (Get-Command dsc).Path | Split-Path
+            $exe_path | Split-Path | Set-Location
+            # Remove exe_path from PATH if it is there
             $new_path = ($oldPath.Split([System.IO.Path]::PathSeparator) | Where-Object { $_ -ne $exe_path }) -join [System.IO.Path]::PathSeparator
             $env:PATH = $new_path
 
-            $null = & "$PSScriptRoot/../../bin/debug/dsc" config test -p "$PSScriptRoot/../examples/osinfo_parameters.dsc.yaml"
+            $null = & "$exe_path/dsc" config test -p "$PSScriptRoot/../examples/osinfo_parameters.dsc.yaml"
             $LASTEXITCODE | Should -Be 0
         }
         finally {
             $env:PATH = $oldPath
+            $oldLocation | Set-Location
         }
     }
 }
