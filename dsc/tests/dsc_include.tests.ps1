@@ -170,9 +170,9 @@ resources:
         $out.results[0].result[0].result.actualState.output | Should -Be 'one'
         $out.results[1].result[0].name | Should -Be 'nested'
         $out.results[1].result[0].type | Should -Be 'Microsoft.DSC/Include'
-        $out.results[1].result[0].result[0].name | Should -Be 'one'
-        $out.results[1].result[0].result[0].type | Should -Be 'Test/Echo'
-        $out.results[1].result[0].result[0].result[0].actualState.output | Should -Be 'one'
+        $out.results[1].result[0].result.actualState.name | Should -Be 'one'
+        $out.results[1].result[0].result.actualState.type | Should -Be 'Test/Echo'
+        $out.results[1].result[0].result.actualState.result.actualState.output | Should -Be 'one'
     }
 
     It 'Set with include works' {
@@ -203,9 +203,39 @@ resources:
 
         $out = dsc config set -d $includeConfig | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result[0].name | Should -Be 'one'
-        $out.results[0].result[0].type | Should -Be 'Test/Echo'
-        $out.results[0].result[0].result.afterState.output | Should -Be 'Hello World'
+        $out.results[0].result.beforeState[0].name | Should -Be 'one'
+        $out.results[0].result.beforeState[0].type | Should -Be 'Test/Echo'
+        $out.results[0].result.afterState[0].result.afterState.output | Should -Be 'Hello World'
         $out.hadErrors | Should -Be $false
+    }
+
+    It 'Test with include works' {
+        $includeYaml = Join-Path $PSScriptRoot ../../dsc/examples/include.dsc.yaml
+        $out = dsc config test -p $includeYaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].type | Should -BeExactly 'Microsoft.DSC/Include'
+        $out.results[0].result[0].name | Should -BeExactly 'os'
+        $out.results[0].result[0].type | Should -BeExactly 'Microsoft/OSInfo'
+        $out.results[0].result[0].result.desiredState.family | Should -BeExactly 'macOS'
+
+        $family = if ($isWindows) {
+            'Windows'
+        } elseif ($IsLinux) {
+            'Linux'
+        } elseif ($IsMacOS) {
+            'macOS'
+        } else {
+            'Unknown'
+        }
+
+        $out.results[0].result[0].result.actualState.family | Should -BeExactly $family
+        ($expectedState, $expectedDiff) = if ($IsMacOS) {
+            $true, 0
+        } else {
+            $false, 1
+        }
+
+        $out.results[0].result[0].result.inDesiredState | Should -Be $expectedState
+        $out.results[0].result[0].result.differingProperties.Count | Should -Be $expectedDiff
     }
 }
