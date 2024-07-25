@@ -452,6 +452,9 @@ extends:
       variables:
         PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
         drop: $(Pipeline.Workspace)/drop_build_main
+        ob_sdl_sbom_enabled: false
+        ob_signing_setup_enabled: false
+        ob_sdl_codeql_compiled_enabled: false
       jobs:
       - job: Validation
         displayName: Manual validation
