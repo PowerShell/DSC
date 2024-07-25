@@ -48,7 +48,7 @@ impl CommandDiscovery {
             trace!("DSC_RESOURCE_PATH not set, trying PATH");
             match env::var_os("PATH") {
                 Some(value) => {
-                    trace!("Using PATH: {:?}", value.to_string_lossy());
+                    trace!("Original PATH: {:?}", value.to_string_lossy());
                     value
                 },
                 None => {
@@ -58,18 +58,27 @@ impl CommandDiscovery {
         };
 
         let mut paths = env::split_paths(&path_env).collect::<Vec<_>>();
-
-        // add exe home to start of path
-        if !using_custom_path {
-            if let Some(exe_home) = env::current_exe()?.parent() {
-                debug!("Adding exe home to path: {}", exe_home.to_string_lossy());
-                paths.insert(0, exe_home.to_path_buf());
-            }
-        }
-
-        // remove duplicate entries to improve perf of resource search
+        // remove duplicate entries
         let mut uniques = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
+
+        // if exe home is not already in PATH env var then add it to env var and list of searched paths
+        if !using_custom_path {
+            if let Some(exe_home) = env::current_exe()?.parent() {
+                let exe_home_pb = exe_home.to_path_buf();
+                if paths.contains(&exe_home_pb) {
+                    trace!("Exe home is already in path: {}", exe_home.to_string_lossy());
+                } else {
+                    trace!("Adding exe home to path: {}", exe_home.to_string_lossy());
+                    paths.push(exe_home_pb);
+
+                    if let Ok(new_path) = env::join_paths(paths.clone()) {
+                        debug!("Using PATH: {:?}", new_path.to_string_lossy());
+                        env::set_var("PATH", &new_path);
+                    }
+                }
+            }
+        };
 
         Ok(paths)
     }
