@@ -120,6 +120,34 @@ Describe 'PowerShell adapter resource tests' {
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Incompatible version of cache in file'
     }
 
+    It 'Verify that removing a module results in cache rebuid' {
+
+        Copy-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource" -Destination $TestDrive
+        Copy-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource" -Destination "$PSScriptRoot/Backup/TestClassResource"
+        Remove-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource"
+
+        $oldPath = $env:PSModulePath
+        try {
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestDrive
+
+            # generate the cache
+            $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
+            # remove the module files
+            Remove-Item -Recurse -Force -Path "$TestDrive/TestClassResource"
+            # verify that cache rebuid happened
+            dsc -l trace resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+
+            $LASTEXITCODE | Should -Be 0
+            "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Detected non-existent cache entry'
+            "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
+        }
+        finally {
+            $env:PSModulePath = $oldPath
+            Copy-Item -Recurse -Force -Path "$PSScriptRoot/Backup/TestClassResource" -Destination "$PSScriptRoot"
+            Remove-Item -Recurse -Force -Path "$PSScriptRoot/Backup"
+        }
+    }
+
     It 'Verify inheritance works in class-based resources' {
 
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
@@ -240,5 +268,16 @@ Describe 'PowerShell adapter resource tests' {
         finally {
             $env:PATH = $oldPath
         }
+    }
+
+    It 'Dsc can process large resource output' -Tag z1{
+        $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
+
+        $r = dsc resource export -r TestClassResource/TestClassResource
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.resources[0].properties.result.count | Should -Be 5000
+
+        $env:TestClassResourceResultCount = $null
     }
 }
