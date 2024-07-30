@@ -204,12 +204,14 @@ impl ResourceDiscovery for CommandDiscovery {
 
         let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
 
+        let mut found_adapter: bool = false;
         for (adapter_name, adapters) in &self.adapters {
             for adapter in adapters {
                 if !regex.is_match(adapter_name) {
                     continue;
                 }
 
+                found_adapter = true;
                 info!("Enumerating resources for adapter '{}'", adapter_name);
                 let pb_adapter_span = warn_span!("");
                 pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
@@ -270,6 +272,10 @@ impl ResourceDiscovery for CommandDiscovery {
 
                 debug!("Adapter '{}' listed {} resources", adapter_name, adapter_resources_count);
             }
+        }
+
+        if !found_adapter {
+            return Err(DscError::AdapterNotFound(adapter_filter.to_string()));
         }
 
         self.adapted_resources = adapted_resources;
