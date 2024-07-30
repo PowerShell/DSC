@@ -475,6 +475,10 @@ function Invoke-DscOperation {
                         'Export' {
                             $t = $dscResourceInstance.GetType()
                             $method = $t.GetMethod('Export')
+                            if ($null -eq $method) {
+                                "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
+                                exit 1
+                            }
                             $resultArray = $method.Invoke($null,$null)
                             $addToActualState = $resultArray
                         }

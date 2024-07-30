@@ -74,6 +74,49 @@ class TestClassResource : BaseTestClass
     }
 }
 
+[DscResource()]
+class NoExport: BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [DscProperty()]
+    [string] $EnumProp
+
+    [void] Set()
+    {
+    }
+
+    [bool] Test()
+    {
+        if (($this.Name -eq "TestClassResource1") -and ($this.Prop1 -eq "ValueForProp1"))
+        {
+            return $true
+        }
+        else
+        {
+            return $false
+        }
+    }
+
+    [NoExport] Get()
+    {
+        if ($this.Name -eq "TestClassResource1")
+        {
+            $this.Prop1 = "ValueForProp1"
+        }
+        else
+        {
+            $this.Prop1 = $env:DSC_CONFIG_ROOT
+        }
+        $this.EnumProp = ([EnumPropEnumeration]::Expected).ToString()
+        return $this
+    }
+}
+
 function Test-World()
 {
     "Hello world from PSTestModule!"
