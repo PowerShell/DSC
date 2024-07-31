@@ -28,4 +28,4 @@
     }
 }
 
-Register-ArgumentCompleter -CommandName Invoke-DscResourceConfigurationDocument -ParameterName ResourceName -ScriptBlock $dscExeSubCommand
+Register-ArgumentCompleter -CommandName Invoke-DscResourceCommand -ParameterName ResourceName -ScriptBlock $dscExeSubCommand

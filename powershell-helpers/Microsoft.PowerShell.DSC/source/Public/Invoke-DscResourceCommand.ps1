@@ -1,6 +1,6 @@
-function Invoke-DscResourceConfigurationDocument 
+function Invoke-DscResourceCommand 
 {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = '__AllParameterSets')]
     param 
     (
         [Parameter(Mandatory = $true)]
@@ -12,13 +12,13 @@ function Invoke-DscResourceConfigurationDocument
         [System.String]
         $Operation = 'Get',
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'ByPath')]
         [AllowNull()]
         [Alias('Path')]
         [System.IO.FileInfo]
         $ResourcePath,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'ByInput')]
         [AllowNull()]
         [hashtable]
         $ResourceInput
@@ -32,37 +32,31 @@ function Invoke-DscResourceConfigurationDocument
 
     process 
     {
-        # build arguments for each function
-        $arguments = @{ Name = $ResourceName} 
-        if ($ResourcePath)
+        $arguments = @{ResourceName = $ResourceName }
+        # get argument data
+        switch ($PSCmdlet.ParameterSetName)
         {
-            $arguments.Add('ResourcePath', $ResourcePath)
+            'ResourcePath' { $arguments.Add('ResourcePath', $ResourcePath) }
+            'ResourceInput' { $arguments.Add('ResourceInput', $ResourceInput) }
+            default { $arguments.Add('ResourceInput', @{}) }
         }
 
-        if ($ResourceInput)
-        {
-            $arguments.Add('ResourceInput', $ResourceInput)
-        }
-        else
-        {
-            $arguments.Add('ResourceInput', @{})
-        }
-
+        # go through operations
         switch ($Operation)
         {
             'Get' 
             {
-                $inputObject = Get-DscResourceConfigurationDocument @arguments
+                $inputObject = Get-DscResourceCommand @arguments
             }
             'Set'
             {
-                $inputObject = Set-DscResourceConfigurationDocument @arguments
+                $inputObject = Set-DscResourceCommand @arguments
             }
             'Test'
             {   
-                $inputobject = Test-DscResourceConfigurationDocument @arguments
+                $inputobject = Test-DscResourceCommand @arguments
             }
-            default {$inputObject = @{}}
+            default { $inputObject = @{} }
         }
 
         return $inputObject

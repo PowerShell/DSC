@@ -1,6 +1,6 @@
-function Test-DscResourceConfigurationDocument 
+function Get-DscResourceCommand
 {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(DefaultParameterSetName = 'ByInput')]
     Param 
     (
         [Parameter(Mandatory = $true)]
@@ -8,15 +8,14 @@ function Test-DscResourceConfigurationDocument
         [System.String]
         $ResourceName,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $false, ParameterSetName = 'ByPath')]
         [Alias('Path')]
         [System.IO.FileInfo]
         $ResourcePath,
 
-        [Parameter(Mandatory = $false)]
-        [Alias('Input')]
+        [Parameter(Mandatory = $false, ParameterSetName = 'ByInput')]
         [hashtable]
-        $ResourceInput
+        $ResourceInput = @{}
     )
 
     begin 
@@ -30,7 +29,7 @@ function Test-DscResourceConfigurationDocument
 
         Write-Verbose -Message "Building sub command with:"
         Write-Verbose -Message ("{0}{1}" -f $data.SubCommand, " --resource $resourceName")
-        $subCommand = New-SubCommand -Subcommand ("{0}{1}" -f $data.SubCommand, " --resource $resourceName")
+        $subCommand = New-SubCommand -SubCommand ("{0}{1}" -f $data.SubCommand, " --resource $resourceName")
     }
 
     process 

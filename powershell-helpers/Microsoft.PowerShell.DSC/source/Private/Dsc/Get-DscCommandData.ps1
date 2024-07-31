@@ -44,19 +44,19 @@ function Get-DscCommandData
                 Test = @{ keyPath = "HKCU\Microsoft"}
             }
         }
-        'Get-DscResourceConfigurationDocument' = @{
+        'Get-DscResourceCommand' = @{
             'preview8' = @{
                 SubCommand = 'resource get'
                 Resources = $resources
             }
         }
-        'Set-DscResourceConfigurationDocument' = @{
+        'Set-DscResourceCommand' = @{
             'preview8' = @{
                 SubCommand = 'resource set'
                 Resources = $resources
             }
         }
-        'Test-DscResourceConfigurationDocument' = @{
+        'Test-DscResourceCommand' = @{
             'preview8' = @{
                 SubCommand = 'resource test'
                 Resources = $resources

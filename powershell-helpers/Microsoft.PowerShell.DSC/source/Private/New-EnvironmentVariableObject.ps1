@@ -1,6 +1,7 @@
 function New-EnvironmentVariableObject
 {
-    param (
+    param 
+    (
         [OutputType([HashTable])]
         [Parameter(Mandatory)]
         [ValidatePattern("[^=]+")]

@@ -1,4 +1,4 @@
-function Set-DscResourceConfigurationDocument 
+function Test-DscResourceCommand
 {
     [CmdletBinding(SupportsShouldProcess)]
     Param 
