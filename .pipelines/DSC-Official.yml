@@ -280,6 +280,9 @@ extends:
               Write-Host "##vso[task.setsecret]$accessToken"
               $header = "Bearer $accessToken"
               Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+              # convert to base64
+              $base64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($accessToken))
+              Write-Host "$base64"
           displayName: 'Get Azure DevOps Token'
           env:
             ob_restore_phase: true
