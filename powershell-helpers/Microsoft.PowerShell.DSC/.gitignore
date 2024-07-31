@@ -1,0 +1,17 @@
+output/
+
+**.bak
+*.local.*
+!**/README.md
+.kitchen/
+
+*.nupkg
+*.suo
+*.user
+*.coverage
+.vs
+.psproj
+.sln
+markdownissues.txt
+node_modules
+package-lock.json
