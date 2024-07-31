@@ -2,10 +2,10 @@ name: DSC-Release-$(Build.BuildId)
 trigger: none
 
 parameters:
-- name: 'debugConsole'
-  displayName: 'Enable debug console'
-  type: boolean
-  default: false
+- name: token
+  displayName: Token to use for CFS
+  type: string
+  default: ''
 
 pr:
   branches:
@@ -29,8 +29,6 @@ resources:
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
   parameters:
-    featureFlags:
-      debugConsole: ${{ parameters.debugConsole }}
     customTags: 'ES365AIMigrationTooling'
     globalSdl:
       disableLegacyManifest: true
@@ -124,21 +122,34 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - task: AzureCLI@2
-          inputs:
-            azureSubscription: az-PowerShell-feed-ingestion
-            scriptType: 'pscore'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+        - ${{ if eq(parameters.token, '') }}:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: az-PowerShell-feed-ingestion
+              scriptType: 'pscore'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
 
-              # Set the access token as a secret, so it doesn't get leaked in the logs
-              Write-Host "##vso[task.setsecret]$accessToken"
-              $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-          displayName: 'Get Azure DevOps Token'
-          env:
-            ob_restore_phase: true
+                # Set the access token as a secret, so it doesn't get leaked in the logs
+                Write-Host "##vso[task.setsecret]$accessToken"
+                $header = "Bearer $accessToken"
+                Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+            displayName: 'Get Azure DevOps Token'
+            env:
+              ob_restore_phase: true
+        - ${{ if ne(parameters.token, '') }}:
+          - task: PowerShell@2
+            inputs:
+              env:
+                TOKEN: ${{ parameters.token }}
+              targetType: inline
+              script: |
+                $header = "Bearer $($env:TOKEN)"
+                Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
+            displayName: 'Set CARGO_REGISTRIES_POWERSHELL_TOKEN'
+            env:
+              ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck -UseCFS
