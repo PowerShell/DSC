@@ -5,7 +5,7 @@ parameters:
 - name: token
   displayName: Token to use for CFS
   type: string
-  default: ''
+  default: 'none'
 
 pr:
   branches:
@@ -122,7 +122,7 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - ${{ if eq(parameters.token, '') }}:
+        - ${{ if eq(parameters.token, 'none') }}:
           - task: AzureCLI@2
             inputs:
               azureSubscription: az-PowerShell-feed-ingestion
@@ -138,7 +138,7 @@ extends:
             displayName: 'Get Azure DevOps Token'
             env:
               ob_restore_phase: true
-        - ${{ if ne(parameters.token, '') }}:
+        - ${{ if ne(parameters.token, 'none') }}:
           - task: PowerShell@2
             inputs:
               targetType: 'inline'
