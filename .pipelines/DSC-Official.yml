@@ -145,6 +145,7 @@ extends:
               pwsh: true
               script: |
                 $header = "Bearer $($env:TOKEN)"
+                Write-Host $env:TOKEN.Length
                 Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
             displayName: 'Set CARGO_REGISTRIES_POWERSHELL_TOKEN'
             env:
