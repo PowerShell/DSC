@@ -141,14 +141,14 @@ extends:
         - ${{ if ne(parameters.token, '') }}:
           - task: PowerShell@2
             inputs:
-              env:
-                TOKEN: ${{ parameters.token }}
-              targetType: inline
+              targetType: 'inline'
+              pwsh: true
               script: |
                 $header = "Bearer $($env:TOKEN)"
                 Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
             displayName: 'Set CARGO_REGISTRIES_POWERSHELL_TOKEN'
             env:
+              TOKEN: ${{ parameters.token }}
               ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
