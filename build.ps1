@@ -192,13 +192,13 @@ if (!$SkipBuild) {
             } else {
                 $header = "Bearer $accessToken"
                 $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             }
         }
     }
 
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
-
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
