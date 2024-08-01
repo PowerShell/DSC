@@ -1,12 +1,6 @@
 name: DSC-Release-$(Build.BuildId)
 trigger: none
 
-parameters:
-- name: token
-  displayName: Token to use for CFS
-  type: string
-  default: 'none'
-
 pr:
   branches:
     include:
@@ -122,38 +116,9 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - ${{ if eq(parameters.token, 'none') }}:
-          - task: AzureCLI@2
-            inputs:
-              azureSubscription: az-PowerShell-feed-ingestion
-              scriptType: 'pscore'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-
-                # Set the access token as a secret, so it doesn't get leaked in the logs
-                Write-Host "##vso[task.setsecret]$accessToken"
-                $header = "Bearer $accessToken"
-                Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-            displayName: 'Get Azure DevOps Token'
-            env:
-              ob_restore_phase: true
-        - ${{ if ne(parameters.token, 'none') }}:
-          - task: PowerShell@2
-            inputs:
-              targetType: 'inline'
-              pwsh: true
-              script: |
-                $header = "Bearer $($env:TOKEN)"
-                Write-Host $env:TOKEN.Length
-                Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-            displayName: 'Set CARGO_REGISTRIES_POWERSHELL_TOKEN'
-            env:
-              TOKEN: ${{ parameters.token }}
-              ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck -UseCFS
+            ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           env:
             ob_restore_phase: true
@@ -269,26 +234,8 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - task: AzureCLI@2
-          inputs:
-            azureSubscription: az-PowerShell-feed-ingestion
-            scriptType: 'pscore'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-
-              # Set the access token as a secret, so it doesn't get leaked in the logs
-              Write-Host "##vso[task.setsecret]$accessToken"
-              $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-              # convert to base64
-              $base64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($accessToken))
-              Write-Host "$base64"
-          displayName: 'Get Azure DevOps Token'
-          env:
-            ob_restore_phase: true
         - pwsh: |
-            ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu -UseCFS
+            ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build x86_64-unknown-linux-gnu'
@@ -312,23 +259,8 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - task: AzureCLI@2
-          inputs:
-            azureSubscription: az-PowerShell-feed-ingestion
-            scriptType: 'pscore'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-
-              # Set the access token as a secret, so it doesn't get leaked in the logs
-              Write-Host "##vso[task.setsecret]$accessToken"
-              $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-          displayName: 'Get Azure DevOps Token'
-          env:
-            ob_restore_phase: true
         - pwsh: |
-            ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu -UseCFS
+            ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-gnu'
@@ -360,23 +292,8 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
-        - task: AzureCLI@2
-          inputs:
-            azureSubscription: az-PowerShell-feed-ingestion
-            scriptType: 'pscore'
-            scriptLocation: 'inlineScript'
-            inlineScript: |
-              $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-
-              # Set the access token as a secret, so it doesn't get leaked in the logs
-              Write-Host "##vso[task.setsecret]$accessToken"
-              $header = "Bearer $accessToken"
-              Write-Host "##vso[task.setvariable variable=CARGO_REGISTRIES_POWERSHELL_TOKEN]$header"
-          displayName: 'Get Azure DevOps Token'
-          env:
-            ob_restore_phase: true
         - pwsh: |
-            ./build.ps1 -Release -Architecture $(buildName) -UseCFS
+            ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"
