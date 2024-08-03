@@ -519,7 +519,7 @@ impl Configurator {
                 } else {
                     default_value.clone()
                 };
-                Configurator::validate_parameter_type(&name, &value, &parameter.parameter_type)?;
+                Configurator::validate_parameter_type(name, &value, &parameter.parameter_type)?;
                 self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
@@ -569,28 +569,28 @@ impl Configurator {
         Ok(())
     }
 
-pub fn set_variables(&mut self, config: &Configuration) -> Result<(), DscError> {
-    let Some(variables) = &config.variables else {
-        debug!("No variables defined in configuration");
-        return Ok(());
-    };
-
-    for (name, value) in variables {
-        let new_value = if let Some(string) = value.as_str() {
-            self.statement_parser.parse_and_execute(string, &self.context)?
-        }
-        else {
-            value.clone()
+    fn set_variables(&mut self, config: &Configuration) -> Result<(), DscError> {
+        let Some(variables) = &config.variables else {
+            debug!("No variables defined in configuration");
+            return Ok(());
         };
-        info!("Set variable '{name}' to '{new_value}'");
-        if self.context.variables.contains_key(name) {
-            return Err(DscError::Validation(format!("Variable '{name}' defined mnore than once")));
-        }
 
-        self.context.variables.insert(name.to_string(), new_value);
+        for (name, value) in variables {
+            let new_value = if let Some(string) = value.as_str() {
+                self.statement_parser.parse_and_execute(string, &self.context)?
+            }
+            else {
+                value.clone()
+            };
+            info!("Set variable '{name}' to '{new_value}'");
+            if self.context.variables.contains_key(name) {
+                return Err(DscError::Validation(format!("Variable '{name}' defined mnore than once")));
+            }
+
+            self.context.variables.insert(name.to_string(), new_value);
+        }
+        Ok(())
     }
-    Ok(())
-}
 
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
