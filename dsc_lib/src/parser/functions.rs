@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use serde_json::{Number, Value};
+use tracing::debug;
 use tree_sitter::Node;
 
 use crate::DscError;
@@ -51,8 +52,10 @@ impl Function {
             return Err(DscError::Parser("Function name node not found".to_string()));
         };
         let args = convert_args_node(statement_bytes, &function_args)?;
+        let name = name.utf8_text(statement_bytes)?;
+        debug!("Function name: {0}", name);
         Ok(Function{
-            name: name.utf8_text(statement_bytes)?.to_string(),
+            name: name.to_string(),
             args})
     }
 
@@ -68,10 +71,12 @@ impl Function {
             for arg in args {
                 match arg {
                     FunctionArg::Expression(expression) => {
+                        debug!("Arg is expression");
                         let value = expression.invoke(function_dispatcher, context)?;
                         resolved_args.push(value.clone());
                     },
                     FunctionArg::Value(value) => {
+                        debug!("Arg is value: '{:?}'", value);
                         resolved_args.push(value.clone());
                     }
                 }

@@ -479,7 +479,7 @@ impl Configurator {
         Ok(result)
     }
 
-    /// Set the parameters context for the configuration.
+    /// Set the parameters and variables context for the configuration.
     ///
     /// # Arguments
     ///
@@ -488,12 +488,18 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the parameters are invalid.
-    pub fn set_parameters(&mut self, parameters_input: &Option<Value>) -> Result<(), DscError> {
-        // set default parameters first
+    pub fn set_context(&mut self, parameters_input: &Option<Value>) -> Result<(), DscError> {
         let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
+        self.set_parameters(parameters_input, &config)?;
+        self.set_variables(&config)?;
+        Ok(())
+    }
+
+    fn set_parameters(&mut self, parameters_input: &Option<Value>, config: &Configuration) -> Result<(), DscError> {
+        // set default parameters first
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
-                debug!("No parameters defined in configuration and no parameters input");
+                info!("No parameters defined in configuration and no parameters input");
                 return Ok(());
             }
             return Err(DscError::Validation("No parameters defined in configuration".to_string()));
@@ -513,7 +519,7 @@ impl Configurator {
                 } else {
                     default_value.clone()
                 };
-                Configurator::validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                Configurator::validate_parameter_type(&name, &value, &parameter.parameter_type)?;
                 self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
@@ -543,6 +549,11 @@ impl Configurator {
                 } else {
                     info!("Set parameter '{name}' to '{value}'");
                 }
+
+                if self.context.parameters.contains_key(&name) {
+                    return Err(DscError::Validation(format!("Parameter '{name}' defined more than once")));
+                }
+
                 self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
                 // also update the configuration with the parameter value
                 if let Some(parameters) = &mut self.config.parameters {
@@ -557,6 +568,29 @@ impl Configurator {
         }
         Ok(())
     }
+
+pub fn set_variables(&mut self, config: &Configuration) -> Result<(), DscError> {
+    let Some(variables) = &config.variables else {
+        debug!("No variables defined in configuration");
+        return Ok(());
+    };
+
+    for (name, value) in variables {
+        let new_value = if let Some(string) = value.as_str() {
+            self.statement_parser.parse_and_execute(string, &self.context)?
+        }
+        else {
+            value.clone()
+        };
+        info!("Set variable '{name}' to '{new_value}'");
+        if self.context.variables.contains_key(name) {
+            return Err(DscError::Validation(format!("Variable '{name}' defined mnore than once")));
+        }
+
+        self.context.variables.insert(name.to_string(), new_value);
+    }
+    Ok(())
+}
 
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
