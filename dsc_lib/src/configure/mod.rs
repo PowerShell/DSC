@@ -550,10 +550,6 @@ impl Configurator {
                     info!("Set parameter '{name}' to '{value}'");
                 }
 
-                if self.context.parameters.contains_key(&name) {
-                    return Err(DscError::Validation(format!("Parameter '{name}' defined more than once")));
-                }
-
                 self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
                 // also update the configuration with the parameter value
                 if let Some(parameters) = &mut self.config.parameters {
@@ -583,10 +579,6 @@ impl Configurator {
                 value.clone()
             };
             info!("Set variable '{name}' to '{new_value}'");
-            if self.context.variables.contains_key(name) {
-                return Err(DscError::Validation(format!("Variable '{name}' defined mnore than once")));
-            }
-
             self.context.variables.insert(name.to_string(), new_value);
         }
         Ok(())
