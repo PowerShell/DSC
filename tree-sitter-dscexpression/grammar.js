@@ -18,7 +18,7 @@ module.exports = grammar({
     escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /.*?/))),
     bracketInStringLiteral: $ => token(prec(PREC.BRACKETINSTRING, seq('[', /.*?/, ']', /.+?/))),
     _expressionString: $ => prec(PREC.EXPRESSIONSTRING, seq('[', $.expression, ']')),
-    expression: $ => seq(field('function', $.function), field('members', optional($.memberAccess))),
+    expression: $ => seq(field('function', $.function), optional($.accessor)),
     stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[].*?/)),
 
     function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
@@ -27,13 +27,17 @@ module.exports = grammar({
     _argument: $ => choice($.expression, $._quotedString, $.number, $.boolean),
 
     _quotedString: $ => seq('\'', $.string, '\''),
-    // ARM strings do not allow to contain single-quote characters
+    // ARM strings are allowed to contain single-quote characters
     string: $ => /[^']*/,
     number: $ => /-?\d+/,
     boolean: $ => choice('true', 'false'),
 
-    memberAccess: $ => seq('.', $.memberName, repeat(seq('.', $.memberName))),
+    accessor: $ => choice(field('members', $.memberAccess), field('index', $.arrayIndex)),
+
+    memberAccess: $ => seq('.', $.memberName, optional($.accessor)),
     memberName: $ => /[a-zA-Z0-9_-]+/,
+
+    arrayIndex: $ => seq('[', $.expression, ']'),
   }
 
 });
