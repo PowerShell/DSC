@@ -66,6 +66,11 @@ if ($jsonInput) {
     if ($jsonInput -ne '@{}') {
         $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
     }
+    else 
+    {
+        $jsonInput = $jsonInput | ConvertTo-Json
+    }
+
     $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
     if ($new_psmodulepath)
     {
