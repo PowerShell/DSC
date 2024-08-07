@@ -76,12 +76,12 @@ impl Expression {
                                 return Err(DscError::Parser("Expression index not supported".to_string()));
                             },
                             _ => {
-                                return Err(DscError::Parser(format!("Invalid accessor kind: '{:?}'", accessor_kind)));
+                                return Err(DscError::Parser(format!("Invalid accessor kind: '{accessor_kind}'")));
                             },
                         }
                     },
                     _ => {
-                        return Err(DscError::Parser(format!("Invalid accessor kind: '{:?}'", accessor_kind)));
+                        return Err(DscError::Parser(format!("Invalid accessor kind: '{accessor_kind}'")));
                     },
                 };
                 accessors.push(value);
@@ -111,7 +111,7 @@ impl Expression {
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
         let result = self.function.invoke(function_dispatcher, context)?;
         trace!("Function result: '{:?}'", result);
-        if self.accessors.len() > 0 {
+        if self.accessors.is_empty() {
             debug!("Evaluating accessors");
             let mut value = result;
             for accessor in &self.accessors {
@@ -122,7 +122,7 @@ impl Expression {
                         }
                         if let Some(object) = value.as_object() {
                             if !object.contains_key(member) {
-                                return Err(DscError::Parser(format!("Member '{:?}' not found", member)));
+                                return Err(DscError::Parser(format!("Member '{member}' not found")));
                             }
                             value = object[member].clone();
                         }
@@ -135,7 +135,10 @@ impl Expression {
                             if !index.is_number() {
                                 return Err(DscError::Parser("Index is not a number".to_string()));
                             }
-                            let index = index.as_u64().unwrap() as usize;
+                            let Some(index) = index.as_u64() else {
+                                return Err(DscError::Parser("Index is not a number".to_string()));
+                            };
+                            let index = usize::try_from(index)?;
                             if index >= array.len() {
                                 return Err(DscError::Parser("Index out of bounds".to_string()));
                             }
