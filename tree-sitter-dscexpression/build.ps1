@@ -1,7 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-# check if tools are installed
+param(
+    [switch]$UpdatePackages
+)
 
 function Invoke-NativeCommand($cmd) {
     Invoke-Expression $cmd
@@ -30,6 +32,19 @@ if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
 npm list tree-sitter-cli
 if ($LASTEXITCODE -ne 0) {
     npm ci tree-sitter-cli --omit=optional
+}
+
+if ($UpdatePackages) {
+    if (!$IsWindows) {
+        throw "This switch only works on Windows"
+    }
+
+    rm ./package-lock.json
+    rm -r ./node_modules
+    npm cache clean --force
+    npm logout
+    vsts-npm-auth -config .npmrc -F -V
+    npm install --force --verbose
 }
 
 Invoke-NativeCommand 'npx tree-sitter generate --build'
