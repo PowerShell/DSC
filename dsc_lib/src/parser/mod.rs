@@ -52,43 +52,45 @@ impl Statement {
         if root_node.is_error() {
             return Err(DscError::Parser(format!("Error parsing statement root: {statement}")));
         }
-        let root_node_kind = root_node.kind();
-        if root_node_kind != "statement" {
+        if root_node.kind() != "statement" {
             return Err(DscError::Parser(format!("Invalid statement: {statement}")));
         }
-        let Some(child_node) = root_node.named_child(0) else {
-            return Err(DscError::Parser("Child node not found".to_string()));
-        };
-        if child_node.is_error() {
-            return Err(DscError::Parser("Error parsing statement child".to_string()));
-        }
-        let kind = child_node.kind();
         let statement_bytes = statement.as_bytes();
-        match kind {
-            "stringLiteral" | "bracketInStringLiteral" => {
-                let Ok(value) = child_node.utf8_text(statement_bytes) else {
-                    return Err(DscError::Parser("Error parsing string literal".to_string()));
-                };
-                debug!("Parsing string literal: {0}", value.to_string());
-                Ok(Value::String(value.to_string()))
-            },
-            "escapedStringLiteral" => {
-                // need to remove the first character: [[ => [
-                let Ok(value) = child_node.utf8_text(statement_bytes) else {
-                    return Err(DscError::Parser("Error parsing escaped string literal".to_string()));
-                };
-                debug!("Parsing escaped string literal: {0}", value[1..].to_string());
-                Ok(Value::String(value[1..].to_string()))
-            },
-            "expression" => {
-                debug!("Parsing expression");
-                let expression = Expression::new(statement_bytes, &child_node)?;
-                Ok(expression.invoke(&self.function_dispatcher, context)?)
-            },
-            _ => {
-                Err(DscError::Parser(format!("Unknown expression type {0}", child_node.kind())))
+        let mut cursor = root_node.walk();
+        let mut return_value = Value::Null;
+        for child_node in root_node.named_children(&mut cursor) {
+            if child_node.is_error() {
+                return Err(DscError::Parser(format!("Error parsing statement: {statement}")));
+            }
+
+            match child_node.kind() {
+                "stringLiteral" => {
+                    let Ok(value) = child_node.utf8_text(statement_bytes) else {
+                        return Err(DscError::Parser("Error parsing string literal".to_string()));
+                    };
+                    debug!("Parsing string literal: {0}", value.to_string());
+                    return_value = Value::String(value.to_string());
+                },
+                "escapedStringLiteral" => {
+                    // need to remove the first character: [[ => [
+                    let Ok(value) = child_node.utf8_text(statement_bytes) else {
+                        return Err(DscError::Parser("Error parsing escaped string literal".to_string()));
+                    };
+                    debug!("Parsing escaped string literal: {0}", value[1..].to_string());
+                    return_value = Value::String(value[1..].to_string());
+                },
+                "expression" => {
+                    debug!("Parsing expression");
+                    let expression = Expression::new(statement_bytes, &child_node)?;
+                    return_value = expression.invoke(&self.function_dispatcher, context)?;
+                },
+                _ => {
+                    return Err(DscError::Parser(format!("Unknown expression type {0}", child_node.kind())));
+                }
             }
         }
+
+        Ok(return_value)
     }
 }
 
@@ -113,8 +115,8 @@ mod tests {
     #[test]
     fn bracket_in_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[this] is a string", &Context::new()).unwrap();
-        assert_eq!(result, "[this] is a string");
+        let result = parser.parse_and_execute("[this] is a string", &Context::new());
+        assert!(result.is_err());
     }
 
     #[test]

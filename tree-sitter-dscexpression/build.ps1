@@ -10,6 +10,8 @@ function Invoke-NativeCommand($cmd) {
     }
 }
 
+$env:TREE_SITTER_VERBOSE=1
+
 if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
     Write-Host 'Installing Node'
 
@@ -30,5 +32,5 @@ if ($LASTEXITCODE -ne 0) {
     npm ci tree-sitter-cli --omit=optional
 }
 
-Invoke-NativeCommand 'npx tree-sitter generate'
+Invoke-NativeCommand 'npx tree-sitter generate --build'
 Invoke-NativeCommand 'npx tree-sitter test'
