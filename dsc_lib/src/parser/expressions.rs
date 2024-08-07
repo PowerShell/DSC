@@ -111,7 +111,7 @@ impl Expression {
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
         let result = self.function.invoke(function_dispatcher, context)?;
         trace!("Function result: '{:?}'", result);
-        if self.accessors.is_empty() {
+        if !self.accessors.is_empty() {
             debug!("Evaluating accessors");
             let mut value = result;
             for accessor in &self.accessors {
