@@ -74,6 +74,33 @@ class TestClassResource : BaseTestClass
     }
 }
 
+[DscResource()]
+class NoExport: BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [DscProperty()]
+    [string] $EnumProp
+
+    [void] Set()
+    {
+    }
+
+    [bool] Test()
+    {
+        return $true
+    }
+
+    [NoExport] Get()
+    {
+        return $this
+    }
+}
+
 function Test-World()
 {
     "Hello world from PSTestModule!"

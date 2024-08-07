@@ -10,6 +10,9 @@ use tree_sitter::LanguageError;
 
 #[derive(Error, Debug)]
 pub enum DscError {
+    #[error("Adapter '{0}' not found")]
+    AdapterNotFound(String),
+
     #[error("Function boolean argument conversion error: {0}")]
     BooleanConversion(#[from] std::str::ParseBoolError),
 
