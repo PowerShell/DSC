@@ -69,6 +69,7 @@ impl Statement {
                 let Ok(value) = child_node.utf8_text(statement_bytes) else {
                     return Err(DscError::Parser("Error parsing string literal".to_string()));
                 };
+                debug!("Parsing string literal: {0}", value.to_string());
                 Ok(Value::String(value.to_string()))
             },
             "escapedStringLiteral" => {
@@ -76,9 +77,11 @@ impl Statement {
                 let Ok(value) = child_node.utf8_text(statement_bytes) else {
                     return Err(DscError::Parser("Error parsing escaped string literal".to_string()));
                 };
+                debug!("Parsing escaped string literal: {0}", value[1..].to_string());
                 Ok(Value::String(value[1..].to_string()))
             },
             "expression" => {
+                debug!("Parsing expression");
                 let expression = Expression::new(statement_bytes, &child_node)?;
                 Ok(expression.invoke(&self.function_dispatcher, context)?)
             },
