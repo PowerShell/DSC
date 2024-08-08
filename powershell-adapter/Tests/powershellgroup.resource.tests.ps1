@@ -280,4 +280,11 @@ Describe 'PowerShell adapter resource tests' {
 
         $env:TestClassResourceResultCount = $null
     }
+
+    It 'Does not work when Get is empty' {
+        $out = dsc resource get --resource Microsoft.DSC/PowerShell 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 2
+        $out | Should -Not -BeNullOrEmpty
+        $out | Should -BeLike "*ERROR*Can not find type `"`" for resource*"
+    }
 }
