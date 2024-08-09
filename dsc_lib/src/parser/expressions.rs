@@ -120,20 +120,16 @@ impl Expression {
             for accessor in &self.accessors {
                 match accessor {
                     Accessor::Member(member) => {
-                        if !value.is_object() {
-                            return Err(DscError::Parser("Member access on non-object value".to_string()));
-                        }
                         if let Some(object) = value.as_object() {
                             if !object.contains_key(member) {
                                 return Err(DscError::Parser(format!("Member '{member}' not found")));
                             }
                             value = object[member].clone();
+                        } else {
+                            return Err(DscError::Parser("Member access on non-object value".to_string()));
                         }
                     },
                     Accessor::Index(index) => {
-                        if !value.is_array() {
-                            return Err(DscError::Parser("Index access on non-array value".to_string()));
-                        }
                         if let Some(array) = value.as_array() {
                             if !index.is_number() {
                                 return Err(DscError::Parser("Index is not a number".to_string()));
@@ -146,6 +142,8 @@ impl Expression {
                                 return Err(DscError::Parser("Index out of bounds".to_string()));
                             }
                             value = array[index].clone();
+                        } else {
+                            return Err(DscError::Parser("Index access on non-array value".to_string()));
                         }
                     },
                 }

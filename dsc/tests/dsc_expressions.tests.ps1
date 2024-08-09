@@ -5,6 +5,11 @@ Describe 'Expressions tests' {
     It 'Accessors work: <text>' -TestCases @(
         @{ text = "[parameters('test').hello]"; expected = '@{world=there}' }
         @{ text = "[parameters('test').hello.world]"; expected = 'there' }
+        @{ text = "[parameters('test').array[0]]"; expected = 'one' }
+        @{ text = "[parameters('test').array[1][1]]"; expected = 'three' }
+        @{ text = "[parameters('test').objectArray[0].name]"; expected = 'one' }
+        @{ text = "[parameters('test').objectArray[1].value[0]]"; expected = '2' }
+        @{ text = "[parameters('test').objectArray[1].value[1].name]"; expected = 'three' }
     ) {
         param($text, $expected)
         $yaml = @"
