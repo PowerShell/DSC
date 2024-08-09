@@ -131,11 +131,8 @@ impl Expression {
                     },
                     Accessor::Index(index) => {
                         if let Some(array) = value.as_array() {
-                            if !index.is_number() {
-                                return Err(DscError::Parser("Index is not a number".to_string()));
-                            }
                             let Some(index) = index.as_u64() else {
-                                return Err(DscError::Parser("Index is not a number".to_string()));
+                                return Err(DscError::Parser("Index is not a valid number".to_string()));
                             };
                             let index = usize::try_from(index)?;
                             if index >= array.len() {
