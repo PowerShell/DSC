@@ -49,7 +49,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
             }
         },
         Err(err) => {
-            error!("Error: {err}");
+            error!("{err}");
             exit(EXIT_DSC_ERROR);
         }
     }
