@@ -23,6 +23,10 @@ resources:
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
   parameters:
+    featureFlags:
+      WindowsHostVersion:
+        Disk: Large
+        Version: 2022    
     customTags: 'ES365AIMigrationTooling'
     globalSdl:
       disableLegacyManifest: true
