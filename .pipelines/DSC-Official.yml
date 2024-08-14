@@ -51,7 +51,7 @@ extends:
       - job: SetPackageVersion
         displayName: Set PackageVersion
         pool:
-          type: windows
+          vmImage: windows-latest
         variables:
           repoRoot: $(Build.SourcesDirectory)\DSC
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
