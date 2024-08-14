@@ -268,6 +268,7 @@ extends:
           env:
             ob_restore_phase: true
         - pwsh: |
+            apt -y install gcc-aarch64-linux-gnu
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -283,6 +284,7 @@ extends:
         displayName: Linux-x64-musl
         pool:
           type: linux
+          vmImage: ubuntu-latest
         steps:
         - task: RustInstaller@1
           inputs:
@@ -309,6 +311,7 @@ extends:
         displayName: Linux-ARM64-musl
         pool:
           type: linux
+          vmImage: ubuntu-latest
           hostArchitecture: arm64
         steps:
         - task: RustInstaller@1
