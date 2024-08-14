@@ -29,12 +29,14 @@ if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
     }
 }
 
-npm list tree-sitter-cli
-if ($LASTEXITCODE -ne 0) {
-    npm ci tree-sitter-cli --omit=optional
-}
+npm install
 
-npm install -g node-gyp
+#npm list tree-sitter-cli
+#if ($LASTEXITCODE -ne 0) {
+#    npm ci tree-sitter-cli --omit=optional
+#}
+
+#npm install -g node-gyp
 
 if ($UpdatePackages) {
     if (!$IsWindows) {
