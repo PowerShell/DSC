@@ -51,6 +51,7 @@ extends:
       - job: SetPackageVersion
         displayName: Set PackageVersion
         pool:
+          type: windows
           vmImage: windows-latest
         variables:
           repoRoot: $(Build.SourcesDirectory)\DSC
@@ -249,6 +250,7 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-gnu
         pool:
+          type: linux
           vmImage: ubuntu-latest
           hostArchitecture: arm64
         steps:
@@ -274,6 +276,7 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-x64-musl
         pool:
+          type: linux
           vmImage: Ubuntu-Latest
         steps:
         - task: RustInstaller@1
@@ -299,6 +302,7 @@ extends:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-musl
         pool:
+          type: linux
           vmImage: Ubuntu-Latest
           hostArchitecture: arm64
         steps:
