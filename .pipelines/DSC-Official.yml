@@ -275,7 +275,6 @@ extends:
         displayName: Linux-x64-musl
         pool:
           type: linux
-          vmImage: ubuntu-latest
         steps:
         - task: RustInstaller@1
           inputs:
@@ -286,7 +285,7 @@ extends:
           env:
             ob_restore_phase: true
         - pwsh: |
-            apt -y install musl-tools
+            tdnf install musl-tools
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -301,7 +300,6 @@ extends:
         displayName: Linux-ARM64-musl
         pool:
           type: linux
-          vmImage: ubuntu-latest
           hostArchitecture: arm64
         steps:
         - task: RustInstaller@1
@@ -313,7 +311,7 @@ extends:
           env:
             ob_restore_phase: true
         - pwsh: |
-            apt -y install musl-tools
+            tdnf install musl-tools
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
