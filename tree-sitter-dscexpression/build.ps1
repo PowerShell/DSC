@@ -34,6 +34,8 @@ if ($LASTEXITCODE -ne 0) {
     npm ci tree-sitter-cli --omit=optional
 }
 
+npm install -g node-gyp
+
 if ($UpdatePackages) {
     if (!$IsWindows) {
         throw "This switch only works on Windows"
