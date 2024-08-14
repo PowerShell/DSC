@@ -10,8 +10,9 @@ pr:
 variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
-  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
-  WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2019/vse2022:latest
+#  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
+  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
+  WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
 
 resources:
   repositories:
@@ -64,7 +65,6 @@ extends:
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: false
           ob_sdl_codeql_compiled_enabled: false
-          WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
         steps:
         - checkout: self
         - pwsh: |
@@ -280,7 +280,6 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
         displayName: Linux-x64-musl
         pool:
           type: linux
@@ -307,7 +306,6 @@ extends:
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
         displayName: Linux-ARM64-musl
         pool:
           type: linux
