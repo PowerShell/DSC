@@ -256,8 +256,6 @@ extends:
         displayName: Linux-ARM64-gnu
         pool:
           type: linux
-          vmImage: ubuntu-latest
-          hostArchitecture: arm64
         steps:
         - task: RustInstaller@1
           inputs:
@@ -283,7 +281,6 @@ extends:
         displayName: Linux-x64-musl
         pool:
           type: linux
-          vmImage: ubuntu-latest
         steps:
         - task: RustInstaller@1
           inputs:
@@ -309,8 +306,6 @@ extends:
         displayName: Linux-ARM64-musl
         pool:
           type: linux
-          vmImage: ubuntu-latest
-          hostArchitecture: arm64
         steps:
         - task: RustInstaller@1
           inputs:
