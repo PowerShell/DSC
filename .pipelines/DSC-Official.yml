@@ -320,6 +320,7 @@ extends:
             $env:AR_aarch64_unknown_linux_musl='llvm-ar'
             $env:CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Clink-self-contained=yes -Clinker=rust-lld"
             apt -y install clang
+            apt -y install llvm
             apt -y install musl-tools
             apt -y install gcc-multilib
             rustup default stable-aarch64-unknown-linux-musl
