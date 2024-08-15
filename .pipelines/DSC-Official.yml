@@ -125,7 +125,7 @@ extends:
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             $LLVMBIN = "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin"
-            if (!Test-Path $LLVMBIN) {
+            if (!(Test-Path $LLVMBIN)) {
               throw "LLVM path '$LLVMBIN' does not exist"
             }
             $env:PATH += ";$LLVMBIN"
