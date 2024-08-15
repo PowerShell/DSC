@@ -124,7 +124,7 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            write-verbose -verbose (dir "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022" | out-string)
+            write-verbose -verbose (dir "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise" | out-string)
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           env:
