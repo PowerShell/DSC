@@ -124,11 +124,11 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            write-verbose -verbose (dir "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise" -r clang.exe | out-string)
-            $VSINSTALLDIR = $(vswhere.exe -latest -requires Microsoft.VisualStudio.Component.VC.Llvm.Clang -property installationPath)
-            $VCINSTALLDIR = Join-Path $VSINSTALLDIR "VC"
-            $LLVM_ROOT = Join-Path $VCINSTALLDIR "Tools\Llvm\x64"
-            $Env:PATH += ";$LLVM_ROOT\bin"
+            $LLVMBIN = "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin"
+            if (!Test-Path $LLVMBIN) {
+              throw "LLVM path '$LLVMBIN' does not exist"
+            }
+            $env:PATH += ";$LLVMBIN"
             write-verbose -verbose (gcm clang.exe | out-string)
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
