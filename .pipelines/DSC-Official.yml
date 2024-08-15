@@ -124,7 +124,7 @@ extends:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
-            write-verbose -verbose "VCINSTALLDIR: $($env:VCINSTALLDIR)"
+            write-verbose -verbose (dir $env:PROGAMFILES | out-string)
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           env:
@@ -321,6 +321,8 @@ extends:
             $env:CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Clink-self-contained=yes -Clinker=rust-lld"
             apt -y install clang
             apt -y install musl-tools
+            apt -y install gcc-multilib
+            rustup default stable-aarch64-unknown-linux-musl
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
