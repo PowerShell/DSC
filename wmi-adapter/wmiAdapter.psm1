@@ -109,6 +109,8 @@ function GetCimSpace
                         }
                     }
 
+                    $addToActualState.properties = $instance_result
+
                     # TODO: validate if we can set it to null
                     $addToActualState.CimInstance = $null
                 }
@@ -118,30 +120,30 @@ function GetCimSpace
                     $wmi_instance = $wmi_instances[0]
 
                     # add the properties from INPUT
-                    $instance_result = $r.properties
+                    $addToActualState.properties = $r.properties
 
                     # return the Microsoft.Management.Infrastructure.CimInstance class
                     $addToActualState.CimInstance = $wmi_instance
+                    
                 }
                 'Test'
                 {
                     # TODO: implement test
                 }
-                # TODO: validate output
-                # 'Export'
-                # {
-                #     foreach ($wmi_instance in $wmi_instances) 
-                #     {
-                #         $wmi_instance.psobject.properties | ForEach-Object {
-                #             if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
-                #             {
-                #                 $instance_result[$_.Name] = $_.Value
-                #             }
-                #         }
+                'Export'
+                {
+                    foreach ($wmi_instance in $wmi_instances) 
+                    {
+                        $wmi_instance.psobject.properties | ForEach-Object {
+                            if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
+                            {
+                                $instance_result[$_.Name] = $_.Value
+                            }
+                        }
 
-                #         $addToActualState.properties += @($instance_result)
-                #     }
-                # }
+                        $addToActualState.properties += @($instance_result)
+                    }
+                }
             }
 
             return $addToActualState
@@ -254,14 +256,19 @@ function Invoke-DscWmi
         }
         'Set'
         {
-            # TODO: validate output
-            $setState = GetCimSpace -Operation $Operation -DesiredState $DesiredState
+            $addToActualState = GetCimSpace -Operation $Operation -DesiredState $DesiredState
 
-            $wmiResources = ValidateCimMethodAndArguments -DesiredState $setState
-
+            $wmiResources = ValidateCimMethodAndArguments -DesiredState $addToActualState
             foreach ($resource in $wmiResources)
             {
-                $addToActualState = InvokeCimMethod @resource
+                $null = InvokeCimMethod @resource
+            }
+
+            # reset the value to be empty
+            $addToActualState = [PSCustomObject]@{
+                name       = $addToActualState.name 
+                type       = $addToActualState.type
+                properties = $null
             }
         }
         'Test'

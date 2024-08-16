@@ -106,6 +106,7 @@ switch ($Operation)
     }
     { @('Get', 'Set', 'Test', 'Export') -contains $_ }
     {
+        
         $desiredState = $wmiAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState)
         {
@@ -125,11 +126,7 @@ switch ($Operation)
                 exit 1
             }
 
-            $result += [PSCustomObject]@{
-                name       = $actualstate.name 
-                type       = $actualstate.type
-                properties = $actualstate.properties
-            }
+            $result += $actualstate
         }
 
         # OUTPUT json to stderr for debug, and to stdout

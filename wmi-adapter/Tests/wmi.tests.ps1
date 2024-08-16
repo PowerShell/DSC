@@ -43,9 +43,9 @@ Describe 'WMI adapter resource tests' {
             $r = Get-Content -Raw $configPath | dsc config get
             $LASTEXITCODE | Should -Be 0
             $res = $r | ConvertFrom-Json
-            $res.results.result.actualstate.result[0].properties.value.LastBootUpTime | Should -Not -BeNull
-            $res.results.result.actualstate.result[0].properties.value.Caption | Should -Not -BeNull
-            $res.results.result.actualstate.result[0].properties.value.NumberOfProcesses | Should -Not -BeNull
+            $res.results.result.actualstate.result[0].properties.LastBootUpTime | Should -Not -BeNull
+            $res.results.result.actualstate.result[0].properties.Caption | Should -Not -BeNull
+            $res.results.result.actualstate.result[0].properties.NumberOfProcesses | Should -Not -BeNull
         }
     
         It 'Example config works' -Skip:(!$IsWindows) {
@@ -54,23 +54,57 @@ Describe 'WMI adapter resource tests' {
             $LASTEXITCODE | Should -Be 0
             $r | Should -Not -BeNullOrEmpty
             $res = $r | ConvertFrom-Json
-            $res.results.result.actualstate.result[0].properties.value.Model | Should -Not -BeNullOrEmpty
-            $res.results.result.actualstate.result[0].properties.value.Description | Should -Not -BeNullOrEmpty
+            $res.results.result.actualstate.result[0].properties.Model | Should -Not -BeNullOrEmpty
+            $res.results.result.actualstate.result[0].properties.Description | Should -Not -BeNullOrEmpty
         }
     }
 
-    # TODO: work on set test
-    # Context "Set WMI resources" {
-    # }
+    # TODO: work on set test configs
+    Context "Set WMI resources" {
+        It 'Set a resource' -Skip:(!$IsWindows) {
+            $inputs = @{
+                adapted_dsc_type = "root.cimv2/Win32_Process"
+                properties       = @{
+                    MethodName  = 'Create'
+                    CommandLine = 'powershell.exe'
+                }
+            }
+            # get the start of processes
+            $ref = Get-Process 
 
-    # TODO: get export working
-    # Context "Export WMI resources" {
-    #     It 'Exports all resources' -Skip:(!$IsWindows) {
-    #         $r = dsc resource export -r root.cimv2/Win32_Process
-    #         $LASTEXITCODE | Should -Be 0
-    #         $res = $r | ConvertFrom-Json
-    #         $res.resources[0].properties.result.count | Should -BeGreaterThan 1
-    #         $json.resources[0].properties.result.properties.value | Should -not -BeNullOrEmpty
-    #     }
-    # }
+            # run the creation of process
+            $r = ($inputs | ConvertTo-Json -Compress) | dsc resource set -r root.cimv2/Win32_Process
+
+            # handle the output as we do not have a filter yet on the get method
+            $diff = Get-Process
+
+            $comparison = (Compare-Object -ReferenceObject $ref -DifferenceObject $diff | Where-Object { $_.SideIndicator -eq '=>' })
+            $process = foreach ($c in $comparison)
+            {
+                if ($c.InputObject.Path -like "*$($inputs.properties.CommandLine)*")
+                {
+                    $c.InputObject
+                }
+            }
+            $res = $r | ConvertFrom-Json
+            $res.afterState.result | Should -Not -BeNull
+            $LASTEXITCODE | Should -Be 0
+            $process | Should -Not -BeNullOrEmpty
+            $process.Path | Should -BeLike "*powershell.exe*"
+        }
+        AfterAll {
+            $process = Get-Process -Name "powershell" -ErrorAction SilentlyContinue | Sort-Object StartTime -Descending -Top 1
+            Stop-Process $process
+        }
+    }
+
+    Context "Export WMI resources" {
+        It 'Exports all resources' -Skip:(!$IsWindows) {
+            $r = dsc resource export -r root.cimv2/Win32_Process
+            $LASTEXITCODE | Should -Be 0
+            $res = $r | ConvertFrom-Json
+            $res.resources.properties.result.properties.value.count | Should -BeGreaterThan 1
+            $res.resources.properties.result.properties.value[0].CreationClassName | Should -Be 'Win32_Process'
+        }
+    }
 }
