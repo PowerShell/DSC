@@ -3,7 +3,7 @@
 registry-auth = true
 
 [registries]
-powershell = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/" }
+POWERSHELL = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/" }
 
 [registry]
 global-credential-providers = ["cargo:token"]
@@ -17,4 +17,10 @@ rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-arg
 
 # The following is only needed for release builds
 [source.crates-io]
-replace-with = "powershell"
+replace-with = "POWERSHELL"
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-musl-gcc"

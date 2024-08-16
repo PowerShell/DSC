@@ -28,6 +28,22 @@ jobs:
       shell: pwsh
       run: ./build.ps1 -test
 
+  build-musl:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - run: rustup target add x86_64-unknown-linux-musl
+    - name: Install musl build tools
+      run: sudo apt update && sudo apt install musl-tools -y
+    - name: Build
+      shell: pwsh
+      run: ./build.ps1 -clippy -target x86_64-unknown-linux-musl
+    - name: Run tests
+      shell: pwsh
+      run: ./build.ps1 -test -target x86_64-unknown-linux-musl
+
   build-windows:
 
     runs-on: windows-latest
