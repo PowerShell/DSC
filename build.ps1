@@ -13,7 +13,7 @@ param(
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCFS
+    [switch]$UseCratesIO
 )
 
 if ($GetPackageVersion) {
@@ -168,7 +168,7 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
-    if (!$UseCFS) {
+    if ($UseCratesIO) {
         # this will override the config.toml
         Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
@@ -177,11 +177,28 @@ if (!$SkipBuild) {
         Write-Host "Using CFS for cargo source replacement"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+
+        if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+            throw "Azure CLI not found"
+        }
+
+        if ($null -ne $env:CARGO_REGISTRIES_POWERSHELL_TOKEN) {
+            Write-Host "Using existing token"
+        } else {
+            Write-Host "Getting token"
+            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+            } else {
+                $header = "Bearer $accessToken"
+                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            }
+        }
     }
 
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
-
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
