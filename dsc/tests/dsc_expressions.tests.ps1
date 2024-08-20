@@ -63,4 +63,16 @@ resources:
         $LASTEXITCODE | Should -Be 2
         $out | Should -BeLike "*ERROR*"
     }
+
+    It 'Multi-line string literals work' {
+      $yamlPath = "$PSScriptRoot/../examples/multiline.dsc.yaml"
+      $out = dsc config get -p $yamlPath | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results[0].result.actualState.output | Should -BeExactly @"
+This is a
+multi-line
+string.
+
+"@
+    }
 }

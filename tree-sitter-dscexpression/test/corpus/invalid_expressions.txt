@@ -198,3 +198,19 @@ Expression with index accessor outside
             (number))))
       (ERROR
         (number)))
+
+=====
+String with un-escaped single-quote
+=====
+[myFunction('argString'test'value')]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+            (string))
+          (ERROR
+            (functionName)
+            (functionName)))))
