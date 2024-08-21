@@ -48,7 +48,7 @@ if ($UpdatePackages) {
     npm cache clean --force
     npm logout
     vsts-npm-auth -config .npmrc -F -V
-    npm install --force --verbose
+    npm install --force --verbose --registry https://pkgs.dev.azure.com/mseng/_packaging/OneESD-DevOps/npm/registry/
 }
 
 Invoke-NativeCommand 'npx tree-sitter generate --build'

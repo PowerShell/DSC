@@ -7,6 +7,8 @@ const PREC = {
 module.exports = grammar({
   name: 'dscexpression',
 
+  extras: $ => ['\n', ' '],
+
   rules: {
     statement: $ => choice(
       $.escapedStringLiteral,
@@ -16,7 +18,7 @@ module.exports = grammar({
     escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /.*?/))),
     _expressionString: $ => prec(PREC.EXPRESSIONSTRING, seq('[', $.expression, ']')),
     expression: $ => seq(field('function', $.function), optional(field('accessor',$.accessor))),
-    stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[].*?/)),
+    stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[](.|\n)*?/)),
 
     function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
     functionName: $ => /[a-z][a-zA-Z0-9]*/,
@@ -24,8 +26,8 @@ module.exports = grammar({
     _argument: $ => choice($.expression, $._quotedString, $.number, $.boolean),
 
     _quotedString: $ => seq('\'', $.string, '\''),
-    // ARM strings are allowed to contain single-quote characters
-    string: $ => /[^']*/,
+    // ARM strings are not allowed to contain single-quote characters unless escaped
+    string: $ => /([^']|''|\n)*/,
     number: $ => /-?\d+/,
     boolean: $ => choice('true', 'false'),
 
