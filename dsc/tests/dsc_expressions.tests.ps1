@@ -70,9 +70,10 @@ resources:
       $LASTEXITCODE | Should -Be 0
       $out.results[0].result.actualState.output | Should -BeExactly @"
 This is a
-multi-line
+'multi-line'
 string.
 
-"@
+"@.Replace("`r", "")
+      $out.results[1].result.actualState.output | Should -BeExactly "This is a single-quote: '"
     }
 }
