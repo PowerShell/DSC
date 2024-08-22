@@ -10,6 +10,8 @@ Describe 'Expressions tests' {
         @{ text = "[parameters('test').objectArray[0].name]"; expected = 'one' }
         @{ text = "[parameters('test').objectArray[1].value[0]]"; expected = '2' }
         @{ text = "[parameters('test').objectArray[1].value[1].name]"; expected = 'three' }
+        @{ text = "[parameters('test').index]"; expected = '1' }
+        @{ text = "[parameters('test').objectArray[parameters('test').index].name]"; expected = 'two' }
     ) {
         param($text, $expected)
         $yaml = @"
@@ -18,6 +20,7 @@ parameters:
   test:
     type: object
     defaultValue:
+      index: 1
       hello:
         world: there
       array:
@@ -38,9 +41,9 @@ resources:
   properties:
     output: "$text"
 "@
-        $debug = $yaml | dsc -l debug config get -f yaml 2>&1 | Out-String
+        $debug = $yaml | dsc -l trace config get -f yaml 2>&1 | Out-String
         $out = $yaml | dsc config get | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
+        $LASTEXITCODE | Should -Be 0 -Because $debug
         $out.results[0].result.actualState.output | Should -Be $expected -Because $debug
     }
 
