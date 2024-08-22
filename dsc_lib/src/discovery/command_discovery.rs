@@ -10,9 +10,10 @@ use crate::dscerror::DscError;
 use indicatif::ProgressStyle;
 use regex::RegexBuilder;
 use semver::Version;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashSet, HashMap};
 use std::env;
 use std::ffi::OsStr;
+use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -279,6 +280,8 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         self.adapted_resources = adapted_resources;
+        save_adapted_resources_lookup_table(&self.adapted_resources);
+
         Ok(())
     }
 
@@ -495,4 +498,40 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     };
 
     Ok(resource)
+}
+
+fn save_adapted_resources_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
+{
+    let mut lookup_table: HashMap<String, String> = HashMap::new();
+    for (resource_name, res_vec) in adapted_resources {
+        let adapter_name = &res_vec[0].require_adapter.as_ref().unwrap();
+        lookup_table.insert(resource_name.to_string(), adapter_name.to_string());
+    }
+
+    debug!("============ABC==========");
+
+    match serde_json::to_string_pretty(&lookup_table) {
+        Ok(lookup_table_json) => {
+            debug!("{:?}", lookup_table_json);
+
+            let file_path = get_lookup_table_file_path();
+            debug!("{:?}", file_path);
+
+            fs::write(file_path, lookup_table_json).expect("Unable to write lookup_table file");
+        },
+        Err(_) => {}
+    }
+    
+}
+
+#[cfg(target_os = "windows")]
+fn get_lookup_table_file_path() -> String
+{
+    // $env:LocalAppData+"dsc\AdaptedResourcesLookupTable.json"
+    let local_app_data_path = match std::env::var("LocalAppData") {
+        Ok(path) => path,
+        Err(_) => { return "".to_string(); }
+    };
+
+    Path::new(&local_app_data_path).join("dsc").join("AdaptedResourcesLookupTable.json").display().to_string()
 }
