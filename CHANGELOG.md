@@ -136,7 +136,8 @@ in this release, see the [diff on GitHub][compare-v3.0.0-preview.9].
 
 - Added support for using variables in a configuration document. Prior to this release, variables
   could be defined in the document but not referenced from resource instances with a configuration
-  function. This release includes the new `variables()` configuration function.
+  function. This release includes the new `variables()` configuration function. For more
+  information, see the [reference documentation][p9-01].
 
   <details><summary>Related work items</summary>
 
@@ -147,7 +148,9 @@ in this release, see the [diff on GitHub][compare-v3.0.0-preview.9].
 
 - Added support for indexing into arrays when using configuration functions. This enables users to
   access specific items in an array of values returned by a configuration function, such as whe
-  referencing the output of a resource.
+  referencing the output of a resource. For more information about configuration functions, see
+  [DSC Configuration document functions reference][p9-02]. For a detailed example showing how to
+  access items in an array, see [Example 4][p9-03].
 
   <details><summary>Related work items</summary>
 
@@ -200,7 +203,8 @@ in this release, see the [diff on GitHub][compare-v3.0.0-preview.9].
 
   </details>
 
-- Added support for the [--what-if] to the `Microsoft.Windows/Registry` resource.
+- Added support for the [WhatIf capability][p9-04] to the `Microsoft.Windows/Registry` resource,
+  improving the user experience when calling `dsc config set` with the [--what-if][p9-05] option.
 
   <details><summary>Related work items</summary>
 
@@ -295,6 +299,13 @@ in this release, see the [diff on GitHub][compare-v3.0.0-preview.9].
   - PRs: [#505][#505]
 
   </details>
+
+<!-- Preview.9 links -->
+[p9-01]: docs/reference/schemas/config/functions/variables.md
+[p9-02]: docs/reference/schemas/config/functions/overview.md
+[p9-03]: docs/reference/schemas/config/functions/overview.md#example-4---access-object-properties-and-array-items
+[p9-04]: docs/reference/schemas/outputs/resource/list.md#capability-whatif
+[p9-05]: docs/reference/cli/config/set.md#-w---what-if
 
 ## [v3.0.0-preview.8][release-v3.0.0-preview.8] - 2024-06-19
 
