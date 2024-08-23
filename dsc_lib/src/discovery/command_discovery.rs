@@ -280,7 +280,6 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         self.adapted_resources = adapted_resources;
-        save_adapted_resources_lookup_table(&self.adapted_resources);
 
         Ok(())
     }
@@ -297,6 +296,11 @@ impl ResourceDiscovery for CommandDiscovery {
         } else {
             self.discover_resources("*")?;
             self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+            
+            // add found adapted resources to the lookup_table
+            add_resources_to_lookup_table(&self.adapted_resources);
+
+            // note: in next line 'BTreeMap::append' will leave self.adapted_resources empty
             resources.append(&mut self.adapted_resources);
         }
 
@@ -356,6 +360,8 @@ impl ResourceDiscovery for CommandDiscovery {
             }
 
             self.discover_adapted_resources("*", &adapter_name)?;
+            // add found adapted resources to the lookup_table
+            add_resources_to_lookup_table(&self.adapted_resources);
 
             // now go through the adapter resources and add them to the list of resources
             for (adapted_name, adapted_resource) in &self.adapted_resources {
@@ -500,28 +506,47 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     Ok(resource)
 }
 
-fn save_adapted_resources_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
+fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
 {
-    let mut lookup_table: HashMap<String, String> = HashMap::new();
+    let mut lookup_table:HashMap<String, String> = load_adapted_resources_lookup_table();
+
     for (resource_name, res_vec) in adapted_resources {
         let adapter_name = &res_vec[0].require_adapter.as_ref().unwrap();
-        lookup_table.insert(resource_name.to_string(), adapter_name.to_string());
-    }
+        lookup_table.insert(resource_name.to_string().to_lowercase(), adapter_name.to_string());
+    };
 
-    debug!("============ABC==========");
+    save_adapted_resources_lookup_table(&lookup_table);
+}
 
+fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
+{
     match serde_json::to_string_pretty(&lookup_table) {
         Ok(lookup_table_json) => {
-            debug!("{:?}", lookup_table_json);
 
             let file_path = get_lookup_table_file_path();
-            debug!("{:?}", file_path);
+            debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
 
             fs::write(file_path, lookup_table_json).expect("Unable to write lookup_table file");
         },
         Err(_) => {}
     }
+}
+
+fn load_adapted_resources_lookup_table() -> HashMap<String, String>
+{
+    let file_path = get_lookup_table_file_path();
     
+    let lookup_table: HashMap<String, String> = match fs::read(file_path.clone()){
+        Ok(data) => { match serde_json::from_slice(&data) {
+                Ok(lt) => { lt },
+                Err(_) => { HashMap::new() }
+            }
+        },
+        Err(_) => { HashMap::new() }
+    };
+
+    debug!("Read {} items into lookup table from {:?}", lookup_table.len(), file_path);
+    lookup_table
 }
 
 #[cfg(target_os = "windows")]
