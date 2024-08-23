@@ -68,6 +68,35 @@ syntax.
   )]
 ```
 
+When the output of a function is an array or object, you can access the properties of the object or
+items in the array.
+
+To access the property of an output object, follow the closing parenthesis of the function with a
+period (`.`) and then the name of the property you want to access. You can also access the
+properties of nested objects and arrays.
+
+```yaml
+# Accessing a top-level property syntax
+<keyword>: "[<function-name>(<function-parameters>...).<property-name>]"
+# Accessing a property nested in another object syntax
+<keyword>: "[<function-name>(<function-parameters>...).<property-name>.<nested-property-name>]"
+# Accessing a property nested in an array item syntax
+<keyword>: "[<function-name>(<function-parameters>...)[<index>].<nested-property-name>]"
+```
+
+To access a specific item in an array output, follow the closing parenthesis of the function with
+an opening square bracket (`[`), then the integer index of the item you want to access, and then a
+closing square bracket (`]`). You can also access items in nested arrays.
+
+```yaml
+# Accessing a top-level array item syntax
+<keyword>: "[<function-name>(<function-parameters>...)[<index>]]"
+# Accessing an array item nested in a property syntax
+<keyword>: "[<function-name>(<function-parameters>...).<property-name>[<nested-array-index>]]"
+# Accessing an array item nested in another array syntax
+<keyword>: "[<function-name>(<function-parameters>...)[<index>][nested-array-index]]"
+```
+
 ## Examples
 
 ### Example 1 - Use a function with valid syntaxes
@@ -218,6 +247,322 @@ messages: []
 hadErrors: false
 ```
 
+### Example 4 - Access object properties and array items
+
+The following configuration documents show how you can access the properties of objects and items
+in arrays. The example uses a shared parameter definition file to make it easier to reference a
+single data source in each configuration document.
+
+The parameters file defines two parameters:
+
+- The `data` parameter is a complex object. The `message` property is a nested object. The
+  `services` property is a nested array.
+- The `list` parameter is a complex array. The third item in the array is an object. The fourth
+  item in the array is a nested array.
+
+```yaml
+# overview.example.4.dsc.parameters.yaml
+parameters:
+  # Object parameter
+  data:
+    # Object property as string
+    name:  Example 4
+    # Object property as integer
+    count: 1
+    # Object property as nested object
+    message:
+      text:  Default message
+      level: info
+      context:
+        location: DC01
+    # Object property as array
+    services:
+      - web
+      - database
+      - application
+  # Array parameter
+  list:
+    # Array item as string
+    - first
+    # Array item as integer
+    - 2
+    # array item as object
+    - name:  third
+      value: 3
+    # Array item as nested array
+    -
+      - Nested first
+      - Nested second
+      - name: Nested third
+```
+
+The first configuration document defines an instance of the `Test/Echo` resource to show how you
+can access an object's properties in a configuration document.
+
+```yaml
+# overview.example.4.properties.dsc.config.yaml
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+# Minimal definition of the parameters
+parameters:
+  data: { type: object }
+  list: { type: array }
+
+resources:
+  - name: Acess the properties of an object
+    type: Test/Echo
+    properties:
+      output:
+        # Accessing output object
+        data: "[parameters('data')]"
+        # Accessing properties
+        data.name:     "[parameters('data').name]"     # string
+        data.count:    "[parameters('data').count]"    # integer
+        data.message:  "[parameters('data').message]"  # nested object
+        data.services: "[parameters('data').services]" # array
+```
+
+```sh
+$params=overview.example.4.dsc.parameters.yaml
+$config=overview.example.4.properties.dsc.config.yaml
+dsc config --parameters-file $params get --path $config
+```
+
+```yaml
+results:
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.133791S
+  name: Access the properties of an object
+  type: Test/Echo
+  result:
+    actualState:
+      output:
+        data:
+          count: 1
+          name: Example 4
+          message:
+            text: Default message
+            level: info
+            context:
+              location: DC01
+          services:
+          - web
+          - database
+          - application
+        data.name: Example 4
+        data.count: 1
+        data.message:
+          text: Default message
+          level: info
+          context:
+            location: DC01
+        data.services:
+        - web
+        - database
+        - application
+```
+
+The next configuration document shows how you can access nested object properties.
+
+```yaml
+# overview.example.4.nested.properties.dsc.config.yaml
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+# Minimal definition of the parameters
+parameters:
+  data: { type: object }
+  list: { type: array }
+
+resources:
+  - name: Access the properties of a nested object
+    type: Test/Echo
+    properties:
+      output:
+        data.message.text:             "[parameters('data').message.text]"
+        data.message.level:            "[parameters('data').message.level]"
+        data.message.context:          "[parameters('data').message.context]"
+        data.message.context.location: "[parameters('data').message.context.location]"
+```
+
+```sh
+$params=overview.example.4.dsc.parameters.yaml
+$config=overview.example.4.nested.properties.dsc.config.yaml
+dsc config --parameters-file $params get --path $config
+```
+
+```yaml
+results:
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.0760186S
+  name: Acess the properties of an object
+  type: Test/Echo
+  result:
+    actualState:
+      output:
+        data.message.text: Default message
+        data.message.level: info
+        data.message.context:
+          location: DC01
+        data.message.context.location: DC01
+```
+
+The following configuration document shows how you can access items in an array.
+
+```yaml
+# overview.example.4.items.dsc.config.yaml
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+# Minimal definition of the parameters
+parameters:
+  data: { type: object }
+  list: { type: array }
+
+resources:
+  - name: Acess items in an array
+    type: Test/Echo
+    properties:
+      output:
+        # Accessing output array
+        list: "[parameters('list')]"
+        # Accessing array items
+        list[0]: "[parameters('list')[0]]" # string
+        list[1]: "[parameters('list')[1]]" # integer
+        list[2]: "[parameters('list')[2]]" # object
+        list[3]: "[parameters('list')[3]]" # nested array
+```
+
+```sh
+$params=overview.example.4.dsc.parameters.yaml
+$config=overview.example.4.items.dsc.config.yaml
+dsc config --parameters-file $params get --path $config
+```
+
+```yaml
+results:
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.0750682S
+  name: Acess items in an array
+  type: Test/Echo
+  result:
+    actualState:
+      output:
+        list:
+        - first
+        - 2
+        - name: third
+          value: 3
+        - - Nested first
+          - Nested second
+          - name: Nested third
+        list[0]: first
+        list[1]: 2
+        list[2]:
+          name: third
+          value: 3
+        list[3]:
+        - Nested first
+        - Nested second
+        - name: Nested third
+```
+
+The following configuration document shows how you can access items in a nested array.
+
+```yaml
+# overview.example.4.nested.items.dsc.config.yaml
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+# Minimal definition of the parameters
+parameters:
+  data: { type: object }
+  list: { type: array }
+
+resources:
+  - name: Acess items in a nested array
+    type: Test/Echo
+    properties:
+      output:
+        list[3][0]: "[parameters('list')[3][0]]"
+        list[3][1]: "[parameters('list')[3][1]]"
+        list[3][2]: "[parameters('list')[3][2]]"
+```
+
+```sh
+$params=overview.example.4.dsc.parameters.yaml
+$config=overview.example.4.nested.items.dsc.config.yaml
+dsc config --parameters-file $params get --path $config
+```
+
+```yaml
+results:
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.1349442S
+  name: Acess items in a nested array
+  type: Test/Echo
+  result:
+    actualState:
+      output:
+        list[3][0]: Nested first
+        list[3][1]: Nested second
+        list[3][2]:
+          name: Nested third
+```
+
+The last configuration document shows how you can use the property and item access syntaxes
+together to access values in complex objects.
+
+```yaml
+# overview.example.4.mixed.dsc.config.yaml
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+# Minimal definition of the parameters
+parameters:
+  data: { type: object }
+  list: { type: array }
+
+resources:
+  - name: Access values in complex objects and arrays
+    type: Test/Echo
+    properties:
+      output:
+        # Accessing array items of an object property
+        data.services[0]: "[parameters('data').services[0]]"
+        data.services[1]: "[parameters('data').services[1]]"
+        data.services[2]: "[parameters('data').services[2]]"
+        # Accessing properties of an object in an array
+        list[2].name:  "[parameters('list')[2].name]"
+        list[2].value: "[parameters('list')[2].value]"
+        # Accessing the property of an object in a nested array
+        list[3][2].name: "[parameters('list')[3][2].name]"
+```
+
+```sh
+$params=overview.example.4.dsc.parameters.yaml
+$config=overview.example.4.mixed.dsc.config.yaml
+dsc config --parameters-file $params get --path $config
+```
+
+```yaml
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+# Minimal definition of the parameters
+parameters:
+  data: { type: object }
+  list: { type: array }
+
+resources:
+  - name: Access values in complex objects and arrays
+    type: Test/Echo
+    properties:
+      output:
+        # Accessing array items of an object property
+        data.services[0]: "[parameters('data').services[0]]"
+        data.services[1]: "[parameters('data').services[1]]"
+        data.services[2]: "[parameters('data').services[2]]"
+        # Accessing properties of an object in an array
+        list[2].name:  "[parameters('list')[2].name]"
+        list[2].value: "[parameters('list')[2].value]"
+        # Accessing the property of an object in a nested array
+        list[3][2].name: "[parameters('list')[3][2].name]"
+```
+
 ## Functions
 
 The following sections include the available DSC configuration functions by purpose and input type.
@@ -238,6 +583,7 @@ The following list of functions operate on data outside of a resource instance:
 
 - [envvar()][envvar] - Return the value of a specified environment variable.
 - [parameters()][parameters] - Return the value of a specified configuration parameter.
+- [variables()][variables] - Return the value of a specified configuration variable.
 
 ### Mathematics functions
 
@@ -297,3 +643,4 @@ The following list of functions create or convert values of a given type:
 [reference]:   ./reference.md
 [resourceId]:  ./resourceId.md
 [sub]:         ./sub.md
+[variables]:   ./variables.md

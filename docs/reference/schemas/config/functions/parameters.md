@@ -44,7 +44,7 @@ resources:
   - name: Echo message parameter
     type: Test/Echo
     properties:
-      text: "[parameters('message')]"
+      output: "[parameters('message')]"
 ```
 
 First, get the current state of the configuration without overriding the parameters with the
@@ -62,7 +62,7 @@ results:
   type: Test/Echo
   result:
     actualState:
-      text: Hello, world!
+      output: Hello, world!
 messages: []
 hadErrors: false
 ```
@@ -80,7 +80,7 @@ results:
   type: Test/Echo
   result:
     actualState:
-      text: Hi, override.
+      output: Hi, override.
 messages: []
 hadErrors: false
 ```

@@ -1049,12 +1049,6 @@
               }
             }
           }
-        },
-        "url": {
-          "title": "Instance Schema URL",
-          "description": "Defines the URL to the DSC Resource's JSON schema for integrating tools.",
-          "type": "string",
-          "format": "uri"
         }
       },
       "examples": [

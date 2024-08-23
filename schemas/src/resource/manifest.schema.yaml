@@ -428,21 +428,6 @@ properties:
                 title:       ${2:property title}
                 description: ${3:explanation of property purpose and usage}
                 type:        ${4|string,integer,number,array,object,null|}
-  url:
-    title: Instance Schema URL
-    description: >-
-      Defines the URL to the DSC Resource's JSON schema for integrating tools.
-    type: string
-    format: uri
-    # VS Code only
-    markdownDescription: |
-      ***
-      [_Online Documentation_][01]
-      ***
-
-      Defines the URL to the DSC Resource's JSON schema for integrating tools.
-
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#url
 
 examples:
   - command:
