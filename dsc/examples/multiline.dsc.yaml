@@ -1,0 +1,13 @@
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: test multi-line
+  type: Test/Echo
+  properties:
+    output: |
+      This is a
+      'multi-line'
+      string.
+- name: test single-quote escaping
+  type: Test/Echo
+  properties:
+    output: "[concat('This is a single-quote: ', '''')]"
