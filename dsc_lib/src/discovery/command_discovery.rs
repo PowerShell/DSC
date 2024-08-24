@@ -8,6 +8,7 @@ use crate::dscresources::resource_manifest::{import_manifest, validate_semver, K
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use indicatif::ProgressStyle;
+use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use semver::Version;
 use std::collections::{BTreeMap, HashSet, HashMap};
@@ -297,7 +298,7 @@ impl ResourceDiscovery for CommandDiscovery {
             self.discover_resources("*")?;
             self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
             
-            // add found adapted resources to the lookup_table
+            // add/update found adapted resources to the lookup_table
             add_resources_to_lookup_table(&self.adapted_resources);
 
             // note: in next line 'BTreeMap::append' will leave self.adapted_resources empty
@@ -341,7 +342,8 @@ impl ResourceDiscovery for CommandDiscovery {
         debug!("Found {} matching non-adapter-based resources", found_resources.len());
 
         // now go through the adapters
-        for (adapter_name, adapters) in self.adapters.clone() {
+        let sorted_adapters = sort_adapters_based_on_lookup_table(&self.adapters, &remaining_required_resource_types);
+        for (adapter_name, adapters) in sorted_adapters {
             // TODO: handle version requirements
             let Some(adapter) = adapters.first() else {
                 // skip if no adapters
@@ -360,7 +362,7 @@ impl ResourceDiscovery for CommandDiscovery {
             }
 
             self.discover_adapted_resources("*", &adapter_name)?;
-            // add found adapted resources to the lookup_table
+            // add/update found adapted resources to the lookup_table
             add_resources_to_lookup_table(&self.adapted_resources);
 
             // now go through the adapter resources and add them to the list of resources
@@ -506,6 +508,36 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     Ok(resource)
 }
 
+fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<DscResource>>, needed_resource_types: &Vec<String>) -> LinkedHashMap<String, Vec<DscResource>>
+{
+    let mut result:LinkedHashMap<String, Vec<DscResource>> = LinkedHashMap::new();
+    let lookup_table:HashMap<String, String> = load_adapted_resources_lookup_table();
+    // first add adapters (for needed types) that can be found in the lookup table
+    for needed_resource in needed_resource_types {
+        match lookup_table.get(needed_resource) {
+            Some(adapter_name) => {
+                match unsorted_adapters.get(adapter_name) {
+                    Some(resource_vec) => {
+                        trace!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
+                        result.insert(adapter_name.to_string(), resource_vec.to_vec());
+                    }
+                    None => {}
+                }
+            }
+            None => {}
+        }
+    }
+
+    // now add remaining adapters
+    for (adapter_name, adapters) in unsorted_adapters {
+        if !result.contains_key(adapter_name) {
+            result.insert(adapter_name.to_string(), adapters.to_vec());
+        }
+    }
+
+    result
+}
+
 fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
 {
     let mut lookup_table:HashMap<String, String> = load_adapted_resources_lookup_table();
@@ -522,10 +554,8 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 {
     match serde_json::to_string_pretty(&lookup_table) {
         Ok(lookup_table_json) => {
-
             let file_path = get_lookup_table_file_path();
             debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
-
             fs::write(file_path, lookup_table_json).expect("Unable to write lookup_table file");
         },
         Err(_) => {}
@@ -559,4 +589,16 @@ fn get_lookup_table_file_path() -> String
     };
 
     Path::new(&local_app_data_path).join("dsc").join("AdaptedResourcesLookupTable.json").display().to_string()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_lookup_table_file_path() -> String
+{
+    // $env:HOME+".dsc/AdaptedResourcesLookupTable.json"
+    let home_path = match std::env::var("HOME") {
+        Ok(path) => path,
+        Err(_) => { return "".to_string(); }
+    };
+
+    Path::new(&home_path).join(".dsc").join("AdaptedResourcesLookupTable.json").display().to_string()
 }
