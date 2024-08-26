@@ -384,7 +384,7 @@ function Get-DscResourceObject {
 
     # catch potential for improperly formatted configuration input
     if ($inputObj.resources -and -not $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        'WARNING: The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace
+        'The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace -Operation Warn
     }
 
     $adapterName = 'Microsoft.DSC/PowerShell'
@@ -486,12 +486,12 @@ function Invoke-DscOperation {
                 }
                 catch {
                     
-                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
+                    'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
             }
             Default {
-                'Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace
+                'Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace -Operation Error
                 exit 1
             }
         }
@@ -500,8 +500,7 @@ function Invoke-DscOperation {
     }
     else {
         $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
-        $errmsg = 'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.'
-        'ERROR: ' + $errmsg | Write-DscTrace
+        'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.' | Write-DscTrace -Operation Error
         exit 1
     }
 }

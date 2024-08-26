@@ -28,7 +28,7 @@ else {
     $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
     $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru -ErrorAction stop -ErrorVariable $importModuleError
     if (-not [string]::IsNullOrEmpty($importModuleError)) {
-        'ERROR: Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace
+        'Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace -Operation Error
     }
 }
 
@@ -173,7 +173,7 @@ function Invoke-DscCacheRefresh {
             if ( $psdscVersion -ge '2.0.7' ) {
                 # only support known dscResourceType
                 if ([dscResourceType].GetEnumNames() -notcontains $dscResource.ImplementationDetail) {
-                    'WARNING: implementation detail not found: ' + $dscResource.ImplementationDetail | Write-DscTrace
+                    'Implementation detail not found: ' + $dscResource.ImplementationDetail | Write-DscTrace -Operation Warn
                     continue
                 }
             }
@@ -261,7 +261,7 @@ function Get-DscResourceObject {
 
     # catch potential for improperly formatted configuration input
     if ($inputObj.resources -and -not $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        'WARNING: The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace
+        'The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace -Operation Warn
     }
 
     # match adapter to version of powershell
@@ -338,7 +338,7 @@ function Invoke-DscOperation {
 
                 # For Linux/MacOS, only class based resources are supported and are called directly.
                 if ($IsLinux) {
-                    'ERROR: Script based resources are only supported on Windows.' | Write-DscTrace
+                    'Script based resources are only supported on Windows.' | Write-DscTrace -Operation Error
                     exit 1
                 }
 
@@ -374,7 +374,7 @@ function Invoke-DscOperation {
                     $addToActualState.properties = $ResultProperties
                 }
                 catch {
-                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
+                    'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
             }
@@ -413,7 +413,7 @@ function Invoke-DscOperation {
                 }
                 catch {
                     
-                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
+                    'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
             }
@@ -445,7 +445,7 @@ function Invoke-DscOperation {
                     $addToActualState.properties = $ResultProperties
                 }
                 catch {
-                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
+                    'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
             }
@@ -459,8 +459,7 @@ function Invoke-DscOperation {
     }
     else {
         $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
-        $errmsg = 'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.'
-        'ERROR: ' + $errmsg | Write-DscTrace
+        'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.' | Write-DscTrace -Operation Error
         exit 1
     }
 }
