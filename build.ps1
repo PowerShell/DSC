@@ -352,9 +352,17 @@ if (!$Clippy -and !$SkipBuild) {
 if ($Test) {
     $failed = $false
 
-    if ($null -eq (Get-PSResourceRepository -Name CFS -ErrorAction Ignore)) {
-        "Registering CFS repository"
-        Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
+    $usingADO = ($null -ne $env:TF_BUILD)
+
+    if ($usingADO) {
+        $repository = 'CFS'
+        if ($null -eq (Get-PSResourceRepository -Name CFS -ErrorAction Ignore)) {
+            "Registering CFS repository"
+            Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
+        }
+    }
+    else {
+        $repository = 'PSGallery'
     }
 
     if ($IsWindows) {
@@ -362,13 +370,13 @@ if ($Test) {
         $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
         if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
         {   "Installing module PSDesiredStateConfiguration 2.0.7"
-            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository CFS -Verbose
+            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository
         }
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
     {   "Installing module Pester"
-        Install-PSResource Pester -WarningAction Ignore -Repository CFS -Verbose
+        Install-PSResource Pester -WarningAction Ignore -Repository $repository
     }
 
     foreach ($project in $projects) {
