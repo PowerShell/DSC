@@ -549,7 +549,7 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
     if let Ok(lookup_table_json) = serde_json::to_string_pretty(&lookup_table) {
         let file_path = get_lookup_table_file_path();
         debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
-        fs::write(file_path, lookup_table_json).expect("Unable to write lookup_table file");
+        fs::write(file_path.clone(), lookup_table_json).expect(&format!("Unable to write lookup_table file {:?}", file_path).to_string());
     }
 }
 
