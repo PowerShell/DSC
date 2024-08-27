@@ -368,14 +368,13 @@ if ($Test) {
         $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
         if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
         {
-            write-verbose -verbose "Using '$repository' repository"
-            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -Verbose
+            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -TrustRepository
         }
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
     {   "Installing module Pester"
-        Install-PSResource Pester -WarningAction Ignore -Repository $repository
+        Install-PSResource Pester -WarningAction Ignore -Repository $repository -TrustRepository
     }
 
     foreach ($project in $projects) {
