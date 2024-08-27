@@ -421,7 +421,7 @@ if ($Test) {
         if (-not(Get-Module -ListAvailable -Name Pester))
         {   "Installing module Pester"
             $InstallTargetDir = ($env:PSModulePath -split ";")[0]
-            Find-PSResource -Name 'Pester' -Repository 'PSGallery' | Save-PSResource -Path $InstallTargetDir -TrustRepository
+            Find-PSResource -Name 'Pester' -Repository $repository | Save-PSResource -Path $InstallTargetDir -TrustRepository
         }
 
         "Updated Pester module location:"
