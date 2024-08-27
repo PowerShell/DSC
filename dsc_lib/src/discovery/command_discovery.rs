@@ -574,10 +574,7 @@ fn load_adapted_resources_lookup_table() -> HashMap<String, String>
 fn get_lookup_table_file_path() -> String
 {
     // $env:LocalAppData+"dsc\AdaptedResourcesLookupTable.json"
-    let local_app_data_path = match std::env::var("LocalAppData") {
-        Ok(path) => path,
-        Err(_) => { return "".to_string(); }
-    };
+    let Ok(local_app_data_path) = std::env::var("LocalAppData") else { return String::new(); };
 
     Path::new(&local_app_data_path).join("dsc").join("AdaptedResourcesLookupTable.json").display().to_string()
 }
