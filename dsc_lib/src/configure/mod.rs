@@ -354,7 +354,7 @@ impl Configurator {
 
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
             // Process SetResult by checking for _metadata field
-            let (set_result_parsed, resource_metadata) = Configurator::parse_metadata(set_result)?;
+            let (set_result_parsed, resource_metadata) = Configurator::parse_metadata_from_set(set_result)?;
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(
                     Metadata {
@@ -675,20 +675,29 @@ impl Configurator {
         Ok(Some(result))
     }
 
-    fn parse_metadata(set_result: SetResult) -> Result<(SetResult, Option<Value>), DscError> {
+    fn parse_metadata(mut input: Value) -> Result<(Value, Option<Value>), DscError> {
+        let result = input.clone();
+        if let Value::Object(mut map) = input.take() {
+            if let Some(removed_value) = map.remove("_metadata") {
+                let modified_value = Value::Object(map);
+                return Ok((modified_value, Some(removed_value)))
+            }
+            else {
+                return Ok((result, None))
+            }
+        }
+        // TODO: if the after_state can't be parsed as a map, it may be because it's nested in a group like - afterState.result.afterState?
+        // returning original for now
+        return Ok((result, None))
+    }
+
+    fn parse_metadata_from_set(set_result: SetResult) -> Result<(SetResult, Option<Value>), DscError> {
         match set_result {
-            SetResult::Resource(mut result) => {
+            SetResult::Resource(result) => {
                 let mut set_result_parsed = result.clone();
-                if let Value::Object(mut map) = result.after_state.take() {
-                    if let Some(removed_value) = map.remove("_metadata") {
-                        let modified_value = Value::Object(map);
-                        set_result_parsed.after_state = modified_value;
-                        return Ok((SetResult::Resource(set_result_parsed), Some(removed_value)))
-                    }
-                }
-                // if the after_state can't be parsed as a map, it may be because it's nested in a group like - afterState.result.afterState?
-                // return original for now
-                Ok((SetResult::Resource(set_result_parsed), None))
+                let (after_state, metadata) = Configurator::parse_metadata(result.after_state)?;
+                set_result_parsed.after_state = after_state;
+                return Ok((SetResult::Resource(set_result_parsed), metadata));
             },
             SetResult::Group(_results) => {
                 //Ok((SetResult::Group(results.clone()), None))
