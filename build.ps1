@@ -368,6 +368,7 @@ if ($Test) {
         $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
         if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
         {
+            write-verbose -verbose "Using '$repository' repository"
             Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -Verbose
         }
     }
