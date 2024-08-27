@@ -353,6 +353,7 @@ if ($Test) {
     $failed = $false
 
     $usingADO = ($null -ne $env:TF_BUILD)
+    $repository = 'PSGallery'
 
     if ($usingADO) {
         $repository = 'CFS'
@@ -361,15 +362,12 @@ if ($Test) {
             Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
         }
     }
-    else {
-        $repository = 'PSGallery'
-    }
 
     if ($IsWindows) {
         # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
         $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
         if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
-        {   "Installing module PSDesiredStateConfiguration 2.0.7"
+        {
             Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository
         }
     }
