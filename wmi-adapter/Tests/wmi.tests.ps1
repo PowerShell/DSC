@@ -44,4 +44,14 @@ Describe 'WMI adapter resource tests' {
         $res.results[0].result.actualState[1].BiosCharacteristics | Should -Not -BeNull
         $res.results[0].result.actualState[2].NumberOfLogicalProcessors | Should -Not -BeNull
     }
+
+    It 'Example config works' -Skip:(!$IsWindows) {
+        $configPath = Join-Path $PSScriptRoot '..\..\dsc\examples\wmi.dsc.yaml'
+        $r = dsc config get -p $configPath
+        $LASTEXITCODE | Should -Be 0
+        $r | Should -Not -BeNullOrEmpty
+        $res = $r | ConvertFrom-Json
+        $res.results[0].result.actualState[0].Model | Should -Not -BeNullOrEmpty
+        $res.results[0].result.actualState[1].Description | Should -Not -BeNullOrEmpty
+    }
 }

@@ -7,12 +7,13 @@ param(
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix','msixbundle','tgz','zip')]
+    [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
-    [switch]$UseX64MakeAppx
+    [switch]$UseX64MakeAppx,
+    [switch]$UseCratesIO
 )
 
 if ($GetPackageVersion) {
@@ -29,7 +30,6 @@ $filesForWindowsPackage = @(
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
-    'PSDesiredStateConfiguration/',
     'psDscAdapter/',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
@@ -87,6 +87,12 @@ function Find-LinkExe {
     }
 }
 
+if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
+    $rustup = 'rustup'
+} else {
+    $rustup = 'echo'
+}
+
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
@@ -106,13 +112,9 @@ if ($null -ne $packageType) {
         }
     }
 
-    if ($IsLinux -and (Test-Path /etc/mariner-release)) {
-        tdnf install -y openssl-devel
-    }
-
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
-    rustup default stable
+    & $rustup default stable
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -153,7 +155,7 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
-    rustup target add $architecture
+    & $rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -166,9 +168,37 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
+    if ($UseCratesIO) {
+        # this will override the config.toml
+        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
+    } else {
+        Write-Host "Using CFS for cargo source replacement"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+
+        if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+            throw "Azure CLI not found"
+        }
+
+        if ($null -ne $env:CARGO_REGISTRIES_POWERSHELL_TOKEN) {
+            Write-Host "Using existing token"
+        } else {
+            Write-Host "Getting token"
+            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+            } else {
+                $header = "Bearer $accessToken"
+                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            }
+        }
+    }
+
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
-
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -192,9 +222,6 @@ if (!$SkipBuild) {
 
     if ($IsWindows) {
         $projects += $windows_projects
-        Save-Module -Path $target -Name 'PSDesiredStateConfiguration' -RequiredVersion '2.0.7' -Repository PSGallery -Force
-        # Need to unhide all the files so that packaging works
-        Get-ChildItem -Path $target -Recurse -Hidden | ForEach-Object { $_.Attributes = 'Normal' }
     }
 
     if ($IsMacOS) {
@@ -238,6 +265,7 @@ if (!$SkipBuild) {
 
             if ($LASTEXITCODE -ne 0) {
                 $failed = $true
+                break
             }
 
             $binary = Split-Path $project -Leaf
@@ -422,7 +450,7 @@ if ($packageType -eq 'msixbundle') {
     $msixPath = Join-Path $PSScriptRoot 'bin' 'msix'
     & $makeappx bundle /d $msixPath /p "$PSScriptRoot\bin\$packageName.msixbundle"
     return
-} elseif ($packageType -eq 'msix') {
+} elseif ($packageType -eq 'msix' -or $packageType -eq 'msix-private') {
     if (!$IsWindows) {
         throw "MSIX is only supported on Windows"
     }
@@ -431,6 +459,8 @@ if ($packageType -eq 'msixbundle') {
         throw 'MSIX requires a specific architecture'
     }
 
+    $isPrivate = $packageType -eq 'msix-private'
+
     $makeappx = Find-MakeAppx
     $makepri = Get-Item (Join-Path $makeappx.Directory "makepri.exe") -ErrorAction Stop
     $displayName = "DesiredStateConfiguration"
@@ -438,14 +468,25 @@ if ($packageType -eq 'msixbundle') {
     $productName = "DesiredStateConfiguration"
     if ($isPreview) {
         Write-Verbose -Verbose "Preview version detected"
-        $productName += "-Preview"
+        if ($isPrivate) {
+            $productName += "-Private"
+        }
+        else {
+            $productName += "-Preview"
+        }
         # save preview number
         $previewNumber = $productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1'
         # remove label from version
         $productVersion = $productVersion.Split('-')[0]
         # replace revision number with preview number
         $productVersion = $productVersion -replace '(\d+)$', "$previewNumber.0"
-        $displayName += "-Preview"
+
+        if ($isPrivate) {
+            $displayName += "-Private"
+        }
+        else {
+            $displayName += "-Preview"
+        }
     }
     Write-Verbose -Verbose "Product version is $productVersion"
     $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
@@ -517,7 +558,7 @@ if ($packageType -eq 'msixbundle') {
         throw "Failed to create msix package"
     }
 
-    Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName.msix"
+    Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName"
 } elseif ($packageType -eq 'zip') {
     $zipTarget = Join-Path $PSScriptRoot 'bin' $architecture 'zip'
     if (Test-Path $zipTarget) {
@@ -562,10 +603,20 @@ if ($packageType -eq 'msixbundle') {
         }
     }
 
-    $packageName = "DSC-$productVersion-$architecture.tar.gz"
-    $tgzFile = Join-Path $PSScriptRoot 'bin' $packageName
-    tar cvf $tgzFile -C $tgzTarget .
-    Write-Host -ForegroundColor Green "`nTgz file is created at $tgzFile"
+    $packageName = "DSC-$productVersion-$architecture.tar"
+    $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
+    tar cvf $tarFile -C $tgzTarget .
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create tar file"
+    }
+    Write-Host -ForegroundColor Green "`nTar file is created at $tarFile"
+
+    $gzFile = "$tarFile.gz"
+    gzip -c $tarFile > $gzFile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create gz file"
+    }
+    Write-Host -ForegroundColor Green "`nGz file is created at $gzFile"
 }
 
 $env:RUST_BACKTRACE=1

@@ -80,38 +80,25 @@ function Invoke-DscCacheRefresh {
                 # if there is nothing in the cache file - refresh cache
                 $refreshCache = $true
                "Filtered DscResourceCache cache is empty" | Write-DscTrace
-        }
-        else
-        {
-            "Checking cache for stale entries" | Write-DscTrace
-
-            foreach ($cacheEntry in $dscResourceCacheEntries) {
-                #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
-
-                $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
-                
-                    if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                    {
-                        "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
-                        $refreshCache = $true
-                        break
-                    }
-                }
-
-                "Filtered DscResourceCache cache is empty" | Write-DscTrace
             }
             else
             {
                 "Checking cache for stale entries" | Write-DscTrace
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
-                    "Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
+                    #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                     
-                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                        {
-                            "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                        if (Test-Path $_.Name) {
+                            if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
+                            {
+                                "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                                $refreshCache = $true
+                                break
+                            }
+                        } else {
+                            "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
                             $refreshCache = $true
                             break
                         }
@@ -120,19 +107,21 @@ function Invoke-DscCacheRefresh {
                     if ($refreshCache) {break}
                 }
 
-                "Checking cache for stale PSModulePath" | Write-DscTrace
+                if (-not $refreshCache) {
+                    "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
-                $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-                $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-                $hs_cache.SymmetricExceptWith($hs_live)
-                $diff = $hs_cache
+                    $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                    $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                    $hs_cache.SymmetricExceptWith($hs_live)
+                    $diff = $hs_cache
 
-                "PSModulePath diff '$diff'" | Write-DscTrace
+                    "PSModulePath diff '$diff'" | Write-DscTrace
 
-                if ($diff.Count -gt 0) {
-                    $refreshCache = $true
+                    if ($diff.Count -gt 0) {
+                        $refreshCache = $true
+                    }
                 }
             }
         }
@@ -295,8 +284,8 @@ function Get-DscResourceObject {
     }
     else {
         # mimic a config object with a single resource
-        $type = $inputObj.type
-        $inputObj.psobject.properties.Remove('type')
+        $type = $inputObj.adapted_dsc_type
+        $inputObj.psobject.properties.Remove('adapted_dsc_type')
         $desiredState += [dscResourceObject]@{
             name       = $adapterName
             type       = $type
@@ -374,15 +363,15 @@ function Invoke-DscOperation {
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
-                        $invokeResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
+                        $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     else {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
-                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $invokeResult.$_ }
+                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
-                    $addToActualState.properties = $getDscResult
+                    $addToActualState.properties = $ResultProperties
                 }
                 catch {
                     'ERROR: ' + $_.Exception.Message | Write-DscTrace
@@ -441,21 +430,19 @@ function Invoke-DscOperation {
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
-
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
-                    $getResult = $PSDesiredStateConfiguration.invoke({ param($Name, $Property) Invoke-DscResource -Name $Name -Method Get -ModuleName @{ModuleName = 'PSDesiredStateConfiguration'; ModuleVersion = '1.1' } -Property $Property -ErrorAction Stop }, $cachedDscResourceInfo.Name, $property )
-
-                    if ($getResult.GetType().Name -eq 'Hashtable') {
-                        $getResult.keys | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+                    if ($invokeResult.GetType().Name -eq 'Hashtable') {
+                        $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     else {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
-                        $getResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $getDscResult = @{} } -Process { $getDscResult[$_] = $getResult.$_ }
+                        $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
                     
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
-                    $addToActualState.properties = $getDscResult
+                    $addToActualState.properties = $ResultProperties
                 }
                 catch {
                     'ERROR: ' + $_.Exception.Message | Write-DscTrace

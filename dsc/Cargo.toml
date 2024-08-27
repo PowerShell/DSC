@@ -1,6 +1,6 @@
 [package]
 name = "dsc"
-version = "3.0.0-preview.9"
+version = "3.0.0-preview.10"
 edition = "2021"
 
 [profile.release]
@@ -20,6 +20,7 @@ dsc_lib = { path = "../dsc_lib" }
 indicatif = { version = "0.17" }
 jsonschema = "0.18"
 path-absolutize = { version = "3.1.1" }
+reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }
 schemars = { version = "0.8.12" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }

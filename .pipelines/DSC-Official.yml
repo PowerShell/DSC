@@ -1,12 +1,6 @@
 name: DSC-Release-$(Build.BuildId)
 trigger: none
 
-parameters:
-- name: 'debugConsole'
-  displayName: 'Enable debug console'
-  type: boolean
-  default: false
-
 pr:
   branches:
     include:
@@ -16,8 +10,9 @@ pr:
 variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
-  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
-  WindowsContainerImage: onebranch.azurecr.io/windows/ltsc2019/vse2022:latest
+#  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
+  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
+  WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
 
 resources:
   repositories:
@@ -30,7 +25,9 @@ extends:
   template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
   parameters:
     featureFlags:
-      debugConsole: ${{ parameters.debugConsole }}
+      WindowsHostVersion:
+        Disk: Large
+        Version: 2022    
     customTags: 'ES365AIMigrationTooling'
     globalSdl:
       disableLegacyManifest: true
@@ -60,10 +57,14 @@ extends:
         displayName: Set PackageVersion
         pool:
           type: windows
+          vmImage: windows-latest
         variables:
           repoRoot: $(Build.SourcesDirectory)\DSC
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
         steps:
         - checkout: self
         - pwsh: |
@@ -92,37 +93,51 @@ extends:
           signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
-          ob_sdl_codeql_compiled_enabled: false
+          ob_sdl_codeql_compiled_enabled: true
         pool:
           type: windows
         displayName: BuildWin
         steps:
         - checkout: self
-          env: 
+          env:
             ob_restore_phase: true
         - task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
           inputs:
             Enabled: true
             AnalyzeInPipeline: true
             Language: rust
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             $tmpdir = "$(Agent.TempDirectory)"
             Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
           displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
-          env: 
+          env:
+            ob_restore_phase: true
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: $(buildName)
+          displayName: Install Rust
+          env:
             ob_restore_phase: true
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
+            $LLVMBIN = "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin"
+            if (!(Test-Path $LLVMBIN)) {
+              throw "LLVM path '$LLVMBIN' does not exist"
+            }
+            $env:PATH += ";$LLVMBIN"
+            write-verbose -verbose (gcm clang.exe | out-string)
             ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
-          env: 
+          env:
             ob_restore_phase: true
           condition: succeeded()
         - task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
           condition: always()
-          env: 
+          env:
             ob_restore_phase: true
         - pwsh: |
             $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
@@ -137,7 +152,7 @@ extends:
             write-host 'Binaries in $(signSrcPath)'
             dir -r "$(signSrcPath)"
           displayName: Copy built binaries
-          env: 
+          env:
             ob_restore_phase: true
           condition: succeeded()
         - task: onebranch.pipeline.signing@1
@@ -201,6 +216,9 @@ extends:
           signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
           ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
         pool:
           type: windows
         steps:
@@ -220,6 +238,14 @@ extends:
         pool:
           type: linux
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: x86_64-unknown-linux-gnu
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
         - pwsh: |
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-gnu -Release
@@ -235,13 +261,78 @@ extends:
         displayName: Linux-ARM64-gnu
         pool:
           type: linux
-          hostArchitecture: arm64
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: aarch64-unknown-linux-gnu
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
         - pwsh: |
+            apt -y install gcc-aarch64-linux-gnu
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-gnu'
+          condition: succeeded()
+
+      - job: BuildLinuxMusl
+        dependsOn: SetPackageVersion
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-x64-musl
+        pool:
+          type: linux
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: x86_64-unknown-linux-musl
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - pwsh: |
+            apt -y install musl-tools
+            ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
+            ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
+            Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+          displayName: 'Build x86_64-unknown-linux-musl'
+          condition: succeeded()
+
+      - job: BuildLinuxArm64Musl
+        dependsOn: SetPackageVersion
+        variables:
+          PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+        displayName: Linux-ARM64-musl
+        pool:
+          type: linux
+        steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: aarch64-unknown-linux-musl
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
+        - pwsh: |
+            $env:CC_aarch64_unknown_linux_musl='clang'
+            $env:AR_aarch64_unknown_linux_musl='llvm-ar'
+            $env:CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Clink-self-contained=yes -Clinker=rust-lld"
+            apt -y install clang
+            apt -y install llvm
+            apt -y install musl-tools
+            apt -y install gcc-multilib
+            rustup default stable-aarch64-unknown-linux-musl
+            ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
+            ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
+            Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
+          displayName: 'Build aarch64-unknown-linux-musl'
           condition: succeeded()
 
       - job: BuildMac
@@ -262,6 +353,14 @@ extends:
             macOS arm64:
               buildName: aarch64-apple-darwin
         steps:
+        - task: RustInstaller@1
+          inputs:
+            rustVersion: ms-stable
+            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            additionalTargets: $(buildName)
+          displayName: Install Rust
+          env:
+            ob_restore_phase: true
         - pwsh: |
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
@@ -274,6 +373,9 @@ extends:
       dependsOn: BuildAndSign
       variables:
         PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+        ob_sdl_sbom_enabled: false
+        ob_signing_setup_enabled: false
+        ob_sdl_codeql_compiled_enabled: false
         drop: $(Pipeline.Workspace)/drop_build_main
       jobs:
       - job: Validation

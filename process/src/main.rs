@@ -5,18 +5,18 @@ mod process_info;
 use std::env;
 use std::process::exit;
 use std::io::{self, Read};
-use sysinfo::System;
+use sysinfo::{ProcessesToUpdate, System};
 use crate::process_info::ProcessInfo;
 
 fn get_task_list() -> Vec<ProcessInfo>
 {
     let mut result = Vec::new();
     let mut s = System::new();
-    s.refresh_processes();
+    s.refresh_processes(ProcessesToUpdate::All);
     for (pid, process) in s.processes() {
         let mut p = ProcessInfo::new();
         p.pid = pid.as_u32();
-        p.name = String::from(process.name());
+        p.name = format!("{:?}", process.name());
         p.cmdline = format!("{:?}", process.cmd());
         result.push(p);
     }

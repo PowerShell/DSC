@@ -118,7 +118,7 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 pub fn add_type_name_to_json(json: String, type_name: String) -> String
 {
     let mut map:HashMap<String,String> = HashMap::new();
-    map.insert(String::from("type"), type_name);
+    map.insert(String::from("adapted_dsc_type"), type_name);
 
     let mut j = json;
     if j.is_empty()
@@ -425,8 +425,8 @@ pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<S
     };
 
     if value.trim().is_empty() {
-        debug!("Provided input is empty");
-        return String::new();
+        error!("Provided input is empty");
+        exit(EXIT_INVALID_INPUT);
     }
 
     match parse_input_to_json(&value) {

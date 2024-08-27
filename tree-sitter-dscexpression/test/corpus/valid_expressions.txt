@@ -1,0 +1,323 @@
+=====
+Function no args
+=====
+[function1()]
+---
+
+(statement
+  (expression
+    (function
+      (functionName))))
+
+=====
+String containing brackets
+=====
+Hello [world]
+---
+
+(statement
+  (stringLiteral))
+
+=====
+Simple expression
+=====
+[myFunction('argString')]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))))
+
+=====
+Multiple arguments
+=====
+[myFunction('argString', 1, -1, true)]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)
+        (number)
+        (number)
+        (boolean)))))
+
+=====
+Nested functions
+=====
+[function1('argString', function2(1, functionThree('threeString', 3), 2), 'oneString')]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)
+        (expression
+          (function
+            (functionName)
+            (arguments
+              (number)
+              (expression
+                (function
+                  (functionName)
+                  (arguments
+                    (string)
+                    (number))))
+              (number))))
+        (string)))))
+
+=====
+Whitespace
+=====
+  [  functionOne   ( 'arg'  , 2 )  ]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)
+        (number)))))
+
+=====
+Function with dot-notation
+=====
+[functionOne('argString').prop1.prop2]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))
+    (accessor
+      (memberAccess
+        (memberName))
+      (memberAccess
+        (memberName)))))
+
+=====
+Nested dot-notation
+=====
+[functionOne(functionTwo(2).prop1.prop2).prop3]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (expression
+          (function
+            (functionName)
+            (arguments
+              (number)))
+          (accessor
+            (memberAccess
+              (memberName))
+            (memberAccess
+              (memberName))))))
+    (accessor
+      (memberAccess
+        (memberName)))))
+
+=====
+Quotes float input
+=====
+[myFunction('1234.5678')]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))))
+
+=====
+Array index
+=====
+[myFunction('argString')[0]]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))
+    (accessor
+      (index
+        (number)))))
+
+=====
+Multiple array indexes
+=====
+[myFunction('argString')[0][1][2]]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))
+    (accessor
+      (index
+        (number))
+      (index
+        (number))
+      (index
+        (number)))))
+
+=====
+Array index with function
+=====
+[myFunction('argString')[myFunction2(1)]]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))
+    (accessor
+      (index
+        (expression
+          (function
+            (functionName)
+            (arguments
+              (number))))))))
+
+=====
+Array index with function and dot-notation
+=====
+[myFunction('argString')[myFunction2(1)].prop1]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))
+    (accessor
+      (index
+        (expression
+          (function
+            (functionName)
+            (arguments
+              (number)))))
+      (memberAccess
+        (memberName)))))
+
+=====
+Array index with function and nested dot-notation
+=====
+[myFunction('argString')[myFunction2(1).prop1.prop2].prop3]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))
+    (accessor
+      (index
+        (expression
+          (function
+            (functionName)
+            (arguments
+              (number)))
+          (accessor
+            (memberAccess
+              (memberName))
+            (memberAccess
+              (memberName)))))
+      (memberAccess
+        (memberName)))))
+
+=====
+Array index with function and nested dot-notation with index
+=====
+[myFunction('argString')[myFunction2(1).prop1.prop2][0]]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))
+    (accessor
+      (index
+        (expression
+          (function
+            (functionName)
+            (arguments
+              (number)))
+          (accessor
+            (memberAccess
+              (memberName))
+            (memberAccess
+              (memberName)))))
+      (index
+        (number)))))
+
+=====
+Multi-line expression
+=====
+[myFunction(
+  'argString',
+  1,
+  -1,
+  true
+)]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)
+        (number)
+        (number)
+        (boolean)))))
+
+=====
+Multi-line literal string
+=====
+This
+is
+a
+multiline
+string
+---
+
+(statement
+  (stringLiteral))
+
+=====
+Escaped single-quotes
+=====
+[myFunction('this ''is'' a string')]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))))

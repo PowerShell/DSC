@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 1
+$script:CurrentCacheSchemaVersion = 2
 
 function Write-DscTrace {
     param(
@@ -42,7 +42,6 @@ function Get-DSCResourceModules
                 if($null -ne $containsDSCResource)
                 {
                     $dscModulePsd1List.Add($psd1) | Out-Null
-                    break
                 }
             }
         }
@@ -107,7 +106,9 @@ function FindAndParseResourceDefinitions
     [CmdletBinding(HelpUri = '')]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$filePath
+        [string]$filePath,
+        [Parameter(Mandatory = $true)]
+        [string]$moduleVersion
     )
 
     if (-not (Test-Path $filePath))
@@ -155,6 +156,7 @@ function FindAndParseResourceDefinitions
                 #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
                 $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
                 $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
+                $DscResourceInfo.Version = $moduleVersion
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
                 Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
@@ -194,7 +196,7 @@ function LoadPowerShellClassResourcesFromModule
         $scriptPath = $moduleInfo.Path;
     }
 
-    $Resources = FindAndParseResourceDefinitions $scriptPath
+    $Resources = FindAndParseResourceDefinitions $scriptPath $moduleInfo.Version
 
     if ($moduleInfo.NestedModules)
     {
@@ -266,9 +268,15 @@ function Invoke-DscCacheRefresh {
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                     
-                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                        {
-                            "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                        if (Test-Path $_.Name) {
+                            if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
+                            {
+                                "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                                $refreshCache = $true
+                                break
+                            }
+                        } else {
+                            "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
                             $refreshCache = $true
                             break
                         }
@@ -277,19 +285,21 @@ function Invoke-DscCacheRefresh {
                     if ($refreshCache) {break}
                 }
 
-                "Checking cache for stale PSModulePath" | Write-DscTrace
+                if (-not $refreshCache) {
+                    "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
-                $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-                $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-                $hs_cache.SymmetricExceptWith($hs_live)
-                $diff = $hs_cache
+                    $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                    $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                    $hs_cache.SymmetricExceptWith($hs_live)
+                    $diff = $hs_cache
 
-                "PSModulePath diff '$diff'" | Write-DscTrace
+                    "PSModulePath diff '$diff'" | Write-DscTrace
 
-                if ($diff.Count -gt 0) {
-                    $refreshCache = $true
+                    if ($diff.Count -gt 0) {
+                        $refreshCache = $true
+                    }
                 }
             }
         }
@@ -309,11 +319,23 @@ function Invoke-DscCacheRefresh {
         $dscResourceModulePsd1s = Get-DSCResourceModules
         if($null -ne $dscResourceModulePsd1s) {
             $modules = Get-Module -ListAvailable -Name ($dscResourceModulePsd1s)
+            $processedModuleNames = @{}
             foreach ($mod in $modules)
             {
-                [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $mod
-                if ($r) {
-                    $DscResources.AddRange($r)
+                if (-not ($processedModuleNames.ContainsKey($mod.Name))) {
+                    $processedModuleNames.Add($mod.Name, $true)
+
+                    # from several modules with the same name select the one with the highest version
+                    $selectedMod = $modules | Where-Object Name -EQ $mod.Name 
+                    if ($selectedMod.Count -gt 1) {
+                        "Found $($selectedMod.Count) modules with name '$($mod.Name)'" | Write-DscTrace -Operation Trace
+                        $selectedMod = $selectedMod | Sort-Object -Property Version -Descending | Select-Object -First 1
+                    }
+
+                    [System.Collections.Generic.List[DscResourceInfo]]$r = LoadPowerShellClassResourcesFromModule -moduleInfo $selectedMod
+                    if ($r) {
+                        $DscResources.AddRange($r)
+                    }
                 }
             }
         }
@@ -379,8 +401,8 @@ function Get-DscResourceObject {
     }
     else {
         # mimic a config object with a single resource
-        $type = $inputObj.type
-        $inputObj.psobject.properties.Remove('type')
+        $type = $inputObj.adapted_dsc_type
+        $inputObj.psobject.properties.Remove('adapted_dsc_type')
         $desiredState += [dscResourceObject]@{
             name       = $adapterName
             type       = $type
@@ -407,9 +429,6 @@ function Invoke-DscOperation {
 
     $psVersion = $PSVersionTable.PSVersion.ToString()
     'PowerShell version: ' + $psVersion | Write-DscTrace
-
-    $moduleVersion = Get-Module PSDesiredStateConfiguration | ForEach-Object Version
-    'PSDesiredStateConfiguration module version: ' + $moduleVersion | Write-DscTrace
 
     # get details from cache about the DSC resource, if it exists
     $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo
@@ -456,6 +475,10 @@ function Invoke-DscOperation {
                         'Export' {
                             $t = $dscResourceInstance.GetType()
                             $method = $t.GetMethod('Export')
+                            if ($null -eq $method) {
+                                "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
+                                exit 1
+                            }
                             $resultArray = $method.Invoke($null,$null)
                             $addToActualState = $resultArray
                         }

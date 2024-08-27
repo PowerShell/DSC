@@ -59,7 +59,11 @@ class TestClassResource : BaseTestClass
     static [TestClassResource[]] Export()
     {
         $resultList = [List[TestClassResource]]::new()
-        1..5 | %{
+        $resultCount = 5
+        if ($env:TestClassResourceResultCount) {
+            $resultCount = $env:TestClassResourceResultCount
+        }
+        1..$resultCount | %{
             $obj = New-Object TestClassResource
             $obj.Name = "Object$_"
             $obj.Prop1 = "Property of object$_"
@@ -67,6 +71,33 @@ class TestClassResource : BaseTestClass
         }
 
         return $resultList.ToArray()
+    }
+}
+
+[DscResource()]
+class NoExport: BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [DscProperty()]
+    [string] $EnumProp
+
+    [void] Set()
+    {
+    }
+
+    [bool] Test()
+    {
+        return $true
+    }
+
+    [NoExport] Get()
+    {
+        return $this
     }
 }
 

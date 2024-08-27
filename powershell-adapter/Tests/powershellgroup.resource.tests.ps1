@@ -120,6 +120,34 @@ Describe 'PowerShell adapter resource tests' {
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Incompatible version of cache in file'
     }
 
+    It 'Verify that removing a module results in cache rebuid' {
+
+        Copy-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource" -Destination $TestDrive
+        Copy-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource" -Destination "$PSScriptRoot/Backup/TestClassResource"
+        Remove-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource"
+
+        $oldPath = $env:PSModulePath
+        try {
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestDrive
+
+            # generate the cache
+            $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
+            # remove the module files
+            Remove-Item -Recurse -Force -Path "$TestDrive/TestClassResource"
+            # verify that cache rebuid happened
+            dsc -l trace resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+
+            $LASTEXITCODE | Should -Be 0
+            "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Detected non-existent cache entry'
+            "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
+        }
+        finally {
+            $env:PSModulePath = $oldPath
+            Copy-Item -Recurse -Force -Path "$PSScriptRoot/Backup/TestClassResource" -Destination "$PSScriptRoot"
+            Remove-Item -Recurse -Force -Path "$PSScriptRoot/Backup"
+        }
+    }
+
     It 'Verify inheritance works in class-based resources' {
 
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
@@ -127,5 +155,129 @@ Describe 'PowerShell adapter resource tests' {
         $resources = $r | ConvertFrom-Json
         $t = $resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}
         $t.properties | Should -Contain "BaseProperty"
+    }
+
+    It 'Verify highest module version is loaded' {
+
+        $srcPath = Join-Path $PSScriptRoot 'TestClassResource'
+        $pathRoot1 = Join-Path $TestDrive 'A'
+        $pathRoot2 = Join-Path $TestDrive 'B'
+        $path1 = Join-Path $pathRoot1 'TestClassResource' '1.0'
+        $path2 = Join-Path $pathRoot1 'TestClassResource' '1.1'
+        $path3 = Join-Path $pathRoot2 'TestClassResource' '2.0'
+        $path4 = Join-Path $pathRoot2 'TestClassResource' '2.0.1'
+
+        New-Item -ItemType Directory -Force -Path $path1 | Out-Null
+        New-Item -ItemType Directory -Force -Path $path2 | Out-Null
+        New-Item -ItemType Directory -Force -Path $path3 | Out-Null
+        New-Item -ItemType Directory -Force -Path $path4 | Out-Null
+
+        $files = Get-ChildItem -Recurse -File -Path $srcPath
+        $files | Copy-Item -Destination $path1
+        $files | Copy-Item -Destination $path2
+        $files | Copy-Item -Destination $path3
+        $files | Copy-Item -Destination $path4
+
+        $filePath = Join-Path $path1 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.0`'") | Set-Content $filePath
+        $filePath = Join-Path $path2 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.1`'") | Set-Content $filePath
+        $filePath = Join-Path $path3 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0`'") | Set-Content $filePath
+        $filePath = Join-Path $path4 'TestClassResource.psd1'
+        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0.1`'") | Set-Content $filePath
+
+
+        $oldPath = $env:PSModulePath
+        try {
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + $pathRoot1
+            $env:PSModulePath += [System.IO.Path]::PathSeparator + $pathRoot2
+
+            $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $r = @($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'})
+            $r.Count | Should -Be 1
+            $r[0].Version | Should -Be '2.0.1'
+        }
+        finally {
+            $env:PSModulePath = $oldPath
+        }
+    }
+
+    It 'Verify adapted_dsc_type field in Get' {
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = '{TestCaseId: 1}'| dsc resource get -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.actualState.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
+    }
+
+    It 'Verify adapted_dsc_type field in Set' {
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = '{TestCaseId: 1}'| dsc resource set -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.beforeState.result | Should -Be $True
+            $resources.afterState.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
+    }
+
+    It 'Verify adapted_dsc_type field in Test' {
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = '{TestCaseId: 1}'| dsc resource test -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.actualState.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
+    }
+
+    It 'Verify adapted_dsc_type field in Export' {
+        $oldPath = $env:PATH
+        try {
+            $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
+            $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
+
+            $r = dsc resource export -r 'Test/TestCase'
+            $LASTEXITCODE | Should -Be 0
+            $resources = $r | ConvertFrom-Json
+            $resources.resources[0].properties.result | Should -Be $True
+        }
+        finally {
+            $env:PATH = $oldPath
+        }
+    }
+
+    It 'Dsc can process large resource output' -Tag z1{
+        $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
+
+        $r = dsc resource export -r TestClassResource/TestClassResource
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.resources[0].properties.result.count | Should -Be 5000
+
+        $env:TestClassResourceResultCount = $null
     }
 }
