@@ -514,24 +514,18 @@ fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<
     let lookup_table:HashMap<String, String> = load_adapted_resources_lookup_table();
     // first add adapters (for needed types) that can be found in the lookup table
     for needed_resource in needed_resource_types {
-        match lookup_table.get(needed_resource) {
-            Some(adapter_name) => {
-                match unsorted_adapters.get(adapter_name) {
-                    Some(resource_vec) => {
-                        trace!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
-                        result.insert(adapter_name.to_string(), resource_vec.to_vec());
-                    }
-                    None => {}
-                }
+        if let Some(adapter_name) = lookup_table.get(needed_resource) {
+            if let Some(resource_vec) = unsorted_adapters.get(adapter_name) {
+                trace!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
+                result.insert(adapter_name.to_string(), resource_vec.clone());
             }
-            None => {}
         }
     }
 
     // now add remaining adapters
     for (adapter_name, adapters) in unsorted_adapters {
         if !result.contains_key(adapter_name) {
-            result.insert(adapter_name.to_string(), adapters.to_vec());
+            result.insert(adapter_name.to_string(), adapters.clone());
         }
     }
 
@@ -544,7 +538,7 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
 
     for (resource_name, res_vec) in adapted_resources {
         let adapter_name = &res_vec[0].require_adapter.as_ref().unwrap();
-        lookup_table.insert(resource_name.to_string().to_lowercase(), adapter_name.to_string());
+        lookup_table.insert(resource_name.to_string().to_lowercase(), (*adapter_name).to_string());
     };
 
     save_adapted_resources_lookup_table(&lookup_table);
@@ -552,13 +546,10 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
 
 fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 {
-    match serde_json::to_string_pretty(&lookup_table) {
-        Ok(lookup_table_json) => {
-            let file_path = get_lookup_table_file_path();
-            debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
-            fs::write(file_path, lookup_table_json).expect("Unable to write lookup_table file");
-        },
-        Err(_) => {}
+    if let Ok(lookup_table_json) = serde_json::to_string_pretty(&lookup_table) {
+        let file_path = get_lookup_table_file_path();
+        debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
+        fs::write(file_path, lookup_table_json).expect("Unable to write lookup_table file");
     }
 }
 
@@ -595,10 +586,6 @@ fn get_lookup_table_file_path() -> String
 fn get_lookup_table_file_path() -> String
 {
     // $env:HOME+".dsc/AdaptedResourcesLookupTable.json"
-    let home_path = match std::env::var("HOME") {
-        Ok(path) => path,
-        Err(_) => { return "".to_string(); }
-    };
-
+    let Ok(home_path) = std::env::var("HOME") else { return String::new(); };
     Path::new(&home_path).join(".dsc").join("AdaptedResourcesLookupTable.json").display().to_string()
 }
