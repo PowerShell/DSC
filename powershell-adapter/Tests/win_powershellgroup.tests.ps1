@@ -70,4 +70,21 @@ Describe 'WindowsPowerShell adapter resource tests' {
       $res = $r | ConvertFrom-Json
       $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
     }
+
+    It 'Verify that there are no cache rebuids for several sequential executions' {
+
+        # remove cache file
+        $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+        Remove-Item -Force -Path $cacheFilePath -ErrorAction SilentlyContinue
+
+        # first execution should build the cache
+        dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
+
+        # next executions following shortly after should Not rebuild the cache
+        1..3 | %{
+            dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
+            "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
+        }
+    }
 }
