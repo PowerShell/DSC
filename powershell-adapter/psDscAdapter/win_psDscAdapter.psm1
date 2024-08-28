@@ -86,12 +86,19 @@ function Invoke-DscCacheRefresh {
                 "Checking cache for stale entries" | Write-DscTrace
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
-                    #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                     
                         if (Test-Path $_.Name) {
-                            if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
+                            $file_LastWriteTime = (Get-Item $_.Name).LastWriteTimeUtc
+                            # Truncate DateTime to seconds
+                            $file_LastWriteTime = $file_LastWriteTime.AddTicks( - ($file_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+
+                            $cache_LastWriteTime = [DateTime]$_.Value
+                            # Truncate DateTime to seconds
+                            $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+
+                            if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime)))
                             {
                                 "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
                                 $refreshCache = $true
