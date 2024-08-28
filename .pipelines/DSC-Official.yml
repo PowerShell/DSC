@@ -7,6 +7,14 @@ pr:
     - onebranch
     - release*
 
+schedules:
+- cron: '0 3 * * 1'
+  displayName: Weekly Build
+  branches:
+    include:
+    - main
+  always: true
+
 variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
