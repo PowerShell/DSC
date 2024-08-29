@@ -549,7 +549,21 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
     if let Ok(lookup_table_json) = serde_json::to_string_pretty(&lookup_table) {
         let file_path = get_lookup_table_file_path();
         debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
-        fs::write(file_path.clone(), lookup_table_json).unwrap_or_else(|_| { panic!("{}", format!("Unable to write lookup_table file {file_path:?}").to_string()) });
+
+        let path = std::path::Path::new(&file_path);
+        if let Some(prefix) = path.parent() {
+            if fs::create_dir_all(prefix).is_ok()  {
+                if !fs::write(file_path.clone(), lookup_table_json).is_ok() {
+                    debug!("Unable to write lookup_table file {file_path:?}");
+                }
+            } else {
+                debug!("Unable to create parent directories of the lookup_table file {file_path:?}");
+            }
+        } else {
+            debug!("Unable to get directory of the lookup_table file {file_path:?}");
+        }
+    } else {
+        debug!("Unable to serialize lookup_table to json");
     }
 }
 
