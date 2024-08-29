@@ -201,16 +201,20 @@ extends:
         dependsOn: BuildWin
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_sbom_enabled: true
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: true
         pool:
           type: windows
         steps:
+        - checkout: self
         - download: current
           artifact: drop_BuildAndSign_BuildWinx64
           patterns: '*.msix'
         - download: current
           artifact: drop_BuildAndSign_BuildWinarm64
           patterns: '*.msix'
-        - checkout: self
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
