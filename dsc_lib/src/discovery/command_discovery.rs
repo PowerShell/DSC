@@ -553,7 +553,7 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
         let path = std::path::Path::new(&file_path);
         if let Some(prefix) = path.parent() {
             if fs::create_dir_all(prefix).is_ok()  {
-                if !fs::write(file_path.clone(), lookup_table_json).is_ok() {
+                if fs::write(file_path.clone(), lookup_table_json).is_err() {
                     debug!("Unable to write lookup_table file {file_path:?}");
                 }
             } else {
