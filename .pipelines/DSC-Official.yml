@@ -237,6 +237,7 @@ extends:
         pool:
           type: windows
         steps:
+        - checkout: self
         - task: CopyFiles@2
           displayName: "Copy Files for 'PublishPipelineArtifact@1' publish task"
           inputs:
