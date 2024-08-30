@@ -14,7 +14,7 @@ pub struct Context {
     pub outputs: HashMap<String, Value>, // this is used by the `reference()` function to retrieve output
     pub parameters: HashMap<String, (Value, DataType)>,
     pub security_context: SecurityContextKind,
-    _variables: HashMap<String, Value>,
+    pub variables: HashMap<String, Value>,
     pub start_datetime: DateTime<Local>,
 }
 
@@ -29,7 +29,7 @@ impl Context {
                 SecurityContext::Admin => SecurityContextKind::Elevated,
                 SecurityContext::User => SecurityContextKind::Restricted,
             },
-            _variables: HashMap::new(),
+            variables: HashMap::new(),
             start_datetime: chrono::Local::now(),
         }
     }

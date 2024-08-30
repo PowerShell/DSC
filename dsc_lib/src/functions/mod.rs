@@ -22,6 +22,7 @@ pub mod parameters;
 pub mod reference;
 pub mod resource_id;
 pub mod sub;
+pub mod variables;
 
 /// The kind of argument that a function accepts.
 #[derive(Debug, PartialEq)]
@@ -78,6 +79,7 @@ impl FunctionDispatcher {
         functions.insert("reference".to_string(), Box::new(reference::Reference{}));
         functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
         functions.insert("sub".to_string(), Box::new(sub::Sub{}));
+        functions.insert("variables".to_string(), Box::new(variables::Variables{}));
         Self {
             functions,
         }

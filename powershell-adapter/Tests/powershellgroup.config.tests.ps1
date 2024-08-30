@@ -71,6 +71,23 @@ Describe 'PowerShell adapter resource tests' {
         $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
     }
 
+    It 'Export fails when class-based resource does not implement' {
+        $yaml = @'
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: Microsoft.DSC/PowerShell
+              properties:
+                resources:
+                - name: Class-resource Info
+                  type: TestClassResource/NoExport
+'@
+        $out = $yaml | dsc config export 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 2
+        $out | Should -Not -BeNullOrEmpty
+        $out | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
+    }
+
     It 'Custom psmodulepath in config works' {
 
         $OldPSModulePath  = $env:PSModulePath

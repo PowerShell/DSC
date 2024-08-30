@@ -78,8 +78,10 @@ String starting with bracket
 [Test] string
 ---
 
-    (statement
-      (bracketInStringLiteral))
+    (ERROR
+      (ERROR
+        (memberName))
+      (functionName))
 
 =====
 Multiple expressions
@@ -88,16 +90,13 @@ Multiple expressions
 ---
 
     (statement
-      (bracketInStringLiteral))
-
-=====
-Whitespace
-=====
-  [  functionOne   ( 'arg'  , 2 )  ]
----
-
-    (statement
-      (stringLiteral))
+      (ERROR
+        (expression
+          (function
+            (functionName))))
+      (expression
+        (function
+          (functionName))))
 
 =====
 Incomplete expression
@@ -169,3 +168,49 @@ Float input starting with decimal
           (ERROR)
           (arguments
               (number)))))
+
+=====
+Expression with member accessor outside
+=====
+[myFunction(1)].accessor
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+            (number))))
+      (ERROR
+        (functionName)))
+
+=====
+Expression with index accessor outside
+=====
+[myFunction(1)][0]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+            (number))))
+      (ERROR
+        (number)))
+
+=====
+String with un-escaped single-quote
+=====
+[myFunction('argString'test'value')]
+---
+
+    (statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+            (string))
+          (ERROR
+            (functionName)
+            (functionName)))))

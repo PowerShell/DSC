@@ -106,7 +106,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
 
 pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     if input.is_empty() {
-        error!("Error: Input is empty");
+        error!("Error: Desired input is empty");
         exit(EXIT_INVALID_ARGS);
     }
 
@@ -151,6 +151,11 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
 }
 
 pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
+    if input.is_empty() {
+        error!("Error: Expected input is required");
+        exit(EXIT_INVALID_ARGS);
+    }
+
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return

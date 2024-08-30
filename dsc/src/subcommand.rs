@@ -49,7 +49,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
             }
         },
         Err(err) => {
-            error!("Error: {err}");
+            error!("{err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -270,7 +270,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         }
     };
 
-    if let Err(err) = configurator.set_parameters(&parameters) {
+    if let Err(err) = configurator.set_context(&parameters) {
         error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
