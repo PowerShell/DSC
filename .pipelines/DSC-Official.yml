@@ -225,28 +225,6 @@ extends:
           displayName: 'Create msixbundle'
           condition: succeeded()
 
-      - job: PublishSigned
-        dependsOn: BuildWin
-        variables:
-          signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
-          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_sbom_enabled: false
-          ob_signing_setup_enabled: false
-          ob_sdl_codeql_compiled_enabled: false
-        pool:
-          type: windows
-        steps:
-        - checkout: self
-        - task: CopyFiles@2
-          displayName: "Copy Files for 'PublishPipelineArtifact@1' publish task"
-          env:
-            ob_restore_phase: true
-          inputs:
-            SourceFolder: $(signOutPath)
-            Contents: '**'
-            TargetFolder: $(Build.ArtifactStagingDirectory)/signed
-
       - job: BuildLinux
         dependsOn: SetPackageVersion
         variables:
