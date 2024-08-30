@@ -240,6 +240,8 @@ extends:
         - checkout: self
         - task: CopyFiles@2
           displayName: "Copy Files for 'PublishPipelineArtifact@1' publish task"
+          env:
+            ob_restore_phase: true
           inputs:
             SourceFolder: $(signOutPath)
             Contents: '**'
