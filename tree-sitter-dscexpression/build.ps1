@@ -29,7 +29,7 @@ if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
     }
 }
 
-npm install
+npm install --omit:optional --registry https://pkgs.dev.azure.com/mseng/_packaging/OneESD-DevOps/npm/registry/
 
 #npm list tree-sitter-cli
 #if ($LASTEXITCODE -ne 0) {
