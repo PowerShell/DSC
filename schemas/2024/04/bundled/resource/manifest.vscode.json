@@ -1832,13 +1832,6 @@
                             ]
                           }
                         }
-                      },
-                      "url": {
-                        "title": "Instance Schema URL",
-                        "description": "Defines the URL to the DSC Resource's JSON schema for integrating tools.",
-                        "type": "string",
-                        "format": "uri",
-                        "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the URL to the DSC Resource's JSON schema for integrating tools.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/property?view=dsc-3.0&preserve-view=true#url\n"
                       }
                     },
                     "examples": [
