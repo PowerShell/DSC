@@ -46,10 +46,11 @@ if ($UpdatePackages) {
     rm ./package-lock.json
     rm -r ./node_modules
     npm cache clean --force
-    npm logout
-    vsts-npm-auth -config .npmrc -F -V
-    npm install --force --verbose --registry https://pkgs.dev.azure.com/mseng/_packaging/OneESD-DevOps/npm/registry/
+    # npm logout
+    # vsts-npm-auth -config .npmrc -F -V
+    npm install --omit:optional --force --verbose #--registry https://pkgs.dev.azure.com/mseng/_packaging/OneESD-DevOps/npm/registry/
 }
 
+Invoke-NativeCommand 'npx node-gyp configure'
 Invoke-NativeCommand 'npx tree-sitter generate --build'
 Invoke-NativeCommand 'npx tree-sitter test'
