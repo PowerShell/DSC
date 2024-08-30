@@ -188,6 +188,11 @@ pub trait Invoke {
 
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking get for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
@@ -204,6 +209,11 @@ impl Invoke for DscResource {
     }
 
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking set for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
@@ -220,6 +230,11 @@ impl Invoke for DscResource {
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking test for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
@@ -264,6 +279,11 @@ impl Invoke for DscResource {
     }
 
     fn delete(&self, filter: &str) -> Result<(), DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking delete for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
@@ -280,6 +300,11 @@ impl Invoke for DscResource {
     }
 
     fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking validate for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
@@ -296,6 +321,11 @@ impl Invoke for DscResource {
     }
 
     fn schema(&self) -> Result<String, DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking schema for resource: {}", self.type_name);
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
@@ -312,6 +342,11 @@ impl Invoke for DscResource {
     }
 
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking export for resource: {}", self.type_name);
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
@@ -321,6 +356,11 @@ impl Invoke for DscResource {
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
+
+        if self.kind == Kind::Adapter {
+            return Err(DscError::NotSupported(format!("Can not perform this operation on the adapter {} itself", &self.type_name).to_string()));
+        }
+
         debug!("Invoking resolve for resource: {}", self.type_name);
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
