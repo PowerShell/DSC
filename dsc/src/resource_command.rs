@@ -5,7 +5,7 @@ use crate::args::OutputFormat;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
-use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse}};
+use dsc_lib::dscresources::invoke_result::{GetResult, ResourceGetResponse};
 use dsc_lib::dscerror::DscError;
 use tracing::{error, debug};
 
@@ -22,11 +22,6 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
-        exit(EXIT_DSC_ERROR);
-    }
-
     if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
@@ -64,11 +59,6 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
-        exit(EXIT_DSC_ERROR);
-    }
-
     if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
         if let Some(pr) = get_resource(dsc, requires) {
@@ -106,7 +96,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
 
 pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     if input.is_empty() {
-        error!("Error: Desired input is empty");
+        error!("Error: Input is empty");
         exit(EXIT_INVALID_ARGS);
     }
 
@@ -116,10 +106,6 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
-        exit(EXIT_DSC_ERROR);
-    }
 
     if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
@@ -151,21 +137,12 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
 }
 
 pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
-    if input.is_empty() {
-        error!("Error: Expected input is required");
-        exit(EXIT_INVALID_ARGS);
-    }
-
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
-        exit(EXIT_DSC_ERROR);
-    }
 
     if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
@@ -203,10 +180,6 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
-    if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
-        exit(EXIT_DSC_ERROR);
-    }
 
     if let Some(requires) = &resource.require_adapter {
         input = add_type_name_to_json(input, resource.type_name.clone());
@@ -232,11 +205,6 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: &Option<OutputForma
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
-    if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
-        exit(EXIT_DSC_ERROR);
-    }
-
     match resource.schema() {
         Ok(json) => {
             // verify is json
@@ -262,11 +230,6 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         return
     };
-
-    if dsc_resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", dsc_resource.type_name);
-        exit(EXIT_DSC_ERROR);
-    }
 
     let mut adapter_resource: Option<&DscResource> = None;
     if let Some(requires) = &dsc_resource.require_adapter {
