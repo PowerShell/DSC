@@ -29,7 +29,7 @@ if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
     }
 }
 
-npm install --omit:optional --registry https://pkgs.dev.azure.com/mseng/_packaging/OneESD-DevOps/npm/registry/
+npm ci --omit:optional --force --registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
 
 #npm list tree-sitter-cli
 #if ($LASTEXITCODE -ne 0) {
@@ -48,7 +48,7 @@ if ($UpdatePackages) {
     npm cache clean --force
     # npm logout
     # vsts-npm-auth -config .npmrc -F -V
-    npm install --omit:optional --force --verbose #--registry https://pkgs.dev.azure.com/mseng/_packaging/OneESD-DevOps/npm/registry/
+    npm install --omit:optional --force --verbose #--registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
 }
 
 Invoke-NativeCommand 'npx node-gyp configure'
