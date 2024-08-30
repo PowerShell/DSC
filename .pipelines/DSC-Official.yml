@@ -36,7 +36,7 @@ extends:
       WindowsHostVersion: 
         Disk: Large
         Version: 2022
-        Network: KS3 # this retricts network access to public upstream repositories
+        Network: KS1 # note that this property is sticky so commenting out will use the previous set one
 # Currently can't be used as some NPM pkgs like tree-sitter-cli reach out to GitHub to get the actual zip pkg
 #        Network: NetLock
     customTags: 'ES365AIMigrationTooling'
