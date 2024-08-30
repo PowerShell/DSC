@@ -293,7 +293,7 @@ resources:
 
     It 'Test operation on the adapter itself should fail' {
         dsc resource test -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
-        $LASTEXITCODE | Should -Be 1
+        $LASTEXITCODE | Should -Be 2
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
     }
 
