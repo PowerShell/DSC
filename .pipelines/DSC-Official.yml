@@ -367,8 +367,10 @@ extends:
 
     - stage: Release
       dependsOn: BuildAndSign
+      condition: ne(variables['Build.Reason'], 'Schedule')
       variables:
         PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+        ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         ob_sdl_sbom_enabled: false
         ob_signing_setup_enabled: false
         ob_sdl_codeql_compiled_enabled: false
@@ -391,11 +393,12 @@ extends:
         displayName: Publish draft to GitHub
         pool:
           type: windows
-        variables:
-          ob_outputDirectory: '$(Build.SourcesDirectory)'
         steps:
         - download: current
           displayName: Download artifacts
+          patterns: |
+            '**/*.zip'
+            '**/*.tar.gz'
         - task: GitHubRelease@1
           displayName: Create GitHub release
           inputs:
