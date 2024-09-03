@@ -370,10 +370,6 @@ extends:
       condition: ne(variables['Build.Reason'], 'Schedule')
       variables:
         PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-        ob_sdl_sbom_enabled: false
-        ob_signing_setup_enabled: false
-        ob_sdl_codeql_compiled_enabled: false
-        drop: $(Pipeline.Workspace)/drop_build_main
       jobs:
       - job: Validation
         displayName: Manual validation
@@ -394,6 +390,10 @@ extends:
           type: windows
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
+          drop: $(Pipeline.Workspace)/drop_build_main
         steps:
         - download: current
           displayName: Download artifacts
