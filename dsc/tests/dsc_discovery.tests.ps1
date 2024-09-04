@@ -4,6 +4,12 @@
 Describe 'tests for resource discovery' {
     BeforeAll {
         $env:DSC_RESOURCE_PATH = $testdrive
+
+        $script:lookupTableFilePath = if ($IsWindows) {
+            Join-Path $env:LocalAppData "dsc\AdaptedResourcesLookupTable.json"
+        } else {
+            Join-Path $env:HOME ".dsc" "AdaptedResourcesLookupTable.json"
+        }
     }
 
     AfterEach {
@@ -98,32 +104,23 @@ Describe 'tests for resource discovery' {
     }
 
     It 'Ensure List operation populates adapter lookup table' {
-        $lookupTableFilePath = if ($IsWindows) {
-            Join-Path $env:LocalAppData "dsc\AdaptedResourcesLookupTable.json"
-        } else {
-            Join-Path $env:HOME ".dsc" "AdaptedResourcesLookupTable.json"
-        }
 
         # remove adapter lookup table file
-        Remove-Item -Force -Path $lookupTableFilePath -ErrorAction SilentlyContinue
-        Test-Path $lookupTableFilePath -PathType Leaf | Should -BeFalse
+        Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction SilentlyContinue
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # perform List on an adapter - this should create adapter lookup table file
         dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
 
-        Test-Path $lookupTableFilePath -PathType Leaf | Should -BeTrue
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
+        $script:lookupTableFilePath | Should -FileContentMatchExactly 'Microsoft.DSC/PowerShell'
     }
 
     It 'Ensure non-List operation populates adapter lookup table' {
-        $lookupTableFilePath = if ($IsWindows) {
-            Join-Path $env:LocalAppData "dsc\AdaptedResourcesLookupTable.json"
-        } else {
-            Join-Path $env:HOME ".dsc" "AdaptedResourcesLookupTable.json"
-        }
 
         # remove adapter lookup table file
-        Remove-Item -Force -Path $lookupTableFilePath -ErrorAction SilentlyContinue
-        Test-Path $lookupTableFilePath -PathType Leaf | Should -BeFalse
+        Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction SilentlyContinue
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # perform Get on an adapter - this should create adapter lookup table file
         $oldPSModulePath = $env:PSModulePath
@@ -132,7 +129,8 @@ Describe 'tests for resource discovery' {
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' | Out-Null
 
-        Test-Path $lookupTableFilePath -PathType Leaf | Should -BeTrue
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
+        $script:lookupTableFilePath | Should -FileContentMatchExactly "TestClassResource/TestClassResource"
         $env:PSModulePath = $oldPSModulePath
     }
 
