@@ -36,7 +36,7 @@ extends:
       WindowsHostVersion: 
         Disk: Large
         Version: 2022
-          Network: KS3 # this retricts network access to public upstream repositories
+        Network: KS1 # note that this property is sticky so commenting out will use the previous set one
 # Currently can't be used as some NPM pkgs like tree-sitter-cli reach out to GitHub to get the actual zip pkg
 #        Network: NetLock
     customTags: 'ES365AIMigrationTooling'
@@ -201,16 +201,20 @@ extends:
         dependsOn: BuildWin
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_sdl_sbom_enabled: true
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: true
         pool:
           type: windows
         steps:
+        - checkout: self
         - download: current
           artifact: drop_BuildAndSign_BuildWinx64
           patterns: '*.msix'
         - download: current
           artifact: drop_BuildAndSign_BuildWinarm64
           patterns: '*.msix'
-        - checkout: self
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
@@ -220,25 +224,6 @@ extends:
             Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
-
-      - job: PublishSigned
-        dependsOn: BuildWin
-        variables:
-          signOutPath: $[ dependencies.BuildWin.outputs['signOutPath.signOutPath'] ]
-          ob_sdl_tsa_configFile: $(Build.SourcesDirectory)\DSC\.config\tsaoptions.json
-          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_sdl_sbom_enabled: false
-          ob_signing_setup_enabled: false
-          ob_sdl_codeql_compiled_enabled: false
-        pool:
-          type: windows
-        steps:
-        - task: CopyFiles@2
-          displayName: "Copy Files for 'PublishPipelineArtifact@1' publish task"
-          inputs:
-            SourceFolder: $(signOutPath)
-            Contents: '**'
-            TargetFolder: $(Build.ArtifactStagingDirectory)/signed
 
       - job: BuildLinux
         dependsOn: SetPackageVersion
@@ -382,12 +367,9 @@ extends:
 
     - stage: Release
       dependsOn: BuildAndSign
+      condition: ne(variables['Build.Reason'], 'Schedule')
       variables:
         PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-        ob_sdl_sbom_enabled: false
-        ob_signing_setup_enabled: false
-        ob_sdl_codeql_compiled_enabled: false
-        drop: $(Pipeline.Workspace)/drop_build_main
       jobs:
       - job: Validation
         displayName: Manual validation
@@ -407,10 +389,17 @@ extends:
         pool:
           type: windows
         variables:
-          ob_outputDirectory: '$(Build.SourcesDirectory)'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
+          drop: $(Pipeline.Workspace)/drop_build_main
         steps:
         - download: current
           displayName: Download artifacts
+          patterns: |
+            '**/*.zip'
+            '**/*.tar.gz'
         - task: GitHubRelease@1
           displayName: Create GitHub release
           inputs:
