@@ -280,4 +280,31 @@ Describe 'PowerShell adapter resource tests' {
 
         $env:TestClassResourceResultCount = $null
     }
+
+    It 'Verify that there are no cache rebuilds for several sequential executions' {
+
+        # remove cache file
+        $cacheFilePath = if ($IsWindows) {
+            # PS 6+ on Windows
+            Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
+        } else {
+            # either WinPS or PS 6+ on Linux/Mac
+            if ($PSVersionTable.PSVersion.Major -le 5) {
+                Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+            } else {
+                Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+            }
+        }
+        Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
+
+        # first execution should build the cache
+        dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
+
+        # next executions following shortly after should Not rebuild the cache
+        1..3 | %{
+            dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+            "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
+        }
+    }
 }
