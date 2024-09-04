@@ -22,13 +22,13 @@
   ],
   "dependencies": {
     "gyp": "^0.3.0",
-    "node-gyp-build": "^4.8.0",
-    "node-addon-api": "^7.1.0",
-    "node-gyp": "^10.2.0"
+    "node-addon-api": "^7.1.1",
+    "node-gyp": "^10.2.0",
+    "node-gyp-build": "^4.8.2"
   },
   "devDependencies": {
-    "prebuildify": "^6.0.0",
-    "tree-sitter-cli": "^0.22.2"
+    "prebuildify": "^6.0.1",
+    "tree-sitter-cli": "^0.22.6"
   },
   "peerDependencies": {
     "tree-sitter": "^0.21.0"
