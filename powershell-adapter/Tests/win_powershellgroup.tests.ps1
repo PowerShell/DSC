@@ -71,11 +71,11 @@ Describe 'WindowsPowerShell adapter resource tests' {
       $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
     }
 
-    It 'Verify that there are no cache rebuids for several sequential executions' -Skip:(!$IsWindows) {
+    It 'Verify that there are no cache rebuilds for several sequential executions' -Skip:(!$IsWindows) {
 
         # remove cache file
         $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-        Remove-Item -Force -Path $cacheFilePath -ErrorAction SilentlyContinue
+        Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
 
         # first execution should build the cache
         dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
