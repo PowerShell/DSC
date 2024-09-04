@@ -516,7 +516,7 @@ fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<
     for needed_resource in needed_resource_types {
         if let Some(adapter_name) = lookup_table.get(needed_resource) {
             if let Some(resource_vec) = unsorted_adapters.get(adapter_name) {
-                trace!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
+                debug!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
                 result.insert(adapter_name.to_string(), resource_vec.clone());
             }
         }
@@ -546,7 +546,7 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
 
 fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 {
-    if let Ok(lookup_table_json) = serde_json::to_string_pretty(&lookup_table) {
+    if let Ok(lookup_table_json) = serde_json::to_string(&lookup_table) {
         let file_path = get_lookup_table_file_path();
         debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
 
