@@ -127,7 +127,7 @@ Describe 'tests for resource discovery' {
         $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
         $env:DSC_RESOURCE_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
-        "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' | Out-Null
+        "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' | Out-Null
 
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
         $script:lookupTableFilePath | Should -FileContentMatchExactly 'testclassresource/testclassresource'
