@@ -111,7 +111,7 @@ Describe 'tests for resource discovery' {
 
         # perform List on an adapter - this should create adapter lookup table file
         dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
-
+        gc -raw $script:lookupTableFilePath
         $script:lookupTableFilePath | Should -FileContentMatchExactly 'Microsoft.DSC/PowerShell'
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
     }
