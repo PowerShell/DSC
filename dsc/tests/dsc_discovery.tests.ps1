@@ -104,16 +104,20 @@ Describe 'tests for resource discovery' {
     }
 
     It 'Ensure List operation populates adapter lookup table' {
-        $env:DSC_RESOURCE_PATH = $null
         # remove adapter lookup table file
         Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction SilentlyContinue
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # perform List on an adapter - this should create adapter lookup table file
+        $oldPSModulePath = $env:PSModulePath
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
+        $env:DSC_RESOURCE_PATH = $null
+        $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
         gc -raw $script:lookupTableFilePath
         $script:lookupTableFilePath | Should -FileContentMatchExactly 'Microsoft.DSC/PowerShell'
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
+        $env:PSModulePath = $oldPSModulePath
     }
 
     It 'Ensure non-List operation populates adapter lookup table' {
