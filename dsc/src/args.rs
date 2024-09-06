@@ -16,6 +16,8 @@ pub enum TraceFormat {
     Default,
     Plaintext,
     Json,
+    #[clap(hide = true)]
+    PassThrough,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]

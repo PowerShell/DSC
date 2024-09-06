@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use jsonschema::JSONSchema;
+use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, env, process::Stdio};
 use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
@@ -815,26 +816,114 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
 {
     if !trace_line.is_empty()
     {
-        if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
+        if let Ok(trace_object) = serde_json::from_str::<Trace>(trace_line) {
+            let mut include_target = trace_object.level == TraceLevel::Debug || trace_object.level == TraceLevel::Trace;
+            let target = if let Some(t) = trace_object.target.as_deref() { t } else {
+                include_target = false;
+                ""
+            };
+            let line_number = if let Some(l) = trace_object.line_number { l } else {
+                include_target = false;
+                0
+            };
+            match trace_object.level {
+                TraceLevel::Error => {
+                    if include_target {
+                        error!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
+                    }
+                    else {
+                        error!("Process {process_id}: {}", trace_object.fields.message);
+                    }
+                },
+                TraceLevel::Warning => {
+                    if include_target {
+                        warn!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
+                    }
+                    else {
+                        warn!("Process {process_id}: {}", trace_object.fields.message);
+                    }
+                },
+                TraceLevel::Info => {
+                    if include_target {
+                        info!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
+                    }
+                    else {
+                        info!("Process {process_id}: {}", trace_object.fields.message);
+                    }
+                },
+                TraceLevel::Debug => {
+                    if include_target {
+                        debug!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
+                    }
+                    else {
+                        debug!("Process {process_id}: {}", trace_object.fields.message);
+                    }
+                },
+                TraceLevel::Trace => {
+                    if include_target {
+                        trace!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
+                    }
+                    else {
+                        trace!("Process {process_id}: {}", trace_object.fields.message);
+                    }
+                },
+            }
+        }
+        else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
             if let Some(msg) = json_obj.get("Error") {
-                error!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                error!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Warning") {
-                warn!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                warn!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Info") {
-                info!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                info!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Debug") {
-                debug!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                debug!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Trace") {
-                trace!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                trace!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
+                trace!("Process {process_id}: {trace_line}");
                 return trace_line;
             };
         } else {
             // the line is not a valid json - return it as filtered stderr_line
+            trace!("Process {process_id}: {}", trace_line);
             return trace_line;
         }
     };
 
     ""
+}
+
+#[derive(PartialEq, Eq, Deserialize)]
+enum TraceLevel {
+    #[serde(rename = "ERROR")]
+    Error,
+    #[serde(rename = "WARN")]
+    Warning,
+    #[serde(rename = "INFO")]
+    Info,
+    #[serde(rename = "DEBUG")]
+    Debug,
+    #[serde(rename = "TRACE")]
+    Trace,
+}
+
+#[derive(Deserialize)]
+struct Fields {
+    message: String,
+}
+
+#[derive(Deserialize)]
+struct Trace {
+    #[serde(rename = "timestamp")]
+    _timestamp: String,
+    level: TraceLevel,
+    fields: Fields,
+    target: Option<String>,
+    line_number: Option<u32>,
+    #[serde(rename = "span")]
+    _span: Option<HashMap<String, Value>>,
+    #[serde(rename = "spans")]
+    _spans: Option<Vec<HashMap<String, Value>>>,
 }

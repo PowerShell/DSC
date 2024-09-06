@@ -323,7 +323,7 @@ pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceForm
                 .with_line_number(with_source)
                 .boxed()
         },
-        TraceFormat::Json => {
+        TraceFormat::Json | TraceFormat::PassThrough => {
             layer
                 .with_ansi(false)
                 .with_level(true)
@@ -331,7 +331,7 @@ pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceForm
                 .with_line_number(with_source)
                 .json()
                 .boxed()
-        }
+        },
     };
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter).with(indicatif_layer);
