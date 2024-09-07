@@ -29,7 +29,12 @@ if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
     }
 }
 
-npm ci --omit:optional --force --registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
+if ($null -ne $env:TF_BUILD) {
+    npm ci --omit:optional --registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
+}
+else {
+    npm install --omit:optional --registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
+}
 
 #npm list tree-sitter-cli
 #if ($LASTEXITCODE -ne 0) {

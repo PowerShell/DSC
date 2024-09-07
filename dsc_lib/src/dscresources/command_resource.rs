@@ -826,46 +826,26 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
                 include_target = false;
                 0
             };
+            let trace_message = if include_target {
+                format!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message)
+            } else {
+                format!("Process {process_id}: {}", trace_object.fields.message)
+            };
             match trace_object.level {
                 TraceLevel::Error => {
-                    if include_target {
-                        error!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
-                    }
-                    else {
-                        error!("Process {process_id}: {}", trace_object.fields.message);
-                    }
+                    error!(trace_message);
                 },
                 TraceLevel::Warning => {
-                    if include_target {
-                        warn!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
-                    }
-                    else {
-                        warn!("Process {process_id}: {}", trace_object.fields.message);
-                    }
+                    warn!(trace_message);
                 },
                 TraceLevel::Info => {
-                    if include_target {
-                        info!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
-                    }
-                    else {
-                        info!("Process {process_id}: {}", trace_object.fields.message);
-                    }
+                    info!(trace_message);
                 },
                 TraceLevel::Debug => {
-                    if include_target {
-                        debug!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
-                    }
-                    else {
-                        debug!("Process {process_id}: {}", trace_object.fields.message);
-                    }
+                    debug!(trace_message);
                 },
                 TraceLevel::Trace => {
-                    if include_target {
-                        trace!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message);
-                    }
-                    else {
-                        trace!("Process {process_id}: {}", trace_object.fields.message);
-                    }
+                    trace!(trace_message);
                 },
             }
         }
