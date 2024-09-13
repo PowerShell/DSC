@@ -6,6 +6,8 @@
     "get": {
         "executable": "runcommandonset",
         "args": [
+          "--trace-format",
+          "json",
           "get"
         ],
         "input": "stdin"
@@ -13,6 +15,8 @@
     "set": {
         "executable": "runcommandonset",
         "args": [
+          "--trace-format",
+          "json",
           "set"
         ],
         "input": "stdin",

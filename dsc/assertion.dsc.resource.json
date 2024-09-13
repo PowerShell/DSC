@@ -7,6 +7,8 @@
   "get": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "--as-group",
       "test",
@@ -17,6 +19,8 @@
   "set": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "--as-group",
       "test"
@@ -28,6 +32,8 @@
   "test": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "--as-group",
       "test",
@@ -45,19 +51,11 @@
     "5": "Resource instance failed schema validation",
     "6": "Command cancelled"
   },
-  "schema": {
-    "command": {
-      "executable": "dsc",
-      "args": [
-        "schema",
-        "--type",
-        "configuration"
-      ]
-    }
-  },
   "validate": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "validate"
     ],
