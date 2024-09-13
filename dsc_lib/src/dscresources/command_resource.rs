@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use clap::ValueEnum;
 use jsonschema::JSONSchema;
 use serde::Deserialize;
 use serde_json::Value;
@@ -827,15 +828,15 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
                 0
             };
             let trace_message = if include_target {
-                format!("Process {process_id}: {target}: {line_number}: {}", trace_object.fields.message)
+                format!("PID {process_id}: {target}: {line_number}: {}", trace_object.fields.message)
             } else {
-                format!("Process {process_id}: {}", trace_object.fields.message)
+                format!("PID {process_id}: {}", trace_object.fields.message)
             };
             match trace_object.level {
                 TraceLevel::Error => {
                     error!(trace_message);
                 },
-                TraceLevel::Warning => {
+                TraceLevel::Warn => {
                     warn!(trace_message);
                 },
                 TraceLevel::Info => {
@@ -851,23 +852,23 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
         }
         else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
             if let Some(msg) = json_obj.get("Error") {
-                error!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
+                error!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Warning") {
-                warn!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
+                warn!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Info") {
-                info!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
+                info!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Debug") {
-                debug!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
+                debug!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Trace") {
-                trace!("Process {process_id}: {}", msg.as_str().unwrap_or_default());
+                trace!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
-                trace!("Process {process_id}: {trace_line}");
+                trace!("PID {process_id}: {trace_line}");
                 return trace_line;
             };
         } else {
             // the line is not a valid json - return it as filtered stderr_line
-            trace!("Process {process_id}: {}", trace_line);
+            trace!("PID {process_id}: {}", trace_line);
             return trace_line;
         }
     };
@@ -875,12 +876,12 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     ""
 }
 
-#[derive(PartialEq, Eq, Deserialize)]
-enum TraceLevel {
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
+pub enum TraceLevel {
     #[serde(rename = "ERROR")]
     Error,
     #[serde(rename = "WARN")]
-    Warning,
+    Warn,
     #[serde(rename = "INFO")]
     Info,
     #[serde(rename = "DEBUG")]

@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{DscType, OutputFormat, TraceFormat, TraceLevel};
-
+use crate::args::{DscType, OutputFormat, TraceFormat};
 use atty::Stream;
 use crate::resolve::Include;
 use dsc_lib::{
@@ -16,6 +15,7 @@ use dsc_lib::{
     },
     dscerror::DscError,
     dscresources::{
+        command_resource::TraceLevel,
         dscresource::DscResource, invoke_result::{
             GetResult,
             SetResult,
