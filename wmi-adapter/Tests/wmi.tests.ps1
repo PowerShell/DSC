@@ -40,18 +40,21 @@ Describe 'WMI adapter resource tests' {
         $r = Get-Content -Raw $configPath | dsc config get
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.results[0].result.actualState[0].LastBootUpTime | Should -Not -BeNull
-        $res.results[0].result.actualState[1].BiosCharacteristics | Should -Not -BeNull
-        $res.results[0].result.actualState[2].NumberOfLogicalProcessors | Should -Not -BeNull
+        $res.results[0].result.actualState[0].LastBootUpTime | Should -BeNullOrEmpty
+        $res.results[0].result.actualState[0].Caption | Should -Not -BeNullOrEmpty
+        $res.results[0].result.actualState[0].Version | Should -Not -BeNullOrEmpty
+        $res.results[0].result.actualState[0].OSArchitecture | Should -Not -BeNullOrEmpty
     }
 
     It 'Example config works' -Skip:(!$IsWindows) {
-        $configPath = Join-Path $PSScriptRoot '..\..\dsc\examples\wmi.dsc.yaml'
+        $configPath = Join-Path $PSScriptRoot '..\..\dsc\examples\wmi_inventory.dsc.yaml'
         $r = dsc config get -p $configPath
         $LASTEXITCODE | Should -Be 0
         $r | Should -Not -BeNullOrEmpty
         $res = $r | ConvertFrom-Json
-        $res.results[0].result.actualState[0].Model | Should -Not -BeNullOrEmpty
-        $res.results[0].result.actualState[1].Description | Should -Not -BeNullOrEmpty
+        $res.results[0].result.actualState[0].Name | Should -Not -BeNullOrEmpty
+        $res.results[0].result.actualState[0].BootupState | Should -BeNullOrEmpty
+        $res.results[0].result.actualState[1].Caption | Should -Not -BeNullOrEmpty
+        $res.results[0].result.actualState[1].BuildNumber | Should -BeNullOrEmpty
     }
 }

@@ -13,6 +13,19 @@ $ProgressPreference = 'Ignore'
 $WarningPreference = 'Ignore'
 $VerbosePreference = 'Ignore'
 
+function Write-Trace {
+    param(
+        [string]$message,
+        [string]$level = 'Error'
+    )
+
+    $trace = [pscustomobject]@{
+        $level = $message
+    } | ConvertTo-Json -Compress
+
+    $host.ui.WriteErrorLine($trace)
+}
+
 function IsConfiguration($obj) {
     if ($null -ne $obj.metadata -and $null -ne $obj.metadata.'Microsoft.DSC' -and $obj.metadata.'Microsoft.DSC'.context -eq 'Configuration') {
         return $true
@@ -29,7 +42,6 @@ if ($Operation -eq 'List')
     {
         $version_string = "";
         $author_string = "";
-        $moduleName = "";
 
         $propertyList = @()
         foreach ($p in $r.CimClassProperties)
@@ -79,17 +91,37 @@ elseif ($Operation -eq 'Get')
             $wmi_namespace = $type_fields[0].Replace('.','\')
             $wmi_classname = $type_fields[1]
 
-            #TODO: add filtering based on supplied properties of $r
-            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname
+            #TODO: identify key properties and add WHERE clause to the query
+            if ($r.properties)
+            {
+                $query = "SELECT $($r.properties.psobject.properties.name -join ',') FROM $wmi_classname"
+                Write-Trace -Level Trace -message "Query: $query"
+                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query
+            }
+            else
+            {
+                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname
+            }
 
             if ($wmi_instances)
             {
                 $instance_result = @{}
+                # TODO: for a `Get`, they key property must be provided so a specific instance is returned rather than just the first
                 $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
                 $wmi_instance.psobject.properties | %{
                     if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
                     {
-                        $instance_result[$_.Name] = $_.Value
+                        if ($r.properties)
+                        {
+                            if ($r.properties.psobject.properties.name -contains $_.Name)
+                            {
+                                $instance_result[$_.Name] = $_.Value
+                            }
+                        }
+                        else
+                        {
+                            $instance_result[$_.Name] = $_.Value
+                        }
                     }
                 }
 
@@ -98,7 +130,7 @@ elseif ($Operation -eq 'Get')
             else
             {
                 $errmsg = "Can not find type " + $r.type + "; please ensure that Get-CimInstance returns this resource type"
-                Write-Error $errmsg
+                Write-Trace $errmsg
                 exit 1
             }
         }
@@ -114,7 +146,8 @@ elseif ($Operation -eq 'Get')
 
         if ($wmi_instances)
         {
-            $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
+            # TODO: there's duplicate code here between configuration and non-configuration execution and should be refactored into a helper
+            $wmi_instance = $wmi_instances[0]
             $result = @{}
             $wmi_instance.psobject.properties | %{
                 if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
@@ -126,7 +159,7 @@ elseif ($Operation -eq 'Get')
         else
         {
             $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-CimInstance returns this resource type"
-            Write-Error $errmsg
+            Write-Trace $errmsg
             exit 1
         }
     }
@@ -140,5 +173,5 @@ elseif ($Operation -eq 'Validate')
 }
 else
 {
-    Write-Error "ERROR: Unsupported operation requested from wmigroup.resource.ps1"
+    Write-Trace "ERROR: Unsupported operation requested from wmigroup.resource.ps1"
 }
