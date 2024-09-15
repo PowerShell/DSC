@@ -56,5 +56,6 @@ Describe 'WMI adapter resource tests' {
         $res.results[0].result.actualState[0].BootupState | Should -BeNullOrEmpty
         $res.results[0].result.actualState[1].Caption | Should -Not -BeNullOrEmpty
         $res.results[0].result.actualState[1].BuildNumber | Should -BeNullOrEmpty
+        $res.results[0].result.actualState[4].AdapterType | Should -BeLike "Ethernet*"
     }
 }

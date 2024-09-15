@@ -39,3 +39,4 @@ resources:
           adaptertype:
           netconnectionid:
           serviceName:
+          netconnectionstatus: 2

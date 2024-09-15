@@ -9,6 +9,11 @@ param(
     $stdinput
 )
 
+trap {
+    Write-Trace -Level Error -message $_.Exception.Message
+    exit 1
+}
+
 $ProgressPreference = 'Ignore'
 $WarningPreference = 'Ignore'
 $VerbosePreference = 'Ignore'
@@ -95,12 +100,43 @@ elseif ($Operation -eq 'Get')
             if ($r.properties)
             {
                 $query = "SELECT $($r.properties.psobject.properties.name -join ',') FROM $wmi_classname"
+                $where = " WHERE "
+                $useWhere = $false
+                $first = $true
+                foreach ($property in $r.properties.psobject.properties)
+                {
+                    if ($null -ne $property.value)
+                    {
+                        $useWhere = $true
+                        if ($first)
+                        {
+                            $first = $false
+                        }
+                        else
+                        {
+                            $where += " AND "
+                        }
+
+                        if ($property.TypeNameOfValue -eq "System.String")
+                        {
+                            $where += "$($property.Name) = '$($property.Value)'"
+                        }
+                        else
+                        {
+                            $where += "$($property.Name) = $($property.Value)"
+                        }
+                    }
+                }
+                if ($useWhere)
+                {
+                    $query += $where
+                }
                 Write-Trace -Level Trace -message "Query: $query"
-                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query
+                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Stop
             }
             else
             {
-                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname
+                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
             }
 
             if ($wmi_instances)
@@ -142,7 +178,7 @@ elseif ($Operation -eq 'Get')
         $wmi_classname = $type_fields[1]
 
         #TODO: add filtering based on supplied properties of $inputobj_pscustomobj
-        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname
+        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
 
         if ($wmi_instances)
         {
