@@ -96,7 +96,7 @@ elseif ($Operation -eq 'Get')
             $wmi_namespace = $type_fields[0].Replace('.','\')
             $wmi_classname = $type_fields[1]
 
-            #TODO: identify key properties and add WHERE clause to the query
+            # TODO: identify key properties and add WHERE clause to the query
             if ($r.properties)
             {
                 $query = "SELECT $($r.properties.psobject.properties.name -join ',') FROM $wmi_classname"
@@ -105,6 +105,7 @@ elseif ($Operation -eq 'Get')
                 $first = $true
                 foreach ($property in $r.properties.psobject.properties)
                 {
+                    # TODO: validate property against the CIM class to give better error message
                     if ($null -ne $property.value)
                     {
                         $useWhere = $true
