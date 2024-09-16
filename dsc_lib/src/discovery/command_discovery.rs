@@ -575,11 +575,7 @@ fn load_adapted_resources_lookup_table() -> HashMap<String, String>
     let file_path = get_lookup_table_file_path();
     
     let lookup_table: HashMap<String, String> = match fs::read(file_path.clone()){
-        Ok(data) => { match serde_json::from_slice(&data) {
-                Ok(lt) => { lt },
-                Err(_) => { HashMap::new() }
-            }
-        },
+        Ok(data) => { serde_json::from_slice(&data).unwrap_or_default() },
         Err(_) => { HashMap::new() }
     };
 
