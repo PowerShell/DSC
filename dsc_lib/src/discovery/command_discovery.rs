@@ -510,8 +510,8 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
 
 fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<DscResource>>, needed_resource_types: &Vec<String>) -> LinkedHashMap<String, Vec<DscResource>>
 {
-    let mut result:LinkedHashMap<String, Vec<DscResource>> = LinkedHashMap::new();
-    let lookup_table:HashMap<String, String> = load_adapted_resources_lookup_table();
+    let mut result = LinkedHashMap::<String, Vec<DscResource>>::new();
+    let lookup_table = load_adapted_resources_lookup_table();
     // first add adapters (for needed types) that can be found in the lookup table
     for needed_resource in needed_resource_types {
         if let Some(adapter_name) = lookup_table.get(needed_resource) {
@@ -534,11 +534,14 @@ fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<
 
 fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
 {
-    let mut lookup_table:HashMap<String, String> = load_adapted_resources_lookup_table();
+    let mut lookup_table = load_adapted_resources_lookup_table();
 
     for (resource_name, res_vec) in adapted_resources {
-        let adapter_name = &res_vec[0].require_adapter.as_ref().unwrap();
-        lookup_table.insert(resource_name.to_string().to_lowercase(), (*adapter_name).to_string());
+        if let Some(adapter_name) = &res_vec[0].require_adapter {
+            lookup_table.insert(resource_name.to_string().to_lowercase(), adapter_name.to_string());
+        } else {
+            debug!("Resource '{resource_name}' in 'adapted_resources' is missing 'require_adapter' field.");
+        }
     };
 
     save_adapted_resources_lookup_table(&lookup_table);
