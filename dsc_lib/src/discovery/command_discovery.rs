@@ -540,7 +540,7 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
         if let Some(adapter_name) = &res_vec[0].require_adapter {
             lookup_table.insert(resource_name.to_string().to_lowercase(), adapter_name.to_string());
         } else {
-            debug!("Resource '{resource_name}' in 'adapted_resources' is missing 'require_adapter' field.");
+            info!("Resource '{resource_name}' in 'adapted_resources' is missing 'require_adapter' field.");
         }
     };
 
@@ -557,16 +557,16 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
         if let Some(prefix) = path.parent() {
             if fs::create_dir_all(prefix).is_ok()  {
                 if fs::write(file_path.clone(), lookup_table_json).is_err() {
-                    debug!("Unable to write lookup_table file {file_path:?}");
+                    info!("Unable to write lookup_table file {file_path:?}");
                 }
             } else {
-                debug!("Unable to create parent directories of the lookup_table file {file_path:?}");
+                info!("Unable to create parent directories of the lookup_table file {file_path:?}");
             }
         } else {
-            debug!("Unable to get directory of the lookup_table file {file_path:?}");
+            info!("Unable to get directory of the lookup_table file {file_path:?}");
         }
     } else {
-        debug!("Unable to serialize lookup_table to json");
+        info!("Unable to serialize lookup_table to json");
     }
 }
 
