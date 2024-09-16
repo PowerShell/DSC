@@ -3,6 +3,7 @@
 
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use dsc_lib::dscresources::command_resource::TraceLevel;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -16,15 +17,8 @@ pub enum TraceFormat {
     Default,
     Plaintext,
     Json,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
-pub enum TraceLevel {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace
+    #[clap(hide = true)]
+    PassThrough,
 }
 
 #[derive(Debug, Parser)]

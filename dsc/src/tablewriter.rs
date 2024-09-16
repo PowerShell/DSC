@@ -1,4 +1,4 @@
-use crossterm::terminal::{size};
+use crossterm::terminal::size;
 
 pub struct Table {
     header: Vec<String>,
@@ -8,13 +8,13 @@ pub struct Table {
 
 impl Table {
     /// Create a new table.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `header` - The header row
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Table` - The new table
     #[must_use]
     pub fn new(header: &[&str]) -> Table {
@@ -31,9 +31,9 @@ impl Table {
     }
 
     /// Add a row to the table.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `row` - The row to add
     pub fn add_row(&mut self, row: Vec<String>) {
         for (i, column) in row.iter().enumerate() {
