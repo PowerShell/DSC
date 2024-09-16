@@ -7,6 +7,8 @@
   "get": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "--as-group",
       "get"
@@ -16,6 +18,8 @@
   "set": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "--as-group",
       "set"
@@ -27,6 +31,8 @@
   "test": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "--as-group",
       "test"
@@ -46,6 +52,8 @@
   "validate": {
     "executable": "dsc",
     "args": [
+      "--trace-format",
+      "pass-through",
       "config",
       "validate"
     ],

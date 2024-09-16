@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 base64 = "0.22.1"
 chrono = "0.4.26"
+clap = { version = "4.4", features = ["derive"] }
 derive_builder ="0.20.0"
 indicatif = "0.17.0"
 jsonschema = "0.18.0"

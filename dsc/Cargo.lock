@@ -500,6 +500,7 @@ dependencies = [
  "base64",
  "cc",
  "chrono",
+ "clap",
  "derive_builder",
  "indicatif",
  "jsonschema",

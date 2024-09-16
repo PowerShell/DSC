@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{DscType, OutputFormat, TraceFormat, TraceLevel};
-
+use crate::args::{DscType, OutputFormat, TraceFormat};
 use atty::Stream;
 use crate::resolve::Include;
 use dsc_lib::{
@@ -16,6 +15,7 @@ use dsc_lib::{
     },
     dscerror::DscError,
     dscresources::{
+        command_resource::TraceLevel,
         dscresource::DscResource, invoke_result::{
             GetResult,
             SetResult,
@@ -323,7 +323,7 @@ pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceForm
                 .with_line_number(with_source)
                 .boxed()
         },
-        TraceFormat::Json => {
+        TraceFormat::Json | TraceFormat::PassThrough => {
             layer
                 .with_ansi(false)
                 .with_level(true)
@@ -331,7 +331,7 @@ pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceForm
                 .with_line_number(with_source)
                 .json()
                 .boxed()
-        }
+        },
     };
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter).with(indicatif_layer);
