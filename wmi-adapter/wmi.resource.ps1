@@ -9,6 +9,7 @@ param(
     $stdinput
 )
 
+# catch any un-caught exception and write it to the error stream
 trap {
     Write-Trace -Level Error -message $_.Exception.Message
     exit 1
