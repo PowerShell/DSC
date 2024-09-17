@@ -3,142 +3,147 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('List','Get','Set','Test','Validate')]
-    $Operation = 'List',
-    [Parameter(ValueFromPipeline)]
-    $stdinput
+    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate.')]
+    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate')]
+    [string]$Operation,
+    [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
+    [string]$jsonInput = '@{}'
 )
 
-$ProgressPreference = 'Ignore'
-$WarningPreference = 'Ignore'
-$VerbosePreference = 'Ignore'
+function Write-DscTrace
+{
+    param
+    (
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Error', 'Warn', 'Info', 'Debug', 'Trace')]
+        [string]$Operation = 'Debug',
 
-function IsConfiguration($obj) {
-    if ($null -ne $obj.metadata -and $null -ne $obj.metadata.'Microsoft.DSC' -and $obj.metadata.'Microsoft.DSC'.context -eq 'Configuration') {
-        return $true
-    }
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Message
+    )
 
-    return $false
+    $trace = @{$Operation = $Message } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
 }
 
-if ($Operation -eq 'List')
+# Adding some debug info to STDERR
+'PSVersion=' + $PSVersionTable.PSVersion.ToString() | Write-DscTrace
+'PSPath=' + $PSHome | Write-DscTrace
+'PSModulePath=' + $env:PSModulePath | Write-DscTrace
+
+if ('Validate' -ne $Operation)
 {
-    $clases = Get-CimClass
-
-    foreach ($r in $clases)
-    {
-        $version_string = "";
-        $author_string = "";
-        $moduleName = "";
-
-        $propertyList = @()
-        foreach ($p in $r.CimClassProperties)
-        {
-            if ($p.Name)
-            {
-                $propertyList += $p.Name
-            }
-        }
-
-        $namespace = $r.CimSystemProperties.Namespace.ToLower().Replace('/','.')
-        $classname = $r.CimSystemProperties.ClassName
-        $fullResourceTypeName = "$namespace/$classname"
-        $requiresString = "Microsoft.Windows/WMI"
-
-        $z = [pscustomobject]@{
-            type = $fullResourceTypeName;
-            kind = 'Resource';
-            version = $version_string;
-            capabilities = @('Get');
-            path = "";
-            directory = "";
-            implementedAs = "";
-            author = $author_string;
-            properties = $propertyList;
-            requireAdapter = $requiresString
-        }
-
-        $z | ConvertTo-Json -Compress
-    }
+    # write $jsonInput to STDERR for debugging
+    $trace = @{'Debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
+    $wmiAdapter = Import-Module "$PSScriptRoot/wmiAdapter.psd1" -Force -PassThru
+    
+    # initialize OUTPUT as array
+    $result = [System.Collections.Generic.List[Object]]::new()
 }
-elseif ($Operation -eq 'Get')
+
+switch ($Operation)
 {
-    $inputobj_pscustomobj = $null
-    if ($stdinput)
+    'List'
     {
-        $inputobj_pscustomobj = $stdinput | ConvertFrom-Json
-    }
+        $clases = Get-CimClass
 
-    $result = @()
-
-    if (IsConfiguration $inputobj_pscustomobj) # we are processing a config batch
-    {
-        foreach($r in $inputobj_pscustomobj.resources)
+        foreach ($r in $clases)
         {
-            $type_fields = $r.type -split "/"
-            $wmi_namespace = $type_fields[0].Replace('.','\')
-            $wmi_classname = $type_fields[1]
-
-            #TODO: add filtering based on supplied properties of $r
-            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname
-
-            if ($wmi_instances)
+            $version_string = "";
+            $author_string = "";
+            $moduleName = "";
+    
+            $propertyList = @()
+            foreach ($p in $r.CimClassProperties)
             {
-                $instance_result = @{}
-                $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
-                $wmi_instance.psobject.properties | %{
-                    if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
-                    {
-                        $instance_result[$_.Name] = $_.Value
-                    }
-                }
-
-                $result += @($instance_result)
-            }
-            else
-            {
-                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-CimInstance returns this resource type"
-                Write-Error $errmsg
-                exit 1
-            }
-        }
-    }
-    else # we are processing an individual resource call
-    {
-        $type_fields = $inputobj_pscustomobj.adapted_dsc_type -split "/"
-        $wmi_namespace = $type_fields[0].Replace('.','\')
-        $wmi_classname = $type_fields[1]
-
-        #TODO: add filtering based on supplied properties of $inputobj_pscustomobj
-        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname
-
-        if ($wmi_instances)
-        {
-            $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
-            $result = @{}
-            $wmi_instance.psobject.properties | %{
-                if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
+                if ($p.Name)
                 {
-                    $result[$_.Name] = $_.Value
+                    $propertyList += $p.Name
                 }
             }
+    
+            # TODO: create class
+            $methodList = [System.Collections.Generic.List[PSObject]]@()
+            foreach ($m in $r.CimClassMethods)
+            {
+                $inputObject = [PSCustomObject]@{
+                    methodName = $m.Name
+                    parameters = @()
+                }
+                
+                if ($m.Parameters)
+                {
+                    $inputObject.parameters = $m.Parameters.Name
+                }
+                $methodList += $inputObject
+            }
+    
+            $namespace = $r.CimSystemProperties.Namespace.ToLower().Replace('/', '.')
+            $classname = $r.CimSystemProperties.ClassName
+            $fullResourceTypeName = "$namespace/$classname"
+            $requiresString = "Microsoft.Windows/WMI"
+    
+            $z = [pscustomobject]@{
+                type           = $fullResourceTypeName;
+                kind           = 'Resource';
+                version        = $version_string;
+                capabilities   = @('Get', 'Set', 'Test', 'Export');
+                # capabilities   = $methodList
+                path           = "";
+                directory      = "";
+                implementedAs  = "";
+                author         = $author_string;
+                properties     = $propertyList;
+                # TODO: Could not use methodsDetails because expected one of `type`, `kind`, `version`, `capabilities`, `path`, `description`, `directory`, `implementedAs`, `author`, `properties`, `requireAdapter`, `manifest`
+                # Where is this coming from?
+                # methodsDetails = $methodList
+                requireAdapter = $requiresString
+            }
+    
+            $z | ConvertTo-Json -Compress -Depth 10
         }
-        else
+    }
+    { @('Get', 'Set', 'Test', 'Export') -contains $_ }
+    {
+        
+        $desiredState = $wmiAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
+        if ($null -eq $desiredState)
         {
-            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-CimInstance returns this resource type"
-            Write-Error $errmsg
+            $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
+            $host.ui.WriteErrorLine($trace)
             exit 1
         }
-    }
 
-    $result | ConvertTo-Json -Compress
-}
-elseif ($Operation -eq 'Validate')
-{
-    # TODO: this is placeholder
-    @{ valid = $true } | ConvertTo-Json
-}
-else
-{
-    Write-Error "ERROR: Unsupported operation requested from wmigroup.resource.ps1"
+        foreach ($ds in $desiredState)
+        {
+            # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
+            $actualstate = $wmiAdapter.Invoke( { param($op, $ds) Invoke-DscWmi -Operation $op -DesiredState $ds }, $Operation, $ds)
+            if ($null -eq $actualState)
+            {
+                $trace = @{'Debug' = 'ERROR: Incomplete GET for resource ' + $ds.type } | ConvertTo-Json -Compress
+                $host.ui.WriteErrorLine($trace)
+                exit 1
+            }
+
+            $result += $actualstate
+        }
+
+        # OUTPUT json to stderr for debug, and to stdout
+        $result = @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
+        $trace = @{'Debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
+        $host.ui.WriteErrorLine($trace)
+        return $result
+    }
+    'Validate'
+    {
+        # VALIDATE not implemented
+        
+        # OUTPUT
+        @{ valid = $true } | ConvertTo-Json
+    }
+    Default
+    {
+        Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
+    }
 }
