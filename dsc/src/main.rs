@@ -124,14 +124,14 @@ fn ctrlc_handler() {
 }
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
-    info!("Terminating subprocesses of process {} {}", process.name(), process.pid());
+    info!("Terminating subprocesses of process {:?} {}", process.name(), process.pid());
     for subprocess in sys.processes().values().filter(|p| p.parent().map_or(false, |parent| parent == process.pid())) {
         terminate_subprocesses(sys, subprocess);
     }
 
-    info!("Terminating process {} {}", process.name(), process.pid());
+    info!("Terminating process {:?} {}", process.name(), process.pid());
     if !process.kill() {
-        error!("Failed to terminate process {} {}", process.name(), process.pid());
+        error!("Failed to terminate process {:?} {}", process.name(), process.pid());
     }
 }
 
@@ -187,7 +187,7 @@ Press any key to close this window
     };
 
     // MS Store runs app using `sihost.exe`
-    if parent_process.name().to_lowercase() == "sihost.exe" || parent_process.name().to_lowercase() == "explorer.exe"{
+    if parent_process.name().to_ascii_lowercase() == "sihost.exe" || parent_process.name().to_ascii_lowercase() == "explorer.exe"{
         eprintln!("{message}");
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
