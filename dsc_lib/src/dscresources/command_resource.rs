@@ -267,7 +267,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
         verify_json(resource, cwd, &stdout)?;
     }
 
-    if resource.kind == Some(Kind::Import) {
+    if resource.kind == Some(Kind::Importer) {
         debug!("Import resource kind, returning group test response");
         let group_test_response: Vec<ResourceTestResult> = serde_json::from_str(&stdout)?;
         return Ok(TestResult::Group(group_test_response));
