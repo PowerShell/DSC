@@ -13,7 +13,8 @@ param(
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCratesIO
+    [switch]$UseCratesIO,
+    [switch]$UpdateLockFile
 )
 
 if ($GetPackageVersion) {
@@ -240,7 +241,12 @@ if (!$SkipBuild) {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
             if ($project -eq 'tree-sitter-dscexpression') {
-                ./build.ps1
+                if ($UpdateLockFile) {
+                    cargo generate-lockfile
+                }
+                else {
+                    ./build.ps1
+                }
             }
 
             if (Test-Path "./Cargo.toml")
@@ -259,7 +265,12 @@ if (!$SkipBuild) {
                     }
                 }
                 else {
-                    cargo build @flags
+                    if ($UpdateLockFile) {
+                        cargo generate-lockfile
+                    }
+                    else {
+                        cargo build @flags
+                    }
                 }
             }
 
