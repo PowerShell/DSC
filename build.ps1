@@ -28,6 +28,8 @@ if ($GetPackageVersion) {
 
 $filesForWindowsPackage = @(
     'dsc.exe',
+    'dscecho.exe',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
@@ -45,6 +47,8 @@ $filesForWindowsPackage = @(
 
 $filesForLinuxPackage = @(
     'dsc',
+    'dscecho',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'apt.dsc.resource.json',
     'apt.dsc.resource.sh',
@@ -57,6 +61,8 @@ $filesForLinuxPackage = @(
 
 $filesForMacPackage = @(
     'dsc',
+    'dscecho',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'brew.dsc.resource.json',
     'brew.dsc.resource.sh',
@@ -209,6 +215,7 @@ if (!$SkipBuild) {
         "security_context_lib",
         "dsc_lib",
         "dsc",
+        "dscecho",
         "osinfo",
         "powershell-adapter",
         "process",

@@ -5,7 +5,7 @@ resources:
   type: Microsoft/OSInfo
   properties: {}
 - name: Echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[concat('The OS is ', reference(resourceId('Microsoft/OSInfo','os')).actualState.family)]"
   dependsOn:
