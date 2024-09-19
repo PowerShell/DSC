@@ -721,13 +721,8 @@ impl Configurator {
     fn parse_metadata(mut input: Value) -> Result<(Value, Option<Value>), DscError> {
         let result = input.clone();
         if let Value::Object(mut map) = input.take() {
-            if let Some(removed_value) = map.remove("_metadata") {
-                let modified_value = Value::Object(map);
-                return Ok((modified_value, Some(removed_value)))
-            }
-            else {
-                return Ok((result, None))
-            }
+            let metadata = map.remove("_metadata");
+            return Ok((Value::Object(map), metadata));
         }
         // TODO: if the after_state can't be parsed as a map, it may be because it's nested in a group like - afterState.result.afterState?
         // returning original for now
