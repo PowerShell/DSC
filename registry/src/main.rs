@@ -123,7 +123,7 @@ fn main() {
 
 pub fn enable_tracing() {
     // default filter to trace level
-    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap();
+    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap_or_default();
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
     let fmt = layer
                 .with_ansi(false)
