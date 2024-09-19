@@ -12,8 +12,7 @@ use registry_helper::RegistryHelper;
 use schemars::schema_for;
 use std::process::exit;
 use tracing::{debug, error};
-use tracing_subscriber::{EnvFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
-
+use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
 use crate::config::Registry;
 
 mod args;
@@ -49,6 +48,7 @@ fn main() {
         args::SubCommand::Config { subcommand } => {
             match subcommand {
                 args::ConfigSubCommand::Get{input} => {
+                    debug!("Get input: {input}");
                     let reg_helper = match RegistryHelper::new(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
@@ -68,6 +68,7 @@ fn main() {
                     }
                 },
                 args::ConfigSubCommand::Set{input, what_if} => {
+                    debug!("Set input: {input}, what_if: {what_if}");
                     let mut reg_helper = match RegistryHelper::new(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
@@ -92,6 +93,7 @@ fn main() {
                     }
                 },
                 args::ConfigSubCommand::Delete{input} => {
+                    debug!("Delete input: {input}");
                     let reg_helper = match RegistryHelper::new(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
@@ -120,9 +122,8 @@ fn main() {
 }
 
 pub fn enable_tracing() {
-    let filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("trace"))
-        .unwrap_or_default();
+    // default filter to trace level
+    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap();
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
     let fmt = layer
                 .with_ansi(false)

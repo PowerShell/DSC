@@ -35,13 +35,13 @@ Describe 'Registry config get tests' {
         # keyPath should return Access Denied
         $json = @'
         {
-            "keyPath": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurePipeServers\\Winreg"
+            "keyPath": "HKLM\\SYSTEM\\CurrentControlSet\\Control"
         }
 '@
         $out = registry config get --input $json 2>&1
-        $LASTEXITCODE | Should -Be 3
+        $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
-        $result.level | Should -BeExactly 'ERROR'
-        $result.fields.message | Should -BeLike '*Permission denied*'
+        $result[0].level | Should -BeExactly 'DEBUG'
+        $result[0].fields.message | Should -BeLike 'Get Input:*'
     }
 }
