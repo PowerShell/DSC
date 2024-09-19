@@ -460,6 +460,8 @@ function Invoke-DscOperation {
                     $resource = GetTypeInstanceFromModule -modulename $cachedDscResourceInfo.ModuleName -classname $cachedDscResourceInfo.Name
                     $dscResourceInstance = $resource::New()
 
+                    $ValidProperties = $cachedDscResourceInfo.Properties.Name
+
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
@@ -469,14 +471,18 @@ function Invoke-DscOperation {
 
                     switch ($Operation) {
                         'Get' {
-                            $Result = $dscResourceInstance.Get()
+                            $Result = @{}
+                            $raw_obj = $dscResourceInstance.Get()
+                            $ValidProperties | %{ $Result[$_] = $raw_obj[$_] }
                             $addToActualState.properties = $Result
                         }
                         'Set' {
                             $dscResourceInstance.Set()
                         }
                         'Test' {
-                            $Result = $dscResourceInstance.Test()
+                            $Result = @{}
+                            $raw_obj = $dscResourceInstance.Test()
+                            $ValidProperties | %{ $Result[$_] = $raw_obj[$_] }
                             $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
                         }
                         'Export' {
@@ -486,7 +492,13 @@ function Invoke-DscOperation {
                                 "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
                                 exit 1
                             }
-                            $resultArray = $method.Invoke($null,$null)
+                            $resultArray = @()
+                            $raw_obj_array = $method.Invoke($null,$null)
+                            foreach ($raw_obj in $raw_obj_array) {
+                                $Result_obj = @{}
+                                $ValidProperties | %{ $Result_obj[$_] = $raw_obj[$_] }
+                                $resultArray += $Result_obj
+                            }
                             $addToActualState = $resultArray
                         }
                     }
