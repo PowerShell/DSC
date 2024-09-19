@@ -33,7 +33,7 @@ class TestClassResource : BaseTestClass
 
     hidden
     [DscProperty()]
-    [string] $HiddenDscProperty
+    [string] $HiddenDscProperty # This property should be in results data, but is an anti-pattern.
 
     [void] Set()
     {
