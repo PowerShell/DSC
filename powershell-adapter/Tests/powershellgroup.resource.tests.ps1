@@ -37,6 +37,11 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.Prop1 | Should -BeExactly 'ValueForProp1'
+
+        # verify that only properties with DscProperty attribute are returned
+        $propertiesNames = $res.actualState.result.properties | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames | Should -Not -Contain 'NonDscProperty'
+        $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
 
     It 'Get uses enum names on class-based resource' {
@@ -53,6 +58,11 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.InDesiredState | Should -Be $True
+
+        # verify that only properties with DscProperty attribute are returned
+        $propertiesNames = $res.actualState.result.properties.InDesiredState | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames | Should -Not -Contain 'NonDscProperty'
+        $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
 
     It 'Set works on class-based resource' {
@@ -71,6 +81,13 @@ Describe 'PowerShell adapter resource tests' {
         $res.resources[0].properties.result.count | Should -Be 5
         $res.resources[0].properties.result[0].Name | Should -Be "Object1"
         $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
+
+        # verify that only properties with DscProperty attribute are returned
+        $res.resources[0].properties.result | %{
+            $propertiesNames = $_ | Get-Member -MemberType NoteProperty | % Name
+            $propertiesNames | Should -Not -Contain 'NonDscProperty'
+            $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
+        }
     }
 
     It 'Get --all works on PS class-based resource' {
