@@ -30,4 +30,18 @@ Describe 'Registry config get tests' {
         $result.valueData.ExpandString | Should -Be '%ProgramFiles%'
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
+
+    It 'Traces should be JSON' -Skip:(!$IsWindows) {
+        # keyPath should return Access Denied
+        $json = @'
+        {
+            "keyPath": "HKLM\\SYSTEM\\CurrentControlSet\\Control"
+        }
+'@
+        $out = registry config get --input $json 2>&1
+        $LASTEXITCODE | Should -Be 0
+        $result = $out | ConvertFrom-Json
+        $result[0].level | Should -BeExactly 'DEBUG'
+        $result[0].fields.message | Should -BeLike 'Get Input:*'
+    }
 }
