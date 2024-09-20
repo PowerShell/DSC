@@ -473,7 +473,7 @@ function Invoke-DscOperation {
                         'Get' {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
-                            $ValidProperties | %{ $Result[$_] = $raw_obj.$_ }
+                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_ }
                             $addToActualState.properties = $Result
                         }
                         'Set' {
@@ -482,7 +482,7 @@ function Invoke-DscOperation {
                         'Test' {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Test()
-                            $ValidProperties | %{ $Result[$_] = $raw_obj.$_ }
+                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_ }
                             $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
                         }
                         'Export' {
@@ -496,7 +496,7 @@ function Invoke-DscOperation {
                             $raw_obj_array = $method.Invoke($null,$null)
                             foreach ($raw_obj in $raw_obj_array) {
                                 $Result_obj = @{}
-                                $ValidProperties | %{ $Result_obj[$_] = $raw_obj.$_ }
+                                $ValidProperties | ForEach-Object { $Result_obj[$_] = $raw_obj.$_ }
                                 $resultArray += $Result_obj
                             }
                             $addToActualState = $resultArray
