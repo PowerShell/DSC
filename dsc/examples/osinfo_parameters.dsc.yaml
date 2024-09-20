@@ -18,6 +18,6 @@ resources:
   properties:
     family: macOS
 - name: path
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[envvar('PATH')]"

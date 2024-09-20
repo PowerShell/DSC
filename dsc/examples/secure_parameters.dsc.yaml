@@ -6,10 +6,10 @@ parameters:
     type: secureObject
 resources:
   - name: Echo 1
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('myString')]"
   - name: Echo 2
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('myObject').myProperty]"

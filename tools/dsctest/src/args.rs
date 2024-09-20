@@ -6,7 +6,6 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
     Delete,
-    Echo,
     Exist,
     ExitCode,
     Sleep,
@@ -27,12 +26,6 @@ pub enum SubCommand {
     #[clap(name = "delete", about = "delete operation")]
     Delete {
         #[clap(name = "input", short, long, help = "The input to the delete command as JSON")]
-        input: String,
-    },
-
-    #[clap(name = "echo", about = "Return the input")]
-    Echo {
-        #[clap(name = "input", short, long, help = "The input to the echo command as JSON")]
         input: String,
     },
 

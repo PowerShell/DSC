@@ -30,7 +30,7 @@ Describe 'config schema tests' {
     }
 
     It 'can accept the use of --format as a subcommand' {
-        $schema = dsc resource schema -r Test/Echo -f pretty-json
+        $schema = dsc resource schema -r Microsoft.DSC.Debug/Echo -f pretty-json
         $LASTEXITCODE | Should -Be 0
         $schema | Should -Not -BeNullOrEmpty
         $schema = $schema | ConvertFrom-Json

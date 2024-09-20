@@ -128,7 +128,7 @@ Describe 'Include tests' {
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: one
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: one
 '@
@@ -171,7 +171,7 @@ resources:
         $out.results[1].result[0].name | Should -Be 'nested'
         $out.results[1].result[0].type | Should -Be 'Microsoft.DSC/Include'
         $out.results[1].result[0].result.actualState.name | Should -Be 'one'
-        $out.results[1].result[0].result.actualState.type | Should -Be 'Test/Echo'
+        $out.results[1].result[0].result.actualState.type | Should -Be 'Microsoft.DSC.Debug/Echo'
         $out.results[1].result[0].result.actualState.result.actualState.output | Should -Be 'one'
     }
 
@@ -180,7 +180,7 @@ resources:
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: one
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: Hello World
 '@
@@ -204,7 +204,7 @@ resources:
         $out = dsc config set -d $includeConfig | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.beforeState[0].name | Should -Be 'one'
-        $out.results[0].result.beforeState[0].type | Should -Be 'Test/Echo'
+        $out.results[0].result.beforeState[0].type | Should -Be 'Microsoft.DSC.Debug/Echo'
         $out.results[0].result.afterState[0].result.afterState.output | Should -Be 'Hello World'
         $out.hadErrors | Should -Be $false
     }
