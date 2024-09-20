@@ -65,7 +65,7 @@ Describe 'config argument tests' {
 '@ }
     ) {
         param($text)
-        $output = $text | dsc resource get -r Test/Echo
+        $output = $text | dsc resource get -r Microsoft.DSC.Debug/Echo
         $output = $output | ConvertFrom-Json
         $output.actualState.output | Should -BeExactly 'Hello There'
     }

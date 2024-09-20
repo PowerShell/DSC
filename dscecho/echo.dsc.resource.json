@@ -1,11 +1,10 @@
 {
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
-    "type": "Test/Echo",
-    "version": "0.1.0",
+    "type": "Microsoft.DSC.Debug/Echo",
+    "version": "1.0.0",
     "get": {
-        "executable": "dsctest",
+        "executable": "dscecho",
         "args": [
-            "echo",
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
@@ -13,9 +12,8 @@
         ]
     },
     "set": {
-        "executable": "dsctest",
+        "executable": "dscecho",
         "args": [
-            "echo",
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
@@ -23,9 +21,8 @@
         ]
     },
     "test": {
-        "executable": "dsctest",
+        "executable": "dscecho",
         "args": [
-            "echo",
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
@@ -34,12 +31,7 @@
     },
     "schema": {
         "command": {
-            "executable": "dsctest",
-            "args": [
-                "schema",
-                "-s",
-                "echo"
-            ]
+            "executable": "dscecho"
         }
     }
 }

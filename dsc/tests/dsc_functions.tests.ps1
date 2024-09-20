@@ -17,7 +17,7 @@ Describe 'tests for function expressions' {
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '$escapedText'
 "@

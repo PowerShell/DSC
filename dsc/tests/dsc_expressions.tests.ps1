@@ -37,7 +37,7 @@ parameters:
           value: 3
 resources:
 - name: echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "$text"
 "@
@@ -58,7 +58,7 @@ resources:
 `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "$expression"
 "@
