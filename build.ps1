@@ -13,7 +13,8 @@ param(
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCFS
+    [switch]$UseCratesIO,
+    [switch]$UpdateLockFile
 )
 
 if ($GetPackageVersion) {
@@ -27,6 +28,8 @@ if ($GetPackageVersion) {
 
 $filesForWindowsPackage = @(
     'dsc.exe',
+    'dscecho.exe',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'powershell.dsc.resource.json',
@@ -44,6 +47,8 @@ $filesForWindowsPackage = @(
 
 $filesForLinuxPackage = @(
     'dsc',
+    'dscecho',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'apt.dsc.resource.json',
     'apt.dsc.resource.sh',
@@ -56,6 +61,8 @@ $filesForLinuxPackage = @(
 
 $filesForMacPackage = @(
     'dsc',
+    'dscecho',
+    'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'brew.dsc.resource.json',
     'brew.dsc.resource.sh',
@@ -110,10 +117,6 @@ if ($null -ne $packageType) {
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
-    }
-
-    if ($IsLinux -and (Test-Path /etc/mariner-release)) {
-        tdnf install -y openssl-devel
     }
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
@@ -172,7 +175,7 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
-    if (!$UseCFS) {
+    if ($UseCratesIO) {
         # this will override the config.toml
         Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
@@ -181,11 +184,28 @@ if (!$SkipBuild) {
         Write-Host "Using CFS for cargo source replacement"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+
+        if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+            throw "Azure CLI not found"
+        }
+
+        if ($null -ne $env:CARGO_REGISTRIES_POWERSHELL_TOKEN) {
+            Write-Host "Using existing token"
+        } else {
+            Write-Host "Getting token"
+            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+            } else {
+                $header = "Bearer $accessToken"
+                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            }
+        }
     }
 
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
-
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -195,6 +215,7 @@ if (!$SkipBuild) {
         "security_context_lib",
         "dsc_lib",
         "dsc",
+        "dscecho",
         "osinfo",
         "powershell-adapter",
         "process",
@@ -227,7 +248,12 @@ if (!$SkipBuild) {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
             if ($project -eq 'tree-sitter-dscexpression') {
-                ./build.ps1
+                if ($UpdateLockFile) {
+                    cargo generate-lockfile
+                }
+                else {
+                    ./build.ps1
+                }
             }
 
             if (Test-Path "./Cargo.toml")
@@ -246,7 +272,12 @@ if (!$SkipBuild) {
                     }
                 }
                 else {
-                    cargo build @flags
+                    if ($UpdateLockFile) {
+                        cargo generate-lockfile
+                    }
+                    else {
+                        cargo build @flags
+                    }
                 }
             }
 
@@ -339,18 +370,29 @@ if (!$Clippy -and !$SkipBuild) {
 if ($Test) {
     $failed = $false
 
+    $usingADO = ($null -ne $env:TF_BUILD)
+    $repository = 'PSGallery'
+
+    if ($usingADO) {
+        $repository = 'CFS'
+        if ($null -eq (Get-PSResourceRepository -Name CFS -ErrorAction Ignore)) {
+            "Registering CFS repository"
+            Register-PSResourceRepository -uri 'https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/nuget/v2' -Name CFS -Trusted
+        }
+    }
+
     if ($IsWindows) {
         # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
         $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
         if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
-        {   "Installing module PSDesiredStateConfiguration 2.0.7"
-            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository PSGallery -TrustRepository
+        {
+            Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -TrustRepository
         }
     }
 
     if (-not(Get-Module -ListAvailable -Name Pester))
     {   "Installing module Pester"
-        Install-PSResource Pester -WarningAction Ignore -Repository PSGallery -TrustRepository
+        Install-PSResource Pester -WarningAction Ignore -Repository $repository -TrustRepository
     }
 
     foreach ($project in $projects) {
@@ -395,7 +437,7 @@ if ($Test) {
         if (-not(Get-Module -ListAvailable -Name Pester))
         {   "Installing module Pester"
             $InstallTargetDir = ($env:PSModulePath -split ";")[0]
-            Find-PSResource -Name 'Pester' -Repository 'PSGallery' | Save-PSResource -Path $InstallTargetDir -TrustRepository
+            Find-PSResource -Name 'Pester' -Repository $repository | Save-PSResource -Path $InstallTargetDir -TrustRepository
         }
 
         "Updated Pester module location:"

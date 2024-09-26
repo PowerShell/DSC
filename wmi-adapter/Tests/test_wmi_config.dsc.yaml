@@ -7,6 +7,10 @@ resources:
     resources:
     - name: Get OS Info
       type: root.cimv2/Win32_OperatingSystem
+      properties:
+        caption:
+        version:
+        osarchitecture:
     - name: Get BIOS Info
       type: root.cimv2/Win32_BIOS
     - name: Get Processor Info

@@ -103,9 +103,9 @@ The `command` property defines how DSC must call the resource to get the JSON sc
 its instances. The value of this property must be an object and define the `executable` property.
 
 When publishing a manifest with the `command` property, Microsoft recommends publishing the JSON
-schema to a publicly available URI and setting the `url` property to that URI. This enables
-authoring tools and other integrating applications to validate instances without running the
-command locally.
+schema to a publicly available URI that matches the `$id` property of the instance schema. This
+enables authoring tools and other integrating applications to validate instances without running
+the command locally.
 
 ```yaml
 Type:               object
@@ -144,17 +144,4 @@ Resource. The value for this property must be a valid JSON schema that defines t
 ```yaml
 Type:                 object
 MinimumPropertyCount: 1
-```
-
-### url
-
-The `url` property defines the URL to the resource's published JSON schema. It's used by
-integrating tools for resources that define the `command` property instead of the `embedded`
-property.
-
-<!-- Can it resolve to a JSON schema published as YAML, or JSON only? -->
-
-```yaml
-Type:   string
-Format: uri
 ```

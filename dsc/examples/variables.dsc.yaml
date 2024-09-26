@@ -1,0 +1,15 @@
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+parameters:
+  myParameter:
+    type: string
+    # the use of `concat()` here is just an example of using an expression for a defaultValue
+    defaultValue: "[concat('world','!')]"
+variables:
+  myOutput: "[concat('Hello ', parameters('myParameter'))]"
+  myObject:
+    test: baz
+resources:
+- name: test
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[concat('myOutput is: ', variables('myOutput'), ', myObject is: ', variables('myObject').test)]"

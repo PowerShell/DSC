@@ -37,7 +37,7 @@ Describe 'dsc config get tests' {
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Echo
-              type: test/echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: hello
 "@
@@ -45,7 +45,7 @@ Describe 'dsc config get tests' {
         $result.hadErrors | Should -BeFalse
         $result.results.Count | Should -Be 1
         $result.results[0].Name | Should -Be 'Echo'
-        $result.results[0].type | Should -BeExactly 'test/echo'
+        $result.results[0].type | Should -BeExactly 'Microsoft.DSC.Debug/Echo'
         $result.results[0].result.actualState.output | Should -Be 'hello'
         $result.metadata.'Microsoft.DSC'.version | Should -BeLike '3.*'
         $result.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Get'

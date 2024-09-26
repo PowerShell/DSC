@@ -8,11 +8,13 @@ use crate::dscresources::resource_manifest::{import_manifest, validate_semver, K
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use indicatif::ProgressStyle;
+use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use semver::Version;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashSet, HashMap};
 use std::env;
 use std::ffi::OsStr;
+use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -48,7 +50,7 @@ impl CommandDiscovery {
             trace!("DSC_RESOURCE_PATH not set, trying PATH");
             match env::var_os("PATH") {
                 Some(value) => {
-                    trace!("Using PATH: {:?}", value.to_string_lossy());
+                    trace!("Original PATH: {:?}", value.to_string_lossy());
                     value
                 },
                 None => {
@@ -58,18 +60,27 @@ impl CommandDiscovery {
         };
 
         let mut paths = env::split_paths(&path_env).collect::<Vec<_>>();
-
-        // add exe home to start of path
-        if !using_custom_path {
-            if let Some(exe_home) = env::current_exe()?.parent() {
-                debug!("Adding exe home to path: {}", exe_home.to_string_lossy());
-                paths.insert(0, exe_home.to_path_buf());
-            }
-        }
-
-        // remove duplicate entries to improve perf of resource search
+        // remove duplicate entries
         let mut uniques = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
+
+        // if exe home is not already in PATH env var then add it to env var and list of searched paths
+        if !using_custom_path {
+            if let Some(exe_home) = env::current_exe()?.parent() {
+                let exe_home_pb = exe_home.to_path_buf();
+                if paths.contains(&exe_home_pb) {
+                    trace!("Exe home is already in path: {}", exe_home.to_string_lossy());
+                } else {
+                    trace!("Adding exe home to path: {}", exe_home.to_string_lossy());
+                    paths.push(exe_home_pb);
+
+                    if let Ok(new_path) = env::join_paths(paths.clone()) {
+                        debug!("Using PATH: {:?}", new_path.to_string_lossy());
+                        env::set_var("PATH", &new_path);
+                    }
+                }
+            }
+        };
 
         Ok(paths)
     }
@@ -195,12 +206,14 @@ impl ResourceDiscovery for CommandDiscovery {
 
         let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
 
+        let mut found_adapter: bool = false;
         for (adapter_name, adapters) in &self.adapters {
             for adapter in adapters {
                 if !regex.is_match(adapter_name) {
                     continue;
                 }
 
+                found_adapter = true;
                 info!("Enumerating resources for adapter '{}'", adapter_name);
                 let pb_adapter_span = warn_span!("");
                 pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
@@ -263,7 +276,12 @@ impl ResourceDiscovery for CommandDiscovery {
             }
         }
 
+        if !found_adapter {
+            return Err(DscError::AdapterNotFound(adapter_filter.to_string()));
+        }
+
         self.adapted_resources = adapted_resources;
+
         Ok(())
     }
 
@@ -279,6 +297,11 @@ impl ResourceDiscovery for CommandDiscovery {
         } else {
             self.discover_resources("*")?;
             self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+            
+            // add/update found adapted resources to the lookup_table
+            add_resources_to_lookup_table(&self.adapted_resources);
+
+            // note: in next line 'BTreeMap::append' will leave self.adapted_resources empty
             resources.append(&mut self.adapted_resources);
         }
 
@@ -319,7 +342,8 @@ impl ResourceDiscovery for CommandDiscovery {
         debug!("Found {} matching non-adapter-based resources", found_resources.len());
 
         // now go through the adapters
-        for (adapter_name, adapters) in self.adapters.clone() {
+        let sorted_adapters = sort_adapters_based_on_lookup_table(&self.adapters, &remaining_required_resource_types);
+        for (adapter_name, adapters) in sorted_adapters {
             // TODO: handle version requirements
             let Some(adapter) = adapters.first() else {
                 // skip if no adapters
@@ -338,6 +362,8 @@ impl ResourceDiscovery for CommandDiscovery {
             }
 
             self.discover_adapted_resources("*", &adapter_name)?;
+            // add/update found adapted resources to the lookup_table
+            add_resources_to_lookup_table(&self.adapted_resources);
 
             // now go through the adapter resources and add them to the list of resources
             for (adapted_name, adapted_resource) in &self.adapted_resources {
@@ -480,4 +506,96 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     };
 
     Ok(resource)
+}
+
+fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<DscResource>>, needed_resource_types: &Vec<String>) -> LinkedHashMap<String, Vec<DscResource>>
+{
+    let mut result = LinkedHashMap::<String, Vec<DscResource>>::new();
+    let lookup_table = load_adapted_resources_lookup_table();
+    // first add adapters (for needed types) that can be found in the lookup table
+    for needed_resource in needed_resource_types {
+        if let Some(adapter_name) = lookup_table.get(needed_resource) {
+            if let Some(resource_vec) = unsorted_adapters.get(adapter_name) {
+                debug!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
+                result.insert(adapter_name.to_string(), resource_vec.clone());
+            }
+        }
+    }
+
+    // now add remaining adapters
+    for (adapter_name, adapters) in unsorted_adapters {
+        if !result.contains_key(adapter_name) {
+            result.insert(adapter_name.to_string(), adapters.clone());
+        }
+    }
+
+    result
+}
+
+fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)
+{
+    let mut lookup_table = load_adapted_resources_lookup_table();
+
+    for (resource_name, res_vec) in adapted_resources {
+        if let Some(adapter_name) = &res_vec[0].require_adapter {
+            lookup_table.insert(resource_name.to_string().to_lowercase(), adapter_name.to_string());
+        } else {
+            info!("Resource '{resource_name}' in 'adapted_resources' is missing 'require_adapter' field.");
+        }
+    };
+
+    save_adapted_resources_lookup_table(&lookup_table);
+}
+
+fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
+{
+    if let Ok(lookup_table_json) = serde_json::to_string(&lookup_table) {
+        let file_path = get_lookup_table_file_path();
+        debug!("Saving lookup table with {} items to {:?}", lookup_table.len(), file_path);
+
+        let path = std::path::Path::new(&file_path);
+        if let Some(prefix) = path.parent() {
+            if fs::create_dir_all(prefix).is_ok()  {
+                if fs::write(file_path.clone(), lookup_table_json).is_err() {
+                    info!("Unable to write lookup_table file {file_path:?}");
+                }
+            } else {
+                info!("Unable to create parent directories of the lookup_table file {file_path:?}");
+            }
+        } else {
+            info!("Unable to get directory of the lookup_table file {file_path:?}");
+        }
+    } else {
+        info!("Unable to serialize lookup_table to json");
+    }
+}
+
+fn load_adapted_resources_lookup_table() -> HashMap<String, String>
+{
+    let file_path = get_lookup_table_file_path();
+    
+    let lookup_table: HashMap<String, String> = match fs::read(file_path.clone()){
+        Ok(data) => { serde_json::from_slice(&data).unwrap_or_default() },
+        Err(_) => { HashMap::new() }
+    };
+
+    debug!("Read {} items into lookup table from {:?}", lookup_table.len(), file_path);
+    lookup_table
+}
+
+#[cfg(target_os = "windows")]
+fn get_lookup_table_file_path() -> String
+{
+    // $env:LocalAppData+"dsc\AdaptedResourcesLookupTable.json"
+    let Ok(local_app_data_path) = std::env::var("LocalAppData") else { return String::new(); };
+
+    Path::new(&local_app_data_path).join("dsc").join("AdaptedResourcesLookupTable.json").display().to_string()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_lookup_table_file_path() -> String
+{
+    // $env:HOME+".dsc/AdaptedResourcesLookupTable.json"
+    let Ok(home_path) = std::env::var("HOME") else { return String::new(); };
+    Path::new(&home_path).join(".dsc").join("AdaptedResourcesLookupTable.json").display().to_string()
 }

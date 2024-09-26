@@ -1,6 +1,5 @@
 const PREC = {
-  ESCAPEDSTRING: 3,
-  BRACKETINSTRING: 2,
+  ESCAPEDSTRING: 2,
   EXPRESSIONSTRING: 1,
   STRINGLITERAL: -11,
 }
@@ -8,18 +7,18 @@ const PREC = {
 module.exports = grammar({
   name: 'dscexpression',
 
+  extras: $ => ['\n', ' '],
+
   rules: {
     statement: $ => choice(
       $.escapedStringLiteral,
-      $.bracketInStringLiteral,
       $._expressionString,
       $.stringLiteral,
     ),
     escapedStringLiteral: $ => token(prec(PREC.ESCAPEDSTRING, seq('[[', /.*?/))),
-    bracketInStringLiteral: $ => token(prec(PREC.BRACKETINSTRING, seq('[', /.*?/, ']', /.+?/))),
     _expressionString: $ => prec(PREC.EXPRESSIONSTRING, seq('[', $.expression, ']')),
-    expression: $ => seq(field('function', $.function), field('members', optional($.memberAccess))),
-    stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[].*?/)),
+    expression: $ => seq(field('function', $.function), optional(field('accessor',$.accessor))),
+    stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[](.|\n)*?/)),
 
     function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
     functionName: $ => /[a-z][a-zA-Z0-9]*/,
@@ -27,13 +26,17 @@ module.exports = grammar({
     _argument: $ => choice($.expression, $._quotedString, $.number, $.boolean),
 
     _quotedString: $ => seq('\'', $.string, '\''),
-    // ARM strings do not allow to contain single-quote characters
-    string: $ => /[^']*/,
+    // ARM strings are not allowed to contain single-quote characters unless escaped
+    string: $ => /([^']|''|\n)*/,
     number: $ => /-?\d+/,
     boolean: $ => choice('true', 'false'),
 
-    memberAccess: $ => seq('.', $.memberName, repeat(seq('.', $.memberName))),
+    accessor: $ => repeat1(choice($.memberAccess, $.index)),
+
+    memberAccess: $ => seq('.', field('name', $.memberName)),
     memberName: $ => /[a-zA-Z0-9_-]+/,
+
+    index: $ => seq('[', field('indexValue', choice($.expression, $.number)), ']'),
   }
 
 });

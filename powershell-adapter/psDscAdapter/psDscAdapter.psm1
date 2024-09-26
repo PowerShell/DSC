@@ -264,13 +264,26 @@ function Invoke-DscCacheRefresh {
                 "Checking cache for stale entries" | Write-DscTrace
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
-                    #"Checking cache entry '$($cacheEntry.Type) $($cacheEntry.LastWriteTimes)'" | Write-DscTrace -Operation Trace
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
                     
-                        if (-not ((Get-Item $_.Name).LastWriteTime.Equals([DateTime]$_.Value)))
-                        {
-                            "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                        if (Test-Path $_.Name) {
+                            $file_LastWriteTime = (Get-Item $_.Name).LastWriteTime
+                            # Truncate DateTime to seconds
+                            $file_LastWriteTime = $file_LastWriteTime.AddTicks( - ($file_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+
+                            $cache_LastWriteTime = [DateTime]$_.Value
+                            # Truncate DateTime to seconds
+                            $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+
+                            if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime)))
+                            {
+                                "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                                $refreshCache = $true
+                                break
+                            }
+                        } else {
+                            "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
                             $refreshCache = $true
                             break
                         }
@@ -279,19 +292,21 @@ function Invoke-DscCacheRefresh {
                     if ($refreshCache) {break}
                 }
 
-                "Checking cache for stale PSModulePath" | Write-DscTrace
+                if (-not $refreshCache) {
+                    "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
 
-                $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-                $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-                $hs_cache.SymmetricExceptWith($hs_live)
-                $diff = $hs_cache
+                    $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                    $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                    $hs_cache.SymmetricExceptWith($hs_live)
+                    $diff = $hs_cache
 
-                "PSModulePath diff '$diff'" | Write-DscTrace
+                    "PSModulePath diff '$diff'" | Write-DscTrace
 
-                if ($diff.Count -gt 0) {
-                    $refreshCache = $true
+                    if ($diff.Count -gt 0) {
+                        $refreshCache = $true
+                    }
                 }
             }
         }
@@ -376,7 +391,7 @@ function Get-DscResourceObject {
 
     # catch potential for improperly formatted configuration input
     if ($inputObj.resources -and -not $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        'WARNING: The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace
+        'The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace -Operation Warn
     }
 
     $adapterName = 'Microsoft.DSC/PowerShell'
@@ -445,6 +460,8 @@ function Invoke-DscOperation {
                     $resource = GetTypeInstanceFromModule -modulename $cachedDscResourceInfo.ModuleName -classname $cachedDscResourceInfo.Name
                     $dscResourceInstance = $resource::New()
 
+                    $ValidProperties = $cachedDscResourceInfo.Properties.Name
+
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
@@ -454,32 +471,46 @@ function Invoke-DscOperation {
 
                     switch ($Operation) {
                         'Get' {
-                            $Result = $dscResourceInstance.Get()
+                            $Result = @{}
+                            $raw_obj = $dscResourceInstance.Get()
+                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_ }
                             $addToActualState.properties = $Result
                         }
                         'Set' {
                             $dscResourceInstance.Set()
                         }
                         'Test' {
-                            $Result = $dscResourceInstance.Test()
+                            $Result = @{}
+                            $raw_obj = $dscResourceInstance.Test()
+                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_ }
                             $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
                             $method = $t.GetMethod('Export')
-                            $resultArray = $method.Invoke($null,$null)
+                            if ($null -eq $method) {
+                                "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
+                                exit 1
+                            }
+                            $resultArray = @()
+                            $raw_obj_array = $method.Invoke($null,$null)
+                            foreach ($raw_obj in $raw_obj_array) {
+                                $Result_obj = @{}
+                                $ValidProperties | ForEach-Object { $Result_obj[$_] = $raw_obj.$_ }
+                                $resultArray += $Result_obj
+                            }
                             $addToActualState = $resultArray
                         }
                     }
                 }
                 catch {
                     
-                    'ERROR: ' + $_.Exception.Message | Write-DscTrace
+                    'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
             }
             Default {
-                'Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace
+                'Resource ImplementationDetail not supported: ' + $cachedDscResourceInfo.ImplementationDetail | Write-DscTrace -Operation Error
                 exit 1
             }
         }
@@ -488,8 +519,7 @@ function Invoke-DscOperation {
     }
     else {
         $dsJSON = $DesiredState | ConvertTo-Json -Depth 10
-        $errmsg = 'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.'
-        'ERROR: ' + $errmsg | Write-DscTrace
+        'Can not find type "' + $DesiredState.type + '" for resource "' + $dsJSON + '". Please ensure that Get-DscResource returns this resource type.' | Write-DscTrace -Operation Error
         exit 1
     }
 }

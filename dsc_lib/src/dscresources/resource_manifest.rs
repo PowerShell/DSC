@@ -13,7 +13,7 @@ use crate::dscerror::DscError;
 pub enum Kind {
     Adapter,
     Group,
-    Import,
+    Importer,
     Resource,
 }
 

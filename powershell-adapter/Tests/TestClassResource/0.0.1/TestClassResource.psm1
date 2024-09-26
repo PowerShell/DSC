@@ -26,6 +26,15 @@ class TestClassResource : BaseTestClass
     [DscProperty()]
     [string] $EnumProp
 
+    [string] $NonDscProperty # This property shouldn't be in results data
+
+    hidden
+    [string] $HiddenNonDscProperty # This property shouldn't be in results data
+
+    hidden
+    [DscProperty()]
+    [string] $HiddenDscProperty # This property should be in results data, but is an anti-pattern.
+
     [void] Set()
     {
     }
@@ -59,7 +68,11 @@ class TestClassResource : BaseTestClass
     static [TestClassResource[]] Export()
     {
         $resultList = [List[TestClassResource]]::new()
-        1..5 | %{
+        $resultCount = 5
+        if ($env:TestClassResourceResultCount) {
+            $resultCount = $env:TestClassResourceResultCount
+        }
+        1..$resultCount | %{
             $obj = New-Object TestClassResource
             $obj.Name = "Object$_"
             $obj.Prop1 = "Property of object$_"
@@ -67,6 +80,33 @@ class TestClassResource : BaseTestClass
         }
 
         return $resultList.ToArray()
+    }
+}
+
+[DscResource()]
+class NoExport: BaseTestClass
+{
+    [DscProperty(Key)]
+    [string] $Name
+
+    [DscProperty()]
+    [string] $Prop1
+
+    [DscProperty()]
+    [string] $EnumProp
+
+    [void] Set()
+    {
+    }
+
+    [bool] Test()
+    {
+        return $true
+    }
+
+    [NoExport] Get()
+    {
+        return $this
     }
 }
 

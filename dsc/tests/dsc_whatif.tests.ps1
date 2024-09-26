@@ -10,7 +10,7 @@ Describe 'whatif tests' {
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
             resources:
             - name: Hello
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: hello
 "@

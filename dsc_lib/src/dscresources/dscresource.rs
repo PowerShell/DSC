@@ -234,15 +234,7 @@ impl Invoke for DscResource {
                 let resource_manifest = import_manifest(manifest.clone())?;
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
-                    let desired_state = if self.kind == Kind::Import {
-                        let config = self.resolve(expected)?.configuration;
-                        // TODO: implement way to resolve entire config doc including expressions and parameters
-                        // as the raw configuration (desired state) won't match the result, also convert the desired
-                        // state to a TestResult so the comparison is consistent
-                        serde_json::to_value(config["resources"].clone())?
-                    } else {
-                        serde_json::from_str(expected)?
-                    };
+                    let desired_state = serde_json::from_str(expected)?;
                     let actual_state = match get_result {
                         GetResult::Group(results) => {
                             let mut result_array: Vec<Value> = Vec::new();
