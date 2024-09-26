@@ -150,4 +150,22 @@ Describe 'tests for resource discovery' {
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Lookup table found resource 'testclassresource/testclassresource' in adapter 'Microsoft.DSC/PowerShell'"
         $env:PSModulePath = $oldPSModulePath
     }
+
+    It 'Verify non-zero exit code when resource not found' {
+
+        $out = dsc resource get -r abc/def
+        $LASTEXITCODE | Should -Be 7
+        $out = dsc resource get --all -r abc/def
+        $LASTEXITCODE | Should -Be 7
+        $out = 'abc' | dsc resource set -r abc/def
+        $LASTEXITCODE | Should -Be 7
+        $out = 'abc' | dsc resource test -r abc/def
+        $LASTEXITCODE | Should -Be 7
+        $out = 'abc' | dsc resource delete -r abc/def
+        $LASTEXITCODE | Should -Be 7
+        $out = dsc resource export -r abc/def
+        $LASTEXITCODE | Should -Be 7
+        $out = dsc resource schema -r abc/def
+        $LASTEXITCODE | Should -Be 7
+    }
 }

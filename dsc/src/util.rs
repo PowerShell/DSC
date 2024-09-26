@@ -50,6 +50,7 @@ pub const EXIT_JSON_ERROR: i32 = 3;
 pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
+pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";

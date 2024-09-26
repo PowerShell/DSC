@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::args::OutputFormat;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, add_type_name_to_json, write_output};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, add_type_name_to_json, write_output};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse}};
@@ -18,7 +18,7 @@ use std::process::exit;
 pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
-        return
+        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
@@ -60,7 +60,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
     let mut input = String::new();
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
-        return
+        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
@@ -112,7 +112,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
 
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
-        return
+        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
@@ -158,7 +158,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
 
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
-        return
+        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
@@ -199,7 +199,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
 pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
-        return
+        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
     debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
@@ -230,7 +230,7 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
 pub fn schema(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
     let Some(resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
-        return
+        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
     if resource.kind == Kind::Adapter {
         error!("Can not perform this operation on the adapter {} itself", resource.type_name);
@@ -260,7 +260,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
     let mut input = String::new();
     let Some(dsc_resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
-        return
+        exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
     if dsc_resource.kind == Kind::Adapter {
