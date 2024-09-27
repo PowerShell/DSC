@@ -282,13 +282,31 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                     return Err(DscError::Operation(format!("Failed to parse json from test {}|{}|{} -> {err}", &test.executable, stdout, stderr)))
                 }
             };
-            let diff_properties = get_diff(&expected_value, &actual_value);
-            Ok(TestResult::Resource(ResourceTestResponse {
-                desired_state: expected_value,
-                actual_state: actual_value,
-                in_desired_state: diff_properties.is_empty(),
-                diff_properties,
-            }))
+
+            // Special case for PSAdapters - Test operation in them returns a single 'InDesiredState' property
+            if (resource.resource_type == "Microsoft.DSC/PowerShell")
+            || (resource.resource_type == "Microsoft.Windows/WindowsPowerShell") {
+                let mut in_desired_state_result = false;
+                if let Some(res) = actual_value["result"][0]["properties"]["InDesiredState"].as_bool() {
+                    in_desired_state_result = res;
+                }
+
+                Ok(TestResult::Resource(ResourceTestResponse {
+                    desired_state: expected_value,
+                    actual_state: actual_value,
+                    in_desired_state: in_desired_state_result,
+                    diff_properties: Vec::new()
+                }))
+            }
+            else {
+                let diff_properties = get_diff(&expected_value, &actual_value);
+                Ok(TestResult::Resource(ResourceTestResponse {
+                    desired_state: expected_value,
+                    actual_state: actual_value,
+                    in_desired_state: diff_properties.is_empty(),
+                    diff_properties,
+                }))
+            }
         },
         Some(ReturnKind::StateAndDiff) => {
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line

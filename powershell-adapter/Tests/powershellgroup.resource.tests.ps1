@@ -57,6 +57,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
+        $res.InDesiredState | Should -Be $True
         $res.actualState.result.properties.InDesiredState | Should -Be $True
 
         # verify that only properties with DscProperty attribute are returned
@@ -324,5 +325,20 @@ Describe 'PowerShell adapter resource tests' {
             dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
             "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
         }
+    }
+
+    It 'Verify InDesiredState in Test' {
+
+        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource'
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.InDesiredState | Should -Be $True
+        $res.actualState.result.properties.InDesiredState | Should -Be $True
+
+        $r = "{'Name':'TestClassResource1','Prop1':'abcd'}" | dsc resource test -r 'TestClassResource/TestClassResource'
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.InDesiredState | Should -Be $False
+        $res.actualState.result.properties.InDesiredState | Should -Be $False
     }
 }
