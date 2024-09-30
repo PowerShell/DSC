@@ -10,7 +10,7 @@ resources:
     $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
     resources:
     - name: Last
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       properties:
         output: Last
   dependsOn:
@@ -21,7 +21,7 @@ resources:
     $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
     resources:
     - name: First
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       properties:
         output: First
     - name: Nested Group
@@ -30,12 +30,12 @@ resources:
         $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
         resources:
         - name: Nested Second
-          type: Test/Echo
+          type: Microsoft.DSC.Debug/Echo
           properties:
             output: Nested Second
           dependsOn:
-          - "[resourceId('Test/Echo','Nested First')]"
+          - "[resourceId('Microsoft.DSC.Debug/Echo','Nested First')]"
         - name: Nested First
-          type: Test/Echo
+          type: Microsoft.DSC.Debug/Echo
           properties:
             output: Nested First

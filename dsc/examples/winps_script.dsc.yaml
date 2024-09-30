@@ -1,0 +1,25 @@
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: Elevated
+resources:
+  - type: Microsoft.Windows/WindowsPowerShell
+    name: Run WinPS script
+    properties: 
+      resources:
+        - name: Run script
+          type: PSDesiredStateConfiguration/Script
+          properties:
+            GetScript: |
+              $text = @"
+              get
+              "@
+              # Returning result must be this type of hashtable
+              @{Result=$text}
+            TestScript: |
+              # TestScript must return a boolean
+              $true
+            SetScript: |
+              $text = @"
+              set
+              "@

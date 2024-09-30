@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use clap::ValueEnum;
 use jsonschema::JSONSchema;
+use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, env, process::Stdio};
 use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
@@ -265,7 +267,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
         verify_json(resource, cwd, &stdout)?;
     }
 
-    if resource.kind == Some(Kind::Import) {
+    if resource.kind == Some(Kind::Importer) {
         debug!("Import resource kind, returning group test response");
         let group_test_response: Vec<ResourceTestResult> = serde_json::from_str(&stdout)?;
         return Ok(TestResult::Group(group_test_response));
@@ -815,26 +817,94 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
 {
     if !trace_line.is_empty()
     {
-        if let Result::Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
+        if let Ok(trace_object) = serde_json::from_str::<Trace>(trace_line) {
+            let mut include_target = trace_object.level == TraceLevel::Debug || trace_object.level == TraceLevel::Trace;
+            let target = if let Some(t) = trace_object.target.as_deref() { t } else {
+                include_target = false;
+                ""
+            };
+            let line_number = if let Some(l) = trace_object.line_number { l } else {
+                include_target = false;
+                0
+            };
+            let trace_message = if include_target {
+                format!("PID {process_id}: {target}: {line_number}: {}", trace_object.fields.message)
+            } else {
+                format!("PID {process_id}: {}", trace_object.fields.message)
+            };
+            match trace_object.level {
+                TraceLevel::Error => {
+                    error!(trace_message);
+                },
+                TraceLevel::Warn => {
+                    warn!(trace_message);
+                },
+                TraceLevel::Info => {
+                    info!(trace_message);
+                },
+                TraceLevel::Debug => {
+                    debug!(trace_message);
+                },
+                TraceLevel::Trace => {
+                    trace!(trace_message);
+                },
+            }
+        }
+        else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
             if let Some(msg) = json_obj.get("Error") {
-                error!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                error!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Warning") {
-                warn!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                warn!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Info") {
-                info!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                info!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Debug") {
-                debug!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                debug!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else if let Some(msg) = json_obj.get("Trace") {
-                trace!("Process id {process_id} : {}", msg.as_str().unwrap_or_default());
+                trace!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
+                trace!("PID {process_id}: {trace_line}");
                 return trace_line;
             };
         } else {
             // the line is not a valid json - return it as filtered stderr_line
+            trace!("PID {process_id}: {}", trace_line);
             return trace_line;
         }
     };
 
     ""
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, ValueEnum)]
+pub enum TraceLevel {
+    #[serde(rename = "ERROR")]
+    Error,
+    #[serde(rename = "WARN")]
+    Warn,
+    #[serde(rename = "INFO")]
+    Info,
+    #[serde(rename = "DEBUG")]
+    Debug,
+    #[serde(rename = "TRACE")]
+    Trace,
+}
+
+#[derive(Deserialize)]
+struct Fields {
+    message: String,
+}
+
+#[derive(Deserialize)]
+struct Trace {
+    #[serde(rename = "timestamp")]
+    _timestamp: String,
+    level: TraceLevel,
+    fields: Fields,
+    target: Option<String>,
+    line_number: Option<u32>,
+    #[serde(rename = "span")]
+    _span: Option<HashMap<String, Value>>,
+    #[serde(rename = "spans")]
+    _spans: Option<Vec<HashMap<String, Value>>>,
 }

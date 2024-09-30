@@ -1,6 +1,6 @@
 [package]
 name = "dsc"
-version = "3.0.0-preview.9"
+version = "3.0.0-preview.11"
 edition = "2021"
 
 [profile.release]
@@ -12,21 +12,21 @@ lto = true
 
 [dependencies]
 atty = { version = "0.2" }
-clap = { version = "4.4", features = ["derive"] }
-clap_complete = { version = "4.4" }
-crossterm = { version = "0.27" }
+clap = { version = "4.5.17", features = ["derive"] }
+clap_complete = { version = "4.5.28" }
+crossterm = { version = "0.28.1" }
 ctrlc = { version = "3.4.0" }
 dsc_lib = { path = "../dsc_lib" }
 indicatif = { version = "0.17" }
-jsonschema = "0.18"
+jsonschema = "0.19.1"
 path-absolutize = { version = "3.1.1" }
-reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }
+reqwest = { version = "0.12.7", features = ["rustls-tls"], default-features = false }
 schemars = { version = "0.8.12" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0", features = ["preserve_order"] }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = { version = "1.0.128", features = ["preserve_order"] }
 serde_yaml = { version = "0.9.3" }
 syntect = { version = "5.0", features = ["default-fancy"], default-features = false }
-sysinfo = { version = "0.30" }
+sysinfo = { version = "0.31.4" }
 thiserror = "1.0.52"
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17", features = ["ansi", "env-filter", "json"] }

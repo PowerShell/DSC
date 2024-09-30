@@ -29,10 +29,19 @@ if ($null -eq (Get-Command npm -ErrorAction Ignore)) {
     }
 }
 
-npm list tree-sitter-cli
-if ($LASTEXITCODE -ne 0) {
-    npm ci tree-sitter-cli --omit=optional
+if ($null -ne $env:TF_BUILD) {
+    npm ci --omit:optional --registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
 }
+else {
+    npm install --omit:optional --registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
+}
+
+#npm list tree-sitter-cli
+#if ($LASTEXITCODE -ne 0) {
+#    npm ci tree-sitter-cli --omit=optional
+#}
+
+#npm install -g node-gyp
 
 if ($UpdatePackages) {
     if (!$IsWindows) {
@@ -42,10 +51,11 @@ if ($UpdatePackages) {
     rm ./package-lock.json
     rm -r ./node_modules
     npm cache clean --force
-    npm logout
-    vsts-npm-auth -config .npmrc -F -V
-    npm install --force --verbose
+    # npm logout
+    # vsts-npm-auth -config .npmrc -F -V
+    npm install --omit:optional --force --verbose #--registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
 }
 
+Invoke-NativeCommand 'npx node-gyp configure'
 Invoke-NativeCommand 'npx tree-sitter generate --build'
 Invoke-NativeCommand 'npx tree-sitter test'

@@ -26,7 +26,7 @@ results:
       Microsoft.DSC:
         duration: *
     name: First
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     result:
       actualState:
         output: First
@@ -40,7 +40,7 @@ results:
         Microsoft.DSC:
           duration: *
       name: Nested First
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       result:
         actualState:
           output: Nested First
@@ -48,7 +48,7 @@ results:
         Microsoft.DSC:
           duration: *
       name: Nested Second
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       result:
         actualState:
           output: Nested Second
@@ -62,7 +62,7 @@ results:
       Microsoft.DSC:
         duration: *
     name: Last
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     result:
       actualState:
         output: Last

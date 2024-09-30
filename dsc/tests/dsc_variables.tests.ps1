@@ -17,7 +17,7 @@ variables:
   myVariable: bar
 resources:
 - name: test
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[variables('myVariable')]"
 '@
@@ -34,7 +34,7 @@ variables:
   hello: world
 resources:
 - name: test
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[variables('myVariable')]"
 '@

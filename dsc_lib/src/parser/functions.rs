@@ -97,7 +97,8 @@ fn convert_args_node(statement_bytes: &[u8], args: &Option<Node>) -> Result<Opti
         match arg.kind() {
             "string" => {
                 let value = arg.utf8_text(statement_bytes)?;
-                result.push(FunctionArg::Value(Value::String(value.to_string())));
+                // Resolve escaped single quotes
+                result.push(FunctionArg::Value(Value::String(value.to_string().replace("''", "'"))));
             },
             "number" => {
                 let value = arg.utf8_text(statement_bytes)?;

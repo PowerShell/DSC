@@ -13,4 +13,4 @@ opt-level = 2
 lto = true
 
 [build-dependencies]
-cc = "1.0"
+cc = "1.1.20"

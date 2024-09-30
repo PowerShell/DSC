@@ -4,6 +4,12 @@
 Describe 'tests for resource discovery' {
     BeforeAll {
         $env:DSC_RESOURCE_PATH = $testdrive
+
+        $script:lookupTableFilePath = if ($IsWindows) {
+            Join-Path $env:LocalAppData "dsc\AdaptedResourcesLookupTable.json"
+        } else {
+            Join-Path $env:HOME ".dsc" "AdaptedResourcesLookupTable.json"
+        }
     }
 
     AfterEach {
@@ -95,5 +101,53 @@ Describe 'tests for resource discovery' {
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
         }
+    }
+
+    It 'Ensure List operation populates adapter lookup table' {
+        # remove adapter lookup table file
+        Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction SilentlyContinue
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
+
+        # perform List on an adapter - this should create adapter lookup table file
+        $oldPSModulePath = $env:PSModulePath
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
+        $env:DSC_RESOURCE_PATH = $null
+        $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
+        dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
+        gc -raw $script:lookupTableFilePath
+        $script:lookupTableFilePath | Should -FileContentMatchExactly 'Microsoft.DSC/PowerShell'
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
+        $env:PSModulePath = $oldPSModulePath
+    }
+
+    It 'Ensure non-List operation populates adapter lookup table' {
+
+        # remove adapter lookup table file
+        Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction SilentlyContinue
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
+
+        # perform Get on an adapter - this should create adapter lookup table file
+        $oldPSModulePath = $env:PSModulePath
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
+        $env:DSC_RESOURCE_PATH = $null
+        $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
+        "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' | Out-Null
+
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
+        $script:lookupTableFilePath | Should -FileContentMatchExactly 'testclassresource/testclassresource'
+        $env:PSModulePath = $oldPSModulePath
+    }
+
+    It 'Verify adapter lookup table is used on repeat invocations' {
+
+        $oldPSModulePath = $env:PSModulePath
+        $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
+        $env:DSC_RESOURCE_PATH = $null
+        $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
+        dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
+        "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' 2> $TestDrive/tracing.txt
+
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Lookup table found resource 'testclassresource/testclassresource' in adapter 'Microsoft.DSC/PowerShell'"
+        $env:PSModulePath = $oldPSModulePath
     }
 }

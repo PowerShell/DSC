@@ -15,7 +15,7 @@ Describe 'Parameters tests' {
                 type: string
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''param1'')]'
 "@
@@ -49,7 +49,7 @@ Describe 'Parameters tests' {
                 type: $type
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''param1'')]'
 "@
@@ -75,7 +75,7 @@ Describe 'Parameters tests' {
                 type: $type
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''param1'')]'
 "@
@@ -103,7 +103,7 @@ Describe 'Parameters tests' {
                 maxLength: 3
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''param1'')]'
 "@
@@ -130,7 +130,7 @@ Describe 'Parameters tests' {
                 maxValue: $max
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''param1'')]'
 "@
@@ -155,7 +155,7 @@ Describe 'Parameters tests' {
                 allowedValues: $($allowed | ConvertTo-Json -Compress)
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''param1'')]'
 "@
@@ -182,7 +182,7 @@ Describe 'Parameters tests' {
                 ${constraint}: 3
             resources:
             - name: Echo
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''param1'')]'
 "@
@@ -211,19 +211,19 @@ Describe 'Parameters tests' {
                 defaultValue: ['hello', 'world']
             resources:
             - name: String
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''paramString'')]'
             - name: Int
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''paramInt'')]'
             - name: Bool
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''paramBool'')]'
             - name: Array
-              type: Test/Echo
+              type: Microsoft.DSC.Debug/Echo
               properties:
                 output: '[parameters(''paramArray'')]'
 "@
@@ -299,7 +299,7 @@ Describe 'Parameters tests' {
             type: $type
         resources:
         - name: Echo
-          type: Test/Echo
+          type: Microsoft.DSC.Debug/Echo
           properties:
             output: '[parameters(''param'')]'
 "@

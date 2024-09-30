@@ -10,6 +10,8 @@ Describe 'Expressions tests' {
         @{ text = "[parameters('test').objectArray[0].name]"; expected = 'one' }
         @{ text = "[parameters('test').objectArray[1].value[0]]"; expected = '2' }
         @{ text = "[parameters('test').objectArray[1].value[1].name]"; expected = 'three' }
+        @{ text = "[parameters('test').index]"; expected = '1' }
+        @{ text = "[parameters('test').objectArray[parameters('test').index].name]"; expected = 'two' }
     ) {
         param($text, $expected)
         $yaml = @"
@@ -18,6 +20,7 @@ parameters:
   test:
     type: object
     defaultValue:
+      index: 1
       hello:
         world: there
       array:
@@ -34,13 +37,13 @@ parameters:
           value: 3
 resources:
 - name: echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "$text"
 "@
-        $debug = $yaml | dsc -l debug config get -f yaml 2>&1 | Out-String
+        $debug = $yaml | dsc -l trace config get -f yaml 2>&1 | Out-String
         $out = $yaml | dsc config get | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
+        $LASTEXITCODE | Should -Be 0 -Because $debug
         $out.results[0].result.actualState.output | Should -Be $expected -Because $debug
     }
 
@@ -55,12 +58,25 @@ resources:
 `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
 - name: echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "$expression"
 "@
         $out = dsc config get -d $yaml 2>&1
         $LASTEXITCODE | Should -Be 2
         $out | Should -BeLike "*ERROR*"
+    }
+
+    It 'Multi-line string literals work' {
+      $yamlPath = "$PSScriptRoot/../examples/multiline.dsc.yaml"
+      $out = dsc config get -p $yamlPath | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results[0].result.actualState.output | Should -BeExactly @"
+This is a
+'multi-line'
+string.
+
+"@.Replace("`r", "")
+      $out.results[1].result.actualState.output | Should -BeExactly "This is a single-quote: '"
     }
 }

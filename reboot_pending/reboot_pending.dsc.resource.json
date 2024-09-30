@@ -1,16 +1,28 @@
 {
-    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
-    "description": "Returns info about pending reboot.",
-    "type": "Microsoft.Windows/RebootPending",
-    "version": "0.1.0",
-    "get": {
-      "executable": "powershell",
-      "args": [
-        "-NoLogo",
-        "-NonInteractive",
-        "-NoProfile",
-        "-Command",
-        "reboot_pending.resource.ps1"
-      ]
+  "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+  "description": "Returns info about pending reboot.",
+  "type": "Microsoft.Windows/RebootPending",
+  "version": "0.1.0",
+  "get": {
+    "executable": "powershell",
+    "args": [
+      "-NoLogo",
+      "-NonInteractive",
+      "-NoProfile",
+      "-Command",
+      "reboot_pending.resource.ps1"
+    ]
+  },
+  "schema": {
+    "embedded": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "null",
+      "properties": {
+        "rebootPending": {
+            "type": "boolean",
+            "readOnly": true
+        }
+      }
     }
+  }
 }

@@ -14,6 +14,7 @@ use crate::parser::functions::Function;
 pub enum Accessor {
     Member(String),
     Index(Value),
+    IndexExpression(Expression),
 }
 
 #[derive(Clone)]
@@ -73,7 +74,8 @@ impl Expression {
                                 Accessor::Index(value)
                             },
                             "expression" => {
-                                return Err(DscError::Parser("Expression index not supported".to_string()));
+                                let expression = Expression::new(statement_bytes, &index_value)?;
+                                Accessor::IndexExpression(expression)
                             },
                             _ => {
                                 return Err(DscError::Parser(format!("Invalid accessor kind: '{accessor_kind}'")));
@@ -118,6 +120,7 @@ impl Expression {
             debug!("Evaluating accessors");
             let mut value = result;
             for accessor in &self.accessors {
+                let mut index = Value::Null;
                 match accessor {
                     Accessor::Member(member) => {
                         if let Some(object) = value.as_object() {
@@ -129,20 +132,31 @@ impl Expression {
                             return Err(DscError::Parser("Member access on non-object value".to_string()));
                         }
                     },
-                    Accessor::Index(index) => {
-                        if let Some(array) = value.as_array() {
-                            let Some(index) = index.as_u64() else {
-                                return Err(DscError::Parser("Index is not a valid number".to_string()));
-                            };
-                            let index = usize::try_from(index)?;
-                            if index >= array.len() {
-                                return Err(DscError::Parser("Index out of bounds".to_string()));
-                            }
-                            value = array[index].clone();
-                        } else {
-                            return Err(DscError::Parser("Index access on non-array value".to_string()));
-                        }
+                    Accessor::Index(index_value) => {
+                        index = index_value.clone();
                     },
+                    Accessor::IndexExpression(expression) => {
+                        index = expression.invoke(function_dispatcher, context)?;
+                        trace!("Expression result: '{:?}'", index);
+                    },
+                }
+
+                if index.is_number() {
+                    if let Some(array) = value.as_array() {
+                        let Some(index) = index.as_u64() else {
+                            return Err(DscError::Parser("Index is not a valid number".to_string()));
+                        };
+                        let index = usize::try_from(index)?;
+                        if index >= array.len() {
+                            return Err(DscError::Parser("Index out of bounds".to_string()));
+                        }
+                        value = array[index].clone();
+                    } else {
+                        return Err(DscError::Parser("Index access on non-array value".to_string()));
+                    }
+                }
+                else if !index.is_null() {
+                    return Err(DscError::Parser("Invalid index type".to_string()));
                 }
             }
 

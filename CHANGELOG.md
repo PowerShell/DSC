@@ -73,6 +73,240 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased change links -->
 
+## [v3.0.0-preview.9][release-v3.0.0-preview.9] - 2024-08-15
+
+This section includes a summary of changes for the `preview.9` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-preview.9].
+
+<!-- Release links -->
+[release-v3.0.0-preview.9]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-preview.9 "Link to the DSC v3.0.0-preview.9 release on GitHub"
+[compare-v3.0.0-preview.9]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...v3.0.0-preview.9
+
+### Removed
+
+- Removed the `url` sub-property from the `schema` property in resource manifests. Starting with
+  this release, resources must either embed their instance property JSON schema in the manifest or
+  define the command that returns the JSON schema for validation.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#457][#457]
+
+  </details>
+
+### Changed
+
+- Changed the invocation for resources from synchronous to asynchronous. Starting with this
+  release, resource invocations are handled asynchronously. This reduced errors related to
+  processing and laid the groundwork for real-time progress reporting.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#491][#491]
+  - PRs: [#493][#493]
+
+  </details>
+
+- Changed the `import` resource type to function as a group resource. This resource instances
+  resolved from import to be used correctly for all operations.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#500][#500]
+
+  </details>
+
+- Changed the inserted property indicating the fully qualified type for an adapted resource from
+  `type` to `adapted_dsc_type`. Prior to this release, DSC forwarded the information about adapted
+  resource instances to the adapters by inserting the `type` property into the property bag for the
+  instance, which had the potential to cause conflicts with actual resource properties named
+  `type`. This change reduces the probability of conflicts by renaming the inserted property to the
+  more explicit `adapted_dsc_type`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#482][#482]
+
+  </details>
+
+### Added
+
+- Added support for using variables in a configuration document. Prior to this release, variables
+  could be defined in the document but not referenced from resource instances with a configuration
+  function. This release includes the new `variables()` configuration function. For more
+  information, see the [reference documentation][p9-01].
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#57][#57]
+  - PRs: [#511][#511]
+
+  </details>
+
+- Added support for indexing into arrays when using configuration functions. This enables users to
+  access specific items in an array of values returned by a configuration function, such as whe
+  referencing the output of a resource. For more information about configuration functions, see
+  [DSC Configuration document functions reference][p9-02]. For a detailed example showing how to
+  access items in an array, see [Example 4][p9-03].
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#509][#509]
+  - PRs: [#514][#514]
+
+  </details>
+
+- Added handling to ensure that the folder containing `dsc` is always searched for resources. This
+  enables users to find and use built-in resources without manually updating their `PATH`
+  environment variable. This change has no effect when the `DSC_RESOURCE_PATH` environment variable
+  is defined.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#494][#494]
+  - PRs: [#499][#499]
+
+  </details>
+
+- Added support for PSDSC resources defined as derived classes. Prior to this release, the adapter
+  didn't support invoking derived classes as resources.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#462][#462]
+  - PRs: [#469][#469]
+
+  </details>
+
+- Added the option to clear the PowerShell adapter caches with the `ClearCache` operation. Prior to
+  this release, the caches needed to be cleared manually.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#468][#468]
+
+  </details>
+
+- Improved reliability of the PowerShell adapter caches. Starting with this release, the adapter
+  caches include a property defining the version of the caching logic they use. If the adapter
+  caching version doesn't match the property of the cache, the adapter rebuilds it with the new
+  version. This enables updating the caching logic in new releases.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#468][#468]
+
+  </details>
+
+- Added support for the [WhatIf capability][p9-04] to the `Microsoft.Windows/Registry` resource,
+  improving the user experience when calling `dsc config set` with the [--what-if][p9-05] option.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#452][#452]
+  - PRs: [#465][#465]
+
+  </details>
+
+- Added handling for when `dsc` is launched from Explorer or the Microsoft Store. Starting with
+  this release, when `dsc` is launched from the Microsoft Store application or Explorer, it shows a
+  message linking users to the documentation and waits for a key press before exiting.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#481][#481]
+
+  </details>
+
+- Improved performance for the PowerShell adapter caching by immediately invalidating the cache
+  when the cache timestampe entries are stale or missing instead of checking each module in the
+  cache.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#497][#497]
+
+  </details>
+
+### Fixed
+
+- Fixed a bug in the `Microsoft.Windows/PowerShell` adapter causing it to always invoke the `Get` operation.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#445][#445]
+  - PRs: [#480][#480]
+
+  </details>
+
+- Fixed a bug in the PowerShell adapters that caused errors when it discovered multiple modules
+  with the same name. Starting with this release, the adapter chooses the version of the module
+  with the latest version.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#487][#487]
+  - PRs: [#489][#489]
+
+  </details>
+
+- Fixed the error messaging when DSC doesn't get any input for a `Test` operation to clearly
+  indicate the problem. Prior to this release, users received a difficult-to-decipher message about
+  an unexpected end of file instead.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#484][#484]
+  - PRs: [#504][#504]
+
+  </details>
+
+- Fixed the behavior when a user specifies an invalid name or wildcard filter when calling
+  `dsc resource list` with the `--adapter` option. Prior to this release, DSC returned no data.
+  Starting with this release, DSC writes a message to STDERR indicating that no adapter was found.
+  The operation still exits with exit code `0`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#477][#477]
+  - PRs: [#506][#506]
+
+  </details>
+
+- Fixed the PowerShell adapters to correctly handle cache updates when a module containing
+  resources is deleted externally.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#495][#495]
+  - PRs: [#497][#497]
+
+  </details>
+
+- Fixed the PowerShell adapters to return a clear error message when a user attempts to call the
+  `Export` operation on an adapted resource that doesn't support it.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#503][#503]
+  - PRs: [#505][#505]
+
+  </details>
+
+<!-- Preview.9 links -->
+[p9-01]: docs/reference/schemas/config/functions/variables.md
+[p9-02]: docs/reference/schemas/config/functions/overview.md
+[p9-03]: docs/reference/schemas/config/functions/overview.md#example-4---access-object-properties-and-array-items
+[p9-04]: docs/reference/schemas/outputs/resource/list.md#capability-whatif
+[p9-05]: docs/reference/cli/config/set.md#-w---what-if
+
 ## [v3.0.0-preview.8][release-v3.0.0-preview.8] - 2024-06-19
 
 This section includes a summary of changes for the `preview.8` release. For the full list of changes
@@ -1574,10 +1808,38 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#439]: https://github.com/PowerShell/DSC/issues/439
 [#441]: https://github.com/PowerShell/DSC/issues/441
 [#444]: https://github.com/PowerShell/DSC/issues/444
-[#454]: https://github.com/PowerShell/DSC/issues/454
-[#464]: https://github.com/PowerShell/DSC/issues/464
+[#445]: https://github.com/PowerShell/DSC/issues/445
 [#45]:  https://github.com/PowerShell/DSC/issues/45
+[#452]: https://github.com/PowerShell/DSC/issues/452
+[#454]: https://github.com/PowerShell/DSC/issues/454
+[#457]: https://github.com/PowerShell/DSC/issues/457
+[#462]: https://github.com/PowerShell/DSC/issues/462
+[#464]: https://github.com/PowerShell/DSC/issues/464
+[#465]: https://github.com/PowerShell/DSC/issues/465
+[#468]: https://github.com/PowerShell/DSC/issues/468
+[#469]: https://github.com/PowerShell/DSC/issues/469
+[#477]: https://github.com/PowerShell/DSC/issues/477
+[#480]: https://github.com/PowerShell/DSC/issues/480
+[#481]: https://github.com/PowerShell/DSC/issues/481
+[#482]: https://github.com/PowerShell/DSC/issues/482
+[#484]: https://github.com/PowerShell/DSC/issues/484
+[#487]: https://github.com/PowerShell/DSC/issues/487
+[#489]: https://github.com/PowerShell/DSC/issues/489
 [#49]:  https://github.com/PowerShell/DSC/issues/49
+[#491]: https://github.com/PowerShell/DSC/issues/491
+[#493]: https://github.com/PowerShell/DSC/issues/493
+[#494]: https://github.com/PowerShell/DSC/issues/494
+[#495]: https://github.com/PowerShell/DSC/issues/495
+[#497]: https://github.com/PowerShell/DSC/issues/497
+[#499]: https://github.com/PowerShell/DSC/issues/499
+[#500]: https://github.com/PowerShell/DSC/issues/500
+[#503]: https://github.com/PowerShell/DSC/issues/503
+[#504]: https://github.com/PowerShell/DSC/issues/504
+[#505]: https://github.com/PowerShell/DSC/issues/505
+[#506]: https://github.com/PowerShell/DSC/issues/504
+[#509]: https://github.com/PowerShell/DSC/issues/509
+[#511]: https://github.com/PowerShell/DSC/issues/511
+[#514]: https://github.com/PowerShell/DSC/issues/514
 [#57]:  https://github.com/PowerShell/DSC/issues/57
 [#70]:  https://github.com/PowerShell/DSC/issues/70
 [#73]:  https://github.com/PowerShell/DSC/issues/73

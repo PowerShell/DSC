@@ -37,6 +37,11 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.Prop1 | Should -BeExactly 'ValueForProp1'
+
+        # verify that only properties with DscProperty attribute are returned
+        $propertiesNames = $res.actualState.result.properties | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames | Should -Not -Contain 'NonDscProperty'
+        $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
 
     It 'Get uses enum names on class-based resource' {
@@ -53,6 +58,11 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.InDesiredState | Should -Be $True
+
+        # verify that only properties with DscProperty attribute are returned
+        $propertiesNames = $res.actualState.result.properties.InDesiredState | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames | Should -Not -Contain 'NonDscProperty'
+        $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
 
     It 'Set works on class-based resource' {
@@ -71,6 +81,13 @@ Describe 'PowerShell adapter resource tests' {
         $res.resources[0].properties.result.count | Should -Be 5
         $res.resources[0].properties.result[0].Name | Should -Be "Object1"
         $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
+
+        # verify that only properties with DscProperty attribute are returned
+        $res.resources[0].properties.result | %{
+            $propertiesNames = $_ | Get-Member -MemberType NoteProperty | % Name
+            $propertiesNames | Should -Not -Contain 'NonDscProperty'
+            $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
+        }
     }
 
     It 'Get --all works on PS class-based resource' {
@@ -270,14 +287,42 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Dsc can process large resource output' -Tag z1{
+    It 'Dsc can process large resource output' {
         $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
 
+        dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
         $r = dsc resource export -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.resources[0].properties.result.count | Should -Be 5000
 
         $env:TestClassResourceResultCount = $null
+    }
+
+    It 'Verify that there are no cache rebuilds for several sequential executions' {
+
+        # remove cache file
+        $cacheFilePath = if ($IsWindows) {
+            # PS 6+ on Windows
+            Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
+        } else {
+            # either WinPS or PS 6+ on Linux/Mac
+            if ($PSVersionTable.PSVersion.Major -le 5) {
+                Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+            } else {
+                Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
+            }
+        }
+        Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
+
+        # first execution should build the cache
+        dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
+
+        # next executions following shortly after should Not rebuild the cache
+        1..3 | %{
+            dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+            "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
+        }
     }
 }

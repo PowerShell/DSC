@@ -274,3 +274,50 @@ Array index with function and nested dot-notation with index
               (memberName)))))
       (index
         (number)))))
+
+=====
+Multi-line expression
+=====
+[myFunction(
+  'argString',
+  1,
+  -1,
+  true
+)]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)
+        (number)
+        (number)
+        (boolean)))))
+
+=====
+Multi-line literal string
+=====
+This
+is
+a
+multiline
+string
+---
+
+(statement
+  (stringLiteral))
+
+=====
+Escaped single-quotes
+=====
+[myFunction('this ''is'' a string')]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (string)))))
