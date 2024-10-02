@@ -325,4 +325,21 @@ Describe 'PowerShell adapter resource tests' {
             "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
         }
     }
+
+    It "Verify that Schema operation works on PS class-based resource" {
+        BeforeDiscovery {
+            $resourceManifest = Resolve-Path -Path (Join-Path $PSScriptRoot 'TestClassResource' 'testclassresource.dsc.resource.json')
+            $dest = Split-Path -Path ((Get-Command dsc).Source) -Parent
+            $script:file = Copy-Item -Path $resourceManifest -Destination $dest -Force -PassThru
+        }
+
+        $r = dsc resource schema --resource TestClassResource/TestClassResource
+        $properties = $r | ConvertFrom-Json
+        $properties.required | Should -Not -BeNullOrEmpty
+        $properties.properties.PSObject.properties.Name.Contains('BaseProperty') | Should -BeTrue
+    }
+}
+
+AfterAll {
+    Remove-Item -Path $file.FullName -Force -ErrorAction SilentlyContinue
 }

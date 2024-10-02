@@ -12,6 +12,7 @@
         "./y2j/Cargo.toml"
     ],
     "rust-analyzer.showUnlinkedFileNotification": true,
+    "powershell.codeFormatting.preset": "OTBS",
     "json.schemas": [
         {
             "fileMatch": ["**/*.dsc.resource.json"],
