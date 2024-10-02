@@ -33,6 +33,17 @@ the command includes the `RESOURCE_NAME` argument, DSC filters the list of disco
 before returning them. The **description** and **tags** options filter the results by the
 resource descriptions and tags. Filters are always applied after resource discovery.
 
+### Adapted resource cache
+
+DSC maintains a cache of discovered adapted resources for performance optimization. The location of
+the cache depends on the operating system, as shown in the following table.
+
+| Operating system | Cache path                                            |
+|:----------------:|:------------------------------------------------------|
+|       Linux      | `%LOCALAPPDATA%\dsc\AdaptedResourcesLookupTable.json` |
+|       macOS      | `~/.dsc/AdaptedResourcesLookupTable.json`             |
+|      Windows     | `~/.dsc/AdaptedResourcesLookupTable.json`             |
+
 ## Examples
 
 ### Example 1 - List all non-adapted resources
