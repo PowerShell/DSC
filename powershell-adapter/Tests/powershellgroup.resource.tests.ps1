@@ -58,6 +58,7 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.InDesiredState | Should -Be $True
+        $res.actualState.result.properties.InDesiredState.GetType().Name | Should -Be "Boolean"
 
         # verify that only properties with DscProperty attribute are returned
         $propertiesNames = $res.actualState.result.properties.InDesiredState | Get-Member -MemberType NoteProperty | % Name
