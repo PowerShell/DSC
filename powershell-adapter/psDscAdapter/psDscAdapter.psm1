@@ -480,9 +480,7 @@ function Invoke-DscOperation {
                             $dscResourceInstance.Set()
                         }
                         'Test' {
-                            $Result = @{}
-                            $raw_obj = $dscResourceInstance.Test()
-                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_ }
+                            $Result = $dscResourceInstance.Test()
                             $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
                         }
                         'Export' {
