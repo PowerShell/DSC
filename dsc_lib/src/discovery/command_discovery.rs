@@ -541,7 +541,7 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
         if let Some(adapter_name) = &res_vec[0].require_adapter {
             let new_value = adapter_name.to_string();
             let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
-            if !lookup_table_changed && (oldvalue == None || oldvalue.is_some_and(|val| val != new_value)) {
+            if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {
                 lookup_table_changed = true;
             };
         } else {
