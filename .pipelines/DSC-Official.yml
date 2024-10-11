@@ -21,6 +21,7 @@ variables:
 #  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
   LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
   WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
+  Codeql.TSAEnabled: true
 
 resources:
   repositories:

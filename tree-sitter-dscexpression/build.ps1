@@ -53,7 +53,7 @@ if ($UpdatePackages) {
     npm cache clean --force
     npm logout
     vsts-npm-auth -config .npmrc -F -V
-    npm install --omit:optional --force --verbose --registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
+    npm install --omit:optional --force --verbose --registry https://registry.npmjs.org/ #--registry https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/npm/registry/
 }
 
 Invoke-NativeCommand 'npx node-gyp configure'

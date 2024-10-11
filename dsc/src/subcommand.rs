@@ -4,7 +4,6 @@
 use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
-use crate::Stream;
 use crate::tablewriter::Table;
 use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
 use dsc_lib::configure::{Configurator, config_doc::{Configuration, ExecutionKind}, config_result::ResourceGetResult};
@@ -17,6 +16,7 @@ use dsc_lib::{
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
 use std::collections::HashMap;
+use std::io::{self, IsTerminal};
 use std::process::exit;
 use tracing::{debug, error, trace};
 
@@ -498,7 +498,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
 fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
     let mut write_table = false;
     let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
-    if format.is_none() && atty::is(Stream::Stdout) {
+    if format.is_none() && io::stdin().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
@@ -580,7 +580,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
             };
             write_output(&json, format);
             // insert newline separating instances if writing to console
-            if atty::is(Stream::Stdout) { println!(); }
+            if io::stdin().is_terminal() { println!(); }
         }
     }
 

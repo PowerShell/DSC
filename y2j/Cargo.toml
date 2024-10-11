@@ -4,7 +4,6 @@ version = "1.0.0"
 edition = "2021"
 
 [dependencies]
-atty = { version = "0.2.0" }
 serde_json = { version = "1.0.0", features = ["preserve_order"] }
 serde_yaml = { version = "0.9.3" }
 syntect = { version = "5.0.0", features = ["default-fancy"], default-features = false }

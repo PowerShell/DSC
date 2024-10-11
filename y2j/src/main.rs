@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use atty::Stream;
-use std::{io::{self, Read}, process::exit};
+use std::{io::{self, Read, IsTerminal}, process::exit};
 use syntect::easy::HighlightLines;
 use syntect::parsing::SyntaxSet;
 use syntect::highlighting::{ThemeSet, Style};
@@ -12,7 +11,7 @@ const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_INPUT: i32 = 1;
 
 fn main() {
-    let input: String = if atty::is(Stream::Stdin) {
+    let input: String = if std::io::stdin().is_terminal() {
         eprintln!("Error: Input JSON/YAML via STDIN is required.");
         exit(EXIT_INVALID_INPUT);
     } else {
@@ -46,7 +45,7 @@ fn main() {
     };
 
     // if stdout is not redirected, print with syntax highlighting
-    if atty::is(Stream::Stdout) {
+    if std::io::stdin().is_terminal() {
         let ps = SyntaxSet::load_defaults_newlines();
         let ts = ThemeSet::load_defaults();
         let syntax = if is_json {

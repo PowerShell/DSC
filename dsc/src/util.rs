@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 use crate::args::{DscType, OutputFormat, TraceFormat};
-use atty::Stream;
 use crate::resolve::Include;
 use dsc_lib::{
     configure::{
@@ -31,6 +30,7 @@ use schemars::{schema_for, schema::RootSchema};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
+use std::io::IsTerminal;
 use std::path::Path;
 use std::process::exit;
 use syntect::{
@@ -194,7 +194,7 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     let mut is_json = true;
     let mut output_format = format.clone();
     let mut syntax_color = false;
-    if atty::is(Stream::Stdout) {
+    if std::io::stdin().is_terminal() {
         syntax_color = true;
         if output_format.is_none() {
             output_format = Some(OutputFormat::Yaml);

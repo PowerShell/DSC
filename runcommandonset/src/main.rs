@@ -1,9 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use atty::Stream;
 use clap::Parser;
-use std::{io::{self, Read}, process::exit};
+use std::{io::{self, Read, IsTerminal}, process::exit};
 use tracing::{error, warn, debug};
 
 use args::{Arguments, SubCommand, TraceLevel};
@@ -41,7 +40,7 @@ fn main() {
     enable_tracing(&trace_level, &args.trace_format);
     warn!("This resource is not idempotent");
 
-    let stdin = if atty::is(Stream::Stdin) {
+    let stdin = if std::io::stdin().is_terminal() {
         None
     } else {
         debug!("Reading input from STDIN");

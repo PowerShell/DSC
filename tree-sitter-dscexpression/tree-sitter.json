@@ -10,7 +10,7 @@
     }
   ],
   "metadata": {
-    "version": "0.0.1",
+    "version": "1.0.0",
     "license": "MIT",
     "description": "Dscexpression grammar for tree-sitter",
     "links": {
@@ -19,10 +19,10 @@
   },
   "bindings": {
     "c": true,
-    "go": true,
+    "go": false,
     "node": true,
-    "python": true,
+    "python": false,
     "rust": true,
-    "swift": true
+    "swift": false
   }
 }
