@@ -146,7 +146,7 @@ Describe 'tests for resource discovery' {
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
 
         # remove adapter lookup table file
-        Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction SilentlyContinue
+        Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction Stop
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # initial invocation should populate and save adapter lookup table
