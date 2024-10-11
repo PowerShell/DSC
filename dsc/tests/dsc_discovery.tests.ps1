@@ -144,10 +144,25 @@ Describe 'tests for resource discovery' {
         $TestClassResourcePath = Resolve-Path "$PSScriptRoot/../../powershell-adapter/Tests"
         $env:DSC_RESOURCE_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
-        dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
-        "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' 2> $TestDrive/tracing.txt
 
+        # remove adapter lookup table file
+        Remove-Item -Force -Path $script:lookupTableFilePath -ErrorAction Stop
+        Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
+
+        # initial invocation should populate and save adapter lookup table
+        dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Read 0 items into lookup table"
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
+
+        # second invocation (without an update) should use but not save adapter lookup table
+        "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Lookup table found resource 'testclassresource/testclassresource' in adapter 'Microsoft.DSC/PowerShell'"
+        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table"
+
+        # third invocation (with an update) should save updated adapter lookup table
+        dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
+
         $env:PSModulePath = $oldPSModulePath
     }
 

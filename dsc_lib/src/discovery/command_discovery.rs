@@ -536,15 +536,22 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
 {
     let mut lookup_table = load_adapted_resources_lookup_table();
 
+    let mut lookup_table_changed = false;
     for (resource_name, res_vec) in adapted_resources {
         if let Some(adapter_name) = &res_vec[0].require_adapter {
-            lookup_table.insert(resource_name.to_string().to_lowercase(), adapter_name.to_string());
+            let new_value = adapter_name.to_string();
+            let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
+            if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {
+                lookup_table_changed = true;
+            };
         } else {
             info!("Resource '{resource_name}' in 'adapted_resources' is missing 'require_adapter' field.");
         }
     };
 
-    save_adapted_resources_lookup_table(&lookup_table);
+    if lookup_table_changed {
+        save_adapted_resources_lookup_table(&lookup_table);
+    }
 }
 
 fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
