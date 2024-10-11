@@ -14,7 +14,8 @@ param(
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
     [switch]$UseCratesIO,
-    [switch]$UpdateLockFile
+    [switch]$UpdateLockFile,
+    [switch]$Audit
 )
 
 if ($GetPackageVersion) {
@@ -252,6 +253,14 @@ if (!$SkipBuild) {
                     cargo generate-lockfile
                 }
                 else {
+                    if ($Audit) {
+                        if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
+                            cargo install cargo-audit --features=fix
+                        }
+
+                        cargo audit fix
+                    }
+
                     ./build.ps1
                 }
             }
@@ -276,6 +285,14 @@ if (!$SkipBuild) {
                         cargo generate-lockfile
                     }
                     else {
+                        if ($Audit) {
+                            if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
+                                cargo install cargo-audit --features=fix
+                            }
+
+                            cargo audit fix
+                        }
+
                         cargo build @flags
                     }
                 }

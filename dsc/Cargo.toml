@@ -18,15 +18,15 @@ crossterm = { version = "0.28.1" }
 ctrlc = { version = "3.4.0" }
 dsc_lib = { path = "../dsc_lib" }
 indicatif = { version = "0.17" }
-jsonschema = "0.19.1"
+jsonschema = "0.22.3"
 path-absolutize = { version = "3.1.1" }
-reqwest = { version = "0.12.7", features = ["rustls-tls"], default-features = false }
+reqwest = { version = "0.12.8", features = ["rustls-tls"], default-features = false }
 schemars = { version = "0.8.12" }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.128", features = ["preserve_order"] }
 serde_yaml = { version = "0.9.3" }
 syntect = { version = "5.0", features = ["default-fancy"], default-features = false }
-sysinfo = { version = "0.31.4" }
+sysinfo = { version = "0.32.0" }
 thiserror = "1.0.52"
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17", features = ["ansi", "env-filter", "json"] }

@@ -1,7 +1,7 @@
 [package]
 name = "tree-sitter-dscexpression"
 description = "DSCExpression grammar for the tree-sitter parsing library"
-version = "0.1.0"
+version = "1.0.0"
 keywords = ["incremental", "parsing", "DSCExpression"]
 categories = ["parsing", "text-editors"]
 repository = "https://github.com/powershell/dsc"
@@ -20,7 +20,7 @@ include = [
 path = "bindings/rust/lib.rs"
 
 [dependencies]
-tree-sitter = "0.23.0"
+tree-sitter = "0.24.3"
 
 [build-dependencies]
 cc = "1.1.20"
