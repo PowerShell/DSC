@@ -21,14 +21,14 @@
     "src/**"
   ],
   "dependencies": {
-    "gyp": "^0.3.0",
-    "node-addon-api": "^7.1.1",
-    "node-gyp": "^10.2.0",
+    "node-addon-api": "^8.2.0",
+    "node-gyp": "10.2.0",
     "node-gyp-build": "^4.8.2"
   },
   "devDependencies": {
+    "gyp": "^0.3.0",
     "prebuildify": "^6.0.1",
-    "tree-sitter-cli": "^0.22.6"
+    "tree-sitter-cli": "^0.24.3"
   },
   "peerDependencies": {
     "tree-sitter": "^0.21.0"
@@ -45,11 +45,5 @@
     "build-wasm": "tree-sitter build --wasm",
     "test": "tree-sitter test",
     "parse": "tree-sitter parse"
-  },
-  "tree-sitter": [
-    {
-      "scope": "source.dscexpression",
-      "injection-regex": "^dscexpression$"
-    }
-  ]
+  }
 }

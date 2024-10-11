@@ -1,0 +1,28 @@
+{
+  "grammars": [
+    {
+      "name": "dscexpression",
+      "camelcase": "Dscexpression",
+      "scope": "source.dscexpression",
+      "path": ".",
+      "file-types": null,
+      "injection-regex": "^dscexpression$"
+    }
+  ],
+  "metadata": {
+    "version": "0.0.1",
+    "license": "MIT",
+    "description": "Dscexpression grammar for tree-sitter",
+    "links": {
+      "repository": "https://github.com/tree-sitter/tree-sitter-dscexpression"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}
