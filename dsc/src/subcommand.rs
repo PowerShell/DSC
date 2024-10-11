@@ -498,7 +498,7 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
 fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
     let mut write_table = false;
     let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
-    if format.is_none() && io::stdin().is_terminal() {
+    if format.is_none() && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
@@ -580,7 +580,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
             };
             write_output(&json, format);
             // insert newline separating instances if writing to console
-            if io::stdin().is_terminal() { println!(); }
+            if io::stdout().is_terminal() { println!(); }
         }
     }
 

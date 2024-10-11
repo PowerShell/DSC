@@ -194,7 +194,7 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     let mut is_json = true;
     let mut output_format = format.clone();
     let mut syntax_color = false;
-    if std::io::stdin().is_terminal() {
+    if std::io::stdout().is_terminal() {
         syntax_color = true;
         if output_format.is_none() {
             output_format = Some(OutputFormat::Yaml);

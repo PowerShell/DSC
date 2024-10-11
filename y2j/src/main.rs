@@ -45,7 +45,7 @@ fn main() {
     };
 
     // if stdout is not redirected, print with syntax highlighting
-    if std::io::stdin().is_terminal() {
+    if std::io::stdout().is_terminal() {
         let ps = SyntaxSet::load_defaults_newlines();
         let ts = ThemeSet::load_defaults();
         let syntax = if is_json {
