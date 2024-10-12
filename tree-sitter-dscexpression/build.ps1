@@ -14,7 +14,7 @@ function Invoke-NativeCommand($cmd) {
 
 $env:TREE_SITTER_VERBOSE=1
 
-if ($null -eq (Get-Command tree-sitter)) {
+if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
     cargo install tree-sitter-cli
 }
 
