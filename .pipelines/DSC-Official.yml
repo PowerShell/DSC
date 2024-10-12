@@ -328,6 +328,7 @@ extends:
             apt -y install llvm
             apt -y install musl-tools
             apt -y install gcc-multilib
+            apt -y install libssl-dev
             rustup default stable-aarch64-unknown-linux-musl
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
