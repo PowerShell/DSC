@@ -19,7 +19,6 @@ variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
 #  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
-  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
   WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
   Codeql.TSAEnabled: true
 
@@ -229,6 +228,7 @@ extends:
       - job: BuildLinux
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-x64-gnu
@@ -253,6 +253,7 @@ extends:
       - job: BuildLinuxArm64
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-gnu
@@ -280,6 +281,7 @@ extends:
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-x64-musl
@@ -306,6 +308,7 @@ extends:
       - job: BuildLinuxArm64Musl
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-musl
