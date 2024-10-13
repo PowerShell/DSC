@@ -325,12 +325,12 @@ extends:
             $env:CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_RUSTFLAGS="-Clink-self-contained=yes -Clinker=rust-lld"
             dpkg --add-architecture arm64
             apt update -o APT::Architecture="arm64" -o APT::Architectures="arm64"
-            apt -y install clang
-            apt -y install llvm
-            apt -y install musl-tools
-            apt -y install gcc-multilib
-            apt -y install libssl-dev
-            apt -y install pkg-config
+            apt -y install clang:arm64
+            apt -y install llvm:arm64
+            apt -y install musl-tools:arm64
+            apt -y install gcc-multilib:arm64
+            apt -y install libssl-dev:arm64
+            apt -y install pkg-config:arm54
             rustup default stable-aarch64-unknown-linux-musl
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
