@@ -272,6 +272,9 @@ extends:
         - pwsh: |
             apt update
             apt -y install gcc-aarch64-linux-gnu
+            if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
+              $env:OPENSSL_LIB_DIR = $matches['dir']
+            }
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -336,6 +339,9 @@ extends:
             apt -y install libssl-dev
             apt -y install pkg-config
             rustup default stable-aarch64-unknown-linux-musl
+            if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
+              $env:OPENSSL_LIB_DIR = $matches['dir']
+            }
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
