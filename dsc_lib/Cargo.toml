@@ -9,7 +9,7 @@ chrono = "0.4.26"
 clap = { version = "4.5.17", features = ["derive"] }
 derive_builder ="0.20.1"
 indicatif = "0.17.0"
-jsonschema = "0.22.3"
+jsonschema = "0.23.0"
 linked-hash-map = "0.5.6"
 num-traits = "0.2.14"
 regex = "1.7.0"
@@ -31,4 +31,4 @@ tree-sitter-dscexpression = { path = "../tree-sitter-dscexpression" }
 serde_yaml = "0.9.3"
 
 [build-dependencies]
-cc="1.1.20"
+cc="1.1.30"
