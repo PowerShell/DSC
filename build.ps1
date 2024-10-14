@@ -226,7 +226,8 @@ if (!$SkipBuild) {
         "runcommandonset",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j"
+        "y2j",
+        "."
     )
     $pedantic_unclean_projects = @()
     $clippy_unclean_projects = @("tree-sitter-dscexpression")
