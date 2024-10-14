@@ -516,7 +516,6 @@ dependencies = [
  "linked-hash-map",
  "num-traits",
  "regex",
- "reqwest",
  "schemars",
  "security_context_lib",
  "semver",
