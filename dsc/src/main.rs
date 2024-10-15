@@ -2,10 +2,9 @@
 // Licensed under the MIT License.
 
 use args::{Args, SubCommand};
-use atty::Stream;
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use std::io::{self, Read};
+use std::io::{self, IsTerminal, Read};
 use std::process::exit;
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
@@ -39,7 +38,7 @@ fn main() {
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
-    let input = if atty::is(Stream::Stdin) {
+    let input = if io::stdin().is_terminal() {
         None
     } else {
         info!("Reading input from STDIN");
