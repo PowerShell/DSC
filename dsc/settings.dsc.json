@@ -1,0 +1,7 @@
+{
+  "resource_path": {
+    "allow_env_override": true,
+    "append_env_path": true,
+    "directories": []
+  }
+}

@@ -66,7 +66,7 @@ impl CommandDiscovery {
             }
         }
 
-        return Err(DscError::Operation("Could not read resource_path setting".to_string()));
+        Err(DscError::Operation("Could not read resource_path setting".to_string()))
     }
 
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
