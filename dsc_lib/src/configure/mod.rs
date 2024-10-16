@@ -260,7 +260,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        resource: None
                     }
                 ),
                 name: resource.name.clone(),
@@ -364,6 +365,8 @@ impl Configurator {
             }
 
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+            // Process SetResult by checking for _metadata field
+            let (set_result_parsed, resource_metadata) = Configurator::parse_metadata_from_set(set_result)?;
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(
                     Metadata {
@@ -372,12 +375,13 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        resource: resource_metadata
                     }
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: set_result,
+                result: set_result_parsed,
             };
             result.results.push(resource_result);
         }
@@ -426,7 +430,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        resource: None
                     }
                 ),
                 name: resource.name.clone(),
@@ -598,7 +603,8 @@ impl Configurator {
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
                 }
-            )
+            ),
+            resource: None
         }
     }
 
@@ -710,5 +716,31 @@ impl Configurator {
             }
         }
         Ok(Some(result))
+    }
+
+    fn parse_metadata(mut input: Value) -> Result<(Value, Option<Value>), DscError> {
+        let result = input.clone();
+        if let Value::Object(mut map) = input.take() {
+            let metadata = map.remove("_metadata");
+            return Ok((Value::Object(map), metadata));
+        }
+        // TODO: if the after_state can't be parsed as a map, it may be because it's nested in a group like - afterState.result.afterState?
+        // returning original for now
+        return Ok((result, None))
+    }
+
+    fn parse_metadata_from_set(set_result: SetResult) -> Result<(SetResult, Option<Value>), DscError> {
+        match set_result {
+            SetResult::Resource(result) => {
+                let mut set_result_parsed = result.clone();
+                let (after_state, metadata) = Configurator::parse_metadata(result.after_state)?;
+                set_result_parsed.after_state = after_state;
+                return Ok((SetResult::Resource(set_result_parsed), metadata));
+            },
+            SetResult::Group(_results) => {
+                //Ok((SetResult::Group(results.clone()), None))
+                Err(DscError::NotImplemented("group resources not implemented yet".to_string()))
+            }
+        }
     }
 }
