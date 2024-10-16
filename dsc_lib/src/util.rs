@@ -44,6 +44,15 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
     }
 }
 
+/// Will search setting files for the specified setting.
+///
+/// # Arguments
+///
+/// * `value_name` - The name of the setting.
+///
+/// # Errors
+///
+/// Will return `Err` if could not find requested setting.
 pub fn get_setting(value_name: &str) -> Result<serde_json::Value, DscError> {
 
     const SETTINGS_FILE_NAME: &str = "settings.dsc.json";
@@ -57,20 +66,20 @@ pub fn get_setting(value_name: &str) -> Result<serde_json::Value, DscError> {
 
         // First, get setting from the default settings file
         settings_file_path = exe_home.join(DEFAULT_SETTINGS_FILE_NAME);
-        if let Ok(v) = load_value_from_json(&settings_file_path, &value_name) {
+        if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
             result = v;
-            debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+            debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
         } else {
-            debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+            debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
         }
 
         // Second, get setting from the active settings file overwriting previous value 
         settings_file_path = exe_home.join(SETTINGS_FILE_NAME);
-        if let Ok(v) = load_value_from_json(&settings_file_path, &value_name) {
+        if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
             result = v;
-            debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+            debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
         } else {
-            debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+            debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
         }
     } else {
         debug!("Can't get dsc executable path");
@@ -78,15 +87,15 @@ pub fn get_setting(value_name: &str) -> Result<serde_json::Value, DscError> {
 
     // Third, get setting from the policy settings file overwriting previous value 
     settings_file_path = PathBuf::from(get_settings_policy_file_path());
-    if let Ok(v) = load_value_from_json(&settings_file_path, &value_name) {
+    if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
         result = v;
-        debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+        debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
     } else {
-        debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+        debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
     }
 
     if result == serde_json::Value::Null {
-        return Err(DscError::NotSupported(format!("Could not find '{}' in settings", value_name).to_string()));
+        return Err(DscError::NotSupported(format!("Could not find '{value_name}' in settings").to_string()));
     }
 
     Ok(result)
@@ -96,15 +105,17 @@ pub fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_js
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let root: serde_json::Value = match serde_json::from_reader(reader) {
-            Ok(j) => j,
-            Err(err) => {
-                return Err(DscError::Json(err));
-            }
-        };
+        Ok(j) => j,
+        Err(err) => {
+            return Err(DscError::Json(err));
+        }
+    };
 
-    for (key, value) in root.as_object().unwrap() {
-        if *key == value_name {
-            return Ok(value.clone())
+    if let Some(r) = root.as_object() {
+        for (key, value) in r {
+            if *key == value_name {
+                return Ok(value.clone())
+            }
         }
     }
 
