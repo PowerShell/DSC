@@ -3,6 +3,12 @@
 
 use crate::dscerror::DscError;
 use serde_json::Value;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::PathBuf;
+use std::path::Path;
+use std::env;
+use tracing::debug;
 
 /// Return JSON string whether the input is JSON or YAML
 ///
@@ -36,4 +42,88 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
             }
         }
     }
+}
+
+pub fn get_setting(value_name: &str) -> Result<serde_json::Value, DscError> {
+
+    const SETTINGS_FILE_NAME: &str = "settings.dsc.json";
+    // Note that default settings file name has a version that is specific to this version of dsc
+    const DEFAULT_SETTINGS_FILE_NAME: &str = "default_settings.v1.dsc.json";
+
+    let mut result:serde_json::Value = serde_json::Value::Null;
+    let mut settings_file_path : PathBuf;
+
+    if let Some(exe_home) = env::current_exe()?.parent() {
+
+        // First, get setting from the default settings file
+        settings_file_path = exe_home.join(DEFAULT_SETTINGS_FILE_NAME);
+        if let Ok(v) = load_value_from_json(&settings_file_path, &value_name) {
+            result = v;
+            debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+        } else {
+            debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+        }
+
+        // Second, get setting from the active settings file overwriting previous value 
+        settings_file_path = exe_home.join(SETTINGS_FILE_NAME);
+        if let Ok(v) = load_value_from_json(&settings_file_path, &value_name) {
+            result = v;
+            debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+        } else {
+            debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+        }
+    } else {
+        debug!("Can't get dsc executable path");
+    }
+
+    // Third, get setting from the policy settings file overwriting previous value 
+    settings_file_path = PathBuf::from(get_settings_policy_file_path());
+    if let Ok(v) = load_value_from_json(&settings_file_path, &value_name) {
+        result = v;
+        debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+    } else {
+        debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy())
+    }
+
+    if result == serde_json::Value::Null {
+        return Err(DscError::NotSupported(format!("Could not find '{}' in settings", value_name).to_string()));
+    }
+
+    Ok(result)
+}
+
+pub fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::Value, DscError> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let root: serde_json::Value = match serde_json::from_reader(reader) {
+            Ok(j) => j,
+            Err(err) => {
+                return Err(DscError::Json(err));
+            }
+        };
+
+    for (key, value) in root.as_object().unwrap() {
+        if *key == value_name {
+            return Ok(value.clone())
+        }
+    }
+
+    Err(DscError::NotSupported(value_name.to_string()))
+}
+
+#[cfg(target_os = "windows")]
+fn get_settings_policy_file_path() -> String
+{
+    // $env:ProgramData+"\dsc\settings.dsc.json"
+    // This location is writable only by admins, but readable by all users
+    let Ok(local_program_data_path) = std::env::var("ProgramData") else { return String::new(); };
+    Path::new(&local_program_data_path).join("dsc").join("settings.dsc.json").display().to_string()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_settings_policy_file_path() -> String
+{
+    // "/etc/.dsc/settings.dsc.json"
+    // This location is writable only by admins, but readable by all users
+    Path::new("/etc").join(".dsc").join("settings.dsc.json").display().to_string()
 }
