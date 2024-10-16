@@ -101,7 +101,7 @@ pub fn get_setting(value_name: &str) -> Result<serde_json::Value, DscError> {
     Ok(result)
 }
 
-pub fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::Value, DscError> {
+fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::Value, DscError> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let root: serde_json::Value = match serde_json::from_reader(reader) {
