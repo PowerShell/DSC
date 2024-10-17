@@ -52,10 +52,10 @@ Describe 'WMI adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $r | Should -Not -BeNullOrEmpty
         $res = $r | ConvertFrom-Json
-        $res.results[0].result.actualState[0].Name | Should -Not -BeNullOrEmpty
-        $res.results[0].result.actualState[0].BootupState | Should -BeNullOrEmpty
-        $res.results[0].result.actualState[1].Caption | Should -Not -BeNullOrEmpty
-        $res.results[0].result.actualState[1].BuildNumber | Should -BeNullOrEmpty
-        $res.results[0].result.actualState[4].AdapterType | Should -BeLike "Ethernet*"
+        $res.results[1].result.actualState[0].Name | Should -Not -BeNullOrEmpty
+        $res.results[1].result.actualState[0].BootupState | Should -BeNullOrEmpty
+        $res.results[1].result.actualState[1].Caption | Should -Not -BeNullOrEmpty
+        $res.results[1].result.actualState[1].BuildNumber | Should -BeNullOrEmpty
+        $res.results[1].result.actualState[4].AdapterType | Should -BeLike "Ethernet*"
     }
 }
