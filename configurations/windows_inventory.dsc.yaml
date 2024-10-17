@@ -1,7 +1,18 @@
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 resources:
+- name: Validate the OS is Windows
+  type: Microsoft.DSC/Assertion
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    resources:
+    - name: os
+      type: Microsoft/OSInfo
+      properties:
+        family: Windows
 - name: WMI
   type: Microsoft.Windows/WMI
+  dependsOn:
+    - "[resourceId('Microsoft.DSC/Assertion','Validate the OS is Windows')]"
   properties:
     resources:
       - name: computer system
@@ -39,4 +50,4 @@ resources:
           adaptertype:
           netconnectionid:
           serviceName:
-          netconnectionstatus: 2
+          netconnectionstatus: 2 # Connected

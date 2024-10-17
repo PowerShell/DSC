@@ -1,0 +1,62 @@
+# This configuration validates a Windows system against a security baseline configuration
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: Elevated
+resources:
+- name: Validate the OS is Windows
+  type: Microsoft.DSC/Assertion
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    resources:
+    - name: os
+      type: Microsoft/OSInfo
+      properties:
+        family: Windows
+- name: Registry checks
+  type: Microsoft.DSC/Group
+  dependsOn: 
+    - "[resourceId('Microsoft.DSC/Assertion','Validate the OS is Windows')]"
+  properties:
+    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    resources:
+      - name: Default RDP port
+        type: Microsoft.Windows/Registry
+        metadata:
+          area: Network Access
+          severity: Critical
+        properties:
+          keyPath: HKLM\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp
+          valueName: PortNumber
+          valueData:
+            DWord: 3389
+      - name: Disable SMBv1
+        type: Microsoft.Windows/Registry
+        metadata:
+          area: Network Access
+          severity: Critical
+        properties:
+          keyPath: HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+          valueName: SMB1
+          valueData:
+            DWord: 0 # Disabled
+      - name: Disable Windows Search service
+        type: Microsoft.Windows/Registry
+        metadata:
+          area: Services
+          severity: Critical
+        properties:
+          keyPath: HKLM\SYSTEM\CurrentControlSet\Services\WSearch
+          valueName: Start
+          valueData:
+            DWord: 4 # Disabled
+      - name: Scan Removeable Drives
+        type: Microsoft.Windows/Registry
+        metadata:
+          area: Services
+          severity: Critical
+        properties:
+          keyPath: HKLM\SOFTWARE\Policies\Microsoft\Windows Defender
+          valueName: DisableRemovableDriveScanning
+          valueData:
+            DWord: 0 # Disabled
