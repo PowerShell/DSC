@@ -41,7 +41,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, debug, error, warn, trace};
+use tracing::{Level, info, debug, error, warn, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 use tracing_indicatif::IndicatifLayer;
 
@@ -394,6 +394,7 @@ pub fn enable_tracing(trace_level_arg: Option<TraceLevel>, trace_format_arg: Opt
 
     // set DSC_TRACE_LEVEL for child processes
     env::set_var(DSC_TRACE_LEVEL, tracing_level.to_string().to_ascii_lowercase());
+    info!("Trace-level is {:?}", tracing_setting.level);
 }
 
 /// Validate the JSON against the schema.
