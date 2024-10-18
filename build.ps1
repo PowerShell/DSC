@@ -44,7 +44,9 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.exe',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
-    'wmi.resource.ps1'
+    'wmi.resource.ps1',
+    'default_settings.v1.dsc.json',
+    'settings.dsc.json'
 )
 
 $filesForLinuxPackage = @(
@@ -59,7 +61,9 @@ $filesForLinuxPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'default_settings.v1.dsc.json',
+    'settings.dsc.json'
 )
 
 $filesForMacPackage = @(
@@ -74,7 +78,9 @@ $filesForMacPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'default_settings.v1.dsc.json',
+    'settings.dsc.json'
 )
 
 # the list of files other than the binaries which need to be executable
