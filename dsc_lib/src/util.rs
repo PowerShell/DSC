@@ -10,6 +10,20 @@ use std::path::Path;
 use std::env;
 use tracing::debug;
 
+pub struct DscSettingValue {
+    pub setting:  serde_json::Value,
+    pub policy: serde_json::Value,
+}
+
+impl Default for DscSettingValue {
+    fn default() -> DscSettingValue {
+        DscSettingValue {
+            setting: serde_json::Value::Null,
+            policy: serde_json::Value::Null,
+        }
+    }
+}
+
 /// Return JSON string whether the input is JSON or YAML
 ///
 /// # Arguments
@@ -53,30 +67,29 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
 /// # Errors
 ///
 /// Will return `Err` if could not find requested setting.
-pub fn get_setting(value_name: &str) -> Result<serde_json::Value, DscError> {
+pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
 
     const SETTINGS_FILE_NAME: &str = "settings.dsc.json";
     // Note that default settings file name has a version that is specific to this version of dsc
     const DEFAULT_SETTINGS_FILE_NAME: &str = "default_settings.v1.dsc.json";
 
-    let mut result:serde_json::Value = serde_json::Value::Null;
+    let mut result: DscSettingValue = DscSettingValue::default();
     let mut settings_file_path : PathBuf;
 
     if let Some(exe_home) = env::current_exe()?.parent() {
-
         // First, get setting from the default settings file
         settings_file_path = exe_home.join(DEFAULT_SETTINGS_FILE_NAME);
         if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
-            result = v;
+            result.setting = v;
             debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
         } else {
             debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
         }
 
-        // Second, get setting from the active settings file overwriting previous value 
+        // Second, get setting from the active settings file overwriting previous value
         settings_file_path = exe_home.join(SETTINGS_FILE_NAME);
         if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
-            result = v;
+            result.setting = v;
             debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
         } else {
             debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
@@ -85,16 +98,17 @@ pub fn get_setting(value_name: &str) -> Result<serde_json::Value, DscError> {
         debug!("Can't get dsc executable path");
     }
 
-    // Third, get setting from the policy settings file overwriting previous value 
+    // Third, get setting from the policy
     settings_file_path = PathBuf::from(get_settings_policy_file_path());
     if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
-        result = v;
+        result.policy = v;
         debug!("Found setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
     } else {
         debug!("Did not find setting '{}' in {}", &value_name, settings_file_path.to_string_lossy());
     }
 
-    if result == serde_json::Value::Null {
+    if (result.setting == serde_json::Value::Null) &&
+       (result.policy == serde_json::Value::Null) {
         return Err(DscError::NotSupported(format!("Could not find '{value_name}' in settings").to_string()));
     }
 
