@@ -67,14 +67,14 @@ impl CommandDiscovery {
                     Ok(v) => {
                         return Ok(v);
                     },
-                    Err(e) => { return Err(DscError::Operation(format!("{}", e))); }
+                    Err(e) => { return Err(DscError::Operation(format!("{e}"))); }
                 }
             } else if v.setting != serde_json::Value::Null {
                 match serde_json::from_value::<ResourcePathSetting>(v.setting) {
                     Ok(v) => {
                         return Ok(v);
                     },
-                    Err(e) => { return Err(DscError::Operation(format!("{}", e))); }
+                    Err(e) => { return Err(DscError::Operation(format!("{e}"))); }
                 }
             }
         }
