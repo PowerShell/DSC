@@ -17,7 +17,7 @@ Describe 'tests for dsc settings' {
         $script:dscDefaultv1SettingsJson = Get-Content -Raw -Path $script:dscDefaultv1SettingsFilePath
 
         $script:policyDirPath = $script:policyFilePath | Split-Path
-        New-Item -ItemType Directory -Path $script:policyDirPath -ErrorAction SilentlyContinue | Out-Null
+        New-Item -ItemType Directory -Path $script:policyDirPath | Out-Null
 
         #create backups of settings files
         $script:dscSettingsFilePath_backup = Join-Path $script:dscHome "settings.dsc.json.backup"
