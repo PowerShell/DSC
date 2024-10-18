@@ -61,21 +61,38 @@ impl CommandDiscovery {
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
         if let Ok(v) = get_setting("resource_path") {
-            if let Ok(resource_path_setting) =  serde_json::from_value(v) {
-                return Ok(resource_path_setting);
+            // if there is a policy value defined - use it; otherwise use setting value
+            if v.policy != serde_json::Value::Null {
+                match serde_json::from_value::<ResourcePathSetting>(v.policy) {
+                    Ok(v) => {
+                        return Ok(v);
+                    },
+                    Err(e) => { return Err(DscError::Operation(format!("{}", e))); }
+                }
+            } else if v.setting != serde_json::Value::Null {
+                match serde_json::from_value::<ResourcePathSetting>(v.setting) {
+                    Ok(v) => {
+                        return Ok(v);
+                    },
+                    Err(e) => { return Err(DscError::Operation(format!("{}", e))); }
+                }
             }
         }
 
-        Err(DscError::Operation("Could not read resource_path setting".to_string()))
+        Err(DscError::Operation("Could not read 'resource_path' setting".to_string()))
     }
 
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
     {
         let mut resource_path_setting = ResourcePathSetting::default();
-        if let Ok(v) = Self::get_resource_path_setting() {
-            resource_path_setting = v;
-        } else {
-            debug!("Could not read resource_path setting");
+
+        match Self::get_resource_path_setting() {
+            Ok(v) => {
+                resource_path_setting = v;
+            },
+            Err(e) => { 
+                debug!("{e}");
+            }
         }
 
         let mut using_custom_path = false;

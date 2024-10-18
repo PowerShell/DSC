@@ -3,5 +3,10 @@
     "allow_env_override": true,
     "append_env_path": true,
     "directories": []
+  },
+  "tracing": {
+    "level": "WARN",
+    "format": "Default",
+    "allow_override": true
   }
 }
