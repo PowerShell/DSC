@@ -300,14 +300,14 @@ pub fn enable_tracing(trace_level_arg: Option<TraceLevel>, trace_format_arg: Opt
                     tracing_setting = v;
                     policy_is_used = true;
                 },
-                Err(e) => { println!("{}", e); }
+                Err(e) => { println!("{e}"); }
             }
         } else if v.setting != serde_json::Value::Null {
             match serde_json::from_value::<TracingSetting>(v.setting) {
                 Ok(v) => {
                     tracing_setting = v;
                 },
-                Err(e) => { println!("{}", e); }
+                Err(e) => { println!("{e}"); }
             }
         }
     } else {
