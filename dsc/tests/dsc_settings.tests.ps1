@@ -3,7 +3,6 @@
 
 Describe 'tests for dsc settings' {
     BeforeAll {
-        $env:DSC_RESOURCE_PATH = $testdrive
 
         $script:policyFilePath = if ($IsWindows) {
             Join-Path $env:ProgramData "dsc" "settings.dsc.json"
@@ -16,8 +15,10 @@ Describe 'tests for dsc settings' {
         $script:dscDefaultv1SettingsFilePath = Join-Path $script:dscHome "default_settings.v1.dsc.json"
         $script:dscDefaultv1SettingsJson = Get-Content -Raw -Path $script:dscDefaultv1SettingsFilePath
 
-        $script:policyDirPath = $script:policyFilePath | Split-Path
-        New-Item -ItemType Directory -Path $script:policyDirPath | Out-Null
+        if ($IsWindows) { #"Setting policy on Linux requires sudo"
+            $script:policyDirPath = $script:policyFilePath | Split-Path
+            New-Item -ItemType Directory -Path $script:policyDirPath | Out-Null
+        }
 
         #create backups of settings files
         $script:dscSettingsFilePath_backup = Join-Path $script:dscHome "settings.dsc.json.backup"
@@ -29,14 +30,17 @@ Describe 'tests for dsc settings' {
     AfterAll {
         Remove-Item -Force -Path $script:dscSettingsFilePath_backup
         Remove-Item -Force -Path $script:dscDefaultv1SettingsFilePath_backup
-        Remove-Item -Recurse -Force -Path $script:policyDirPath
+        if ($IsWindows) { #"Setting policy on Linux requires sudo"
+            Remove-Item -Recurse -Force -Path $script:policyDirPath
+        }
     }
 
     AfterEach {
         Copy-Item -Force -Path $script:dscSettingsFilePath_backup -Destination $script:dscSettingsFilePath
         Copy-Item -Force -Path $script:dscDefaultv1SettingsFilePath_backup -Destination $script:dscDefaultv1SettingsFilePath
-        Remove-Item -Path $script:policyFilePath -ErrorAction SilentlyContinue
-        $env:DSC_RESOURCE_PATH = $null
+        if ($IsWindows) { #"Setting policy on Linux requires sudo"
+            Remove-Item -Path $script:policyFilePath -ErrorAction SilentlyContinue
+        }
     }
 
     It 'ensure a new tracing value in settings has effect' {
@@ -55,6 +59,11 @@ Describe 'tests for dsc settings' {
     }
 
     It 'Confirm settings override priorities' {
+
+        if (! $IsWindows) {
+            Set-ItResult -Skip -Because "Setting policy requires sudo"
+            return
+        }
         
         $v = $script:dscDefaultv1SettingsJson.Replace('"level": "WARN"', '"level": "TRACE"')
         $v = $v.Replace('"directories": []', '"directories": ["PolicyDir"]')
