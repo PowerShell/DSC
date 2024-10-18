@@ -300,14 +300,14 @@ pub fn enable_tracing(trace_level_arg: Option<TraceLevel>, trace_format_arg: Opt
                     tracing_setting = v;
                     policy_is_used = true;
                 },
-                Err(e) => { println!("{}", format!("{e}")); }
+                Err(e) => { println!("{}", e); }
             }
         } else if v.setting != serde_json::Value::Null {
             match serde_json::from_value::<TracingSetting>(v.setting) {
                 Ok(v) => {
                     tracing_setting = v;
                 },
-                Err(e) => { println!("{}", format!("{e}")); }
+                Err(e) => { println!("{}", e); }
             }
         }
     } else {
@@ -316,21 +316,18 @@ pub fn enable_tracing(trace_level_arg: Option<TraceLevel>, trace_format_arg: Opt
 
     // override with DSC_TRACE_LEVEL env var if permitted
     if tracing_setting.allow_override {
-        match env::var(DSC_TRACE_LEVEL) {
-            Ok(level) => {
-                tracing_setting.level = match level.to_ascii_uppercase().as_str() {
-                    "ERROR" => TraceLevel::Error,
-                    "WARN" => TraceLevel::Warn,
-                    "INFO" => TraceLevel::Info,
-                    "DEBUG" => TraceLevel::Debug,
-                    "TRACE" => TraceLevel::Trace,
-                    _ => {
-                        warn!("Invalid DSC_TRACE_LEVEL value '{level}', defaulting to 'warn'");
-                        TraceLevel::Warn
-                    }
+        if let Ok(level) = env::var(DSC_TRACE_LEVEL) {
+            tracing_setting.level = match level.to_ascii_uppercase().as_str() {
+                "ERROR" => TraceLevel::Error,
+                "WARN" => TraceLevel::Warn,
+                "INFO" => TraceLevel::Info,
+                "DEBUG" => TraceLevel::Debug,
+                "TRACE" => TraceLevel::Trace,
+                _ => {
+                    warn!("Invalid DSC_TRACE_LEVEL value '{level}', defaulting to 'warn'");
+                    TraceLevel::Warn
                 }
-            },
-            Err(_) => {},
+            }
         }
     }
 
