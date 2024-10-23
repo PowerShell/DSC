@@ -34,7 +34,7 @@ fn main() {
 
     let args = Args::parse();
 
-    util::enable_tracing(args.trace_level, args.trace_format);
+    util::enable_tracing(&args.trace_level, &args.trace_format);
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 

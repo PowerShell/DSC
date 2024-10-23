@@ -291,7 +291,7 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     }
 }
 
-pub fn enable_tracing(trace_level_arg: Option<TraceLevel>, trace_format_arg: Option<TraceFormat>) {
+pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &Option<TraceFormat>) {
     
     let mut policy_is_used = false;
     let mut tracing_setting = TracingSetting::default();

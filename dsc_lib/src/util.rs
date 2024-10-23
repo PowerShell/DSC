@@ -59,6 +59,7 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
 }
 
 /// Will search setting files for the specified setting.
+/// Performance implication: Use this function economically as every call opens/reads several config files.
 ///
 /// # Arguments
 ///
