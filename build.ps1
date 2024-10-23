@@ -44,7 +44,9 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.exe',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
-    'wmi.resource.ps1'
+    'wmi.resource.ps1',
+    'configurations/windows_baseline.dsc.yaml',
+    'configurations/windows_inventory.dsc.yaml'
 )
 
 $filesForLinuxPackage = @(
