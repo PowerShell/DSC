@@ -113,7 +113,9 @@ impl CommandDiscovery {
             for p in resource_path_setting.directories {
                 if let Ok(v) = PathBuf::from_str(&p) {
                     paths.push(v);
-                }
+                } else {
+                    trace!("Can't parse path: '{p}'");
+                };
             }
 
             if resource_path_setting.append_env_path {

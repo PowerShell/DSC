@@ -59,11 +59,11 @@ pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
 
 #[derive(Deserialize)]
 pub struct TracingSetting {
-    /// Trace level to use - see pub enum TraceLevel in dsc_lib\src\dscresources\command_resource.rs
+    /// Trace level to use - see pub enum `TraceLevel` in dsc_lib\src\dscresources\command_resource.rs
     level:  TraceLevel,
-    /// Trace format to use - see pub enum TraceFormat in dsc\src\args.rs
+    /// Trace format to use - see pub enum `TraceFormat` in dsc\src\args.rs
     format: TraceFormat,
-    /// Whether the 'level' can be overrridden by DSC_TRACE_LEVEL environment variable
+    /// Whether the 'level' can be overrridden by `DSC_TRACE_LEVEL` environment variable
     #[serde(rename = "allowOverride")]
     allow_override: bool
 }
