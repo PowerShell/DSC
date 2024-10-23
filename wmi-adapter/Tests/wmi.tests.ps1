@@ -47,7 +47,7 @@ Describe 'WMI adapter resource tests' {
     }
 
     It 'Example config works' -Skip:(!$IsWindows) {
-        $configPath = Join-Path $PSScriptRoot '..\..\configurations\windows_inventory.dsc.yaml'
+        $configPath = Join-Path $PSScriptRoot '..\..\configurations\windows\windows_inventory.dsc.yaml'
         $r = dsc config get -p $configPath
         $LASTEXITCODE | Should -Be 0
         $r | Should -Not -BeNullOrEmpty
