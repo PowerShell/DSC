@@ -34,8 +34,13 @@ pub struct CommandDiscovery {
 
 #[derive(Deserialize)]
 pub struct ResourcePathSetting {
+    /// whether to allow overriding with the DSC_RESOURCE_PATH environment variable
+    #[serde(rename = "allowEnvOverride")]
     allow_env_override: bool,
+    /// whether to append the PATH environment variable to the list of resource directories
+    #[serde(rename = "appendEnvPath")]
     append_env_path: bool,
+    /// array of directories that DSC should search for non-built-in resources
     directories: Vec<String>
 }
 
@@ -60,26 +65,26 @@ impl CommandDiscovery {
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
-        if let Ok(v) = get_setting("resource_path") {
+        if let Ok(v) = get_setting("resourcePath") {
             // if there is a policy value defined - use it; otherwise use setting value
             if v.policy != serde_json::Value::Null {
                 match serde_json::from_value::<ResourcePathSetting>(v.policy) {
                     Ok(v) => {
                         return Ok(v);
                     },
-                    Err(e) => { return Err(DscError::Operation(format!("{e}"))); }
+                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
                 }
             } else if v.setting != serde_json::Value::Null {
                 match serde_json::from_value::<ResourcePathSetting>(v.setting) {
                     Ok(v) => {
                         return Ok(v);
                     },
-                    Err(e) => { return Err(DscError::Operation(format!("{e}"))); }
+                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
                 }
             }
         }
 
-        Err(DscError::Operation("Could not read 'resource_path' setting".to_string()))
+        Err(DscError::Setting("Could not read 'resourcePath' setting".to_string()))
     }
 
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
@@ -112,7 +117,7 @@ impl CommandDiscovery {
             }
 
             if resource_path_setting.append_env_path {
-                trace!("Appending PATH to resource_path");
+                debug!("Appending PATH to resourcePath");
                 match env::var_os("PATH") {
                     Some(value) => {
                         trace!("Original PATH: {:?}", value.to_string_lossy());

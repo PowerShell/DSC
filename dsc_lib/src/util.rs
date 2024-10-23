@@ -11,15 +11,15 @@ use std::env;
 use tracing::debug;
 
 pub struct DscSettingValue {
-    pub setting:  serde_json::Value,
-    pub policy: serde_json::Value,
+    pub setting:  Value,
+    pub policy: Value,
 }
 
 impl Default for DscSettingValue {
     fn default() -> DscSettingValue {
         DscSettingValue {
-            setting: serde_json::Value::Null,
-            policy: serde_json::Value::Null,
+            setting: Value::Null,
+            policy: Value::Null,
         }
     }
 }
@@ -148,7 +148,7 @@ fn get_settings_policy_file_path() -> String
 #[cfg(not(target_os = "windows"))]
 fn get_settings_policy_file_path() -> String
 {
-    // "/etc/.dsc/settings.dsc.json"
+    // "/etc/dsc/settings.dsc.json"
     // This location is writable only by admins, but readable by all users
-    Path::new("/etc").join(".dsc").join("settings.dsc.json").display().to_string()
+    Path::new("/etc").join("dsc").join("settings.dsc.json").display().to_string()
 }

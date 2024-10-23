@@ -41,7 +41,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, info, debug, error, warn, trace};
+use tracing::{Level, debug, error, info, warn, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 use tracing_indicatif::IndicatifLayer;
 
@@ -59,8 +59,12 @@ pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
 
 #[derive(Deserialize)]
 pub struct TracingSetting {
+    /// Trace level to use - see pub enum TraceLevel in dsc_lib\src\dscresources\command_resource.rs
     level:  TraceLevel,
+    /// Trace format to use - see pub enum TraceFormat in dsc\src\args.rs
     format: TraceFormat,
+    /// Whether the 'level' can be overrridden by DSC_TRACE_LEVEL environment variable
+    #[serde(rename = "allowOverride")]
     allow_override: bool
 }
 

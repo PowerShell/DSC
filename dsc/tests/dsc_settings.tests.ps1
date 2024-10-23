@@ -7,7 +7,7 @@ Describe 'tests for dsc settings' {
         $script:policyFilePath = if ($IsWindows) {
             Join-Path $env:ProgramData "dsc" "settings.dsc.json"
         } else {
-            "/etc/.dsc/settings.dsc.json"
+            "/etc/dsc/settings.dsc.json"
         }
 
         $script:dscHome = (Get-Command dsc).Path | Split-Path
@@ -53,9 +53,12 @@ Describe 'tests for dsc settings' {
 
     It 'ensure a new resource_path value in settings has effect' {
         
-        $script:dscDefaultv1SettingsJson.Replace('"directories": []', '"directories": ["TestDir"]') | Set-Content -Force -Path $script:dscSettingsFilePath
+        $script:dscDefaultv1SettingsJson.Replace('"directories": []', '"directories": ["TestDir1","TestDir2"]') | Set-Content -Force -Path $script:dscSettingsFilePath
+        copy-Item -Recurse -Force -Path $script:dscSettingsFilePath -Destination "C:\Temp\"
         dsc -l debug resource list 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: "TestDir'
+        copy-Item -Recurse -Force -Path $TestDrive/tracing.txt -Destination "C:\Temp\"
+        $expectedString = 'Using Resource Path: "TestDir1'+[System.IO.Path]::PathSeparator+'TestDir2'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly $expectedString
     }
 
     It 'Confirm settings override priorities' {
