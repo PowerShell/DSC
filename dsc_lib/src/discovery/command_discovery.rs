@@ -34,7 +34,7 @@ pub struct CommandDiscovery {
 
 #[derive(Deserialize)]
 pub struct ResourcePathSetting {
-    /// whether to allow overriding with the DSC_RESOURCE_PATH environment variable
+    /// whether to allow overriding with the `DSC_RESOURCE_PATH` environment variable
     #[serde(rename = "allowEnvOverride")]
     allow_env_override: bool,
     /// whether to append the PATH environment variable to the list of resource directories
