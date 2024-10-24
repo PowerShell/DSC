@@ -6,10 +6,16 @@ use crossterm::event;
 #[cfg(debug_assertions)]
 use std::env;
 
+#[macro_use]
+extern crate rust_i18n;
+
+// Init translations using the `[package.metadata.i18n]` section in `Cargo.toml`
+i18n!();
+
 use args::Arguments;
 use clap::Parser;
 use registry_helper::RegistryHelper;
-use schemars::schema_for;
+use schema::{canonicalize_schema, get_schema_generator};
 use std::process::exit;
 use tracing::{debug, error};
 use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
@@ -19,6 +25,7 @@ mod args;
 pub mod config;
 mod error;
 mod registry_helper;
+mod schema;
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_INPUT: i32 = 2;
@@ -111,8 +118,13 @@ fn main() {
                 },
             }
         },
-        args::SubCommand::Schema => {
-            let schema = schema_for!(Registry);
+        args::SubCommand::Schema { enhanced } => {
+            let generator = get_schema_generator(enhanced);
+            let mut schema = generator.into_root_schema_for::<Registry>();
+            if !enhanced {
+                // Set to canonical schema URI and remove VS Code keywords
+                canonicalize_schema(&mut schema);
+            }
             let json =serde_json::to_string(&schema).unwrap();
             println!("{json}");
         },
