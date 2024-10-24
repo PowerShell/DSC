@@ -5,7 +5,7 @@ version = "1.0.0"
 keywords = ["incremental", "parsing", "DSCExpression"]
 categories = ["parsing", "text-editors"]
 repository = "https://github.com/powershell/dsc"
-edition = "2018"
+edition = "2021"
 license = "MIT"
 
 build = "bindings/rust/build.rs"
