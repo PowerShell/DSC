@@ -1,6 +1,6 @@
 [package]
 name = "registry"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 
 [profile.release]
@@ -14,13 +14,13 @@ lto = true
 lto = true
 
 [dependencies]
-clap = { version = "4.4.0", features = ["derive"] }
+clap = { version = "4.5.20", features = ["derive"] }
 crossterm = "0.28.1"
 registry = "1.2.3"
 schemars = "0.8.0"
 serde = "1.0.130"
 serde_json = "1.0.68"
-thiserror = "1.0.30"
+thiserror = "1.0.64"
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17", features = ["ansi", "env-filter", "json"] }
 utfx = "0.1.0"

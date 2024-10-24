@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use clap::ValueEnum;
-use jsonschema::JSONSchema;
+use jsonschema::Validator;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, env, process::Stdio};
@@ -742,7 +742,7 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
     // otherwise, use schema validation
     let schema = get_schema(resource, cwd)?;
     let schema: Value = serde_json::from_str(&schema)?;
-    let compiled_schema = match JSONSchema::compile(&schema) {
+    let compiled_schema = match Validator::new(&schema) {
         Ok(schema) => schema,
         Err(e) => {
             return Err(DscError::Schema(e.to_string()));

@@ -19,8 +19,8 @@ variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
 #  LinuxContainerImage: 'mcr.microsoft.com/onebranch/cbl-mariner/build:2.0'
-  LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
   WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
+  Codeql.TSAEnabled: true
 
 resources:
   repositories:
@@ -228,6 +228,7 @@ extends:
       - job: BuildLinux
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-x64-gnu
@@ -252,11 +253,13 @@ extends:
       - job: BuildLinuxArm64
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-gnu
         pool:
           type: linux
+          hostArchitecture: arm64
         steps:
         - task: RustInstaller@1
           inputs:
@@ -269,6 +272,9 @@ extends:
         - pwsh: |
             apt update
             apt -y install gcc-aarch64-linux-gnu
+            if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
+              $env:OPENSSL_LIB_DIR = $matches['dir']
+            }
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-gnu
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-gnu -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -278,6 +284,7 @@ extends:
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-x64-musl
@@ -304,11 +311,13 @@ extends:
       - job: BuildLinuxArm64Musl
         dependsOn: SetPackageVersion
         variables:
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-musl
         pool:
           type: linux
+          hostArchitecture: arm64
         steps:
         - task: RustInstaller@1
           inputs:
@@ -327,7 +336,12 @@ extends:
             apt -y install llvm
             apt -y install musl-tools
             apt -y install gcc-multilib
+            apt -y install libssl-dev
+            apt -y install pkg-config
             rustup default stable-aarch64-unknown-linux-musl
+            if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
+              $env:OPENSSL_LIB_DIR = $matches['dir']
+            }
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"

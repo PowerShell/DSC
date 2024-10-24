@@ -165,12 +165,6 @@ elseif ($Operation -eq 'Get')
 
                 $result += @($instance_result)
             }
-            else
-            {
-                $errmsg = "Can not find type " + $r.type + "; please ensure that Get-CimInstance returns this resource type"
-                Write-Trace $errmsg
-                exit 1
-            }
         }
     }
     else # we are processing an individual resource call

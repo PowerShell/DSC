@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 use crate::args::{DscType, OutputFormat, TraceFormat};
-use atty::Stream;
 use crate::resolve::Include;
 use dsc_lib::{
     configure::{
@@ -25,12 +24,13 @@ use dsc_lib::{
     },
     util::parse_input_to_json,
 };
-use jsonschema::JSONSchema;
+use jsonschema::Validator;
 use path_absolutize::Absolutize;
 use schemars::{schema_for, schema::RootSchema};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
+use std::io::IsTerminal;
 use std::path::Path;
 use std::process::exit;
 use syntect::{
@@ -50,6 +50,7 @@ pub const EXIT_JSON_ERROR: i32 = 3;
 pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
+pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
@@ -193,7 +194,7 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     let mut is_json = true;
     let mut output_format = format.clone();
     let mut syntax_color = false;
-    if atty::is(Stream::Stdout) {
+    if std::io::stdout().is_terminal() {
         syntax_color = true;
         if output_format.is_none() {
             output_format = Some(OutputFormat::Yaml);
@@ -363,7 +364,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     debug!("Validating {source} against schema");
     trace!("JSON: {json}");
     trace!("Schema: {schema}");
-    let compiled_schema = match JSONSchema::compile(schema) {
+    let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {
             return Err(DscError::Validation(format!("JSON Schema Compilation Error: {err}")));

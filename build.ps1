@@ -14,7 +14,8 @@ param(
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
     [switch]$UseCratesIO,
-    [switch]$UpdateLockFile
+    [switch]$UpdateLockFile,
+    [switch]$Audit
 )
 
 if ($GetPackageVersion) {
@@ -32,6 +33,7 @@ $filesForWindowsPackage = @(
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
+    'NOTICE.txt',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'reboot_pending.dsc.resource.json',
@@ -42,7 +44,9 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.exe',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
-    'wmi.resource.ps1'
+    'wmi.resource.ps1',
+    'windows_baseline.dsc.yaml',
+    'windows_inventory.dsc.yaml'
 )
 
 $filesForLinuxPackage = @(
@@ -53,6 +57,7 @@ $filesForLinuxPackage = @(
     'apt.dsc.resource.json',
     'apt.dsc.resource.sh',
     'group.dsc.resource.json',
+    'NOTICE.txt',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
@@ -67,6 +72,7 @@ $filesForMacPackage = @(
     'brew.dsc.resource.json',
     'brew.dsc.resource.sh',
     'group.dsc.resource.json',
+    'NOTICE.txt',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
@@ -205,7 +211,7 @@ if (!$SkipBuild) {
     }
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
+    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows")
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -222,7 +228,8 @@ if (!$SkipBuild) {
         "runcommandonset",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j"
+        "y2j",
+        "."
     )
     $pedantic_unclean_projects = @()
     $clippy_unclean_projects = @("tree-sitter-dscexpression")
@@ -252,6 +259,14 @@ if (!$SkipBuild) {
                     cargo generate-lockfile
                 }
                 else {
+                    if ($Audit) {
+                        if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
+                            cargo install cargo-audit --features=fix
+                        }
+
+                        cargo audit fix
+                    }
+
                     ./build.ps1
                 }
             }
@@ -276,6 +291,14 @@ if (!$SkipBuild) {
                         cargo generate-lockfile
                     }
                     else {
+                        if ($Audit) {
+                            if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
+                                cargo install cargo-audit --features=fix
+                            }
+
+                            cargo audit fix
+                        }
+
                         cargo build @flags
                     }
                 }
