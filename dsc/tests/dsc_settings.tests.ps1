@@ -5,13 +5,13 @@ Describe 'tests for dsc settings' {
     BeforeAll {
 
         $script:policyFilePath = if ($IsWindows) {
-            Join-Path $env:ProgramData "dsc" "settings.dsc.json"
+            Join-Path $env:ProgramData "dsc" "dsc.settings.json"
         } else {
             "/etc/dsc/settings.dsc.json"
         }
 
         $script:dscHome = (Get-Command dsc).Path | Split-Path
-        $script:dscSettingsFilePath = Join-Path $script:dscHome "settings.dsc.json"
+        $script:dscSettingsFilePath = Join-Path $script:dscHome "dsc.settings.json"
         $script:dscDefaultv1SettingsFilePath = Join-Path $script:dscHome "default_settings.v1.dsc.json"
         $script:dscDefaultv1SettingsJson = Get-Content -Raw -Path $script:dscDefaultv1SettingsFilePath
 

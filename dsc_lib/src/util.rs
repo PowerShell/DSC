@@ -70,7 +70,7 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
 /// Will return `Err` if could not find requested setting.
 pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
 
-    const SETTINGS_FILE_NAME: &str = "settings.dsc.json";
+    const SETTINGS_FILE_NAME: &str = "dsc.settings.json";
     // Note that default settings file name has a version that is specific to this version of dsc
     const DEFAULT_SETTINGS_FILE_NAME: &str = "default_settings.v1.dsc.json";
 
@@ -140,16 +140,16 @@ fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::
 #[cfg(target_os = "windows")]
 fn get_settings_policy_file_path() -> String
 {
-    // $env:ProgramData+"\dsc\settings.dsc.json"
+    // $env:ProgramData+"\dsc\dsc.settings.json"
     // This location is writable only by admins, but readable by all users
     let Ok(local_program_data_path) = std::env::var("ProgramData") else { return String::new(); };
-    Path::new(&local_program_data_path).join("dsc").join("settings.dsc.json").display().to_string()
+    Path::new(&local_program_data_path).join("dsc").join("dsc.settings.json").display().to_string()
 }
 
 #[cfg(not(target_os = "windows"))]
 fn get_settings_policy_file_path() -> String
 {
-    // "/etc/dsc/settings.dsc.json"
+    // "/etc/dsc/dsc.settings.json"
     // This location is writable only by admins, but readable by all users
-    Path::new("/etc").join("dsc").join("settings.dsc.json").display().to_string()
+    Path::new("/etc").join("dsc").join("dsc.settings.json").display().to_string()
 }
