@@ -1,5 +1,86 @@
 _version: 2
 cli:
+  about:
+    en: Manage state of Windows registry
+  # config command help
+  config:
+    about:
+      en: Manage registry configuration.
+    args:
+      input:
+        help:
+          en: The registry JSON input.
+      what_if:
+        help:
+          en: Run as a what-if operation instead of applying the registry configuration.
+    get:
+      about:
+        en: Retrieve registry configuration.
+    set:
+      about:
+        en: Apply registry configuration.
+    delete:
+      about:
+        en: Delete registry configuration.
+  # query command help
+  query:
+    about:
+      en: Query a registry key or value.
+    args:
+      key_path:
+        help:
+          en: The registry key path to query.
+      value_name:
+        help:
+          en: The name of the value to query.
+      recurse:
+        help:
+          en: Recursively query subkeys.
+  # set command help
+  set:
+    about:
+      en: Set a registry key or value.
+    args:
+      key_path:
+        help:
+          en: The registry key path to set.
+      value:
+        help:
+          en: The value to set.
+  # remove command help
+  remove:
+    about:
+      en: Remove a registry key or value.
+    args:
+      key_path:
+        help:
+          en: The registry key path to remove.
+      value_name:
+        help:
+          en: The name of the value to remove.
+      recurse:
+        help:
+          en: Recursively remove subkeys.
+  # find command help
+  find:
+    about:
+      en: Find a registry key or value.
+    args:
+      key_path:
+        help:
+          en: The registry key path to start find.
+      find:
+        help:
+          en: The string to find.
+      recurse:
+        help:
+          en: Recursively find.
+      keys_only:
+        help:
+          en: Only find keys.
+      values_only:
+        help:
+          en: Only find values.
   # schema command help
   schema:
     about:
