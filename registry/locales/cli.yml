@@ -1,0 +1,10 @@
+_version: 2
+cli:
+  # schema command help
+  schema:
+    about:
+      en: Retrieve JSON schema.
+    args:
+      enhanced:
+        help:
+          en: Retrieve JSON schema enhanced  for VS Code authoring and review.

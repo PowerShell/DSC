@@ -1,0 +1,169 @@
+_version: 2
+
+schema:
+  title:
+    en: Microsoft.Windows/Registry instance
+  description:
+    en: Manages Windows Registry keys and values.
+  markdownDescription:
+    en: |-
+      Each instance of the `Microsoft.Windows/Registry` resource manages a registry key or value.
+      You can use it to idempotently ensure that a registry key or value exists and set the data
+      for registry values.
+  # Properties
+  keyPath:
+    title:
+      en: Registry key path
+    description:
+      en: >-
+        Defines the path to the registry key to manage. Must be prefixed with a valid
+        hive identifier. Separate the paths with back slashes only.
+    markdownDescription:
+      en: |-
+        The `keyPath` property defines the path to the registry key an instance
+        of the resource manages. It must be prefixed with a valid hive identifier:
+
+        | Identifier                      | Hive                  |
+        |:-------------------------------:|:----------------------|
+        | `HKCC` or `HKEY_CURRENT_CONFIG` | Current configuration |
+        | `HKCU` or `HKEY_CURRENT_USER`   | Current user          |
+        | `HKCR` or `HKEY_CLASSES_ROOT`   | Classes root          |
+        | `HKLM` or `HKEY_LOCAL_MACHINE`  | Local machine         |
+        | `HKU` or `HKEY_USERS`           | Users                 |
+
+        Specify the path to the registry key with backslashes (`\`), like
+        `HKCU\DSC\Properties\keyPath\Example`. If using JSON, ensure the
+        backlsashes are escaped, like `HKCU\\DSC\\Properties\\keyPath\\Example`.
+    patternErrorMessage:
+      en: >-
+        The value must begin with a valid hive identifier. Valid identifiers are:
+        
+        HKCC, HKEY_CURRENT_CONFIG,
+        HKCU, HKEY_CURRENT_USER
+        HKCR, HKEY_CLASSES_ROOT
+        HKLM, HKEY_LOCAL_MACHINE
+        HKU, and HKEY_USERS.
+
+  metadata:
+    title:
+      en: Resource metadata
+    description:
+      en: Defines metadata returned by the resource.
+    markdownDescription:
+      en: |-
+        The `metadata` property defines metadata returned by the resource. The registry resource
+        doesn't support sending metadata input. It returns messages when invoked in what-if mode.
+    whatIf:
+      title:
+        en: What-if messages
+      description:
+        en: A list of messages returned by the resource when invoked in what-if mode.
+      markdownDescription: 
+        en: >-
+          Contains a list of messages returned by the resource when invoked in what-if mode, as
+          with the `dsc config set --what-if` command.
+  valueName:
+    title:
+      en: Registry value name
+    description:
+      en: Defines the name of the registry value to manage.
+    markdownDescription:
+      en: |-
+        The `valueName` property defines the name of the registry value to manage. This value is
+        required when specifying value data.
+  valueData:
+    title:
+      en: Registry value data
+    description:
+      en: Defines the data for a registry value.
+    markdownDescription:
+      en: |-
+        Defines the data for a registry value. When you specify this value, you must also specify
+        the name of the registry value.
+
+        Define the data as an object with a single property. The property name determines the data
+        type and the property value determines the data value. The following table lists the
+        available data types.
+
+        | Property name  | Data description                                                   |
+        |:--------------:|:-------------------------------------------------------------------|
+        | `String`       | Defines the registry value as a static string.                     |
+        | `ExpandString` | Defines the registry value as a string with expandable references. |
+        | `MultiString`  | Defines the registry value as an array of static strings.          |
+        | `Binary`       | Defines the registry value as an array of bytes.                   |
+        | `DWord`        | Defines the registry value as an unsigned 32-bit integer.          |
+        | `QWord`        | Defines the registry value as an unsigned 64-bit integer.          |
+    String:
+      title:
+        en: String value data
+      description:
+        en: Defines the registry value as a static string.
+      markdownDescription:
+        en: |-
+          When you define `valueData` with the `String` property, the resource sets the data for
+          the registry value as a static string. If the string contains any unexpanded references
+          to environment variables, such as `%PATH%`, the references are treated as literal
+          characters and aren't expandable.`
+    ExpandString:
+      title:
+        en: Expandable string value data
+      description:
+        en: Defines the registry value as a string with expandable references.
+      markdownDescription:
+        en: |-
+          When you define `valueData` with the `ExpandString` property, the resource sets the data
+          for the registry value as a string. If the string contains any unexpanded references to
+          environment variables, such as `%PATH%`, they're expandable.
+    MultiString:
+      title:
+        en: Multiple string value data
+      description:
+        en: Defines the registry value as an array of static strings.
+      markdownDescription:
+        en: |-
+          When you define `valueData` with the `MultiString` property, the resource sets the data
+          for the registry value as an array of static strings. You can specify the value as an
+          empty array, or as an array containing one or more strings. If any of the strings in the
+          array contain any unexpanded references to environment variables, such as `%PATH%`, the
+          references are treated as literal characters and aren't expandable.
+    Binary:
+      title:
+        en: Binary value data
+      description:
+        en: Defines the registry value as an array of bytes.
+      markdownDescription:
+        en: |-
+          When you define `valueData` with the `Binary` property, the resource sets the data for
+          the registry value as an array of bytes. You can specify the value as an empty array or
+          as an array containing the integer representation of one or more bytes.
+    DWord:
+      title:
+        en: DWord value data
+      description:
+        en:  Defines the registry value as an unsigned 32-bit integer.
+      markdownDescription:
+        en: |-
+          When you define `valueData` with the `DWord` property, the resource sets the data for the
+          registry value as an unsigned 32-bit integer.
+    QWord:
+      title:
+        en: QWord value data
+      description:
+        en: Defines the registry value as an unsigned 64-bit integer.
+      markdownDescription:
+        en: |-
+          When you define `valueData` with the `QWord` property, the resource sets the data for the
+          registry value as an unsigned 64-bit integer.
+  exist:
+    title:
+      en: Exist
+    description:
+      en: Defines whether the instance should exist.
+    markdownDescription:
+      en: |-
+        The `_exist` property defines whether a registry key or value should exist. When this
+        property is `true`, the resource creates the registry key or value if it doesn't exist
+        during a `set` operation. When this property is `false`, the resource deletes the registry
+        key or value if it exists during a `set` operation.
+
+        The default value is `true`.
