@@ -485,12 +485,10 @@ function Invoke-DscOperation {
                         }
                         'Export' {
                             $methods = $t.GetMethods() | Where-Object { $_.Name -eq 'Export' }
-                            $method = foreach ($m in $methods) 
-                            {
-                                if ($m.GetParameters().Count -eq 0)
-                                {
+                            $method = foreach ($m in $methods) {
+                                if ($m.GetParameters().Count -eq 0) {
                                     $m
-									break
+				    break
                                 }
                             }
                             
