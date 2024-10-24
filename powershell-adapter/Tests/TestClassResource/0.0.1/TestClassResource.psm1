@@ -81,6 +81,30 @@ class TestClassResource : BaseTestClass
 
         return $resultList.ToArray()
     }
+
+    static [TestClassResource[]] Export([bool]$UseExport)
+    {
+        if ($UseExport) 
+        {
+            return [TestClassResource]::Export()
+        }
+        else 
+        {
+            $resultList = [List[TestClassResource]]::new()
+            $resultCount = 5
+            if ($env:TestClassResourceResultCount) {
+                $resultCount = $env:TestClassResourceResultCount
+            }
+            1..$resultCount | %{
+                $obj = New-Object TestClassResource
+                $obj.Name = "Object$_"
+                $obj.Prop1 = "Property of object$_"
+                $resultList.Add($obj)
+            }
+        }
+
+        return $resultList.ToArray()
+    }
 }
 
 [DscResource()]
