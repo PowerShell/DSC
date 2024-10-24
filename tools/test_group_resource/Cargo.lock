@@ -391,6 +391,7 @@ dependencies = [
  "tracing-indicatif",
  "tree-sitter",
  "tree-sitter-dscexpression",
+ "tree-sitter-rust",
 ]
 
 [[package]]

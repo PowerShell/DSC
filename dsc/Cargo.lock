@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "dsc"
-version = "3.0.0-preview.11"
+version = "3.0.0-rc.1"
 dependencies = [
  "clap",
  "clap_complete",
@@ -517,6 +517,7 @@ dependencies = [
  "tracing-indicatif",
  "tree-sitter",
  "tree-sitter-dscexpression",
+ "tree-sitter-rust",
 ]
 
 [[package]]

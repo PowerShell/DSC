@@ -25,10 +25,11 @@ tokio = { version = "1.40.0", features = ["full"] }
 tracing = "0.1.37"
 tracing-indicatif = { version = "0.3.6" }
 tree-sitter = "0.24.3"
+tree-sitter-rust = "0.23.0"
 tree-sitter-dscexpression = { path = "../tree-sitter-dscexpression" }
 
 [dev-dependencies]
 serde_yaml = "0.9.3"
 
 [build-dependencies]
-cc="1.1.30"
+cc="1.1"
