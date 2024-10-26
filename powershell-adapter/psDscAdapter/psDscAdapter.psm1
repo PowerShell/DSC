@@ -484,11 +484,12 @@ function Invoke-DscOperation {
                             $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
                         }
                         'Export' {
+                            $t = $dscResourceInstance.GetType()
                             $methods = $t.GetMethods() | Where-Object { $_.Name -eq 'Export' }
-                            $method = foreach ($m in $methods) {
-                                if ($m.GetParameters().Count -eq 0) {
-                                    $m
-				    break
+                            $method = foreach ($mt in $methods) {
+                                if ($mt.GetParameters().Count -eq 0) {
+                                    $mt
+				                    break
                                 }
                             }
                             
