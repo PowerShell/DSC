@@ -655,6 +655,13 @@ if ($packageType -eq 'msixbundle') {
         }
     }
 
+    # for Linux, we only build musl as its statically linked, so we remove the musl suffix
+    if ($architecture -eq 'aarch64-unknown-linux-musl') {
+        $architecture = 'aarch64-linux'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl') {
+        $architecture = 'x86_64-linux'
+    }
+
     $packageName = "DSC-$productVersion-$architecture.tar"
     $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
     tar cvf $tarFile -C $tgzTarget .

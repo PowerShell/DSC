@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-is_elevated = "0.1.0"
+is_elevated = "0.1"
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-nix = { version = "0.29.0", features = ["user"] }
+nix = { version = "0.29", features = ["user"] }

@@ -3,7 +3,7 @@
 registry-auth = true
 
 [registries]
-POWERSHELL = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/" }
+POWERSHELL = { index = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/" }
 
 [registry]
 global-credential-providers = ["cargo:token"]

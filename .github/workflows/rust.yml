@@ -15,18 +15,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-linux:
+  # build-linux:
 
-    runs-on: ubuntu-latest
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      shell: pwsh
-      run: ./build.ps1 -clippy
-    - name: Run tests
-      shell: pwsh
-      run: ./build.ps1 -test
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Build
+  #     shell: pwsh
+  #     run: ./build.ps1 -clippy
+  #   - name: Run tests
+  #     shell: pwsh
+  #     run: ./build.ps1 -test
 
   build-musl:
 

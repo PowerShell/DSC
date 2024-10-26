@@ -14,16 +14,16 @@ lto = true
 lto = true
 
 [dependencies]
-clap = { version = "4.5.20", features = ["derive"] }
-crossterm = "0.28.1"
-registry = "1.2.3"
-schemars = "0.8.0"
-serde = "1.0.130"
-serde_json = "1.0.68"
-thiserror = "1.0.64"
-tracing = { version = "0.1.37" }
-tracing-subscriber = { version = "0.3.17", features = ["ansi", "env-filter", "json"] }
-utfx = "0.1.0"
+clap = { version = "4.5", features = ["derive"] }
+crossterm = "0.28"
+registry = "1.2"
+schemars = "0.8"
+serde = "1.0"
+serde_json = "1.0"
+thiserror = "1.0"
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "json"] }
+utfx = "0.1"
 
 [build-dependencies]
 static_vcruntime = "2.0"
