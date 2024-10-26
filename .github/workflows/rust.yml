@@ -28,7 +28,7 @@ jobs:
   #     shell: pwsh
   #     run: ./build.ps1 -test
 
-  build-musl:
+  build-linux:
 
     runs-on: ubuntu-latest
 
