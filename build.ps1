@@ -200,7 +200,7 @@ if (!$SkipBuild) {
             $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
             if ($LASTEXITCODE -ne 0) {
                 Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                $env:CARGO_REGISITRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/"
+                $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/"
             } else {
                 $header = "Bearer $accessToken"
                 $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
@@ -209,7 +209,7 @@ if (!$SkipBuild) {
         }
         else {
             Write-Warning "Azure CLI not found, proceeding with anonymous access."
-            $env:CARGO_REGISITRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/"
+            $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell/Cargo/index/"
         }
     }
 
