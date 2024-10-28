@@ -15,7 +15,8 @@ param(
     [switch]$UseX64MakeAppx,
     [switch]$UseCratesIO,
     [switch]$UpdateLockFile,
-    [switch]$Audit
+    [switch]$Audit,
+    [switch]$UseCFSAuth
 )
 
 if ($GetPackageVersion) {
@@ -191,21 +192,25 @@ if (!$SkipBuild) {
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
 
-        if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-            throw "Azure CLI not found"
-        }
+        if ($UseCFSAuth -or $null -ne $env:TF_BUILD) {
+            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+                throw "Azure CLI not found"
+            }
 
-        if ($null -ne $env:CARGO_REGISTRIES_POWERSHELL_TOKEN) {
-            Write-Host "Using existing token"
-        } else {
-            Write-Host "Getting token"
-            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-            } else {
-                $header = "Bearer $accessToken"
-                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
+                Write-Host "Getting token"
+                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+                } else {
+                    $header = "Bearer $accessToken"
+                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
+                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                }
+            }
+            else {
+                Write-Warning "Azure CLI not found, proceeding with anonymous access."
             }
         }
     }
@@ -655,7 +660,16 @@ if ($packageType -eq 'msixbundle') {
         }
     }
 
-    $packageName = "DSC-$productVersion-$architecture.tar"
+    # for Linux, we only build musl as its statically linked, so we remove the musl suffix
+    $productArchitecture = if ($architecture -eq 'aarch64-unknown-linux-musl') {
+        'aarch64-linux'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl') {
+        'x86_64-linux'
+    } else {
+        $architecture
+    }
+
+    $packageName = "DSC-$productVersion-$productArchitecture.tar"
     $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
     tar cvf $tarFile -C $tgzTarget .
     if ($LASTEXITCODE -ne 0) {
