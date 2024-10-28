@@ -10,9 +10,6 @@ opt-level = 2
 # enable link time optimization to remove dead code
 lto = true
 
-[profile.dev]
-lto = true
-
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 crossterm = "0.28"

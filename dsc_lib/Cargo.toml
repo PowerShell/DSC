@@ -3,6 +3,13 @@ name = "dsc_lib"
 version = "3.0.0"
 edition = "2021"
 
+[profile.release]
+strip = true
+# optimize for size
+opt-level = 2
+# enable link time optimization to remove dead code
+lto = true
+
 [dependencies]
 base64 = "0.22"
 chrono = "0.4"

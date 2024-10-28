@@ -3,7 +3,12 @@ name = "osinfo"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+strip = true
+# optimize for size
+opt-level = 2
+# enable link time optimization to remove dead code
+lto = true
 
 [dependencies]
 os_info = { version = "3.7" }
