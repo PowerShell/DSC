@@ -43,8 +43,7 @@ mod tests {
     #[test]
     fn init() {
         let mut parser = Statement::new().unwrap();
-        let mut context = Context::new();
-        let result = parser.parse_and_execute("[targetPath()]", &context).unwrap();
+        let result = parser.parse_and_execute("[targetPath()]", &Context::new()).unwrap();
         assert_eq!(result, "");
     }
 

@@ -50,18 +50,18 @@ mod tests {
     use crate::parser::Statement;
 
     #[test]
-    fn no_arg() {
+    fn two_args() {
         let mut parser = Statement::new().unwrap();
         let separator = std::path::MAIN_SEPARATOR;
-        let result = parser.parse_and_execute("[path('a','b'", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[path('a','b')]", &Context::new()).unwrap();
         assert_eq!(result, format!("a{separator}b"));
     }
 
     #[test]
-    fn with_arg() {
+    fn three_args() {
         let mut parser = Statement::new().unwrap();
         let separator = std::path::MAIN_SEPARATOR;
         let result = parser.parse_and_execute("[path('a','b','c')]", &Context::new()).unwrap();
-        assert_eq!(result, format!("{separator}a{separator}b{separator}c"));
+        assert_eq!(result, format!("a{separator}b{separator}c"));
     }
 }
