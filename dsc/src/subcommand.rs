@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
 use dsc_lib::configure::{Configurator, config_doc::{Configuration, ExecutionKind}, config_result::ResourceGetResult};
 use dsc_lib::dscerror::DscError;
 use dsc_lib::dscresources::invoke_result::ResolveResult;
@@ -15,9 +15,12 @@ use dsc_lib::{
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
-use std::collections::HashMap;
-use std::io::{self, IsTerminal};
-use std::process::exit;
+use std::{
+    collections::HashMap,
+    io::{self, IsTerminal},
+    path::Path,
+    process::exit
+};
 use tracing::{debug, error, trace};
 
 pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
@@ -271,7 +274,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
     };
 
     if let Some(path) = mounted_path {
-        configurator.set_mounted_path(path);
+        if !Path::new(&path).exists() {
+            error!("Error: Target path '{path}' does not exist");
+            exit(EXIT_INVALID_ARGS);
+        }
+
+        configurator.set_target_path(path);
     }
 
     if let Err(err) = configurator.set_context(&parameters) {

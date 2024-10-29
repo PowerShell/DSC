@@ -48,8 +48,8 @@ pub enum SubCommand {
         parameters: Option<String>,
         #[clap(short = 'f', long, help = "Parameters to pass to the configuration as a JSON or YAML file", conflicts_with = "parameters")]
         parameters_file: Option<String>,
-        #[clap(short = 'm', long, help = "Mounted path to use for supported resources")]
-        mounted_path: Option<String>,
+        #[clap(short = 't', long, help = "Target path to apply configuration, requires resource support.")]
+        target_path: Option<String>,
         // Used to inform when DSC is used as a group resource to modify it's output
         #[clap(long, hide = true)]
         as_group: bool,

@@ -2,6 +2,11 @@
 # Licensed under the MIT License.
 
 Describe 'tests for function expressions' {
+    BeforeAll {
+        $global:sep = [System.IO.Path]::DirectorySeparatorChar
+    }
+
+
     It 'function works: <text>' -TestCases @(
         @{ text = "[concat('a', 'b')]"; expected = 'ab' }
         @{ text = "[concat('a', 'b', 'c')]"; expected = 'abc' }
@@ -25,20 +30,11 @@ Describe 'tests for function expressions' {
         $out.results[0].result.actualState.output | Should -Be $expected
     }
 
-    It 'mountedpath(<path>) works' -TestCases @(
-        @{ path = '' }
-        @{ path = "hello$([System.IO.Path]::DirectorySeparatorChar)world" }
+    It 'path(<path>) works' -TestCases @(
+        @{ path = "targetPath(), 'a'"; expected = "$PSHOME${sep}a" }
+        @{ path = "'a', 'b', 'c'"; expected = "a${sep}b${sep}c" }
     ) {
-        param($path)
-
-        $testPath = if ($path.Length -gt 0) {
-            $expected = "$PSHOME$([System.IO.Path]::DirectorySeparatorChar)$path"
-            "'$($path.replace('\', '\\'))'"
-        }
-        else {
-            $expected = $PSHOME
-            $path
-        }
+        param($path, $expected)
 
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
@@ -46,9 +42,9 @@ Describe 'tests for function expressions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: "[mountedpath($testPath)]"
+                output: "[path($path)]"
 "@
-        $out = $config_yaml | dsc config --mounted-path $PSHOME get | ConvertFrom-Json
+        $out = $config_yaml | dsc config --target-path $PSHOME get | ConvertFrom-Json
         $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
 }

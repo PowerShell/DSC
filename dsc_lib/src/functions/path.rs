@@ -5,37 +5,42 @@ use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
 use serde_json::Value;
+use std::path::PathBuf;
 use tracing::debug;
 
 #[derive(Debug, Default)]
-pub struct MountedPath {}
+pub struct Path {}
 
 /// Implements the 'mountedpath' function.
 /// This function returns the value of the mounted path.
 /// The optional parameter is a path appended to the mounted path.
 /// Path is not validated as it might be used for creation.
-impl Function for MountedPath {
+impl Function for Path {
     fn min_args(&self) -> usize {
-        0
+        2
     }
 
     fn max_args(&self) -> usize {
-        1
+        usize::MAX
     }
 
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
         vec![AcceptedArgKind::String]
     }
 
-    fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
-        debug!("Executing mountedpath function with args: {:?}", args);
+    fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
+        debug!("Executing path function with args: {:?}", args);
 
-        if args.len() == 1 {
-            let path = args[0].as_str().ok_or(DscError::Parser("Invalid argument".to_string()))?;
-            Ok(Value::String(format!("{}{}{path}", context.mounted_path, std::path::MAIN_SEPARATOR)))
-        } else {
-            Ok(Value::String(context.mounted_path.clone()))
+        let mut path = PathBuf::new();
+        for arg in args {
+            if let Value::String(s) = arg {
+                path.push(s);
+            } else {
+                return Err(DscError::Parser("Arguments must all be strings".to_string()));
+            }
         }
+
+        Ok(Value::String(path.to_string_lossy().to_string()))
     }
 }
 
@@ -47,20 +52,16 @@ mod tests {
     #[test]
     fn no_arg() {
         let mut parser = Statement::new().unwrap();
-        let mut context = Context::new();
         let separator = std::path::MAIN_SEPARATOR;
-        context.mounted_path = format!("{separator}mnt");
-        let result = parser.parse_and_execute("[mountedpath()]", &context).unwrap();
-        assert_eq!(result, format!("{separator}mnt"));
+        let result = parser.parse_and_execute("[path('a','b'", &Context::new()).unwrap();
+        assert_eq!(result, format!("a{separator}b"));
     }
 
     #[test]
     fn with_arg() {
         let mut parser = Statement::new().unwrap();
-        let mut context = Context::new();
         let separator = std::path::MAIN_SEPARATOR;
-        context.mounted_path = format!("{separator}mnt");
-        let result = parser.parse_and_execute("[mountedpath('foo')]", &context).unwrap();
-        assert_eq!(result, format!("{separator}mnt{separator}foo"));
+        let result = parser.parse_and_execute("[path('a','b','c')]", &Context::new()).unwrap();
+        assert_eq!(result, format!("{separator}a{separator}b{separator}c"));
     }
 }

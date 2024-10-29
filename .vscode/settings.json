@@ -2,7 +2,7 @@
     "rust-analyzer.linkedProjects": [
         "./dsc/Cargo.toml",
         "./dsc_lib/Cargo.toml",
-        "./echo/Cargo.toml",
+        "./dscecho/Cargo.toml",
         "./osinfo/Cargo.toml",
         "./registry/Cargo.toml",
         "./runcommandonset/Cargo.toml",

@@ -20,6 +20,7 @@ use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
+use std::path::PathBuf;
 use std::{collections::HashMap, mem};
 use tracing::{debug, info, trace, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
@@ -480,12 +481,12 @@ impl Configurator {
     }
 
     /// Set the mounted path for the configuration.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `mounted_path` - The mounted path to set.
-    pub fn set_mounted_path(&mut self, mounted_path: &str) {
-        self.context.mounted_path = mounted_path.to_string();
+    pub fn set_target_path(&mut self, target_path: &str) {
+        self.context.target_path = PathBuf::from(target_path);
     }
 
     /// Set the parameters and variables context for the configuration.
