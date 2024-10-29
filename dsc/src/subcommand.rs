@@ -186,7 +186,7 @@ fn initialize_config_root(path: &Option<String>) -> Option<String> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool, as_include: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: &Option<String>, stdin: &Option<String>, as_group: &bool, as_include: &bool) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { document, path, .. } |
         ConfigSubCommand::Set { document, path, .. } |
@@ -269,6 +269,10 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
             }
         }
     };
+
+    if let Some(path) = mounted_path {
+        configurator.set_mounted_path(path);
+    }
 
     if let Err(err) = configurator.set_context(&parameters) {
         error!("Error: Parameter input failure: {err}");

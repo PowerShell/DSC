@@ -12,6 +12,7 @@ use super::config_doc::{DataType, SecurityContextKind};
 pub struct Context {
     pub execution_type: ExecutionKind,
     pub outputs: HashMap<String, Value>, // this is used by the `reference()` function to retrieve output
+    pub mounted_path: String,
     pub parameters: HashMap<String, (Value, DataType)>,
     pub security_context: SecurityContextKind,
     pub variables: HashMap<String, Value>,
@@ -24,6 +25,7 @@ impl Context {
         Self {
             execution_type: ExecutionKind::Actual,
             outputs: HashMap::new(),
+            mounted_path: String::new(),
             parameters: HashMap::new(),
             security_context: match get_security_context() {
                 SecurityContext::Admin => SecurityContextKind::Elevated,

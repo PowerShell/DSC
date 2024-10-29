@@ -17,6 +17,7 @@ pub mod int;
 pub mod max;
 pub mod min;
 pub mod mod_function;
+pub mod mounted_path;
 pub mod mul;
 pub mod parameters;
 pub mod reference;
@@ -74,6 +75,7 @@ impl FunctionDispatcher {
         functions.insert("max".to_string(), Box::new(max::Max{}));
         functions.insert("min".to_string(), Box::new(min::Min{}));
         functions.insert("mod".to_string(), Box::new(mod_function::Mod{}));
+        functions.insert("mountedpath".to_string(), Box::new(mounted_path::MountedPath{}));
         functions.insert("mul".to_string(), Box::new(mul::Mul{}));
         functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
         functions.insert("reference".to_string(), Box::new(reference::Reference{}));

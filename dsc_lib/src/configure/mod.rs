@@ -479,6 +479,15 @@ impl Configurator {
         Ok(result)
     }
 
+    /// Set the mounted path for the configuration.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `mounted_path` - The mounted path to set.
+    pub fn set_mounted_path(&mut self, mounted_path: &str) {
+        self.context.mounted_path = mounted_path.to_string();
+    }
+
     /// Set the parameters and variables context for the configuration.
     ///
     /// # Arguments
