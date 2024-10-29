@@ -2,11 +2,6 @@
 # Licensed under the MIT License.
 
 Describe 'tests for function expressions' {
-    BeforeAll {
-        $sep = [System.IO.Path]::DirectorySeparatorChar
-    }
-
-
     It 'function works: <text>' -TestCases @(
         @{ text = "[concat('a', 'b')]"; expected = 'ab' }
         @{ text = "[concat('a', 'b', 'c')]"; expected = 'abc' }
@@ -31,8 +26,8 @@ Describe 'tests for function expressions' {
     }
 
     It 'path(<path>) works' -TestCases @(
-        @{ path = "targetPath(), 'a'"; expected = "$PSHOME${sep}a" }
-        @{ path = "'a', 'b', 'c'"; expected = "a${sep}b${sep}c" }
+        @{ path = "targetPath(), 'a'"; expected = "$PSHOME$([System.IO.Path]::DirectorySeparatorChar)a" }
+        @{ path = "'a', 'b', 'c'"; expected = "a$([System.IO.Path]::DirectorySeparatorChar)b$([System.IO.Path]::DirectorySeparatorChar)c" }
     ) {
         param($path, $expected)
 
