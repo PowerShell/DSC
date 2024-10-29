@@ -3,7 +3,7 @@
 
 Describe 'tests for function expressions' {
     BeforeAll {
-        $global:sep = [System.IO.Path]::DirectorySeparatorChar
+        $sep = [System.IO.Path]::DirectorySeparatorChar
     }
 
 
