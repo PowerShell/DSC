@@ -10,7 +10,7 @@ use tracing::debug;
 #[derive(Debug, Default)]
 pub struct TargetPath {}
 
-/// Implements the 'TargetPath' function.
+/// Implements the `targetPath` function.
 /// This function returns the value of the mounted path.
 /// The optional parameter is a path appended to the mounted path.
 /// Path is not validated as it might be used for creation.

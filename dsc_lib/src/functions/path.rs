@@ -11,7 +11,7 @@ use tracing::debug;
 #[derive(Debug, Default)]
 pub struct Path {}
 
-/// Implements the 'path' function.
+/// Implements the `path` function.
 /// Accepts a variable number of arguments, each of which is a string.
 /// Returns a string that is the concatenation of the arguments, separated by the platform's path separator.
 impl Function for Path {
