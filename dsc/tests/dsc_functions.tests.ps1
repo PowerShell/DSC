@@ -42,4 +42,24 @@ Describe 'tests for function expressions' {
         $out = $config_yaml | dsc config --target-path $PSHOME get | ConvertFrom-Json
         $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
+
+    It 'default targetPath() is correct for the OS' {
+        $config_yaml = @'
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[targetPath()]"
+'@
+
+        $expected = if ($IsWindows) {
+            $env:SYSTEMDRIVE + '\'
+        } else {
+            '/'
+        }
+        $out = $config_yaml | dsc config get | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly $expected
+    }
 }

@@ -25,7 +25,7 @@ impl Context {
         Self {
             execution_type: ExecutionKind::Actual,
             outputs: HashMap::new(),
-            target_path: PathBuf::new(),
+            target_path: get_default_os_target_path(),
             parameters: HashMap::new(),
             security_context: match get_security_context() {
                 SecurityContext::Admin => SecurityContextKind::Elevated,
@@ -41,4 +41,16 @@ impl Default for Context {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[cfg(target_os = "windows")]
+fn get_default_os_target_path() -> PathBuf {
+    // use SYSTEMDRIVE env var to get the default target path
+    let system_drive = std::env::var("SYSTEMDRIVE").unwrap_or_else(|_| "C:".to_string());
+    PathBuf::from(system_drive).join("\\")
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_default_os_target_path() -> PathBuf {
+    PathBuf::from("/")
 }
