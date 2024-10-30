@@ -11,10 +11,9 @@ use tracing::debug;
 #[derive(Debug, Default)]
 pub struct Path {}
 
-/// Implements the 'mountedpath' function.
-/// This function returns the value of the mounted path.
-/// The optional parameter is a path appended to the mounted path.
-/// Path is not validated as it might be used for creation.
+/// Implements the 'path' function.
+/// Accepts a variable number of arguments, each of which is a string.
+/// Returns a string that is the concatenation of the arguments, separated by the platform's path separator.
 impl Function for Path {
     fn min_args(&self) -> usize {
         2
