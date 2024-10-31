@@ -7,13 +7,12 @@ Describe 'tests for dsc settings' {
         $script:policyFilePath = if ($IsWindows) {
             Join-Path $env:ProgramData "dsc" "dsc.settings.json"
         } else {
-            "/etc/dsc/settings.dsc.json"
+            "/etc/dsc/dsc.settings.json"
         }
 
         $script:dscHome = (Get-Command dsc).Path | Split-Path
         $script:dscSettingsFilePath = Join-Path $script:dscHome "dsc.settings.json"
-        $script:dscDefaultv1SettingsFilePath = Join-Path $script:dscHome "dsc_default.settings.json"
-        $script:dscDefaultv1SettingsJson = Get-Content -Raw -Path $script:dscDefaultv1SettingsFilePath
+        $script:dscDefaultSettingsFilePath = Join-Path $script:dscHome "dsc_default.settings.json"
 
         if ($IsWindows) { #"Setting policy on Linux requires sudo"
             $script:policyDirPath = $script:policyFilePath | Split-Path
@@ -21,23 +20,28 @@ Describe 'tests for dsc settings' {
         }
 
         #create backups of settings files
-        $script:dscSettingsFilePath_backup = Join-Path $script:dscHome "settings.dsc.json.backup"
-        $script:dscDefaultv1SettingsFilePath_backup = Join-Path $script:dscHome "dsc_default.settings.json.backup"
+        $script:dscSettingsFilePath_backup = Join-Path $script:dscHome "dsc.settings.json.backup"
+        $script:dscDefaultSettingsFilePath_backup = Join-Path $script:dscHome "dsc_default.settings.json.backup"
         Copy-Item -Force -Path $script:dscSettingsFilePath -Destination $script:dscSettingsFilePath_backup
-        Copy-Item -Force -Path $script:dscDefaultv1SettingsFilePath -Destination $script:dscDefaultv1SettingsFilePath_backup
+        Copy-Item -Force -Path $script:dscDefaultSettingsFilePath -Destination $script:dscDefaultSettingsFilePath_backup
     }
 
     AfterAll {
         Remove-Item -Force -Path $script:dscSettingsFilePath_backup
-        Remove-Item -Force -Path $script:dscDefaultv1SettingsFilePath_backup
+        Remove-Item -Force -Path $script:dscDefaultSettingsFilePath_backup
         if ($IsWindows) { #"Setting policy on Linux requires sudo"
             Remove-Item -Recurse -Force -Path $script:policyDirPath
         }
     }
 
+    BeforeEach {
+        $script:dscDefaultSettings = Get-Content -Raw -Path $script:dscDefaultSettingsFilePath_backup | ConvertFrom-Json
+        $script:dscDefaultv1Settings = (Get-Content -Raw -Path $script:dscDefaultSettingsFilePath_backup | ConvertFrom-Json)."1"
+    }
+
     AfterEach {
         Copy-Item -Force -Path $script:dscSettingsFilePath_backup -Destination $script:dscSettingsFilePath
-        Copy-Item -Force -Path $script:dscDefaultv1SettingsFilePath_backup -Destination $script:dscDefaultv1SettingsFilePath
+        Copy-Item -Force -Path $script:dscDefaultSettingsFilePath_backup -Destination $script:dscDefaultSettingsFilePath
         if ($IsWindows) { #"Setting policy on Linux requires sudo"
             Remove-Item -Path $script:policyFilePath -ErrorAction SilentlyContinue
         }
@@ -45,7 +49,8 @@ Describe 'tests for dsc settings' {
 
     It 'ensure a new tracing value in settings has effect' {
         
-        $script:dscDefaultv1SettingsJson.Replace('"level": "WARN"', '"level": "TRACE"') | Set-Content -Force -Path $script:dscSettingsFilePath
+        $script:dscDefaultv1Settings."tracing"."level" = "TRACE"
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:dscSettingsFilePath
 
         dsc resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Trace"
@@ -53,10 +58,9 @@ Describe 'tests for dsc settings' {
 
     It 'ensure a new resource_path value in settings has effect' {
         
-        $script:dscDefaultv1SettingsJson.Replace('"directories": []', '"directories": ["TestDir1","TestDir2"]') | Set-Content -Force -Path $script:dscSettingsFilePath
-        copy-Item -Recurse -Force -Path $script:dscSettingsFilePath -Destination "C:\Temp\"
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("TestDir1","TestDir2")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:dscSettingsFilePath
         dsc -l debug resource list 2> $TestDrive/tracing.txt
-        copy-Item -Recurse -Force -Path $TestDrive/tracing.txt -Destination "C:\Temp\"
         $expectedString = 'Using Resource Path: "TestDir1'+[System.IO.Path]::PathSeparator+'TestDir2'
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly $expectedString
     }
@@ -68,17 +72,17 @@ Describe 'tests for dsc settings' {
             return
         }
         
-        $v = $script:dscDefaultv1SettingsJson.Replace('"level": "WARN"', '"level": "TRACE"')
-        $v = $v.Replace('"directories": []', '"directories": ["PolicyDir"]')
-        $v | Set-Content -Force -Path $script:policyFilePath
+        $script:dscDefaultv1Settings."tracing"."level" = "TRACE"
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("PolicyDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:policyFilePath
 
-        $v = $script:dscDefaultv1SettingsJson.Replace('"level": "WARN"', '"level": "TRACE"')
-        $v = $v.Replace('"directories": []', '"directories": ["SettingsDir"]')
-        $v | Set-Content -Force -Path $script:dscSettingsFilePath
+        $script:dscDefaultv1Settings."tracing"."level" = "TRACE"
+        $script:dscDefaultv1Settings."resourcePath"."directories" = @("SettingsDir")
+        $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:dscSettingsFilePath
 
-        $v = $script:dscDefaultv1SettingsJson.Replace('"level": "WARN"', '"level": "TRACE"')
-        $v = $v.Replace('"directories": []', '"directories": ["Defaultv1SettingsDir"]')
-        $v | Set-Content -Force -Path  $script:dscDefaultv1SettingsFilePath
+        $script:dscDefaultSettings."1"."tracing"."level" = "TRACE"
+        $script:dscDefaultSettings."1"."resourcePath"."directories" = @("Defaultv1SettingsDir")
+        $script:dscDefaultSettings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path  $script:dscDefaultSettingsFilePath
 
         # ensure policy overrides everything
         dsc -l debug resource list 2> $TestDrive/tracing.txt
