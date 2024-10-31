@@ -296,6 +296,19 @@ pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &O
     let mut policy_is_used = false;
     let mut tracing_setting = TracingSetting::default();
 
+    let default_filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("warning"))
+        .unwrap_or_default()
+        .add_directive(Level::TRACE.into());
+    let default_indicatif_layer = IndicatifLayer::new();
+    let default_layer = tracing_subscriber::fmt::Layer::default().with_writer(default_indicatif_layer.get_stderr_writer());
+    let default_fmt = default_layer
+                .with_ansi(true)
+                .with_level(true)
+                .boxed();
+    let default_subscriber = tracing_subscriber::Registry::default().with(default_fmt).with(default_filter).with(default_indicatif_layer);
+    let default_guard = tracing::subscriber::set_default(default_subscriber);
+
     // read setting/policy from files
     if let Ok(v) = get_setting("tracing") {
         if v.policy != serde_json::Value::Null {
@@ -304,18 +317,18 @@ pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &O
                     tracing_setting = v;
                     policy_is_used = true;
                 },
-                Err(e) => { println!("{e}"); }
+                Err(e) => { error!("{e}"); }
             }
         } else if v.setting != serde_json::Value::Null {
             match serde_json::from_value::<TracingSetting>(v.setting) {
                 Ok(v) => {
                     tracing_setting = v;
                 },
-                Err(e) => { println!("{e}"); }
+                Err(e) => { error!("{e}"); }
             }
         }
     } else {
-        println!("Could not read 'tracing' setting");
+        error!("Could not read 'tracing' setting");
     }
 
     // override with DSC_TRACE_LEVEL env var if permitted
@@ -392,6 +405,7 @@ pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &O
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter).with(indicatif_layer);
 
+    drop(default_guard);
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
     }
