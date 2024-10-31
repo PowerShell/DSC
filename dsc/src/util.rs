@@ -298,9 +298,9 @@ pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &O
     let mut tracing_setting = TracingSetting::default();
 
     let default_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("warning"))
+        .or_else(|_| EnvFilter::try_new("error"))
         .unwrap_or_default()
-        .add_directive(Level::TRACE.into());
+        .add_directive(Level::ERROR.into());
     let default_indicatif_layer = IndicatifLayer::new();
     let default_layer = tracing_subscriber::fmt::Layer::default().with_writer(default_indicatif_layer.get_stderr_writer());
     let default_fmt = default_layer
