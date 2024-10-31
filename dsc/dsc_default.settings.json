@@ -1,12 +1,14 @@
 {
-  "resourcePath": {
-    "allowEnvOverride": true,
-    "appendEnvPath": true,
-    "directories": []
-  },
-  "tracing": {
-    "level": "WARN",
-    "format": "Default",
-    "allowOverride": true
+  "1": {
+    "resourcePath": {
+      "allowEnvOverride": true,
+      "appendEnvPath": true,
+      "directories": []
+    },
+    "tracing": {
+      "level": "WARN",
+      "format": "Default",
+      "allowOverride": true
+    }
   }
 }
