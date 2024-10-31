@@ -111,11 +111,8 @@ impl CommandDiscovery {
             paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
         } else {
             for p in resource_path_setting.directories {
-                if let Ok(v) = PathBuf::from_str(&p) {
-                    paths.push(v);
-                } else {
-                    trace!("Can't parse path: '{p}'");
-                };
+                let Ok(v) = PathBuf::from_str(&p) else { return Err(DscError::Operation("Can't parse '{p}'".to_string()));};
+                paths.push(v);
             }
 
             if resource_path_setting.append_env_path {
