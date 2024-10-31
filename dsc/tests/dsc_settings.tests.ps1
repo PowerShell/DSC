@@ -12,7 +12,7 @@ Describe 'tests for dsc settings' {
 
         $script:dscHome = (Get-Command dsc).Path | Split-Path
         $script:dscSettingsFilePath = Join-Path $script:dscHome "dsc.settings.json"
-        $script:dscDefaultv1SettingsFilePath = Join-Path $script:dscHome "default_settings.v1.dsc.json"
+        $script:dscDefaultv1SettingsFilePath = Join-Path $script:dscHome "dsc_default.settings.json"
         $script:dscDefaultv1SettingsJson = Get-Content -Raw -Path $script:dscDefaultv1SettingsFilePath
 
         if ($IsWindows) { #"Setting policy on Linux requires sudo"
@@ -22,7 +22,7 @@ Describe 'tests for dsc settings' {
 
         #create backups of settings files
         $script:dscSettingsFilePath_backup = Join-Path $script:dscHome "settings.dsc.json.backup"
-        $script:dscDefaultv1SettingsFilePath_backup = Join-Path $script:dscHome "default_settings.v1.dsc.json.backup"
+        $script:dscDefaultv1SettingsFilePath_backup = Join-Path $script:dscHome "dsc_default.settings.json.backup"
         Copy-Item -Force -Path $script:dscSettingsFilePath -Destination $script:dscSettingsFilePath_backup
         Copy-Item -Force -Path $script:dscDefaultv1SettingsFilePath -Destination $script:dscDefaultv1SettingsFilePath_backup
     }

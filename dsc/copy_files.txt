@@ -1,2 +1,2 @@
 settings.dsc.json
-default_settings.v1.dsc.json
+dsc_default.settings.json

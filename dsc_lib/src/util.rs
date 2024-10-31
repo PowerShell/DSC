@@ -72,7 +72,7 @@ pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
 
     const SETTINGS_FILE_NAME: &str = "dsc.settings.json";
     // Note that default settings file name has a version that is specific to this version of dsc
-    const DEFAULT_SETTINGS_FILE_NAME: &str = "default_settings.v1.dsc.json";
+    const DEFAULT_SETTINGS_FILE_NAME: &str = "dsc_default.settings.json";
 
     let mut result: DscSettingValue = DscSettingValue::default();
     let mut settings_file_path : PathBuf;

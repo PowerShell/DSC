@@ -48,7 +48,7 @@ $filesForWindowsPackage = @(
     'wmi.resource.ps1',
     'windows_baseline.dsc.yaml',
     'windows_inventory.dsc.yaml'
-    'default_settings.v1.dsc.json',
+    'dsc_default.settings.json',
     'settings.dsc.json'
 )
 
@@ -65,7 +65,7 @@ $filesForLinuxPackage = @(
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
-    'default_settings.v1.dsc.json',
+    'dsc_default.settings.json',
     'settings.dsc.json'
 )
 
@@ -82,7 +82,7 @@ $filesForMacPackage = @(
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
-    'default_settings.v1.dsc.json',
+    'dsc_default.settings.json',
     'settings.dsc.json'
 )
 
