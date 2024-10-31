@@ -38,13 +38,18 @@ impl Function for TargetPath {
 mod tests {
     use crate::configure::context::Context;
     use crate::parser::Statement;
-    use std::path::PathBuf;
+    use std::{env, path::PathBuf};
 
     #[test]
     fn init() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[targetPath()]", &Context::new()).unwrap();
-        assert_eq!(result, "");
+        // on windows, the default is SYSTEMDRIVE env var
+        #[cfg(target_os = "windows")]
+        assert_eq!(result, env::var("SYSTEMDRIVE").unwrap());
+        // on linux/macOS, the default is /
+        #[cfg(not(target_os = "windows"))]
+        assert_eq!(result, "/");
     }
 
     #[test]
