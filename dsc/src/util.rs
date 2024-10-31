@@ -291,6 +291,7 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &Option<TraceFormat>) {
     
     let mut policy_is_used = false;
