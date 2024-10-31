@@ -3,6 +3,13 @@ name = "y2j"
 version = "1.0.0"
 edition = "2021"
 
+[profile.release]
+strip = true
+# optimize for size
+opt-level = 2
+# enable link time optimization to remove dead code
+lto = true
+
 [dependencies]
 serde_json = { version = "1.0.0", features = ["preserve_order"] }
 serde_yaml = { version = "0.9.3" }

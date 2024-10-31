@@ -25,5 +25,6 @@
     "sarif-viewer.connectToGithubCodeScanning": "off",
     "vscode-nmake-tools.workspaceBuildDirectories": [
         "."
-    ]
+    ],
+    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true
 }
