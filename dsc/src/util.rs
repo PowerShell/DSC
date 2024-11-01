@@ -298,7 +298,7 @@ pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &O
     let mut tracing_setting = TracingSetting::default();
 
     let default_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("warning"))
+        .or_else(|_| EnvFilter::try_new("warn"))
         .unwrap_or_default()
         .add_directive(Level::WARN.into());
     let default_indicatif_layer = IndicatifLayer::new();
@@ -370,7 +370,7 @@ pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &O
 
     // enable tracing
     let filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("warning"))
+        .or_else(|_| EnvFilter::try_new("warn"))
         .unwrap_or_default()
         .add_directive(tracing_level.into());
     let indicatif_layer = IndicatifLayer::new();
