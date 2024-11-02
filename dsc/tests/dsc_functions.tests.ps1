@@ -26,7 +26,7 @@ Describe 'tests for function expressions' {
     }
 
     It 'path(<path>) works' -TestCases @(
-        @{ path = "targetPath(), 'a'"; expected = "$PSHOME$([System.IO.Path]::DirectorySeparatorChar)a" }
+        @{ path = "systemRoot(), 'a'"; expected = "$PSHOME$([System.IO.Path]::DirectorySeparatorChar)a" }
         @{ path = "'a', 'b', 'c'"; expected = "a$([System.IO.Path]::DirectorySeparatorChar)b$([System.IO.Path]::DirectorySeparatorChar)c" }
     ) {
         param($path, $expected)
@@ -43,14 +43,14 @@ Describe 'tests for function expressions' {
         $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
 
-    It 'default targetPath() is correct for the OS' {
+    It 'default systemRoot() is correct for the OS' {
         $config_yaml = @'
             $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: "[targetPath()]"
+                output: "[systemRoot()]"
 '@
 
         $expected = if ($IsWindows) {

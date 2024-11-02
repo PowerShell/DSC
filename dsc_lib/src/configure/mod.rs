@@ -485,8 +485,8 @@ impl Configurator {
     /// # Arguments
     ///
     /// * `mounted_path` - The mounted path to set.
-    pub fn set_target_path(&mut self, target_path: &str) {
-        self.context.target_path = PathBuf::from(target_path);
+    pub fn set_system_root(&mut self, system_root: &str) {
+        self.context.system_root = PathBuf::from(system_root);
     }
 
     /// Set the parameters and variables context for the configuration.

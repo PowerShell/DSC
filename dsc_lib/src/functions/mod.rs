@@ -23,7 +23,7 @@ pub mod path;
 pub mod reference;
 pub mod resource_id;
 pub mod sub;
-pub mod target_path;
+pub mod system_root;
 pub mod variables;
 
 /// The kind of argument that a function accepts.
@@ -82,7 +82,7 @@ impl FunctionDispatcher {
         functions.insert("reference".to_string(), Box::new(reference::Reference{}));
         functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
         functions.insert("sub".to_string(), Box::new(sub::Sub{}));
-        functions.insert("targetPath".to_string(), Box::new(target_path::TargetPath{}));
+        functions.insert("systemRoot".to_string(), Box::new(system_root::SystemRoot{}));
         functions.insert("variables".to_string(), Box::new(variables::Variables{}));
         Self {
             functions,

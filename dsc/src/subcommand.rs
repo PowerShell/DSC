@@ -279,7 +279,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             exit(EXIT_INVALID_ARGS);
         }
 
-        configurator.set_target_path(path);
+        configurator.set_system_root(path);
     }
 
     if let Err(err) = configurator.set_context(&parameters) {
