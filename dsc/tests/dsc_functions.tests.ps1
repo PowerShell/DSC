@@ -39,7 +39,7 @@ Describe 'tests for function expressions' {
               properties:
                 output: "[path($path)]"
 "@
-        $out = $config_yaml | dsc config --target-path $PSHOME get | ConvertFrom-Json
+        $out = $config_yaml | dsc config --system-root $PSHOME get | ConvertFrom-Json
         $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
 
