@@ -309,8 +309,8 @@ resources:
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
     }
 
-    It 'Invalid --target-path' {
-        dsc config --target-path /invalid/path get -p "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
+    It 'Invalid --system-root' {
+        dsc config --system-root /invalid/path get -p "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 1
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path '/invalid/path' does not exist"
     }
