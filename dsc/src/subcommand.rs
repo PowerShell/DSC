@@ -104,12 +104,12 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool, as_test: &bool)
+pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool)
 {
     match configurator.invoke_test() {
         Ok(result) => {
             if *as_group {
-                let json = if *as_test {
+                let json = if *as_config {
                     let mut result_configuration = Configuration::new();
                     result_configuration.resources = Vec::new();
                     for test_result in result.results {
@@ -341,8 +341,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         ConfigSubCommand::Set { format, .. } => {
             config_set(&mut configurator, format, as_group);
         },
-        ConfigSubCommand::Test { format, as_get, as_test, .. } => {
-            config_test(&mut configurator, format, as_group, as_get, as_test);
+        ConfigSubCommand::Test { format, as_get, as_config, .. } => {
+            config_test(&mut configurator, format, as_group, as_get, as_config);
         },
         ConfigSubCommand::Validate { document, path, format} => {
             let mut result = ValidateResult {
