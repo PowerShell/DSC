@@ -338,6 +338,16 @@ pub fn get_well_known_properties() -> HashMap<String, Value> {
 }
 
 #[must_use]
+/// Performs a comparison of two JSON Values if the expected is a strict subset of the actual
+///
+/// # Arguments
+///
+/// * `expected` - The expected value
+/// * `actual` - The actual value
+///
+/// # Returns
+///
+/// An array of top level properties that differ, if any
 pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
     let mut diff_properties: Vec<String> = Vec::new();
     if expected.is_null() {
@@ -373,34 +383,28 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                     continue;
                 }
 
-                match actual.as_object() {
-                    Some(actual_object) => {
-                        if actual_object.contains_key(key) {
-                            if value.is_array() {
-                                if !actual[key].is_array() {
-                                    info!("diff: {} is not an array", actual[key]);
+                if let Some(actual_object) = actual.as_object() {
+                    if actual_object.contains_key(key) {
+                        if let Some(value_array) = value.as_array() {
+                            if let Some(actual_array) = actual[key].as_array() {
+                                if !is_same_array(value_array, actual_array) {
+                                    info!("diff: arrays differ for {key}");
                                     diff_properties.push(key.to_string());
                                 }
-                                else {
-                                    if !is_same_array(&value.as_array().unwrap(), &actual[key].as_array().unwrap()) {
-                                        info!("diff: arrays differ for {key}");
-                                        diff_properties.push(key.to_string());
-                                    }
-                                }
-                            }
-                            else if value != &actual[key] {
+                            } else {
+                                info!("diff: {} is not an array", actual[key]);
                                 diff_properties.push(key.to_string());
                             }
-                        }
-                        else {
-                            info!("diff: {key} missing");
+                        } else if value != &actual[key] {
                             diff_properties.push(key.to_string());
                         }
-                    },
-                    None => {
-                        info!("diff: {key} not object");
+                    } else {
+                        info!("diff: {key} missing");
                         diff_properties.push(key.to_string());
-                    },
+                    }
+                } else {
+                    info!("diff: {key} not object");
+                    diff_properties.push(key.to_string());
                 }
             }
         }
@@ -417,7 +421,7 @@ fn is_same_array(expected: &Vec<Value>, actual: &Vec<Value>) -> bool {
     }
 
     for item in expected {
-        if !array_contains(&actual, &item) {
+        if !array_contains(actual, item) {
             info!("diff: actual array missing expected element");
             return false;
         }
@@ -428,57 +432,43 @@ fn is_same_array(expected: &Vec<Value>, actual: &Vec<Value>) -> bool {
 
 fn array_contains(array: &Vec<Value>, find: &Value) -> bool {
     for item in array {
-        if find.is_boolean() && item.is_boolean() {
-            if find.as_bool().unwrap() == item.as_bool().unwrap() {
-                return true;
-            }
+        if find.is_boolean() && item.is_boolean() && find.as_bool().unwrap() == item.as_bool().unwrap() {
+            return true;
         }
 
-        if find.is_f64() && item.is_f64() {
-            if find.as_f64().unwrap() == item.as_f64().unwrap() {
-                return true;
-            }
+        if find.is_f64() && item.is_f64() && (find.as_f64().unwrap() - item.as_f64().unwrap()).abs() < 0.1 {
+            return true;
         }
 
-        if find.is_i64() && item.is_i64() {
-            if find.as_i64().unwrap() == item.as_i64().unwrap() {
-                return true;
-            }
+        if find.is_i64() && item.is_i64() && find.as_i64().unwrap() == item.as_i64().unwrap() {
+            return true;
         }
 
         if find.is_null() && item.is_null() {
             return true;
         }
 
-        if find.is_number() && item.is_number() {
-            if find.as_number().unwrap() == item.as_number().unwrap() {
-                return true;
-            }
+        if find.is_number() && item.is_number() && find.as_number().unwrap() == item.as_number().unwrap() {
+            return true;
         }
 
-        if find.is_string() && item.is_string() {
-            if find.as_str().unwrap() == item.as_str().unwrap() {
-                return true;
-            }
+        if find.is_string() && item.is_string() && find.as_str().unwrap() == item.as_str().unwrap() {
+            return true;
         }
 
-        if find.is_u64() && item.is_u64() {
-            if find.as_u64().unwrap() == item.as_u64().unwrap() {
-                return true;
-            }
+        if find.is_u64() && item.is_u64() && find.as_u64().unwrap() == item.as_u64().unwrap() {
+            return true;
         }
 
         if find.is_object() && item.is_object() {
             let obj_diff = get_diff(find, item);
-            if obj_diff.len() == 0 {
+            if obj_diff.is_empty() {
                 return true;
             }
         }
 
-        if find.is_array() && item.is_array() {
-            if array_contains(item.as_array().unwrap(), find) {
-                return true;
-            }
+        if find.is_array() && item.is_array() && array_contains(item.as_array().unwrap(), find) {
+            return true;
         }
     }
 
