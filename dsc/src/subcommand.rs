@@ -6,12 +6,23 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
-use dsc_lib::configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}};
-use dsc_lib::dscerror::DscError;
-use dsc_lib::dscresources::invoke_result::{ResolveResult, TestResult};
 use dsc_lib::{
+    configure::{
+        config_doc::{
+            Configuration,
+            ExecutionKind,
+            Resource,
+        },
+        config_result::ResourceGetResult,
+        Configurator,
+    },
+    dscerror::DscError,
     DscManager,
-    dscresources::invoke_result::ValidateResult,
+    dscresources::invoke_result::{
+        ResolveResult,
+        TestResult,
+        ValidateResult,
+    },
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
@@ -93,7 +104,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_test: &bool)
+pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool, as_test: &bool)
 {
     match configurator.invoke_test() {
         Ok(result) => {
@@ -127,6 +138,19 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                         result_configuration.resources.push(resource);
                     }
                     match serde_json::to_string(&result_configuration) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            error!("JSON Error: {err}");
+                            exit(EXIT_JSON_ERROR);
+                        }
+                    }
+                }
+                else if *as_get {
+                    let mut group_result = Vec::<ResourceGetResult>::new();
+                    for test_result in result.results {
+                        group_result.push(test_result.into());
+                    }
+                    match serde_json::to_string(&group_result) {
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON Error: {err}");
@@ -317,8 +341,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         ConfigSubCommand::Set { format, .. } => {
             config_set(&mut configurator, format, as_group);
         },
-        ConfigSubCommand::Test { format, as_test, .. } => {
-            config_test(&mut configurator, format, as_group, as_test);
+        ConfigSubCommand::Test { format, as_get, as_test, .. } => {
+            config_test(&mut configurator, format, as_group, as_get, as_test);
         },
         ConfigSubCommand::Validate { document, path, format} => {
             let mut result = ValidateResult {
