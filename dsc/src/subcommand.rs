@@ -6,9 +6,9 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
-use dsc_lib::configure::{Configurator, config_doc::{Configuration, ExecutionKind}, config_result::ResourceGetResult};
+use dsc_lib::configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}};
 use dsc_lib::dscerror::DscError;
-use dsc_lib::dscresources::invoke_result::ResolveResult;
+use dsc_lib::dscresources::invoke_result::{ResolveResult, TestResult};
 use dsc_lib::{
     DscManager,
     dscresources::invoke_result::ValidateResult,
@@ -93,17 +93,40 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool)
+pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_test: &bool)
 {
     match configurator.invoke_test() {
         Ok(result) => {
             if *as_group {
-                let json = if *as_get {
-                    let mut group_result = Vec::<ResourceGetResult>::new();
+                let json = if *as_test {
+                    let mut result_configuration = Configuration::new();
+                    result_configuration.resources = Vec::new();
                     for test_result in result.results {
-                        group_result.push(test_result.into());
+                        let properties = match test_result.result {
+                            TestResult::Resource(test_response) => {
+                                if test_response.actual_state.is_object() {
+                                    test_response.actual_state.as_object().cloned()
+                                } else {
+                                    debug!("actual_state is not an object");
+                                    None
+                                }
+                            },
+                            TestResult::Group(_) => {
+                                // not expected
+                                debug!("Unexpected Group TestResult");
+                                None
+                            }
+                        };
+                        let resource = Resource {
+                            name: test_result.name,
+                            resource_type: test_result.resource_type,
+                            properties,
+                            depends_on: None,
+                            metadata: None,
+                        };
+                        result_configuration.resources.push(resource);
                     }
-                    match serde_json::to_string(&group_result) {
+                    match serde_json::to_string(&result_configuration) {
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON Error: {err}");
@@ -294,8 +317,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         ConfigSubCommand::Set { format, .. } => {
             config_set(&mut configurator, format, as_group);
         },
-        ConfigSubCommand::Test { format, as_get, .. } => {
-            config_test(&mut configurator, format, as_group, as_get);
+        ConfigSubCommand::Test { format, as_test, .. } => {
+            config_test(&mut configurator, format, as_group, as_test);
         },
         ConfigSubCommand::Validate { document, path, format} => {
             let mut result = ValidateResult {
