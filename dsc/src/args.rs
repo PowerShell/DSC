@@ -101,6 +101,8 @@ pub enum ConfigSubCommand {
         format: Option<OutputFormat>,
         #[clap(long, hide = true)]
         as_get: bool,
+        #[clap(long, hide = true)]
+        as_test: bool,
     },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate {

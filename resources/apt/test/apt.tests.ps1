@@ -28,8 +28,7 @@ Describe 'Apt resource tests' {
                 Set-ItResult -Skip -Because "Apt not found"
             }
             $out = dsc -l trace config get -p $yamlPath 2> "$TestDrive/stderr.txt" | ConvertFrom-Json -Depth 10
-            write-verbose -verbose (Get-Content "$TestDrive/stderr.txt" | Out-String)
-            $LASTEXITCODE | Should -Be 0
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TestDrive/stderr.txt" | Out-String)
             $exists = $null -ne (Get-Command $pkgName -CommandType Application -ErrorAction Ignore)
             $observed = $out.results[1].result.actualState._exist
             $observed | Should -Be $exists
