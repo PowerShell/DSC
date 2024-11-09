@@ -4,6 +4,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
+use serde::Deserialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -12,7 +13,7 @@ pub enum OutputFormat {
     Yaml,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Deserialize)]
 pub enum TraceFormat {
     Default,
     Plaintext,
@@ -29,8 +30,8 @@ pub struct Args {
     pub subcommand: SubCommand,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum)]
     pub trace_level: Option<TraceLevel>,
-    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
-    pub trace_format: TraceFormat,
+    #[clap(short = 'f', long, help = "Trace format to use", value_enum)]
+    pub trace_format: Option<TraceFormat>,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
