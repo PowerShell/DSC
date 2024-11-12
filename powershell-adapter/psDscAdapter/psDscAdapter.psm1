@@ -485,7 +485,14 @@ function Invoke-DscOperation {
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
-                            $method = $t.GetMethod('Export')
+                            $methods = $t.GetMethods() | Where-Object { $_.Name -eq 'Export' }
+                            $method = foreach ($mt in $methods) {
+                                if ($mt.GetParameters().Count -eq 0) {
+                                    $mt
+				                    break
+                                }
+                            }
+                            
                             if ($null -eq $method) {
                                 "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
                                 exit 1
