@@ -478,63 +478,71 @@ fn array_contains(array: &Vec<Value>, find: &Value) -> bool {
 #[test]
 fn same_array() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(null)];
-    let array_two = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(null)];
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!(null)];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!(null)];
     assert_eq!(is_same_array(&array_one, &array_two), true);
 }
 
 #[test]
 fn same_array_out_of_order() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(true), json!(r#"{"a":"b"}"#)];
-    let array_two = vec![json!(r#"{"a":"b"}"#), json!("a"), json!(true)];
+    let array_one = vec![json!("a"), json!(true), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a"), json!(true)];
     assert_eq!(is_same_array(&array_one, &array_two), true);
 }
 
 #[test]
 fn different_array() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#)];
-    let array_two = vec![json!(r#"{"a":"b"}"#), json!("a"), json!(2)];
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a"), json!(2)];
     assert_eq!(is_same_array(&array_one, &array_two), false);
 }
 
 #[test]
 fn different_array_sizes() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#)];
-    let array_two = vec![json!(r#"{"a":"b"}"#), json!("a")];
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a")];
     assert_eq!(is_same_array(&array_one, &array_two), false);
 }
 
 #[test]
-fn array_with_multiple_objects_with_superset() {
+fn array_with_multiple_objects_with_actual_superset() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(r#"{"c":"d"}"#)];
-    let array_two = vec![json!("a"), json!(1), json!(r#"{"a":"b", "c":"d"}"#), json!(r#"{"c":"d"}"#)];
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!({"c":"d"})];
+    let array_two = vec![json!("a"), json!(1), json!({"c":"d", "a":"b"}), json!({"c":"d"})];
+    assert_eq!(is_same_array(&array_one, &array_two), true);
+}
+
+#[test]
+fn array_with_multiple_objects_with_expected_superset() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b", "c":"d"}), json!({"c":"d"})];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!({"c":"d"})];
     assert_eq!(is_same_array(&array_one, &array_two), false);
 }
 
 #[test]
 fn array_with_duplicates_out_of_order() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(r#"{"a":"b"}"#)];
-    let array_two = vec![json!(r#"{"a":"b"}"#), json!("a"), json!(1), json!(r#"{"a":"b"}"#)];
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a"), json!(1), json!({"a":"b"})];
     assert_eq!(is_same_array(&array_one, &array_two), true);
 }
 
 #[test]
 fn same_array_with_nested_array() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(vec![json!("a"), json!(1)])];
-    let array_two = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(vec![json!("a"), json!(1)])];
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(1)])];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(1)])];
     assert_eq!(is_same_array(&array_one, &array_two), true);
 }
 
 #[test]
 fn different_array_with_nested_array() {
     use serde_json::json;
-    let array_one = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(vec![json!("a"), json!(1)])];
-    let array_two = vec![json!("a"), json!(1), json!(r#"{"a":"b"}"#), json!(vec![json!("a"), json!(2)])];
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(1)])];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(2)])];
     assert_eq!(is_same_array(&array_one, &array_two), false);
 }
