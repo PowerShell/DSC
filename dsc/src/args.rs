@@ -99,8 +99,10 @@ pub enum ConfigSubCommand {
         path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
+        // Used by Assertion resource to return `test` result as a `get` result
         #[clap(long, hide = true)]
         as_get: bool,
+        // Used by Assertion resource to return `test` result as a configuration `test` result
         #[clap(long, hide = true)]
         as_config: bool,
     },
