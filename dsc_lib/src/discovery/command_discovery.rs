@@ -39,17 +39,6 @@ impl CommandDiscovery {
 
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
     {
-        let mut resource_path_setting = ResourcePathSetting::default();
-
-        match Self::get_resource_path_setting() {
-            Ok(v) => {
-                resource_path_setting = v;
-            },
-            Err(e) => {
-                debug!("{e}");
-            }
-        }
-
         let mut using_custom_path = false;
 
         // try DSC_RESOURCE_PATH env var first otherwise use PATH

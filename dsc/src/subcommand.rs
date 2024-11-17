@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -110,9 +110,31 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                     let mut result_configuration = Configuration::new();
                     result_configuration.resources = Vec::new();
                     for test_result in result.results {
-                        group_result.push(test_result.into());
+                        let properties = match test_result.result {
+                            TestResult::Resource(test_response) => {
+                                if test_response.actual_state.is_object() {
+                                    test_response.actual_state.as_object().cloned()
+                                } else {
+                                    debug!("actual_state is not an object");
+                                    None
+                                }
+                            },
+                            TestResult::Group(_) => {
+                                // not expected
+                                debug!("Unexpected Group TestResult");
+                                None
+                            }
+                        };
+                        let resource = Resource {
+                            name: test_result.name,
+                            resource_type: test_result.resource_type,
+                            properties,
+                            depends_on: None,
+                            metadata: None,
+                        };
+                        result_configuration.resources.push(resource);
                     }
-                    match serde_json::to_string(&group_result) {
+                    match serde_json::to_string(&result_configuration) {
                         Ok(json) => json,
                         Err(err) => {
                             error!("JSON Error: {err}");
