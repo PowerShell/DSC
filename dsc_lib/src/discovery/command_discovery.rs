@@ -39,6 +39,17 @@ impl CommandDiscovery {
 
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
     {
+        let mut resource_path_setting = ResourcePathSetting::default();
+
+        match Self::get_resource_path_setting() {
+            Ok(v) => {
+                resource_path_setting = v;
+            },
+            Err(e) => {
+                debug!("{e}");
+            }
+        }
+
         let mut using_custom_path = false;
 
         // try DSC_RESOURCE_PATH env var first otherwise use PATH
@@ -75,8 +86,7 @@ impl CommandDiscovery {
                     paths.push(exe_home_pb);
 
                     if let Ok(new_path) = env::join_paths(paths.clone()) {
-                        debug!("Using PATH: {:?}", new_path.to_string_lossy());
-                        env::set_var("PATH", &new_path);
+                        env::set_var("PATH", new_path);
                     }
                 }
             }
@@ -297,7 +307,7 @@ impl ResourceDiscovery for CommandDiscovery {
         } else {
             self.discover_resources("*")?;
             self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
-            
+
             // add/update found adapted resources to the lookup_table
             add_resources_to_lookup_table(&self.adapted_resources);
 
@@ -580,7 +590,7 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 fn load_adapted_resources_lookup_table() -> HashMap<String, String>
 {
     let file_path = get_lookup_table_file_path();
-    
+
     let lookup_table: HashMap<String, String> = match fs::read(file_path.clone()){
         Ok(data) => { serde_json::from_slice(&data).unwrap_or_default() },
         Err(_) => { HashMap::new() }
