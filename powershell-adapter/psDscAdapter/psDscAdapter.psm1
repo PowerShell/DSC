@@ -33,14 +33,15 @@ function Get-DSCResourceModules
             continue
         }
 
-        foreach($moduleFolder in Get-ChildItem $folder -Directory)
-        {
-            $addModule = $false
-            foreach($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2)
-            {
-                $containsDSCResource = select-string -LiteralPath $psd1 -pattern '^[^#]*\bDscResourcesToExport\b.*'
-                if($null -ne $containsDSCResource)
-                {
+        $moduleFolders = Get-ChildItem $folder -Directory
+        if (-not $moduleFolders) {
+            $moduleFolders = Get-ChildItem (Split-Path $folder -Parent) | Where-Object { $_.Name -eq (Split-Path $folder -Leaf) }
+        }
+
+        foreach ($moduleFolder in $moduleFolders) {
+            foreach ($psd1 in Get-ChildItem -Recurse -Filter "$($moduleFolder.Name).psd1" -Path $moduleFolder.fullname -Depth 2) {
+                $containsDSCResource = Select-String -LiteralPath $psd1 -Pattern '^[^#]*\bDscResourcesToExport\b.*'
+                if ($null -ne $containsDSCResource) {
                     $dscModulePsd1List.Add($psd1) | Out-Null
                 }
             }
