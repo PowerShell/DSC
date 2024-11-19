@@ -37,7 +37,7 @@
       "config",
       "--as-group",
       "test",
-      "--as-get"
+      "--as-config"
     ],
     "input": "stdin",
     "return": "state"

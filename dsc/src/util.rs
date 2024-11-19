@@ -23,10 +23,12 @@ use dsc_lib::{
         }, resource_manifest::ResourceManifest
     },
     util::parse_input_to_json,
+    util::get_setting,
 };
 use jsonschema::Validator;
 use path_absolutize::Absolutize;
 use schemars::{schema_for, schema::RootSchema};
+use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
@@ -39,7 +41,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, debug, error, warn, trace};
+use tracing::{Level, debug, error, info, warn, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 use tracing_indicatif::IndicatifLayer;
 
@@ -54,6 +56,27 @@ pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
+
+#[derive(Deserialize)]
+pub struct TracingSetting {
+    /// Trace level to use - see pub enum `TraceLevel` in `dsc_lib\src\dscresources\command_resource.rs`
+    level:  TraceLevel,
+    /// Trace format to use - see pub enum `TraceFormat` in `dsc\src\args.rs`
+    format: TraceFormat,
+    /// Whether the 'level' can be overrridden by `DSC_TRACE_LEVEL` environment variable
+    #[serde(rename = "allowOverride")]
+    allow_override: bool
+}
+
+impl Default for TracingSetting {
+    fn default() -> TracingSetting {
+        TracingSetting {
+            level: TraceLevel::Warn,
+            format: TraceFormat::Default,
+            allow_override: true,
+        }
+    }
+}
 
 /// Get string representation of JSON value.
 ///
@@ -268,31 +291,76 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
     }
 }
 
-pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceFormat) {
-    let tracing_level = match trace_level {
-        Some(level) => level,
-        None => {
-            // use DSC_TRACE_LEVEL env var if set
-            match env::var(DSC_TRACE_LEVEL) {
-                Ok(level) => {
-                    match level.to_ascii_uppercase().as_str() {
-                        "ERROR" => &TraceLevel::Error,
-                        "WARN" => &TraceLevel::Warn,
-                        "INFO" => &TraceLevel::Info,
-                        "DEBUG" => &TraceLevel::Debug,
-                        "TRACE" => &TraceLevel::Trace,
-                        _ => {
-                            warn!("Invalid DSC_TRACE_LEVEL value '{level}', defaulting to 'warn'");
-                            &TraceLevel::Warn
-                        },
-                    }
+#[allow(clippy::too_many_lines)]
+pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &Option<TraceFormat>) {
+    
+    let mut policy_is_used = false;
+    let mut tracing_setting = TracingSetting::default();
+
+    let default_filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("warn"))
+        .unwrap_or_default()
+        .add_directive(Level::WARN.into());
+    let default_indicatif_layer = IndicatifLayer::new();
+    let default_layer = tracing_subscriber::fmt::Layer::default().with_writer(default_indicatif_layer.get_stderr_writer());
+    let default_fmt = default_layer
+                .with_ansi(true)
+                .with_level(true)
+                .boxed();
+    let default_subscriber = tracing_subscriber::Registry::default().with(default_fmt).with(default_filter).with(default_indicatif_layer);
+    let default_guard = tracing::subscriber::set_default(default_subscriber);
+
+    // read setting/policy from files
+    if let Ok(v) = get_setting("tracing") {
+        if v.policy != serde_json::Value::Null {
+            match serde_json::from_value::<TracingSetting>(v.policy) {
+                Ok(v) => {
+                    tracing_setting = v;
+                    policy_is_used = true;
                 },
-                Err(_) => &TraceLevel::Warn,
+                Err(e) => { error!("{e}"); }
+            }
+        } else if v.setting != serde_json::Value::Null {
+            match serde_json::from_value::<TracingSetting>(v.setting) {
+                Ok(v) => {
+                    tracing_setting = v;
+                },
+                Err(e) => { error!("{e}"); }
             }
         }
+    } else {
+        error!("Could not read 'tracing' setting");
+    }
+
+    // override with DSC_TRACE_LEVEL env var if permitted
+    if tracing_setting.allow_override {
+        if let Ok(level) = env::var(DSC_TRACE_LEVEL) {
+            tracing_setting.level = match level.to_ascii_uppercase().as_str() {
+                "ERROR" => TraceLevel::Error,
+                "WARN" => TraceLevel::Warn,
+                "INFO" => TraceLevel::Info,
+                "DEBUG" => TraceLevel::Debug,
+                "TRACE" => TraceLevel::Trace,
+                _ => {
+                    warn!("Invalid DSC_TRACE_LEVEL value '{level}', defaulting to 'warn'");
+                    TraceLevel::Warn
+                }
+            }
+        }
+    }
+
+    // command-line args override setting value, but not policy
+    if !policy_is_used {
+        if let Some(v) = trace_level_arg {
+            tracing_setting.level = v.clone();
+        };
+        if let Some(v) = trace_format_arg {
+            tracing_setting.format = v.clone();
+        };
     };
 
-    let tracing_level = match tracing_level {
+    // convert to 'tracing' crate type
+    let tracing_level = match tracing_setting.level {
         TraceLevel::Error => Level::ERROR,
         TraceLevel::Warn => Level::WARN,
         TraceLevel::Info => Level::INFO,
@@ -300,14 +368,15 @@ pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceForm
         TraceLevel::Trace => Level::TRACE,
     };
 
+    // enable tracing
     let filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("warning"))
+        .or_else(|_| EnvFilter::try_new("warn"))
         .unwrap_or_default()
         .add_directive(tracing_level.into());
     let indicatif_layer = IndicatifLayer::new();
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(indicatif_layer.get_stderr_writer());
     let with_source = tracing_level == Level::DEBUG || tracing_level == Level::TRACE;
-    let fmt = match trace_format {
+    let fmt = match tracing_setting.format {
         TraceFormat::Default => {
             layer
                 .with_ansi(true)
@@ -337,12 +406,14 @@ pub fn enable_tracing(trace_level: &Option<TraceLevel>, trace_format: &TraceForm
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter).with(indicatif_layer);
 
+    drop(default_guard);
     if tracing::subscriber::set_global_default(subscriber).is_err() {
         eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
     }
 
     // set DSC_TRACE_LEVEL for child processes
     env::set_var(DSC_TRACE_LEVEL, tracing_level.to_string().to_ascii_lowercase());
+    info!("Trace-level is {:?}", tracing_setting.level);
 }
 
 /// Validate the JSON against the schema.

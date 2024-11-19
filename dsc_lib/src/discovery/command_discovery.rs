@@ -11,6 +11,7 @@ use indicatif::ProgressStyle;
 use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use semver::Version;
+use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet, HashMap};
 use std::env;
 use std::ffi::OsStr;
@@ -18,14 +19,39 @@ use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use tracing::{debug, info, trace, warn, warn_span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
+
+use crate::util::get_setting;
 
 pub struct CommandDiscovery {
     // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
     resources: BTreeMap<String, Vec<DscResource>>,
     adapters: BTreeMap<String, Vec<DscResource>>,
     adapted_resources: BTreeMap<String, Vec<DscResource>>,
+}
+
+#[derive(Deserialize)]
+pub struct ResourcePathSetting {
+    /// whether to allow overriding with the `DSC_RESOURCE_PATH` environment variable
+    #[serde(rename = "allowEnvOverride")]
+    allow_env_override: bool,
+    /// whether to append the PATH environment variable to the list of resource directories
+    #[serde(rename = "appendEnvPath")]
+    append_env_path: bool,
+    /// array of directories that DSC should search for non-built-in resources
+    directories: Vec<String>
+}
+
+impl Default for ResourcePathSetting {
+    fn default() -> ResourcePathSetting {
+        ResourcePathSetting {
+            allow_env_override: true,
+            append_env_path: true,
+            directories: vec![],
+        }
+    }
 }
 
 impl CommandDiscovery {
@@ -37,31 +63,74 @@ impl CommandDiscovery {
         }
     }
 
-    fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
+    fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
-        let mut using_custom_path = false;
-
-        // try DSC_RESOURCE_PATH env var first otherwise use PATH
-        let path_env = if let Some(value) = env::var_os("DSC_RESOURCE_PATH") {
-            debug!("Using DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
-            using_custom_path = true;
-            value
-        } else {
-            trace!("DSC_RESOURCE_PATH not set, trying PATH");
-            match env::var_os("PATH") {
-                Some(value) => {
-                    trace!("Original PATH: {:?}", value.to_string_lossy());
-                    value
-                },
-                None => {
-                    return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
+        if let Ok(v) = get_setting("resourcePath") {
+            // if there is a policy value defined - use it; otherwise use setting value
+            if v.policy != serde_json::Value::Null {
+                match serde_json::from_value::<ResourcePathSetting>(v.policy) {
+                    Ok(v) => {
+                        return Ok(v);
+                    },
+                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
+                }
+            } else if v.setting != serde_json::Value::Null {
+                match serde_json::from_value::<ResourcePathSetting>(v.setting) {
+                    Ok(v) => {
+                        return Ok(v);
+                    },
+                    Err(e) => { return Err(DscError::Setting(format!("{e}"))); }
                 }
             }
-        };
+        }
 
-        let mut paths = env::split_paths(&path_env).collect::<Vec<_>>();
+        Err(DscError::Setting("Could not read 'resourcePath' setting".to_string()))
+    }
+
+    fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
+    {
+        let mut resource_path_setting = ResourcePathSetting::default();
+
+        match Self::get_resource_path_setting() {
+            Ok(v) => {
+                resource_path_setting = v;
+            },
+            Err(e) => {
+                debug!("{e}");
+            }
+        }
+
+        let mut using_custom_path = false;
+        let mut paths: Vec<PathBuf> = vec![];
+
+        let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
+        if resource_path_setting.allow_env_override && dsc_resource_path.is_some(){
+            let value = dsc_resource_path.unwrap();
+            debug!("Using DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
+            using_custom_path = true;
+            paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+        } else {
+            for p in resource_path_setting.directories {
+                let v = PathBuf::from_str(&p);
+                paths.push(v.unwrap_or_default());
+            }
+
+            if resource_path_setting.append_env_path {
+                debug!("Appending PATH to resourcePath");
+                match env::var_os("PATH") {
+                    Some(value) => {
+                        trace!("Original PATH: {:?}", value.to_string_lossy());
+                        paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+                    },
+                    None => {
+                        return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
+                    }
+                }
+            }
+        }
+
         // remove duplicate entries
-        let mut uniques = HashSet::new();
+        let mut uniques: HashSet<PathBuf> = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
 
         // if exe home is not already in PATH env var then add it to env var and list of searched paths
@@ -75,12 +144,15 @@ impl CommandDiscovery {
                     paths.push(exe_home_pb);
 
                     if let Ok(new_path) = env::join_paths(paths.clone()) {
-                        debug!("Using PATH: {:?}", new_path.to_string_lossy());
-                        env::set_var("PATH", &new_path);
+                        env::set_var("PATH", new_path);
                     }
                 }
             }
         };
+
+        if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
+            debug!("Using Resource Path: {:?}", final_resource_path.to_string_lossy());
+        }
 
         Ok(paths)
     }
@@ -297,7 +369,7 @@ impl ResourceDiscovery for CommandDiscovery {
         } else {
             self.discover_resources("*")?;
             self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
-            
+
             // add/update found adapted resources to the lookup_table
             add_resources_to_lookup_table(&self.adapted_resources);
 
@@ -580,7 +652,7 @@ fn save_adapted_resources_lookup_table(lookup_table: &HashMap<String, String>)
 fn load_adapted_resources_lookup_table() -> HashMap<String, String>
 {
     let file_path = get_lookup_table_file_path();
-    
+
     let lookup_table: HashMap<String, String> = match fs::read(file_path.clone()){
         Ok(data) => { serde_json::from_slice(&data).unwrap_or_default() },
         Err(_) => { HashMap::new() }

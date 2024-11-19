@@ -20,6 +20,7 @@ use self::contraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
+use std::path::PathBuf;
 use std::{collections::HashMap, mem};
 use tracing::{debug, info, trace, warn_span, Span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
@@ -477,6 +478,15 @@ impl Configurator {
         std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
+    }
+
+    /// Set the mounted path for the configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `system_root` - The system root to set.
+    pub fn set_system_root(&mut self, system_root: &str) {
+        self.context.system_root = PathBuf::from(system_root);
     }
 
     /// Set the parameters and variables context for the configuration.

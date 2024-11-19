@@ -4,6 +4,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
+use serde::Deserialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -12,7 +13,7 @@ pub enum OutputFormat {
     Yaml,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Deserialize)]
 pub enum TraceFormat {
     Default,
     Plaintext,
@@ -29,8 +30,8 @@ pub struct Args {
     pub subcommand: SubCommand,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum)]
     pub trace_level: Option<TraceLevel>,
-    #[clap(short = 'f', long, help = "Trace format to use", value_enum, default_value = "default")]
-    pub trace_format: TraceFormat,
+    #[clap(short = 'f', long, help = "Trace format to use", value_enum)]
+    pub trace_format: Option<TraceFormat>,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -48,6 +49,8 @@ pub enum SubCommand {
         parameters: Option<String>,
         #[clap(short = 'f', long, help = "Parameters to pass to the configuration as a JSON or YAML file", conflicts_with = "parameters")]
         parameters_file: Option<String>,
+        #[clap(short = 'r', long, help = "Specify the operating system root path if not targeting the current running OS")]
+        system_root: Option<String>,
         // Used to inform when DSC is used as a group resource to modify it's output
         #[clap(long, hide = true)]
         as_group: bool,
@@ -99,8 +102,12 @@ pub enum ConfigSubCommand {
         path: Option<String>,
         #[clap(short = 'f', long, help = "The output format to use")]
         format: Option<OutputFormat>,
+        // Used by Assertion resource to return `test` result as a `get` result
         #[clap(long, hide = true)]
         as_get: bool,
+        // Used by Assertion resource to return `test` result as a configuration `test` result
+        #[clap(long, hide = true)]
+        as_config: bool,
     },
     #[clap(name = "validate", about = "Validate the current configuration", hide = true)]
     Validate {
