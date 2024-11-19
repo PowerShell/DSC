@@ -65,6 +65,8 @@ pub struct MicrosoftDscMetadata {
 pub struct Metadata {
     #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
     pub microsoft: Option<MicrosoftDscMetadata>,
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    pub resource: Option<Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
