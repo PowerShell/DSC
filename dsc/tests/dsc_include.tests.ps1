@@ -165,7 +165,7 @@ resources:
     configurationFile: $nestedIncludeConfigPath
 "@
 
-        $out = $includeConfig | dsc config get | ConvertFrom-Json
+        $out = $includeConfig | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result[0].result.actualState.output | Should -Be 'one'
         $out.results[1].result[0].name | Should -Be 'nested'
@@ -201,7 +201,7 @@ resources:
     configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
 "@
 
-        $out = dsc config set -d $includeConfig | ConvertFrom-Json
+        $out = dsc config set -i $includeConfig | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.beforeState[0].name | Should -Be 'one'
         $out.results[0].result.beforeState[0].type | Should -Be 'Microsoft.DSC.Debug/Echo'

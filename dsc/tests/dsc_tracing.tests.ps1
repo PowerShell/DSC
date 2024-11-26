@@ -12,14 +12,14 @@ Describe 'tracing tests' {
         param($level)
 
         $logPath = "$TestDrive/dsc_trace.log"
-        $null = '{}' | dsc -l $level resource get -r 'DoesNotExist' 2> $logPath
+        $null = dsc -l $level resource get -r 'DoesNotExist' 2> $logPath
         $log = Get-Content $logPath -Raw
         $log | Should -BeLikeExactly "* $($level.ToUpper()) *"
     }
 
     It 'trace level error does not emit other levels' {
         $logPath = "$TestDrive/dsc_trace.log"
-        $null = '{}' | dsc --trace-level error resource list 'DoesNotExist' 2> $logPath
+        $null = dsc --trace-level error resource list 'DoesNotExist' 2> $logPath
         $log = Get-Content $logPath -Raw
         $log | Should -Not -BeLikeExactly "* WARNING *"
         $log | Should -Not -BeLikeExactly "* INFO *"
@@ -29,14 +29,14 @@ Describe 'tracing tests' {
 
     It 'trace format plaintext does not emit ANSI' {
         $logPath = "$TestDrive/dsc_trace.log"
-        $null = '{}' | dsc --trace-format plaintext resource list 'DoesNotExist' 2> $logPath
+        $null = dsc --trace-format plaintext resource list 'DoesNotExist' 2> $logPath
         $log = Get-Content $logPath -Raw
         $log | Should -Not -BeLikeExactly "*``[0m*"
     }
 
     It 'trace format json emits json' {
         $logPath = "$TestDrive/dsc_trace.log"
-        $null = '{}' | dsc --trace-format json resource list 'DoesNotExist' 2> $logPath
+        $null = dsc --trace-format json resource list 'DoesNotExist' 2> $logPath
         foreach ($line in (Get-Content $logPath)) {
             $trace = $line | ConvertFrom-Json -Depth 10
             $trace.timestamp | Should -Not -BeNullOrEmpty
@@ -55,7 +55,7 @@ Describe 'tracing tests' {
         param($level, $sourceExpected)
 
         $logPath = "$TestDrive/dsc_trace.log"
-        $null = '{}' | dsc -l $level resource list 'DoesNotExist' 2> $logPath
+        $null = dsc -l $level resource list 'DoesNotExist' 2> $logPath
         $log = Get-Content $logPath -Raw
         if ($sourceExpected) {
             $log | Should -BeLike "*dsc_lib*: *"
@@ -82,7 +82,7 @@ Describe 'tracing tests' {
                 level: trace
 "@
 
-        $out = (dsc -l $level config get -d $configYaml 2> $null) | ConvertFrom-Json
+        $out = (dsc -l $level config get -i $configYaml 2> $null) | ConvertFrom-Json
         $out.results[0].result.actualState.level | Should -BeExactly $level
     }
 

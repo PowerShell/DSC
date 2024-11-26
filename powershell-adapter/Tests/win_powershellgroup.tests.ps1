@@ -6,7 +6,7 @@ Describe 'WindowsPowerShell adapter resource tests' {
     BeforeAll {
         if ($isWindows) {
             winrm quickconfig -quiet -force
-        }    
+        }
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
@@ -37,7 +37,7 @@ Describe 'WindowsPowerShell adapter resource tests' {
 
         $testFile = "$testdrive\test.txt"
         'test' | Set-Content -Path $testFile -Force
-        $r = '{"DestinationPath":"' + $testFile.replace('\','\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File'
+        $r = '{"DestinationPath":"' + $testFile.replace('\','\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.DestinationPath | Should -Be "$testFile"
@@ -46,7 +46,7 @@ Describe 'WindowsPowerShell adapter resource tests' {
     It 'Set works on Binary "File" resource' -Skip:(!$IsWindows){
 
         $testFile = "$testdrive\test.txt"
-        $r = '{"DestinationPath":"' + $testFile.replace('\','\\') + '", type: File, contents: HelloWorld, Ensure: present}' | dsc resource set -r 'PSDesiredStateConfiguration/File'
+        $null = '{"DestinationPath":"' + $testFile.replace('\','\\') + '", type: File, contents: HelloWorld, Ensure: present}' | dsc resource set -r 'PSDesiredStateConfiguration/File' -f -
         $LASTEXITCODE | Should -Be 0
         Get-Content -Raw -Path $testFile | Should -Be "HelloWorld"
     }
@@ -55,7 +55,7 @@ Describe 'WindowsPowerShell adapter resource tests' {
 
         $testFile = "$testdrive\test.txt"
         'test' | Set-Content -Path $testFile -Force
-        $r = '{"GetScript": "@{result = $(Get-Content ' + $testFile.replace('\','\\') + ')}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script'
+        $r = '{"GetScript": "@{result = $(Get-Content ' + $testFile.replace('\','\\') + ')}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.result | Should -Be 'test'
@@ -65,7 +65,7 @@ Describe 'WindowsPowerShell adapter resource tests' {
 
       $testFile = "$testdrive\test.txt"
       'test' | Set-Content -Path $testFile -Force
-      $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get
+      $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get -f -
       $LASTEXITCODE | Should -Be 0
       $res = $r | ConvertFrom-Json
       $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"

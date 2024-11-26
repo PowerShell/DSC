@@ -21,7 +21,7 @@ Describe 'dsc config test tests' {
              family: Windows
 '@
 
-        $out = dsc config test -d $configYaml | ConvertFrom-Json
+        $out = dsc config test -i $configYaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
 
         if ($IsWindows) {

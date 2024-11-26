@@ -65,12 +65,12 @@ Describe 'config argument tests' {
 '@ }
     ) {
         param($text)
-        $output = $text | dsc resource get -r Microsoft.DSC.Debug/Echo
+        $output = $text | dsc resource get -r Microsoft.DSC.Debug/Echo -f -
         $output = $output | ConvertFrom-Json
         $output.actualState.output | Should -BeExactly 'Hello There'
     }
 
-    It '--format <format> is used even when redirected' -TestCases @(
+    It '--output-format <format> is used even when redirected' -TestCases @(
         @{ format = 'yaml'; expected = @'
 actualState:
   hello: world
@@ -86,7 +86,7 @@ actualState:
     ) {
         param($format, $expected)
 
-        $out = dsc resource get -r Test/Hello --format $format | Out-String
+        $out = dsc resource get -r Test/Hello --output-format $format | Out-String
         $LASTEXITCODE | Should -Be 0
         $out.Trim() | Should -BeExactly $expected
     }
@@ -102,7 +102,7 @@ actualState:
 
     It 'input can be passed using <parameter>' -TestCases @(
         @{ parameter = '-d' }
-        @{ parameter = '--document' }
+        @{ parameter = '--input' }
     ) {
         param($parameter)
 
@@ -141,32 +141,18 @@ resources:
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
 
-    It '--document and --path cannot be used together' {
-        dsc config get --document 1 --path foo.json 2> $TestDrive/error.txt
+    It '--input and --path cannot be used together' {
+        dsc config get --input 1 --path foo.json 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 2
     }
 
-    It 'stdin and --document cannot be used together' {
-        '{ "foo": true }' | dsc config get --document 1 2> $TestDrive/error.txt
+    It 'stdin and --input cannot be used together' {
+        '{ "foo": true }' | dsc config get -f - --input 1 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 1
-    }
-
-    It 'stdin and --path cannot be used together' {
-        '{ "foo": true }' | dsc config get --path foo.json 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 1
-    }
-
-    It 'stdin, --document and --path cannot be used together' {
-        '{ "foo": true }' | dsc config get --document 1 --path foo.json 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 2
     }
 
     It '--trace-level has effect' {
@@ -183,7 +169,7 @@ resources:
     }
 
     It 'stdin cannot be empty if neither input or path is provided' {
-        '' | dsc resource set -r Microsoft/OSInfo 2> $TestDrive/error.txt
+        '' | dsc resource set -r Microsoft/OSInfo -f - 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
@@ -205,7 +191,7 @@ resources:
     }
 
     It 'document cannot be empty if neither stdin or path is provided' {
-        dsc config set --document " " 2> $TestDrive/error.txt
+        dsc config set --input " " 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
@@ -269,7 +255,7 @@ resources:
 
     It 'passing filepath to document arg should error' {
         $configFile = Resolve-Path $PSScriptRoot/../examples/osinfo.dsc.json
-        $stderr = dsc config get -d $configFile 2>&1
+        $stderr = dsc config get -i $configFile 2>&1
         $stderr | Should -Match '.*?--path.*?'
     }
 
@@ -286,13 +272,13 @@ resources:
     }
 
     It 'Set operation on the adapter itself should fail' {
-        'abc' | dsc resource set -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        'abc' | dsc resource set -r Microsoft.DSC/PowerShell -f - 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
     }
 
     It 'Test operation on the adapter itself should fail' {
-        'abc' | dsc resource test -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        'abc' | dsc resource test -r Microsoft.DSC/PowerShell -f - 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
     }
