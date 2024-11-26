@@ -69,7 +69,7 @@ resources:
 
     It 'Multi-line string literals work' {
       $yamlPath = "$PSScriptRoot/../examples/multiline.dsc.yaml"
-      $out = dsc config get -p $yamlPath | ConvertFrom-Json
+      $out = dsc config get -f $yamlPath | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results[0].result.actualState.output | Should -BeExactly @"
 This is a

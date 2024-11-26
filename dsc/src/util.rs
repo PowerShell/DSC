@@ -382,19 +382,39 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     Ok(())
 }
 
-pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> String {
-    let value = match (input, stdin, path) {
-        (Some(_), Some(_), None) | (None, Some(_), Some(_)) => {
-            error!("Error: Cannot specify both stdin and --document or --path");
-            exit(EXIT_INVALID_ARGS);
-        },
-        (Some(input), None, None) => {
-            debug!("Reading input from command line parameter");
+pub fn get_input(input: &Option<String>, file: &Option<String>) -> String {
+    trace!("Input: {input:?}, File: {file:?}");
+    let value = if let Some(input) = input {
+        debug!("Reading input from command line parameter");
 
-            // see if user accidentally passed in a file path
-            if Path::new(input).exists() {
-                error!("Error: Document provided is a file path, use --path instead");
-                exit(EXIT_INVALID_INPUT);
+        // see if user accidentally passed in a file path
+        if Path::new(input).exists() {
+            error!("Error: Document provided is a file path, use '--file' instead");
+            exit(EXIT_INVALID_INPUT);
+        }
+        input.clone()
+    } else if let Some(path) = file {
+        debug!("Reading input from file {}", path);
+        // check if need to read from STDIN
+        if path == "-" {
+            info!("Reading input from STDIN");
+            let mut stdin = Vec::<u8>::new();
+            match std::io::stdin().read_to_end(&mut stdin) {
+                Ok(_) => {
+                    match String::from_utf8(stdin) {
+                        Ok(input) => {
+                            input
+                        },
+                        Err(err) => {
+                            error!("Error: Invalid utf-8 input: {err}");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                },
+                Err(err) => {
+                    error!("Error: Failed to read input from STDIN: {err}");
+                    exit(EXIT_INVALID_INPUT);
+                }
             }
             input.clone()
         },

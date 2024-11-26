@@ -140,7 +140,7 @@ Describe 'PowerShell adapter resource tests' {
         $config_path = "$TestDrive/test_config.dsc.yaml"
         $yaml | Set-Content -Path $config_path
 
-        $out = dsc config get --path $config_path
+        $out = dsc config get --file $config_path
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
         $res.results.result.actualState.result.properties.Name | Should -Be $TestDrive
