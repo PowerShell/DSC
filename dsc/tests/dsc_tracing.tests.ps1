@@ -88,9 +88,10 @@ Describe 'tracing tests' {
 
     It 'Pass-through tracing should only emit JSON for child processes' {
         $logPath = "$TestDrive/dsc_trace.log"
-        $out = dsc -l info -f pass-through  config get -p ../examples/groups.dsc.yaml 2> $logPath
+        $out = dsc -l info -t pass-through config get -f ../examples/groups.dsc.yaml 2> $logPath
         foreach ($line in (Get-Content $logPath)) {
             $line | Should -Not -BeNullOrEmpty
+            Write-Verbose -Verbose $line
             $json = $line | ConvertFrom-Json
             $json.timestamp | Should -Not -BeNullOrEmpty
             $json.level | Should -BeIn 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'

@@ -454,12 +454,13 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
 }
 
 pub fn get_input(input: &Option<String>, file: &Option<String>) -> String {
+    trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("Reading input from command line parameter");
 
         // see if user accidentally passed in a file path
         if Path::new(input).exists() {
-            error!("Error: Document provided is a file path, use --path instead");
+            error!("Error: Document provided is a file path, use '--file' instead");
             exit(EXIT_INVALID_INPUT);
         }
         input.clone()
@@ -467,6 +468,7 @@ pub fn get_input(input: &Option<String>, file: &Option<String>) -> String {
         debug!("Reading input from file {}", path);
         // check if need to read from STDIN
         if path == "-" {
+            info!("Reading input from STDIN");
             let mut stdin = Vec::<u8>::new();
             match std::io::stdin().read_to_end(&mut stdin) {
                 Ok(_) => {

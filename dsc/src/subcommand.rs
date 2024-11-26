@@ -220,33 +220,45 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
 }
 
 fn initialize_config_root(path: &Option<String>) -> Option<String> {
-    if path.is_some() {
-        let config_path = path.clone().unwrap_or_default();
-        Some(set_dscconfigroot(&config_path))
-    } else if std::env::var(DSC_CONFIG_ROOT).is_ok() {
+    let use_stdin = if let Some(specified_path) = path {
+        if specified_path != "-" {
+            return Some(set_dscconfigroot(specified_path));
+        } else {
+            true
+        }
+    } else {
+        false
+    };
+
+    if std::env::var(DSC_CONFIG_ROOT).is_ok() {
         let config_root = std::env::var(DSC_CONFIG_ROOT).unwrap_or_default();
         debug!("Using {config_root} for {DSC_CONFIG_ROOT}");
-        None
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
         debug!("Using current directory '{current_directory:?}' for {DSC_CONFIG_ROOT}");
         set_dscconfigroot(&current_directory.to_string_lossy());
-        None
     }
+
+    // if the path is "-", we need to return it so later processing can handle it correctly
+    if use_stdin {
+        return Some("-".to_string());
+    }
+
+    None
 }
 
 #[allow(clippy::too_many_lines)]
 pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: &Option<String>, as_group: &bool, as_include: &bool) {
     let (new_parameters, json_string) = match subcommand {
-        ConfigSubCommand::Get { input: document, file: path, .. } |
-        ConfigSubCommand::Set { input: document, file: path, .. } |
-        ConfigSubCommand::Test { input: document, file: path, .. } |
-        ConfigSubCommand::Validate { input: document, file: path, .. } |
-        ConfigSubCommand::Export { input: document, file: path, .. } => {
-            let new_path = initialize_config_root(path);
-            let input = get_input(document, &new_path);
+        ConfigSubCommand::Get { input, file, .. } |
+        ConfigSubCommand::Set { input, file, .. } |
+        ConfigSubCommand::Test { input, file, .. } |
+        ConfigSubCommand::Validate { input, file, .. } |
+        ConfigSubCommand::Export { input, file, .. } => {
+            let new_path = initialize_config_root(file);
+            let document = get_input(input, &new_path);
             if *as_include {
-                let (new_parameters, config_json) = match get_contents(&input) {
+                let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
                     Err(err) => {
                         error!("{err}");
@@ -255,13 +267,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 };
                 (new_parameters, config_json)
             } else {
-                (None, input)
+                (None, document)
             }
         },
-        ConfigSubCommand::Resolve { input: document, file: path, .. } => {
-            let new_path = initialize_config_root(path);
-            let input = get_input(document, &new_path);
-            let (new_parameters, config_json) = match get_contents(&input) {
+        ConfigSubCommand::Resolve { input, file, .. } => {
+            let new_path = initialize_config_root(file);
+            let document = get_input(input, &new_path);
+            let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
                     error!("{err}");
@@ -344,14 +356,14 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         ConfigSubCommand::Test { output_format: format, as_get, as_config, .. } => {
             config_test(&mut configurator, format, as_group, as_get, as_config);
         },
-        ConfigSubCommand::Validate { input: document, file: path, output_format: format} => {
+        ConfigSubCommand::Validate { input, file, output_format: format} => {
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,
             };
             if *as_include {
-                let new_path = initialize_config_root(path);
-                let input = get_input(document, &new_path);
+                let new_path = initialize_config_root(file);
+                let input = get_input(input, &new_path);
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing

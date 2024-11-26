@@ -24,7 +24,7 @@ Describe 'Parameters tests' {
         if ($inputType -eq 'file') {
             $file_path = "$TestDrive/test.parameters.json"
             Set-Content -Path $file_path -Value $params_json
-            $out = dsc config -f $file_path get -f - | ConvertFrom-Json
+            $out = $config_yaml | dsc config -f $file_path get -f - | ConvertFrom-Json
         }
         else {
             $out = $config_yaml | dsc config -p $params_json get -f - | ConvertFrom-Json
@@ -86,7 +86,7 @@ Describe 'Parameters tests' {
         $LASTEXITCODE | Should -Be 4
     }
 
-    It 'Input length is wrong for <type>' -TestCases @(
+    It 'Input length is wrong for <type> with value: <value>' -TestCases @(
         @{ type = 'string'; value = 'hi' }
         @{ type = 'string'; value = 'hello' }
         @{ type = 'array'; value = @('hello', 'there') }
@@ -111,7 +111,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get -f - 2>&1}
         $testError[0] | Should -match 'error'
-        $LASTEXITCODE | Should -Be 2
+        $LASTEXITCODE | Should -Be 4
     }
 
     It 'Input number value is out of range for <min> and <max>' -TestCases @(
@@ -138,7 +138,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get -f - 2>&1}
         $testError[0] | Should -match 'error'
-        $LASTEXITCODE | Should -Be 2
+        $LASTEXITCODE | Should -Be 4
     }
 
     It 'Input is not in the allowed value list for <type>' -TestCases @(
@@ -163,7 +163,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get -f - 2>&1}
         $testError[0] | Should -match 'error'
-        $LASTEXITCODE | Should -Be 2
+        $LASTEXITCODE | Should -Be 4
     }
 
     It 'Length constraint is incorrectly applied to <type> with <constraint>' -TestCases @(
@@ -190,7 +190,7 @@ Describe 'Parameters tests' {
 
         $testError = & {$config_yaml | dsc config -p $params_json get -f - 2>&1}
         $testError[0] | Should -match 'error'
-        $LASTEXITCODE | Should -Be 2
+        $LASTEXITCODE | Should -Be 4
     }
 
     It 'Default value is used when not provided' {
@@ -275,7 +275,7 @@ Describe 'Parameters tests' {
     }
 
     It 'secure types can be passed as objects to resources' {
-      $out = dsc config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml get -p $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
+      $out = dsc config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml get -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results[0].result.actualState.output | Should -BeExactly 'mySecret'
       $out.results[1].result.actualState.output | Should -BeExactly 'mySecretProperty'
@@ -305,7 +305,15 @@ Describe 'Parameters tests' {
 "@
 
       $params_json = @{ parameters = @{ param = $value }} | ConvertTo-Json
-      $null = $config_yaml | dsc config -p $params_json get -f -
+      $output = $config_yaml | dsc config -p $params_json get -f - 2>&1
       $LASTEXITCODE | Should -Be 4
+      if ($type -eq 'secureString') {
+        $type = 'string'
+      }
+      elseif ($type -eq 'secureObject') {
+        $type = 'object'
+      }
+
+      $output | Should -Match "Parameter input failure:.*?$type"
     }
 }

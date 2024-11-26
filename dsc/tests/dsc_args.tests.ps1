@@ -101,7 +101,7 @@ actualState:
     }
 
     It 'input can be passed using <parameter>' -TestCases @(
-        @{ parameter = '-d' }
+        @{ parameter = '-i' }
         @{ parameter = '--input' }
     ) {
         param($parameter)
@@ -121,8 +121,8 @@ resources:
     }
 
     It 'input can be passed using <parameter>' -TestCases @(
-        @{ parameter = '-p' }
-        @{ parameter = '--path' }
+        @{ parameter = '-f' }
+        @{ parameter = '--file' }
     ) {
         param($parameter)
 
@@ -141,18 +141,11 @@ resources:
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
 
-    It '--input and --path cannot be used together' {
-        dsc config get --input 1 --path foo.json 2> $TestDrive/error.txt
+    It '--input and --file cannot be used together' {
+        dsc config get --input 1 --file foo.json 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 2
-    }
-
-    It 'stdin and --input cannot be used together' {
-        '{ "foo": true }' | dsc config get -f - --input 1 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 1
     }
 
     It '--trace-level has effect' {
@@ -184,7 +177,7 @@ resources:
 
     It 'path contents cannot be empty if neither stdin or input is provided' {
         Set-Content -Path $TestDrive/empty.yaml -Value " "
-        dsc resource set -r Microsoft/OSInfo --path $TestDrive/empty.yaml 2> $TestDrive/error.txt
+        dsc resource set -r Microsoft/OSInfo --file $TestDrive/empty.yaml 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
@@ -200,8 +193,8 @@ resources:
     It 'verify `dsc resource list` and `dsc resource list *`' {
         # return all native resources, providers, but not adapter-based resources;
         # results for `dsc resource list` and `dsc resource list *` should be the same
-        $a = dsc resource list -f json
-        $b = dsc resource list '*' -f json
+        $a = dsc resource list -o json
+        $b = dsc resource list '*' -o json
         $a.Count | Should -Be $b.Count
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
@@ -215,7 +208,7 @@ resources:
 
     It 'verify `dsc resource list resource_filter`' {
         # same as previous but also apply resource_filter filter
-        $a = dsc resource list 'Test*' -f json
+        $a = dsc resource list 'Test*' -o json
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
             $a_obj.type.StartsWith("Test") | Should -Be $true
@@ -226,7 +219,7 @@ resources:
 
     It 'verify `dsc resource list * -a *`' {
         # return all adapter-based resources
-        $a = dsc resource list '*' -a '*' -f json
+        $a = dsc resource list '*' -a '*' -o json
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
             $a_obj.requireAdapter | Should -Not -BeNullOrEmpty
@@ -236,7 +229,7 @@ resources:
 
     It 'verify `dsc resource list * adapter_filter`' {
         # return all resources of adapters that match adapter_filter filter
-        $a = dsc resource list '*' -a Test* -f json | ConvertFrom-Json
+        $a = dsc resource list '*' -a Test* -o json | ConvertFrom-Json
         foreach ($r in $a) {
             $r.requireAdapter.StartsWith("Test") | Should -Be $true
             $r.kind | Should -Be "Resource"
@@ -245,7 +238,7 @@ resources:
 
     It 'verify `dsc resource list resource_filter adapter_filter`' {
         # same as previous but also apply resource_filter filter to resource types
-        $a = dsc resource list *TestResource2 -a *TestGroup -f json | ConvertFrom-Json
+        $a = dsc resource list *TestResource2 -a *TestGroup -o json | ConvertFrom-Json
         $a.Count | Should -Be 1
         $r = $a[0]
         $r.requireAdapter | Should -Not -BeNullOrEmpty
@@ -256,7 +249,7 @@ resources:
     It 'passing filepath to document arg should error' {
         $configFile = Resolve-Path $PSScriptRoot/../examples/osinfo.dsc.json
         $stderr = dsc config get -i $configFile 2>&1
-        $stderr | Should -Match '.*?--path.*?'
+        $stderr | Should -Match '.*?--file.*?'
     }
 
     It 'Get operation on the adapter itself should fail' {
@@ -296,7 +289,7 @@ resources:
     }
 
     It 'Invalid --system-root' {
-        dsc config --system-root /invalid/path get -p "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
+        dsc config --system-root /invalid/path get -f "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 1
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path '/invalid/path' does not exist"
     }

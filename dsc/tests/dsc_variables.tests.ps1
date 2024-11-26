@@ -4,7 +4,7 @@
 Describe 'Configruation variables tests' {
     It 'Variables example config works' {
         $configFile = "$PSSCriptRoot/../examples/variables.dsc.yaml"
-        $out = dsc config get -p $configFile | ConvertFrom-Json
+        $out = dsc config get -f $configFile | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.actualState.output | Should -BeExactly 'myOutput is: Hello world!, myObject is: baz'
     }

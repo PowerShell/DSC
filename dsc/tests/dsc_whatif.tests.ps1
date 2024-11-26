@@ -65,7 +65,7 @@ Describe 'whatif tests' {
     }
 
     It 'config set whatif for group resource' {
-        $result = dsc config set -p $PSScriptRoot/../examples/groups.dsc.yaml -w 2>&1
+        $result = dsc config set -f $PSScriptRoot/../examples/groups.dsc.yaml -w 2>&1
         $result | Should -Match 'ERROR.*?Not implemented.*?what-if'
         $LASTEXITCODE | Should -Be 2
     }

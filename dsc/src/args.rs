@@ -30,7 +30,7 @@ pub struct Args {
     pub subcommand: SubCommand,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum)]
     pub trace_level: Option<TraceLevel>,
-    #[clap(short = 'f', long, help = "Trace format to use", value_enum)]
+    #[clap(short = 't', long, help = "Trace format to use", value_enum)]
     pub trace_format: Option<TraceFormat>,
 }
 
@@ -67,7 +67,7 @@ pub enum SubCommand {
     Schema {
         #[clap(name = "type", short, long, help = "The type of DSC schema to get")]
         dsc_type: DscType,
-        #[clap(short = 'f', long, help = "The output format to use")]
+        #[clap(short = 'o', long, help = "The output format to use")]
         format: Option<OutputFormat>,
     },
 }
@@ -184,9 +184,9 @@ pub enum ResourceSubCommand {
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON or YAML", conflicts_with = "file")]
         input: Option<String>,
-        #[clap(short = 'p', long, help = "The path to a JSON or YAML file used as input to the configuration or resource. Use '-' for the file to read from STDIN.", conflicts_with = "input")]
+        #[clap(short = 'f', long, help = "The path to a JSON or YAML file used as input to the configuration or resource. Use '-' for the file to read from STDIN.", conflicts_with = "input")]
         file: Option<String>,
-        #[clap(short = 'f', long, help = "The output format to use")]
+        #[clap(short = 'o', long, help = "The output format to use")]
         output_format: Option<OutputFormat>,
     },
     #[clap(name = "delete", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
@@ -195,7 +195,7 @@ pub enum ResourceSubCommand {
         resource: String,
         #[clap(short, long, help = "The input to pass to the resource as JSON or YAML", conflicts_with = "file")]
         input: Option<String>,
-        #[clap(short = 'p', long, help = "The path to a JSON or YAML file used as input to the configuration or resource. Use '-' for the file to read from STDIN.", conflicts_with = "input")]
+        #[clap(short = 'f', long, help = "The path to a JSON or YAML file used as input to the configuration or resource. Use '-' for the file to read from STDIN.", conflicts_with = "input")]
         file: Option<String>,
     },
     #[clap(name = "schema", about = "Get the JSON schema for a resource", arg_required_else_help = true)]

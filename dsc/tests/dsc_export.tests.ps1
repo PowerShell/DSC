@@ -77,7 +77,7 @@ Describe 'resource export tests' {
 
     It 'Export can be called on individual resource with the use of --output-format as a subcommand' {
 
-      $out = dsc resource export -r Microsoft/Process -f pretty-json
+      $out = dsc resource export -r Microsoft/Process -o pretty-json
       $LASTEXITCODE | Should -Be 0
       $config_with_process_list = $out | ConvertFrom-Json
       $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
