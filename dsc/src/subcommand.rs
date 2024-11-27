@@ -223,9 +223,9 @@ fn initialize_config_root(path: &Option<String>) -> Option<String> {
     let use_stdin = if let Some(specified_path) = path {
         if specified_path != "-" {
             return Some(set_dscconfigroot(specified_path));
-        } else {
-            true
         }
+
+        true
     } else {
         false
     };
