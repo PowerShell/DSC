@@ -1,12 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'WindowsPowerShell adapter resource tests' {
+Describe 'WindowsPowerShell adapter resource tests - requires elevated permissions' {
 
     BeforeAll {
         if ($isWindows) {
             winrm quickconfig -quiet -force
-        }    
+        }
         $OldPSModulePath  = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
@@ -63,12 +63,12 @@ Describe 'WindowsPowerShell adapter resource tests' {
 
     It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){
 
-      $testFile = "$testdrive\test.txt"
-      'test' | Set-Content -Path $testFile -Force
-      $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get
-      $LASTEXITCODE | Should -Be 0
-      $res = $r | ConvertFrom-Json
-      $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
+        $testFile = "$testdrive\test.txt"
+        'test' | Set-Content -Path $testFile -Force
+        $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt',"$testFile") | dsc config get -f -
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
     }
 
     It 'Verify that there are no cache rebuilds for several sequential executions' -Skip:(!$IsWindows) {
