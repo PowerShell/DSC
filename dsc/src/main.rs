@@ -137,6 +137,8 @@ fn check_debug() {
 // Check if the dsc binary parent process is WinStore.App or Exploerer.exe
 #[cfg(windows)]
 fn check_store() {
+    use std::io::Read;
+
     let message = r"
 DSC.exe is a command-line tool and cannot be run directly from the Windows Store or Explorer.
 Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
