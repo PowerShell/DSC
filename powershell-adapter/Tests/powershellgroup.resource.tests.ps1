@@ -28,7 +28,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        ($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource' -and $_.Type -eq 'TestClassNoVersion/TestClassNoVersion'}).Count | Should -Be 2
+        ($resources | ? {$_.Type -in @('TestClassResource/TestClassResource', 'TestClassNoVersion/TestClassNoVersion')}).Count | Should -Be 2
     }
 
     It 'Get works on class-based resource' {
