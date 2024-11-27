@@ -26,9 +26,8 @@ Describe 'dsc config get tests' {
 
     It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {
         $jsonPath = Join-Path $PSScriptRoot '../examples/invalid_schema.dsc.yaml'
-        $config = Get-Content $jsonPath -Raw
-        $testError = & {$config | dsc config get -f - 2>&1}
-        $testError[0] | Should -match 'error:'
+        $testError = & {dsc config get -f $jsonPath 2>&1}
+        $testError[0] | Should -match 'Schema:'
         $LASTEXITCODE | Should -Be 2
     }
 

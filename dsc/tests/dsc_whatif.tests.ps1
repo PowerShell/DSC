@@ -35,8 +35,8 @@ Describe 'whatif tests' {
               properties:
                 keyPath: 'HKCU\1\2'
 "@
-        $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
-        $set_result = $config_yaml | dsc config set | ConvertFrom-Json
+        $what_if_result = dsc config set -w -i $config_yaml | ConvertFrom-Json
+        $set_result = dsc config set -i $config_yaml | ConvertFrom-Json
         $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
         $what_if_result.results.result.beforeState._exist | Should -Be $set_result.results.result.beforeState._exist
         $what_if_result.results.result.beforeState.keyPath | Should -Be $set_result.results.result.beforeState.keyPath
