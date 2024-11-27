@@ -28,7 +28,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        ($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}).Count | Should -Be 1
+        ($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource' -and $_.Type -eq 'TestClassNoVersion/TestClassNoVersion'}).Count | Should -Be 2
     }
 
     It 'Get works on class-based resource' {
@@ -42,6 +42,14 @@ Describe 'PowerShell adapter resource tests' {
         $propertiesNames = $res.actualState.result.properties | Get-Member -MemberType NoteProperty | % Name
         $propertiesNames | Should -Not -Contain 'NonDscProperty'
         $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
+    }
+
+    It 'Get works on class-based resource without sub-directory version' {
+
+        $r = "{'Name':'TestClassNoVersion'}" | dsc resource get -r 'TestClassNoVersion/TestClassNoVersion'
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.result.properties.Name | Should -BeExactly 'TestClassNoVersion'
     }
 
     It 'Get uses enum names on class-based resource' {
@@ -66,9 +74,26 @@ Describe 'PowerShell adapter resource tests' {
         $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
 
+    It 'Test works on class-based resource without sub-directory version' {
+
+        $r = "{'Name':'TestClassNoVersion'}" | dsc resource test -r 'TestClassNoVersion/TestClassNoVersion'
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.result.properties.InDesiredState | Should -Be $True
+        $res.actualState.result.properties.InDesiredState.GetType().Name | Should -Be "Boolean"
+    }
+
     It 'Set works on class-based resource' {
 
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource' -f -
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.afterState.result | Should -Not -BeNull
+    }
+
+    It 'Set works on class-based resource without sub-directory version' {
+
+        $r = "{'Name':'TestClassNoVersion'}" | dsc resource set -r 'TestClassNoVersion/TestClassNoVersion'
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.afterState.result | Should -Not -BeNull
