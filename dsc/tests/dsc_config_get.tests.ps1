@@ -9,7 +9,7 @@ Describe 'dsc config get tests' {
         param($config)
         $jsonPath = Join-Path $PSScriptRoot '../examples' $config
         $config = Get-Content $jsonPath -Raw
-        $out = $config | dsc config get | ConvertFrom-Json
+        $out = dsc config get -i $config | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 3
@@ -32,7 +32,7 @@ Describe 'dsc config get tests' {
         $LASTEXITCODE | Should -Be 2
     }
 
-    It 'can accept the use of --format as a subcommand' {
+    It 'can accept the use of --output-format as a subcommand' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:

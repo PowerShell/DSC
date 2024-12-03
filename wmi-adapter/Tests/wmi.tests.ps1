@@ -37,7 +37,7 @@ Describe 'WMI adapter resource tests' {
 
     It 'Get works on a config with WMI resources' -Skip:(!$IsWindows){
 
-        $r = Get-Content -Raw $configPath | dsc config get
+        $r = Get-Content -Raw $configPath | dsc config get -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState[0].LastBootUpTime | Should -BeNullOrEmpty

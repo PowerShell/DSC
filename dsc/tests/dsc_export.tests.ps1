@@ -51,7 +51,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $yaml | dsc config export | dsc config set
+        $out = dsc config export -i $yaml | dsc config set
         $LASTEXITCODE | Should -Be 0
         $set_results = $out | ConvertFrom-Json
         $set_results.results.count | Should -BeGreaterThan 1
@@ -75,7 +75,7 @@ Describe 'resource export tests' {
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'Export can be called on individual resource with the use of --format as a subcommand' {
+    It 'Export can be called on individual resource with the use of --output-format as a subcommand' {
 
       $out = dsc resource export -r Microsoft/Process -o pretty-json
       $LASTEXITCODE | Should -Be 0
@@ -85,7 +85,7 @@ Describe 'resource export tests' {
       $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
 
-    It 'Export can be called on a configuration with the use of --format as a subcommand' {
+    It 'Export can be called on a configuration with the use of --output-format as a subcommand' {
 
       $yaml = @'
           $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json

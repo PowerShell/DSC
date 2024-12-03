@@ -119,7 +119,7 @@ Describe 'resource set tests' {
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
     }
 
-    It 'can accept the use of --format <format> as a subcommand' -Skip:(!$IsWindows) -TestCases @(
+    It 'can accept the use of --output-format <format> as a subcommand' -Skip:(!$IsWindows) -TestCases @(
         @{ format = 'yaml'; expected = @'
 beforeState:
   test: true
@@ -148,7 +148,7 @@ changedProperties:
         $oldPath = $env:DSC_RESOURCE_PATH
         try {
             $env:DSC_RESOURCE_PATH = $TestDrive
-            $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest --format $format | Out-String
+            $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest --output-format $format -f - | Out-String
             $LASTEXITCODE | Should -Be 0
             $out.Trim() | Should -BeExactly $expected
         }

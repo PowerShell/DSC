@@ -55,18 +55,18 @@ Describe 'registry config set tests' {
             )
         }
 
-        $out = dsc config set -d ($config | ConvertTo-Json -Depth 10)
+        $out = dsc config set -i ($config | ConvertTo-Json -Depth 10)
         $LASTEXITCODE | Should -Be 0
 
         $config.resources[0].properties._exist = $false
-        $out = dsc config set -d ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
+        $out = dsc config set -i ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.afterState._exist | Should -Be $false
 
         Get-ItemProperty -Path 'HKCU:\1\2' -Name 'Test' -ErrorAction Ignore | Should -BeNullOrEmpty
 
         $config.resources[0].properties.valueName = $null
-        $out = dsc config set -d ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
+        $out = dsc config set -i ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.afterState._exist | Should -Be $false
 
