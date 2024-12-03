@@ -51,7 +51,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = dsc config export -i $yaml | dsc config set
+        $out = dsc config export -i $yaml | dsc config set -f -
         $LASTEXITCODE | Should -Be 0
         $set_results = $out | ConvertFrom-Json
         $set_results.results.count | Should -BeGreaterThan 1
