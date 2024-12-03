@@ -190,18 +190,18 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
 ///
 /// * `json` - The JSON to write
 /// * `format` - The format to use
-pub fn write_output(json: &str, format: &Option<OutputFormat>) {
+pub fn write_output(json: &str, format: Option<&OutputFormat>) {
     let mut is_json = true;
-    let mut output_format = format.clone();
+    let mut output_format = format;
     let mut syntax_color = false;
     if std::io::stdout().is_terminal() {
         syntax_color = true;
         if output_format.is_none() {
-            output_format = Some(OutputFormat::Yaml);
+            output_format = Some(&OutputFormat::Yaml);
         }
     }
     else if output_format.is_none() {
-        output_format = Some(OutputFormat::Json);
+        output_format = Some(&OutputFormat::Json);
     }
 
     let output = match output_format {

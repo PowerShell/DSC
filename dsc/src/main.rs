@@ -71,7 +71,7 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, &format);
+            util::write_output(&json, format.as_ref());
         },
     }
 

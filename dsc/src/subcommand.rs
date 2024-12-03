@@ -43,7 +43,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -53,7 +53,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -78,7 +78,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -88,7 +88,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -164,7 +164,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                         }
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -174,7 +174,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -198,7 +198,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
             if result.had_errors {
 
                 for msg in result.messages
@@ -216,7 +216,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-fn initialize_config_root(path: &Option<String>) -> Option<String> {
+fn initialize_config_root(path: Option<&String>) -> Option<String> {
     // code that calls this pass in either None, Some("-"), or Some(path)
     // in the case of `-` we treat it as None, but need to pass it back as subsequent processing needs to handle it
     let use_stdin = if let Some(specified_path) = path {
@@ -254,7 +254,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_gro
         ConfigSubCommand::Test { input, file, .. } |
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
-            let new_path = initialize_config_root(file);
+            let new_path = initialize_config_root(file.as_ref());
             let document = get_input(input, &new_path);
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
@@ -270,7 +270,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_gro
             }
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
-            let new_path = initialize_config_root(file);
+            let new_path = initialize_config_root(file.as_ref());
             let document = get_input(input, &new_path);
             let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
@@ -331,7 +331,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_gro
         }
     };
 
-    if let Err(err) = configurator.set_context(&parameters) {
+    if let Err(err) = configurator.set_context(parameters.as_ref()) {
         error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
@@ -352,7 +352,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_gro
                 reason: None,
             };
             if *as_include {
-                let new_path = initialize_config_root(file);
+                let new_path = initialize_config_root(file.as_ref());
                 let input = get_input(input, &new_path);
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
@@ -380,7 +380,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_gro
                 exit(EXIT_JSON_ERROR);
             };
 
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
         },
         ConfigSubCommand::Export { output_format, .. } => {
             config_export(&mut configurator, output_format);
@@ -414,7 +414,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_gro
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, output_format);
+            write_output(&json_string, output_format.as_ref());
         },
     }
 }
@@ -520,7 +520,7 @@ pub fn resource(subcommand: &ResourceSubCommand) {
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name, adapter_name, description, tags, output_format);
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
         },
         ResourceSubCommand::Schema { resource , output_format } => {
             dsc.find_resources(&[resource.to_string()]);
@@ -556,14 +556,14 @@ pub fn resource(subcommand: &ResourceSubCommand) {
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>) {
     let mut write_table = false;
     let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
     if format.is_none() && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
+    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::from("*"))) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
@@ -594,7 +594,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
 
             // if description is specified, skip if resource description does not contain it
             if description.is_some() &&
-                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
+                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&&String::new()).to_lowercase())) {
                 continue;
             }
 
