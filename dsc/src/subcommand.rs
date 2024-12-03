@@ -220,6 +220,8 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
 }
 
 fn initialize_config_root(path: &Option<String>) -> Option<String> {
+    // code that calls this pass in either None, Some("-"), or Some(path)
+    // in the case of `-` we treat it as None, but need to pass it back as subsequent processing needs to handle it
     let use_stdin = if let Some(specified_path) = path {
         if specified_path != "-" {
             return Some(set_dscconfigroot(specified_path));
