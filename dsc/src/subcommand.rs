@@ -563,7 +563,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::from(""))) {
+    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new())) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
