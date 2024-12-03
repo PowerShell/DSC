@@ -172,11 +172,11 @@ Describe 'tests for resource discovery' {
         $LASTEXITCODE | Should -Be 7
         $out = dsc resource get --all -r abc/def
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource set -r abc/def
+        $out = 'abc' | dsc resource set -r abc/def -f -
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource test -r abc/def
+        $out = 'abc' | dsc resource test -r abc/def -f -
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource delete -r abc/def
+        $out = 'abc' | dsc resource delete -r abc/def -f -
         $LASTEXITCODE | Should -Be 7
         $out = dsc resource export -r abc/def
         $LASTEXITCODE | Should -Be 7

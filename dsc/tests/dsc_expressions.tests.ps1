@@ -42,7 +42,7 @@ resources:
     output: "$text"
 "@
         $debug = $yaml | dsc -l trace config get -f yaml 2>&1 | Out-String
-        $out = $yaml | dsc config get | ConvertFrom-Json
+        $out = $yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because $debug
         $out.results[0].result.actualState.output | Should -Be $expected -Because $debug
     }
@@ -62,7 +62,7 @@ resources:
   properties:
     output: "$expression"
 "@
-        $out = dsc config get -d $yaml 2>&1
+        $out = dsc config get -i $yaml 2>&1
         $LASTEXITCODE | Should -Be 2
         $out | Should -BeLike "*ERROR*"
     }

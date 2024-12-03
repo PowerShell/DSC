@@ -14,8 +14,8 @@ Describe 'whatif tests' {
               properties:
                 output: hello
 "@
-        $what_if_result = $config_yaml | dsc config set -w | ConvertFrom-Json
-        $set_result = $config_yaml | dsc config set | ConvertFrom-Json
+        $what_if_result = dsc config set -w -i $config_yaml | ConvertFrom-Json
+        $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
         $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
         $what_if_result.results.result.beforeState.output | Should -Be $set_result.results.result.beforeState.output
         $what_if_result.results.result.afterState.output | Should -Be $set_result.results.result.afterState.output
@@ -35,16 +35,8 @@ Describe 'whatif tests' {
               properties:
                 keyPath: 'HKCU\1\2'
 "@
-<<<<<<< HEAD
-        $what_if_result = $config_yaml | dsc config set -w | ConvertFrom-Json
-        $set_result = $config_yaml | dsc config set | ConvertFrom-Json
-||||||| parent of da9d8a2 (fix windows tests)
-        $what_if_result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
-        $set_result = $config_yaml | dsc config set | ConvertFrom-Json
-=======
         $what_if_result = dsc config set -w -i $config_yaml | ConvertFrom-Json
-        $set_result = dsc config set -i $config_yaml | ConvertFrom-Json
->>>>>>> da9d8a2 (fix windows tests)
+        $set_result = $config_yaml | dsc config set -f - | ConvertFrom-Json
         $what_if_result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
         $what_if_result.results.result.beforeState._exist | Should -Be $set_result.results.result.beforeState._exist
         $what_if_result.results.result.beforeState.keyPath | Should -Be $set_result.results.result.beforeState.keyPath
@@ -67,7 +59,7 @@ Describe 'whatif tests' {
               properties:
                 _exist: false
 "@
-        $result = $config_yaml | dsc config set -w 2>&1
+        $result = dsc config set -w -i $config_yaml 2>&1
         $result | Should -Match 'ERROR.*?Not supported.*?what-if'
         $LASTEXITCODE | Should -Be 2
     }
@@ -87,7 +79,7 @@ Describe 'whatif tests' {
           properties:
             executionType: Actual
 "@
-        $result = $config_yaml | dsc config set | ConvertFrom-Json
+        $result = dsc config set -i $config_yaml | ConvertFrom-Json
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
         $result.results.result.afterState.executionType | Should -BeExactly 'Actual'
         $result.results.result.changedProperties | Should -Be $null
@@ -105,7 +97,7 @@ Describe 'whatif tests' {
           properties:
             executionType: Actual
 "@
-        $result = $config_yaml | dsc config set -w | ConvertFrom-Json
+        $result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'WhatIf'
         $result.results.result.afterState.executionType | Should -BeExactly 'WhatIf'
         $result.results.result.changedProperties | Should -BeExactly 'executionType'

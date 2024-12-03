@@ -55,7 +55,7 @@ Describe 'resource test tests' {
     }
 
     It 'can accept the use of --format as a subcommand' {
-        $null = "output: hello" | dsc resource test -r Microsoft.DSC.Debug/Echo --format pretty-json
+        $null = "output: hello" | dsc resource test -r Microsoft.DSC.Debug/Echo --output-format pretty-json -f -
         $LASTEXITCODE | Should -Be 0
     }
 }

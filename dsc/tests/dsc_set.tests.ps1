@@ -161,7 +161,7 @@ changedProperties:
         $oldPath = $env:DSC_RESOURCE_PATH
         try {
             $env:DSC_RESOURCE_PATH = $TestDrive
-            $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest | ConvertFrom-Json
+            $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest -f - | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $out.BeforeState.test | Should -Be $true
             $out.AfterState.test | Should -Be $false

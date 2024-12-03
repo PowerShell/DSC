@@ -31,7 +31,7 @@ Describe 'osinfo resource tests' {
         else {
             $invalid = 'Windows'
         }
-        $out = "{`"family`": `"$invalid`"}" | dsc resource test -r 'Microsoft/OSInfo' | ConvertFrom-Json
+        $out = "{`"family`": `"$invalid`"}" | dsc resource test -r 'Microsoft/OSInfo' -f - | ConvertFrom-Json
         $actual = dsc resource get -r Microsoft/OSInfo | ConvertFrom-Json
         $out.actualState.family | Should -BeExactly $actual.actualState.family
         $out.actualState.version | Should -BeExactly $actual.actualState.version

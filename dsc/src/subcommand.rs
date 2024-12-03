@@ -247,7 +247,7 @@ fn initialize_config_root(path: &Option<String>) -> Option<String> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool, as_include: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_group: &bool, as_include: &bool) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
@@ -337,14 +337,14 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
     }
 
     match subcommand {
-        ConfigSubCommand::Get { format, .. } => {
-            config_get(&mut configurator, format, as_group);
+        ConfigSubCommand::Get { output_format, .. } => {
+            config_get(&mut configurator, output_format, as_group);
         },
-        ConfigSubCommand::Set { format, .. } => {
-            config_set(&mut configurator, format, as_group);
+        ConfigSubCommand::Set { output_format, .. } => {
+            config_set(&mut configurator, output_format, as_group);
         },
-        ConfigSubCommand::Test { format, as_get, as_config, .. } => {
-            config_test(&mut configurator, format, as_group, as_get, as_config);
+        ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
+            config_test(&mut configurator, output_format, as_group, as_get, as_config);
         },
         ConfigSubCommand::Validate { input, file, output_format: format} => {
             let mut result = ValidateResult {
@@ -382,10 +382,10 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
 
             write_output(&json, format);
         },
-        ConfigSubCommand::Export { format, .. } => {
-            config_export(&mut configurator, format);
+        ConfigSubCommand::Export { output_format, .. } => {
+            config_export(&mut configurator, output_format);
         },
-        ConfigSubCommand::Resolve { format, .. } => {
+        ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
                 Err(err) => {
@@ -414,7 +414,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, format);
+            write_output(&json_string, output_format);
         },
     }
 }
@@ -509,7 +509,7 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
+pub fn resource(subcommand: &ResourceSubCommand) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
@@ -519,38 +519,38 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, adapter_name, description, tags, format } => {
-            list_resources(&mut dsc, resource_name, adapter_name, description, tags, format);
+        ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
+            list_resources(&mut dsc, resource_name, adapter_name, description, tags, output_format);
         },
-        ResourceSubCommand::Schema { resource , format } => {
+        ResourceSubCommand::Schema { resource , output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::schema(&dsc, resource, format);
+            resource_command::schema(&dsc, resource, output_format);
         },
-        ResourceSubCommand::Export { resource, format } => {
+        ResourceSubCommand::Export { resource, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::export(&mut dsc, resource, format);
+            resource_command::export(&mut dsc, resource, output_format);
         },
-        ResourceSubCommand::Get { resource, input, path, all, format } => {
+        ResourceSubCommand::Get { resource, input, file, all, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            if *all { resource_command::get_all(&dsc, resource, format); }
+            if *all { resource_command::get_all(&dsc, resource, output_format); }
             else {
-                let parsed_input = get_input(input, stdin, path);
-                resource_command::get(&dsc, resource, parsed_input, format);
+                let parsed_input = get_input(input, file);
+                resource_command::get(&dsc, resource, parsed_input, output_format);
             }
         },
-        ResourceSubCommand::Set { resource, input, path, format } => {
+        ResourceSubCommand::Set { resource, input, file, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
-            resource_command::set(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input, file);
+            resource_command::set(&dsc, resource, parsed_input, output_format);
         },
-        ResourceSubCommand::Test { resource, input, path, format } => {
+        ResourceSubCommand::Test { resource, input, file, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
-            resource_command::test(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input, file);
+            resource_command::test(&dsc, resource, parsed_input, output_format);
         },
-        ResourceSubCommand::Delete { resource, input, path } => {
+        ResourceSubCommand::Delete { resource, input, file } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
+            let parsed_input = get_input(input, file);
             resource_command::delete(&dsc, resource, parsed_input);
         },
     }

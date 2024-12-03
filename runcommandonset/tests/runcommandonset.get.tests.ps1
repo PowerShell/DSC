@@ -20,7 +20,7 @@ Describe 'tests for runcommandonset get' {
         }
 "@
 
-        $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
+        $result = dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -i $json | ConvertFrom-Json
         $result.actualState.arguments | Should -BeExactly @('bar', 'baz')
         $result.actualState.executable | Should -BeExactly 'foo'
         $result.actualState.exitCode | Should -BeExactly 5

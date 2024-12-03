@@ -82,7 +82,7 @@ Describe 'tracing tests' {
                 level: trace
 "@
 
-        $out = (dsc -l $level config get -d $configYaml 2> $null) | ConvertFrom-Json
+        $out = (dsc -l $level config get -i $configYaml 2> $null) | ConvertFrom-Json
         $out.results[0].result.actualState.level | Should -BeExactly $level
     }
 
