@@ -20,7 +20,7 @@ Describe 'tests for runcommandonset get' {
         }
 "@
 
-        $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet | ConvertFrom-Json
+        $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f - | ConvertFrom-Json
         $result.actualState.arguments | Should -BeExactly @('bar', 'baz')
         $result.actualState.executable | Should -BeExactly 'foo'
         $result.actualState.exitCode | Should -BeExactly 5
@@ -32,7 +32,7 @@ Describe 'tests for runcommandonset get' {
     }
 
     It 'Executable is a required input via STDIN' {
-        '{ "arguments": "foo" }' | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet
+        '{ "arguments": "foo" }' | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f -
         $LASTEXITCODE | Should -Be 2
     }
 }

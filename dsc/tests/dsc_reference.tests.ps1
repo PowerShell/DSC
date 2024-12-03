@@ -3,7 +3,7 @@
 
 Describe 'Tests for config using reference function' {
     It 'Reference works' {
-        $out = dsc config get -p $PSScriptRoot/../examples/reference.dsc.yaml | ConvertFrom-Json
+        $out = dsc config get -f $PSScriptRoot/../examples/reference.dsc.yaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $os = if ($IsWindows) {
             'Windows'

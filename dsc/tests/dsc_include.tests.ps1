@@ -23,7 +23,7 @@ Describe 'Include tests' {
 "@
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $config | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath | ConvertFrom-Json
+        $out = dsc config get -f $configPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $expectedOS = 'Windows'
@@ -47,7 +47,7 @@ Describe 'Include tests' {
 "@
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $config | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath | ConvertFrom-Json
+        $out = dsc config get -f $configPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $expectedOS = 'Windows'
@@ -79,7 +79,7 @@ Describe 'Include tests' {
 
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $configYaml | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath 2> $logPath
+        $out = dsc config get -f $configPath 2> $logPath
         $LASTEXITCODE | Should -Be 2
         $log = Get-Content -Path $logPath -Raw
         $log | Should -BeLike "*ERROR*"
@@ -111,7 +111,7 @@ Describe 'Include tests' {
 
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $configYaml | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath | ConvertFrom-Json
+        $out = dsc config get -f $configPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $expectedOS = 'Windows'
@@ -165,7 +165,7 @@ resources:
     configurationFile: $nestedIncludeConfigPath
 "@
 
-        $out = $includeConfig | dsc config get | ConvertFrom-Json
+        $out = $includeConfig | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result[0].result.actualState.output | Should -Be 'one'
         $out.results[1].result[0].name | Should -Be 'nested'
@@ -201,7 +201,7 @@ resources:
     configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
 "@
 
-        $out = dsc config set -d $includeConfig | ConvertFrom-Json
+        $out = dsc config set -i $includeConfig | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.beforeState[0].name | Should -Be 'one'
         $out.results[0].result.beforeState[0].type | Should -Be 'Microsoft.DSC.Debug/Echo'
@@ -211,7 +211,7 @@ resources:
 
     It 'Test with include works' {
         $includeYaml = Join-Path $PSScriptRoot ../../dsc/examples/include.dsc.yaml
-        $out = dsc config test -p $includeYaml | ConvertFrom-Json
+        $out = dsc config test -f $includeYaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft.DSC/Include'
         $out.results[0].result[0].name | Should -BeExactly 'os'

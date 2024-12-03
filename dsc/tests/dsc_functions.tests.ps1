@@ -21,7 +21,7 @@ Describe 'tests for function expressions' {
               properties:
                 output: '$escapedText'
 "@
-        $out = $config_yaml | dsc config get | ConvertFrom-Json
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
         $out.results[0].result.actualState.output | Should -Be $expected
     }
 
@@ -39,7 +39,7 @@ Describe 'tests for function expressions' {
               properties:
                 output: "[path($path)]"
 "@
-        $out = $config_yaml | dsc config --system-root $PSHOME get | ConvertFrom-Json
+        $out = $config_yaml | dsc config --system-root $PSHOME get -f - | ConvertFrom-Json
         $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
 
@@ -58,7 +58,7 @@ Describe 'tests for function expressions' {
         } else {
             '/'
         }
-        $out = $config_yaml | dsc config get | ConvertFrom-Json
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
