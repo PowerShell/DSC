@@ -62,7 +62,7 @@ fn main() {
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand);
         },
-        SubCommand::Schema { dsc_type , format } => {
+        SubCommand::Schema { dsc_type , output_format } => {
             let schema = util::get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -71,7 +71,7 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, format.as_ref());
+            util::write_output(&json, output_format.as_ref());
         },
     }
 
