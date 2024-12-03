@@ -47,7 +47,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
         }
         Err(err) => {
             error!("Error: {err}");
@@ -100,7 +100,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
                 exit(EXIT_JSON_ERROR);
             }
         };
-        write_output(&json, format);
+        write_output(&json, format.as_ref());
     }
 }
 
@@ -141,7 +141,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
         }
         Err(err) => {
             error!("Error: {err}");
@@ -187,7 +187,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
         }
         Err(err) => {
             error!("Error: {err}");
@@ -247,7 +247,7 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: &Option<OutputForma
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
         }
         Err(err) => {
             error!("Error: {err}");
@@ -293,7 +293,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
             exit(EXIT_JSON_ERROR);
         }
     };
-    write_output(&json, format);
+    write_output(&json, format.as_ref());
 }
 
 #[must_use]

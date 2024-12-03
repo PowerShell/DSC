@@ -48,10 +48,10 @@ Describe 'Tests for listing resources' {
         }
     }
 
-    It 'can accept the use of --format as a subcommand' {
+    It 'can accept the use of --output-format as a subcommand' {
         $expectedCount = 1
         $expectedType = 'Microsoft/OSInfo'
-        $resources = dsc resource list --description "operating system" --format pretty-json | ConvertFrom-Json
+        $resources = dsc resource list --description "operating system" --output-format pretty-json | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $resources.Count | Should -Be $expectedCount
         if ($expectedCount -gt 0) {

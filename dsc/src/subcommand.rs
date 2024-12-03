@@ -43,7 +43,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -53,7 +53,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -78,7 +78,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -88,7 +88,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -164,7 +164,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                         }
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -174,7 +174,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_output(&json, format.as_ref());
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -198,7 +198,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
             if result.had_errors {
 
                 for msg in result.messages
@@ -216,34 +216,48 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-fn initialize_config_root(path: &Option<String>) -> Option<String> {
-    if path.is_some() {
-        let config_path = path.clone().unwrap_or_default();
-        Some(set_dscconfigroot(&config_path))
-    } else if std::env::var(DSC_CONFIG_ROOT).is_ok() {
+fn initialize_config_root(path: Option<&String>) -> Option<String> {
+    // code that calls this pass in either None, Some("-"), or Some(path)
+    // in the case of `-` we treat it as None, but need to pass it back as subsequent processing needs to handle it
+    let use_stdin = if let Some(specified_path) = path {
+        if specified_path != "-" {
+            return Some(set_dscconfigroot(specified_path));
+        }
+
+        true
+    } else {
+        false
+    };
+
+    if std::env::var(DSC_CONFIG_ROOT).is_ok() {
         let config_root = std::env::var(DSC_CONFIG_ROOT).unwrap_or_default();
         debug!("Using {config_root} for {DSC_CONFIG_ROOT}");
-        None
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
         debug!("Using current directory '{current_directory:?}' for {DSC_CONFIG_ROOT}");
         set_dscconfigroot(&current_directory.to_string_lossy());
-        None
     }
+
+    // if the path is "-", we need to return it so later processing can handle it correctly
+    if use_stdin {
+        return Some("-".to_string());
+    }
+
+    None
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin: &Option<String>, as_group: &bool, as_include: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, as_group: &bool, as_include: &bool) {
     let (new_parameters, json_string) = match subcommand {
-        ConfigSubCommand::Get { document, path, .. } |
-        ConfigSubCommand::Set { document, path, .. } |
-        ConfigSubCommand::Test { document, path, .. } |
-        ConfigSubCommand::Validate { document, path, .. } |
-        ConfigSubCommand::Export { document, path, .. } => {
-            let new_path = initialize_config_root(path);
-            let input = get_input(document, stdin, &new_path);
+        ConfigSubCommand::Get { input, file, .. } |
+        ConfigSubCommand::Set { input, file, .. } |
+        ConfigSubCommand::Test { input, file, .. } |
+        ConfigSubCommand::Validate { input, file, .. } |
+        ConfigSubCommand::Export { input, file, .. } => {
+            let new_path = initialize_config_root(file.as_ref());
+            let document = get_input(input, &new_path);
             if *as_include {
-                let (new_parameters, config_json) = match get_contents(&input) {
+                let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
                     Err(err) => {
                         error!("{err}");
@@ -252,13 +266,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
                 };
                 (new_parameters, config_json)
             } else {
-                (None, input)
+                (None, document)
             }
         },
-        ConfigSubCommand::Resolve { document, path, .. } => {
-            let new_path = initialize_config_root(path);
-            let input = get_input(document, stdin, &new_path);
-            let (new_parameters, config_json) = match get_contents(&input) {
+        ConfigSubCommand::Resolve { input, file, .. } => {
+            let new_path = initialize_config_root(file.as_ref());
+            let document = get_input(input, &new_path);
+            let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
                     error!("{err}");
@@ -317,29 +331,29 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
         }
     };
 
-    if let Err(err) = configurator.set_context(&parameters) {
+    if let Err(err) = configurator.set_context(parameters.as_ref()) {
         error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
 
     match subcommand {
-        ConfigSubCommand::Get { format, .. } => {
-            config_get(&mut configurator, format, as_group);
+        ConfigSubCommand::Get { output_format, .. } => {
+            config_get(&mut configurator, output_format, as_group);
         },
-        ConfigSubCommand::Set { format, .. } => {
-            config_set(&mut configurator, format, as_group);
+        ConfigSubCommand::Set { output_format, .. } => {
+            config_set(&mut configurator, output_format, as_group);
         },
-        ConfigSubCommand::Test { format, as_get, as_config, .. } => {
-            config_test(&mut configurator, format, as_group, as_get, as_config);
+        ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
+            config_test(&mut configurator, output_format, as_group, as_get, as_config);
         },
-        ConfigSubCommand::Validate { document, path, format} => {
+        ConfigSubCommand::Validate { input, file, output_format: format} => {
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,
             };
             if *as_include {
-                let new_path = initialize_config_root(path);
-                let input = get_input(document, stdin, &new_path);
+                let new_path = initialize_config_root(file.as_ref());
+                let input = get_input(input, &new_path);
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
@@ -366,12 +380,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
                 exit(EXIT_JSON_ERROR);
             };
 
-            write_output(&json, format);
+            write_output(&json, format.as_ref());
         },
-        ConfigSubCommand::Export { format, .. } => {
-            config_export(&mut configurator, format);
+        ConfigSubCommand::Export { output_format, .. } => {
+            config_export(&mut configurator, output_format);
         },
-        ConfigSubCommand::Resolve { format, .. } => {
+        ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
                 Err(err) => {
@@ -400,7 +414,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, stdin:
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, format);
+            write_output(&json_string, output_format.as_ref());
         },
     }
 }
@@ -495,7 +509,7 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
+pub fn resource(subcommand: &ResourceSubCommand) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
@@ -505,51 +519,51 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, adapter_name, description, tags, format } => {
-            list_resources(&mut dsc, resource_name, adapter_name, description, tags, format);
+        ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
         },
-        ResourceSubCommand::Schema { resource , format } => {
+        ResourceSubCommand::Schema { resource , output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::schema(&dsc, resource, format);
+            resource_command::schema(&dsc, resource, output_format);
         },
-        ResourceSubCommand::Export { resource, format } => {
+        ResourceSubCommand::Export { resource, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::export(&mut dsc, resource, format);
+            resource_command::export(&mut dsc, resource, output_format);
         },
-        ResourceSubCommand::Get { resource, input, path, all, format } => {
+        ResourceSubCommand::Get { resource, input, file, all, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            if *all { resource_command::get_all(&dsc, resource, format); }
+            if *all { resource_command::get_all(&dsc, resource, output_format); }
             else {
-                let parsed_input = get_input(input, stdin, path);
-                resource_command::get(&dsc, resource, parsed_input, format);
+                let parsed_input = get_input(input, file);
+                resource_command::get(&dsc, resource, parsed_input, output_format);
             }
         },
-        ResourceSubCommand::Set { resource, input, path, format } => {
+        ResourceSubCommand::Set { resource, input, file, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
-            resource_command::set(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input, file);
+            resource_command::set(&dsc, resource, parsed_input, output_format);
         },
-        ResourceSubCommand::Test { resource, input, path, format } => {
+        ResourceSubCommand::Test { resource, input, file, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
-            resource_command::test(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input, file);
+            resource_command::test(&dsc, resource, parsed_input, output_format);
         },
-        ResourceSubCommand::Delete { resource, input, path } => {
+        ResourceSubCommand::Delete { resource, input, file } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
+            let parsed_input = get_input(input, file);
             resource_command::delete(&dsc, resource, parsed_input);
         },
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>) {
     let mut write_table = false;
     let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
     if format.is_none() && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
+    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new())) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
@@ -580,7 +594,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
 
             // if description is specified, skip if resource description does not contain it
             if description.is_some() &&
-                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
+                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&&String::new()).to_lowercase())) {
                 continue;
             }
 

@@ -4,7 +4,7 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use std::io::{self, IsTerminal, Read};
+use std::io;
 use std::process::exit;
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
@@ -38,30 +38,6 @@ fn main() {
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
-    let input = if io::stdin().is_terminal() {
-        None
-    } else {
-        info!("Reading input from STDIN");
-        let mut buffer: Vec<u8> = Vec::new();
-        io::stdin().read_to_end(&mut buffer).unwrap();
-        let input = match String::from_utf8(buffer) {
-            Ok(input) => input,
-            Err(e) => {
-                error!("Invalid UTF-8 sequence: {e}");
-                exit(util::EXIT_INVALID_ARGS);
-            },
-        };
-        // get_input call expects at most 1 input, so wrapping Some(empty input) would throw it off
-        // have only seen this happen with dsc_args.test.ps1 running on the CI pipeline
-        if input.is_empty() {
-            debug!("Input from STDIN is empty");
-            None
-        }
-        else {
-            Some(input)
-        }
-    };
-
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("Generating completion script for {:?}", shell);
@@ -72,7 +48,7 @@ fn main() {
             if let Some(file_name) = parameters_file {
                 info!("Reading parameters from file {file_name}");
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &input, &as_group, &as_include),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &as_group, &as_include),
                     Err(err) => {
                         error!("Error: Failed to read parameters file '{file_name}': {err}");
                         exit(util::EXIT_INVALID_INPUT);
@@ -80,13 +56,13 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, &input, &as_group, &as_include);
+                subcommand::config(&subcommand, &parameters, &as_group, &as_include);
             }
         },
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand, &input);
+            subcommand::resource(&subcommand);
         },
-        SubCommand::Schema { dsc_type , format } => {
+        SubCommand::Schema { dsc_type , output_format } => {
             let schema = util::get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -95,7 +71,7 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, &format);
+            util::write_output(&json, output_format.as_ref());
         },
     }
 
@@ -162,6 +138,8 @@ fn check_debug() {
 // Check if the dsc binary parent process is WinStore.App or Exploerer.exe
 #[cfg(windows)]
 fn check_store() {
+    use std::io::Read;
+
     let message = r"
 DSC.exe is a command-line tool and cannot be run directly from the Windows Store or Explorer.
 Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.

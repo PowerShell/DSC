@@ -21,7 +21,7 @@ Describe 'tests for function expressions' {
               properties:
                 output: '$escapedText'
 "@
-        $out = $config_yaml | dsc config get | ConvertFrom-Json
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
         $out.results[0].result.actualState.output | Should -Be $expected
     }
 }

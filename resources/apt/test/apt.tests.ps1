@@ -27,7 +27,7 @@ Describe 'Apt resource tests' {
             if (-not $aptExists) {
                 Set-ItResult -Skip -Because "Apt not found"
             }
-            $out = dsc -l trace config get -p $yamlPath 2> "$TestDrive/stderr.txt" | ConvertFrom-Json -Depth 10
+            $out = dsc -l trace config get -f $yamlPath 2> "$TestDrive/stderr.txt" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content "$TestDrive/stderr.txt" | Out-String)
             $exists = $null -ne (Get-Command $pkgName -CommandType Application -ErrorAction Ignore)
             $observed = $out.results[1].result.actualState._exist
@@ -39,7 +39,7 @@ Describe 'Apt resource tests' {
                 Set-ItResult -Skip -Because "Apt not found"
             }
 
-            $out = dsc config test -p $yamlPath| ConvertFrom-Json -Depth 10
+            $out = dsc config test -f $yamlPath| ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
             $exists = $null -ne (Get-Command pkgName -CommandType Application -ErrorAction Ignore)
             $out.results[1].result.inDesiredState | Should -Be $exists
@@ -60,7 +60,7 @@ Describe 'Apt resource tests' {
                 apt remove -y $pkgname
             }
 
-            $result = dsc config set -p $yamlInstallPath | ConvertFrom-Json
+            $result = dsc config set -f $yamlInstallPath | ConvertFrom-Json
             $result.results[1].result.beforestate._exist | Should -Be false
             $result.results[1].result.afterstate._exist | Should -Be true
         }
@@ -72,7 +72,7 @@ Describe 'Apt resource tests' {
                 apt install -y $pkgname
             }
 
-            $result = dsc config set -p $yamlUnInstallPath | ConvertFrom-Json
+            $result = dsc config set -f $yamlUnInstallPath | ConvertFrom-Json
             $result.results[1].result.beforestate._exist | Should -Be true
             $result.results[1].result.afterstate._exist | Should -Be false
         }

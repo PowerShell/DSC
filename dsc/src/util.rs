@@ -30,7 +30,7 @@ use schemars::{schema_for, schema::RootSchema};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
-use std::io::IsTerminal;
+use std::io::{IsTerminal, Read};
 use std::path::Path;
 use std::process::exit;
 use syntect::{
@@ -39,7 +39,7 @@ use syntect::{
     parsing::SyntaxSet,
     util::{as_24_bit_terminal_escaped, LinesWithEndings}
 };
-use tracing::{Level, debug, error, warn, trace};
+use tracing::{Level, debug, error, info, trace, warn};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 use tracing_indicatif::IndicatifLayer;
 
@@ -190,18 +190,18 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
 ///
 /// * `json` - The JSON to write
 /// * `format` - The format to use
-pub fn write_output(json: &str, format: &Option<OutputFormat>) {
+pub fn write_output(json: &str, format: Option<&OutputFormat>) {
     let mut is_json = true;
-    let mut output_format = format.clone();
+    let mut output_format = format;
     let mut syntax_color = false;
     if std::io::stdout().is_terminal() {
         syntax_color = true;
         if output_format.is_none() {
-            output_format = Some(OutputFormat::Yaml);
+            output_format = Some(&OutputFormat::Yaml);
         }
     }
     else if output_format.is_none() {
-        output_format = Some(OutputFormat::Json);
+        output_format = Some(&OutputFormat::Json);
     }
 
     let output = match output_format {
@@ -382,47 +382,54 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     Ok(())
 }
 
-pub fn get_input(input: &Option<String>, stdin: &Option<String>, path: &Option<String>) -> String {
-    let value = match (input, stdin, path) {
-        (Some(_), Some(_), None) | (None, Some(_), Some(_)) => {
-            error!("Error: Cannot specify both stdin and --document or --path");
-            exit(EXIT_INVALID_ARGS);
-        },
-        (Some(input), None, None) => {
-            debug!("Reading input from command line parameter");
+pub fn get_input(input: &Option<String>, file: &Option<String>) -> String {
+    trace!("Input: {input:?}, File: {file:?}");
+    let value = if let Some(input) = input {
+        debug!("Reading input from command line parameter");
 
-            // see if user accidentally passed in a file path
-            if Path::new(input).exists() {
-                error!("Error: Document provided is a file path, use --path instead");
-                exit(EXIT_INVALID_INPUT);
+        // see if user accidentally passed in a file path
+        if Path::new(input).exists() {
+            error!("Error: Document provided is a file path, use '--file' instead");
+            exit(EXIT_INVALID_INPUT);
+        }
+        input.clone()
+    } else if let Some(path) = file {
+        debug!("Reading input from file {}", path);
+        // check if need to read from STDIN
+        if path == "-" {
+            info!("Reading input from STDIN");
+            let mut stdin = Vec::<u8>::new();
+            match std::io::stdin().read_to_end(&mut stdin) {
+                Ok(_) => {
+                    match String::from_utf8(stdin) {
+                        Ok(input) => {
+                            input
+                        },
+                        Err(err) => {
+                            error!("Error: Invalid utf-8 input: {err}");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                },
+                Err(err) => {
+                    error!("Error: Failed to read input from STDIN: {err}");
+                    exit(EXIT_INVALID_INPUT);
+                }
             }
-            input.clone()
-        },
-        (None, Some(stdin), None) => {
-            debug!("Reading input from stdin");
-            stdin.clone()
-        },
-        (None, None, Some(path)) => {
-            debug!("Reading input from file {}", path);
+        } else {
             match std::fs::read_to_string(path) {
                 Ok(input) => {
-                    input.clone()
+                    input
                 },
                 Err(err) => {
                     error!("Error: Failed to read input file: {err}");
                     exit(EXIT_INVALID_INPUT);
                 }
             }
-        },
-        (None, None, None) => {
-            debug!("No input provided via stdin, file, or command line");
-            return String::new();
-        },
-        _default => {
-            /* clap should handle these cases via conflicts_with so this should not get reached */
-            error!("Error: Invalid input");
-            exit(EXIT_INVALID_ARGS);
         }
+    } else {
+        debug!("No input provided");
+        return String::new();
     };
 
     if value.trim().is_empty() {

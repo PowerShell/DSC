@@ -82,15 +82,16 @@ Describe 'tracing tests' {
                 level: trace
 "@
 
-        $out = (dsc -l $level config get -d $configYaml 2> $null) | ConvertFrom-Json
+        $out = (dsc -l $level config get -i $configYaml 2> $null) | ConvertFrom-Json
         $out.results[0].result.actualState.level | Should -BeExactly $level
     }
 
     It 'Pass-through tracing should only emit JSON for child processes' {
         $logPath = "$TestDrive/dsc_trace.log"
-        $out = dsc -l info -f pass-through  config get -p ../examples/groups.dsc.yaml 2> $logPath
+        $out = dsc -l info -t pass-through config get -f ../examples/groups.dsc.yaml 2> $logPath
         foreach ($line in (Get-Content $logPath)) {
             $line | Should -Not -BeNullOrEmpty
+            Write-Verbose -Verbose $line
             $json = $line | ConvertFrom-Json
             $json.timestamp | Should -Not -BeNullOrEmpty
             $json.level | Should -BeIn 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'

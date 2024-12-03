@@ -110,7 +110,7 @@ Describe 'tests for resource input' {
         }
 "@
 
-        $result = $json | dsc resource $operation -r Test/EnvVarInput | ConvertFrom-Json
+        $result = dsc resource $operation -r Test/EnvVarInput -i $json | ConvertFrom-Json
         $result.$member.Hello | Should -BeExactly 'foo'
         $result.$member.World | Should -Be 2
         $result.$member.Boolean | Should -Be 'true'

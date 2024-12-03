@@ -11,17 +11,23 @@
     "executable": "registry",
     "args": [
       "config",
-      "get"
-    ],
-    "input": "stdin"
+      "get",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ]
   },
   "set": {
     "executable": "registry",
     "args": [
       "config",
-      "set"
+      "set",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
     ],
-    "input": "stdin",
     "implementsPretest": true,
     "return": "state"
   },
@@ -29,9 +35,12 @@
     "executable": "registry",
     "args": [
       "config",
-      "test"
+      "test",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
     ],
-    "input": "stdin",
     "return": "state"
   },
   "exitCodes": {

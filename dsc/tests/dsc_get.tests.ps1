@@ -29,7 +29,7 @@ Describe 'resource get tests' {
             "valueName": "ProductName"
         }
 '@
-        $output = $json | dsc resource get -r $resource
+        $output = $json | dsc resource get -r $resource -f -
         $LASTEXITCODE | Should -Be 0
         $output = $output | ConvertFrom-Json
         $output.actualState.keyPath | Should -BeExactly 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
@@ -44,7 +44,7 @@ Describe 'resource get tests' {
             "Name": "ProductName"
         }
 '@
-        $testError = & {$json | dsc resource get -r Microsoft.Windows/Registry get 2>&1}
+        $testError = & {$json | dsc resource get -r Microsoft.Windows/Registry get -f - 2>&1}
         $testError[0] | SHould -match 'error:'
         $LASTEXITCODE | Should -Be 2
     }
