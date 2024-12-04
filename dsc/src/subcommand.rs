@@ -606,7 +606,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
 
             // if description is specified, skip if resource description does not contain it
             if description.is_some() &&
-                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&&String::new()).to_lowercase())) {
+                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
                 continue;
             }
 
