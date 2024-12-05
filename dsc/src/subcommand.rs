@@ -34,7 +34,7 @@ use std::{
 };
 use tracing::{debug, error, trace};
 
-pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
+pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
 {
     match configurator.invoke_get() {
         Ok(result) => {
@@ -69,7 +69,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
+pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
 {
     match configurator.invoke_set(false) {
         Ok(result) => {
@@ -104,7 +104,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool)
+pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool)
 {
     match configurator.invoke_test() {
         Ok(result) => {
@@ -190,7 +190,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
     }
 }
 
-pub fn config_export(configurator: &mut Configurator, format: &Option<OutputFormat>)
+pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>)
 {
     match configurator.invoke_export() {
         Ok(result) => {
@@ -219,7 +219,7 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
     }
 }
 
-fn initialize_config_root(path: &Option<String>) -> Option<String> {
+fn initialize_config_root(path: Option<&String>) -> Option<String> {
     // code that calls this pass in either None, Some("-"), or Some(path)
     // in the case of `-` we treat it as None, but need to pass it back as subsequent processing needs to handle it
     let use_stdin = if let Some(specified_path) = path {
@@ -250,15 +250,15 @@ fn initialize_config_root(path: &Option<String>) -> Option<String> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: &Option<String>, as_group: &bool, as_include: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_include: &bool) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
         ConfigSubCommand::Test { input, file, .. } |
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
-            let new_path = initialize_config_root(file);
-            let document = get_input(input, &new_path);
+            let new_path = initialize_config_root(file.as_ref());
+            let document = get_input(input.as_ref(), new_path.as_ref());
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
@@ -273,8 +273,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             }
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
-            let new_path = initialize_config_root(file);
-            let document = get_input(input, &new_path);
+            let new_path = initialize_config_root(file.as_ref());
+            let document = get_input(input.as_ref(), new_path.as_ref());
             let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
@@ -343,29 +343,29 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         configurator.set_system_root(path);
     }
 
-    if let Err(err) = configurator.set_context(&parameters) {
+    if let Err(err) = configurator.set_context(parameters.as_ref()) {
         error!("Error: Parameter input failure: {err}");
         exit(EXIT_INVALID_INPUT);
     }
 
     match subcommand {
-        ConfigSubCommand::Get { output_format: format, .. } => {
-            config_get(&mut configurator, format, as_group);
+        ConfigSubCommand::Get { output_format, .. } => {
+            config_get(&mut configurator, output_format.as_ref(), as_group);
         },
-        ConfigSubCommand::Set { output_format: format, .. } => {
-            config_set(&mut configurator, format, as_group);
+        ConfigSubCommand::Set { output_format, .. } => {
+            config_set(&mut configurator, output_format.as_ref(), as_group);
         },
-        ConfigSubCommand::Test { output_format: format, as_get, as_config, .. } => {
-            config_test(&mut configurator, format, as_group, as_get, as_config);
+        ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
+            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config);
         },
-        ConfigSubCommand::Validate { input, file, output_format: format} => {
+        ConfigSubCommand::Validate { input, file, output_format} => {
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,
             };
             if *as_include {
-                let new_path = initialize_config_root(file);
-                let input = get_input(input, &new_path);
+                let new_path = initialize_config_root(file.as_ref());
+                let input = get_input(input.as_ref(), new_path.as_ref());
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
@@ -392,12 +392,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 exit(EXIT_JSON_ERROR);
             };
 
-            write_output(&json, format);
+            write_output(&json, output_format.as_ref());
         },
-        ConfigSubCommand::Export { output_format: format, .. } => {
-            config_export(&mut configurator, format);
+        ConfigSubCommand::Export { output_format, .. } => {
+            config_export(&mut configurator, output_format.as_ref());
         },
-        ConfigSubCommand::Resolve { output_format: format, .. } => {
+        ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
                 Err(err) => {
@@ -426,7 +426,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, format);
+            write_output(&json_string, output_format.as_ref());
         },
     }
 }
@@ -531,51 +531,51 @@ pub fn resource(subcommand: &ResourceSubCommand) {
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format: format } => {
-            list_resources(&mut dsc, resource_name, adapter_name, description, tags, format);
+        ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
         },
-        ResourceSubCommand::Schema { resource , output_format: format } => {
+        ResourceSubCommand::Schema { resource , output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::schema(&dsc, resource, format);
+            resource_command::schema(&dsc, resource, output_format.as_ref());
         },
-        ResourceSubCommand::Export { resource, output_format: format } => {
+        ResourceSubCommand::Export { resource, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::export(&mut dsc, resource, format);
+            resource_command::export(&mut dsc, resource, output_format.as_ref());
         },
-        ResourceSubCommand::Get { resource, input, file: path, all, output_format: format } => {
+        ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            if *all { resource_command::get_all(&dsc, resource, format); }
+            if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
             else {
-                let parsed_input = get_input(input, path);
-                resource_command::get(&dsc, resource, parsed_input, format);
+                let parsed_input = get_input(input.as_ref(), path.as_ref());
+                resource_command::get(&dsc, resource, parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, input, file: path, output_format: format } => {
+        ResourceSubCommand::Set { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, path);
-            resource_command::set(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            resource_command::set(&dsc, resource, parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Test { resource, input, file: path, output_format: format } => {
+        ResourceSubCommand::Test { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, path);
-            resource_command::test(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            resource_command::test(&dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, path);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::delete(&dsc, resource, parsed_input);
         },
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>) {
     let mut write_table = false;
     let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
     if format.is_none() && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
+    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new())) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
@@ -606,7 +606,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
 
             // if description is specified, skip if resource description does not contain it
             if description.is_some() &&
-                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
+                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
                 continue;
             }
 

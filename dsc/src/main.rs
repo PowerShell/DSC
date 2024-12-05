@@ -33,7 +33,7 @@ fn main() {
 
     let args = Args::parse();
 
-    util::enable_tracing(&args.trace_level, &args.trace_format);
+    util::enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
 
     debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
 
@@ -47,7 +47,7 @@ fn main() {
             if let Some(file_name) = parameters_file {
                 info!("Reading parameters from file {file_name}");
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &system_root, &as_group, &as_include),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include),
                     Err(err) => {
                         error!("Error: Failed to read parameters file '{file_name}': {err}");
                         exit(util::EXIT_INVALID_INPUT);
@@ -55,13 +55,13 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, &system_root, &as_group, &as_include);
+                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_include);
             }
         },
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand);
         },
-        SubCommand::Schema { dsc_type , format } => {
+        SubCommand::Schema { dsc_type , output_format } => {
             let schema = util::get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
@@ -70,7 +70,7 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, &format);
+            util::write_output(&json, output_format.as_ref());
         },
     }
 

@@ -51,7 +51,7 @@ impl Function {
         let Some(name) = function_name else {
             return Err(DscError::Parser("Function name node not found".to_string()));
         };
-        let args = convert_args_node(statement_bytes, &function_args)?;
+        let args = convert_args_node(statement_bytes, function_args.as_ref())?;
         let name = name.utf8_text(statement_bytes)?;
         debug!("Function name: {0}", name);
         Ok(Function{
@@ -87,7 +87,7 @@ impl Function {
     }
 }
 
-fn convert_args_node(statement_bytes: &[u8], args: &Option<Node>) -> Result<Option<Vec<FunctionArg>>, DscError> {
+fn convert_args_node(statement_bytes: &[u8], args: Option<&Node>) -> Result<Option<Vec<FunctionArg>>, DscError> {
     let Some(args) = args else {
         return Ok(None);
     };

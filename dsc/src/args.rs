@@ -68,7 +68,7 @@ pub enum SubCommand {
         #[clap(name = "type", short, long, help = "The type of DSC schema to get")]
         dsc_type: DscType,
         #[clap(short = 'o', long, help = "The output format to use")]
-        format: Option<OutputFormat>,
+        output_format: Option<OutputFormat>,
     },
 }
 

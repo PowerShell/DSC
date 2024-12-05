@@ -213,18 +213,18 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
 ///
 /// * `json` - The JSON to write
 /// * `format` - The format to use
-pub fn write_output(json: &str, format: &Option<OutputFormat>) {
+pub fn write_output(json: &str, format: Option<&OutputFormat>) {
     let mut is_json = true;
-    let mut output_format = format.clone();
+    let mut output_format = format;
     let mut syntax_color = false;
     if std::io::stdout().is_terminal() {
         syntax_color = true;
         if output_format.is_none() {
-            output_format = Some(OutputFormat::Yaml);
+            output_format = Some(&OutputFormat::Yaml);
         }
     }
     else if output_format.is_none() {
-        output_format = Some(OutputFormat::Json);
+        output_format = Some(&OutputFormat::Json);
     }
 
     let output = match output_format {
@@ -292,7 +292,7 @@ pub fn write_output(json: &str, format: &Option<OutputFormat>) {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn enable_tracing(trace_level_arg: &Option<TraceLevel>, trace_format_arg: &Option<TraceFormat>) {
+pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Option<&TraceFormat>) {
 
     let mut policy_is_used = false;
     let mut tracing_setting = TracingSetting::default();
@@ -453,7 +453,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     Ok(())
 }
 
-pub fn get_input(input: &Option<String>, file: &Option<String>) -> String {
+pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("Reading input from command line parameter");
