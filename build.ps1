@@ -30,6 +30,8 @@ if ($GetPackageVersion) {
 
 $filesForWindowsPackage = @(
     'dsc.exe',
+    'dsc_default.settings.json',
+    'dsc.settings.json',
     'dscecho.exe',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -54,6 +56,8 @@ $filesForWindowsPackage = @(
 
 $filesForLinuxPackage = @(
     'dsc',
+    'dsc_default.settings.json',
+    'dsc.settings.json'
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -71,6 +75,8 @@ $filesForLinuxPackage = @(
 
 $filesForMacPackage = @(
     'dsc',
+    'dsc_default.settings.json',
+    'dsc.settings.json'
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
