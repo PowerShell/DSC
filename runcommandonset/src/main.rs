@@ -30,7 +30,6 @@ fn main() {
                     "debug" => TraceLevel::Debug,
                     "trace" => TraceLevel::Trace,
                     _ => {
-                        //warn!("{}: {trace_level}", t!("main.invalidTraceLevel"));
                         warn!("{}: {trace_level}", t!("main.invalidTraceLevel"));
                         TraceLevel::Info
                     }
