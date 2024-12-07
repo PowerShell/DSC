@@ -30,6 +30,8 @@ if ($GetPackageVersion) {
 
 $filesForWindowsPackage = @(
     'dsc.exe',
+    'dsc_default.settings.json',
+    'dsc.settings.json',
     'dscecho.exe',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -50,12 +52,12 @@ $filesForWindowsPackage = @(
     'wmi.resource.ps1',
     'windows_baseline.dsc.yaml',
     'windows_inventory.dsc.yaml'
-    'dsc_default.settings.json',
-    'dsc.settings.json'
 )
 
 $filesForLinuxPackage = @(
     'dsc',
+    'dsc_default.settings.json',
+    'dsc.settings.json'
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -68,13 +70,13 @@ $filesForLinuxPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset',
-    'dsc_default.settings.json',
-    'dsc.settings.json'
+    'runcommandonset'
 )
 
 $filesForMacPackage = @(
     'dsc',
+    'dsc_default.settings.json',
+    'dsc.settings.json'
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -87,9 +89,7 @@ $filesForMacPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset',
-    'dsc_default.settings.json',
-    'dsc.settings.json'
+    'runcommandonset'
 )
 
 # the list of files other than the binaries which need to be executable
