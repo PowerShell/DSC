@@ -6,8 +6,11 @@ mod echo;
 
 use args::Args;
 use clap::Parser;
+use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use crate::echo::Echo;
+
+i18n!("locales", fallback = "en-us");
 
 fn main() {
     let args = Args::parse();
@@ -16,7 +19,7 @@ fn main() {
             let echo = match serde_json::from_str::<Echo>(&input) {
                 Ok(echo) => echo,
                 Err(err) => {
-                    eprintln!("Error JSON does not match schema: {err}");
+                    eprintln!("{}: {err}", t!("main.invalidJson"));
                     std::process::exit(1);
                 }
             };
@@ -25,7 +28,7 @@ fn main() {
             return;
         },
         None => {
-            eprintln!("No input provided.");
+            eprintln!("{}", t!("main.noInput"));
         }
     }
 

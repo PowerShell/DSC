@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.1", features = ["derive"] }
+rust-i18n = { version = "3.1" }
 schemars = { version = "0.8" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
