@@ -14,7 +14,7 @@ pub mod args;
 pub mod runcommand;
 pub mod utils;
 
-i18n!("locales", fallback = "en");
+i18n!("locales", fallback = "en-us");
 
 fn main() {
     let args = Arguments::parse();
