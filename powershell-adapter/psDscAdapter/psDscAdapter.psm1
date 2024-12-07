@@ -32,7 +32,8 @@ function Get-DSCResourceModules
         {
             continue
         }
-
+	# Partially re-used code from the original DSCv2 Get-DSCResource code
+	# Get-Module -ListAvailable is slow and has a bug causing incorrect reporting
         $moduleFolders = Get-ChildItem $folder -Directory
         if (-not $moduleFolders) {
             $moduleFolders = Get-ChildItem (Split-Path $folder -Parent) | Where-Object { $_.Name -eq (Split-Path $folder -Leaf) }
