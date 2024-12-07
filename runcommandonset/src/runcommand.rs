@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
@@ -19,7 +20,7 @@ impl RunCommand {
         match serde_json::to_string(self) {
             Ok(json) => json,
             Err(e) => {
-                eprintln!("Failed to serialize to JSON: {e}");
+                eprintln!("{}: {e}", t!("runcommand.invalidJson"));
                 String::new()
             }
         }
