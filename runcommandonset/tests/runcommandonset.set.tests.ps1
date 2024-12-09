@@ -36,20 +36,20 @@ Describe 'tests for runcommandonset set' {
             "arguments": ["-Command", "echo hello world"]
         }
 "@
-        $input_json | runcommandonset set 2> $TestDrive/output.txt
-        $actual = Get-Content -Path $TestDrive/output.txt
-        $actual | Should -Contain 'Stdout: hello'
-        $actual | Should -Contain 'world'
+        $input_json | runcommandonset --trace-level trace --trace-format plaintext set 2> $TestDrive/output.txt
+        $actual = Get-Content -Path $TestDrive/output.txt -Raw
+        $actual | Should -BeLike '*Stdout: hello*'
+        $actual | Should -BeLike '*world*'
         $LASTEXITCODE | Should -Be 0
     }
 
     It 'STDERR captured when calling resource directly with invalid args' {
-        $json = runcommandonset set -e pwsh -a "echo hello world" 2> $TestDrive/output.txt
+        $json = runcommandonset --trace-level trace --trace-format plaintext set -e pwsh -a "echo hello world" 2> $TestDrive/output.txt
         $stdout = $json | ConvertFrom-Json
         $stdout.exitCode | Should -Be 64
-        $expected = "Stderr: The argument 'echo hello world' is not recognized as the name of a script file. Check the spelling of the name, or if a path was included, verify that the path is correct and try again."
-        $stderr = Get-Content -Path $TestDrive/output.txt
-        $stderr | Should -Contain $expected
+        $expected = "*Stderr: The argument 'echo hello world' is not recognized as the name of a script file. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.*"
+        $stderr = Get-Content -Path $TestDrive/output.txt -Raw
+        $stderr | Should -BeLike $expected
         $LASTEXITCODE | Should -Be 0
     }
 
@@ -78,9 +78,9 @@ Describe 'tests for runcommandonset set' {
     It 'Executable does not exist' {
         '{ "executable": "foo" }' | dsc -l trace resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f - 2> $TestDrive/output.txt
         $actual = Get-Content -Path $TestDrive/output.txt -Raw
-        $expected_logging = 'Failed to execute foo: No such file or directory (os error 2)'
+        $expected_logging = "Failed to execute 'foo': No such file or directory (os error 2)"
         if ($IsWindows) {
-            $expected_logging = 'Failed to execute foo: program not found'
+            $expected_logging = "Failed to execute 'foo': program not found"
         }
         $actual | Should -BeLike "*$expected_logging*"
         $LASTEXITCODE | Should -Be 2
