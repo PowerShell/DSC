@@ -1,0 +1,35 @@
+_version: 2
+errors:
+  InvalidHive:
+    en: Invalid hive
+  Json:
+    en: JSON
+  Registry:
+    en: Registry
+  RegistryKey:
+    en: Registry key
+  RegistryKeyNotFound:
+    en: Registry key not found
+  RegistryValue:
+    en: Registry value
+  Utf16Conversion:
+    en: UTF-16 conversion failed due to interior NULL values for
+  UnsupportedValueDataType:
+    en: Unsupported registry value data type
+  # internal, not an enum
+  eprint:
+    tracing_init:
+      en: Unable to set global default tracing subscriber. Tracing is diabled.
+    debug:
+      attach:
+        en: attach debugger to pid %{pid} and press any key to continue
+      event:
+        read:
+          en: "Error: Failed to read event: %{err}"
+        unexpexted:
+          en: "Unexpected event: %{e:?}"
+    remove:
+      key_not_exist:
+        en: Key already does not exist
+      deleting_subkey:
+        en: Deleting subkey '%{name}' using %{parent}
