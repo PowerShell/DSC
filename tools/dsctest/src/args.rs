@@ -8,6 +8,7 @@ pub enum Schemas {
     Delete,
     Exist,
     ExitCode,
+    Metadata,
     Sleep,
     Trace,
     WhatIf,
@@ -38,6 +39,12 @@ pub enum SubCommand {
     #[clap(name = "exit-code", about = "Return the exit code specified in the input")]
     ExitCode {
         #[clap(name = "input", short, long, help = "The input to the exit code command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "metadata", about = "Return the metadata")]
+    Metadata {
+        #[clap(name = "input", short, long, help = "The input to the metadata command as JSON")]
         input: String,
     },
 
