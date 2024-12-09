@@ -81,7 +81,7 @@ fn ctrlc_handler() {
     warn!("Ctrl-C received");
 
     // get process tree for current process and terminate all processes
-    let sys = System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new()));
+    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
     info!("Found {} processes", sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
         error!("Could not get current process id");
