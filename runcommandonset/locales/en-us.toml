@@ -1,0 +1,22 @@
+_version = 1
+
+[main]
+emptyStdin = "Input from STDIN is empty"
+invalidTraceLevel = "Defaulting to Info, invalid trace level defined in DSC_TRACE_LEVEL env var"
+invalidUtf8 = "Invalid UTF-8 sequence"
+notIdempotent = "This resource is not idempotent"
+readStdin = "Reading input from STDIN"
+
+[runcommand]
+invalidJson = "Failed to serialize to JSON"
+
+[utils]
+executableRequired = "Executable is required when input is not provided via stdin"
+failedToExecute = "Failed to execute"
+failedOpenStderr = "Failed to open stderr for"
+failedOpenStdout = "Failed to open stdout for"
+failedReadStderr = "Failed to read stderr for"
+failedReadStdout = "Failed to read stdout for"
+failedWait = "Failed to wait for"
+invalidInput = "Input is not valid"
+unableToTrace = "Unable to set global default tracing subscriber.  Tracing is diabled."
