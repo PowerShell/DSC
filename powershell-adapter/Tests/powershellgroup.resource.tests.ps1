@@ -7,12 +7,9 @@ Describe 'PowerShell adapter resource tests' {
         $OldPSModulePath = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
-        if ($IsLinux -or $IsMacOS)
-        {
+        if ($IsLinux -or $IsMacOS) {
             $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
-        }
-        else
-        {
+        } else {
             $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
         }
     }
@@ -142,20 +139,14 @@ Describe 'PowerShell adapter resource tests' {
         # generate the cache
         $null = dsc resource list '*' -a Microsoft.DSC/PowerShell
         # update the version in the cache file
-        $cacheFilePath = if ($IsWindows)
-        {
+        $cacheFilePath = if ($IsWindows) {
             # PS 6+ on Windows
             Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-        }
-        else
-        {
+        } else {
             # either WinPS or PS 6+ on Linux/Mac
-            if ($PSVersionTable.PSVersion.Major -le 5)
-            {
+            if ($PSVersionTable.PSVersion.Major -le 5) {
                 Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-            }
-            else
-            {
+            } else {
                 Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
             }
         }
@@ -177,8 +168,7 @@ Describe 'PowerShell adapter resource tests' {
         Remove-Item -Recurse -Force -Path "$PSScriptRoot/TestClassResource"
 
         $oldPath = $env:PSModulePath
-        try
-        {
+        try {
             $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestDrive
 
             # generate the cache
@@ -191,9 +181,7 @@ Describe 'PowerShell adapter resource tests' {
             $LASTEXITCODE | Should -Be 0
             "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Detected non-existent cache entry'
             "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
-        }
-        finally
-        {
+        } finally {
             $env:PSModulePath = $oldPath
             Copy-Item -Recurse -Force -Path "$PSScriptRoot/Backup/TestClassResource" -Destination "$PSScriptRoot"
             Remove-Item -Recurse -Force -Path "$PSScriptRoot/Backup"
@@ -241,8 +229,7 @@ Describe 'PowerShell adapter resource tests' {
 
 
         $oldPath = $env:PSModulePath
-        try
-        {
+        try {
             $env:PSModulePath += [System.IO.Path]::PathSeparator + $pathRoot1
             $env:PSModulePath += [System.IO.Path]::PathSeparator + $pathRoot2
 
@@ -252,17 +239,14 @@ Describe 'PowerShell adapter resource tests' {
             $r = @($resources | ? { $_.Type -eq 'TestClassResource/TestClassResource' })
             $r.Count | Should -Be 1
             $r[0].Version | Should -Be '2.0.1'
-        }
-        finally
-        {
+        } finally {
             $env:PSModulePath = $oldPath
         }
     }
 
     It 'Verify adapted_dsc_type field in Get' {
         $oldPath = $env:PATH
-        try
-        {
+        try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
@@ -270,17 +254,14 @@ Describe 'PowerShell adapter resource tests' {
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
             $resources.actualState.result | Should -Be $True
-        }
-        finally
-        {
+        } finally {
             $env:PATH = $oldPath
         }
     }
 
     It 'Verify adapted_dsc_type field in Set' {
         $oldPath = $env:PATH
-        try
-        {
+        try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
@@ -289,17 +270,14 @@ Describe 'PowerShell adapter resource tests' {
             $resources = $r | ConvertFrom-Json
             $resources.beforeState.result | Should -Be $True
             $resources.afterState.result | Should -Be $True
-        }
-        finally
-        {
+        } finally {
             $env:PATH = $oldPath
         }
     }
 
     It 'Verify adapted_dsc_type field in Test' {
         $oldPath = $env:PATH
-        try
-        {
+        try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
@@ -307,17 +285,14 @@ Describe 'PowerShell adapter resource tests' {
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
             $resources.actualState.result | Should -Be $True
-        }
-        finally
-        {
+        } finally {
             $env:PATH = $oldPath
         }
     }
 
     It 'Verify adapted_dsc_type field in Export' {
         $oldPath = $env:PATH
-        try
-        {
+        try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
@@ -325,9 +300,7 @@ Describe 'PowerShell adapter resource tests' {
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
             $resources.resources[0].properties.result | Should -Be $True
-        }
-        finally
-        {
+        } finally {
             $env:PATH = $oldPath
         }
     }
@@ -347,20 +320,14 @@ Describe 'PowerShell adapter resource tests' {
     It 'Verify that there are no cache rebuilds for several sequential executions' {
 
         # remove cache file
-        $cacheFilePath = if ($IsWindows)
-        {
+        $cacheFilePath = if ($IsWindows) {
             # PS 6+ on Windows
             Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-        }
-        else
-        {
+        } else {
             # either WinPS or PS 6+ on Linux/Mac
-            if ($PSVersionTable.PSVersion.Major -le 5)
-            {
+            if ($PSVersionTable.PSVersion.Major -le 5) {
                 Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-            }
-            else
-            {
+            } else {
                 Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
             }
         }
