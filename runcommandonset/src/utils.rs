@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use std::{io::Read, process::{Command, exit, Stdio}};
 use tracing::{Level, error, debug, trace};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
@@ -33,7 +34,7 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, e
         command = match serde_json::from_str(&input) {
             Ok(json) => json,
             Err(err) => {
-                error!("Error: Input is not valid: {err}");
+                error!("{}: {err}", t!("utils.invalidInput"));
                 exit(EXIT_INVALID_INPUT);
             }
         }
@@ -45,7 +46,7 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, e
         };
     }
     else {
-        error!("Error: Executable is required when input is not provided via stdin");
+        error!("{}", t!("utils.executableRequired"));
         exit(EXIT_INVALID_INPUT);
     }
     command
@@ -72,7 +73,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     };
 
     let filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("warning"))
+        .or_else(|_| EnvFilter::try_new("warn"))
         .unwrap_or_default()
         .add_directive(tracing_level.into());
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
@@ -104,7 +105,7 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
+        eprintln!("{}", t!("utils.unableToTrace"));
     }
 }
 
@@ -132,33 +133,33 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> (i32, Stri
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(e) => {
-            error!("Failed to execute {}: {e}", executable);
+            error!("{} '{executable}': {e}", t!("utils.failedToExecute"));
             exit(EXIT_DSC_ERROR);
         }
     };
 
     let Some(mut child_stdout) = child.stdout.take() else {
-        error!("Failed to open stdout for {}", executable);
+        error!("{} {executable}", t!("utils.failedOpenStdout"));
         exit(EXIT_DSC_ERROR);
     };
     let mut stdout_buf = Vec::new();
     match child_stdout.read_to_end(&mut stdout_buf) {
         Ok(_) => (),
         Err(e) => {
-            error!("Failed to read stdout for {}: {e}", executable);
+            error!("{} '{executable}': {e}", t!("utils.failedReadStdout"));
             exit(EXIT_DSC_ERROR);
         }
     }
 
     let Some(mut child_stderr) = child.stderr.take() else {
-        error!("Failed to open stderr for {}", executable);
+        error!("{} {executable}", t!("utils.failedOpenStderr"));
         exit(EXIT_DSC_ERROR);
     };
     let mut stderr_buf = Vec::new();
     match child_stderr.read_to_end(&mut stderr_buf) {
         Ok(_) => (),
         Err(e) => {
-            error!("Failed to read stderr for {}: {e}", executable);
+            error!("{} '{executable}': {e}", t!("utils.failedReadStderr"));
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -166,7 +167,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>) -> (i32, Stri
     let exit_status = match child.wait() {
         Ok(exit_status) => exit_status,
         Err(e) => {
-            error!("Failed to wait for {}: {e}", executable);
+            error!("{} '{executable}': {e}", t!("utils.failedWait"));
             exit(EXIT_DSC_ERROR);
         }
     };
