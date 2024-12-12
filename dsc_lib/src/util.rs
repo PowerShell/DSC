@@ -64,6 +64,7 @@ impl DscProgressBar {
          }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     pub fn pb_inc(&mut self, delta: u64) {
         self.ui_bar.pb_inc(delta);
         self.position += delta;
@@ -85,6 +86,7 @@ impl DscProgressBar {
         self.emit_json();
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     pub fn pb_set_length(&mut self, len: u64) {
         self.ui_bar.pb_set_length(len);
         self.length = len;
@@ -95,6 +97,7 @@ impl DscProgressBar {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     pub fn pb_set_position(&mut self, pos: u64) {
         self.ui_bar.pb_set_position(pos);
         self.position = pos;

@@ -183,7 +183,7 @@ impl ResourceDiscovery for CommandDiscovery {
             "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
         )?);
         pb_span.pb_set_message("Searching for resources");
-        let _ = pb_span.enter();
+        pb_span.enter();
 
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
         let mut adapters = BTreeMap::<String, Vec<DscResource>>::new();
@@ -276,7 +276,7 @@ impl ResourceDiscovery for CommandDiscovery {
         )?);
         pb_span.pb_set_message("Searching for adapted resources");
         pb_span.pb_set_length(self.adapters.len() as u64);
-        let _ = pb_span.enter();
+        pb_span.enter();
 
         let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
 
@@ -296,7 +296,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
                 )?);
                 pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
-                let _ = pb_adapter_span.enter();
+                pb_adapter_span.enter();
                 let manifest = if let Some(manifest) = &adapter.manifest {
                     if let Ok(manifest) = import_manifest(manifest.clone()) {
                         manifest
