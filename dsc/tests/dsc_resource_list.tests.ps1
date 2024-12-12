@@ -62,6 +62,7 @@ Describe 'Tests for listing resources' {
         dsc resource list -o json -a * 2> $TestDrive/ErrorStream.txt
         $LASTEXITCODE | Should -Be 0
         $lines = Get-Content $TestDrive/ErrorStream.txt
+        $lines | Out-Host
         $ProgressMessagesFound = $False
         foreach ($line in $lines) {
             if ($line.Contains("activity")) { # if line is a progress message
