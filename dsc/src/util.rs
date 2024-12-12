@@ -443,11 +443,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     };
 
     if let Err(err) = compiled_schema.validate(json) {
-        let mut error = format!("'{source}' failed validation: ");
-        for e in err {
-            error.push_str(&format!("\n{e} "));
-        }
-        return Err(DscError::Validation(error));
+        return Err(DscError::Validation(format!("'{source}' failed validation: {err}")));
     };
 
     Ok(())
