@@ -93,7 +93,6 @@ impl DscProgressBar {
         if self.length  > 0 {
             self.progress_value.percent_complete = if self.position >= self.length {100}
                 else { ((self.position * 100) / self.length) as u16};
-            self.emit_json();
         }
     }
 
