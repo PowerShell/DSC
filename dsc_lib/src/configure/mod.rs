@@ -12,6 +12,8 @@ use crate::dscresources::{
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
+use crate::OutputFormat;
+use crate::util::DscProgressBar;
 use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
@@ -22,8 +24,7 @@ use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
 use std::{collections::HashMap, mem};
-use tracing::{debug, info, trace, warn_span, Span};
-use tracing_indicatif::span_ext::IndicatifSpanExt;
+use tracing::{debug, info, trace};
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
@@ -31,12 +32,13 @@ pub mod contraints;
 pub mod depends_on;
 pub mod parameters;
 
-pub struct Configurator {
+pub struct Configurator<'a> {
     json: String,
     config: Configuration,
     pub context: Context,
     discovery: Discovery,
     statement_parser: Statement,
+    progress_format: Option<&'a OutputFormat>,
 }
 
 /// Add the results of an export operation to a configuration.
@@ -134,9 +136,9 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn get_progress_bar_span(len: u64) -> Result<Span, DscError> {
-    // use warn_span since that is the default logging level but progress bars will be suppressed if error trace level is used
-    let pb_span = warn_span!("");
+fn get_progress_bar_span(len: u64, progress_format: Option<&OutputFormat>) -> Result<DscProgressBar, DscError> {
+    let mut pb_span = DscProgressBar::new(progress_format.is_some_and(|v| (v == &OutputFormat::Json) || (v == &OutputFormat::PrettyJson)));
+        
     pb_span.pb_set_style(&ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
     )?);
@@ -192,7 +194,7 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
     Ok(())
 }
 
-impl Configurator {
+impl Configurator<'_> {
     /// Create a new `Configurator` instance.
     ///
     /// # Arguments
@@ -202,7 +204,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new(json: &str) -> Result<Configurator, DscError> {
+    pub fn new<'a>(json: &'a str, progress_format: Option<&'a OutputFormat>) -> Result<Configurator<'a>, DscError> {
         let discovery = Discovery::new()?;
         let mut config = Configurator {
             json: json.to_owned(),
@@ -210,6 +212,7 @@ impl Configurator {
             context: Context::new(),
             discovery,
             statement_parser: Statement::new()?,
+            progress_format,
         };
         config.validate_config()?;
         Ok(config)
@@ -237,11 +240,11 @@ impl Configurator {
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let pb_span = get_progress_bar_span(resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut pb_span = get_progress_bar_span(resources.len() as u64, self.progress_format)?;
+        pb_span.enter();
         for resource in resources {
-            Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
+            pb_span.pb_inc(1);
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -274,7 +277,6 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Get)
         );
-        std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
     }
@@ -295,11 +297,11 @@ impl Configurator {
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let pb_span = get_progress_bar_span(resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut pb_span = get_progress_bar_span(resources.len() as u64, self.progress_format)?;
+        pb_span.enter();
         for resource in resources {
-            Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Set '{}'", resource.name).as_str());
+            pb_span.pb_inc(1);
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -386,7 +388,6 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Set)
         );
-        mem::drop(pb_span_enter);
         mem::drop(pb_span);
         Ok(result)
     }
@@ -403,11 +404,11 @@ impl Configurator {
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let pb_span = get_progress_bar_span(resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut pb_span = get_progress_bar_span(resources.len() as u64, self.progress_format)?;
+        pb_span.enter();
         for resource in resources {
-            Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Test '{}'", resource.name).as_str());
+            pb_span.pb_inc(1);
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -440,7 +441,6 @@ impl Configurator {
         result.metadata = Some(
             self.get_result_metadata(Operation::Test)
         );
-        std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
     }
@@ -458,12 +458,12 @@ impl Configurator {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        let pb_span = get_progress_bar_span(self.config.resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut pb_span = get_progress_bar_span(self.config.resources.len() as u64, self.progress_format)?;
+        pb_span.enter();
         let resources = self.config.resources.clone();
         for resource in &resources {
-            Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
+            pb_span.pb_inc(1);
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
@@ -475,7 +475,6 @@ impl Configurator {
 
         conf.metadata = Some(self.get_result_metadata(Operation::Export));
         result.result = Some(conf);
-        std::mem::drop(pb_span_enter);
         std::mem::drop(pb_span);
         Ok(result)
     }
@@ -650,7 +649,7 @@ impl Configurator {
 
         // Perform discovery of resources used in config
         let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
-        self.discovery.find_resources(&required_resources);
+        self.discovery.find_resources(&required_resources, self.progress_format);
         self.config = config;
         Ok(())
     }
