@@ -37,23 +37,12 @@ impl Default for DscSettingValue {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Default, Debug, Clone, Serialize)]
 pub struct DscProgressValue {
     pub activity:  String,
     pub status: String,
     pub percent_complete: u16,
     pub seconds_remaining: u64,
-}
-
-impl Default for DscProgressValue {
-    fn default() -> DscProgressValue {
-        DscProgressValue {
-            activity: String::new(),
-            status: String::new(),
-            percent_complete: 0,
-            seconds_remaining: 0,
-        }
-    }
 }
 
 pub struct DscProgressBar {
@@ -123,7 +112,7 @@ impl DscProgressBar {
     fn emit_json(&self) {
         if self.emit_json {
             let json = serde_json::to_string(&self.progress_value);
-            eprintln!("{:?}", json);
+            eprintln!("{json:?}");
         }
     }
 }

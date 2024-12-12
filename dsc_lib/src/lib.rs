@@ -42,11 +42,11 @@ impl DscManager {
         self.discovery.find_resource(name)
     }
 
-    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: &Option<OutputFormat>) -> Vec<DscResource> {
+    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: Option<&OutputFormat>) -> Vec<DscResource> {
         self.discovery.list_available_resources(type_name_filter, adapter_name_filter, progress_format)
     }
 
-    pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: &Option<OutputFormat>) {
+    pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: Option<&OutputFormat>) {
         self.discovery.find_resources(required_resource_types, progress_format);
     }
     /// Invoke the get operation on a resource.

@@ -203,7 +203,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new(json: &str, progress_format: &Option<OutputFormat>) -> Result<Configurator, DscError> {
+    pub fn new(json: &str, progress_format: Option<&OutputFormat>) -> Result<Configurator, DscError> {
         let discovery = Discovery::new()?;
         let mut config = Configurator {
             json: json.to_owned(),
@@ -645,7 +645,7 @@ impl Configurator {
         Ok(())
     }
 
-    fn validate_config(&mut self, progress_format: &Option<OutputFormat>) -> Result<(), DscError> {
+    fn validate_config(&mut self, progress_format: Option<&OutputFormat>) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(config.metadata.as_ref())?;
 

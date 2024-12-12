@@ -287,7 +287,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         }
     };
 
-    let mut configurator = match Configurator::new(&json_string, output_format) {
+    let mut configurator = match Configurator::new(&json_string, output_format.as_ref()) {
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
@@ -377,7 +377,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     }
                 }
             } else {
-                match validate_config(configurator.get_config(), output_format) {
+                match validate_config(configurator.get_config(), output_format.as_ref()) {
                     Ok(()) => {
                         // valid, so do nothing
                     },
@@ -445,7 +445,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 /// # Errors
 ///
 /// * `DscError` - The error that occurred.
-pub fn validate_config(config: &Configuration, progress_format: &Option<OutputFormat>) -> Result<(), DscError> {
+pub fn validate_config(config: &Configuration, progress_format: Option<&OutputFormat>) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("Validating configuration against schema");
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
@@ -533,18 +533,18 @@ pub fn resource(subcommand: &ResourceSubCommand) {
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format);
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
         },
         ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format);
+            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
             resource_command::schema(&dsc, resource, output_format.as_ref());
         },
         ResourceSubCommand::Export { resource, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format);
+            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
             resource_command::export(&mut dsc, resource, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format);
+            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
             if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
             else {
                 let parsed_input = get_input(input.as_ref(), path.as_ref());
@@ -552,24 +552,24 @@ pub fn resource(subcommand: &ResourceSubCommand) {
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format);
+            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::set(&dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format);
+            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::test(&dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
-            dsc.find_resources(&[resource.to_string()], &None);
+            dsc.find_resources(&[resource.to_string()], None); //TODO: add output_format to ResourceSubCommand::Delete
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::delete(&dsc, resource, parsed_input);
         },
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: &Option<OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>) {
     let mut write_table = false;
     let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
     if format.is_none() && io::stdout().is_terminal() {
@@ -652,7 +652,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format.as_ref());
+            write_output(&json, format);
             // insert newline separating instances if writing to console
             if io::stdout().is_terminal() { println!(); }
         }

@@ -37,7 +37,7 @@ impl Discovery {
     /// # Returns
     ///
     /// A vector of `DscResource` instances.
-    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: &Option<OutputFormat>) -> Vec<DscResource> {
+    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: Option<&OutputFormat>) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
@@ -74,7 +74,7 @@ impl Discovery {
     /// # Arguments
     ///
     /// * `required_resource_types` - The required resource types.
-    pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: &Option<OutputFormat>) {
+    pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: Option<&OutputFormat>) {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
