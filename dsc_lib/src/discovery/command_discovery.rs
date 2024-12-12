@@ -183,7 +183,7 @@ impl ResourceDiscovery for CommandDiscovery {
             "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
         )?);
         pb_span.pb_set_message("Searching for resources");
-        pb_span.enter();
+        let _ = pb_span.enter();
 
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
         let mut adapters = BTreeMap::<String, Vec<DscResource>>::new();
