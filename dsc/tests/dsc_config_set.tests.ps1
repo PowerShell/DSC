@@ -15,7 +15,7 @@ Describe 'dsc config set tests' {
               properties:
                 _exist: false
 "@
-        $out = $config_yaml | dsc config set | ConvertFrom-Json
+        $out = $config_yaml | dsc config set -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 2

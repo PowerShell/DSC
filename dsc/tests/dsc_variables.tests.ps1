@@ -4,7 +4,7 @@
 Describe 'Configruation variables tests' {
     It 'Variables example config works' {
         $configFile = "$PSSCriptRoot/../examples/variables.dsc.yaml"
-        $out = dsc config get -p $configFile | ConvertFrom-Json
+        $out = dsc config get -f $configFile | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.actualState.output | Should -BeExactly 'myOutput is: Hello world!, myObject is: baz'
     }
@@ -21,7 +21,7 @@ resources:
   properties:
     output: "[variables('myVariable')]"
 '@
-        $out = dsc config get -d $configYaml | ConvertFrom-Json
+        $out = dsc config get -i $configYaml | ConvertFrom-Json
         Write-Verbose -Verbose $out
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.actualState.output | Should -Be 'bar'
@@ -38,7 +38,7 @@ resources:
   properties:
     output: "[variables('myVariable')]"
 '@
-        $out = dsc config get -d $configYaml 2>&1 | Out-String
+        $out = dsc config get -i $configYaml 2>&1 | Out-String
         Write-Verbose -Verbose $out
         $LASTEXITCODE | Should -Be 2
         $out | Should -BeLike "*Variable 'myVariable' does not exist or has not been initialized yet*"

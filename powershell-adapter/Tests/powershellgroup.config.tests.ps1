@@ -26,16 +26,16 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on config with class-based resources' {
 
-        $r = Get-Content -Raw $pwshConfigPath | dsc config get
+        $r = Get-Content -Raw $pwshConfigPath | dsc config get -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState.result[0].properties.Prop1 | Should -BeExactly 'ValueForProp1'
         $res.results[0].result.actualState.result[0].properties.EnumProp | Should -BeExactly 'Expected'
     }
-    
+
     It 'Test works on config with class-based resources' {
 
-        $r = Get-Content -Raw $pwshConfigPath | dsc config test
+        $r = Get-Content -Raw $pwshConfigPath | dsc config test -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState.result[0] | Should -Not -BeNull
@@ -43,7 +43,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Set works on config with class-based resources' {
 
-        $r = Get-Content -Raw $pwshConfigPath | dsc config set
+        $r = Get-Content -Raw $pwshConfigPath | dsc config set -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results.result.afterState.result[0].type | Should -Be "TestClassResource/TestClassResource"
@@ -61,7 +61,7 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: TestClassResource/TestClassResource
 '@
-        $out = $yaml | dsc config export
+        $out = $yaml | dsc config export -f -
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
         $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
@@ -82,7 +82,7 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: TestClassResource/NoExport
 '@
-        $out = $yaml | dsc config export 2>&1 | Out-String
+        $out = $yaml | dsc config export -f - 2>&1 | Out-String
         $LASTEXITCODE | Should -Be 2
         $out | Should -Not -BeNullOrEmpty
         $out | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
@@ -107,7 +107,7 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: TestClassResource/TestClassResource
 "@
-            $out = $yaml | dsc config export
+            $out = $yaml | dsc config export -f -
             $LASTEXITCODE | Should -Be 0
             $res = $out | ConvertFrom-Json
             $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
@@ -140,7 +140,7 @@ Describe 'PowerShell adapter resource tests' {
         $config_path = "$TestDrive/test_config.dsc.yaml"
         $yaml | Set-Content -Path $config_path
 
-        $out = dsc config get --path $config_path
+        $out = dsc config get --file $config_path
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
         $res.results.result.actualState.result.properties.Name | Should -Be $TestDrive
@@ -161,7 +161,7 @@ Describe 'PowerShell adapter resource tests' {
                   properties:
                     Name: "[envvar('DSC_CONFIG_ROOT')]"
 "@
-        $out = $yaml | dsc config get | ConvertFrom-Json
+        $out = $yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.actualState.result[0].properties.Name | Should -BeExactly (Get-Location).Path
     }

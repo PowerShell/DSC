@@ -15,7 +15,7 @@ Describe 'Invoke a resource test directly' {
 
         $out = @"
         { "family": "$os" }
-"@ | dsc resource test -r Microsoft/OSInfo | ConvertFrom-Json
+"@ | dsc resource test -r Microsoft/OSInfo -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.actualState.family | Should -BeExactly $os
         $out.inDesiredState | Should -Be $true

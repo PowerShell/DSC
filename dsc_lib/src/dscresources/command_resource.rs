@@ -30,14 +30,14 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let args = process_args(&get.args, filter);
+    let args = process_args(get.args.as_ref(), filter);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
-        command_input = get_command_input(&get.input, filter)?;
+        command_input = get_command_input(get.input.as_ref(), filter)?;
     }
 
     info!("Invoking get '{}' using '{}'", &resource.resource_type, &get.executable);
-    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, &resource.exit_codes)?;
+    let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     if resource.kind == Some(Kind::Resource) {
         debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &get.executable);
         verify_json(resource, cwd, &stdout)?;
@@ -134,11 +134,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let args = process_args(&get.args, desired);
-    let command_input = get_command_input(&get.input, desired)?;
+    let args = process_args(get.args.as_ref(), desired);
+    let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("Getting current state for set by invoking get '{}' using '{}'", &resource.resource_type, &get.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, &resource.exit_codes)?;
+    let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     if resource.kind == Some(Kind::Resource) {
         debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &get.executable);
@@ -154,7 +154,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_args(&set.args, desired);
+    let args = process_args(set.args.as_ref(), desired);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -168,7 +168,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     }
 
     info!("Invoking {} '{}' using '{}'", operation_type, &resource.resource_type, &set.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env, &resource.exit_codes)?;
+    let (exit_code, stdout, stderr) = invoke_command(&set.executable, args, input_desired, Some(cwd), env, resource.exit_codes.as_ref())?;
 
     match set.returns {
         Some(ReturnKind::State) => {
@@ -256,11 +256,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 
     verify_json(resource, cwd, expected)?;
 
-    let args = process_args(&test.args, expected);
-    let command_input = get_command_input(&test.input, expected)?;
+    let args = process_args(test.args.as_ref(), expected);
+    let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("Invoking test '{}' using '{}'", &resource.resource_type, &test.executable);
-    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, &resource.exit_codes)?;
+    let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     if resource.kind == Some(Kind::Resource) {
         debug!("Verifying output of test '{}' using '{}'", &resource.resource_type, &test.executable);
@@ -376,11 +376,11 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
 
     verify_json(resource, cwd, filter)?;
 
-    let args = process_args(&delete.args, filter);
-    let command_input = get_command_input(&delete.input, filter)?;
+    let args = process_args(delete.args.as_ref(), filter);
+    let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
-    let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, &resource.exit_codes)?;
+    let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     Ok(())
 }
@@ -407,11 +407,11 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
         return Err(DscError::NotImplemented("validate".to_string()));
     };
 
-    let args = process_args(&validate.args, config);
-    let command_input = get_command_input(&validate.input, config)?;
+    let args = process_args(validate.args.as_ref(), config);
+    let command_input = get_command_input(validate.input.as_ref(), config)?;
 
     info!("Invoking validate '{}' using '{}'", &resource.resource_type, &validate.executable);
-    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, &resource.exit_codes)?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -432,7 +432,7 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 
     match schema_kind {
         SchemaKind::Command(ref command) => {
-            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None, &resource.exit_codes)?;
+            let (_exit_code, stdout, _stderr) = invoke_command(&command.executable, command.args.clone(), None, Some(cwd), None, resource.exit_codes.as_ref())?;
             Ok(stdout)
         },
         SchemaKind::Embedded(ref schema) => {
@@ -468,15 +468,15 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
         if !input.is_empty() {
             verify_json(resource, cwd, input)?;
 
-            command_input = get_command_input(&export.input, input)?;
+            command_input = get_command_input(export.input.as_ref(), input)?;
         }
 
-        args = process_args(&export.args, input);
+        args = process_args(export.args.as_ref(), input);
     } else {
-        args = process_args(&export.args, "");
+        args = process_args(export.args.as_ref(), "");
     }
 
-    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, &resource.exit_codes)?;
+    let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     let mut instances: Vec<Value> = Vec::new();
     for line in stdout.lines()
     {
@@ -518,11 +518,11 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
         return Err(DscError::Operation(format!("Resolve is not supported by resource {}", &resource.resource_type)));
     };
 
-    let args = process_args(&resolve.args, input);
-    let command_input = get_command_input(&resolve.input, input)?;
+    let args = process_args(resolve.args.as_ref(), input);
+    let command_input = get_command_input(resolve.input.as_ref(), input)?;
 
     info!("Invoking resolve '{}' using '{}'", &resource.resource_type, &resolve.executable);
-    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, &resource.exit_codes)?;
+    let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     let result: ResolveResult = serde_json::from_str(&stdout)?;
     Ok(result)
 }
@@ -542,7 +542,7 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
 ///
-async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
 
     // use somewhat large initial buffer to avoid early string reallocations;
     // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
@@ -659,7 +659,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 /// Will panic if tokio runtime can't be created.
 ///
 #[allow(clippy::implicit_hasher)]
-pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: &Option<HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
     debug!("Invoking command '{}' with args {:?}", executable, args);
 
     tokio::runtime::Builder::new_multi_thread()
@@ -669,7 +669,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
         .block_on(run_process_async(executable, args, input, cwd, env, exit_codes))
 }
 
-fn process_args(args: &Option<Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
+fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("No args to process");
         return None;
@@ -700,7 +700,7 @@ struct CommandInput {
     stdin: Option<String>,
 }
 
-fn get_command_input(input_kind: &Option<InputKind>, input: &str) -> Result<CommandInput, DscError> {
+fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<CommandInput, DscError> {
     let mut env: Option<HashMap<String, String>> = None;
     let mut stdin: Option<String> = None;
     match input_kind {

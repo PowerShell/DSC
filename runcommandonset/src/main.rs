@@ -2,8 +2,9 @@
 // Licensed under the MIT License.
 
 use clap::Parser;
+use rust_i18n::{i18n, t};
 use std::{io::{self, Read, IsTerminal}, process::exit};
-use tracing::{error, warn, debug};
+use tracing::{error, warn, debug, trace};
 
 use args::{Arguments, SubCommand, TraceLevel};
 use runcommand::RunCommand;
@@ -12,6 +13,8 @@ use utils::{enable_tracing, invoke_command, parse_input, EXIT_INVALID_ARGS};
 pub mod args;
 pub mod runcommand;
 pub mod utils;
+
+i18n!("locales", fallback = "en-us");
 
 fn main() {
     let args = Arguments::parse();
@@ -27,7 +30,7 @@ fn main() {
                     "debug" => TraceLevel::Debug,
                     "trace" => TraceLevel::Trace,
                     _ => {
-                        warn!("Invalid trace level: {trace_level}");
+                        warn!("{}: {trace_level}", t!("main.invalidTraceLevel"));
                         TraceLevel::Info
                     }
                 }
@@ -38,24 +41,24 @@ fn main() {
         }
     };
     enable_tracing(&trace_level, &args.trace_format);
-    warn!("This resource is not idempotent");
+    warn!("{}", t!("main.notIdempotent"));
 
     let stdin = if std::io::stdin().is_terminal() {
         None
     } else {
-        debug!("Reading input from STDIN");
+        debug!("{}", t!("main.readStdin"));
         let mut buffer: Vec<u8> = Vec::new();
         io::stdin().read_to_end(&mut buffer).unwrap();
         let stdin = match String::from_utf8(buffer) {
             Ok(stdin) => stdin,
             Err(e) => {
-                error!("Invalid UTF-8 sequence: {e}");
+                error!("{}: {e}", t!("main.invalidUtf8"));
                 exit(EXIT_INVALID_ARGS);
             },
         };
         // parse_input expects at most 1 input, so wrapping Some(empty input) would throw it off
         if stdin.is_empty() {
-            debug!("Input from STDIN is empty");
+            debug!("{}", t!("main.emptyStdin"));
             None
         }
         else {
@@ -72,9 +75,8 @@ fn main() {
         SubCommand::Set { arguments, executable, exit_code } => {
             command = parse_input(arguments, executable, exit_code, stdin);
             let (exit_code, stdout, stderr) = invoke_command(command.executable.as_ref(), command.arguments.clone());
-            // TODO: convert this to tracing json once other PR is merged to handle tracing from resources
-            eprintln!("Stdout: {stdout}");
-            eprintln!("Stderr: {stderr}");
+            trace!("Stdout: {stdout}");
+            trace!("Stderr: {stderr}");
             command.exit_code = exit_code;
         }
     }

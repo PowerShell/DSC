@@ -3,7 +3,7 @@
 
 Describe 'Group resource tests' {
     It 'Nested groups should work for get' {
-        $out = (dsc config get -p $PSScriptRoot/../examples/groups.dsc.yaml -f yaml | Out-String).Trim()
+        $out = (dsc config get -f $PSScriptRoot/../examples/groups.dsc.yaml -o yaml | Out-String).Trim()
         $LASTEXITCODE | Should -Be 0
         $out | Should -BeLike @'
 metadata:

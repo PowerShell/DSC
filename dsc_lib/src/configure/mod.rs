@@ -163,7 +163,7 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
     Ok(serde_json::to_string(&properties)?)
 }
 
-fn check_security_context(metadata: &Option<Metadata>) -> Result<(), DscError> {
+fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
     if metadata.is_none() {
         return Ok(());
     }
@@ -243,7 +243,7 @@ impl Configurator {
         for resource in resources {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(&resource.properties)?;
+            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -301,7 +301,7 @@ impl Configurator {
         for resource in resources {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Set '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(&resource.properties)?;
+            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -409,7 +409,7 @@ impl Configurator {
         for resource in resources {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Test '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(&resource.properties)?;
+            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -465,7 +465,7 @@ impl Configurator {
         for resource in &resources {
             Span::current().pb_inc(1);
             pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(&resource.properties)?;
+            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
@@ -499,14 +499,14 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the parameters are invalid.
-    pub fn set_context(&mut self, parameters_input: &Option<Value>) -> Result<(), DscError> {
+    pub fn set_context(&mut self, parameters_input: Option<&Value>) -> Result<(), DscError> {
         let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
         Ok(())
     }
 
-    fn set_parameters(&mut self, parameters_input: &Option<Value>, config: &Configuration) -> Result<(), DscError> {
+    fn set_parameters(&mut self, parameters_input: Option<&Value>, config: &Configuration) -> Result<(), DscError> {
         // set default parameters first
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
@@ -647,7 +647,7 @@ impl Configurator {
 
     fn validate_config(&mut self, progress_format: &Option<OutputFormat>) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
-        check_security_context(&config.metadata)?;
+        check_security_context(config.metadata.as_ref())?;
 
         // Perform discovery of resources used in config
         let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
@@ -656,7 +656,7 @@ impl Configurator {
         Ok(())
     }
 
-    fn invoke_property_expressions(&mut self, properties: &Option<Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
+    fn invoke_property_expressions(&mut self, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
         debug!("Invoke property expressions");
         if properties.is_none() {
             return Ok(None);
@@ -668,7 +668,7 @@ impl Configurator {
                 trace!("Invoke property expression for {name}: {value}");
                 match value {
                     Value::Object(object) => {
-                        let value = self.invoke_property_expressions(&Some(object.clone()))?;
+                        let value = self.invoke_property_expressions(Some(object))?;
                         result.insert(name.clone(), serde_json::to_value(value)?);
                         continue;
                     },
@@ -677,7 +677,7 @@ impl Configurator {
                         for element in array {
                             match element {
                                 Value::Object(object) => {
-                                    let value = self.invoke_property_expressions(&Some(object.clone()))?;
+                                    let value = self.invoke_property_expressions(Some(object))?;
                                     result_array.push(serde_json::to_value(value)?);
                                     continue;
                                 },

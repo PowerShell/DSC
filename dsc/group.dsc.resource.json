@@ -11,9 +11,12 @@
       "pass-through",
       "config",
       "--as-group",
-      "get"
-    ],
-    "input": "stdin"
+      "get",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ]
   },
   "set": {
     "executable": "dsc",
@@ -22,9 +25,12 @@
       "pass-through",
       "config",
       "--as-group",
-      "set"
+      "set",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
     ],
-    "input": "stdin",
     "implementsPretest": true,
     "return": "state"
   },
@@ -35,9 +41,12 @@
       "pass-through",
       "config",
       "--as-group",
-      "test"
+      "test",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
     ],
-    "input": "stdin",
     "return": "state"
   },
   "exitCodes": {
@@ -56,8 +65,11 @@
       "--trace-format",
       "pass-through",
       "config",
-      "validate"
-    ],
-    "input": "stdin"
+      "validate",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ]
   }
 }

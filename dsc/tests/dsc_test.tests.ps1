@@ -10,7 +10,7 @@ Describe 'resource test tests' {
         }
 '@
         $current = registry config get --input $json
-        $out = $current | dsc resource test -r Microsoft.Windows/Registry
+        $out = $current | dsc resource test -r Microsoft.Windows/Registry -f -
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.inDesiredState | Should -BeTrue
@@ -27,7 +27,7 @@ Describe 'resource test tests' {
             }
         }
 '@
-        $out = $json | dsc resource test -r Microsoft.Windows/Registry
+        $out = $json | dsc resource test -r Microsoft.Windows/Registry -f -
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.inDesiredState | Should -BeFalse
@@ -45,7 +45,7 @@ Describe 'resource test tests' {
             }
         }
 '@
-        $out = $json | dsc resource test -r Microsoft.Windows/Registry
+        $out = $json | dsc resource test -r Microsoft.Windows/Registry -f -
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
         $out.inDesiredState | Should -BeFalse
@@ -54,8 +54,8 @@ Describe 'resource test tests' {
         $out.differingProperties[1] | Should -BeExactly '_exist'
     }
 
-    It 'can accept the use of --format as a subcommand' {
-        $null = "output: hello" | dsc resource test -r Microsoft.DSC.Debug/Echo --format pretty-json
+    It 'can accept the use of --output-format as a subcommand' {
+        $null = "output: hello" | dsc resource test -r Microsoft.DSC.Debug/Echo --output-format pretty-json -f -
         $LASTEXITCODE | Should -Be 0
     }
 }

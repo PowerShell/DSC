@@ -41,8 +41,8 @@ resources:
   properties:
     output: "$text"
 "@
-        $debug = $yaml | dsc -l trace config get -f yaml 2>&1 | Out-String
-        $out = $yaml | dsc config get | ConvertFrom-Json
+        $debug = $yaml | dsc -l trace config get -o yaml -f - 2>&1 | Out-String
+        $out = $yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because $debug
         $out.results[0].result.actualState.output | Should -Be $expected -Because $debug
     }
@@ -62,14 +62,14 @@ resources:
   properties:
     output: "$expression"
 "@
-        $out = dsc config get -d $yaml 2>&1
+        $out = dsc config get -i $yaml 2>&1
         $LASTEXITCODE | Should -Be 2
         $out | Should -BeLike "*ERROR*"
     }
 
     It 'Multi-line string literals work' {
       $yamlPath = "$PSScriptRoot/../examples/multiline.dsc.yaml"
-      $out = dsc config get -p $yamlPath | ConvertFrom-Json
+      $out = dsc config get -f $yamlPath | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results[0].result.actualState.output | Should -BeExactly @"
 This is a

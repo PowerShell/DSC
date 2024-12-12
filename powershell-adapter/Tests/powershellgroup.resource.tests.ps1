@@ -33,7 +33,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get works on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource'
+        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.Prop1 | Should -BeExactly 'ValueForProp1'
@@ -46,7 +46,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get uses enum names on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource'
+        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.EnumProp | Should -BeExactly 'Expected'
@@ -54,7 +54,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Test works on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource'
+        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.properties.InDesiredState | Should -Be $True
@@ -68,7 +68,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Set works on class-based resource' {
 
-        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource'
+        $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.afterState.result | Should -Not -BeNull
@@ -229,7 +229,7 @@ Describe 'PowerShell adapter resource tests' {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}'| dsc resource get -r 'Test/TestCase'
+            $r = '{TestCaseId: 1}'| dsc resource get -r 'Test/TestCase' -f -
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
             $resources.actualState.result | Should -Be $True
@@ -245,7 +245,7 @@ Describe 'PowerShell adapter resource tests' {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}'| dsc resource set -r 'Test/TestCase'
+            $r = '{TestCaseId: 1}'| dsc resource set -r 'Test/TestCase' -f -
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
             $resources.beforeState.result | Should -Be $True
@@ -262,7 +262,7 @@ Describe 'PowerShell adapter resource tests' {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}'| dsc resource test -r 'Test/TestCase'
+            $r = '{TestCaseId: 1}'| dsc resource test -r 'Test/TestCase' -f -
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
             $resources.actualState.result | Should -Be $True

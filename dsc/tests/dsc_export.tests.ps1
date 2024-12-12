@@ -32,7 +32,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $yaml | dsc config export
+        $out = $yaml | dsc config export -f -
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
         $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
@@ -51,7 +51,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $yaml | dsc config export | dsc config set
+        $out = $yaml | dsc config export -f - | dsc config set -f -
         $LASTEXITCODE | Should -Be 0
         $set_results = $out | ConvertFrom-Json
         $set_results.results.count | Should -BeGreaterThan 1
@@ -71,13 +71,13 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $yaml | dsc config export 2>&1
+        $out = $yaml | dsc config export -f - 2>&1
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'Export can be called on individual resource with the use of --format as a subcommand' {
+    It 'Export can be called on individual resource with the use of --output-format as a subcommand' {
 
-      $out = dsc resource export -r Microsoft/Process -f pretty-json
+      $out = dsc resource export -r Microsoft/Process -o pretty-json
       $LASTEXITCODE | Should -Be 0
       $config_with_process_list = $out | ConvertFrom-Json
       $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
@@ -85,7 +85,7 @@ Describe 'resource export tests' {
       $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
 
-    It 'Export can be called on a configuration with the use of --format as a subcommand' {
+    It 'Export can be called on a configuration with the use of --output-format as a subcommand' {
 
       $yaml = @'
           $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
@@ -95,7 +95,7 @@ Describe 'resource export tests' {
             properties:
               pid: 0
 '@
-      $out = $yaml | dsc config export -f pretty-json
+      $out = $yaml | dsc config export -o pretty-json -f -
       $LASTEXITCODE | Should -Be 0
       $config_with_process_list = $out | ConvertFrom-Json
       $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'

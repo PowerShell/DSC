@@ -9,7 +9,7 @@ Describe 'dsc config get tests' {
         param($config)
         $jsonPath = Join-Path $PSScriptRoot '../examples' $config
         $config = Get-Content $jsonPath -Raw
-        $out = $config | dsc config get | ConvertFrom-Json
+        $out = $config | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 3
@@ -26,13 +26,12 @@ Describe 'dsc config get tests' {
 
     It 'will fail if resource schema does not match' -Skip:(!$IsWindows) {
         $jsonPath = Join-Path $PSScriptRoot '../examples/invalid_schema.dsc.yaml'
-        $config = Get-Content $jsonPath -Raw
-        $testError = & {$config | dsc config get get 2>&1}
-        $testError[0] | Should -match 'error:'
+        $testError = & {dsc config get -f $jsonPath 2>&1}
+        $testError[0] | Should -match 'Schema:'
         $LASTEXITCODE | Should -Be 2
     }
 
-    It 'can accept the use of --format as a subcommand' {
+    It 'can accept the use of --output-format as a subcommand' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
@@ -41,7 +40,7 @@ Describe 'dsc config get tests' {
               properties:
                 output: hello
 "@
-        $result = $config_yaml | dsc config get --format pretty-json | ConvertFrom-Json
+        $result = $config_yaml | dsc config get --output-format pretty-json -f - | ConvertFrom-Json
         $result.hadErrors | Should -BeFalse
         $result.results.Count | Should -Be 1
         $result.results[0].Name | Should -Be 'Echo'

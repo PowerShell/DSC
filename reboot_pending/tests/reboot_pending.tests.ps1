@@ -10,7 +10,7 @@ Describe 'reboot_pending resource tests' {
 
     It 'reboot_pending works in a config' -Skip:(!$IsWindows) {
         $ConfigPath = Resolve-Path "$PSScriptRoot/reboot_pending.dsc.yaml"
-        $out = dsc config get --path $ConfigPath | ConvertFrom-Json
+        $out = dsc config get --file $ConfigPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results.result.actualState.rebootPending | Should -Not -BeNullOrEmpty
     }
