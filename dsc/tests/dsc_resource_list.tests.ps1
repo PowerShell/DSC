@@ -58,6 +58,20 @@ Describe 'Tests for listing resources' {
         }
     }
 
+    It 'json progress for resource subcommand' {
+        dsc resource list -o json -a * 2> $TestDrive/ErrorStream.txt
+        $LASTEXITCODE | Should -Be 0
+        $lines = Get-Content $TestDrive/ErrorStream.txt
+        $ProgressMessagesFound = $False
+        foreach ($line in $lines) {
+            if ($line.Contains("activity")) { # if line is a progress message
+                $line.Contains("percent_complete") | Should -BeTrue
+                $ProgressMessagesFound = $True
+            }
+        }
+        $ProgressMessagesFound | Should -BeTrue
+    }
+
     It 'Capabilities are returned' {
         $resource = dsc resource list Microsoft/OSInfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
