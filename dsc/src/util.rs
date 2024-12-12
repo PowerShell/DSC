@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{DscType, OutputFormat, TraceFormat};
+use crate::args::{DscType, TraceFormat};
 use crate::resolve::Include;
 use dsc_lib::{
     configure::{
@@ -24,6 +24,7 @@ use dsc_lib::{
     },
     util::parse_input_to_json,
     util::get_setting,
+    util::OutputFormat,
 };
 use jsonschema::Validator;
 use path_absolutize::Absolutize;

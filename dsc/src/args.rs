@@ -4,14 +4,8 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
+use dsc_lib::util::OutputFormat;
 use serde::Deserialize;
-
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
-pub enum OutputFormat {
-    Json,
-    PrettyJson,
-    Yaml,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Deserialize)]
 pub enum TraceFormat {

@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::OutputFormat;
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, add_type_name_to_json, write_output};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse}};
 use dsc_lib::dscerror::DscError;
+use dsc_lib::util::OutputFormat;
 use tracing::{error, debug};
 
 use dsc_lib::{

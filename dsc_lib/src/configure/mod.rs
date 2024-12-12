@@ -12,6 +12,7 @@ use crate::dscresources::{
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
+use crate::OutputFormat;
 use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
@@ -202,7 +203,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new(json: &str) -> Result<Configurator, DscError> {
+    pub fn new(json: &str, progress_format: &Option<OutputFormat>) -> Result<Configurator, DscError> {
         let discovery = Discovery::new()?;
         let mut config = Configurator {
             json: json.to_owned(),
@@ -211,7 +212,7 @@ impl Configurator {
             discovery,
             statement_parser: Statement::new()?,
         };
-        config.validate_config()?;
+        config.validate_config(progress_format)?;
         Ok(config)
     }
 
@@ -644,13 +645,13 @@ impl Configurator {
         Ok(())
     }
 
-    fn validate_config(&mut self) -> Result<(), DscError> {
+    fn validate_config(&mut self, progress_format: &Option<OutputFormat>) -> Result<(), DscError> {
         let config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(&config.metadata)?;
 
         // Perform discovery of resources used in config
         let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
-        self.discovery.find_resources(&required_resources);
+        self.discovery.find_resources(&required_resources, progress_format);
         self.config = config;
         Ok(())
     }

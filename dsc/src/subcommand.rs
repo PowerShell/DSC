@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, DscType, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
@@ -25,6 +25,7 @@ use dsc_lib::{
     },
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    util::OutputFormat,
 };
 use std::{
     collections::HashMap,
@@ -237,12 +238,12 @@ fn initialize_config_root(path: &Option<String>) -> Option<String> {
 
 #[allow(clippy::too_many_lines)]
 pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: &Option<String>, stdin: &Option<String>, as_group: &bool, as_include: &bool) {
-    let (new_parameters, json_string) = match subcommand {
-        ConfigSubCommand::Get { document, path, .. } |
-        ConfigSubCommand::Set { document, path, .. } |
-        ConfigSubCommand::Test { document, path, .. } |
-        ConfigSubCommand::Validate { document, path, .. } |
-        ConfigSubCommand::Export { document, path, .. } => {
+    let (new_parameters, json_string, progress_format) = match subcommand {
+        ConfigSubCommand::Get { document, path, format, .. } |
+        ConfigSubCommand::Set { document, path, format,  .. } |
+        ConfigSubCommand::Test { document, path, format, .. } |
+        ConfigSubCommand::Validate { document, path, format,  .. } |
+        ConfigSubCommand::Export { document, path, format,  .. } => {
             let new_path = initialize_config_root(path);
             let input = get_input(document, stdin, &new_path);
             if *as_include {
@@ -253,12 +254,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                         exit(EXIT_DSC_ERROR);
                     }
                 };
-                (new_parameters, config_json)
+                (new_parameters, config_json, format)
             } else {
-                (None, input)
+                (None, input, format)
             }
         },
-        ConfigSubCommand::Resolve { document, path, .. } => {
+        ConfigSubCommand::Resolve { document, path, format, .. } => {
             let new_path = initialize_config_root(path);
             let input = get_input(document, stdin, &new_path);
             let (new_parameters, config_json) = match get_contents(&input) {
@@ -268,11 +269,11 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     exit(EXIT_DSC_ERROR);
                 }
             };
-            (new_parameters, config_json)
+            (new_parameters, config_json, format)
         }
     };
 
-    let mut configurator = match Configurator::new(&json_string) {
+    let mut configurator = match Configurator::new(&json_string, progress_format) {
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
@@ -362,7 +363,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     }
                 }
             } else {
-                match validate_config(configurator.get_config()) {
+                match validate_config(configurator.get_config(), progress_format) {
                     Ok(()) => {
                         // valid, so do nothing
                     },
@@ -430,7 +431,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 /// # Errors
 ///
 /// * `DscError` - The error that occurred.
-pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
+pub fn validate_config(config: &Configuration, progress_format: &Option<OutputFormat>) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("Validating configuration against schema");
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
@@ -456,7 +457,7 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 
         resource_types.push(type_name.to_lowercase().to_string());
     }
-    dsc.find_resources(&resource_types);
+    dsc.find_resources(&resource_types, progress_format);
 
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
@@ -521,15 +522,15 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             list_resources(&mut dsc, resource_name, adapter_name, description, tags, format);
         },
         ResourceSubCommand::Schema { resource , format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], format);
             resource_command::schema(&dsc, resource, format);
         },
         ResourceSubCommand::Export { resource, format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], format);
             resource_command::export(&mut dsc, resource, format);
         },
         ResourceSubCommand::Get { resource, input, path, all, format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], format);
             if *all { resource_command::get_all(&dsc, resource, format); }
             else {
                 let parsed_input = get_input(input, stdin, path);
@@ -537,17 +538,17 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
             }
         },
         ResourceSubCommand::Set { resource, input, path, format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], format);
             let parsed_input = get_input(input, stdin, path);
             resource_command::set(&dsc, resource, parsed_input, format);
         },
         ResourceSubCommand::Test { resource, input, path, format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], format);
             let parsed_input = get_input(input, stdin, path);
             resource_command::test(&dsc, resource, parsed_input, format);
         },
         ResourceSubCommand::Delete { resource, input, path } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], &None);
             let parsed_input = get_input(input, stdin, path);
             resource_command::delete(&dsc, resource, parsed_input);
         },
@@ -561,7 +562,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
+    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default(), format) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
