@@ -18,7 +18,7 @@ use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
-use self::contraints::{check_length, check_number_limits, check_allowed_values};
+use self::constraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
@@ -28,7 +28,7 @@ use tracing::{debug, info, trace};
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
-pub mod contraints;
+pub mod constraints;
 pub mod depends_on;
 pub mod parameters;
 
