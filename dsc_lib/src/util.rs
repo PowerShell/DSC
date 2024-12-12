@@ -115,7 +115,7 @@ impl DscProgressBar {
     fn emit_json(&self) {
         if self.emit_json {
             if let Ok(json) = serde_json::to_string(&self.progress_value) {
-                eprintln!("{json:?}");
+                eprintln!("{json}");
             }
         }
     }
