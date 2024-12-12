@@ -27,6 +27,7 @@ use dsc_lib::{
 };
 use jsonschema::Validator;
 use path_absolutize::Absolutize;
+use rust_i18n::t;
 use schemars::{schema_for, schema::RootSchema};
 use serde::Deserialize;
 use serde_json::Value;
@@ -438,12 +439,12 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {
-            return Err(DscError::Validation(format!("{}: {err}", t!("util.failedToCompileSchema")));
+            return Err(DscError::Validation(format!("{}: {err}", t!("util.failedToCompileSchema"))));
         }
     };
 
     if let Err(err) = compiled_schema.validate(json) {
-        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed")));
+        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed"))));
     };
 
     Ok(())
