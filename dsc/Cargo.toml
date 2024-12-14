@@ -19,6 +19,7 @@ dsc_lib = { path = "../dsc_lib" }
 indicatif = { version = "0.17" }
 jsonschema = { version = "0.26", default-features = false }
 path-absolutize = { version = "3.1" }
+rust-i18n = { version = "3" }
 schemars = { version = "0.8" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }

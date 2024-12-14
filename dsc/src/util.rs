@@ -27,6 +27,7 @@ use dsc_lib::{
 };
 use jsonschema::Validator;
 use path_absolutize::Absolutize;
+use rust_i18n::t;
 use schemars::{schema_for, schema::RootSchema};
 use serde::Deserialize;
 use serde_json::Value;
@@ -93,7 +94,7 @@ pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
     match serde_json::to_string(&json) {
         Ok(json_string) => json_string,
         Err(err) => {
-            error!("Error: Failed to convert JSON to string: {err}");
+            error!("{}: {err}", t!("util.failedToConvertJsonToString"));
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -153,7 +154,7 @@ pub fn add_type_name_to_json(json: String, type_name: String) -> String
     match add_fields_to_json(&j, &map) {
         Ok(json) => json,
         Err(err) => {
-            error!("JSON Error: {err}");
+            error!("JSON: {err}");
             exit(EXIT_JSON_ERROR);
         }
     }
@@ -233,14 +234,14 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
             let value: serde_json::Value = match serde_json::from_str(json) {
                 Ok(value) => value,
                 Err(err) => {
-                    error!("JSON Error: {err}");
+                    error!("JSON: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
             match serde_json::to_string_pretty(&value) {
                 Ok(json) => json,
                 Err(err) => {
-                    error!("JSON Error: {err}");
+                    error!("JSON: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             }
@@ -250,14 +251,14 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
             let value: serde_json::Value = match serde_json::from_str(json) {
                 Ok(value) => value,
                 Err(err) => {
-                    error!("JSON Error: {err}");
+                    error!("JSON: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
             match serde_yaml::to_string(&value) {
                 Ok(yaml) => yaml,
                 Err(err) => {
-                    error!("YAML Error: {err}");
+                    error!("YAML: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             }
@@ -329,7 +330,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
             }
         }
     } else {
-        error!("Could not read 'tracing' setting");
+        error!("{}", t!("util.failedToReadTracingSetting"));
     }
 
     // override with DSC_TRACE_LEVEL env var if permitted
@@ -342,7 +343,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
                 "DEBUG" => TraceLevel::Debug,
                 "TRACE" => TraceLevel::Trace,
                 _ => {
-                    warn!("Invalid DSC_TRACE_LEVEL value '{level}', defaulting to 'warn'");
+                    warn!("{}: '{level}'", t!("util.invalidTraceLevel"));
                     TraceLevel::Warn
                 }
             }
@@ -408,7 +409,7 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
 
     drop(default_guard);
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
+        eprintln!("{}", t!("util.failedToSetTracing"));
     }
 
     // set DSC_TRACE_LEVEL for child processes
@@ -432,18 +433,18 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
 ///
 /// * `DscError` - The JSON is invalid
 pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
-    debug!("Validating {source} against schema");
+    debug!("{}: {source}", t!("util.validatingSchema"));
     trace!("JSON: {json}");
     trace!("Schema: {schema}");
     let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {
-            return Err(DscError::Validation(format!("JSON Schema Compilation Error: {err}")));
+            return Err(DscError::Validation(format!("{}: {err}", t!("util.failedToCompileSchema"))));
         }
     };
 
     if let Err(err) = compiled_schema.validate(json) {
-        return Err(DscError::Validation(format!("'{source}' failed validation: {err}")));
+        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed"))));
     };
 
     Ok(())
@@ -452,19 +453,19 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
 pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
-        debug!("Reading input from command line parameter");
+        debug!("{}", t!("util.readingInput"));
 
         // see if user accidentally passed in a file path
         if Path::new(input).exists() {
-            error!("Error: Document provided is a file path, use '--file' instead");
+            error!("{}", t!("util.inputIsFile"));
             exit(EXIT_INVALID_INPUT);
         }
         input.clone()
     } else if let Some(path) = file {
-        debug!("Reading input from file {}", path);
+        debug!("{} {path}", t!("util.readingInputFromFile"));
         // check if need to read from STDIN
         if path == "-" {
-            info!("Reading input from STDIN");
+            info!("{}", t!("util.readingInputFromStdin"));
             let mut stdin = Vec::<u8>::new();
             match std::io::stdin().read_to_end(&mut stdin) {
                 Ok(_) => {
@@ -473,13 +474,13 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
                             input
                         },
                         Err(err) => {
-                            error!("Error: Invalid utf-8 input: {err}");
+                            error!("{}: {err}", t!("util.invalidUtf8"));
                             exit(EXIT_INVALID_INPUT);
                         }
                     }
                 },
                 Err(err) => {
-                    error!("Error: Failed to read input from STDIN: {err}");
+                    error!("{}: {err}", t!("util.failedToReadStdin"));
                     exit(EXIT_INVALID_INPUT);
                 }
             }
@@ -489,25 +490,25 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
                     input
                 },
                 Err(err) => {
-                    error!("Error: Failed to read input file: {err}");
+                    error!("{}: {err}", t!("util.failedToReadFile"));
                     exit(EXIT_INVALID_INPUT);
                 }
             }
         }
     } else {
-        debug!("No input provided");
+        debug!("{}", t!("util.noInput"));
         return String::new();
     };
 
     if value.trim().is_empty() {
-        error!("Provided input is empty");
+        error!("{}", t!("util.emptyInput"));
         exit(EXIT_INVALID_INPUT);
     }
 
     match parse_input_to_json(&value) {
         Ok(json) => json,
         Err(err) => {
-            error!("Error: Invalid JSON or YAML: {err}");
+            error!("{}: {err}", t!("util.failedToParseInput"));
             exit(EXIT_INVALID_INPUT);
         }
     }
@@ -529,14 +530,14 @@ pub fn set_dscconfigroot(config_path: &str) -> String
 
     // make path absolute
     let Ok(full_path) = path.absolutize() else {
-            error!("Error making config path absolute");
+            error!("{}", t!("util.failedToAbsolutizePath"));
             exit(EXIT_DSC_ERROR);
     };
 
     let config_root_path = if full_path.is_file() {
         let Some(config_root_path) = full_path.parent() else {
             // this should never happen because path was made absolute
-            error!("Error reading config path parent");
+            error!("{}", t!("util.failedToGetParentPath"));
             exit(EXIT_DSC_ERROR);
         };
         config_root_path.to_string_lossy().into_owned()
@@ -546,11 +547,11 @@ pub fn set_dscconfigroot(config_path: &str) -> String
 
     // warn if env var is already set/used
     if env::var(DSC_CONFIG_ROOT).is_ok() {
-        warn!("The current value of '{DSC_CONFIG_ROOT}' env var will be overridden");
+        warn!("{}", t!("util.dscConfigRootAlreadySet"));
     }
 
     // Set env var so child processes (of resources) can use it
-    debug!("Setting '{DSC_CONFIG_ROOT}' env var as '{config_root_path}'");
+    debug!("{} '{config_root_path}'", t!("util.settingDscConfigRoot"));
     env::set_var(DSC_CONFIG_ROOT, config_root_path);
 
     full_path.to_string_lossy().into_owned()
