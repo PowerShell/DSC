@@ -262,6 +262,7 @@ if (!$SkipBuild) {
         "osinfo",
         "powershell-adapter",
         "process",
+        "resources/fs",
         "runcommandonset",
         "tools/dsctest",
         "tools/test_group_resource",
