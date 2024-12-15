@@ -31,9 +31,17 @@ impl Function for Path {
         debug!("Executing path function with args: {:?}", args);
 
         let mut path = PathBuf::new();
+        let mut first = true;
         for arg in args {
             if let Value::String(s) = arg {
-                path.push(s);
+                // if first argument is a drive letter, add it with a separator suffix as PathBuf.push() doesn't add it
+                if first && s.len() == 2 && s.chars().nth(1).unwrap() == ':' {
+                    path.push(s.to_owned() + std::path::MAIN_SEPARATOR.to_string().as_str());
+                    first = false;
+                    continue;
+                } else {
+                    path.push(s);
+                }
             } else {
                 return Err(DscError::Parser("Arguments must all be strings".to_string()));
             }
@@ -47,6 +55,22 @@ impl Function for Path {
 mod tests {
     use crate::configure::context::Context;
     use crate::parser::Statement;
+
+    #[test]
+    fn start_with_drive_letter() {
+        let mut parser = Statement::new().unwrap();
+        let separator = std::path::MAIN_SEPARATOR;
+        let result = parser.parse_and_execute("[path('C:','test')]", &Context::new()).unwrap();
+        assert_eq!(result, format!("C:{separator}test"));
+    }
+
+    #[test]
+    fn drive_letter_in_middle() {
+        let mut parser = Statement::new().unwrap();
+        let separator = std::path::MAIN_SEPARATOR;
+        let result = parser.parse_and_execute("[path('a','C:','test')]", &Context::new()).unwrap();
+        assert_eq!(result, format!("a{separator}C:{separator}test"));
+    }
 
     #[test]
     fn two_args() {
