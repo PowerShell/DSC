@@ -20,6 +20,7 @@ use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::constraints::{check_length, check_number_limits, check_allowed_values};
 use indicatif::ProgressStyle;
+use rust_i18n::t;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
@@ -78,7 +79,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
 // they are re-used to apply configuration
 fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<String, Value>>, DscError> {
-    debug!("Escape returned property values");
+    debug!("{}", t!("configure.mod.escapePropertyValues"));
     let mut result: Map<String, Value> = Map::new();
     for (name, value) in properties {
         match value {
@@ -97,12 +98,12 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
                             continue;
                         },
                         Value::Array(_) => {
-                            return Err(DscError::Parser("Nested arrays not supported".to_string()));
+                            return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
                         },
                         Value::String(_) => {
                             // use as_str() so that the enclosing quotes are not included for strings
                             let Some(statement) = element.as_str() else {
-                                return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                             };
                             if statement.starts_with('[') && statement.ends_with(']') {
                                 result_array.push(Value::String(format!("[{statement}")));
@@ -120,7 +121,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
             Value::String(_) => {
                 // use as_str() so that the enclosing quotes are not included for strings
                 let Some(statement) = value.as_str() else {
-                    return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
+                    return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
                 };
                 if statement.starts_with('[') && statement.ends_with(']') {
                     result.insert(name.clone(), Value::String(format!("[{statement}")));
@@ -178,12 +179,12 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
                     },
                     SecurityContextKind::Elevated => {
                         if get_security_context() != SecurityContext::Admin {
-                            return Err(DscError::SecurityContext("Elevated security context required".to_string()));
+                            return Err(DscError::SecurityContext(t!("configure.mod.elevationRequired").to_string()));
                         }
                     },
                     SecurityContextKind::Restricted => {
                         if get_security_context() != SecurityContext::User {
-                            return Err(DscError::SecurityContext("Restricted security context required".to_string()));
+                            return Err(DscError::SecurityContext(t!("configure.mid.restrictedRequired").to_string()));
                         }
                     },
                 }
@@ -328,22 +329,22 @@ impl Configurator {
             };
 
             let desired = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("desired: {desired}");
+            trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
             let end_datetime;
             let set_result;
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
-                debug!("Resource handles _exist or _exist is true");
+                debug!("{}", t!("configure.mod.handlesExist"));
                 start_datetime = chrono::Local::now();
                 set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 if self.context.execution_type == ExecutionKind::WhatIf {
                     // TODO: add delete what-if support
-                    return Err(DscError::NotSupported("What-if execution not supported for delete".to_string()));
+                    return Err(DscError::NotSupported(t!("configure.mod.whatIfNotSupportedForDelete").to_string()));
                 }
-                debug!("Resource implements delete and _exist is false");
+                debug!("{}", t!("configure.mod.implementsDelete"));
                 let before_result = dsc_resource.get(&desired)?;
                 start_datetime = chrono::Local::now();
                 dsc_resource.delete(&desired)?;
@@ -352,7 +353,7 @@ impl Configurator {
                 set_result = match before_result {
                     GetResult::Resource(before_response) => {
                         let GetResult::Resource(after_result) = after_result else {
-                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
+                            return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
                         };
                         let before_value = serde_json::to_value(&before_response.actual_state)?;
                         let after_value = serde_json::to_value(&after_result.actual_state)?;
@@ -363,12 +364,12 @@ impl Configurator {
                         })
                     },
                     GetResult::Group(_) => {
-                        return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
+                        return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
                     },
                 };
                 end_datetime = chrono::Local::now();
             } else {
-                return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
+                return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
             }
 
             self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
@@ -420,7 +421,7 @@ impl Configurator {
             };
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("expected: {expected}");
+            trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
             let test_result = dsc_resource.test(&expected)?;
             let end_datetime = chrono::Local::now();
@@ -474,7 +475,7 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             let input = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("input: {input}");
+            trace!("{}", t!("configure.mod.exportInput", input = input));
             add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
         }
 
@@ -513,22 +514,22 @@ impl Configurator {
         // set default parameters first
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
-                info!("No parameters defined in configuration and no parameters input");
+                info!("{}", t!("configure.mod.noParameters"));
                 return Ok(());
             }
-            return Err(DscError::Validation("No parameters defined in configuration".to_string()));
+            return Err(DscError::Validation(t!("configure.mod.noParametersDefined").to_string()));
         };
 
         for (name, parameter) in parameters {
-            debug!("Processing parameter '{name}'");
+            debug!("{}", t!("configure.mod.processingParameter", name = name));
             if let Some(default_value) = &parameter.default_value {
-                debug!("Set default parameter '{name}'");
+                debug!("{}", t!("configure.mod.setDefaultParameter", name = name));
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
                         self.statement_parser.parse_and_execute(value, &self.context)?
                     } else {
-                        return Err(DscError::Parser("Default value as string is not defined".to_string()));
+                        return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
                     }
                 } else {
                     default_value.clone()
@@ -539,14 +540,14 @@ impl Configurator {
         }
 
         let Some(parameters_input) = parameters_input else {
-            debug!("No parameters input");
+            debug!("{}", t!("configure.mod.noParametersInput"));
             return Ok(());
         };
 
         trace!("parameters_input: {parameters_input}");
         let parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
         let Some(parameters_constraints) = &config.parameters else {
-            return Err(DscError::Validation("No parameters defined in configuration".to_string()));
+            return Err(DscError::Validation(t!("configure.mod.noParametersDefined").to_string()));
         };
         for (name, value) in parameters {
             if let Some(constraint) = parameters_constraints.get(&name) {
@@ -559,9 +560,9 @@ impl Configurator {
 
                 Configurator::validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                 if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
-                    info!("Set secure parameter '{name}'");
+                    info!("{}", t!("configure.mod.setSecureParameter", name = name));
                 } else {
-                    info!("Set parameter '{name}' to '{value}'");
+                    info!("{}", t!("configure.mod.setParameter", name = name, value = value));
                 }
 
                 self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
@@ -573,7 +574,7 @@ impl Configurator {
                 }
             }
             else {
-                return Err(DscError::Validation(format!("Parameter '{name}' not defined in configuration")));
+                return Err(DscError::Validation(t!("configure.mod.parameterNotDefined", name = name).to_string()));
             }
         }
         Ok(())
@@ -581,7 +582,7 @@ impl Configurator {
 
     fn set_variables(&mut self, config: &Configuration) -> Result<(), DscError> {
         let Some(variables) = &config.variables else {
-            debug!("No variables defined in configuration");
+            debug!("{}", t!("configure.mod.noVariables"));
             return Ok(());
         };
 
@@ -592,7 +593,7 @@ impl Configurator {
             else {
                 value.clone()
             };
-            info!("Set variable '{name}' to '{new_value}'");
+            info!("{}", t!("configure.mod.setVariable", name = name, value = new_value));
             self.context.variables.insert(name.to_string(), new_value);
         }
         Ok(())
@@ -620,27 +621,27 @@ impl Configurator {
         match parameter_type {
             DataType::String | DataType::SecureString => {
                 if !value.is_string() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
                 }
             },
             DataType::Int => {
                 if !value.is_i64() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not an integer")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
                 }
             },
             DataType::Bool => {
                 if !value.is_boolean() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not a boolean")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
                 }
             },
             DataType::Array => {
                 if !value.is_array() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
                 }
             },
             DataType::Object | DataType::SecureObject => {
                 if !value.is_object() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
                 }
             },
         }
@@ -660,7 +661,7 @@ impl Configurator {
     }
 
     fn invoke_property_expressions(&mut self, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
-        debug!("Invoke property expressions");
+        debug!("{}", t!("configure.mod.invokePropertyExpressions"));
         if properties.is_none() {
             return Ok(None);
         }
@@ -668,7 +669,7 @@ impl Configurator {
         let mut result: Map<String, Value> = Map::new();
         if let Some(properties) = properties {
             for (name, value) in properties {
-                trace!("Invoke property expression for {name}: {value}");
+                trace!("{}", t!("configure.mod.invokeExpression", name = name, value = value));
                 match value {
                     Value::Object(object) => {
                         let value = self.invoke_property_expressions(Some(object))?;
@@ -685,16 +686,16 @@ impl Configurator {
                                     continue;
                                 },
                                 Value::Array(_) => {
-                                    return Err(DscError::Parser("Nested arrays not supported".to_string()));
+                                    return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
                                 },
                                 Value::String(_) => {
                                     // use as_str() so that the enclosing quotes are not included for strings
                                     let Some(statement) = element.as_str() else {
-                                        return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                                     };
                                     let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                                     let Some(string_result) = statement_result.as_str() else {
-                                        return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                                     };
                                     result_array.push(Value::String(string_result.to_string()));
                                 }
@@ -708,7 +709,7 @@ impl Configurator {
                     Value::String(_) => {
                         // use as_str() so that the enclosing quotes are not included for strings
                         let Some(statement) = value.as_str() else {
-                            return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
+                            return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
                         };
                         let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                         if let Some(string_result) = statement_result.as_str() {

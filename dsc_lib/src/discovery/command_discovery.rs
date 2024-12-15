@@ -11,6 +11,7 @@ use crate::util::ProgressFormat;
 use indicatif::ProgressStyle;
 use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
+use rust_i18n::t;
 use semver::Version;
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet, HashMap};
@@ -86,7 +87,7 @@ impl CommandDiscovery {
             }
         }
 
-        Err(DscError::Setting("Could not read 'resourcePath' setting".to_string()))
+        Err(DscError::Setting(t!("discovery.commandDiscovery.couldNotReadSetting").to_string()))
     }
 
     fn get_resource_paths() -> Result<Vec<PathBuf>, DscError>
@@ -108,7 +109,7 @@ impl CommandDiscovery {
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
         if resource_path_setting.allow_env_override && dsc_resource_path.is_some(){
             let value = dsc_resource_path.unwrap();
-            debug!("Using DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
+            debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
             using_custom_path = true;
             paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
         } else {
@@ -118,14 +119,14 @@ impl CommandDiscovery {
             }
 
             if resource_path_setting.append_env_path {
-                debug!("Appending PATH to resourcePath");
+                debug!("{}", t!("discovery.commandDiscovery.appendingEnvPath"));
                 match env::var_os("PATH") {
                     Some(value) => {
-                        trace!("Original PATH: {:?}", value.to_string_lossy());
+                        trace!("{}", t!("discovery.commandDiscovery.originalPath", path = value.to_string_lossy()));
                         paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
                     },
                     None => {
-                        return Err(DscError::Operation("Failed to get PATH environment variable".to_string()));
+                        return Err(DscError::Operation(t!("discovery.commandDiscovery.failedGetEnvPath").to_string()));
                     }
                 }
             }
@@ -140,9 +141,9 @@ impl CommandDiscovery {
             if let Some(exe_home) = get_exe_path()?.parent() {
                 let exe_home_pb = exe_home.to_path_buf();
                 if paths.contains(&exe_home_pb) {
-                    trace!("Exe home is already in path: {}", exe_home.to_string_lossy());
+                    trace!("{}", t!("discovery.commandDiscovery.exeHomeAlreadyInPath", path = exe_home.to_string_lossy()));
                 } else {
-                    trace!("Adding exe home to path: {}", exe_home.to_string_lossy());
+                    trace!("{}", t!("discovery.commandDiscovery.addExeHomeToPath", path = exe_home.to_string_lossy()));
                     paths.push(exe_home_pb);
 
                     if let Ok(new_path) = env::join_paths(paths.clone()) {
@@ -153,7 +154,7 @@ impl CommandDiscovery {
         };
 
         if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
-            debug!("Using Resource Path: {:?}", final_resource_path.to_string_lossy());
+            debug!("{}", t!("discovery.commandDiscovery.usingResourcePath", path = final_resource_path.to_string_lossy()));
         }
 
         Ok(paths)
@@ -169,21 +170,21 @@ impl Default for CommandDiscovery {
 impl ResourceDiscovery for CommandDiscovery {
 
     fn discover_resources(&mut self, filter: &str) -> Result<(), DscError> {
-        info!("Discovering resources using filter: {filter}");
+        info!("{}", t!("discovery.commandDiscovery.discoverResources", filter = filter));
 
         let regex_str = convert_wildcard_to_regex(filter);
         debug!("Using regex {regex_str} as filter for adapter name");
         let mut regex_builder = RegexBuilder::new(&regex_str);
         regex_builder.case_insensitive(true);
         let Ok(regex) = regex_builder.build() else {
-            return Err(DscError::Operation("Could not build Regex filter for adapter name".to_string()));
+            return Err(DscError::Operation(t!("discovery.commandDiscovery.invalidAdapterFilter").to_string()));
         };
 
         let pb_span = warn_span!("");
         pb_span.pb_set_style(&ProgressStyle::with_template(
             "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
         )?);
-        pb_span.pb_set_message("Searching for resources");
+        pb_span.pb_set_message(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
         let _ = pb_span.enter();
 
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
@@ -208,7 +209,7 @@ impl ResourceDiscovery for CommandDiscovery {
                             if file_name_lowercase.ends_with(".dsc.resource.json") ||
                                 file_name_lowercase.ends_with(".dsc.resource.yaml") ||
                                 file_name_lowercase.ends_with(".dsc.resource.yml") {
-                                trace!("Found resource manifest: {path:?}");
+                                trace!("{}", t!("discovery.commandDiscovery.foundResourceManifest", path = path.to_string_lossy()));
                                 let resource = match load_manifest(&path)
                                 {
                                     Ok(r) => r,
@@ -226,10 +227,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                     if let Some(ref manifest) = resource.manifest {
                                         let manifest = import_manifest(manifest.clone())?;
                                         if manifest.kind == Some(Kind::Adapter) {
-                                            trace!("Resource adapter '{}' found", resource.type_name);
+                                            trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
                                             insert_resource(&mut adapters, &resource, true);
                                         } else {
-                                            trace!("Resource '{}' found", resource.type_name);
+                                            trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
                                             insert_resource(&mut resources, &resource, true);
                                         }
                                     }

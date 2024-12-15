@@ -5,7 +5,7 @@ use crate::util::ProgressFormat;
 use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
 use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
-use rust_i18n::{i18n, t};
+use rust_i18n::i18n;
 
 pub mod configure;
 pub mod discovery;
