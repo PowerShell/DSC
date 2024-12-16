@@ -68,6 +68,11 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let separator = std::path::MAIN_SEPARATOR;
         let result = parser.parse_and_execute("[path('a','C:','test')]", &Context::new()).unwrap();
+
+        // if any part of the path is absolute, it replaces it instead of appending
+        #[cfg(target_os = "windows")]
+        assert_eq!(result, format!("C:{separator}test"));
+        #[cfg(not(target_os = "windows"))]
         assert_eq!(result, format!("a{separator}C:{separator}test"));
     }
 
