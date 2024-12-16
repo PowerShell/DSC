@@ -39,9 +39,8 @@ impl Function for Path {
                     path.push(s.to_owned() + std::path::MAIN_SEPARATOR.to_string().as_str());
                     first = false;
                     continue;
-                } else {
-                    path.push(s);
                 }
+                path.push(s);
             } else {
                 return Err(DscError::Parser("Arguments must all be strings".to_string()));
             }
@@ -70,6 +69,14 @@ mod tests {
         let separator = std::path::MAIN_SEPARATOR;
         let result = parser.parse_and_execute("[path('a','C:','test')]", &Context::new()).unwrap();
         assert_eq!(result, format!("a{separator}C:{separator}test"));
+    }
+
+    #[test]
+    fn unix_absolute_path() {
+        let mut parser = Statement::new().unwrap();
+        let separator = std::path::MAIN_SEPARATOR;
+        let result = parser.parse_and_execute("[path('/','a','b')]", &Context::new()).unwrap();
+        assert_eq!(result, format!("/a{separator}b"));
     }
 
     #[test]
