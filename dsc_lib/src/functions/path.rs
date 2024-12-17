@@ -31,15 +31,8 @@ impl Function for Path {
         debug!("Executing path function with args: {:?}", args);
 
         let mut path = PathBuf::new();
-        let mut first = true;
         for arg in args {
             if let Value::String(s) = arg {
-                // if first argument is a drive letter, add it with a separator suffix as PathBuf.push() doesn't add it
-                if first && s.len() == 2 && s.chars().nth(1).unwrap() == ':' {
-                    path.push(s.to_owned() + std::path::MAIN_SEPARATOR.to_string().as_str());
-                    first = false;
-                    continue;
-                }
                 path.push(s);
             } else {
                 return Err(DscError::Parser("Arguments must all be strings".to_string()));
@@ -60,14 +53,14 @@ mod tests {
     #[test]
     fn start_with_drive_letter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('C:','test')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[path('C:\\','test')]", &Context::new()).unwrap();
         assert_eq!(result, format!("C:{SEPARATOR}test"));
     }
 
     #[test]
     fn drive_letter_in_middle() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('a','C:','test')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[path('a','C:\\','test')]", &Context::new()).unwrap();
 
         // if any part of the path is absolute, it replaces it instead of appending on Windows
         #[cfg(target_os = "windows")]
@@ -81,11 +74,11 @@ mod tests {
     #[test]
     fn multiple_drive_letters() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('C:','D:','test')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[path('C:\\','D:\\','test')]", &Context::new()).unwrap();
 
         // if any part of the path is absolute, it replaces it instead of appending on Windows
         #[cfg(target_os = "windows")]
-        assert_eq!(result, format!("D:test"));
+        assert_eq!(result, format!("D:\\test"));
 
         // non-Windows, the colon is a valid character in a path
         #[cfg(not(target_os = "windows"))]
