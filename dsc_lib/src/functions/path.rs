@@ -85,7 +85,7 @@ mod tests {
 
         // if any part of the path is absolute, it replaces it instead of appending on Windows
         #[cfg(target_os = "windows")]
-        assert_eq!(result, format!("D:{SEPARATOR}test"));
+        assert_eq!(result, format!("D:test"));
 
         // non-Windows, the colon is a valid character in a path
         #[cfg(not(target_os = "windows"))]
