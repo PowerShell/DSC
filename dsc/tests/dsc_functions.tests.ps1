@@ -54,7 +54,7 @@ Describe 'tests for function expressions' {
 '@
 
         $expected = if ($IsWindows) {
-            $env:SYSTEMDRIVE
+            $env:SYSTEMDRIVE + '\'
         } else {
             '/'
         }
