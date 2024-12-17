@@ -54,7 +54,12 @@ mod tests {
     fn start_with_drive_letter() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[path('C:\\','test')]", &Context::new()).unwrap();
+
+        #[cfg(target_os = "windows")]
         assert_eq!(result, format!("C:{SEPARATOR}test"));
+
+        #[cfg(not(target_os = "windows"))]
+        assert_eq!(result, format!("C:\\{SEPARATOR}test"));
     }
 
     #[test]
@@ -68,7 +73,7 @@ mod tests {
 
         // non-Windows, the colon is a valid character in a path
         #[cfg(not(target_os = "windows"))]
-        assert_eq!(result, format!("a{SEPARATOR}C:{SEPARATOR}test"));
+        assert_eq!(result, format!("a{SEPARATOR}C:\\{SEPARATOR}test"));
     }
 
     #[test]
@@ -82,7 +87,7 @@ mod tests {
 
         // non-Windows, the colon is a valid character in a path
         #[cfg(not(target_os = "windows"))]
-        assert_eq!(result, format!("C:{SEPARATOR}D:{SEPARATOR}test"));
+        assert_eq!(result, format!("C:\\{SEPARATOR}D:\\{SEPARATOR}test"));
     }
 
     #[test]
