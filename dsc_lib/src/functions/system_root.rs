@@ -44,7 +44,7 @@ mod tests {
         let result = parser.parse_and_execute("[systemRoot()]", &Context::new()).unwrap();
         // on windows, the default is SYSTEMDRIVE env var
         #[cfg(target_os = "windows")]
-        assert_eq!(result, std::env::var("SYSTEMDRIVE").unwrap());
+        assert_eq!(result, format!("{}\\", std::env::var("SYSTEMDRIVE").unwrap()));
         // on linux/macOS, the default is /
         #[cfg(not(target_os = "windows"))]
         assert_eq!(result, "/");
