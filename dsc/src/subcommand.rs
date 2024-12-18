@@ -341,7 +341,12 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             exit(EXIT_INVALID_ARGS);
         }
 
-        configurator.set_system_root(path);
+        // make sure path has a trailing separator if it's a drive letter
+        if path.len() == 2 && path.chars().nth(1).unwrap_or(' ') == ':' {
+            configurator.set_system_root(&format!("{path}\\"));
+        } else {
+            configurator.set_system_root(path);
+        }
     }
 
     if let Err(err) = configurator.set_context(parameters.as_ref()) {
