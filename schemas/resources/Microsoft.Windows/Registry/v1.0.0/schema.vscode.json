@@ -1,0 +1,177 @@
+{
+    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft.Windows/Registry/v1.0.0/schema.vscode.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Microsoft.Windows/Registry instance",
+    "description": "Manages Windows Registry keys and values.",
+    "type": "object",
+    "properties": {
+        "_exist": {
+            "title": "Exist",
+            "description": "Defines whether the instance should exist.",
+            "type": "boolean",
+            "default": true,
+            "markdownDescription": "The `_exist` property defines whether a registry key or value should exist. When this\nproperty is `true`, the resource creates the registry key or value if it doesn't exist\nduring a `set` operation. When this property is `false`, the resource deletes the registry\nkey or value if it exists during a `set` operation.\n\nThe default value is `true`."
+        },
+        "_metadata": {
+            "title": "Resource metadata",
+            "description": "Defines metadata returned by the resource.",
+            "$ref": "#/definitions/Metadata",
+            "markdownDescription": "The `metadata` property defines metadata returned by the resource. The registry resource\ndoesn't support sending metadata input. It returns messages when invoked in what-if mode.",
+            "readOnly": true
+        },
+        "keyPath": {
+            "title": "Registry key path",
+            "description": "Defines the path to the registry key to manage. Must be prefixed with a valid hive identifier. Separate the paths with back slashes only.",
+            "type": "string",
+            "markdownDescription": "The `keyPath` property defines the path to the registry key an instance\nof the resource manages. It must be prefixed with a valid hive identifier:\n\n| Identifier                      | Hive                  |\n|:-------------------------------:|:----------------------|\n| `HKCC` or `HKEY_CURRENT_CONFIG` | Current configuration |\n| `HKCU` or `HKEY_CURRENT_USER`   | Current user          |\n| `HKCR` or `HKEY_CLASSES_ROOT`   | Classes root          |\n| `HKLM` or `HKEY_LOCAL_MACHINE`  | Local machine         |\n| `HKU` or `HKEY_USERS`           | Users                 |\n\nSpecify the path to the registry key with backslashes (`\\`), like\n`HKCU\\DSC\\Properties\\keyPath\\Example`. If using JSON, ensure the\nbacklsashes are escaped, like `HKCU\\\\DSC\\\\Properties\\\\keyPath\\\\Example`.",
+            "pattern": "^(HKCC|HKEY_CURRENT_CONFIG|HKCU|HKEY_CURRENT_USER|HKCR|HKEY_CLASSES_ROOT|HKLM|HKEY_LOCAL_MACHINE|HKU|HKEY_USERS)\\\\[a-zA-Z0-9-_\\\\]+?[^\\\\]$",
+            "patternErrorMessage": "The value must begin with a valid hive identifier. Valid identifiers are:\nHKCC, HKEY_CURRENT_CONFIG, HKCU, HKEY_CURRENT_USER HKCR, HKEY_CLASSES_ROOT HKLM, HKEY_LOCAL_MACHINE HKU, and HKEY_USERS."
+        },
+        "valueData": {
+            "title": "Registry value data",
+            "description": "Defines the data for a registry value.",
+            "$ref": "#/definitions/RegistryValueData",
+            "markdownDescription": "Defines the data for a registry value. When you specify this value, you must also specify\nthe name of the registry value.\n\nDefine the data as an object with a single property. The property name determines the data\ntype and the property value determines the data value. The following table lists the\navailable data types.\n\n| Property name  | Data description                                                   |\n|:--------------:|:-------------------------------------------------------------------|\n| `String`       | Defines the registry value as a static string.                     |\n| `ExpandString` | Defines the registry value as a string with expandable references. |\n| `MultiString`  | Defines the registry value as an array of static strings.          |\n| `Binary`       | Defines the registry value as an array of bytes.                   |\n| `DWord`        | Defines the registry value as an unsigned 32-bit integer.          |\n| `QWord`        | Defines the registry value as an unsigned 64-bit integer.          |"
+        },
+        "valueName": {
+            "title": "Registry value name",
+            "description": "Defines the name of the registry value to manage.",
+            "type": "string",
+            "markdownDescription": "The `valueName` property defines the name of the registry value to manage. This value is\nrequired when specifying value data."
+        }
+    },
+    "additionalProperties": false,
+    "dependentRequired": {
+        "valueData": [
+            "valueName"
+        ]
+    },
+    "markdownDescription": "Each instance of the `Microsoft.Windows/Registry` resource manages a registry key or value.\nYou can use it to idempotently ensure that a registry key or value exists and set the data\nfor registry values.",
+    "required": [
+        "keyPath"
+    ],
+    "definitions": {
+        "Metadata": {
+            "type": "object",
+            "properties": {
+                "whatIf": {
+                    "title": "What-if messages",
+                    "description": "A list of messages returned by the resource when invoked in what-if mode.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "markdownDescription": "Contains a list of messages returned by the resource when invoked in what-if mode, as with the `dsc config set --what-if` command.",
+                    "readOnly": true
+                }
+            },
+            "additionalProperties": false
+        },
+        "RegistryValueData": {
+            "oneOf": [
+                {
+                    "title": "String value data",
+                    "description": "Defines the registry value as a static string.",
+                    "type": "object",
+                    "properties": {
+                        "String": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "markdownDescription": "When you define `valueData` with the `String` property, the resource sets the data for\nthe registry value as a static string. If the string contains any unexpanded references\nto environment variables, such as `%PATH%`, the references are treated as literal\ncharacters and aren't expandable.`",
+                    "required": [
+                        "String"
+                    ]
+                },
+                {
+                    "title": "Expandable string value data",
+                    "description": "Defines the registry value as a string with expandable references.",
+                    "type": "object",
+                    "properties": {
+                        "ExpandString": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "markdownDescription": "When you define `valueData` with the `ExpandString` property, the resource sets the data\nfor the registry value as a string. If the string contains any unexpanded references to\nenvironment variables, such as `%PATH%`, they're expandable.",
+                    "required": [
+                        "ExpandString"
+                    ]
+                },
+                {
+                    "title": "Binary value data",
+                    "description": "Defines the registry value as an array of bytes.",
+                    "type": "object",
+                    "properties": {
+                        "Binary": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "uint8",
+                                "minimum": 0
+                            }
+                        }
+                    },
+                    "additionalProperties": false,
+                    "markdownDescription": "When you define `valueData` with the `Binary` property, the resource sets the data for\nthe registry value as an array of bytes. You can specify the value as an empty array or\nas an array containing the integer representation of one or more bytes.",
+                    "required": [
+                        "Binary"
+                    ]
+                },
+                {
+                    "title": "DWord value data",
+                    "description": "Defines the registry value as an unsigned 32-bit integer.",
+                    "type": "object",
+                    "properties": {
+                        "DWord": {
+                            "type": "integer",
+                            "format": "uint32",
+                            "minimum": 0
+                        }
+                    },
+                    "additionalProperties": false,
+                    "markdownDescription": "When you define `valueData` with the `DWord` property, the resource sets the data for the\nregistry value as an unsigned 32-bit integer.",
+                    "required": [
+                        "DWord"
+                    ]
+                },
+                {
+                    "title": "Multiple string value data",
+                    "description": "Defines the registry value as an array of static strings.",
+                    "type": "object",
+                    "properties": {
+                        "MultiString": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "additionalProperties": false,
+                    "markdownDescription": "When you define `valueData` with the `MultiString` property, the resource sets the data\nfor the registry value as an array of static strings. You can specify the value as an\nempty array, or as an array containing one or more strings. If any of the strings in the\narray contain any unexpanded references to environment variables, such as `%PATH%`, the\nreferences are treated as literal characters and aren't expandable.",
+                    "required": [
+                        "MultiString"
+                    ]
+                },
+                {
+                    "title": "QWord value data",
+                    "description": "Defines the registry value as an unsigned 64-bit integer.",
+                    "type": "object",
+                    "properties": {
+                        "QWord": {
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0
+                        }
+                    },
+                    "additionalProperties": false,
+                    "markdownDescription": "When you define `valueData` with the `QWord` property, the resource sets the data for the\nregistry value as an unsigned 64-bit integer.",
+                    "required": [
+                        "QWord"
+                    ]
+                }
+            ]
+        }
+    }
+}
