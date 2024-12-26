@@ -1,0 +1,37 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC/FileSystem",
+    "description": "Manage file system configuration settings.",
+    "version": "0.1.0",
+    "get": {
+        "executable": "filesys",
+        "args": [
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "input": "stdin",
+        "implementsPretest": false
+    },
+    "delete": {
+        "executable": "fs",
+        "args": [
+            "delete",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "input": "stdin"
+    },
+    "schema": {
+        "command": {
+            "executable": "fs",
+            "args": [
+                "schema"
+            ]
+        }
+    }
+}

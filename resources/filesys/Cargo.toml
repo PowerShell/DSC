@@ -1,0 +1,13 @@
+[package]
+name = "filesys"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version ="4.5", features = ["derive"] }
+serde = "1.0"
+serde_json = "1.0"
+schemars = "0.8"
+tracing = { version = "0.1" }
+sha256 = { version = "1.5.0" }
+fs_extra = { version = "1.2.0" }
