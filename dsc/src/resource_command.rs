@@ -7,6 +7,7 @@ use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse}};
 use dsc_lib::dscerror::DscError;
+use rust_i18n::t;
 use tracing::{error, debug};
 
 use dsc_lib::{
@@ -15,15 +16,15 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
+pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: Option<&OutputFormat>) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
+        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
 
@@ -32,7 +33,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter '{}' not found", requires);
+            error!("{}: {requires}", t!("resource_command.adapterNotFound"));
             return;
         };
     }
@@ -56,16 +57,16 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
     }
 }
 
-pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputFormat>) {
     let mut input = String::new();
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
+        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
 
@@ -74,7 +75,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter '{}' not found", requires);
+            error!("{}: {requires}", t!("resource_command.adapterNotFound"));
             return;
         };
     }
@@ -104,9 +105,9 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: &Option<OutputForm
     }
 }
 
-pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
+pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: Option<&OutputFormat>) {
     if input.is_empty() {
-        error!("Error: Desired input is empty");
+        error!("{}", t!("resource_command.setInputEmpty"));
         exit(EXIT_INVALID_ARGS);
     }
 
@@ -115,9 +116,9 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
+        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
 
@@ -126,7 +127,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter '{}' not found", requires);
+            error!("{}: {requires}", t!("resource_command.adapterNotFound"));
             return;
         };
     }
@@ -150,9 +151,9 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: &Op
     }
 }
 
-pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &Option<OutputFormat>) {
+pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: Option<&OutputFormat>) {
     if input.is_empty() {
-        error!("Error: Expected input is required");
+        error!("{}", t!("resource_command.testInputEmpty"));
         exit(EXIT_INVALID_ARGS);
     }
 
@@ -161,9 +162,9 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
+        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
 
@@ -172,7 +173,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter '{}' not found", requires);
+            error!("{}: {requires}", t!("resource_command.adapterNotFound"));
             return;
         };
     }
@@ -183,14 +184,14 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: &O
             let json = match serde_json::to_string(&result) {
                 Ok(json) => json,
                 Err(err) => {
-                    error!("JSON Error: {err}");
+                    error!("JSON: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
             write_output(&json, format);
         }
         Err(err) => {
-            error!("Error: {err}");
+            error!("{err}");
             exit(EXIT_DSC_ERROR);
         }
     }
@@ -202,9 +203,9 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("resource.type_name - {} implemented_as - {:?}", resource.type_name, resource.implemented_as);
+    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
     if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
+        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
 
@@ -213,7 +214,7 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
         if let Some(pr) = get_resource(dsc, requires) {
             resource = pr;
         } else {
-            error!("Adapter '{}' not found", requires);
+            error!("{}: {requires}", t!("resource_command.adapterNotFound"));
             return;
         };
     }
@@ -227,13 +228,13 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
     }
 }
 
-pub fn schema(dsc: &DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+pub fn schema(dsc: &DscManager, resource_type: &str, format: Option<&OutputFormat>) {
     let Some(resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
     if resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", resource.type_name);
+        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
 
@@ -256,7 +257,7 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: &Option<OutputForma
     }
 }
 
-pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputFormat>) {
+pub fn export(dsc: &mut DscManager, resource_type: &str, format: Option<&OutputFormat>) {
     let mut input = String::new();
     let Some(dsc_resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
@@ -264,7 +265,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
     };
 
     if dsc_resource.kind == Kind::Adapter {
-        error!("Can not perform this operation on the adapter {} itself", dsc_resource.type_name);
+        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), dsc_resource.type_name);
         exit(EXIT_DSC_ERROR);
     }
 
@@ -274,7 +275,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
         if let Some(pr) = get_resource(dsc, requires) {
             adapter_resource = Some(pr);
         } else {
-            error!("Adapter '{}' not found", requires);
+            error!("{}: {requires}", t!("resource_command.adapterNotFound"));
             return;
         };
     }
@@ -282,14 +283,14 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: &Option<OutputF
     let mut conf = Configuration::new();
 
     if let Err(err) = add_resource_export_results_to_configuration(dsc_resource, adapter_resource, &mut conf, &input) {
-        error!("Error: {err}");
+        error!("{err}");
         exit(EXIT_DSC_ERROR);
     }
 
     let json = match serde_json::to_string(&conf) {
         Ok(json) => json,
         Err(err) => {
-            error!("JSON Error: {err}");
+            error!("JSON: {err}");
             exit(EXIT_JSON_ERROR);
         }
     };

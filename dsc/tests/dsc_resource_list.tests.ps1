@@ -9,7 +9,6 @@ Describe 'Tests for listing resources' {
         $resources.Count | Should -BeGreaterThan 0
         $resources.type | Should -Contain 'Microsoft.DSC/Assertion'
         $resources.type | Should -Contain 'Microsoft.DSC/Group'
-        $resources.type | Should -Contain 'Microsoft.DSC/Parallel'
         $resources.type | Should -Contain 'Microsoft/OSInfo'
         ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/Group' }).Kind | Should -BeExactly 'Group'
         ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'Resource'
@@ -48,10 +47,10 @@ Describe 'Tests for listing resources' {
         }
     }
 
-    It 'can accept the use of --format as a subcommand' {
+    It 'can accept the use of --output-format as a subcommand' {
         $expectedCount = 1
         $expectedType = 'Microsoft/OSInfo'
-        $resources = dsc resource list --description "operating system" --format pretty-json | ConvertFrom-Json
+        $resources = dsc resource list --description "operating system" --output-format pretty-json | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $resources.Count | Should -Be $expectedCount
         if ($expectedCount -gt 0) {

@@ -26,6 +26,7 @@ use dsc_lib::{
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
 };
+use rust_i18n::t;
 use std::{
     collections::HashMap,
     io::{self, IsTerminal},
@@ -34,7 +35,7 @@ use std::{
 };
 use tracing::{debug, error, trace};
 
-pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
+pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
 {
     match configurator.invoke_get() {
         Ok(result) => {
@@ -69,7 +70,7 @@ pub fn config_get(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool)
+pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
 {
     match configurator.invoke_set(false) {
         Ok(result) => {
@@ -104,7 +105,7 @@ pub fn config_set(configurator: &mut Configurator, format: &Option<OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool)
+pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool)
 {
     match configurator.invoke_test() {
         Ok(result) => {
@@ -118,13 +119,13 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                                 if test_response.actual_state.is_object() {
                                     test_response.actual_state.as_object().cloned()
                                 } else {
-                                    debug!("actual_state is not an object");
+                                    debug!("{}", t!("subcommand.actualStateNotObject"));
                                     None
                                 }
                             },
                             TestResult::Group(_) => {
                                 // not expected
-                                debug!("Unexpected Group TestResult");
+                                debug!("{}", t!("subcommand.unexpectedTestResult"));
                                 None
                             }
                         };
@@ -140,7 +141,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                     match serde_json::to_string(&result_configuration) {
                         Ok(json) => json,
                         Err(err) => {
-                            error!("JSON Error: {err}");
+                            error!("JSON: {err}");
                             exit(EXIT_JSON_ERROR);
                         }
                     }
@@ -153,7 +154,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                     match serde_json::to_string(&group_result) {
                         Ok(json) => json,
                         Err(err) => {
-                            error!("JSON Error: {err}");
+                            error!("JSON: {err}");
                             exit(EXIT_JSON_ERROR);
                         }
                     }
@@ -162,7 +163,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                     match serde_json::to_string(&(result.results)) {
                         Ok(json) => json,
                         Err(err) => {
-                            error!("JSON Error: {err}");
+                            error!("JSON: {err}");
                             exit(EXIT_JSON_ERROR);
                         }
                     }
@@ -173,7 +174,7 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
-                        error!("JSON Error: {err}");
+                        error!("JSON: {err}");
                         exit(EXIT_JSON_ERROR);
                     }
                 };
@@ -184,20 +185,20 @@ pub fn config_test(configurator: &mut Configurator, format: &Option<OutputFormat
             }
         },
         Err(err) => {
-            error!("Error: {err}");
+            error!("{err}");
             exit(EXIT_DSC_ERROR);
         }
     }
 }
 
-pub fn config_export(configurator: &mut Configurator, format: &Option<OutputFormat>)
+pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>)
 {
     match configurator.invoke_export() {
         Ok(result) => {
             let json = match serde_json::to_string(&result.result) {
                 Ok(json) => json,
                 Err(err) => {
-                    error!("JSON Error: {err}");
+                    error!("JSON: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };
@@ -206,47 +207,61 @@ pub fn config_export(configurator: &mut Configurator, format: &Option<OutputForm
 
                 for msg in result.messages
                 {
-                    error!("{:?} message {}", msg.level, msg.message);
+                    error!("{:?} {} {}", msg.level, t!("subcommand.message"), msg.message);
                 };
 
                 exit(EXIT_DSC_ERROR);
             }
         },
         Err(err) => {
-            error!("Error: {err}");
+            error!("{err}");
             exit(EXIT_DSC_ERROR);
         }
     }
 }
 
-fn initialize_config_root(path: &Option<String>) -> Option<String> {
-    if path.is_some() {
-        let config_path = path.clone().unwrap_or_default();
-        Some(set_dscconfigroot(&config_path))
-    } else if std::env::var(DSC_CONFIG_ROOT).is_ok() {
+fn initialize_config_root(path: Option<&String>) -> Option<String> {
+    // code that calls this pass in either None, Some("-"), or Some(path)
+    // in the case of `-` we treat it as None, but need to pass it back as subsequent processing needs to handle it
+    let use_stdin = if let Some(specified_path) = path {
+        if specified_path != "-" {
+            return Some(set_dscconfigroot(specified_path));
+        }
+
+        true
+    } else {
+        false
+    };
+
+    if std::env::var(DSC_CONFIG_ROOT).is_ok() {
         let config_root = std::env::var(DSC_CONFIG_ROOT).unwrap_or_default();
-        debug!("Using {config_root} for {DSC_CONFIG_ROOT}");
-        None
+        debug!("DSC_CONFIG_ROOT = {config_root}");
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
-        debug!("Using current directory '{current_directory:?}' for {DSC_CONFIG_ROOT}");
+        debug!("DSC_CONFIG_ROOT = {} '{current_directory:?}'", t!("subcommand.currentDirectory"));
         set_dscconfigroot(&current_directory.to_string_lossy());
-        None
     }
+
+    // if the path is "-", we need to return it so later processing can handle it correctly
+    if use_stdin {
+        return Some("-".to_string());
+    }
+
+    None
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: &Option<String>, stdin: &Option<String>, as_group: &bool, as_include: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_include: &bool) {
     let (new_parameters, json_string) = match subcommand {
-        ConfigSubCommand::Get { document, path, .. } |
-        ConfigSubCommand::Set { document, path, .. } |
-        ConfigSubCommand::Test { document, path, .. } |
-        ConfigSubCommand::Validate { document, path, .. } |
-        ConfigSubCommand::Export { document, path, .. } => {
-            let new_path = initialize_config_root(path);
-            let input = get_input(document, stdin, &new_path);
+        ConfigSubCommand::Get { input, file, .. } |
+        ConfigSubCommand::Set { input, file, .. } |
+        ConfigSubCommand::Test { input, file, .. } |
+        ConfigSubCommand::Validate { input, file, .. } |
+        ConfigSubCommand::Export { input, file, .. } => {
+            let new_path = initialize_config_root(file.as_ref());
+            let document = get_input(input.as_ref(), new_path.as_ref());
             if *as_include {
-                let (new_parameters, config_json) = match get_contents(&input) {
+                let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
                     Err(err) => {
                         error!("{err}");
@@ -255,13 +270,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 };
                 (new_parameters, config_json)
             } else {
-                (None, input)
+                (None, document)
             }
         },
-        ConfigSubCommand::Resolve { document, path, .. } => {
-            let new_path = initialize_config_root(path);
-            let input = get_input(document, stdin, &new_path);
-            let (new_parameters, config_json) = match get_contents(&input) {
+        ConfigSubCommand::Resolve { input, file, .. } => {
+            let new_path = initialize_config_root(file.as_ref());
+            let document = get_input(input.as_ref(), new_path.as_ref());
+            let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
                     error!("{err}");
@@ -292,11 +307,11 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         parameters
     } {
         None => {
-            debug!("No parameters specified");
+            debug!("{}", t!("subcommand.noParameters"));
             None
         },
         Some(parameters) => {
-            debug!("Parameters specified");
+            debug!("{}", t!("subcommand.parameters"));
             match serde_json::from_str(parameters) {
                 Ok(json) => Some(json),
                 Err(_) => {
@@ -305,13 +320,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                             match serde_json::to_value(yaml) {
                                 Ok(json) => Some(json),
                                 Err(err) => {
-                                    error!("Error: Failed to convert YAML to JSON: {err}");
+                                    error!("{}: {err}", t!("subcommand.failedConvertJson"));
                                     exit(EXIT_DSC_ERROR);
                                 }
                             }
                         },
                         Err(err) => {
-                            error!("Error: Parameters are not valid JSON or YAML: {err}");
+                            error!("{}: {err}", t!("subcommand.invalidParamters"));
                             exit(EXIT_INVALID_INPUT);
                         }
                     }
@@ -322,42 +337,47 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 
     if let Some(path) = mounted_path {
         if !Path::new(&path).exists() {
-            error!("Error: Target path '{path}' does not exist");
+            error!("{}: '{path}'", t!("subcommand.invalidPath"));
             exit(EXIT_INVALID_ARGS);
         }
 
-        configurator.set_system_root(path);
+        // make sure path has a trailing separator if it's a drive letter
+        if path.len() == 2 && path.chars().nth(1).unwrap_or(' ') == ':' {
+            configurator.set_system_root(&format!("{path}\\"));
+        } else {
+            configurator.set_system_root(path);
+        }
     }
 
-    if let Err(err) = configurator.set_context(&parameters) {
-        error!("Error: Parameter input failure: {err}");
+    if let Err(err) = configurator.set_context(parameters.as_ref()) {
+        error!("{}: {err}", t!("subcommand.failedSetParameters"));
         exit(EXIT_INVALID_INPUT);
     }
 
     match subcommand {
-        ConfigSubCommand::Get { format, .. } => {
-            config_get(&mut configurator, format, as_group);
+        ConfigSubCommand::Get { output_format, .. } => {
+            config_get(&mut configurator, output_format.as_ref(), as_group);
         },
-        ConfigSubCommand::Set { format, .. } => {
-            config_set(&mut configurator, format, as_group);
+        ConfigSubCommand::Set { output_format, .. } => {
+            config_set(&mut configurator, output_format.as_ref(), as_group);
         },
-        ConfigSubCommand::Test { format, as_get, as_config, .. } => {
-            config_test(&mut configurator, format, as_group, as_get, as_config);
+        ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
+            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config);
         },
-        ConfigSubCommand::Validate { document, path, format} => {
+        ConfigSubCommand::Validate { input, file, output_format} => {
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,
             };
             if *as_include {
-                let new_path = initialize_config_root(path);
-                let input = get_input(document, stdin, &new_path);
+                let new_path = initialize_config_root(file.as_ref());
+                let input = get_input(input.as_ref(), new_path.as_ref());
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
                     },
                     Err(err) => {
-                        error!("Error: Failed to deserialize Include input: {err}");
+                        error!("{}: {err}", t!("subcommand.invalidInclude"));
                         result.valid = false;
                     }
                 }
@@ -374,20 +394,20 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             }
 
             let Ok(json) = serde_json::to_string(&result) else {
-                error!("Failed to convert validation result to JSON");
+                error!("{}", t!("subcommand.failedSerialize"));
                 exit(EXIT_JSON_ERROR);
             };
 
-            write_output(&json, format);
+            write_output(&json, output_format.as_ref());
         },
-        ConfigSubCommand::Export { format, .. } => {
-            config_export(&mut configurator, format);
+        ConfigSubCommand::Export { output_format, .. } => {
+            config_export(&mut configurator, output_format.as_ref());
         },
-        ConfigSubCommand::Resolve { format, .. } => {
+        ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
                 Err(err) => {
-                    error!("Error: Failed to deserialize configuration: {err}");
+                    error!("{}: {err}", t!("subcommand.invalidConfiguration"));
                     exit(EXIT_DSC_ERROR);
                 }
             };
@@ -408,11 +428,11 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             let json_string = match serde_json::to_string(&resolve_result) {
                 Ok(json) => json,
                 Err(err) => {
-                    error!("Error: Failed to serialize resolve result: {err}");
+                    error!("{}: {err}", t!("subcommand.failedSerializeResolve"));
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, format);
+            write_output(&json_string, output_format.as_ref());
         },
     }
 }
@@ -432,7 +452,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 /// * `DscError` - The error that occurred.
 pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
     // first validate against the config schema
-    debug!("Validating configuration against schema");
+    debug!("{}", t!("subcommand.validatingConfiguration"));
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
     let config_value = serde_json::to_value(config)?;
     validate_json("Configuration", &schema, &config_value)?;
@@ -440,14 +460,14 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 
     // then validate each resource
     let Some(resources) = config_value["resources"].as_array() else {
-        return Err(DscError::Validation("Error: Resources not specified".to_string()));
+        return Err(DscError::Validation(t!("subcommand.noResources").to_string()));
     };
 
     // discover the resources
     let mut resource_types = Vec::new();
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
-            return Err(DscError::Validation("Error: Resource type not specified".to_string()));
+            return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
 
         if resource_types.contains(&type_name.to_lowercase()) {
@@ -460,14 +480,14 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
-            return Err(DscError::Validation("Error: Resource type not specified".to_string()));
+            return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
 
-        trace!("Validating resource named '{}'", resource_block["name"].as_str().unwrap_or_default());
+        trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
 
         // get the actual resource
         let Some(resource) = get_resource(&dsc, type_name) else {
-            return Err(DscError::Validation(format!("Error: Resource type '{type_name}' not found")));
+            return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
         // see if the resource is command based
@@ -477,28 +497,28 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
                 // convert to resource_manifest
                 let manifest: ResourceManifest = serde_json::from_value(manifest)?;
                 if manifest.validate.is_some() {
-                    debug!("Resource {type_name} implements validation");
+                    debug!("{}: {type_name} ", t!("subcommand.resourceImplementsValidate"));
                     // get the resource's part of the config
                     let resource_config = resource_block["properties"].to_string();
                     let result = resource.validate(&resource_config)?;
                     if !result.valid {
-                        let reason = result.reason.unwrap_or("No reason provided".to_string());
+                        let reason = result.reason.unwrap_or(t!("subcommand.noReason").to_string());
                         let type_name = resource.type_name.clone();
-                        return Err(DscError::Validation(format!("Resource {type_name} failed validation: {reason}")));
+                        return Err(DscError::Validation(format!("{}: {type_name} {reason}", t!("subcommand.resourceValidationFailed"))));
                     }
                 }
                 else {
                     // use schema validation
-                    trace!("Resource {type_name} does not implement validation, using schema");
+                    trace!("{}: {type_name}", t!("subcommand.resourceDoesNotImplementValidate"));
                     let Ok(schema) = resource.schema() else {
-                        return Err(DscError::Validation(format!("Error: Resource {type_name} does not have a schema nor supports validation")));
+                        return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noSchemaOrValidate"))));
                     };
                     let schema = serde_json::from_str(&schema)?;
 
                     validate_json(&resource.type_name, &schema, &resource_block["properties"])?;
                 }
             } else {
-                return Err(DscError::Validation(format!("Error: Resource {type_name} does not have a manifest")));
+                return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noManifest"))));
             }
         }
     }
@@ -507,7 +527,7 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
+pub fn resource(subcommand: &ResourceSubCommand) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
@@ -517,51 +537,58 @@ pub fn resource(subcommand: &ResourceSubCommand, stdin: &Option<String>) {
     };
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, adapter_name, description, tags, format } => {
-            list_resources(&mut dsc, resource_name, adapter_name, description, tags, format);
+        ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
         },
-        ResourceSubCommand::Schema { resource , format } => {
+        ResourceSubCommand::Schema { resource , output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::schema(&dsc, resource, format);
+            resource_command::schema(&dsc, resource, output_format.as_ref());
         },
-        ResourceSubCommand::Export { resource, format } => {
+        ResourceSubCommand::Export { resource, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            resource_command::export(&mut dsc, resource, format);
+            resource_command::export(&mut dsc, resource, output_format.as_ref());
         },
-        ResourceSubCommand::Get { resource, input, path, all, format } => {
+        ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            if *all { resource_command::get_all(&dsc, resource, format); }
+            if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
             else {
-                let parsed_input = get_input(input, stdin, path);
-                resource_command::get(&dsc, resource, parsed_input, format);
+                let parsed_input = get_input(input.as_ref(), path.as_ref());
+                resource_command::get(&dsc, resource, parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, input, path, format } => {
+        ResourceSubCommand::Set { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
-            resource_command::set(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            resource_command::set(&dsc, resource, parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Test { resource, input, path, format } => {
+        ResourceSubCommand::Test { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
-            resource_command::test(&dsc, resource, parsed_input, format);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            resource_command::test(&dsc, resource, parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Delete { resource, input, path } => {
+        ResourceSubCommand::Delete { resource, input, file: path } => {
             dsc.find_resources(&[resource.to_string()]);
-            let parsed_input = get_input(input, stdin, path);
+            let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::delete(&dsc, resource, parsed_input);
         },
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_name: &Option<String>, description: &Option<String>, tags: &Option<Vec<String>>, format: &Option<OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>) {
     let mut write_table = false;
-    let mut table = Table::new(&["Type", "Kind", "Version", "Caps", "RequireAdapter", "Description"]);
+    let mut table = Table::new(&[
+        t!("subcommand.tableHeader_type").to_string().as_ref(),
+        t!("subcommand.tableheader_kind").to_string().as_ref(),
+        t!("subcommand.tableheader_version").to_string().as_ref(),
+        t!("subcommand.tableheader_capabilities").to_string().as_ref(),
+        t!("subcommand.tableheader_adapter").to_string().as_ref(),
+        t!("subcommand.tableheader_description").to_string().as_ref(),
+    ]);
     if format.is_none() && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(&resource_name.clone().unwrap_or("*".to_string()), &adapter_name.clone().unwrap_or_default()) {
+    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new())) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),
@@ -585,14 +612,14 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
             let manifest = match import_manifest(resource_manifest.clone()) {
                 Ok(resource_manifest) => resource_manifest,
                 Err(err) => {
-                    error!("Error in manifest for {0}: {err}", resource.type_name);
+                    error!("{} {}: {err}", t!("subcommand.invalidManifest"), resource.type_name);
                     continue;
                 }
             };
 
             // if description is specified, skip if resource description does not contain it
             if description.is_some() &&
-                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.as_ref().unwrap_or(&String::new()).to_lowercase())) {
+                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
                 continue;
             }
 
@@ -633,7 +660,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: &Option<String>, adapter_
             let json = match serde_json::to_string(&resource) {
                 Ok(json) => json,
                 Err(err) => {
-                    error!("JSON Error: {err}");
+                    error!("JSON: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
             };

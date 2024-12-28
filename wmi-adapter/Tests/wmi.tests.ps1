@@ -37,7 +37,7 @@ Describe 'WMI adapter resource tests' {
 
     It 'Get works on a config with WMI resources' -Skip:(!$IsWindows){
 
-        $r = Get-Content -Raw $configPath | dsc config get
+        $r = Get-Content -Raw $configPath | dsc config get -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.results[0].result.actualState[0].LastBootUpTime | Should -BeNullOrEmpty
@@ -48,7 +48,7 @@ Describe 'WMI adapter resource tests' {
 
     It 'Example config works' -Skip:(!$IsWindows) {
         $configPath = Join-Path $PSScriptRoot '..\..\configurations\windows\windows_inventory.dsc.yaml'
-        $r = dsc config get -p $configPath
+        $r = dsc config get -f $configPath
         $LASTEXITCODE | Should -Be 0
         $r | Should -Not -BeNullOrEmpty
         $res = $r | ConvertFrom-Json

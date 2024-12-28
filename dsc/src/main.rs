@@ -4,8 +4,8 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
-use std::io::{self, IsTerminal, Read};
-use std::process::exit;
+use rust_i18n::{i18n, t};
+use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
 
@@ -21,6 +21,8 @@ pub mod subcommand;
 pub mod tablewriter;
 pub mod util;
 
+i18n!("locales", fallback = "en-us");
+
 fn main() {
     #[cfg(debug_assertions)]
     check_debug();
@@ -29,73 +31,49 @@ fn main() {
     check_store();
 
     if ctrlc::set_handler(ctrlc_handler).is_err() {
-        error!("Error: Failed to set Ctrl-C handler");
+        error!("{}", t!("main.failedCtrlCHandler"));
     }
 
     let args = Args::parse();
 
-    util::enable_tracing(&args.trace_level, &args.trace_format);
+    util::enable_tracing(args.trace_level.as_ref(), args.trace_format.as_ref());
 
-    debug!("Running dsc {}", env!("CARGO_PKG_VERSION"));
-
-    let input = if io::stdin().is_terminal() {
-        None
-    } else {
-        info!("Reading input from STDIN");
-        let mut buffer: Vec<u8> = Vec::new();
-        io::stdin().read_to_end(&mut buffer).unwrap();
-        let input = match String::from_utf8(buffer) {
-            Ok(input) => input,
-            Err(e) => {
-                error!("Invalid UTF-8 sequence: {e}");
-                exit(util::EXIT_INVALID_ARGS);
-            },
-        };
-        // get_input call expects at most 1 input, so wrapping Some(empty input) would throw it off
-        // have only seen this happen with dsc_args.test.ps1 running on the CI pipeline
-        if input.is_empty() {
-            debug!("Input from STDIN is empty");
-            None
-        }
-        else {
-            Some(input)
-        }
-    };
+    debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
     match args.subcommand {
         SubCommand::Completer { shell } => {
-            info!("Generating completion script for {:?}", shell);
+            info!("{} {:?}", t!("main.generatingCompleter"), shell);
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_include } => {
             if let Some(file_name) = parameters_file {
-                info!("Reading parameters from file {file_name}");
+                info!("{}: {file_name}", t!("main.readingParametersFile"));
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), &system_root, &input, &as_group, &as_include),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include),
                     Err(err) => {
-                        error!("Error: Failed to read parameters file '{file_name}': {err}");
+                        error!("{} '{file_name}': {err}", t!("main.failedToReadParametersFile"));
                         exit(util::EXIT_INVALID_INPUT);
                     }
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, &system_root, &input, &as_group, &as_include);
+                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_include);
             }
         },
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand, &input);
+            subcommand::resource(&subcommand);
         },
-        SubCommand::Schema { dsc_type , format } => {
+        SubCommand::Schema { dsc_type , output_format } => {
             let schema = util::get_schema(dsc_type);
             let json = match serde_json::to_string(&schema) {
                 Ok(json) => json,
                 Err(err) => {
-                    error!("JSON Error: {err}");
+                    error!("JSON: {err}");
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, &format);
+            util::write_output(&json, output_format.as_ref());
         },
     }
 
@@ -103,18 +81,18 @@ fn main() {
 }
 
 fn ctrlc_handler() {
-    warn!("Ctrl-C received");
+    warn!("{}", t!("main.ctrlCReceived"));
 
     // get process tree for current process and terminate all processes
-    let sys = System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new()));
-    info!("Found {} processes", sys.processes().len());
+    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
+    info!("{}: {}", t!("main.foundProcesses"), sys.processes().len());
     let Ok(current_pid) = get_current_pid() else {
-        error!("Could not get current process id");
+        error!("{}", t!("main.failedToGetPid"));
         exit(util::EXIT_CTRL_C);
     };
-    info!("Current process id: {}", current_pid);
+    info!("{}: {}", t!("main.currentPid"), current_pid);
     let Some(current_process) = sys.process(current_pid) else {
-        error!("Could not get current process");
+        error!("{}", t!("main.failedToGetProcess"));
         exit(util::EXIT_CTRL_C);
     };
 
@@ -123,14 +101,14 @@ fn ctrlc_handler() {
 }
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
-    info!("Terminating subprocesses of process {:?} {}", process.name(), process.pid());
+    info!("{}: {:?} {}", t!("main.terminatingSubprocess"), process.name(), process.pid());
     for subprocess in sys.processes().values().filter(|p| p.parent().map_or(false, |parent| parent == process.pid())) {
         terminate_subprocesses(sys, subprocess);
     }
 
-    info!("Terminating process {:?} {}", process.name(), process.pid());
+    info!("{}: {:?} {}", t!("main.terminatingProcess"), process.name(), process.pid());
     if !process.kill() {
-        error!("Failed to terminate process {:?} {}", process.name(), process.pid());
+        error!("{}: {:?} {}", t!("main.failedTerminateProcess"), process.name(), process.pid());
     }
 }
 
@@ -142,7 +120,7 @@ fn check_debug() {
             let event = match event::read() {
                 Ok(event) => event,
                 Err(err) => {
-                    eprintln!("Error: Failed to read event: {err}");
+                    eprintln!("Failed to read event: {err}");
                     break;
                 }
             };
@@ -151,9 +129,6 @@ fn check_debug() {
                 if key.kind == event::KeyEventKind::Press {
                     break;
                 }
-            } else {
-                eprintln!("Unexpected event: {event:?}");
-                continue;
             }
         }
     }
@@ -162,13 +137,9 @@ fn check_debug() {
 // Check if the dsc binary parent process is WinStore.App or Exploerer.exe
 #[cfg(windows)]
 fn check_store() {
-    let message = r"
-DSC.exe is a command-line tool and cannot be run directly from the Windows Store or Explorer.
-Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
+    use std::io::Read;
 
-Press any key to close this window
-";
-    let sys = System::new_with_specifics(RefreshKind::new().with_processes(ProcessRefreshKind::new()));
+    let sys = System::new_with_specifics(RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()));
     // get current process
     let Ok(current_pid) = get_current_pid() else {
         return;
@@ -187,7 +158,7 @@ Press any key to close this window
 
     // MS Store runs app using `sihost.exe`
     if parent_process.name().to_ascii_lowercase() == "sihost.exe" || parent_process.name().to_ascii_lowercase() == "explorer.exe"{
-        eprintln!("{message}");
+        eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
         exit(util::EXIT_INVALID_ARGS);
