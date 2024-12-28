@@ -26,5 +26,6 @@
     "vscode-nmake-tools.workspaceBuildDirectories": [
         "."
     ],
-    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true
+    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true,
+    "powershell.codeFormatting.preset": "OTBS"
 }
