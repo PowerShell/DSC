@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 
 pub struct Args {
     #[clap(subcommand)]
-    pub subcommand: SubCommand,
+    pub subcommand: SubCommand
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
@@ -25,11 +25,29 @@ pub enum SubCommand {
         input: String,
     },
 
+    #[clap(name = "set", about = "Set the current state of file or directory.", arg_required_else_help = true)]
+    Set {
+        #[clap(short, long, required = true, help = "The path to the file or directory.")]
+        input : String,
+    },
+
     #[clap(name = "export", about = "Exports the files and directories under the specified path", arg_required_else_help = true)]
     Export {
         #[clap(short, long, required = true, help = "The path to the file or directory.")]
-        path: String,
+        input: String,
     },
+
     #[clap(name = "schema", about = "Retrieve JSON schema.")]
-    Schema,
+    Schema {
+        #[clap(short, long, default_value = "file", help = "The type of schema to retrieve.")]
+        schema_type: FileSystemObjectType,
+    }
+}
+
+#[derive(Clone, Default, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub enum FileSystemObjectType {
+    #[default]
+    File,
+    Directory,
+    FileContent,
 }

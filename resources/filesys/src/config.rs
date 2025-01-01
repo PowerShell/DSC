@@ -15,12 +15,11 @@ pub struct File {
     pub size: Option<u64>,
 
     /// The file hash.
-    pub hash: String,
+    pub hash: Option<String>,
 
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, Hash)]
 #[serde(rename ="Directory", deny_unknown_fields)]
@@ -29,11 +28,47 @@ pub struct Directory {
     pub path: String,
 
     /// The directory size.
-    pub size: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
 
     /// The files under the directory.
-    pub files: Vec<File>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub files: Option<Vec<File>>,
+
+    /// Recurse into subdirectories.
+    pub recurse: bool,
 
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, Hash)]
+#[serde(rename ="FileContent", deny_unknown_fields)]
+pub struct FileContent
+{
+    /// The path to the file.
+    pub path: String,
+
+    /// The file hash.
+    pub hash: String,
+
+    /// The file encoding.
+    pub encoding: Encoding,
+
+    /// The file content.
+    pub content: String,
+
+    #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
+    pub exist: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, Hash)]
+pub enum Encoding {
+    Utf8,
+    Utf16,
+    Utf32,
+    Ascii,
+    Base64,
+    Hex,
+    Binary,
 }
