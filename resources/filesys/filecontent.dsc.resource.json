@@ -15,17 +15,6 @@
         "input": "stdin",
         "implementsPretest": false
     },
-    "delete": {
-        "executable": "filesys",
-        "args": [
-            "delete",
-            {
-                "jsonInputArg": "--input",
-                "mandatory": true
-            }
-        ],
-        "input": "stdin"
-    },
     "set": {
         "executable": "filesys",
         "args": [
