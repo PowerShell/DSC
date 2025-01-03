@@ -36,7 +36,7 @@ pub struct Directory {
     pub files: Option<Vec<File>>,
 
     /// Recurse into subdirectories.
-    pub recurse: bool,
+    pub recurse: Option<bool>,
 
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,

@@ -36,7 +36,18 @@
             }
         ],
         "input": "stdin"
-    }
+    },
+    "export": {
+        "executable": "filesys",
+        "args": [
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ],
+        "input": "stdin"
+    },
     "schema": {
         "command": {
             "executable": "filesys",

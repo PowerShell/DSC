@@ -2,12 +2,10 @@
 // Licensed under the MIT License.
 
 use crate::config::File;
-use crate::config::Directory;
 use std::fs;
 use std::fs::File as fsFile;
 use std::path::Path;
 use tracing::{debug};
-use fs_extra::dir::get_size;
 
 impl File {
     /// Create a new `File`.
@@ -21,24 +19,6 @@ impl File {
             path: path.to_string(),
             size: None,
             hash: None,
-            exist: None,
-        }
-    }
-}
-
-impl Directory {
-    /// Create a new `Directory`.
-    ///
-    /// # Arguments
-    ///
-    /// * `string` - The string for the Path
-    #[must_use]
-    pub fn new(path: &str) -> Directory {
-        Directory {
-            path: path.to_string(),
-            size: None,
-            files: None,
-            recurse: false,
             exist: None,
         }
     }
@@ -101,52 +81,6 @@ pub fn export_file_path(file: &File) -> Result<File, Box<dyn std::error::Error>>
         },
         Err(e) => {
             Err(e)?
-        }
-    }
-}
-
-pub fn export_dir_path(dir: &Directory) -> Result<Directory, Box<dyn std::error::Error>> {
-    // Export the file or directory
-    let path = Path::new(dir.path.as_str());
-
-    match path.exists() {
-        false => {
-            return Ok(Directory { path: path.to_str().unwrap().to_string(), size: None, files: None, recurse: dir.recurse, exist: Some(false) });
-        }
-        _ => {}
-    }
-
-    match path.is_dir() {
-        true => {
-            let files: Vec<File> = {
-                let dir = fs::read_dir(path)?;
-                let mut files = Vec::new();
-                for entry in dir {
-                    let entry = entry?;
-                    let path = entry.path();
-                    let f = File::new(path.to_str().unwrap());
-                    files.push(get_file(&f)?);
-                }
-                files
-            };
-
-            let dir_size = get_size(path)?;
-
-            Ok(Directory { path: path.to_str().unwrap().to_string(), size: Some(dir_size), files: Some(files), recurse: dir.recurse, exist: Some(true) })
-        }
-        false => {
-            let path = Path::new(path);
-            let f = File::new(path.to_str().unwrap());
-            let file = get_file(&f)?;
-            let parent = path.parent();
-            match parent {
-                Some(parent) => {
-                    Ok(Directory { path: parent.to_str().unwrap().to_string(), size: file.size, files: vec![file].into(), recurse: dir.recurse, exist: Some(true) })
-                }
-                _ => {
-                    return Err("Path is not a file or directory")?;
-                }
-            }
         }
     }
 }

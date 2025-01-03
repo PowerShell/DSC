@@ -6,12 +6,14 @@ use clap::Parser;
 use std::process::exit;
 use tracing::{debug, error};
 use crate::config::{File, Directory, FileContent};
-use file_helper::{get_file, set_file, delete_file, export_file_path, export_dir_path};
+use file_helper::{get_file, set_file, delete_file, export_file_path};
+use dir_helpers::{get_dir, set_dir, delete_dir, export_dir_path};
 use schemars::schema_for;
 
 mod args;
 pub mod config;
 mod file_helper;
+mod dir_helpers;
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_INPUT: i32 = 2;
@@ -31,9 +33,9 @@ fn main() {
                 None => {
                     let dir = match is_directory_type(input.as_str()) {
                         Some(dir) => {
-                            // let dir = get_file(&dir).unwrap();
-                            // let json = serde_json::to_string(&dir).unwrap();
-                            // println!("{}", json);
+                            let dir = get_dir(&dir).unwrap();
+                            let json = serde_json::to_string(&dir).unwrap();
+                            println!("{}", json);
                         }
                         None => {
                             let filecontent = match is_fillecontent_type(input.as_str()) {
@@ -64,9 +66,9 @@ fn main() {
                 None => {
                     let dir = match is_directory_type(input.as_str()) {
                         Some(dir) => {
-                            // let dir = delete_file(&dir).unwrap();
-                            // let json = serde_json::to_string(&dir).unwrap();
-                            // println!("{}", json);
+                            let dir = delete_dir(&dir).unwrap();
+                            let json = serde_json::to_string(&dir).unwrap();
+                            println!("{}", json);
                         }
                         None => {
                             let filecontent = match is_fillecontent_type(input.as_str()) {
@@ -98,9 +100,9 @@ fn main() {
                 None => {
                     let dir = match is_directory_type(input.as_str()) {
                         Some(dir) => {
-                            // let dir = get_file(&dir).unwrap();
-                            // let json = serde_json::to_string(&dir).unwrap();
-                            // println!("{}", json);
+                            let dir = set_dir(&dir).unwrap();
+                            let json = serde_json::to_string(&dir).unwrap();
+                            println!("{}", json);
                         }
                         None => {
                             let filecontent = match is_fillecontent_type(input.as_str()) {
