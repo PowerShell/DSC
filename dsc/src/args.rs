@@ -63,7 +63,7 @@ pub enum SubCommand {
         #[clap(name = "type", short, long, help = t!("args.schemaType").to_string(), value_enum)]
         dsc_type: DscType,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string(), value_enum)]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
 }
 
@@ -76,7 +76,7 @@ pub enum ConfigSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string(), value_enum)]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "set", about = t!("args.setAbout").to_string())]
     Set {
@@ -85,7 +85,7 @@ pub enum ConfigSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
         #[clap(short = 'w', long, help = t!("args.whatIf").to_string())]
         what_if: bool,
     },
@@ -96,7 +96,7 @@ pub enum ConfigSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
         // Used by Assertion resource to return `test` result as a `get` result
         #[clap(long, hide = true)]
         as_get: bool,
@@ -111,7 +111,7 @@ pub enum ConfigSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "export", about = t!("args.exportAbout").to_string())]
     Export {
@@ -120,7 +120,7 @@ pub enum ConfigSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "resolve", about = t!("args.resolveAbout").to_string(), hide = true)]
     Resolve {
@@ -129,7 +129,7 @@ pub enum ConfigSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     }
 }
 
@@ -147,7 +147,7 @@ pub enum ResourceSubCommand {
         #[clap(short, long, help = t!("args.tags").to_string())]
         tags: Option<Vec<String>>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "get", about = t!("args.resourceGet").to_string(), arg_required_else_help = true)]
     Get {
@@ -160,7 +160,7 @@ pub enum ResourceSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "set", about = "Invoke the set operation to a resource", arg_required_else_help = true)]
     Set {
@@ -171,7 +171,7 @@ pub enum ResourceSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "test", about = "Invoke the test operation to a resource", arg_required_else_help = true)]
     Test {
@@ -182,7 +182,7 @@ pub enum ResourceSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "delete", about = "Invoke the delete operation to a resource", arg_required_else_help = true)]
     Delete {
@@ -198,14 +198,14 @@ pub enum ResourceSubCommand {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
     #[clap(name = "export", about = "Retrieve all resource instances", arg_required_else_help = true)]
     Export {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: OutputFormat,
+        output_format: Option<OutputFormat>,
     },
 }
 

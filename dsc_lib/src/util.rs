@@ -18,6 +18,7 @@ use indicatif::ProgressStyle;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
+    #[clap(hide = true)]
     None,
     Json,
     PrettyJson,

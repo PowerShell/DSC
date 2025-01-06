@@ -296,7 +296,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         }
     };
 
-    configurator.set_output_format(*output_format);
+    let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+    configurator.set_output_format(output_format);
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {
@@ -359,15 +360,19 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 
     match subcommand {
         ConfigSubCommand::Get { output_format, .. } => {
-            config_get(&mut configurator, *output_format, as_group);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            config_get(&mut configurator, output_format, as_group);
         },
         ConfigSubCommand::Set { output_format, .. } => {
-            config_set(&mut configurator, *output_format, as_group);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            config_set(&mut configurator, output_format, as_group);
         },
         ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
-            config_test(&mut configurator, *output_format, as_group, as_get, as_config);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            config_test(&mut configurator, output_format, as_group, as_get, as_config);
         },
         ConfigSubCommand::Validate { input, file, output_format} => {
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,
@@ -385,7 +390,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     }
                 }
             } else {
-                match validate_config(configurator.get_config(), *output_format) {
+                match validate_config(configurator.get_config(), output_format) {
                     Ok(()) => {
                         // valid, so do nothing
                     },
@@ -401,12 +406,14 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 exit(EXIT_JSON_ERROR);
             };
 
-            write_output(&json, *output_format);
+            write_output(&json, output_format);
         },
         ConfigSubCommand::Export { output_format, .. } => {
-            config_export(&mut configurator, *output_format);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            config_export(&mut configurator, output_format);
         },
         ConfigSubCommand::Resolve { output_format, .. } => {
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
                 Err(err) => {
@@ -435,7 +442,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, *output_format);
+            write_output(&json_string, output_format);
         },
     }
 }
@@ -541,33 +548,39 @@ pub fn resource(subcommand: &ResourceSubCommand) {
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), *output_format);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format);
         },
         ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()], *output_format);
-            resource_command::schema(&dsc, resource, *output_format);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            dsc.find_resources(&[resource.to_string()], output_format);
+            resource_command::schema(&dsc, resource, output_format);
         },
         ResourceSubCommand::Export { resource, output_format } => {
-            dsc.find_resources(&[resource.to_string()], *output_format);
-            resource_command::export(&mut dsc, resource, *output_format);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            dsc.find_resources(&[resource.to_string()], output_format);
+            resource_command::export(&mut dsc, resource, output_format);
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()], *output_format);
-            if *all { resource_command::get_all(&dsc, resource, *output_format); }
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            dsc.find_resources(&[resource.to_string()], output_format);
+            if *all { resource_command::get_all(&dsc, resource, output_format); }
             else {
                 let parsed_input = get_input(input.as_ref(), path.as_ref());
-                resource_command::get(&dsc, resource, parsed_input, *output_format);
+                resource_command::get(&dsc, resource, parsed_input, output_format);
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], *output_format);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            dsc.find_resources(&[resource.to_string()], output_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&dsc, resource, parsed_input, *output_format);
+            resource_command::set(&dsc, resource, parsed_input, output_format);
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], *output_format);
+            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            dsc.find_resources(&[resource.to_string()], output_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::test(&dsc, resource, parsed_input, *output_format);
+            resource_command::test(&dsc, resource, parsed_input, output_format);
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
             dsc.find_resources(&[resource.to_string()], OutputFormat::None); //TODO: add output_format to ResourceSubCommand::Delete
