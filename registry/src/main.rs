@@ -6,6 +6,13 @@ use crossterm::event;
 #[cfg(debug_assertions)]
 use std::env;
 
+// #[macro_use]
+// extern crate rust_i18n;
+
+// Init translations using the `[package.metadata.i18n]` section in `Cargo.toml`
+use rust_i18n::t;
+rust_i18n::i18n!("locales");
+
 use args::Arguments;
 use clap::Parser;
 use registry_helper::RegistryHelper;
@@ -135,19 +142,24 @@ pub fn enable_tracing() {
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
+        let msg = t!("error.eprint.tracing_init");
+        eprintln!("{msg}");
     }
 }
 
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_REGISTRY").is_ok() {
-        eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
+        let msg = t!("error.eprint.debug.attach", pid = std::process::id());
+        eprintln!("{msg}");
+        // eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
         loop {
             let event = match event::read() {
                 Ok(event) => event,
                 Err(err) => {
-                    eprintln!("Error: Failed to read event: {err}");
+                    let msg = t!("error.eprint.debug.event.read", "err" => err);
+                    eprintln!("{msg}");
+                    // eprintln!("Error: Failed to read event: {err}");
                     break;
                 }
             };
@@ -157,7 +169,9 @@ fn check_debug() {
                     break;
                 }
             } else {
-                eprintln!("Unexpected event: {event:?}");
+                let msg = t!("error.eprint.debug.event.unexpected", e = event : {:?});
+                eprintln!("{msg}");
+                // eprintln!("Unexpected event: {event:?}");
                 continue;
             }
         }
