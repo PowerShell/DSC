@@ -291,6 +291,6 @@ resources:
     It 'Invalid --system-root' {
         dsc config --system-root /invalid/path get -f "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 1
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path '/invalid/path' does not exist"
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path does not exist: '/invalid/path'"
     }
 }

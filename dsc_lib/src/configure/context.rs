@@ -45,9 +45,9 @@ impl Default for Context {
 
 #[cfg(target_os = "windows")]
 fn get_default_os_system_root() -> PathBuf {
-    // use SYSTEMDRIVE env var to get the default target path
+    // use SYSTEMDRIVE env var to get the default target path, append trailing separator
     let system_drive = std::env::var("SYSTEMDRIVE").unwrap_or_else(|_| "C:".to_string());
-    PathBuf::from(system_drive)
+    PathBuf::from(system_drive + "\\")
 }
 
 #[cfg(not(target_os = "windows"))]
