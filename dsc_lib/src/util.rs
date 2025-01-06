@@ -16,8 +16,9 @@ use tracing::warn_span;
 use tracing::span::Span;
 use indicatif::ProgressStyle;
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
+    None,
     Json,
     PrettyJson,
     Yaml,
@@ -38,25 +39,25 @@ impl Default for DscSettingValue {
 }
 
 #[derive(Default, Debug, Clone, Serialize)]
-pub struct DscProgressValue {
+pub struct Progress {
     pub activity:  String,
     pub status: String,
     pub percent_complete: u16,
     pub seconds_remaining: u64,
 }
 
-pub struct DscProgressBar {
-    progress_value:  DscProgressValue,
+pub struct ProgressBar {
+    progress_value:  Progress,
     ui_bar: Span, //IndicatifSpanExt
     length: u64,
     position: u64,
     emit_json: bool
 }
 
-impl DscProgressBar {
-    pub fn new(emit_json: bool) -> DscProgressBar {
-        DscProgressBar {
-            progress_value: DscProgressValue::default(),
+impl ProgressBar {
+    pub fn new(emit_json: bool) -> ProgressBar {
+        ProgressBar {
+            progress_value: Progress::default(),
             ui_bar: warn_span!(""),
             length: 0,
             position: 0,

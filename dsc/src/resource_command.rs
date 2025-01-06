@@ -16,7 +16,7 @@ use dsc_lib::{
 };
 use std::process::exit;
 
-pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: Option<&OutputFormat>) {
+pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: OutputFormat) {
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
@@ -57,7 +57,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: Opt
     }
 }
 
-pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputFormat>) {
+pub fn get_all(dsc: &DscManager, resource_type: &str, format: OutputFormat) {
     let mut input = String::new();
     let Some(mut resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
@@ -105,7 +105,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputForm
     }
 }
 
-pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: Option<&OutputFormat>) {
+pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: OutputFormat) {
     if input.is_empty() {
         error!("{}", t!("resource_command.setInputEmpty"));
         exit(EXIT_INVALID_ARGS);
@@ -151,7 +151,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: Opt
     }
 }
 
-pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: Option<&OutputFormat>) {
+pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: OutputFormat) {
     if input.is_empty() {
         error!("{}", t!("resource_command.testInputEmpty"));
         exit(EXIT_INVALID_ARGS);
@@ -228,7 +228,7 @@ pub fn delete(dsc: &DscManager, resource_type: &str, mut input: String) {
     }
 }
 
-pub fn schema(dsc: &DscManager, resource_type: &str, format: Option<&OutputFormat>) {
+pub fn schema(dsc: &DscManager, resource_type: &str, format: OutputFormat) {
     let Some(resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
@@ -257,7 +257,7 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: Option<&OutputForma
     }
 }
 
-pub fn export(dsc: &mut DscManager, resource_type: &str, format: Option<&OutputFormat>) {
+pub fn export(dsc: &mut DscManager, resource_type: &str, format: OutputFormat) {
     let mut input = String::new();
     let Some(dsc_resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());

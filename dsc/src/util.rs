@@ -215,23 +215,23 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
 ///
 /// * `json` - The JSON to write
 /// * `format` - The format to use
-pub fn write_output(json: &str, format: Option<&OutputFormat>) {
+pub fn write_output(json: &str, format: OutputFormat) {
     let mut is_json = true;
     let mut output_format = format;
     let mut syntax_color = false;
     if std::io::stdout().is_terminal() {
         syntax_color = true;
-        if output_format.is_none() {
-            output_format = Some(&OutputFormat::Yaml);
+        if output_format == OutputFormat::None {
+            output_format = OutputFormat::Yaml;
         }
     }
-    else if output_format.is_none() {
-        output_format = Some(&OutputFormat::Json);
+    else if output_format == OutputFormat::None {
+        output_format = OutputFormat::Json;
     }
 
     let output = match output_format {
-        Some(OutputFormat::Json) => json.to_string(),
-        Some(OutputFormat::PrettyJson) => {
+        OutputFormat::Json => json.to_string(),
+        OutputFormat::PrettyJson => {
             let value: serde_json::Value = match serde_json::from_str(json) {
                 Ok(value) => value,
                 Err(err) => {
@@ -247,7 +247,7 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
                 }
             }
         },
-        Some(OutputFormat::Yaml) | None => {
+        OutputFormat::Yaml | OutputFormat::None => {
             is_json = false;
             let value: serde_json::Value = match serde_json::from_str(json) {
                 Ok(value) => value,

@@ -13,7 +13,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::OutputFormat;
-use crate::util::DscProgressBar;
+use crate::util::ProgressBar;
 use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
@@ -32,13 +32,13 @@ pub mod contraints;
 pub mod depends_on;
 pub mod parameters;
 
-pub struct Configurator<'a> {
+pub struct Configurator {
     json: String,
     config: Configuration,
     pub context: Context,
     discovery: Discovery,
     statement_parser: Statement,
-    progress_format: Option<&'a OutputFormat>,
+    progress_format: OutputFormat,
 }
 
 /// Add the results of an export operation to a configuration.
@@ -136,8 +136,8 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn get_progress_bar_span(len: u64, progress_format: Option<&OutputFormat>) -> Result<DscProgressBar, DscError> {
-    let mut pb_span = DscProgressBar::new(progress_format.is_some_and(|v| (v == &OutputFormat::Json) || (v == &OutputFormat::PrettyJson)));
+fn get_progress_bar_span(len: u64, progress_format: OutputFormat) -> Result<ProgressBar, DscError> {
+    let mut pb_span = ProgressBar::new((progress_format == OutputFormat::Json) || (progress_format == OutputFormat::PrettyJson));
         
     pb_span.pb_set_style(&ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
@@ -194,7 +194,7 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
     Ok(())
 }
 
-impl Configurator<'_> {
+impl Configurator {
     /// Create a new `Configurator` instance.
     ///
     /// # Arguments
@@ -204,7 +204,7 @@ impl Configurator<'_> {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new<'a>(json: &'a str, progress_format: Option<&'a OutputFormat>) -> Result<Configurator<'a>, DscError> {
+    pub fn new(json: &str) -> Result<Configurator, DscError> {
         let discovery = Discovery::new()?;
         let mut config = Configurator {
             json: json.to_owned(),
@@ -212,7 +212,7 @@ impl Configurator<'_> {
             context: Context::new(),
             discovery,
             statement_parser: Statement::new()?,
-            progress_format,
+            progress_format: OutputFormat::None,
         };
         config.validate_config()?;
         Ok(config)
@@ -226,6 +226,11 @@ impl Configurator<'_> {
     #[must_use]
     pub fn get_config(&self) -> &Configuration {
         &self.config
+    }
+
+    /// Sets progress format for the configuration.
+    pub fn set_output_format(&mut self, progress_format: OutputFormat) {
+        self.progress_format = progress_format;
     }
 
     /// Invoke the get operation on a resource.

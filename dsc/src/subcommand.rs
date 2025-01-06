@@ -36,7 +36,7 @@ use std::{
 };
 use tracing::{debug, error, trace};
 
-pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
+pub fn config_get(configurator: &mut Configurator, format: OutputFormat, as_group: &bool)
 {
     match configurator.invoke_get() {
         Ok(result) => {
@@ -71,7 +71,7 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
     }
 }
 
-pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
+pub fn config_set(configurator: &mut Configurator, format: OutputFormat, as_group: &bool)
 {
     match configurator.invoke_set(false) {
         Ok(result) => {
@@ -106,7 +106,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool)
+pub fn config_test(configurator: &mut Configurator, format: OutputFormat, as_group: &bool, as_get: &bool, as_config: &bool)
 {
     match configurator.invoke_test() {
         Ok(result) => {
@@ -192,7 +192,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
     }
 }
 
-pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>)
+pub fn config_export(configurator: &mut Configurator, format: OutputFormat)
 {
     match configurator.invoke_export() {
         Ok(result) => {
@@ -288,13 +288,15 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         }
     };
 
-    let mut configurator = match Configurator::new(&json_string, output_format.as_ref()) {
+    let mut configurator = match Configurator::new(&json_string) {
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     };
+
+    configurator.set_output_format(*output_format);
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {
@@ -357,13 +359,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 
     match subcommand {
         ConfigSubCommand::Get { output_format, .. } => {
-            config_get(&mut configurator, output_format.as_ref(), as_group);
+            config_get(&mut configurator, *output_format, as_group);
         },
         ConfigSubCommand::Set { output_format, .. } => {
-            config_set(&mut configurator, output_format.as_ref(), as_group);
+            config_set(&mut configurator, *output_format, as_group);
         },
         ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
-            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config);
+            config_test(&mut configurator, *output_format, as_group, as_get, as_config);
         },
         ConfigSubCommand::Validate { input, file, output_format} => {
             let mut result = ValidateResult {
@@ -383,7 +385,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     }
                 }
             } else {
-                match validate_config(configurator.get_config(), output_format.as_ref()) {
+                match validate_config(configurator.get_config(), *output_format) {
                     Ok(()) => {
                         // valid, so do nothing
                     },
@@ -399,10 +401,10 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 exit(EXIT_JSON_ERROR);
             };
 
-            write_output(&json, output_format.as_ref());
+            write_output(&json, *output_format);
         },
         ConfigSubCommand::Export { output_format, .. } => {
-            config_export(&mut configurator, output_format.as_ref());
+            config_export(&mut configurator, *output_format);
         },
         ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
@@ -433,7 +435,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, output_format.as_ref());
+            write_output(&json_string, *output_format);
         },
     }
 }
@@ -451,7 +453,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 /// # Errors
 ///
 /// * `DscError` - The error that occurred.
-pub fn validate_config(config: &Configuration, progress_format: Option<&OutputFormat>) -> Result<(), DscError> {
+pub fn validate_config(config: &Configuration, progress_format: OutputFormat) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("{}", t!("subcommand.validatingConfiguration"));
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
@@ -539,43 +541,43 @@ pub fn resource(subcommand: &ResourceSubCommand) {
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), *output_format);
         },
         ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
-            resource_command::schema(&dsc, resource, output_format.as_ref());
+            dsc.find_resources(&[resource.to_string()], *output_format);
+            resource_command::schema(&dsc, resource, *output_format);
         },
         ResourceSubCommand::Export { resource, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
-            resource_command::export(&mut dsc, resource, output_format.as_ref());
+            dsc.find_resources(&[resource.to_string()], *output_format);
+            resource_command::export(&mut dsc, resource, *output_format);
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
-            if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
+            dsc.find_resources(&[resource.to_string()], *output_format);
+            if *all { resource_command::get_all(&dsc, resource, *output_format); }
             else {
                 let parsed_input = get_input(input.as_ref(), path.as_ref());
-                resource_command::get(&dsc, resource, parsed_input, output_format.as_ref());
+                resource_command::get(&dsc, resource, parsed_input, *output_format);
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
+            dsc.find_resources(&[resource.to_string()], *output_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&dsc, resource, parsed_input, output_format.as_ref());
+            resource_command::set(&dsc, resource, parsed_input, *output_format);
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], output_format.as_ref());
+            dsc.find_resources(&[resource.to_string()], *output_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::test(&dsc, resource, parsed_input, output_format.as_ref());
+            resource_command::test(&dsc, resource, parsed_input, *output_format);
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
-            dsc.find_resources(&[resource.to_string()], None); //TODO: add output_format to ResourceSubCommand::Delete
+            dsc.find_resources(&[resource.to_string()], OutputFormat::None); //TODO: add output_format to ResourceSubCommand::Delete
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::delete(&dsc, resource, parsed_input);
         },
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: OutputFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -585,7 +587,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
         t!("subcommand.tableheader_adapter").to_string().as_ref(),
         t!("subcommand.tableheader_description").to_string().as_ref(),
     ]);
-    if format.is_none() && io::stdout().is_terminal() {
+    if format == OutputFormat::None && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
