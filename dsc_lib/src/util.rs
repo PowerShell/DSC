@@ -39,11 +39,14 @@ impl Default for DscSettingValue {
     }
 }
 
+/// Only `activity` and `percent_complete` fields are mandatory for Progress messages
 #[derive(Default, Debug, Clone, Serialize)]
 pub struct Progress {
     pub activity:  String,
+    #[serde(default, skip_serializing_if = "is_default")]
     pub status: String,
     pub percent_complete: u16,
+    #[serde(default, skip_serializing_if = "is_default")]
     pub seconds_remaining: u64,
 }
 
@@ -53,6 +56,10 @@ pub struct ProgressBar {
     length: u64,
     position: u64,
     emit_json: bool
+}
+
+fn is_default<T: Default + PartialEq>(t: &T) -> bool {
+    t == &T::default()
 }
 
 impl ProgressBar {

@@ -56,7 +56,7 @@ Describe 'dsc config get tests' {
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'json progress for config subcommand' {
+    It 'json progress for config subcommand' -Tag z1 {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
@@ -70,8 +70,9 @@ Describe 'dsc config get tests' {
         $lines = Get-Content $TestDrive/ErrorStream.txt
         $ProgressMessagesFound = $False
         foreach ($line in $lines) {
-            if ($line.Contains("activity")) { # if line is a progress message
-                $line.Contains("percent_complete") | Should -BeTrue
+            $jp = $line | ConvertFrom-Json
+            if ($jp.activity) { # if line is a progress message
+                $jp.percent_complete | Should -BeIn (0..100)
                 $ProgressMessagesFound = $True
             }
         }

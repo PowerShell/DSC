@@ -64,8 +64,9 @@ Describe 'Tests for listing resources' {
         $lines = Get-Content $TestDrive/ErrorStream.txt
         $ProgressMessagesFound = $False
         foreach ($line in $lines) {
-            if ($line.Contains("activity")) { # if line is a progress message
-                $line.Contains("percent_complete") | Should -BeTrue
+            $jp = $line | ConvertFrom-Json
+            if ($jp.activity) { # if line is a progress message
+                $jp.percent_complete | Should -BeIn (0..100)
                 $ProgressMessagesFound = $True
             }
         }
