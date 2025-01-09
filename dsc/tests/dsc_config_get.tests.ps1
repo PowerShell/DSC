@@ -56,7 +56,7 @@ Describe 'dsc config get tests' {
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'json progress for config subcommand' -Tag z1 {
+    It 'json progress for config subcommand' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
