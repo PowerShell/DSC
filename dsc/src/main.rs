@@ -74,7 +74,7 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            let output_format = output_format.unwrap_or_else(|| { OutputFormat::None });
+            let output_format = output_format.unwrap_or({ OutputFormat::None });
             util::write_output(&json, output_format);
         },
     }
