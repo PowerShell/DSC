@@ -70,10 +70,12 @@ Describe 'dsc config get tests' {
         $lines = Get-Content $TestDrive/ErrorStream.txt
         $ProgressMessagesFound = $False
         foreach ($line in $lines) {
-            $jp = $line | ConvertFrom-Json
-            if ($jp.activity) { # if line is a progress message
-                $jp.percent_complete | Should -BeIn (0..100)
-                $ProgressMessagesFound = $True
+            if ($line.StartsWith('{')) {
+                $jp = $line | ConvertFrom-Json
+                if ($jp.activity) { # if line is a progress message
+                    $jp.percent_complete | Should -BeIn (0..100)
+                    $ProgressMessagesFound = $True
+                }
             }
         }
         $ProgressMessagesFound | Should -BeTrue
