@@ -26,6 +26,7 @@ Describe 'resource export tests' {
 
         $yaml = @'
             $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            contentVersion: 1.2.3
             resources:
             - name: Processes
               type: Microsoft/Process
@@ -39,6 +40,8 @@ Describe 'resource export tests' {
         $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
         $config_with_process_list.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Export'
+        # contentVersion on export is always 1.0.0
+        $config_with_process_list.contentVersion | Should -BeExactly '1.0.0'
     }
 
     It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {
