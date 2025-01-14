@@ -36,6 +36,7 @@ pub struct Directory {
     pub files: Option<Vec<File>>,
 
     /// Recurse into subdirectories.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub recurse: Option<bool>,
 
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
@@ -49,15 +50,19 @@ pub struct FileContent
     /// The path to the file.
     pub path: String,
 
-    /// The file hash.
-    pub hash: String,
+    /// The file hash. If not provided, the hash is calculated from the content.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hash: Option<String>,
 
-    /// The file encoding.
-    pub encoding: Encoding,
+    /// The file encoding. UTF-8 is the default.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub encoding: Option<Encoding>,
 
     /// The file content.
-    pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
 
+    /// If the file exists. True is the default.
     #[serde(rename = "_exist", skip_serializing_if = "Option::is_none")]
     pub exist: Option<bool>,
 }
@@ -66,9 +71,6 @@ pub struct FileContent
 pub enum Encoding {
     Utf8,
     Utf16,
-    Utf32,
     Ascii,
-    Base64,
-    Hex,
     Binary,
 }

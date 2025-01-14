@@ -158,7 +158,7 @@ fn compare_file_state(file: &File) -> Result<File, Box<dyn std::error::Error>> {
     };
 }
 
-fn calculate_hash(path: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn calculate_hash(path: &str) -> Result<String, Box<dyn std::error::Error>> {
     let bytes = fs::read(path)?;
     let digest = sha256::digest(&bytes);
     Ok(digest)

@@ -8,12 +8,14 @@ use tracing::{debug, error};
 use crate::config::{File, Directory, FileContent};
 use file_helper::{get_file, set_file, delete_file, export_file_path};
 use dir_helpers::{get_dir, set_dir, delete_dir, export_dir_path};
+use filecontent_helper::{get_file_content, delete_file_content};
 use schemars::schema_for;
 
 mod args;
 pub mod config;
 mod file_helper;
 mod dir_helpers;
+mod filecontent_helper;
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_INPUT: i32 = 2;
@@ -40,9 +42,9 @@ fn main() {
                         None => {
                             let filecontent = match is_fillecontent_type(input.as_str()) {
                                 Some(filecontent) => {
-                                    // let filecontent = get_file(&filecontent).unwrap();
-                                    // let json = serde_json::to_string(&filecontent).unwrap();
-                                    // println!("{}", json);
+                                    let filecontent = get_file_content(&filecontent).unwrap();
+                                    let json = serde_json::to_string(&filecontent).unwrap();
+                                    println!("{}", json);
                                 }
                                 None => {
                                     error!("Invalid input.");
@@ -73,9 +75,9 @@ fn main() {
                         None => {
                             let filecontent = match is_fillecontent_type(input.as_str()) {
                                 Some(filecontent) => {
-                                    // let filecontent = delete_file(&filecontent).unwrap();
-                                    // let json = serde_json::to_string(&filecontent).unwrap();
-                                    // println!("{}", json);
+                                    let filecontent = delete_file_content(&filecontent).unwrap();
+                                    let json = serde_json::to_string(&filecontent).unwrap();
+                                    println!("{}", json);
                                 }
                                 None => {
                                     error!("Invalid input.");
