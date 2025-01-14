@@ -72,7 +72,8 @@ pub struct Metadata {
 pub struct Configuration {
     #[serde(rename = "$schema")]
     pub schema: DocumentSchemaUri,
-    // `contentVersion` is required by ARM, but doesn't serve a purpose here
+    #[serde(rename = "contentVersion")]
+    pub content_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<HashMap<String, Parameter>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -164,13 +165,7 @@ pub enum DocumentSchemaUri {
 
 impl Default for Configuration {
     fn default() -> Self {
-        Self {
-            schema: DocumentSchemaUri::Version2024_04,
-            parameters: None,
-            variables: None,
-            resources: Vec::new(),
-            metadata: None,
-        }
+        Self::new()
     }
 }
 
@@ -179,6 +174,7 @@ impl Configuration {
     pub fn new() -> Self {
         Self {
             schema: DocumentSchemaUri::Version2024_04,
+            content_version: Some("1.0.0".to_string()),
             parameters: None,
             variables: None,
             resources: Vec::new(),
