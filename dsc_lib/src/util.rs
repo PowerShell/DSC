@@ -3,6 +3,7 @@
 
 use crate::dscerror::DscError;
 use serde_json::Value;
+use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -79,7 +80,7 @@ pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
     let mut result: DscSettingValue = DscSettingValue::default();
     let mut settings_file_path : PathBuf;
 
-    if let Some(exe_home) = env::current_exe()?.parent() {
+    if let Some(exe_home) = get_exe_path()?.parent() {
         // First, get setting from the default settings file
         settings_file_path = exe_home.join(DEFAULT_SETTINGS_FILE_NAME);
         if let Ok(v) = load_value_from_json(&settings_file_path, DEFAULT_SETTINGS_SCHEMA_VERSION) {
@@ -139,6 +140,19 @@ fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::
     }
 
     Err(DscError::NotSupported(value_name.to_string()))
+}
+
+pub fn get_exe_path() -> Result<PathBuf, DscError> {
+    if let Ok(exe) = env::current_exe() {
+        if let Ok(target_path) = fs::read_link(exe.clone()) {
+            return Ok(target_path);
+        }
+        else {
+            return Ok(exe);
+        }
+    }
+
+    Err(DscError::NotSupported("Can't get the path to dsc executable".to_string()))
 }
 
 #[cfg(target_os = "windows")]
