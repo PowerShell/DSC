@@ -43,11 +43,11 @@ impl Default for DscSettingValue {
 #[derive(Default, Debug, Clone, Serialize)]
 pub struct Progress {
     pub activity:  String,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub status: String,
     pub percent_complete: u16,
-    #[serde(default, skip_serializing_if = "is_default")]
-    pub seconds_remaining: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub seconds_remaining: Option<u64>,
 }
 
 pub struct ProgressBar {
@@ -56,10 +56,6 @@ pub struct ProgressBar {
     length: u64,
     position: u64,
     emit_json: bool
-}
-
-fn is_default<T: Default + PartialEq>(t: &T) -> bool {
-    t == &T::default()
 }
 
 impl ProgressBar {
