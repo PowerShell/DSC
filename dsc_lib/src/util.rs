@@ -142,14 +142,19 @@ fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::
     Err(DscError::NotSupported(value_name.to_string()))
 }
 
+/// Gets path to the current dsc process.
+/// If dsc is started using a symlink, this functon returns target of the symlink.
+///
+/// # Errors
+///
+/// Will return `Err` if path to the current exe can't be retrived.
 pub fn get_exe_path() -> Result<PathBuf, DscError> {
     if let Ok(exe) = env::current_exe() {
         if let Ok(target_path) = fs::read_link(exe.clone()) {
             return Ok(target_path);
-        }
-        else {
-            return Ok(exe);
-        }
+        };
+
+        return Ok(exe);
     }
 
     Err(DscError::NotSupported("Can't get the path to dsc executable".to_string()))
