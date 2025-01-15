@@ -1,0 +1,9 @@
+# Example configuration mixing native app resources with classic PS resources
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: Set file content
+  type: Microsoft.DSC/FileContent
+  properties:
+    path: "[path('d:\\', 'temp', 'a.txt')]"
+    content: "Hello, World!"
+    _exist: true

@@ -4,6 +4,7 @@
 use crate::config::{FileContent, Encoding};
 use std::path::Path;
 use std::io;
+use std::io::Write;
 use tracing::{debug};
 
 impl Encoding {
@@ -48,16 +49,35 @@ pub fn get_file_content(filecontent: &FileContent) -> Result<FileContent, Box<dy
 }
 
 pub fn set_file_content(filecontent: &FileContent) -> Result<FileContent, Box<dyn std::error::Error>> {
-    // debug!("In set_file_content");
-    // let path = Path::new(&filecontent.path);
-    // let content = filecontent.content.as_ref().unwrap_or(&String::new());
-    // let encoding = filecontent.encoding.unwrap_or(Encoding::Utf8).to_encoding_rs().unwrap_or(encoding_rs::UTF_8);
-    // let mut file = fsFile::create(path)?;
+    debug!("In set_file_content");
+    let path = Path::new(&filecontent.path);
+    //let content = filecontent.content.as_ref().unwrap_or(&String::new());
+    //let encoding = filecontent.encoding.unwrap_or(Encoding::Utf8).to_encoding_rs().unwrap_or(encoding_rs::UTF_8);
+    let file_expected_exists = filecontent.exist.unwrap_or(true);
+
+    if path.exists() && !file_expected_exists {
+        std::fs::remove_file(path)?;
+        return Ok(filecontent.clone())
+    }
+    else if !path.exists() && !file_expected_exists {
+        return Ok(filecontent.clone())
+    }
+
+    let mut file = std::fs::File::create(path)?;
+
     // let mut encoder = encoding.new_encoder();
     // let mut bytes = vec![0; content.len() * encoding.new_encoder().max_buffer_length()];
     // let (bytes_written, _, _) = encoder.encode_to_slice(content, &mut bytes, true);
     // file.write_all(&bytes[..bytes_written])?;
-    // Ok(filecontent.clone())
+
+    match &filecontent.content {
+        Some(content) => {
+            file.write_all(content.as_bytes())?;
+        },
+        None => {
+        }
+    }
+
     Ok(filecontent.clone())
 }
 
@@ -126,7 +146,9 @@ pub fn compare_filecontent_state(filecontent: &FileContent) -> Result<FileConten
     else {
         match filecontent.exist {
             Some(true) | None => {
-                return Err("File does not exist")?;
+                let mut updated_file_content = filecontent.clone();
+                updated_file_content.exist = Some(false);
+                return Ok(updated_file_content);
             },
             Some(false) => {
                 return Ok(filecontent.clone());

@@ -8,7 +8,7 @@ use tracing::{debug, error};
 use crate::config::{File, Directory, FileContent};
 use file_helper::{get_file, set_file, delete_file, export_file_path};
 use dir_helpers::{get_dir, set_dir, delete_dir, export_dir_path};
-use filecontent_helper::{get_file_content, delete_file_content};
+use filecontent_helper::{get_file_content, set_file_content, delete_file_content};
 use schemars::schema_for;
 
 mod args;
@@ -40,7 +40,7 @@ fn main() {
                             println!("{}", json);
                         }
                         None => {
-                            let filecontent = match is_fillecontent_type(input.as_str()) {
+                            let filecontent = match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
                                     let filecontent = get_file_content(&filecontent).unwrap();
                                     let json = serde_json::to_string(&filecontent).unwrap();
@@ -73,7 +73,7 @@ fn main() {
                             println!("{}", json);
                         }
                         None => {
-                            let filecontent = match is_fillecontent_type(input.as_str()) {
+                            let filecontent = match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
                                     let filecontent = delete_file_content(&filecontent).unwrap();
                                     let json = serde_json::to_string(&filecontent).unwrap();
@@ -107,11 +107,11 @@ fn main() {
                             println!("{}", json);
                         }
                         None => {
-                            let filecontent = match is_fillecontent_type(input.as_str()) {
+                            let filecontent = match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
-                                    // let filecontent = get_file(&filecontent).unwrap();
-                                    // let json = serde_json::to_string(&filecontent).unwrap();
-                                    // println!("{}", json);
+                                    let filecontent = set_file_content(&filecontent).unwrap();
+                                    let json = serde_json::to_string(&filecontent).unwrap();
+                                    println!("{}", json);
                                 }
                                 None => {
                                     error!("Invalid input.");
@@ -142,11 +142,11 @@ fn main() {
                             debug!("File exported successfully.");
                         }
                         None => {
-                            let filecontent = match is_fillecontent_type(input.as_str()) {
+                            let filecontent = match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
-                                    // let filecontent = get_file(&filecontent).unwrap();
-                                    // let json = serde_json::to_string(&filecontent).unwrap();
-                                    // println!("{}", json);
+                                    let filecontent = get_file_content(&filecontent).unwrap();
+                                    let json = serde_json::to_string(&filecontent).unwrap();
+                                    println!("{}", json);
                                 }
                                 None => {
                                     error!("Invalid input.");
@@ -200,7 +200,7 @@ fn is_directory_type(input: &str) -> Option<Directory> {
     Some(dir)
 }
 
-fn is_fillecontent_type(input: &str) -> Option<FileContent> {
+fn is_filecontent_type(input: &str) -> Option<FileContent> {
     let filecontent: FileContent = match serde_json::from_str(input) {
         Ok(input) => input,
         Err(_) => return None,
