@@ -65,17 +65,15 @@ Describe 'dsc config get tests' {
               properties:
                 output: hello
 "@
-        $config_yaml | dsc config get --output-format json -f - 2> $TestDrive/ErrorStream.txt
+        $config_yaml | dsc -t json config get --output-format json -f - 2> $TestDrive/ErrorStream.txt
         $LASTEXITCODE | Should -Be 0
         $lines = Get-Content $TestDrive/ErrorStream.txt
         $ProgressMessagesFound = $False
         foreach ($line in $lines) {
-            if ($line.StartsWith('{')) {
-                $jp = $line | ConvertFrom-Json
-                if ($jp.activity) { # if line is a progress message
-                    $jp.percent_complete | Should -BeIn (0..100)
-                    $ProgressMessagesFound = $True
-                }
+            $jp = $line | ConvertFrom-Json
+            if ($jp.activity) { # if line is a progress message
+                $jp.percent_complete | Should -BeIn (0..100)
+                $ProgressMessagesFound = $True
             }
         }
         $ProgressMessagesFound | Should -BeTrue
