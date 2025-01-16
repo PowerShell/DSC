@@ -102,7 +102,7 @@ fn ctrlc_handler() {
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
     info!("{}: {:?} {}", t!("main.terminatingSubprocess"), process.name(), process.pid());
-    for subprocess in sys.processes().values().filter(|p| p.parent().map_or(false, |parent| parent == process.pid())) {
+    for subprocess in sys.processes().values().filter(|p| p.parent().is_some_and(|parent| parent == process.pid())) {
         terminate_subprocesses(sys, subprocess);
     }
 
