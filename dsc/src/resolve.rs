@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use dsc_lib::configure::config_doc::Configuration;
 use dsc_lib::util::parse_input_to_json;
 use rust_i18n::t;
 use schemars::JsonSchema;
