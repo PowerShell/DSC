@@ -18,17 +18,17 @@ pub enum IncludeKind {
     /// and not allowed to reference parent directories.  If a configuration document is used
     /// instead of a file, then the path is relative to the current working directory.
     #[serde(rename = "configurationFile")]
-    FilePath(String),
+    ConfigurationFile(String),
     #[serde(rename = "configurationContent")]
-    Content(String),
+    ConfigurationContent(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum IncludeParametersKind {
     #[serde(rename = "parametersFile")]
-    FilePath(String),
+    ParametersFile(String),
     #[serde(rename = "parametersContent")]
-    Content(String),
+    ParametersContent(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -67,7 +67,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
     };
 
     let config_json = match include.configuration {
-        IncludeKind::FilePath(file_path) => {
+        IncludeKind::ConfigurationFile(file_path) => {
             let include_path = normalize_path(Path::new(&file_path))?;
 
             // read the file specified in the Include input
@@ -100,7 +100,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                 }
             }
         },
-        IncludeKind::Content(text) => {
+        IncludeKind::ConfigurationContent(text) => {
             match parse_input_to_json(&text) {
                 Ok(json) => json,
                 Err(err) => {
@@ -111,7 +111,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
     };
 
     let parameters = match include.parameters {
-        Some(IncludeParametersKind::FilePath(file_path)) => {
+        Some(IncludeParametersKind::ParametersFile(file_path)) => {
             // combine the path with DSC_CONFIG_ROOT
             let parameters_file = normalize_path(Path::new(&file_path))?;
             info!("{} '{parameters_file:?}'", t!("resolve.resolvingParameters"));
@@ -130,7 +130,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                 }
             }
         },
-        Some(IncludeParametersKind::Content(text)) => {
+        Some(IncludeParametersKind::ParametersContent(text)) => {
             let parameters_json = match parse_input_to_json(&text) {
                 Ok(json) => json,
                 Err(err) => {
