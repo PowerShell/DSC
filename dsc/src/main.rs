@@ -157,7 +157,7 @@ fn check_store() {
     };
 
     // MS Store runs app using `sihost.exe`
-    if parent_process.name().to_ascii_lowercase() == "sihost.exe" || parent_process.name().to_ascii_lowercase() == "explorer.exe"{
+    if parent_process.name().eq_ignore_ascii_case("sihost.exe") || parent_process.name().eq_ignore_ascii_case("explorer.exe") {
         eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
