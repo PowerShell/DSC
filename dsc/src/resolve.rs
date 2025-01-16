@@ -99,27 +99,6 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFile")));
                 }
             }
-            // // try to deserialize the Include content as YAML first
-            // let configuration: Configuration = match serde_yaml::from_str(&include_content) {
-            //     Ok(configuration) => configuration,
-            //     Err(_err) => {
-            //         // if that fails, try to deserialize it as JSON
-            //         match serde_json::from_str(&include_content) {
-            //             Ok(configuration) => configuration,
-            //             Err(err) => {
-            //                 return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFile")));
-            //             }
-            //         }
-            //     }
-            // };
-
-            // // serialize the Configuration as JSON
-            // match serde_json::to_string(&configuration) {
-            //     Ok(json) => json,
-            //     Err(err) => {
-            //         return Err(format!("JSON: {err}"));
-            //     }
-            // }
         },
         IncludeKind::Content(text) => {
             match parse_input_to_json(&text) {
