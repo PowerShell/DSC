@@ -24,6 +24,7 @@ use tracing::{debug, info, trace, warn, warn_span};
 use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 use crate::util::get_setting;
+use crate::util::get_exe_path;
 
 pub struct CommandDiscovery {
     // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
@@ -135,7 +136,7 @@ impl CommandDiscovery {
 
         // if exe home is not already in PATH env var then add it to env var and list of searched paths
         if !using_custom_path {
-            if let Some(exe_home) = env::current_exe()?.parent() {
+            if let Some(exe_home) = get_exe_path()?.parent() {
                 let exe_home_pb = exe_home.to_path_buf();
                 if paths.contains(&exe_home_pb) {
                     trace!("Exe home is already in path: {}", exe_home.to_string_lossy());
