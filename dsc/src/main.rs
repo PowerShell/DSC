@@ -102,7 +102,7 @@ fn ctrlc_handler() {
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
     info!("{}: {:?} {}", t!("main.terminatingSubprocess"), process.name(), process.pid());
-    for subprocess in sys.processes().values().filter(|p| p.parent().map_or(false, |parent| parent == process.pid())) {
+    for subprocess in sys.processes().values().filter(|p| p.parent().is_some_and(|parent| parent == process.pid())) {
         terminate_subprocesses(sys, subprocess);
     }
 
@@ -157,7 +157,7 @@ fn check_store() {
     };
 
     // MS Store runs app using `sihost.exe`
-    if parent_process.name().to_ascii_lowercase() == "sihost.exe" || parent_process.name().to_ascii_lowercase() == "explorer.exe"{
+    if parent_process.name().eq_ignore_ascii_case("sihost.exe") || parent_process.name().eq_ignore_ascii_case("explorer.exe") {
         eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();
