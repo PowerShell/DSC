@@ -8,6 +8,7 @@ use rust_i18n::{i18n, t};
 use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
+use dsc_lib::util::OutputFormat;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -73,7 +74,8 @@ fn main() {
                     exit(util::EXIT_JSON_ERROR);
                 }
             };
-            util::write_output(&json, output_format.as_ref());
+            let output_format = output_format.unwrap_or(OutputFormat::None);
+            util::write_output(&json, output_format);
         },
     }
 
