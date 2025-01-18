@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json",
+  "parameters": {
+    "osFamily": {
+      "type": "string",
+      "defaultValue": "[concat('Win','dows')]",
+      "allowedValues": [
+        "Windows",
+        "Linux",
+        "macOS"
+      ]
+    }
+  },
+  "resources": [
+    {
+      "name": "os",
+      "type": "Microsoft/OSInfo",
+      "properties": {
+        "family": "[parameters('osFamily')]"
+      }
+    },
+    {
+      "name": "another os instance",
+      "type": "Microsoft/OSInfo",
+      "properties": {
+        "family": "macOS"
+      }
+    },
+    {
+      "name": "path",
+      "type": "Microsoft.DSC.Debug/Echo",
+      "properties": {
+        "output": "[envvar('PATH')]"
+      }
+    }
+  ]
+}
