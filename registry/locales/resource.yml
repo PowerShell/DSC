@@ -1,0 +1,5 @@
+_version: 2
+resource:
+  what_if:
+    create_key:
+      en: "key: %{subkey} not found, would create it"
