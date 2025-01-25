@@ -56,6 +56,29 @@ Describe 'dsc config get tests' {
         $LASTEXITCODE | Should -Be 0
     }
 
+    It 'json progress for config subcommand' {
+        $config_yaml = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: hello
+"@
+        $config_yaml | dsc --progress-format json config get -f - 2> $TestDrive/ErrorStream.txt
+        $LASTEXITCODE | Should -Be 0
+        $lines = Get-Content $TestDrive/ErrorStream.txt
+        $ProgressMessagesFound = $False
+        foreach ($line in $lines) {
+            $jp = $line | ConvertFrom-Json
+            if ($jp.activity) { # if line is a progress message
+                $jp.percent_complete | Should -BeIn (0..100)
+                $ProgressMessagesFound = $True
+            }
+        }
+        $ProgressMessagesFound | Should -BeTrue
+    }
+
     It 'contentVersion is ignored' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json

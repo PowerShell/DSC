@@ -4,6 +4,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
+use dsc_lib::util::ProgressFormat;
 use rust_i18n::t;
 use serde::Deserialize;
 
@@ -33,6 +34,8 @@ pub struct Args {
     pub trace_level: Option<TraceLevel>,
     #[clap(short = 't', long, help = t!("args.traceFormat").to_string(), value_enum)]
     pub trace_format: Option<TraceFormat>,
+    #[clap(short = 'p', long, help = t!("args.progressFormat").to_string(), value_enum)]
+    pub progress_format: Option<ProgressFormat>,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]

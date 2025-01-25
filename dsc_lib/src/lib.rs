@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::util::ProgressFormat;
 use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
 use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
@@ -41,12 +42,12 @@ impl DscManager {
         self.discovery.find_resource(name)
     }
 
-    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Vec<DscResource> {
-        self.discovery.list_available_resources(type_name_filter, adapter_name_filter)
+    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<DscResource> {
+        self.discovery.list_available_resources(type_name_filter, adapter_name_filter, progress_format)
     }
 
-    pub fn find_resources(&mut self, required_resource_types: &[String]) {
-        self.discovery.find_resources(required_resource_types);
+    pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) {
+        self.discovery.find_resources(required_resource_types, progress_format);
     }
     /// Invoke the get operation on a resource.
     ///
