@@ -41,7 +41,7 @@ fn main() {
 
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
-    let progress_format = args.progress_format.unwrap_or({ ProgressFormat::Default });
+    let progress_format = args.progress_format.unwrap_or( ProgressFormat::Default );
     
     match args.subcommand {
         SubCommand::Completer { shell } => {
