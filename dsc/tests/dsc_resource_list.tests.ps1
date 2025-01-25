@@ -59,7 +59,7 @@ Describe 'Tests for listing resources' {
     }
 
     It 'json progress for resource subcommand' {
-        dsc --progress-format json resource list -a '*' 2> $TestDrive/ErrorStream.txt
+        dsc -t json -p json resource list -a '*' 2> $TestDrive/ErrorStream.txt
         $LASTEXITCODE | Should -Be 0
         $lines = Get-Content $TestDrive/ErrorStream.txt
         $ProgressMessagesFound = $False
