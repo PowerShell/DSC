@@ -25,6 +25,7 @@ use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 use crate::util::get_setting;
 use crate::util::get_exe_path;
+use crate::util::ResourceFilter;
 
 pub struct CommandDiscovery {
     // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
@@ -381,34 +382,25 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(resources)
     }
 
-    // TODO: handle version requirements
-    fn find_resources(&mut self, required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
+    fn find_resources(&mut self, required_resource_types: &[ResourceFilter]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         debug!("Searching for resources: {:?}", required_resource_types);
         self.discover_resources("*")?;
 
-        // convert required_resource_types to lowercase to handle case-insentiive search
-        let mut remaining_required_resource_types = required_resource_types.iter().map(|x| x.to_lowercase()).collect::<Vec<String>>();
-        remaining_required_resource_types.sort_unstable();
-        remaining_required_resource_types.dedup();
-
+        let mut remaining_required_resource_types = required_resource_types.to_vec();
         let mut found_resources = BTreeMap::<String, DscResource>::new();
 
         for (resource_name, resources) in &self.resources {
-            // TODO: handle version requirements
-            let Some(resource ) = resources.first() else {
-                // skip if no resources
-                continue;
-            };
-
-            if remaining_required_resource_types.contains(&resource_name.to_lowercase())
-            {
-                // remove the resource from the list of required resources
-                remaining_required_resource_types.retain(|x| *x != resource_name.to_lowercase());
-                found_resources.insert(resource_name.to_lowercase(), resource.clone());
-                if remaining_required_resource_types.is_empty()
-                {
-                    return Ok(found_resources);
+            for (pos, req) in remaining_required_resource_types.iter().enumerate() {
+                for res in resources {
+                    if req.matches(res) {
+                        remaining_required_resource_types.swap_remove(pos);
+                        found_resources.insert(resource_name.to_lowercase(), res.clone());
+                        if remaining_required_resource_types.is_empty()
+                        {
+                            return Ok(found_resources);
+                        }
+                    }
                 }
             }
         }

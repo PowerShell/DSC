@@ -2,6 +2,9 @@
 // Licensed under the MIT License.
 
 use crate::dscerror::DscError;
+use crate::dscresources::dscresource::DscResource;
+use semver::VersionReq;
+use semver::Version;
 use serde_json::Value;
 use std::fs;
 use std::fs::File;
@@ -25,6 +28,33 @@ impl Default for DscSettingValue {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResourceFilter {
+    pub type_name_filter:  String,
+    pub version_filter: String,
+    version_req: VersionReq
+}
+
+impl ResourceFilter {
+    pub fn new(type_name_filter:  String) -> Self {
+        Self {
+            type_name_filter: type_name_filter.to_lowercase(),
+            version_filter: ">=0.0.0".to_string(),
+            version_req: VersionReq::parse(">=0.0.0".to_string()).expect("Failed VersionReq parsing")
+        }
+    }
+
+    pub fn matches(self: &ResourceFilter, resource: &DscResource) -> bool {
+        if self.type_name_filter.eq(&resource.type_name.to_lowercase()) {
+            let resource_ver = Version::parse(&resource.version);
+            if self.version_req.matches(resource_ver) {
+                return true;
+            }
+        };
+
+        return false;
+    }
+}
 /// Return JSON string whether the input is JSON or YAML
 ///
 /// # Arguments

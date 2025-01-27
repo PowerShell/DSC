@@ -4,6 +4,7 @@
 use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
 use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
+use crate::util::ResourceFilter;
 
 pub mod configure;
 pub mod discovery;
@@ -45,7 +46,7 @@ impl DscManager {
         self.discovery.list_available_resources(type_name_filter, adapter_name_filter)
     }
 
-    pub fn find_resources(&mut self, required_resource_types: &[String]) {
+    pub fn find_resources(&mut self, required_resource_types: &[ResourceFilter]) {
         self.discovery.find_resources(required_resource_types);
     }
     /// Invoke the get operation on a resource.
