@@ -25,6 +25,7 @@ use dsc_lib::{
     },
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    util::ResourceFilter,
 };
 use rust_i18n::t;
 use std::{
@@ -476,7 +477,12 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 
         resource_types.push(type_name.to_lowercase().to_string());
     }
-    dsc.find_resources(&resource_types);
+
+    let mut resource_filters: Vec<ResourceFilter> = Vec::new();
+    for a in resource_types {
+        resource_filters.push(ResourceFilter::new(a));
+    }
+    dsc.find_resources(&resource_filters);
 
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
@@ -541,15 +547,15 @@ pub fn resource(subcommand: &ResourceSubCommand) {
             list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
         },
         ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[ResourceFilter::new(resource.to_string())]);
             resource_command::schema(&dsc, resource, output_format.as_ref());
         },
         ResourceSubCommand::Export { resource, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[ResourceFilter::new(resource.to_string())]);
             resource_command::export(&mut dsc, resource, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[ResourceFilter::new(resource.to_string())]);
             if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
             else {
                 let parsed_input = get_input(input.as_ref(), path.as_ref());
@@ -557,17 +563,17 @@ pub fn resource(subcommand: &ResourceSubCommand) {
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[ResourceFilter::new(resource.to_string())]);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::set(&dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[ResourceFilter::new(resource.to_string())]);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::test(&dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[ResourceFilter::new(resource.to_string())]);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::delete(&dsc, resource, parsed_input);
         },

@@ -5,7 +5,7 @@ mod command_discovery;
 mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::{dscresources::dscresource::DscResource, dscerror::DscError};
+use crate::{dscresources::dscresource::DscResource, dscerror::DscError, util::ResourceFilter};
 use std::collections::BTreeMap;
 use tracing::error;
 
@@ -73,7 +73,7 @@ impl Discovery {
     /// # Arguments
     ///
     /// * `required_resource_types` - The required resource types.
-    pub fn find_resources(&mut self, required_resource_types: &[String]) {
+    pub fn find_resources(&mut self, required_resource_types: &[ResourceFilter]) {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
@@ -90,7 +90,7 @@ impl Discovery {
 
             for resource in discovered_resources {
                 self.resources.insert(resource.0.clone(), resource.1);
-                remaining_required_resource_types.retain(|x| *x != resource.0);
+                remaining_required_resource_types.retain(|x| *x.type_name_filter != resource.0);
             };
         }
     }

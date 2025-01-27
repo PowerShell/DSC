@@ -17,6 +17,7 @@ use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation,
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::contraints::{check_length, check_number_limits, check_allowed_values};
+use crate::util::ResourceFilter;
 use indicatif::ProgressStyle;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
@@ -649,8 +650,12 @@ impl Configurator {
         check_security_context(config.metadata.as_ref())?;
 
         // Perform discovery of resources used in config
-        let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
-        self.discovery.find_resources(&required_resources);
+        let required_resource_types = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
+        let mut resource_filters: Vec<ResourceFilter> = Vec::new();
+        for a in required_resource_types {
+            resource_filters.push(ResourceFilter::new(a));
+        }
+        self.discovery.find_resources(&resource_filters);
         self.config = config;
         Ok(())
     }
