@@ -1,0 +1,163 @@
+{
+    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/Microsoft.Windows/Registry/v1.0.0/schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Microsoft.Windows/Registry instance",
+    "description": "Manages Windows Registry keys and values.",
+    "type": "object",
+    "properties": {
+        "_exist": {
+            "title": "Exist",
+            "description": "Defines whether the instance should exist.",
+            "type": "boolean",
+            "default": true
+        },
+        "_metadata": {
+            "title": "Resource metadata",
+            "description": "Defines metadata returned by the resource.",
+            "$ref": "#/$defs/Metadata",
+            "readOnly": true
+        },
+        "keyPath": {
+            "title": "Registry key path",
+            "description": "Defines the path to the registry key to manage. Must be prefixed with a valid hive identifier. Separate the paths with back slashes only.",
+            "type": "string",
+            "pattern": "^(HKCC|HKEY_CURRENT_CONFIG|HKCU|HKEY_CURRENT_USER|HKCR|HKEY_CLASSES_ROOT|HKLM|HKEY_LOCAL_MACHINE|HKU|HKEY_USERS)\\\\[a-zA-Z0-9-_\\\\]+?[^\\\\]$"
+        },
+        "valueData": {
+            "title": "Registry value data",
+            "description": "Defines the data for a registry value.",
+            "$ref": "#/$defs/RegistryValueData"
+        },
+        "valueName": {
+            "title": "Registry value name",
+            "description": "Defines the name of the registry value to manage.",
+            "type": "string"
+        }
+    },
+    "additionalProperties": false,
+    "dependentRequired": {
+        "valueData": [
+            "valueName"
+        ]
+    },
+    "required": [
+        "keyPath"
+    ],
+    "$defs": {
+        "Metadata": {
+            "type": "object",
+            "properties": {
+                "whatIf": {
+                    "title": "What-if messages",
+                    "description": "A list of messages returned by the resource when invoked in what-if mode.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "readOnly": true
+                }
+            },
+            "additionalProperties": false
+        },
+        "RegistryValueData": {
+            "oneOf": [
+                {
+                    "title": "String value data",
+                    "description": "Defines the registry value as a static string.",
+                    "type": "object",
+                    "properties": {
+                        "String": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "String"
+                    ]
+                },
+                {
+                    "title": "Expandable string value data",
+                    "description": "Defines the registry value as a string with expandable references.",
+                    "type": "object",
+                    "properties": {
+                        "ExpandString": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "ExpandString"
+                    ]
+                },
+                {
+                    "title": "Binary value data",
+                    "description": "Defines the registry value as an array of bytes.",
+                    "type": "object",
+                    "properties": {
+                        "Binary": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "uint8",
+                                "minimum": 0
+                            }
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "Binary"
+                    ]
+                },
+                {
+                    "title": "DWord value data",
+                    "description": "Defines the registry value as an unsigned 32-bit integer.",
+                    "type": "object",
+                    "properties": {
+                        "DWord": {
+                            "type": "integer",
+                            "format": "uint32",
+                            "minimum": 0
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "DWord"
+                    ]
+                },
+                {
+                    "title": "Multiple string value data",
+                    "description": "Defines the registry value as an array of static strings.",
+                    "type": "object",
+                    "properties": {
+                        "MultiString": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "MultiString"
+                    ]
+                },
+                {
+                    "title": "QWord value data",
+                    "description": "Defines the registry value as an unsigned 64-bit integer.",
+                    "type": "object",
+                    "properties": {
+                        "QWord": {
+                            "type": "integer",
+                            "format": "uint64",
+                            "minimum": 0
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                        "QWord"
+                    ]
+                }
+            ]
+        }
+    }
+}
