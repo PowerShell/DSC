@@ -581,11 +581,11 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
-        t!("subcommand.tableheader_kind").to_string().as_ref(),
-        t!("subcommand.tableheader_version").to_string().as_ref(),
-        t!("subcommand.tableheader_capabilities").to_string().as_ref(),
-        t!("subcommand.tableheader_adapter").to_string().as_ref(),
-        t!("subcommand.tableheader_description").to_string().as_ref(),
+        t!("subcommand.tableHeader_kind").to_string().as_ref(),
+        t!("subcommand.tableHeader_version").to_string().as_ref(),
+        t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
+        t!("subcommand.tableHeader_adapter").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
     if format.is_none() && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
