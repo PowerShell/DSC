@@ -87,23 +87,23 @@ Describe 'tests for dsc settings' {
         # ensure policy overrides everything
         dsc -l debug resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Trace"
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: "PolicyDir'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: PolicyDir'
 
         # without policy, command-line args have priority
         Remove-Item -Path $script:policyFilePath
         dsc -l debug resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Debug"
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: "SettingsDir'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: SettingsDir'
 
         # without policy and command-line args, settings file is used
         dsc resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Trace"
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: "SettingsDir'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: SettingsDir'
 
         # without policy and command-line args and settings file, the default settings file is used
         Remove-Item -Path $script:dscSettingsFilePath
         dsc resource list 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Trace-level is Trace"
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: "Defaultv1SettingsDir'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Using Resource Path: Defaultv1SettingsDir'
     }
 }
