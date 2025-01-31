@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 
 #[derive(Debug, Default)]
@@ -29,11 +30,11 @@ impl Function for ResourceId {
         if let Some(value) = resource_type.as_str() {
             let slash_count = value.chars().filter(|c| *c == '/').count();
             if slash_count != 1 {
-                return Err(DscError::Function("resourceId".to_string(), "Type argument must contain exactly one slash".to_string()));
+                return Err(DscError::Function("resourceId".to_string(), t!("functions.resourceid.incorrectTypeFormat").to_string()));
             }
             result.push_str(value);
         } else {
-            return Err(DscError::Parser("Invalid argument type for first parameter".to_string()));
+            return Err(DscError::Parser(t!("functions.resourceId.invalidFirstArgType").to_string()));
         }
         // ARM uses a slash separator, but here we use a colon which is not allowed for the type nor name
         result.push(':');
@@ -41,12 +42,12 @@ impl Function for ResourceId {
         let resource_name = &args[1];
         if let Some(value) = resource_name.as_str() {
             if value.contains('/') {
-                return Err(DscError::Function("resourceId".to_string(), "Name argument cannot contain a slash".to_string()));
+                return Err(DscError::Function("resourceId".to_string(), t!("functions.resourceId.incorrectNameFormat").to_string()));
             }
 
             result.push_str(value);
         } else {
-            return Err(DscError::Parser("Invalid argument type for second parameter".to_string()));
+            return Err(DscError::Parser(t!("functions.resourceId.invalidSecondArgType").to_string()));
         }
 
         Ok(Value::String(result))

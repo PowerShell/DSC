@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -27,11 +28,11 @@ impl Function for Mod {
         debug!("mod function");
         if let (Some(arg1), Some(arg2)) = (args[0].as_i64(), args[1].as_i64()) {
             if arg2 == 0 {
-                return Err(DscError::Parser("Cannot divide by zero".to_string()));
+                return Err(DscError::Parser(t!("functions.mod.divideByZero").to_string()));
             }
             Ok(Value::Number((arg1 % arg2).into()))
         } else {
-            Err(DscError::Parser("Invalid argument(s)".to_string()))
+            Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
         }
     }
 }

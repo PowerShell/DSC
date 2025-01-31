@@ -78,3 +78,244 @@ progressSearching = "Searching for resources"
 foundResourceManifest = "Found resource manifest: #{path}"
 adapterFound = "Resource adapter '#{adapter}' found"
 resourceFound = "Resource '#{resource}' found"
+
+[dscresources.commandResource]
+invokeGet = "Invoking get for '#{resource}'"
+invokeGetUsing = "Invoking get '#{resource}' using '#{executable}'"
+verifyOutputUsing = "Verifying output of get '#{resource}' using '#{executable}'"
+groupGetResponse = "Group get response: #{response}"
+failedParseJson = "Failed to parse JSON from get #{executable}|#{stdout}|#{stderr} -> #{err}"
+invokeSet = "Invoking set for '#{resource}'"
+noPretest = "No pretest, invoking test on '#{resource}'"
+syntheticWhatIf = "cannot process what-if execution type, as resource implements pre-test and does not support what-if"
+setGetCurrent = "Getting current state for set by invoking get on '#{resource}' using '#{executable}'"
+setVerifyGet = "Verifying output of get on '#{resource}' using '#{executable}'"
+setVerifyOutput = "Verifying output of #{operation} '#{resource}' using '#{executable}'"
+setUnexpectedOutput = "Command did not return expected actual output"
+setUnexpectedDiff = "Command did not return expected diff output"
+invokeTest = "Invoking test for '#{resource}'"
+testSyntheticTest = "Resource '#{resource}' does not implement test, performing synthetic test"
+invokeTestUsing = "Invoking test on '#{resource}' using '{executable}'"
+testVerifyOutput = "Verifying output of test on '#{resource}' using '#{executable}'"
+testGroupTestResponse = "Import resource kind, returning group test response"
+testNoActualState = "No actual state returned"
+testNoDiff = "No diff properties returned"
+invokeDeleteUsing = "Invoking delete on '#{resource}' using '#{executable}'"
+invokeValidateConfig = "Invoking validate on '#{resource}' using '#{config}'"
+invokeVaalidateUsing = "Invoking validate on '#{resource}' using '#{executable}'"
+exportNotSupported = "Export is not supported by resource '#{resource}'"
+exportVerifyOutput = "Verifying output of export on '#{resource}' using '#{executable}'"
+resolveNotSupported = "Resolve is not supported by resource '#{resource}'"
+invokeResolveUsing = "Invoking resolve on '#{resource}' using '#{executable}'"
+processChildStdout = "child process did not have a handle to stdout"
+processChildStderr = "child process did not have a handle to stderr"
+processChildStdin = "child process did not have a handle to stdin"
+processWriteStdin = "could not write to stdin"
+processChildId = "Can't get child process id"
+processChildExit = "Process '#{executable}' id #{id} exited with code #{code}"
+processChildTerminated = "Process '#{executable}' id #{id} terminated by signal"
+processTerminated = "Process terminated by signal"
+commandInvoke = "Invoking command '#{executable}' with args #{args}"
+noArgs = "No args to process"
+parseAsEnvVars = "Parsing input as environment variables"
+parseAsStdin = "Parsing input as stdin"
+noInput = "No input kind specified"
+verifyJson = "Verify JSON for '#{resource}'"
+validateJson = "Validating against JSON: #{json}"
+resourceInvalidJson = "Resource reported input JSON is not valid"
+invalidArrayKey = "Unsupported array value for key '#{key}'.  Only string and number is supported."
+invalidKey = "Unsupported value for key '#{key}'.  Only string, bool, number, and array is supported."
+
+[dscresources.dscresource]
+invokeGet = "Invoking get for '#{resource}'"
+customResourceNotSupported = "Custom resource not supported"
+invokeSet = "Invoking set for '#{resource}'"
+invokeTest = "Invoking test for '#{resource}'"
+invokeDelete = "Invoking delete for '#{resource}'"
+invokeValidate = "Invoking validate for '#{resource}'"
+invokeSchema = "Invoking schema for '#{resource}'"
+invokeExport = "Invoking export for '#{resource}'"
+invokeResolve = "Invoking resolve for '#{resource}'"
+subDiff = "diff: sub diff for '#{key}'"
+diffArray = "diff: arrays differ for '#{key}'"
+diffNotArray = "diff: '#{key}' is not an array"
+diffKeyMissing = "diff: key '#{key}' missing"
+diffKeyNotObject = "diff: key '#{key}' is not an object"
+diffArraySize = "diff: arrays have different lengths"
+diffMissingItem = "diff: actual array missing expected item"
+
+[functions]
+invalidArgType = "Invalid argument type"
+invalidArguments = "Invalid argument(s)"
+unknownFunction = "Unknown function '#{name}'"
+noArgsAccepted = "Function '#{name}' does not accept arguments"
+invalidArgCount = "Function '#{name}' requires exactly #{count} arguments"
+minArgsRequired = "Function '#{name}' requires at least #{count} arguments"
+argCountRequired = "Function '#{name}' requires between #{min_args} and #{max_args} arguments"
+noArrayArgs = "Function '#{name}' does not accept array arguments, accepted types are: #{accepted_args_string}"
+noBooleanArgs = "Function '#{name}' does not accept boolean arguments, accepted types are: #{accepted_args_string}"
+noNumberArgs = "Function '#{name}' does not accept number arguments, accepted types are: #{accepted_args_string}"
+noObjectArgs = "Function '#{name}' does not accept object arguments, accepted types are: #{accepted_args_string}"
+noStringArgs = "Function '#{name}' does not accept string arguments, accepted types are: #{accepted_args_string}"
+
+[functions.add]
+invoked = "add function"
+
+[functions.concat]
+invoked = "concat function"
+argsMustBeStrings = "Arguments must all be strings"
+argsMustBeArrays = "Arguments must all be arrays"
+onlyArraysOfStrings = "Arguments must all be arrays of strings"
+
+[functions.createArray]
+invoked = "createArray function"
+argsMustAllBeArrays = "Arguments must all be arrays"
+argsMustAllBeIntegers = "Arguments must all be integers"
+argsMustAllBeObjects = "Arguments must all be objects"
+argsMustAllBeStrings = "Arguments must all be strings"
+
+[functions.div]
+invoked = "div function"
+divideByZero = "Cannot divide by zero"
+
+[functions.envvar]
+notFound = "Environment variable not found"
+
+[functions.int]
+invalidInput = "invalid input string"
+parseStringError = "unable to parse string to int"
+castError = "unable to cast to int"
+parseNumError = "unable to parse number to int"
+
+[functions.max]
+emptyArray = "Array cannot be empty"
+integersOnly = "Array must contain only integers"
+noMax = "Unable to find max value"
+
+[functions.min]
+invoked = "min function"
+emptyArray = "Array cannot be empty"
+integersOnly = "Input must only contain integers"
+noMin = "Unable to find min value"
+
+[functions.mod]
+divideByZero = "Cannot divide by zero"
+
+[functions.mul]
+invoked = "mul function"
+
+[functions.parameters]
+invoked = "parameters function"
+traceKey = "parameters key: #{key}"
+keyNotString = "Parameter '#{key}' is not a string"
+keyNotFound = "Parameter '#{key}' not found in context"
+
+[functions.path]
+traceArgs = "Executing path function with args: #{args}"
+argsMustBeStrings = "Arguments must all be strings"
+
+[functions.reference]
+invoked = "reference function"
+keyNotFound = "Invalid resourceId or resource has not executed yet: #{key}"
+
+[functions.resourceId]
+incorrectTypeFormat = "Type argument must contain exactly one slash"
+invalidFirstArgType = "Invalid argument type for first parameter"
+incorrectNameFormat = "Name argument cannot contain a slash"
+invalidSecondArgType = "Invalid argument type for second parameter"
+
+[functions.sub]
+invoked = "sub function"
+
+[functions.systemRoot]
+invoked = "systemRoot function"
+
+[functions.variables]
+invoked = "variables function"
+keyNotFound = "Variable '#{key}' does not exist or has not been initialized yet"
+
+[parser.expression]
+functionNodeNotFound = "Function node not found"
+parsingFunction = "Parsing function '#{name}'"
+parsingAccessor = "Parsing accessor '#{name}'"
+accessorParsingError = "Error parsing accessor"
+parsingMemberAccessor = "Parsing member accessor '#{name}'"
+memberNotFound = "Member name not found"
+parsingIndexAccessor = "Parsing index accessor '#{index}'"
+indexNotFound = "Index value not found"
+invalidAccessorKind = "Invalid accessor kind: '#{kind}'"
+functionResult = "Function results: #{results}"
+evalAccessors = "Evaluating accessors"
+memberNameNotFound = "Member '#{member}' not found"
+accessOnNonObject = "Member access on non-object value"
+expressionResult = "Expression result: #{result}"
+indexNotValid = "Index is not a valid number"
+indexOutOfBounds = "Index is out of bounds"
+indexOnNonArray = "Index access on non-array value"
+invalidIndexType = "Invalid index type"
+
+[parser.functions]
+foundErrorNode = "Found error node parsing function"
+nameNodeNotFound = "Function name node not found"
+functionName = "Function name: '#{name}'"
+argIsExpression = "Argument is an expression"
+argIsValue = "Argument is a value: '#{value}'"
+unknownArgType = "Unknown argument type '#{kind}'"
+
+[parser]
+parsingStatement = "Parsing statement: #{statement}"
+failedToParse = "Unable to parse: #{statement}"
+failedToParseRoot = "Unable to parse statement root: #{statement}"
+invalidStatement = "Invalid statement: #{statement}"
+failedToParseStringLiteral = "Unable to parse string literal"
+parsingStringLiteral = "Parsing string literal: #{value}"
+failedToParseEscapedStringLiteral = "Unable to parse escaped string literal"
+parsingEscapedStringLiteral = "Parsing escaped string literal: #{value}"
+parsingExpression = "Parsing expression"
+unknownExpressionType = "Unknown expression type: #{kind}"
+
+[dscerror]
+adapterNotFound = "Adapter not found"
+booleanConversion = "Function boolean argument conversion"
+exitCode = "exit code"
+commandResource = "Command: Resource"
+commandExecutable = "Command: Executable"
+manifestDescription = "manifest description"
+commandOperation = "Command: Operation"
+forExecutable = "for executable"
+function = "Function"
+error = "error"
+integerConversion = "Function integer argument conversion"
+invalidConfiguration = "Invalid configuration"
+unsupportedManifestVersion = "Unsupported manifest version"
+mustBe = "Must be"
+invalidFunctionParameterCount = "Invalid function parameter count for"
+expected = "expected"
+got = "got"
+language = "Language"
+manifest = "Manifest"
+missingManifest = "Missing manifest"
+adapterBasedResource = "Adapter based resource"
+missingRequires = "missing 'requires' property for resource"
+schemaMissing = "Schema missing from manifest"
+notImplemented = "Not implemented"
+notSupported = "Not supported"
+numberConversion = "Number conversion"
+operation = "Operation"
+parser = "Parser"
+progress = "Progress"
+resourceNotFound = "Resource not found"
+resourceManifestNotFound = "Resource manifest not found"
+schema = "Schema"
+schemaNotAvailable = "No Schema found and `validate` is not supported"
+securityContext = "Security context"
+utf8Conversion = "UTF-8 conversion"
+unkonwn = "Unknown"
+validation = "Validation"
+setting = "Setting"
+
+[util]
+foundSetting = "Found setting '#{name}' in #{path}"
+notFoundSetting = "Setting '#{name}' not found in #{path}"
+failedToGetExePath = "Can't get 'dsc' executable path"
+settingNotFound = "Setting '#{name}' not found"

@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -24,7 +25,7 @@ impl Function for CreateArray {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        debug!("createArray function");
+        debug!("{}", t!("functions.createArray.invoked"));
         let mut array_result = Vec::<Value>::new();
         let mut input_type : Option<AcceptedArgKind> = None;
         for value in args {
@@ -32,28 +33,28 @@ impl Function for CreateArray {
                 if input_type.is_none() {
                     input_type = Some(AcceptedArgKind::Array);
                 } else if input_type != Some(AcceptedArgKind::Array) {
-                    return Err(DscError::Parser("Arguments must all be arrays".to_string()));
+                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeArrays").to_string()));
                 }
             } else if value.is_number() {
                 if input_type.is_none() {
                     input_type = Some(AcceptedArgKind::Number);
                 } else if input_type != Some(AcceptedArgKind::Number) {
-                    return Err(DscError::Parser("Arguments must all be integers".to_string()));
+                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeIntegers").to_string()));
                 }
             } else if value.is_object() {
                 if input_type.is_none() {
                     input_type = Some(AcceptedArgKind::Object);
                 } else if input_type != Some(AcceptedArgKind::Object) {
-                    return Err(DscError::Parser("Arguments must all be objects".to_string()));
+                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeObjects").to_string()));
                 }
             } else if value.is_string() {
                 if input_type.is_none() {
                     input_type = Some(AcceptedArgKind::String);
                 } else if input_type != Some(AcceptedArgKind::String) {
-                    return Err(DscError::Parser("Arguments must all be strings".to_string()));
+                    return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeStrings").to_string()));
                 }
             } else {
-                return Err(DscError::Parser("Invalid argument type".to_string()));
+                return Err(DscError::Parser(t!("functions.invalidArgType").to_string()));
             }
             array_result.push(value.clone());
         }

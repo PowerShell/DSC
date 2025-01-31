@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -24,15 +25,15 @@ impl Function for Reference {
     }
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
-        debug!("reference function");
+        debug!("{}", t!("functions.reference.invoked"));
         if let Some(key) = args[0].as_str() {
             if context.outputs.contains_key(key) {
                 Ok(context.outputs[key].clone())
             } else {
-                Err(DscError::Parser(format!("Invalid resourceId or resource has not executed yet: {key}")))
+                Err(DscError::Parser(t!("functions.reference.keyNotFound", key = key).to_string()))
             }
         } else {
-            Err(DscError::Parser("Invalid argument".to_string()))
+            Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
         }
     }
 }

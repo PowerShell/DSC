@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use crate::DscError;
 use crate::configure::context::Context;
+use rust_i18n::t;
 use serde_json::Value;
 
 pub mod add;
@@ -101,7 +102,7 @@ impl FunctionDispatcher {
     /// This function will return an error if the function fails to execute.
     pub fn invoke(&self, name: &str, args: &Vec<Value>, context: &Context) -> Result<Value, DscError> {
         let Some(function) = self.functions.get(name) else {
-            return Err(DscError::Parser(format!("Unknown function '{name}'")));
+            return Err(DscError::Parser(t!("functions.unknownFunction", name = name).to_string()));
         };
 
         // check if arg number are valid
@@ -109,31 +110,31 @@ impl FunctionDispatcher {
         let max_args = function.max_args();
         if args.len() < min_args || args.len() > max_args {
             if max_args == 0 {
-                return Err(DscError::Parser(format!("Function '{name}' does not accept arguments")));
+                return Err(DscError::Parser(t!("functions.noArgsAccepted", name = name).to_string()));
             }
             else if min_args == max_args {
-                return Err(DscError::Parser(format!("Function '{name}' requires exactly {min_args} arguments")));
+                return Err(DscError::Parser(t!("functions.invalidArgCount", name = name, count = min_args).to_string()));
             }
             else if max_args == usize::MAX {
-                return Err(DscError::Parser(format!("Function '{name}' requires at least {min_args} arguments")));
+                return Err(DscError::Parser(t!("functions.minArgsRequired", name = name, count = min_args).to_string()));
             }
 
-            return Err(DscError::Parser(format!("Function '{name}' requires between {min_args} and {max_args} arguments")));
+            return Err(DscError::Parser(t!("functions.argCountRequired", name = name, min = min_args, max = max_args).to_string()));
         }
         // check if arg types are valid
         let accepted_arg_types = function.accepted_arg_types();
         let accepted_args_string = accepted_arg_types.iter().map(|x| format!("{x:?}")).collect::<Vec<String>>().join(", ");
         for value in args {
             if value.is_array() && !accepted_arg_types.contains(&AcceptedArgKind::Array) {
-                return Err(DscError::Parser(format!("Function '{name}' does not accept array arguments, accepted types are: {accepted_args_string}")));
+                return Err(DscError::Parser(t!("functions.noArrayArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
             } else if value.is_boolean() && !accepted_arg_types.contains(&AcceptedArgKind::Boolean) {
-                return Err(DscError::Parser(format!("Function '{name}' does not accept boolean arguments, accepted types are: {accepted_args_string}")));
+                return Err(DscError::Parser(t!("functions.noBooleanArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
             } else if value.is_number() && !accepted_arg_types.contains(&AcceptedArgKind::Number) {
-                return Err(DscError::Parser(format!("Function '{name}' does not accept number arguments, accepted types are: {accepted_args_string}")));
+                return Err(DscError::Parser(t!("functions.noNumberArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
             } else if value.is_object() && !accepted_arg_types.contains(&AcceptedArgKind::Object) {
-                return Err(DscError::Parser(format!("Function '{name}' does not accept object arguments, accepted types are: {accepted_args_string}")));
+                return Err(DscError::Parser(t!("functions.noObjectArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
             } else if value.is_string() && !accepted_arg_types.contains(&AcceptedArgKind::String) {
-                return Err(DscError::Parser(format!("Function '{name}' does not accept string argument, accepted types are: {accepted_args_string}")));
+                return Err(DscError::Parser(t!("functions.noStringArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
             }
         }
 

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use serde_json::{Number, Value};
 use tracing::debug;
 use tree_sitter::Node;
@@ -44,16 +45,16 @@ impl Function {
             match member.kind() {
                 "arguments" => function_args = Some(member),
                 "functionName" => function_name = Some(member),
-                "ERROR" => return Err(DscError::Parser("Found error node parsing function".to_string())),
+                "ERROR" => return Err(DscError::Parser(t!("parser.functions.foundErrorNode").to_string())),
                 _ => {}
             }
         }
         let Some(name) = function_name else {
-            return Err(DscError::Parser("Function name node not found".to_string()));
+            return Err(DscError::Parser(t!("parser.functions.nameNodeNotFound").to_string()));
         };
         let args = convert_args_node(statement_bytes, function_args.as_ref())?;
         let name = name.utf8_text(statement_bytes)?;
-        debug!("Function name: {0}", name);
+        debug!("{}", t!("parser.functions.functionName", name = name));
         Ok(Function{
             name: name.to_string(),
             args})
@@ -71,12 +72,12 @@ impl Function {
             for arg in args {
                 match arg {
                     FunctionArg::Expression(expression) => {
-                        debug!("Arg is expression");
+                        debug!("{}", t!("parser.functions.argIsExpression"));
                         let value = expression.invoke(function_dispatcher, context)?;
                         resolved_args.push(value.clone());
                     },
                     FunctionArg::Value(value) => {
-                        debug!("Arg is value: '{:?}'", value);
+                        debug!("{}", t!("parser.functions.argIsValue", value = value : {:?}));
                         resolved_args.push(value.clone());
                     }
                 }
@@ -114,7 +115,7 @@ fn convert_args_node(statement_bytes: &[u8], args: Option<&Node>) -> Result<Opti
                 result.push(FunctionArg::Expression(expression));
             },
             _ => {
-                return Err(DscError::Parser(format!("Unknown argument type '{0}'", arg.kind())));
+                return Err(DscError::Parser(t!("parser.function.unknownArgType", kind = arg.kind()).to_string()));
             }
         }
     }
