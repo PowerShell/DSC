@@ -4,6 +4,7 @@ _version = 1
 about = "Apply configuration or invoke specific DSC resources"
 traceFormat = "Trace format to use"
 traceLevel = "Trace level to use"
+progressFormat = "Progress format to use"
 completer = "Generate a shell completion script"
 configAbout = "Apply a configuration document"
 parameters = "Parameters to pass to the configuration as JSON or YAML"

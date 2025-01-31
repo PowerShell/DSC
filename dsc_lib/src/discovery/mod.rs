@@ -5,7 +5,7 @@ mod command_discovery;
 mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::{dscresources::dscresource::DscResource, dscerror::DscError};
+use crate::{dscresources::dscresource::DscResource, dscerror::DscError, util::ProgressFormat};
 use std::collections::BTreeMap;
 use tracing::error;
 
@@ -36,7 +36,7 @@ impl Discovery {
     /// # Returns
     ///
     /// A vector of `DscResource` instances.
-    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Vec<DscResource> {
+    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
@@ -45,7 +45,7 @@ impl Discovery {
 
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.list_available_resources(type_name_filter, adapter_name_filter) {
+            let discovered_resources = match discovery_type.list_available_resources(type_name_filter, adapter_name_filter, progress_format) {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");
@@ -73,14 +73,14 @@ impl Discovery {
     /// # Arguments
     ///
     /// * `required_resource_types` - The required resource types.
-    pub fn find_resources(&mut self, required_resource_types: &[String]) {
+    pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new()),
         ];
         let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.find_resources(&remaining_required_resource_types) {
+            let discovered_resources = match discovery_type.find_resources(&remaining_required_resource_types, progress_format) {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");

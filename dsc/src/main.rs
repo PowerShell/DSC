@@ -8,6 +8,7 @@ use rust_i18n::{i18n, t};
 use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
+use dsc_lib::util::ProgressFormat;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -40,6 +41,8 @@ fn main() {
 
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
+    let progress_format = args.progress_format.unwrap_or( ProgressFormat::Default );
+    
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("{} {:?}", t!("main.generatingCompleter"), shell);
@@ -50,7 +53,7 @@ fn main() {
             if let Some(file_name) = parameters_file {
                 info!("{}: {file_name}", t!("main.readingParametersFile"));
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include, progress_format),
                     Err(err) => {
                         error!("{} '{file_name}': {err}", t!("main.failedToReadParametersFile"));
                         exit(util::EXIT_INVALID_INPUT);
@@ -58,11 +61,11 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_include);
+                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_include, progress_format);
             }
         },
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand);
+            subcommand::resource(&subcommand, progress_format);
         },
         SubCommand::Schema { dsc_type , output_format } => {
             let schema = util::get_schema(dsc_type);
