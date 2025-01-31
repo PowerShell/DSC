@@ -4,9 +4,10 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use std::path::PathBuf;
-use tracing::debug;
+use tracing::trace;
 
 #[derive(Debug, Default)]
 pub struct Path {}
@@ -28,14 +29,14 @@ impl Function for Path {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        debug!("Executing path function with args: {:?}", args);
+        trace!("{}", t!("functions.path.traceArgs", args = args : {:?}));
 
         let mut path = PathBuf::new();
         for arg in args {
             if let Value::String(s) = arg {
                 path.push(s);
             } else {
-                return Err(DscError::Parser("Arguments must all be strings".to_string()));
+                return Err(DscError::Parser(t!("functions.path.argsMustBeStrings").to_string()));
             }
         }
 

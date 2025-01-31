@@ -42,7 +42,7 @@ fn main() {
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
     let progress_format = args.progress_format.unwrap_or( ProgressFormat::Default );
-    
+
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("{} {:?}", t!("main.generatingCompleter"), shell);
@@ -55,7 +55,7 @@ fn main() {
                 match std::fs::read_to_string(&file_name) {
                     Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include, progress_format),
                     Err(err) => {
-                        error!("{} '{file_name}': {err}", t!("main.failedToReadParametersFile"));
+                        error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
                         exit(util::EXIT_INVALID_INPUT);
                     }
                 }
@@ -111,7 +111,7 @@ fn terminate_subprocesses(sys: &System, process: &Process) {
 
     info!("{}: {:?} {}", t!("main.terminatingProcess"), process.name(), process.pid());
     if !process.kill() {
-        error!("{}: {:?} {}", t!("main.failedTerminateProcess"), process.name(), process.pid());
+        error!("{}: {:?} {}", t!("main.failedTerminatingProcess"), process.name(), process.pid());
     }
 }
 

@@ -5,6 +5,7 @@ use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::AcceptedArgKind;
 use num_traits::cast::NumCast;
+use rust_i18n::t;
 use serde_json::Value;
 use super::Function;
 
@@ -28,13 +29,13 @@ impl Function for Int {
         let arg = &args[0];
         let value: i64;
         if arg.is_string() {
-            let input = arg.as_str().ok_or(DscError::FunctionArg("int".to_string(), "invalid input string".to_string()))?;
-            let result = input.parse::<f64>().map_err(|_| DscError::FunctionArg("int".to_string(), "unable to parse string to int".to_string()))?;
-            value = NumCast::from(result).ok_or(DscError::FunctionArg("int".to_string(), "unable to cast to int".to_string()))?;
+            let input = arg.as_str().ok_or(DscError::FunctionArg("int".to_string(), t!("functions.int.invalidInput").to_string()))?;
+            let result = input.parse::<f64>().map_err(|_| DscError::FunctionArg("int".to_string(), t!("functions.int.parseStringError").to_string()))?;
+            value = NumCast::from(result).ok_or(DscError::FunctionArg("int".to_string(), t!("functions.int.castError").to_string()))?;
         } else if arg.is_number() {
-            value = arg.as_i64().ok_or(DscError::FunctionArg("int".to_string(), "unable to parse number to int".to_string()))?;
+            value = arg.as_i64().ok_or(DscError::FunctionArg("int".to_string(), t!("functions.int.parseNumError").to_string()))?;
         } else {
-            return Err(DscError::FunctionArg("int".to_string(), "Invalid argument type".to_string()));
+            return Err(DscError::FunctionArg("int".to_string(), t!("functions.invalidArgType").to_string()));
         }
         Ok(Value::Number(value.into()))
     }

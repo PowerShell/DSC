@@ -3,6 +3,7 @@
 
 use crate::configure::config_doc::Parameter;
 use crate::DscError;
+use rust_i18n::t;
 use serde_json::Value;
 
 /// Checks that the given value matches the given parameter length constraints.
@@ -25,48 +26,48 @@ pub fn check_length(name: &str, value: &Value, constraint: &Parameter) -> Result
     if let Some(min_length) = constraint.min_length {
         if value.is_string() {
             let Some(value) = value.as_str() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has minimum length constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.minLengthIsNull", name = name).to_string()));
             };
 
             if value.len() < usize::try_from(min_length)? {
-                return Err(DscError::Validation(format!("Parameter '{name}' has minimum length constraint of {min_length} but is {0}", value.len())));
+                return Err(DscError::Validation(t!("configure.constraints.notMinLength", name = name, min_length = min_length, length = value.len()).to_string()));
             }
         }
         else if value.is_array() {
             let Some(value) = value.as_array() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has minimum length constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.minLengthIsNull", name = name).to_string()));
             };
 
             if value.len() < usize::try_from(min_length)? {
-                return Err(DscError::Validation(format!("Parameter '{name}' has minimum length constraint of {min_length} but is {0}", value.len())));
+                return Err(DscError::Validation(t!("configure.constraints.notMinLength", name = name, min_length = min_length, length = value.len()).to_string()));
             }
         }
         else {
-            return Err(DscError::Validation(format!("Parameter '{name}' has minimum length constraint but is not a string or array")));
+            return Err(DscError::Validation(t!("configure.constraints.minLengthNotStringOrArray", name = name).to_string()));
         }
     }
 
     if let Some(max_length) = constraint.max_length {
         if value.is_string() {
             let Some(value) = value.as_str() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has maximum length constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.maxLengthIsNull", name = name).to_string()));
             };
 
             if value.len() > usize::try_from(max_length)? {
-                return Err(DscError::Validation(format!("Parameter '{name}' has maximum length constraint of {max_length} but is {0}", value.len())));
+                return Err(DscError::Validation(t!("configure.constraints.maxLengthExceeded", name = name, max_length = max_length, length = value.len()).to_string()));
             }
         }
         else if value.is_array() {
             let Some(value) = value.as_array() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has maximum length constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.maxLengthIsNull", name = name).to_string()));
             };
 
             if value.len() > usize::try_from(max_length)? {
-                return Err(DscError::Validation(format!("Parameter '{name}' has maximum length constraint of {max_length} but is {0}", value.len())));
+                return Err(DscError::Validation(t!("configure.constraints.maxLengthExceeded", name = name, max_length = max_length, length = value.len()).to_string()));
             }
         }
         else {
-            return Err(DscError::Validation(format!("Parameter '{name}' has maximum length constraint but is not a string or array")));
+            return Err(DscError::Validation(t!("configure.constraints.maxLengthNotStringOrArray", name = name).to_string()));
         }
     }
 
@@ -93,30 +94,30 @@ pub fn check_number_limits(name: &str, value: &Value, constraint: &Parameter) ->
     if let Some(min_value) = constraint.min_value {
         if value.is_i64() && value.as_i64().is_some() {
             let Some(value) = value.as_i64() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has minimum value constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.minValueIsNull", name = name).to_string()));
             };
 
             if value < min_value {
-                return Err(DscError::Validation(format!("Parameter '{name}' has minimum value constraint of {min_value} but is {value}")));
+                return Err(DscError::Validation(t!("configure.constraints.notMinValue", name = name, min_value = min_value, value = value).to_string()));
             }
         }
         else {
-            return Err(DscError::Validation(format!("Parameter '{name}' has minimum value constraint but is not an integer")));
+            return Err(DscError::Validation(t!("configure.constraints.minValueNotInteger", name = name).to_string()));
         }
     }
 
     if let Some(max_value) = constraint.max_value {
         if value.is_i64() && value.as_i64().is_some() {
             let Some(value) = value.as_i64() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has maximum value constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.maxValueIsNull", name = name).to_string()));
             };
 
             if value > max_value {
-                return Err(DscError::Validation(format!("Parameter '{name}' has maximum value constraint of {max_value} but is {value}")));
+                return Err(DscError::Validation(t!("configure.constraints.notMaxValue", name = name, max_value = max_value, value = value).to_string()));
             }
         }
         else {
-            return Err(DscError::Validation(format!("Parameter '{name}' has maximum value constraint but is not an integer")));
+            return Err(DscError::Validation(t!("configure.constraints.maxValueNotInteger", name = name).to_string()));
         }
     }
 
@@ -143,24 +144,24 @@ pub fn check_allowed_values(name: &str, value: &Value, constraint: &Parameter) -
     if let Some(allowed_values) = &constraint.allowed_values {
         if value.is_string() && value.as_str().is_some(){
             let Some(value) = value.as_str() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has allowed values constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.allowedValuesIsNull", name = name).to_string()));
             };
 
             if !allowed_values.contains(&Value::String(value.to_string())) {
-                return Err(DscError::Validation(format!("Parameter '{name}' has value not in the allowed values list")));
+                return Err(DscError::Validation(t!("configure.constraints.notAllowedValue", name = name).to_string()));
             }
         }
         else if value.is_i64() && value.as_i64().is_some() {
             let Some(value) = value.as_i64() else {
-                return Err(DscError::Validation(format!("Parameter '{name}' has allowed values constraint but is null")));
+                return Err(DscError::Validation(t!("configure.constraints.allowedValuesIsNull", name = name).to_string()));
             };
 
             if !allowed_values.contains(&Value::Number(value.into())) {
-                return Err(DscError::Validation(format!("Parameter '{name}' has value not in the allowed values list")));
+                return Err(DscError::Validation(t!("configure.constraints.notAllowedValue", name = name).to_string()));
             }
         }
         else {
-            return Err(DscError::Validation(format!("Parameter '{name}' has allowed values constraint but is not a string or integer")));
+            return Err(DscError::Validation(t!("configure.constraints.allowedValuesNotStringOrInteger", name = name).to_string()));
         }
     }
 

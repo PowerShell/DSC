@@ -126,7 +126,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     Some(parameters_json)
                 },
                 Err(err) => {
-                    return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.failedResolveParametersFile")));
+                    return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.couldNotReadParametersFile")));
                 }
             }
         },
@@ -134,7 +134,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
             let parameters_json = match parse_input_to_json(&text) {
                 Ok(json) => json,
                 Err(err) => {
-                    return Err(format!("{}: {err}", t!("resolve.invalidParametersContent")));
+                    return Err(format!("{}: {err}", t!("resolve.failedParseParametersFile")));
                 }
             };
             Some(parameters_json)

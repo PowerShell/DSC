@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -24,15 +25,15 @@ impl Function for Div {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        debug!("div function");
+        debug!("{}", t!("functions.div.invoked"));
         if let (Some(arg1), Some(arg2)) = (args[0].as_i64(), args[1].as_i64()) {
             if let Some(value) = arg1.checked_div(arg2) {
                 Ok(Value::Number(value.into()))
             } else {
-                Err(DscError::Parser("Cannot divide by zero".to_string()))
+                Err(DscError::Parser(t!("functions.div.divideByZero").to_string()))
             }
         } else {
-            Err(DscError::Parser("Invalid argument(s)".to_string()))
+            Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
         }
     }
 }

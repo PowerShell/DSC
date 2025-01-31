@@ -3,6 +3,7 @@
 
 use crate::{configure::config_doc::ExecutionKind, dscresources::resource_manifest::Kind};
 use dscerror::DscError;
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -188,10 +189,10 @@ pub trait Invoke {
 
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
-        debug!("Invoking get for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("get custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -204,10 +205,10 @@ impl Invoke for DscResource {
     }
 
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
-        debug!("Invoking set for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("set custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -220,10 +221,10 @@ impl Invoke for DscResource {
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
-        debug!("Invoking test for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("test custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -264,10 +265,10 @@ impl Invoke for DscResource {
     }
 
     fn delete(&self, filter: &str) -> Result<(), DscError> {
-        debug!("Invoking delete for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("set custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -280,10 +281,10 @@ impl Invoke for DscResource {
     }
 
     fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
-        debug!("Invoking validate for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeValidate", resource = self.type_name));
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("validate custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -296,10 +297,10 @@ impl Invoke for DscResource {
     }
 
     fn schema(&self) -> Result<String, DscError> {
-        debug!("Invoking schema for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeSchema", resource = self.type_name));
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("schema custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -312,7 +313,7 @@ impl Invoke for DscResource {
     }
 
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
-        debug!("Invoking export for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
@@ -321,7 +322,7 @@ impl Invoke for DscResource {
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
-        debug!("Invoking resolve for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeResolve", resource = self.type_name));
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
@@ -373,7 +374,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
             if value.is_object() {
                 let sub_diff = get_diff(value, &actual[key]);
                 if !sub_diff.is_empty() {
-                    debug!("diff: sub diff for {key}");
+                    debug!("{}", t!("dscresources.dscresource.subDiff", key = key));
                     diff_properties.push(key.to_string());
                 }
             }
@@ -388,22 +389,22 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
                         if let Some(value_array) = value.as_array() {
                             if let Some(actual_array) = actual[key].as_array() {
                                 if !is_same_array(value_array, actual_array) {
-                                    info!("diff: arrays differ for {key}");
+                                    info!("{}", t!("dscresources.dscresource.diffArray", key = key));
                                     diff_properties.push(key.to_string());
                                 }
                             } else {
-                                info!("diff: {} is not an array", actual[key]);
+                                info!("{}", t!("dscresources.dscresource.diffNotArray", key = actual[key]));
                                 diff_properties.push(key.to_string());
                             }
                         } else if value != &actual[key] {
                             diff_properties.push(key.to_string());
                         }
                     } else {
-                        info!("diff: {key} missing");
+                        info!("{}", t!("dscresources.dscresource.diffKeyMissing", key = key));
                         diff_properties.push(key.to_string());
                     }
                 } else {
-                    info!("diff: {key} not object");
+                    info!("{}", t!("dscresources.dscresource.diffKeyNotObject", key = key));
                     diff_properties.push(key.to_string());
                 }
             }
@@ -416,13 +417,13 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
 /// Compares two arrays independent of order
 fn is_same_array(expected: &Vec<Value>, actual: &Vec<Value>) -> bool {
     if expected.len() != actual.len() {
-        info!("diff: arrays are different lengths");
+        info!("{}", t!("dscresources.dscresource.diffArraySize"));
         return false;
     }
 
     for item in expected {
         if !array_contains(actual, item) {
-            info!("diff: actual array missing expected element");
+            info!("{}", t!("dscresources.dscresource.diffMissingItem"));
             return false;
         }
     }

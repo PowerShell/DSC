@@ -84,6 +84,6 @@ Describe 'Tests for listing resources' {
     It 'Invalid adapter returns an error' {
         $out = dsc resource list --adapter 'foo*' 2>&1 | Out-String
         $LASTEXITCODE | Should -Be 0
-        $out | Should -BeLike "*ERROR*Adapter 'foo`*' not found*"
+        $out | Should -BeLike "*ERROR*Adapter not found: foo`*"
     }
 }
