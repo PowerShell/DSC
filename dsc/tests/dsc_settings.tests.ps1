@@ -48,7 +48,7 @@ Describe 'tests for dsc settings' {
     }
 
     It 'ensure a new tracing value in settings has effect' {
-        
+
         $script:dscDefaultv1Settings."tracing"."level" = "TRACE"
         $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:dscSettingsFilePath
 
@@ -57,11 +57,11 @@ Describe 'tests for dsc settings' {
     }
 
     It 'ensure a new resource_path value in settings has effect' {
-        
+
         $script:dscDefaultv1Settings."resourcePath"."directories" = @("TestDir1","TestDir2")
         $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:dscSettingsFilePath
         dsc -l debug resource list 2> $TestDrive/tracing.txt
-        $expectedString = 'Using Resource Path: "TestDir1'+[System.IO.Path]::PathSeparator+'TestDir2'
+        $expectedString = 'Using Resource Path: TestDir1'+[System.IO.Path]::PathSeparator+'TestDir2'
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly $expectedString
     }
 
@@ -71,7 +71,7 @@ Describe 'tests for dsc settings' {
             Set-ItResult -Skip -Because "Setting policy requires sudo"
             return
         }
-        
+
         $script:dscDefaultv1Settings."tracing"."level" = "TRACE"
         $script:dscDefaultv1Settings."resourcePath"."directories" = @("PolicyDir")
         $script:dscDefaultv1Settings | ConvertTo-Json -Depth 90 | Set-Content -Force -Path $script:policyFilePath

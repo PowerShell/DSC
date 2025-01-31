@@ -576,15 +576,23 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         }
     };
 
-    let stdout = child.stdout.take().expect(&t!("dscreousrces.commandResource.processChildStdout").to_string());
-    let stderr = child.stderr.take().expect(&t!("dscreousrces.commandResource.processChildStderr").to_string());
+    let Some(stdout) = child.stdout.take() else {
+        return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processChildStdout").to_string(), executable.to_string()));
+    };
+    let Some(stderr) = child.stderr.take() else {
+        return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processChildStderr").to_string(), executable.to_string()));
+    };
     let mut stdout_reader = BufReader::new(stdout).lines();
     let mut stderr_reader = BufReader::new(stderr).lines();
 
     if let Some(input) = input {
         trace!("Writing to command STDIN: {input}");
-        let mut stdin = child.stdin.take().expect(&t!("dscreousrces.commandResource.processChildStdin").to_string());
-        stdin.write_all(input.as_bytes()).await.expect(&t!("dscreousrces.commandResource.processWriteStdin").to_string());
+        let Some(mut stdin) = child.stdin.take() else {
+            return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processChildStdin").to_string(), executable.to_string()));
+        };
+        if stdin.write_all(input.as_bytes()).await.is_err() {
+            return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processWriteStdin").to_string(), executable.to_string()));
+        }
         drop(stdin);
     }
 
