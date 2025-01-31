@@ -115,7 +115,7 @@ fn convert_args_node(statement_bytes: &[u8], args: Option<&Node>) -> Result<Opti
                 result.push(FunctionArg::Expression(expression));
             },
             _ => {
-                return Err(DscError::Parser(t!("parser.function.unknownArgType", kind = arg.kind()).to_string()));
+                return Err(DscError::Parser(t!("parser.functions.unknownArgType", kind = arg.kind()).to_string()));
             }
         }
     }

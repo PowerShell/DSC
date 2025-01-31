@@ -30,7 +30,7 @@ impl Function for ResourceId {
         if let Some(value) = resource_type.as_str() {
             let slash_count = value.chars().filter(|c| *c == '/').count();
             if slash_count != 1 {
-                return Err(DscError::Function("resourceId".to_string(), t!("functions.resourceid.incorrectTypeFormat").to_string()));
+                return Err(DscError::Function("resourceId".to_string(), t!("functions.resourceId.incorrectTypeFormat").to_string()));
             }
             result.push_str(value);
         } else {

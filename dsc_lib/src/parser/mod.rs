@@ -45,23 +45,23 @@ impl Statement {
     ///
     /// This function will return an error if the statement fails to parse or execute.
     pub fn parse_and_execute(&mut self, statement: &str, context: &Context) -> Result<Value, DscError> {
-        debug!("{}", t!("parser.statement.parsingStatement", statement = statement));
+        debug!("{}", t!("parser.parsingStatement", statement = statement));
         let Some(tree) = &mut self.parser.parse(statement, None) else {
-            return Err(DscError::Parser(t!("parser.statement.failedToParse", statement = statement).to_string()));
+            return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
         };
         let root_node = tree.root_node();
         if root_node.is_error() {
-            return Err(DscError::Parser(t!("parser.statement.failedToParseRoot", statement = statement).to_string()));
+            return Err(DscError::Parser(t!("parser.failedToParseRoot", statement = statement).to_string()));
         }
         if root_node.kind() != "statement" {
-            return Err(DscError::Parser(t!("parser.statement.invalidStatement", statement = statement).to_string()));
+            return Err(DscError::Parser(t!("parser.invalidStatement", statement = statement).to_string()));
         }
         let statement_bytes = statement.as_bytes();
         let mut cursor = root_node.walk();
         let mut return_value = Value::Null;
         for child_node in root_node.named_children(&mut cursor) {
             if child_node.is_error() {
-                return Err(DscError::Parser(t!("parser.statement.failedToParse", statement = statement).to_string()));
+                return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
             }
 
             match child_node.kind() {
@@ -69,7 +69,7 @@ impl Statement {
                     let Ok(value) = child_node.utf8_text(statement_bytes) else {
                         return Err(DscError::Parser(t!("parser.failedToParseStringLiteral").to_string()));
                     };
-                    debug!("{}", t!("parser.statement.parsingStringLiteral", value = value.to_string()));
+                    debug!("{}", t!("parser.parsingStringLiteral", value = value.to_string()));
                     return_value = Value::String(value.to_string());
                 },
                 "escapedStringLiteral" => {
@@ -77,11 +77,11 @@ impl Statement {
                     let Ok(value) = child_node.utf8_text(statement_bytes) else {
                         return Err(DscError::Parser(t!("parser.failedToParseEscapedStringLiteral").to_string()));
                     };
-                    debug!("{}", t!("parser.statement.parsingEscapedStringLiteral", value = value[1..].to_string()));
+                    debug!("{}", t!("parser.parsingEscapedStringLiteral", value = value[1..].to_string()));
                     return_value = Value::String(value[1..].to_string());
                 },
                 "expression" => {
-                    debug!("{}", t!("parser.statement.parsingExpression"));
+                    debug!("{}", t!("parser.parsingExpression"));
                     let expression = Expression::new(statement_bytes, &child_node)?;
                     return_value = expression.invoke(&self.function_dispatcher, context)?;
                 },

@@ -139,7 +139,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
 
 fn get_progress_bar_span(len: u64, progress_format: ProgressFormat) -> Result<ProgressBar, DscError> {
     let mut pb_span = ProgressBar::new(progress_format == ProgressFormat::Json);
-        
+
     pb_span.pb_set_style(&ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
     )?);
@@ -184,7 +184,7 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
                     },
                     SecurityContextKind::Restricted => {
                         if get_security_context() != SecurityContext::User {
-                            return Err(DscError::SecurityContext(t!("configure.mid.restrictedRequired").to_string()));
+                            return Err(DscError::SecurityContext(t!("configure.mod.restrictedRequired").to_string()));
                         }
                     },
                 }

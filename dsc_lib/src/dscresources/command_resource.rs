@@ -249,9 +249,9 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
-    debug!("{}", t!("dscresource.commandResource.invokeTest", resource = &resource.resource_type));
+    debug!("{}", t!("dscresources.commandResource.invokeTest", resource = &resource.resource_type));
     let Some(test) = &resource.test else {
-        info!("{}", t!("dscresource.commandResource.testSyntheticTest", resource = &resource.resource_type));
+        info!("{}", t!("dscresources.commandResource.testSyntheticTest", resource = &resource.resource_type));
         return invoke_synthetic_test(resource, cwd, expected);
     };
 
@@ -411,7 +411,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
     let args = process_args(validate.args.as_ref(), config);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
-    info!("{}", t!("dscreources.commandResource.invokeValidateUsing", resource = &resource.resource_type, executable = &validate.executable));
+    info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &resource.resource_type, executable = &validate.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
@@ -516,7 +516,7 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
 /// Error returned if the resource does not successfully resolve the input
 pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Result<ResolveResult, DscError> {
     let Some(resolve) = &resource.resolve else {
-        return Err(DscError::Operation(t!("dscreources.commandResource.resolveNotSupported", resource = &resource.resource_type).to_string()));
+        return Err(DscError::Operation(t!("dscresources.commandResource.resolveNotSupported", resource = &resource.resource_type).to_string()));
     };
 
     let args = process_args(resolve.args.as_ref(), input);
@@ -577,10 +577,10 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     };
 
     let Some(stdout) = child.stdout.take() else {
-        return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processChildStdout").to_string(), executable.to_string()));
+        return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStdout").to_string(), executable.to_string()));
     };
     let Some(stderr) = child.stderr.take() else {
-        return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processChildStderr").to_string(), executable.to_string()));
+        return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStderr").to_string(), executable.to_string()));
     };
     let mut stdout_reader = BufReader::new(stdout).lines();
     let mut stderr_reader = BufReader::new(stderr).lines();
@@ -588,10 +588,10 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     if let Some(input) = input {
         trace!("Writing to command STDIN: {input}");
         let Some(mut stdin) = child.stdin.take() else {
-            return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processChildStdin").to_string(), executable.to_string()));
+            return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStdin").to_string(), executable.to_string()));
         };
         if stdin.write_all(input.as_bytes()).await.is_err() {
-            return Err(DscError::CommandOperation(t!("dscreousrces.commandResource.processWriteStdin").to_string(), executable.to_string()));
+            return Err(DscError::CommandOperation(t!("dscresources.commandResource.processWriteStdin").to_string(), executable.to_string()));
         }
         drop(stdin);
     }
@@ -714,11 +714,11 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
     let mut stdin: Option<String> = None;
     match input_kind {
         Some(InputKind::Env) => {
-            debug!("{}", t!("dscresources.commandResource.parsingAsEnvVars"));
+            debug!("{}", t!("dscresources.commandResource.parseAsEnvVars"));
             env = Some(json_to_hashmap(input)?);
         },
         Some(InputKind::Stdin) => {
-            debug!("{}", t!("dscresources.commandResource.parsingAsStdin"));
+            debug!("{}", t!("dscresources.commandResource.parseAsStdin"));
             stdin = Some(input.to_string());
         },
         None => {
