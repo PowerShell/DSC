@@ -308,7 +308,7 @@ parameters:
   list: { type: array }
 
 resources:
-  - name: Acess the properties of an object
+  - name: Access the properties of an object
     type: Test/Echo
     properties:
       output:
@@ -394,7 +394,7 @@ results:
 - metadata:
     Microsoft.DSC:
       duration: PT0.0760186S
-  name: Acess the properties of an object
+  name: Access the properties of an object
   type: Test/Echo
   result:
     actualState:
@@ -417,7 +417,7 @@ parameters:
   list: { type: array }
 
 resources:
-  - name: Acess items in an array
+  - name: Access items in an array
     type: Test/Echo
     properties:
       output:
@@ -441,7 +441,7 @@ results:
 - metadata:
     Microsoft.DSC:
       duration: PT0.0750682S
-  name: Acess items in an array
+  name: Access items in an array
   type: Test/Echo
   result:
     actualState:
@@ -476,7 +476,7 @@ parameters:
   list: { type: array }
 
 resources:
-  - name: Acess items in a nested array
+  - name: Access items in a nested array
     type: Test/Echo
     properties:
       output:
@@ -496,7 +496,7 @@ results:
 - metadata:
     Microsoft.DSC:
       duration: PT0.1349442S
-  name: Acess items in a nested array
+  name: Access items in a nested array
   type: Test/Echo
   result:
     actualState:

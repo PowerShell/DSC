@@ -3,13 +3,20 @@
 
 Describe 'Invoke a resource test directly' {
     It 'test can be called on a resource' {
-        $os = if ($IsWindows) {
+        $os = if ($IsWindows)
+        {
             'Windows'
-        } elseif ($IsLinux) {
+        }
+        elseif ($IsLinux)
+        {
             'Linux'
-        } elseif ($IsMacOS) {
+        }
+        elseif ($IsMacOS)
+        {
             'macOS'
-        } else {
+        }
+        else
+        {
             'Unknown'
         }
 
@@ -21,7 +28,7 @@ Describe 'Invoke a resource test directly' {
         $out.inDesiredState | Should -Be $true
     }
 
-    It 'test returns proper error code if no input is provded' {
+    It 'test returns proper error code if no input is provided' {
         $out = dsc resource test -r Microsoft/OSInfo 2>&1
         $LASTEXITCODE | Should -Be 1
         $out | Should -BeLike '*ERROR*'

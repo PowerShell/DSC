@@ -137,7 +137,7 @@ fn check_debug() {
     }
 }
 
-// Check if the dsc binary parent process is WinStore.App or Exploerer.exe
+// Check if the dsc binary parent process is WinStore.App or Explorer.exe
 #[cfg(windows)]
 fn check_store() {
     use std::io::Read;

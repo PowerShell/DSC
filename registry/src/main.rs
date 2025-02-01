@@ -135,7 +135,7 @@ pub fn enable_tracing() {
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
+        eprintln!("Unable to set global default tracing subscriber.  Tracing is disabled.");
     }
 }
 
