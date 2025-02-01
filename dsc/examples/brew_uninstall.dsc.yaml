@@ -9,7 +9,7 @@ resources:
     - name: os_check
       type: Microsoft/OSInfo
       properties:
-        family: MacOS
+        family: macOS
 - name: brew
   type: DSC.PackageManagement/Brew
   properties:

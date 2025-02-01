@@ -8,6 +8,7 @@ use rust_i18n::{i18n, t};
 use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
+use dsc_lib::util::ProgressFormat;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -40,6 +41,8 @@ fn main() {
 
     debug!("{}: {}", t!("main.usingDscVersion"), env!("CARGO_PKG_VERSION"));
 
+    let progress_format = args.progress_format.unwrap_or( ProgressFormat::Default );
+
     match args.subcommand {
         SubCommand::Completer { shell } => {
             info!("{} {:?}", t!("main.generatingCompleter"), shell);
@@ -50,19 +53,19 @@ fn main() {
             if let Some(file_name) = parameters_file {
                 info!("{}: {file_name}", t!("main.readingParametersFile"));
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include, progress_format),
                     Err(err) => {
-                        error!("{} '{file_name}': {err}", t!("main.failedToReadParametersFile"));
+                        error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
                         exit(util::EXIT_INVALID_INPUT);
                     }
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_include);
+                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_include, progress_format);
             }
         },
         SubCommand::Resource { subcommand } => {
-            subcommand::resource(&subcommand);
+            subcommand::resource(&subcommand, progress_format);
         },
         SubCommand::Schema { dsc_type , output_format } => {
             let schema = util::get_schema(dsc_type);
@@ -102,13 +105,13 @@ fn ctrlc_handler() {
 
 fn terminate_subprocesses(sys: &System, process: &Process) {
     info!("{}: {:?} {}", t!("main.terminatingSubprocess"), process.name(), process.pid());
-    for subprocess in sys.processes().values().filter(|p| p.parent().map_or(false, |parent| parent == process.pid())) {
+    for subprocess in sys.processes().values().filter(|p| p.parent().is_some_and(|parent| parent == process.pid())) {
         terminate_subprocesses(sys, subprocess);
     }
 
     info!("{}: {:?} {}", t!("main.terminatingProcess"), process.name(), process.pid());
     if !process.kill() {
-        error!("{}: {:?} {}", t!("main.failedTerminateProcess"), process.name(), process.pid());
+        error!("{}: {:?} {}", t!("main.failedTerminatingProcess"), process.name(), process.pid());
     }
 }
 
@@ -157,7 +160,7 @@ fn check_store() {
     };
 
     // MS Store runs app using `sihost.exe`
-    if parent_process.name().to_ascii_lowercase() == "sihost.exe" || parent_process.name().to_ascii_lowercase() == "explorer.exe"{
+    if parent_process.name().eq_ignore_ascii_case("sihost.exe") || parent_process.name().eq_ignore_ascii_case("explorer.exe") {
         eprintln!("{}", t!("main.storeMessage"));
         // wait for keypress
         let _ = io::stdin().read(&mut [0u8]).unwrap();

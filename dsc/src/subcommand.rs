@@ -25,6 +25,7 @@ use dsc_lib::{
     },
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    util::ProgressFormat,
 };
 use rust_i18n::t;
 use std::{
@@ -251,7 +252,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_include: &bool) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_include: &bool, progress_format: ProgressFormat) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
@@ -294,6 +295,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             exit(EXIT_DSC_ERROR);
         }
     };
+
+    configurator.set_progress_format(progress_format);
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {
@@ -382,7 +385,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     }
                 }
             } else {
-                match validate_config(configurator.get_config()) {
+                match validate_config(configurator.get_config(), progress_format) {
                     Ok(()) => {
                         // valid, so do nothing
                     },
@@ -450,7 +453,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
 /// # Errors
 ///
 /// * `DscError` - The error that occurred.
-pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
+pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("{}", t!("subcommand.validatingConfiguration"));
     let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
@@ -476,7 +479,7 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 
         resource_types.push(type_name.to_lowercase().to_string());
     }
-    dsc.find_resources(&resource_types);
+    dsc.find_resources(&resource_types, progress_format);
 
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
@@ -527,7 +530,7 @@ pub fn validate_config(config: &Configuration) -> Result<(), DscError> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn resource(subcommand: &ResourceSubCommand) {
+pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) {
     let mut dsc = match DscManager::new() {
         Ok(dsc) => dsc,
         Err(err) => {
@@ -538,18 +541,18 @@ pub fn resource(subcommand: &ResourceSubCommand) {
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref());
+            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
         ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], progress_format);
             resource_command::schema(&dsc, resource, output_format.as_ref());
         },
         ResourceSubCommand::Export { resource, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], progress_format);
             resource_command::export(&mut dsc, resource, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], progress_format);
             if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
             else {
                 let parsed_input = get_input(input.as_ref(), path.as_ref());
@@ -557,38 +560,38 @@ pub fn resource(subcommand: &ResourceSubCommand) {
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::set(&dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::test(&dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
-            dsc.find_resources(&[resource.to_string()]);
+            dsc.find_resources(&[resource.to_string()], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
             resource_command::delete(&dsc, resource, parsed_input);
         },
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
-        t!("subcommand.tableheader_kind").to_string().as_ref(),
-        t!("subcommand.tableheader_version").to_string().as_ref(),
-        t!("subcommand.tableheader_capabilities").to_string().as_ref(),
-        t!("subcommand.tableheader_adapter").to_string().as_ref(),
-        t!("subcommand.tableheader_description").to_string().as_ref(),
+        t!("subcommand.tableHeader_kind").to_string().as_ref(),
+        t!("subcommand.tableHeader_version").to_string().as_ref(),
+        t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
+        t!("subcommand.tableHeader_adapter").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
     if format.is_none() && io::stdout().is_terminal() {
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new())) {
+    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
             (Capability::Get, "g"),

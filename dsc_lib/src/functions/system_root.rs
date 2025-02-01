@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -26,7 +27,7 @@ impl Function for SystemRoot {
     }
 
     fn invoke(&self, _args: &[Value], context: &Context) -> Result<Value, DscError> {
-        debug!("Executing targetPath function");
+        debug!("{}", t!("functions.systemRoot.invoked"));
 
         Ok(Value::String(context.system_root.to_string_lossy().to_string()))
     }

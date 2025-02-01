@@ -8,7 +8,7 @@ Describe 'exit code tests' {
     }
     It 'non-zero exit code not in manifest has generic message' {
         dsc resource get -r Test/ExitCode --input "{ exitCode: 1 }" 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Exit code 1'
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'exit code 1'
     }
     It 'success exit code executes without error' {
         $result = dsc resource get -r Test/ExitCode --input "{ exitCode: 0 }" | ConvertFrom-Json
