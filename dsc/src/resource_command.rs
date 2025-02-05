@@ -88,7 +88,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputForm
         }
     };
 
-    let mut first = true;
+    let mut include_separator = false;
     for instance in export_result.actual_state
     {
         let get_result = GetResult::Resource(ResourceGetResponse {
@@ -102,8 +102,8 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputForm
                 exit(EXIT_JSON_ERROR);
             }
         };
-        write_object(&json, format, !first);
-        first = false;
+        write_object(&json, format, include_separator);
+        include_separator = true;
     }
 }
 
