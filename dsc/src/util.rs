@@ -208,15 +208,14 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
     }
 }
 
-static mut FIRST_WRITE: bool = true;
-
-/// Write the output to the console
+/// Write the JSON object to the console
 ///
 /// # Arguments
 ///
 /// * `json` - The JSON to write
 /// * `format` - The format to use
-pub fn write_output(json: &str, format: Option<&OutputFormat>) {
+/// * `include_separator` - Whether to include a separator for YAML before the object
+pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator: bool) {
     let mut is_json = true;
     let mut output_format = format;
     let mut syntax_color = false;
@@ -250,8 +249,7 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
         },
         Some(OutputFormat::Yaml) | None => {
             is_json = false;
-            if !unsafe { FIRST_WRITE } {
-                // include YAML document separator for subsequent outputs
+            if include_separator {
                 println!("---");
             }
 
@@ -296,10 +294,6 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
     }
     else {
         println!("{output}");
-    }
-
-    unsafe {
-        FIRST_WRITE = false;
     }
 }
 

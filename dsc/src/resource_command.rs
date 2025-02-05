@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::args::OutputFormat;
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, add_type_name_to_json, write_output};
+use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, add_type_name_to_json, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
 use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse}};
@@ -48,7 +48,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, mut input: String, format: Opt
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_object(&json, format, false);
         }
         Err(err) => {
             error!("Error: {err}");
@@ -88,6 +88,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputForm
         }
     };
 
+    let mut first = true;
     for instance in export_result.actual_state
     {
         let get_result = GetResult::Resource(ResourceGetResponse {
@@ -101,7 +102,8 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputForm
                 exit(EXIT_JSON_ERROR);
             }
         };
-        write_output(&json, format);
+        write_object(&json, format, !first);
+        first = false;
     }
 }
 
@@ -142,7 +144,7 @@ pub fn set(dsc: &DscManager, resource_type: &str, mut input: String, format: Opt
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_object(&json, format, false);
         }
         Err(err) => {
             error!("Error: {err}");
@@ -188,7 +190,7 @@ pub fn test(dsc: &DscManager, resource_type: &str, mut input: String, format: Op
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_object(&json, format, false);
         }
         Err(err) => {
             error!("{err}");
@@ -248,7 +250,7 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: Option<&OutputForma
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_object(&json, format, false);
         }
         Err(err) => {
             error!("Error: {err}");
@@ -294,7 +296,7 @@ pub fn export(dsc: &mut DscManager, resource_type: &str, format: Option<&OutputF
             exit(EXIT_JSON_ERROR);
         }
     };
-    write_output(&json, format);
+    write_object(&json, format, false);
 }
 
 #[must_use]
