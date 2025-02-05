@@ -16,7 +16,7 @@ chrono = "0.4"
 clap = { version = "4.5", features = ["derive"] }
 derive_builder ="0.20"
 indicatif = "0.17"
-jsonschema = { version = "0.23", default-features = false }
+jsonschema = { version = "0.28", default-features = false }
 linked-hash-map = "0.5"
 num-traits = "0.2"
 regex = "1.11"
@@ -32,7 +32,7 @@ semver = "1.0"
 tokio = { version = "1.41", features = ["full"] }
 tracing = "0.1"
 tracing-indicatif = { version = "0.3" }
-tree-sitter = "0.24"
+tree-sitter = "0.25"
 tree-sitter-rust = "0.23"
 tree-sitter-dscexpression = { path = "../tree-sitter-dscexpression" }
 
