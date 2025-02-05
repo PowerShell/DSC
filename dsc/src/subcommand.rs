@@ -591,7 +591,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
         // write as table if format is not specified and interactive
         write_table = true;
     }
-    let mut first = true;
+    let mut include_separator = false;
     for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
@@ -668,8 +668,8 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_object(&json, format, !first);
-            first = false;
+            write_object(&json, format, include_separator);
+            include_separator = true;
             // insert newline separating instances if writing to console
             if io::stdout().is_terminal() { println!(); }
         }
