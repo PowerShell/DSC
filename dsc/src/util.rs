@@ -208,6 +208,8 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
     }
 }
 
+static mut FIRST_WRITE: bool = true;
+
 /// Write the output to the console
 ///
 /// # Arguments
@@ -248,6 +250,11 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
         },
         Some(OutputFormat::Yaml) | None => {
             is_json = false;
+            if !unsafe { FIRST_WRITE } {
+                // include YAML document separator for subsequent outputs
+                println!("---");
+            }
+
             let value: serde_json::Value = match serde_json::from_str(json) {
                 Ok(value) => value,
                 Err(err) => {
@@ -289,6 +296,10 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
     }
     else {
         println!("{output}");
+    }
+
+    unsafe {
+        FIRST_WRITE = false;
     }
 }
 
