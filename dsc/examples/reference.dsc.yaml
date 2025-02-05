@@ -7,6 +7,6 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[concat('The OS is ', reference(resourceId('Microsoft/OSInfo','os')).actualState.family)]"
+    output: "[concat('The OS is ', reference(resourceId('Microsoft/OSInfo','os')).family)]"
   dependsOn:
   - "[resourceId('Microsoft/OSInfo','os')]"
