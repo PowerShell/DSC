@@ -504,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "dsc"
-version = "3.0.0-preview.12"
+version = "3.0.0-rc"
 dependencies = [
  "clap",
  "clap_complete",
