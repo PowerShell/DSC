@@ -11,7 +11,7 @@ use super::config_doc::{DataType, SecurityContextKind};
 
 pub struct Context {
     pub execution_type: ExecutionKind,
-    pub outputs: HashMap<String, Value>, // this is used by the `reference()` function to retrieve output
+    pub references: HashMap<String, Value>,
     pub system_root: PathBuf,
     pub parameters: HashMap<String, (Value, DataType)>,
     pub security_context: SecurityContextKind,
@@ -24,7 +24,7 @@ impl Context {
     pub fn new() -> Self {
         Self {
             execution_type: ExecutionKind::Actual,
-            outputs: HashMap::new(),
+            references: HashMap::new(),
             system_root: get_default_os_system_root(),
             parameters: HashMap::new(),
             security_context: match get_security_context() {

@@ -27,8 +27,8 @@ impl Function for Reference {
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.reference.invoked"));
         if let Some(key) = args[0].as_str() {
-            if context.outputs.contains_key(key) {
-                Ok(context.outputs[key].clone())
+            if context.references.contains_key(key) {
+                Ok(context.references[key].clone())
             } else {
                 Err(DscError::Parser(t!("functions.reference.keyNotFound", key = key).to_string()))
             }
@@ -47,7 +47,7 @@ mod tests {
     fn valid_resourceid() {
         let mut parser = Statement::new().unwrap();
         let mut context = Context::new();
-        context.outputs.insert("foo:bar".to_string(), "baz".into());
+        context.references.insert("foo:bar".to_string(), "baz".into());
         let result = parser.parse_and_execute("[reference('foo:bar')]", &context).unwrap();
         assert_eq!(result, "baz");
     }

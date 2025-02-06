@@ -4,9 +4,10 @@
 use crate::configure::config_doc::{ExecutionKind, Metadata};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
+use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff}, invoke_result::{SetResult, ResourceSetResponse}},
-    invoke_result::GetResult,
+    {dscresource::{Capability, Invoke, get_diff},
+    invoke_result::{GetResult, SetResult, TestResult,  ResourceSetResponse}},
     resource_manifest::Kind,
 };
 use crate::DscResource;
@@ -56,7 +57,7 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, adapter_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<(), DscError> {
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, adapter_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
     let export_result = match adapter_resource {
         Some(_) => adapter_resource.unwrap().export(input)?,
@@ -73,7 +74,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
         conf.resources.push(r);
     }
 
-    Ok(())
+    Ok(export_result)
 }
 
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
@@ -261,7 +262,18 @@ impl Configurator {
             let start_datetime = chrono::Local::now();
             let get_result = dsc_resource.get(&filter)?;
             let end_datetime = chrono::Local::now();
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&get_result)?);
+            match &get_result {
+                GetResult::Resource(resource_result) => {
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.actual_state)?);
+                },
+                GetResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results));
+                },
+            }
             let resource_result = config_result::ResourceGetResult {
                 metadata: Some(
                     Metadata {
@@ -372,7 +384,19 @@ impl Configurator {
                 return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
             }
 
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+            match &set_result {
+                SetResult::Resource(resource_result) => {
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.after_state)?);
+                },
+                SetResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results));
+                },
+            }
+
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(
                     Metadata {
@@ -425,7 +449,18 @@ impl Configurator {
             let start_datetime = chrono::Local::now();
             let test_result = dsc_resource.test(&expected)?;
             let end_datetime = chrono::Local::now();
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&test_result)?);
+            match &test_result {
+                TestResult::Resource(resource_test_result) => {
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_test_result.actual_state)?);
+                },
+                TestResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results));
+                },
+            }
             let resource_result = config_result::ResourceTestResult {
                 metadata: Some(
                     Metadata {
@@ -476,7 +511,8 @@ impl Configurator {
             };
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
+            let export_result = add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
+            self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&export_result.actual_state)?);
         }
 
         conf.metadata = Some(self.get_result_metadata(Operation::Export));
