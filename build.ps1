@@ -544,7 +544,12 @@ if ($packageType -eq 'msixbundle') {
             $productName += "-Preview"
         }
         # save preview number
-        $previewNumber = $productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1'
+        $previewNumber = [int]($productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1' | Out-String)
+        $productLabel = $productVersion.Split('-')[1]
+        if ($productLabel.StartsWith('rc')) {
+            # if RC, we increment by 100 to ensure it's newer than the last preview
+            $previewNumber += 100
+        }
         # remove label from version
         $productVersion = $productVersion.Split('-')[0]
         # replace revision number with preview number

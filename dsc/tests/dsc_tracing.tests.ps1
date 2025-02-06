@@ -83,7 +83,7 @@ Describe 'tracing tests' {
 "@
 
         $out = (dsc -l $level config get -i $configYaml 2> $null) | ConvertFrom-Json
-        $out.results[0].result.actualState.level | Should -BeExactly $level
+        $out.results[0].result.actualState.level | Should -BeExactly $level -Because ($out | Out-String)
     }
 
     It 'Pass-through tracing should only emit JSON for child processes' {
