@@ -91,6 +91,16 @@ actualState:
         $out.Trim() | Should -BeExactly $expected
     }
 
+    It 'YAML output includes object separator' {
+        $out = dsc resource list -o yaml | Out-String
+        foreach ($obj in $out.Split('---')) {
+            $resource = $obj | y2j | ConvertFrom-Json
+            $resource | Should -Not -BeNullOrEmpty
+            $resource.Type | Should -BeLike '*/*'
+            $resource.Kind | Should -BeIn ('Resource', 'Group', 'Importer', 'Adapter')
+        }
+    }
+
     It 'can generate PowerShell completer' {
         $out = dsc completer powershell | Out-String
         Invoke-Expression $out
