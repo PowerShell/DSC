@@ -3,20 +3,13 @@
 
 Describe 'Invoke a resource test directly' {
     It 'test can be called on a resource' {
-        $os = if ($IsWindows)
-        {
+        $os = if ($IsWindows) {
             'Windows'
-        }
-        elseif ($IsLinux)
-        {
+        } elseif ($IsLinux) {
             'Linux'
-        }
-        elseif ($IsMacOS)
-        {
+        } elseif ($IsMacOS) {
             'macOS'
-        }
-        else
-        {
+        } else {
             'Unknown'
         }
 
