@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_object, get_input, set_dscconfigroot, validate_json};
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -48,7 +48,7 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_object(&json, format, false);
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -58,7 +58,7 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_object(&json, format, false);
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -83,7 +83,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_object(&json, format, false);
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -93,7 +93,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_object(&json, format, false);
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -169,7 +169,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         }
                     }
                 };
-                write_output(&json, format);
+                write_object(&json, format, false);
             }
             else {
                 let json = match serde_json::to_string(&result) {
@@ -179,7 +179,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_output(&json, format);
+                write_object(&json, format, false);
                 if result.had_errors {
                     exit(EXIT_DSC_ERROR);
                 }
@@ -203,7 +203,7 @@ pub fn config_export(configurator: &mut Configurator, format: Option<&OutputForm
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_object(&json, format, false);
             if result.had_errors {
 
                 for msg in result.messages
@@ -401,7 +401,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                 exit(EXIT_JSON_ERROR);
             };
 
-            write_output(&json, output_format.as_ref());
+            write_object(&json, output_format.as_ref(), false);
         },
         ConfigSubCommand::Export { output_format, .. } => {
             config_export(&mut configurator, output_format.as_ref());
@@ -435,7 +435,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json_string, output_format.as_ref());
+            write_object(&json_string, output_format.as_ref(), false);
         },
     }
 }
@@ -591,6 +591,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
         // write as table if format is not specified and interactive
         write_table = true;
     }
+    let mut include_separator = false;
     for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
         let mut capabilities = "--------".to_string();
         let capability_types = [
@@ -667,7 +668,8 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
                     exit(EXIT_JSON_ERROR);
                 }
             };
-            write_output(&json, format);
+            write_object(&json, format, include_separator);
+            include_separator = true;
             // insert newline separating instances if writing to console
             if io::stdout().is_terminal() { println!(); }
         }

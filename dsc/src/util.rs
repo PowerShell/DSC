@@ -208,13 +208,14 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
     }
 }
 
-/// Write the output to the console
+/// Write the JSON object to the console
 ///
 /// # Arguments
 ///
 /// * `json` - The JSON to write
 /// * `format` - The format to use
-pub fn write_output(json: &str, format: Option<&OutputFormat>) {
+/// * `include_separator` - Whether to include a separator for YAML before the object
+pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator: bool) {
     let mut is_json = true;
     let mut output_format = format;
     let mut syntax_color = false;
@@ -248,6 +249,10 @@ pub fn write_output(json: &str, format: Option<&OutputFormat>) {
         },
         Some(OutputFormat::Yaml) | None => {
             is_json = false;
+            if include_separator {
+                println!("---");
+            }
+
             let value: serde_json::Value = match serde_json::from_str(json) {
                 Ok(value) => value,
                 Err(err) => {
