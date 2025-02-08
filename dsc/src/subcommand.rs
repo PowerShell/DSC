@@ -329,7 +329,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                             }
                         },
                         Err(err) => {
-                            error!("{}: {err}", t!("subcommand.invalidParamters"));
+                            error!("{}: {err}", t!("subcommand.invalidParameters"));
                             exit(EXIT_INVALID_INPUT);
                         }
                     }
