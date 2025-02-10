@@ -1,0 +1,52 @@
+_version = 1
+
+[args]
+about = "Manage state of Windows registry"
+configAbout = "Manage registry configuration."
+configArgsInputHelp = "The registry JSON input."
+configArgsWhatIfHelp = "Run as a what-if operation instead of applying the registry configuration."
+configGetAbout = "Retrieve registry configuration."
+configSetAbout = "Apply registry configuration."
+configDeleteAbout = "Delete registry configuration."
+queryAbout = "Query a registry key or value."
+queryArgsKeyPathHelp = "The registry key path to query."
+queryArgsValueNameHelp = "The name of the value to query."
+queryArgsRecurseHelp = "Recursively query subkeys."
+setAbout = "Set a registry key or value."
+setArgsKeyPathHelp = "The registry key path to set."
+setArgsValueHelp = "The value to set."
+removeAbout = "Remove a registry key or value."
+removeArgsKeyPathHelp = "The registry key path to remove."
+removeArgsValueNameHelp = "The name of the value to remove."
+removeArgsRecurseHelp = "Recursively remove subkeys."
+findAbout = "Find a registry key or value."
+findArgsKeyPathHelp = "The registry key path to start find."
+findArgsFindHelp = "The string to find."
+findArgsRecurseHelp = "Recursively find."
+findArgsKeysOnlyHelp = "Only find keys."
+findArgsValuesOnlyHelp = "Only find values."
+schemaAbout = "Retrieve JSON schema."
+
+[config]
+# No localizable strings
+
+[error]
+invalidHive = "Invalid hive"
+json = "JSON"
+registry = "Registry"
+registryKey = "Registry key"
+registryKeyNotFound = "Registry key not found"
+registryValue = "Registry value"
+utf16Conversion = "UTF-16 conversion failed due to interior NULL values for"
+unsupportedValueDataType = "Unsupported registry value data type"
+
+[main]
+tracingInitError = "Unable to set global default tracing subscriber. Tracing is disabled."
+debugAttach = "attach debugger to pid %{pid} and press any key to continue"
+debugEventReadError = "Error: Failed to read event: %{err}"
+debugEventUnexpectedError = "Unexpected event: %{e:?}"
+
+[registry_helper]
+whatIfCreateKey = "key: %{subkey} not found, would create it"
+removeErrorKeyNotExist = "Key already does not exist"
+removeDeletingSubKey = "Deleting subkey '%{name}' using %{parent}"
