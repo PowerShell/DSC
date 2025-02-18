@@ -148,11 +148,19 @@ switch ($Operation) {
             exit 1
         }
 
+        # get unique module names from the desiredState input
+        $moduleInput = $desiredState | Select-Object -ExpandProperty Type | Sort-Object -Unique
+
+        # refresh the cache with the modules that are available on the system
         $dscResourceCache = Invoke-DscCacheRefresh -module $dscResourceModules
-        if ($dscResourceCache.count -lt $dscResourceModules.count) {
-            $trace = @{'Debug' = 'ERROR: DSC resource module not found.' } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
-            exit 1
+
+        # check if all the desired modules are in the cache
+        $moduleInput | ForEach-Object {
+            if ($dscResourceCache.type -notcontains $_) {
+                $trace = @{'Debug' = ('ERROR: DSC resource {0} module not found.' -f $_)} | ConvertTo-Json -Compress
+                $host.ui.WriteErrorLine($trace)
+                exit 1
+            }
         }
 
         foreach ($ds in $desiredState) {
