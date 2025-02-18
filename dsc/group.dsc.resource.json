@@ -3,7 +3,7 @@
   "type": "Microsoft.DSC/Group",
   "version": "0.1.0",
   "description": "All resources in the supplied configuration is treated as a group.",
-  "kind": "Group",
+  "kind": "group",
   "get": {
     "executable": "dsc",
     "args": [
