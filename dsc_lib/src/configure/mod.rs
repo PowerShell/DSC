@@ -254,6 +254,7 @@ impl Configurator {
             match &get_result {
                 GetResult::Resource(resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.actual_state)?);
+                    progress.set_resource(&resource.name, &resource.resource_type, Some(&resource_result.actual_state));
                 },
                 GetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -402,6 +403,7 @@ impl Configurator {
             match &set_result {
                 SetResult::Resource(resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.after_state)?);
+                    progress.set_resource(&resource.name, &resource.resource_type, Some(&resource_result.after_state));
                 },
                 SetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -473,6 +475,7 @@ impl Configurator {
             match &test_result {
                 TestResult::Resource(resource_test_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_test_result.actual_state)?);
+                    progress.set_resource(&resource.name, &resource.resource_type, Some(&resource_test_result.actual_state));
                 },
                 TestResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
