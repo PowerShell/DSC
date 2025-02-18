@@ -2,9 +2,10 @@
 // Licensed under the MIT License.
 
 use clap::{Parser, Subcommand};
+use rust_i18n::t;
 
 #[derive(Parser)]
-#[clap(name = "registry", version = "0.0.1", about = "Manage state of Windows registry", long_about = None)]
+#[clap(name = "registry", version = "0.0.1", about = t!("args.about").to_string(), long_about = None)]
 pub struct Arguments {
 
     #[clap(subcommand)]
@@ -13,70 +14,70 @@ pub struct Arguments {
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum ConfigSubCommand {
-    #[clap(name = "get", about = "Retrieve registry configuration.")]
+    #[clap(name = "get", about = t!("args.configGetAbout").to_string())]
     Get {
-        #[clap(short, long, required = true, help = "The registry JSON input.")]
+        #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]
         input: String,
     },
-    #[clap(name = "set", about = "Apply registry configuration.")]
+    #[clap(name = "set", about = t!("args.configSetAbout").to_string())]
     Set {
-        #[clap(short, long, required = true, help = "The registry JSON input.")]
+        #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]
         input: String,
-        #[clap(short = 'w', long, help = "Run as a what-if operation instead of applying the registry configuration")]
+        #[clap(short = 'w', long, help = t!("args.configArgsWhatIfHelp").to_string())]
         what_if: bool,
     },
-    #[clap(name = "delete", about = "Delete registry configuration.")]
+    #[clap(name = "delete", about = t!("args.configDeleteAbout").to_string())]
     Delete {
-        #[clap(short, long, required = true, help = "The registry JSON input.")]
+        #[clap(short, long, required = true, help = t!("args.configArgsInputHelp").to_string())]
         input: String,
     },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
-    #[clap(name = "query", about = "Query a registry key or value.", arg_required_else_help = true)]
+    #[clap(name = "query", about = t!("args.queryAbout").to_string(), arg_required_else_help = true)]
     Query {
-        #[clap(short, long, required = true, help = "The registry key path to query.")]
+        #[clap(short, long, required = true, help = t!("args.queryArgsKeyPathHelp").to_string())]
         key_path: String,
-        #[clap(short, long, help = "The name of the value to query.")]
+        #[clap(short, long, help = t!("args.queryArgsValueNameHelp").to_string())]
         value_name: Option<String>,
-        #[clap(short, long, help = "Recursively query subkeys.")]
+        #[clap(short, long, help = t!("args.queryArgsRecurseHelp").to_string())]
         recurse: bool,
     },
-    #[clap(name = "set", about = "Set a registry key or value.")]
+    #[clap(name = "set", about = t!("args.setAbout").to_string())]
     Set {
-        #[clap(short, long, required = true, help = "The registry key path to set.")]
+        #[clap(short, long, required = true, help = t!("args.setArgsKeyPathHelp").to_string())]
         key_path: String,
-        #[clap(short, long, help = "The value to set.")]
+        #[clap(short, long, help = t!("args.setArgsValueHelp").to_string())]
         value: String,
     },
-    #[clap(name = "remove", about = "Remove a registry key or value.", arg_required_else_help = true)]
+    #[clap(name = "remove", about = t!("args.removeAbout").to_string(), arg_required_else_help = true)]
     Remove {
-        #[clap(short, long, required = true, help = "The registry key path to remove.")]
+        #[clap(short, long, required = true, help = t!("args.removeArgsKeyPathHelp").to_string())]
         key_path: String,
-        #[clap(short, long, help = "The name of the value to remove.")]
+        #[clap(short, long, help = t!("args.removeArgsValueNameHelp").to_string())]
         value_name: Option<String>,
-        #[clap(short, long, help = "Recursively remove subkeys.")]
+        #[clap(short, long, help = t!("args.removeArgsRecurseHelp").to_string())]
         recurse: bool,
     },
-    #[clap(name = "find", about = "Find a registry key or value.", arg_required_else_help = true)]
+    #[clap(name = "find", about = t!("args.findAbout").to_string(), arg_required_else_help = true)]
     Find {
-        #[clap(short, long, required = true, help = "The registry key path to start find.")]
+        #[clap(short, long, required = true, help = t!("args.findArgsKeyPathHelp").to_string())]
         key_path: String,
-        #[clap(short, long, required = true, help = "The string to find.")]
+        #[clap(short, long, required = true, help = t!("args.findArgsFindHelp").to_string())]
         find: String,
-        #[clap(short, long, help = "Recursively find.")]
+        #[clap(short, long, help = t!("args.findArgsRecurseHelp").to_string())]
         recurse: bool,
-        #[clap(long, help = "Only find keys.")]
+        #[clap(long, help = t!("args.findArgsKeysOnlyHelp").to_string())]
         keys_only: bool,
-        #[clap(long, help = "Only find values.")]
+        #[clap(long, help = t!("args.findArgsValuesOnlyHelp").to_string())]
         values_only: bool,
     },
-    #[clap(name = "config", about = "Manage registry configuration.", arg_required_else_help = true)]
+    #[clap(name = "config", about = t!("args.configAbout").to_string(), arg_required_else_help = true)]
     Config {
         #[clap(subcommand)]
         subcommand: ConfigSubCommand,
     },
-    #[clap(name = "schema", about = "Retrieve JSON schema.")]
+    #[clap(name = "schema", about = t!("args.schemaAbout").to_string())]
     Schema,
 }
