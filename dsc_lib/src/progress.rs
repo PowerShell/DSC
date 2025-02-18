@@ -68,6 +68,7 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
+
     /// Create a `ProgressBar` object to update progress
     ///
     /// # Arguments
@@ -102,6 +103,12 @@ impl ProgressBar {
         })
     }
 
+    /// Increment the progress bar by the specified amount and write the progress
+    ///
+    /// # Arguments
+    ///
+    /// * `delta` - The amount to increment the progress bar by
+    ///
     pub fn increment(&mut self, delta: u64) {
         if self.format == ProgressFormat::None {
             return;
@@ -124,12 +131,26 @@ impl ProgressBar {
         }
     }
 
+    /// Set the resource being operated on and write the progress
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the resource being operated on
+    /// * `resource_type` - The type of the resource being operated on
+    /// * `result` - The result of the operation
+    ///
     pub fn set_resource(&mut self, name: &str, resource_type: &str, result: Option<&Value>) {
         self.progress_value.resource_name = Some(name.to_string());
         self.progress_value.resource_type = Some(resource_type.to_string());
         self.progress_value.result = result.cloned();
     }
 
+    /// Set the status of the operation and write the progress
+    ///
+    /// # Arguments
+    ///
+    /// * `status` - The status of the operation
+    ///
     pub fn set_activity(&mut self, activity: &str) {
         match self.format {
             ProgressFormat::Json => {
@@ -143,17 +164,17 @@ impl ProgressBar {
         }
     }
 
+    /// Set the number of total items to complete
+    ///
+    /// # Arguments
+    ///
+    /// * `len` - The number of total items to complete
+    ///
     pub fn set_length(&mut self, len: u64) {
         match self.format {
             ProgressFormat::Json => {
                 self.item_count = len;
-                if self.item_count  > 0 {
-                    self.progress_value.percent_complete = if self.item_position >= self.item_count {
-                        100
-                    } else {
-                        u8::try_from((self.item_position * 100) / self.item_count).unwrap_or(100)
-                    };
-                }
+                self.set_percent_complete();
             },
             ProgressFormat::Default => {
                 self.console_bar.pb_set_length(len);
@@ -162,18 +183,18 @@ impl ProgressBar {
         }
     }
 
+    /// Set the position as progress through the items and write the progress
+    ///
+    /// # Arguments
+    ///
+    /// * `pos` - The position as progress through the items
+    ///
     pub fn set_position(&mut self, pos: u64) {
         match self.format {
             ProgressFormat::Json => {
                 self.item_position = pos;
-                if self.item_count  > 0 {
-                    self.progress_value.percent_complete = if self.item_position >= self.item_count {
-                        100
-                    } else {
-                        u8::try_from((self.item_position * 100) / self.item_count).unwrap_or(100)
-                    };
-                    self.write_json();
-                }
+                self.set_percent_complete();
+                self.write_json();
             },
             ProgressFormat::Default => {
                 self.console_bar.pb_set_position(pos);
@@ -187,6 +208,16 @@ impl ProgressBar {
             eprintln!("{json}");
         } else {
             trace!("{}", t!("progress.failedToSerialize", json = self.progress_value : {:?}));
+        }
+    }
+
+    fn set_percent_complete(&mut self) {
+        if self.item_count  > 0 {
+            self.progress_value.percent_complete = if self.item_position >= self.item_count {
+                100
+            } else {
+                u8::try_from((self.item_position * 100) / self.item_count).unwrap_or(100)
+            };
         }
     }
 }
