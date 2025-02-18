@@ -314,6 +314,9 @@ unknown = "Unknown"
 validation = "Validation"
 setting = "Setting"
 
+[progress]
+failedToSerialize = "Failed to serialize progress JSON: %{json}"
+
 [util]
 foundSetting = "Found setting '%{name}' in %{path}"
 notFoundSetting = "Setting '%{name}' not found in %{path}"

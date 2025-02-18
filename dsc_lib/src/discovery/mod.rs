@@ -5,7 +5,7 @@ mod command_discovery;
 mod discovery_trait;
 
 use crate::discovery::discovery_trait::ResourceDiscovery;
-use crate::{dscresources::dscresource::DscResource, dscerror::DscError, util::ProgressFormat};
+use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress::ProgressFormat};
 use std::collections::BTreeMap;
 use tracing::error;
 

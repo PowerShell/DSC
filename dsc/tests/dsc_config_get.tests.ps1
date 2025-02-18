@@ -68,15 +68,25 @@ Describe 'dsc config get tests' {
         $config_yaml | dsc --progress-format json config get -f - 2> $TestDrive/ErrorStream.txt
         $LASTEXITCODE | Should -Be 0
         $lines = Get-Content $TestDrive/ErrorStream.txt
-        $ProgressMessagesFound = $False
+        $ProgressMessagesFound = $false
+        $ProgressResultFound = $false
         foreach ($line in $lines) {
             $jp = $line | ConvertFrom-Json
             if ($jp.activity) { # if line is a progress message
+                $jp.id | Should -Not -BeNullOrEmpty
                 $jp.percent_complete | Should -BeIn (0..100)
-                $ProgressMessagesFound = $True
+                $ProgressMessagesFound = $true
+            }
+
+            if ($jp.percent_complete -eq 100 -and $jp.resourceType -eq 'Microsoft.DSC.Debug/Echo') {
+                $ProgressResultFound = $true
+                $jp.resourceName | Should -BeExactly 'Echo'
+                $jp.result | Should -Not -BeNullOrEmpty
+                $jp.result.output | Should -BeExactly 'hello'
             }
         }
         $ProgressMessagesFound | Should -BeTrue
+        $ProgressResultFound | Should -BeTrue
     }
 
     It 'contentVersion is ignored' {

@@ -4,7 +4,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use dsc_lib::dscresources::command_resource::TraceLevel;
-use dsc_lib::util::ProgressFormat;
+use dsc_lib::progress::ProgressFormat;
 use rust_i18n::t;
 use serde::Deserialize;
 

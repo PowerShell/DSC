@@ -8,7 +8,7 @@ use rust_i18n::{i18n, t};
 use std::{io, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
-use dsc_lib::util::ProgressFormat;
+use dsc_lib::progress::ProgressFormat;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
