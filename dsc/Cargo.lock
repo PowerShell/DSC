@@ -2283,6 +2283,20 @@ dependencies = [
 [[package]]
 name = "wasm-bindgen"
 version = "0.2.95"
+<<<<<<< HEAD
+||||||| parent of 92e72a89 (Fix progress display when using JSON, add None option; exhance progress schema)
+version = "0.2.100"
+=======
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26816d2e1a4a36a2940b96c5296ce403917633dff8f3440e9b236ed6f6bacad2"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
+name = "wasm-bindgen"
+version = "0.2.100"
+>>>>>>> 92e72a89 (Fix progress display when using JSON, add None option; exhance progress schema)
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "128d1e363af62632b8eb57219c8fd7877144af57558fb2ef0368d0087bddeb2e"
 dependencies = [
