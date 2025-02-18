@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::util::ProgressFormat;
+use crate::progress::ProgressFormat;
+
 use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
 use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
@@ -13,6 +14,7 @@ pub mod dscerror;
 pub mod dscresources;
 pub mod functions;
 pub mod parser;
+pub mod progress;
 pub mod util;
 
 i18n!("locales", fallback = "en-us");
