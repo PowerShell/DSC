@@ -2,7 +2,7 @@
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
     "type": "Microsoft.DSC/PowerShell",
     "version": "0.1.0",
-    "kind": "Adapter",
+    "kind": "adapter",
     "description": "Resource adapter to classic DSC Powershell resources.",
     "tags": [
       "PowerShell"

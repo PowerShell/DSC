@@ -47,8 +47,8 @@ Describe 'dsc config get tests' {
         $result.results[0].type | Should -BeExactly 'Microsoft.DSC.Debug/Echo'
         $result.results[0].result.actualState.output | Should -Be 'hello'
         $result.metadata.'Microsoft.DSC'.version | Should -BeLike '3.*'
-        $result.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Get'
-        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
+        $result.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'get'
+        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
         $result.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
         $result.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
         $result.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty
