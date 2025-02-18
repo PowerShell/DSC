@@ -74,11 +74,11 @@ Describe 'dsc config get tests' {
             $jp = $line | ConvertFrom-Json
             if ($jp.activity) { # if line is a progress message
                 $jp.id | Should -Not -BeNullOrEmpty
-                $jp.percent_complete | Should -BeIn (0..100)
+                $jp.percentComplete | Should -BeIn (0..100)
                 $ProgressMessagesFound = $true
             }
 
-            if ($jp.percent_complete -eq 100 -and $jp.resourceType -eq 'Microsoft.DSC.Debug/Echo') {
+            if ($jp.percentComplete -eq 100 -and $jp.resourceType -eq 'Microsoft.DSC.Debug/Echo') {
                 $ProgressResultFound = $true
                 $jp.resourceName | Should -BeExactly 'Echo'
                 $jp.result | Should -Not -BeNullOrEmpty
