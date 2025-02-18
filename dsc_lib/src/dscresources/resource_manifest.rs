@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use crate::dscerror::DscError;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum Kind {
     Adapter,
     Group,

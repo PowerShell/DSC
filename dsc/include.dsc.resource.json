@@ -3,7 +3,7 @@
   "type": "Microsoft.DSC/Include",
   "version": "0.1.0",
   "description": "Allows including a configuration file with optional parameter file.",
-  "kind": "Importer",
+  "kind": "importer",
   "get": {
     "executable": "dsc",
     "args": [

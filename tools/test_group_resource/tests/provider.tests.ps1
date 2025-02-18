@@ -24,7 +24,7 @@ Describe 'Resource adapter tests' {
         {
             "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
             "type": "Test/InvalidTestGroup",
-            "kind": "Adapter",
+            "kind": "adapter",
             "version": "0.1.0",
             "get": {
                 "executable": "test_group_resource",
