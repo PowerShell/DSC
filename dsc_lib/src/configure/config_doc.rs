@@ -7,12 +7,14 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, hash::Hash};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum ContextKind {
     Configuration,
     Resource,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum SecurityContextKind {
     Current,
     Elevated,
@@ -20,6 +22,7 @@ pub enum SecurityContextKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum Operation {
     Get,
     Set,
@@ -28,6 +31,7 @@ pub enum Operation {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum ExecutionKind {
     Actual,
     WhatIf,

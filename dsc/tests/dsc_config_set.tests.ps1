@@ -29,8 +29,8 @@ Describe 'dsc config set tests' {
         $out.results[1].result.afterState.deleteCalled | Should -BeTrue
         $out.results[1].result.afterState._exist | Should -BeFalse
         $out.metadata.'Microsoft.DSC'.version | Should -BeLike '3.*'
-        $out.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Set'
-        $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
+        $out.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'set'
+        $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
         $out.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
         $out.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
         $out.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty

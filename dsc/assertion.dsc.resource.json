@@ -3,7 +3,7 @@
   "type": "Microsoft.DSC/Assertion",
   "version": "0.1.0",
   "description": "`test` will be invoked for all resources in the supplied configuration.",
-  "kind": "Group",
+  "kind": "group",
   "get": {
     "executable": "dsc",
     "args": [

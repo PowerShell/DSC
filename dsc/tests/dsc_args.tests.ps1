@@ -97,7 +97,7 @@ actualState:
             $resource = $obj | y2j | ConvertFrom-Json
             $resource | Should -Not -BeNullOrEmpty
             $resource.Type | Should -BeLike '*/*'
-            $resource.Kind | Should -BeIn ('Resource', 'Group', 'Importer', 'Adapter')
+            $resource.Kind | Should -BeIn ('resource', 'group', 'importer', 'adapter')
         }
     }
 
@@ -242,7 +242,7 @@ resources:
         $a = dsc resource list '*' -a Test* -o json | ConvertFrom-Json
         foreach ($r in $a) {
             $r.requireAdapter.StartsWith("Test") | Should -Be $true
-            $r.kind | Should -Be "Resource"
+            $r.kind | Should -Be "resource"
         }
     }
 
@@ -253,7 +253,7 @@ resources:
         $r = $a[0]
         $r.requireAdapter | Should -Not -BeNullOrEmpty
         $r.requireAdapter.StartsWith("Test") | Should -Be $true
-        $r.kind | Should -Be "Resource"
+        $r.kind | Should -Be "resource"
     }
 
     It 'passing filepath to document arg should error' {

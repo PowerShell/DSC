@@ -2,7 +2,7 @@
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 metadata:
   Microsoft.DSC:
-    securityContext: Elevated
+    securityContext: elevated
 resources:
 - name: Validate the OS is Windows
   type: Microsoft.DSC/Assertion

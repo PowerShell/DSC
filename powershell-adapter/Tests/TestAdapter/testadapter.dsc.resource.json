@@ -2,7 +2,7 @@
     "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
     "type": "Test/TestAdapter",
     "version": "0.1.0",
-    "kind": "Adapter",
+    "kind": "adapter",
     "description": "Resource adapter for testing.",
     "tags": [
       "PowerShell"

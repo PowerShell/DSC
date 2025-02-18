@@ -2,7 +2,7 @@
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
 metadata:
   Microsoft.DSC:
-    requiredSecurityContext: Current # this is the default and just used as an example indicating this config works for admins and non-admins
+    requiredSecurityContext: current # this is the default and just used as an example indicating this config works for admins and non-admins
 resources:
 - name: Last Group
   type: Microsoft.DSC/Group
