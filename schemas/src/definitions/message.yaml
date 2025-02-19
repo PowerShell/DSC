@@ -33,6 +33,6 @@ properties:
       Indicates the severity of the message.
     type: string
     enum:
-      - Error
-      - Warning
-      - Information
+      - error
+      - warning
+      - information
