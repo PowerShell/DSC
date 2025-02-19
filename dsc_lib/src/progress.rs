@@ -116,13 +116,7 @@ impl ProgressBar {
 
         self.item_position += delta;
 
-        if self.item_count  > 0 {
-            self.progress_value.percent_complete = if self.item_position >= self.item_count {
-                100
-            } else {
-                u8::try_from((self.item_position * 100) / self.item_count).unwrap_or(100)
-            };
-        }
+        self.set_percent_complete();
 
         if self.format == ProgressFormat::Json {
             self.write_json();
