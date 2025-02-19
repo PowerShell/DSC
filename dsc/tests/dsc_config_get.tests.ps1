@@ -60,16 +60,21 @@ Describe 'dsc config get tests' {
         $config_yaml = @"
             `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
-            - name: Echo
+            - name: Echo 1
               type: Microsoft.DSC.Debug/Echo
               properties:
                 output: hello
+            - name: Echo 2
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: world
 "@
         $config_yaml | dsc --progress-format json config get -f - 2> $TestDrive/ErrorStream.txt
         $LASTEXITCODE | Should -Be 0
         $lines = Get-Content $TestDrive/ErrorStream.txt
         $ProgressMessagesFound = $false
-        $ProgressResultFound = $false
+        $InstanceOneFound = $false
+        $InstanceTwoFound = $false
         foreach ($line in $lines) {
             $jp = $line | ConvertFrom-Json
             if ($jp.activity) { # if line is a progress message
@@ -78,15 +83,19 @@ Describe 'dsc config get tests' {
                 $ProgressMessagesFound = $true
             }
 
-            if ($jp.percentComplete -eq 100 -and $jp.resourceType -eq 'Microsoft.DSC.Debug/Echo') {
-                $ProgressResultFound = $true
-                $jp.resourceName | Should -BeExactly 'Echo'
-                $jp.result | Should -Not -BeNullOrEmpty
-                $jp.result.output | Should -BeExactly 'hello'
+            if ($null -ne $jp.result -and $jp.resourceType -eq 'Microsoft.DSC.Debug/Echo') {
+                if ($jp.resourceName -eq 'Echo 1') {
+                    $InstanceOneFound = $true
+                    $jp.result.actualState.output | Should -BeExactly 'hello'
+                } elseif ($jp.resourceName -eq 'Echo 2') {
+                    $InstanceTwoFound = $true
+                    $jp.result.actualState.output | Should -BeExactly 'world'
+                }
             }
         }
         $ProgressMessagesFound | Should -BeTrue
-        $ProgressResultFound | Should -BeTrue
+        $InstanceOneFound | Should -BeTrue
+        $InstanceTwoFound | Should -BeTrue
     }
 
     It 'contentVersion is ignored' {

@@ -179,7 +179,7 @@ impl ResourceDiscovery for CommandDiscovery {
         };
 
         let mut progress = ProgressBar::new(1, progress_format)?;
-        progress.set_activity(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
+        progress.write_activity(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
 
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
         let mut adapters = BTreeMap::<String, Vec<DscResource>>::new();
@@ -235,7 +235,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 }
             }
         }
-        progress.increment(1);
+        progress.write_increment(1);
         debug!("Found {} matching non-adapter-based resources", resources.len());
         self.resources = resources;
         self.adapters = adapters;
@@ -268,14 +268,14 @@ impl ResourceDiscovery for CommandDiscovery {
         };
 
         let mut progress = ProgressBar::new(self.adapters.len() as u64, progress_format)?;
-        progress.set_activity("Searching for adapted resources");
+        progress.write_activity("Searching for adapted resources");
 
         let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
 
         let mut found_adapter: bool = false;
         for (adapter_name, adapters) in &self.adapters {
             for adapter in adapters {
-                progress.increment(1);
+                progress.write_increment(1);
 
                 if !regex.is_match(adapter_name) {
                     continue;
@@ -284,7 +284,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 found_adapter = true;
                 info!("Enumerating resources for adapter '{}'", adapter_name);
                 let mut adapter_progress = ProgressBar::new(1, progress_format)?;
-                adapter_progress.set_activity(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
+                adapter_progress.write_activity(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
                 let manifest = if let Some(manifest) = &adapter.manifest {
                     if let Ok(manifest) = import_manifest(manifest.clone()) {
                         manifest
@@ -336,7 +336,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     };
                 }
 
-                adapter_progress.increment(1);
+                adapter_progress.write_increment(1);
                 debug!("Adapter '{}' listed {} resources", adapter_name, adapter_resources_count);
             }
         }

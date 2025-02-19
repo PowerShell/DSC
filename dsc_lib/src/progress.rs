@@ -109,7 +109,7 @@ impl ProgressBar {
     ///
     /// * `delta` - The amount to increment the progress bar by
     ///
-    pub fn increment(&mut self, delta: u64) {
+    pub fn write_increment(&mut self, delta: u64) {
         if self.format == ProgressFormat::None {
             return;
         }
@@ -131,7 +131,7 @@ impl ProgressBar {
         }
     }
 
-    /// Set the resource being operated on and write the progress
+    /// Set the resource being operated on
     ///
     /// # Arguments
     ///
@@ -151,7 +151,7 @@ impl ProgressBar {
     ///
     /// * `status` - The status of the operation
     ///
-    pub fn set_activity(&mut self, activity: &str) {
+    pub fn write_activity(&mut self, activity: &str) {
         match self.format {
             ProgressFormat::Json => {
                 self.progress_value.activity = Some(activity.to_string());
@@ -178,26 +178,6 @@ impl ProgressBar {
             },
             ProgressFormat::Default => {
                 self.console_bar.pb_set_length(len);
-            },
-            ProgressFormat::None => {}
-        }
-    }
-
-    /// Set the position as progress through the items and write the progress
-    ///
-    /// # Arguments
-    ///
-    /// * `pos` - The position as progress through the items
-    ///
-    pub fn set_position(&mut self, pos: u64) {
-        match self.format {
-            ProgressFormat::Json => {
-                self.item_position = pos;
-                self.set_percent_complete();
-                self.write_json();
-            },
-            ProgressFormat::Default => {
-                self.console_bar.pb_set_position(pos);
             },
             ProgressFormat::None => {}
         }
