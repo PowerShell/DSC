@@ -906,6 +906,8 @@ struct Trace {
     level: TraceLevel,
     fields: Fields,
     target: Option<String>,
+    // `tracing` crate uses snake_case, but we can allow for camelCase to be consistent with JSON
+    #[serde(alias = "lineNumber")]
     line_number: Option<u32>,
     #[serde(rename = "span")]
     _span: Option<HashMap<String, Value>>,
