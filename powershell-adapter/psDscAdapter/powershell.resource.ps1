@@ -157,8 +157,7 @@ switch ($Operation) {
         # check if all the desired modules are in the cache
         $moduleInput | ForEach-Object {
             if ($dscResourceCache.type -notcontains $_) {
-                $trace = @{'Debug' = ('ERROR: DSC resource {0} module not found.' -f $_)} | ConvertTo-Json -Compress
-                $host.ui.WriteErrorLine($trace)
+               ('ERROR: DSC resource {0} module not found.' -f $_) | Write-DscTrace
                 exit 1
             }
         }
