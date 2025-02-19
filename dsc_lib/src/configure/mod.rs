@@ -232,8 +232,8 @@ impl Configurator {
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            progress.set_activity(format!("Get '{}'", resource.name).as_str());
             progress.set_resource(&resource.name, &resource.resource_type, None);
+            progress.write_activity(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -247,7 +247,6 @@ impl Configurator {
             match &get_result {
                 GetResult::Resource(resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.actual_state)?);
-                    progress.set_resource(&resource.name, &resource.resource_type, Some(&resource_result.actual_state));
                 },
                 GetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -255,7 +254,6 @@ impl Configurator {
                         results.push(serde_json::to_value(&result.result)?);
                     }
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
-                    progress.set_resource(&resource.name, &resource.resource_type, Some(&Value::Array(results.clone())));
                 },
             }
             let resource_result = config_result::ResourceGetResult {
@@ -271,10 +269,11 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: get_result,
+                result: get_result.clone(),
             };
             result.results.push(resource_result);
-            progress.increment(1);
+            progress.set_resource(&resource.name, &resource.resource_type, Some(&serde_json::to_value(get_result)?));
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
@@ -301,8 +300,8 @@ impl Configurator {
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            progress.set_activity(format!("Set '{}'", resource.name).as_str());
             progress.set_resource(&resource.name, &resource.resource_type, None);
+            progress.write_activity(format!("Set '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -370,7 +369,6 @@ impl Configurator {
             match &set_result {
                 SetResult::Resource(resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.after_state)?);
-                    progress.set_resource(&resource.name, &resource.resource_type, Some(&resource_result.after_state));
                 },
                 SetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -378,10 +376,8 @@ impl Configurator {
                         results.push(serde_json::to_value(&result.result)?);
                     }
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
-                    progress.set_resource(&resource.name, &resource.resource_type, Some(&Value::Array(results.clone())));
                 },
             }
-
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(
                     Metadata {
@@ -395,10 +391,11 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: set_result,
+                result: set_result.clone(),
             };
             result.results.push(resource_result);
-            progress.increment(1);
+            progress.set_resource(&resource.name, &resource.resource_type, Some(&serde_json::to_value(set_result)?));
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
@@ -421,8 +418,8 @@ impl Configurator {
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            progress.set_activity(format!("Test '{}'", resource.name).as_str());
             progress.set_resource(&resource.name, &resource.resource_type, None);
+            progress.write_activity(format!("Test '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -436,7 +433,6 @@ impl Configurator {
             match &test_result {
                 TestResult::Resource(resource_test_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_test_result.actual_state)?);
-                    progress.set_resource(&resource.name, &resource.resource_type, Some(&resource_test_result.actual_state));
                 },
                 TestResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -444,7 +440,6 @@ impl Configurator {
                         results.push(serde_json::to_value(&result.result)?);
                     }
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
-                    progress.set_resource(&resource.name, &resource.resource_type, Some(&Value::Array(results.clone())));
                 },
             }
             let resource_result = config_result::ResourceTestResult {
@@ -460,10 +455,11 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: test_result,
+                result: test_result.clone(),
             };
             result.results.push(resource_result);
-            progress.increment(1);
+            progress.set_resource(&resource.name, &resource.resource_type, Some(&serde_json::to_value(test_result)?));
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
@@ -488,8 +484,8 @@ impl Configurator {
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
         for resource in &resources {
-            progress.set_activity(format!("Export '{}'", resource.name).as_str());
             progress.set_resource(&resource.name, &resource.resource_type, None);
+            progress.write_activity(format!("Export '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
@@ -498,8 +494,8 @@ impl Configurator {
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
             self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&export_result.actual_state)?);
-            progress.set_resource(&resource.name, &resource.resource_type, Some(&Value::Array(export_result.actual_state)));
-            progress.increment(1);
+            progress.set_resource(&resource.name, &resource.resource_type, Some(&serde_json::to_value(export_result)?));
+            progress.write_increment(1);
         }
 
         conf.metadata = Some(self.get_result_metadata(Operation::Export));
