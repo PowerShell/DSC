@@ -115,9 +115,6 @@ impl ProgressBar {
         }
 
         self.item_position += delta;
-
-        self.set_percent_complete();
-
         if self.format == ProgressFormat::Json {
             self.write_json();
         } else {
@@ -168,7 +165,6 @@ impl ProgressBar {
         match self.format {
             ProgressFormat::Json => {
                 self.item_count = len;
-                self.set_percent_complete();
             },
             ProgressFormat::Default => {
                 self.console_bar.pb_set_length(len);
@@ -177,21 +173,19 @@ impl ProgressBar {
         }
     }
 
-    fn write_json(&self) {
-        if let Ok(json) = serde_json::to_string(&self.progress_value) {
-            eprintln!("{json}");
-        } else {
-            trace!("{}", t!("progress.failedToSerialize", json = self.progress_value : {:?}));
-        }
-    }
-
-    fn set_percent_complete(&mut self) {
+    fn write_json(&mut self) {
         if self.item_count  > 0 {
             self.progress_value.percent_complete = if self.item_position >= self.item_count {
                 100
             } else {
                 u8::try_from((self.item_position * 100) / self.item_count).unwrap_or(100)
             };
+        }
+
+        if let Ok(json) = serde_json::to_string(&self.progress_value) {
+            eprintln!("{json}");
+        } else {
+            trace!("{}", t!("progress.failedToSerialize", json = self.progress_value : {:?}));
         }
     }
 }
