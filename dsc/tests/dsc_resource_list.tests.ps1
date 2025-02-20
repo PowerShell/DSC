@@ -67,7 +67,8 @@ Describe 'Tests for listing resources' {
             $jp = $line | ConvertFrom-Json
             if ($jp.activity) { # if line is a progress message
                 $jp.id | Should -Not -BeNullOrEmpty
-                $jp.percentComplete | Should -BeIn (0..100)
+                $jp.totalItems | Should -Not -BeNullOrEmpty
+                $jp.completedItems | Should -Not -BeNullOrEmpty
                 $ProgressMessagesFound = $True
             }
         }
