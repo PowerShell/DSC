@@ -24,36 +24,42 @@ pub enum ProgressFormat {
 }
 
 #[derive(Default, Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Progress {
     /// The unique identifier for the operation.
     pub id: String,
     /// The activity being performed.
     pub activity: Option<String>,
-    /// The percentage of the operation that is complete from 0 to 100.
-    #[serde(rename = "percentComplete")]
-    pub percent_complete: u8,
+    /// The total number of items to process.
+    pub total_items: u64,
+    /// The number of items processed.
+    pub completed_items: u64,
     /// The status of the operation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<String>,
     /// The number of seconds remaining in the operation.
-    #[serde(rename = "secondsRemaining", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub seconds_remaining: Option<u64>,
     /// The name of the resource being operated on.
-    #[serde(rename = "resourceName", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_name: Option<String>,
     /// The type of the resource being operated on.
-    #[serde(rename = "resourceType", skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_type: Option<String>,
     /// The result of the operation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
+    /// Indicates if the operation failed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub failed: Option<bool>,
 }
 
 impl Progress {
     #[must_use]
-    pub fn new() -> Progress {
+    pub fn new(total_items: u64) -> Progress {
         Progress {
             id: Uuid::new_v4().to_string(),
+            total_items,
             ..Default::default()
         }
     }
@@ -62,8 +68,6 @@ impl Progress {
 pub struct ProgressBar {
     progress_value:  Progress,
     console_bar: Span,
-    item_count: u64,
-    item_position: u64,
     format: ProgressFormat
 }
 
@@ -84,21 +88,19 @@ impl ProgressBar {
     ///
     /// Fails if progress style for console rendering can't be set.
     ///
-    pub fn new(item_count: u64, format: ProgressFormat) -> Result<ProgressBar, DscError> {
+    pub fn new(total_items: u64, format: ProgressFormat) -> Result<ProgressBar, DscError> {
         let bar = warn_span!("");
         if format == ProgressFormat::Default {
             bar.pb_set_style(&ProgressStyle::with_template(
                 "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
             )?);
-            bar.pb_set_length(item_count);
+            bar.pb_set_length(total_items);
             let _guard = bar.enter();
         }
 
         Ok(ProgressBar {
-            progress_value: Progress::new(),
+            progress_value: Progress::new(total_items),
             console_bar: bar,
-            item_count,
-            item_position: 0,
             format
         })
     }
@@ -114,7 +116,7 @@ impl ProgressBar {
             return;
         }
 
-        self.item_position += delta;
+        self.progress_value.completed_items += delta;
         if self.format == ProgressFormat::Json {
             self.write_json();
         } else {
@@ -130,10 +132,29 @@ impl ProgressBar {
     /// * `resource_type` - The type of the resource being operated on
     /// * `result` - The result of the operation
     ///
-    pub fn set_resource(&mut self, name: &str, resource_type: &str, result: Option<&Value>) {
+    pub fn set_resource(&mut self, name: &str, resource_type: &str) {
         self.progress_value.resource_name = Some(name.to_string());
         self.progress_value.resource_type = Some(resource_type.to_string());
-        self.progress_value.result = result.cloned();
+        self.progress_value.result = None;
+        self.progress_value.failed = None;
+    }
+
+    /// Set the result of the operation. This will clear any error.
+    ///
+    /// # Arguments
+    ///
+    /// * `result` - The result of the operation
+    ///
+    pub fn set_result(&mut self, result: &Value) {
+        self.progress_value.failed = None;
+        self.progress_value.result = Some(result.clone());
+    }
+
+    /// Indicate that the operation failed.  This will clear any result.
+    ///
+    pub fn set_failed(&mut self) {
+        self.progress_value.result = None;
+        self.progress_value.failed = Some(true);
     }
 
     /// Set the status of the operation and write the progress
@@ -161,10 +182,10 @@ impl ProgressBar {
     ///
     /// * `len` - The number of total items to complete
     ///
-    pub fn set_length(&mut self, len: u64) {
+    pub fn set_total_items(&mut self, len: u64) {
         match self.format {
             ProgressFormat::Json => {
-                self.item_count = len;
+                self.progress_value.total_items = len;
             },
             ProgressFormat::Default => {
                 self.console_bar.pb_set_length(len);
@@ -174,14 +195,6 @@ impl ProgressBar {
     }
 
     fn write_json(&mut self) {
-        if self.item_count  > 0 {
-            self.progress_value.percent_complete = if self.item_position >= self.item_count {
-                100
-            } else {
-                u8::try_from((self.item_position * 100) / self.item_count).unwrap_or(100)
-            };
-        }
-
         if let Ok(json) = serde_json::to_string(&self.progress_value) {
             eprintln!("{json}");
         } else {
