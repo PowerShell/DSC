@@ -25,6 +25,13 @@ pub enum ProgressFormat {
 
 #[derive(Default, Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct Failure {
+    pub message: String,
+    pub exit_code: i32,
+}
+
+#[derive(Default, Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Progress {
     /// The unique identifier for the operation.
     pub id: String,
@@ -49,9 +56,9 @@ pub struct Progress {
     /// The result of the operation.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
-    /// Indicates if the operation failed.
+    /// Failure information.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub failed: Option<bool>,
+    pub failure: Option<Failure>,
 }
 
 impl Progress {
@@ -136,7 +143,7 @@ impl ProgressBar {
         self.progress_value.resource_name = Some(name.to_string());
         self.progress_value.resource_type = Some(resource_type.to_string());
         self.progress_value.result = None;
-        self.progress_value.failed = None;
+        self.progress_value.failure = None;
     }
 
     /// Set the result of the operation. This will clear any error.
@@ -146,15 +153,15 @@ impl ProgressBar {
     /// * `result` - The result of the operation
     ///
     pub fn set_result(&mut self, result: &Value) {
-        self.progress_value.failed = None;
+        self.progress_value.failure = None;
         self.progress_value.result = Some(result.clone());
     }
 
     /// Indicate that the operation failed.  This will clear any result.
     ///
-    pub fn set_failed(&mut self) {
+    pub fn set_failure(&mut self, failure: Option<Failure>) {
         self.progress_value.result = None;
-        self.progress_value.failed = Some(true);
+        self.progress_value.failure = failure;
     }
 
     /// Set the status of the operation and write the progress

@@ -13,7 +13,7 @@ use crate::dscresources::{
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
-use crate::progress::{ProgressBar, ProgressFormat};
+use crate::progress::{Failure, ProgressBar, ProgressFormat};
 use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
@@ -245,7 +245,7 @@ impl Configurator {
             let get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
                 Err(e) => {
-                    progress.set_failed();
+                    progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
                     return Err(e);
                 },
@@ -342,7 +342,7 @@ impl Configurator {
                 set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
                     Ok(result) => result,
                     Err(e) => {
-                        progress.set_failed();
+                        progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
                         return Err(e);
                     },
@@ -357,21 +357,21 @@ impl Configurator {
                 let before_result = match dsc_resource.get(&desired) {
                     Ok(result) => result,
                     Err(e) => {
-                        progress.set_failed();
+                        progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
                         return Err(e);
                     },
                 };
                 start_datetime = chrono::Local::now();
-                if let Err(err) = dsc_resource.delete(&desired) {
-                    progress.set_failed();
+                if let Err(e) = dsc_resource.delete(&desired) {
+                    progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
-                    return Err(err);
+                    return Err(e);
                 }
                 let after_result = match dsc_resource.get(&desired) {
                     Ok(result) => result,
                     Err(e) => {
-                        progress.set_failed();
+                        progress.set_failure(get_failure_from_error(&e));
                         progress.write_increment(1);
                         return Err(e);
                     },
@@ -464,7 +464,7 @@ impl Configurator {
             let test_result = match dsc_resource.test(&expected) {
                 Ok(result) => result,
                 Err(e) => {
-                    progress.set_failed();
+                    progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
                     return Err(e);
                 },
@@ -535,7 +535,7 @@ impl Configurator {
             let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
-                    progress.set_failed();
+                    progress.set_failure(get_failure_from_error(&e));
                     progress.write_increment(1);
                     return Err(e);
                 },
@@ -790,5 +790,23 @@ impl Configurator {
             }
         }
         Ok(Some(result))
+    }
+}
+
+fn get_failure_from_error(err: &DscError) -> Option<Failure> {
+    match err {
+        DscError::CommandExit(_resource, exit_code, reason) => {
+            Some(Failure {
+                message: reason.to_string(),
+                exit_code: exit_code.clone(),
+            })
+        },
+        DscError::CommandExitFromManifest(_resource, exit_code, reason) => {
+            Some(Failure {
+                message: reason.to_string(),
+                exit_code: exit_code.clone(),
+            })
+        },
+        _ => None,
     }
 }
