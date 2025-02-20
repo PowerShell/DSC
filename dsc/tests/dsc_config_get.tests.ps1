@@ -110,7 +110,7 @@ Describe 'dsc config get tests' {
             - name: ErrorTest
               type: Test/ExitCode
               properties:
-                exitCode: 1
+                exitCode: 8
 '@
         dsc --progress-format json --trace-format json config get -i $config_yaml 2> $TestDrive/ErrorStream.txt
         $LASTEXITCODE | Should -Be 2
@@ -134,10 +134,12 @@ Describe 'dsc config get tests' {
                     $jp.failed | Should -BeNullOrEmpty
                 }
             }
-            elseif ($null -ne $jp.failed -and $jp.resourceType -eq 'Test/ExitCode') {
+            elseif ($null -ne $jp.failure -and $jp.resourceType -eq 'Test/ExitCode') {
                 if ($jp.resourceName -eq 'ErrorTest') {
                     $InstanceTwoFound = $true
                     $jp.result | Should -BeNullOrEmpty
+                    $jp.failure.exitCode | Should -Be 8
+                    $jp.failure.message | Should -Not -BeNullOrEmpty
                 }
             }
         }
