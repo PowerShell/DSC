@@ -798,13 +798,13 @@ fn get_failure_from_error(err: &DscError) -> Option<Failure> {
         DscError::CommandExit(_resource, exit_code, reason) => {
             Some(Failure {
                 message: reason.to_string(),
-                exit_code: exit_code.clone(),
+                exit_code: *exit_code,
             })
         },
         DscError::CommandExitFromManifest(_resource, exit_code, reason) => {
             Some(Failure {
                 message: reason.to_string(),
-                exit_code: exit_code.clone(),
+                exit_code: *exit_code,
             })
         },
         _ => None,
