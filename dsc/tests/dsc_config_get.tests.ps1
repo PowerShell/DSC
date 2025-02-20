@@ -79,7 +79,8 @@ Describe 'dsc config get tests' {
             $jp = $line | ConvertFrom-Json
             if ($jp.activity) { # if line is a progress message
                 $jp.id | Should -Not -BeNullOrEmpty
-                $jp.percentComplete | Should -BeIn (0..100)
+                $jp.totalItems | Should -Not -BeNullOrEmpty
+                $jp.completedItems | Should -Not -BeNullOrEmpty
                 $ProgressMessagesFound = $true
             }
 
@@ -90,6 +91,53 @@ Describe 'dsc config get tests' {
                 } elseif ($jp.resourceName -eq 'Echo 2') {
                     $InstanceTwoFound = $true
                     $jp.result.actualState.output | Should -BeExactly 'world'
+                }
+            }
+        }
+        $ProgressMessagesFound | Should -BeTrue
+        $InstanceOneFound | Should -BeTrue
+        $InstanceTwoFound | Should -BeTrue
+    }
+
+    It 'json progress returns correctly for failed resource' {
+        $config_yaml = @'
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: Echo 1
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: hello
+            - name: ErrorTest
+              type: Test/ExitCode
+              properties:
+                exitCode: 1
+'@
+        dsc --progress-format json --trace-format json config get -i $config_yaml 2> $TestDrive/ErrorStream.txt
+        $LASTEXITCODE | Should -Be 2
+        $lines = Get-Content $TestDrive/ErrorStream.txt
+        $ProgressMessagesFound = $false
+        $InstanceOneFound = $false
+        $InstanceTwoFound = $false
+        foreach ($line in $lines) {
+            $jp = $line | ConvertFrom-Json
+            if ($jp.activity) { # if line is a progress message
+                $jp.id | Should -Not -BeNullOrEmpty
+                $jp.totalItems | Should -Not -BeNullOrEmpty
+                $jp.completedItems | Should -Not -BeNullOrEmpty
+                $ProgressMessagesFound = $true
+            }
+
+            if ($null -ne $jp.result -and $jp.resourceType -eq 'Microsoft.DSC.Debug/Echo') {
+                if ($jp.resourceName -eq 'Echo 1') {
+                    $InstanceOneFound = $true
+                    $jp.result.actualState.output | Should -BeExactly 'hello'
+                    $jp.failed | Should -BeNullOrEmpty
+                }
+            }
+            elseif ($null -ne $jp.failed -and $jp.resourceType -eq 'Test/ExitCode') {
+                if ($jp.resourceName -eq 'ErrorTest') {
+                    $InstanceTwoFound = $true
+                    $jp.result | Should -BeNullOrEmpty
                 }
             }
         }
