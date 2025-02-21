@@ -45,9 +45,9 @@ Describe 'PowerShell adapter resource tests' {
                 - name: Class-resource Info
                   type: TestClassResourceNotExist/TestClassResourceNotExist
 '@
-        $yaml | dsc -l trace config get -f - 2> $TestDrive/tracing.txt
+        $yaml | dsc -l trace config get -f - 2> "$TestDrive/tracing.txt"
         $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatch 'ERROR: DSC resource TestClassResourceNotExist/TestClassResourceNotExist module not found.'
+        "$TestDrive/tracing.txt" | Should -FileContentMatch 'DSC resource TestClassResourceNotExist/TestClassResourceNotExist module not found.'
     }
 
     It 'Test works on config with class-based resources' {
