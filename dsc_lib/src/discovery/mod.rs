@@ -38,14 +38,14 @@ impl Discovery {
     /// A vector of `DscResource` instances.
     pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<DscResource> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
-            Box::new(command_discovery::CommandDiscovery::new()),
+            Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];
 
         let mut resources: Vec<DscResource> = Vec::new();
 
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.list_available_resources(type_name_filter, adapter_name_filter, progress_format) {
+            let discovered_resources = match discovery_type.list_available_resources(type_name_filter, adapter_name_filter) {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");
@@ -75,12 +75,12 @@ impl Discovery {
     /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
-            Box::new(command_discovery::CommandDiscovery::new()),
+            Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];
         let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.find_resources(&remaining_required_resource_types, progress_format) {
+            let discovered_resources = match discovery_type.find_resources(&remaining_required_resource_types) {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");
