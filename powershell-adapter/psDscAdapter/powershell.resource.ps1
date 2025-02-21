@@ -157,7 +157,7 @@ switch ($Operation) {
         # check if all the desired modules are in the cache
         $moduleInput | ForEach-Object {
             if ($dscResourceCache.type -notcontains $_) {
-               ('ERROR: DSC resource {0} module not found.' -f $_) | Write-DscTrace
+                ('DSC resource {0} module not found.' -f $_) | Write-DscTrace -Operation Error
                 exit 1
             }
         }
