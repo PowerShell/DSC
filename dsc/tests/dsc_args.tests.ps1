@@ -303,4 +303,10 @@ resources:
         $LASTEXITCODE | Should -Be 1
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path does not exist: '/invalid/path'"
     }
+
+    It '--progress-format can be None' {
+        dsc -p none resource list 2> $TestDrive/tracing.txt
+        $LASTEXITCODE | Should -Be 0
+        (Get-Content $TestDrive/tracing.txt -Raw) | Should -BeNullOrEmpty
+    }
 }

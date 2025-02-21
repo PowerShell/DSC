@@ -7,8 +7,7 @@ use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
-use crate::util::ProgressFormat;
-use indicatif::ProgressStyle;
+use crate::progress::{ProgressBar, ProgressFormat};
 use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use rust_i18n::t;
@@ -22,10 +21,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use tracing::{debug, info, trace, warn, warn_span};
-use tracing_indicatif::span_ext::IndicatifSpanExt;
+use tracing::{debug, info, trace, warn};
 
-use crate::util::{get_setting, ProgressBar};
+use crate::util::get_setting;
 use crate::util::get_exe_path;
 
 pub struct CommandDiscovery {
@@ -33,6 +31,7 @@ pub struct CommandDiscovery {
     resources: BTreeMap<String, Vec<DscResource>>,
     adapters: BTreeMap<String, Vec<DscResource>>,
     adapted_resources: BTreeMap<String, Vec<DscResource>>,
+    progress_format: ProgressFormat,
 }
 
 #[derive(Deserialize)]
@@ -58,11 +57,12 @@ impl Default for ResourcePathSetting {
 }
 
 impl CommandDiscovery {
-    pub fn new() -> CommandDiscovery {
+    pub fn new(progress_format: ProgressFormat) -> CommandDiscovery {
         CommandDiscovery {
             resources: BTreeMap::new(),
             adapters: BTreeMap::new(),
             adapted_resources: BTreeMap::new(),
+            progress_format,
         }
     }
 
@@ -163,7 +163,7 @@ impl CommandDiscovery {
 
 impl Default for CommandDiscovery {
     fn default() -> Self {
-        Self::new()
+        Self::new(ProgressFormat::Default)
     }
 }
 
@@ -180,12 +180,8 @@ impl ResourceDiscovery for CommandDiscovery {
             return Err(DscError::Operation(t!("discovery.commandDiscovery.invalidAdapterFilter").to_string()));
         };
 
-        let pb_span = warn_span!("");
-        pb_span.pb_set_style(&ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
-        )?);
-        pb_span.pb_set_message(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
-        let _ = pb_span.enter();
+        let mut progress = ProgressBar::new(1, self.progress_format)?;
+        progress.write_activity(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
 
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
         let mut adapters = BTreeMap::<String, Vec<DscResource>>::new();
@@ -241,13 +237,14 @@ impl ResourceDiscovery for CommandDiscovery {
                 }
             }
         }
+        progress.write_increment(1);
         debug!("Found {} matching non-adapter-based resources", resources.len());
         self.resources = resources;
         self.adapters = adapters;
         Ok(())
     }
 
-    fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str, progress_format: ProgressFormat) -> Result<(), DscError> {
+    fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError> {
         if self.resources.is_empty() && self.adapters.is_empty() {
             self.discover_resources("*")?;
         }
@@ -272,20 +269,15 @@ impl ResourceDiscovery for CommandDiscovery {
             return Err(DscError::Operation("Could not build Regex filter for resource name".to_string()));
         };
 
-        let mut pb_span = ProgressBar::new(progress_format == ProgressFormat::Json);
-        pb_span.pb_set_style(&ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
-        )?);
-        pb_span.pb_set_message("Searching for adapted resources");
-        pb_span.pb_set_length(self.adapters.len() as u64);
-        pb_span.enter();
+        let mut progress = ProgressBar::new(self.adapters.len() as u64, self.progress_format)?;
+        progress.write_activity("Searching for adapted resources");
 
         let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
 
         let mut found_adapter: bool = false;
         for (adapter_name, adapters) in &self.adapters {
             for adapter in adapters {
-                pb_span.pb_inc(1);
+                progress.write_increment(1);
 
                 if !regex.is_match(adapter_name) {
                     continue;
@@ -293,12 +285,8 @@ impl ResourceDiscovery for CommandDiscovery {
 
                 found_adapter = true;
                 info!("Enumerating resources for adapter '{}'", adapter_name);
-                let mut pb_adapter_span = ProgressBar::new(progress_format == ProgressFormat::Json);
-                pb_adapter_span.pb_set_style(&ProgressStyle::with_template(
-                    "{spinner:.green} [{elapsed_precise:.cyan}] {msg:.white}"
-                )?);
-                pb_adapter_span.pb_set_message(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
-                pb_adapter_span.enter();
+                let mut adapter_progress = ProgressBar::new(1, self.progress_format)?;
+                adapter_progress.write_activity(format!("Enumerating resources for adapter '{adapter_name}'").as_str());
                 let manifest = if let Some(manifest) = &adapter.manifest {
                     if let Ok(manifest) = import_manifest(manifest.clone()) {
                         manifest
@@ -350,6 +338,7 @@ impl ResourceDiscovery for CommandDiscovery {
                     };
                 }
 
+                adapter_progress.write_increment(1);
                 debug!("Adapter '{}' listed {} resources", adapter_name, adapter_resources_count);
             }
         }
@@ -363,7 +352,7 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
-    fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
+    fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
 
         trace!("Listing resources with type_name_filter '{type_name_filter}' and adapter_name_filter '{adapter_name_filter}'");
         let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
@@ -374,7 +363,7 @@ impl ResourceDiscovery for CommandDiscovery {
             resources.append(&mut self.adapters);
         } else {
             self.discover_resources("*")?;
-            self.discover_adapted_resources(type_name_filter, adapter_name_filter, progress_format)?;
+            self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
 
             // add/update found adapted resources to the lookup_table
             add_resources_to_lookup_table(&self.adapted_resources);
@@ -387,7 +376,7 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 
     // TODO: handle version requirements
-    fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) -> Result<BTreeMap<String, DscResource>, DscError>
+    fn find_resources(&mut self, required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         debug!("Searching for resources: {:?}", required_resource_types);
         self.discover_resources("*")?;
@@ -439,7 +428,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 }
             }
 
-            self.discover_adapted_resources("*", &adapter_name, progress_format)?;
+            self.discover_adapted_resources("*", &adapter_name)?;
             // add/update found adapted resources to the lookup_table
             add_resources_to_lookup_table(&self.adapted_resources);
 

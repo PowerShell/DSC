@@ -25,7 +25,7 @@ use dsc_lib::{
     },
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
-    util::ProgressFormat,
+    progress::ProgressFormat,
 };
 use rust_i18n::t;
 use std::{
@@ -288,15 +288,13 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         }
     };
 
-    let mut configurator = match Configurator::new(&json_string) {
+    let mut configurator = match Configurator::new(&json_string, progress_format) {
         Ok(configurator) => configurator,
         Err(err) => {
             error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
         }
     };
-
-    configurator.set_progress_format(progress_format);
 
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {

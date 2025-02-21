@@ -35,6 +35,7 @@ tracing-indicatif = { version = "0.3" }
 tree-sitter = "0.25"
 tree-sitter-rust = "0.23"
 tree-sitter-dscexpression = { path = "../tree-sitter-dscexpression" }
+uuid = { version = "1.13", features = ["v4"] }
 
 [dev-dependencies]
 serde_yaml = "0.9"

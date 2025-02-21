@@ -2,10 +2,8 @@
 // Licensed under the MIT License.
 
 use crate::dscerror::DscError;
-use clap::ValueEnum;
 use rust_i18n::t;
 use serde_json::Value;
-use serde::Serialize;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -13,16 +11,6 @@ use std::path::PathBuf;
 use std::path::Path;
 use std::env;
 use tracing::debug;
-use tracing_indicatif::span_ext::IndicatifSpanExt;
-use tracing::warn_span;
-use tracing::span::Span;
-use indicatif::ProgressStyle;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-pub enum ProgressFormat {
-    Default,
-    Json,
-}
 
 pub struct DscSettingValue {
     pub setting:  Value,
@@ -34,92 +22,6 @@ impl Default for DscSettingValue {
         DscSettingValue {
             setting: Value::Null,
             policy: Value::Null,
-        }
-    }
-}
-
-/// Only `activity` and `percent_complete` fields are mandatory for Progress messages
-#[derive(Default, Debug, Clone, Serialize)]
-pub struct Progress {
-    pub activity:  String,
-    pub percent_complete: u16,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub status: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub seconds_remaining: Option<u64>,
-}
-
-pub struct ProgressBar {
-    progress_value:  Progress,
-    ui_bar: Span, //IndicatifSpanExt
-    length: u64,
-    position: u64,
-    emit_json: bool
-}
-
-impl ProgressBar {
-    pub fn new(emit_json: bool) -> ProgressBar {
-        ProgressBar {
-            progress_value: Progress::default(),
-            ui_bar: warn_span!(""),
-            length: 0,
-            position: 0,
-            emit_json
-         }
-    }
-
-    #[allow(clippy::cast_possible_truncation)]
-    pub fn pb_inc(&mut self, delta: u64) {
-        self.ui_bar.pb_inc(delta);
-        self.position += delta;
-        if self.length  > 0 {
-            self.progress_value.percent_complete = if self.position >= self.length {100}
-                else { ((self.position * 100) / self.length) as u16};
-
-            self.emit_json();
-        }
-    }
-
-    pub fn pb_set_style(&mut self, style: &ProgressStyle) {
-        self.ui_bar.pb_set_style(style);
-    }
-
-    pub fn pb_set_message(&mut self, msg: &str) {
-        self.ui_bar.pb_set_message(msg);
-        self.progress_value.activity = msg.to_string();
-        self.emit_json();
-    }
-
-    #[allow(clippy::cast_possible_truncation)]
-    pub fn pb_set_length(&mut self, len: u64) {
-        self.ui_bar.pb_set_length(len);
-        self.length = len;
-        if self.length  > 0 {
-            self.progress_value.percent_complete = if self.position >= self.length {100}
-                else { ((self.position * 100) / self.length) as u16};
-        }
-    }
-
-    #[allow(clippy::cast_possible_truncation)]
-    pub fn pb_set_position(&mut self, pos: u64) {
-        self.ui_bar.pb_set_position(pos);
-        self.position = pos;
-        if self.length  > 0 {
-            self.progress_value.percent_complete = if self.position >= self.length {100}
-                else { ((self.position * 100) / self.length) as u16};
-            self.emit_json();
-        }
-    }
-
-    pub fn enter(&self) {
-        _ = self.ui_bar.enter();
-    }
-
-    fn emit_json(&self) {
-        if self.emit_json {
-            if let Ok(json) = serde_json::to_string(&self.progress_value) {
-                eprintln!("{json}");
-            }
         }
     }
 }

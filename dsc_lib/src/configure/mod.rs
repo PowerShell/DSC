@@ -13,19 +13,17 @@ use crate::dscresources::{
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
-use crate::ProgressFormat;
-use crate::util::ProgressBar;
+use crate::progress::{Failure, ProgressBar, ProgressFormat};
 use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
 use self::constraints::{check_length, check_number_limits, check_allowed_values};
-use indicatif::ProgressStyle;
 use rust_i18n::t;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
-use std::{collections::HashMap, mem};
+use std::collections::HashMap;
 use tracing::{debug, info, trace};
 pub mod context;
 pub mod config_doc;
@@ -138,16 +136,6 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn get_progress_bar_span(len: u64, progress_format: ProgressFormat) -> Result<ProgressBar, DscError> {
-    let mut pb_span = ProgressBar::new(progress_format == ProgressFormat::Json);
-
-    pb_span.pb_set_style(&ProgressStyle::with_template(
-        "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
-    )?);
-    pb_span.pb_set_length(len);
-    Ok(pb_span)
-}
-
 fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Result<String, DscError> {
     if *kind == Kind::Adapter {
         // add metadata to the properties so the adapter knows this is a config
@@ -206,7 +194,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new(json: &str) -> Result<Configurator, DscError> {
+    pub fn new(json: &str, progress_format: ProgressFormat) -> Result<Configurator, DscError> {
         let discovery = Discovery::new()?;
         let mut config = Configurator {
             json: json.to_owned(),
@@ -214,7 +202,7 @@ impl Configurator {
             context: Context::new(),
             discovery,
             statement_parser: Statement::new()?,
-            progress_format: ProgressFormat::Default,
+            progress_format,
         };
         config.validate_config()?;
         Ok(config)
@@ -230,11 +218,6 @@ impl Configurator {
         &self.config
     }
 
-    /// Sets progress format for the configuration.
-    pub fn set_progress_format(&mut self, progress_format: ProgressFormat) {
-        self.progress_format = progress_format;
-    }
-
     /// Invoke the get operation on a resource.
     ///
     /// # Returns
@@ -247,11 +230,10 @@ impl Configurator {
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let mut pb_span = get_progress_bar_span(resources.len() as u64, self.progress_format)?;
-        pb_span.enter();
+        let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
-            pb_span.pb_inc(1);
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -260,7 +242,14 @@ impl Configurator {
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
             let start_datetime = chrono::Local::now();
-            let get_result = dsc_resource.get(&filter)?;
+            let get_result = match dsc_resource.get(&filter) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
+            };
             let end_datetime = chrono::Local::now();
             match &get_result {
                 GetResult::Resource(resource_result) => {
@@ -271,7 +260,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results));
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceGetResult {
@@ -287,15 +276,16 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: get_result,
+                result: get_result.clone(),
             };
             result.results.push(resource_result);
+            progress.set_result(&serde_json::to_value(get_result)?);
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
             self.get_result_metadata(Operation::Get)
         );
-        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -312,14 +302,14 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
+    #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let mut pb_span = get_progress_bar_span(resources.len() as u64, self.progress_format)?;
-        pb_span.enter();
+        let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            pb_span.pb_set_message(format!("Set '{}'", resource.name).as_str());
-            pb_span.pb_inc(1);
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Set '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -349,7 +339,14 @@ impl Configurator {
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("{}", t!("configure.mod.handlesExist"));
                 start_datetime = chrono::Local::now();
-                set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
+                set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 if self.context.execution_type == ExecutionKind::WhatIf {
@@ -357,10 +354,28 @@ impl Configurator {
                     return Err(DscError::NotSupported(t!("configure.mod.whatIfNotSupportedForDelete").to_string()));
                 }
                 debug!("{}", t!("configure.mod.implementsDelete"));
-                let before_result = dsc_resource.get(&desired)?;
+                let before_result = match dsc_resource.get(&desired) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
                 start_datetime = chrono::Local::now();
-                dsc_resource.delete(&desired)?;
-                let after_result = dsc_resource.get(&desired)?;
+                if let Err(e) = dsc_resource.delete(&desired) {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                }
+                let after_result = match dsc_resource.get(&desired) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
                 // convert get result to set result
                 set_result = match before_result {
                     GetResult::Resource(before_response) => {
@@ -393,10 +408,9 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results));
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
                 },
             }
-
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(
                     Metadata {
@@ -410,15 +424,16 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: set_result,
+                result: set_result.clone(),
             };
             result.results.push(resource_result);
+            progress.set_result(&serde_json::to_value(set_result)?);
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
             self.get_result_metadata(Operation::Set)
         );
-        mem::drop(pb_span);
         Ok(result)
     }
 
@@ -434,11 +449,10 @@ impl Configurator {
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let mut pb_span = get_progress_bar_span(resources.len() as u64, self.progress_format)?;
-        pb_span.enter();
+        let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            pb_span.pb_set_message(format!("Test '{}'", resource.name).as_str());
-            pb_span.pb_inc(1);
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Test '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -447,7 +461,14 @@ impl Configurator {
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
-            let test_result = dsc_resource.test(&expected)?;
+            let test_result = match dsc_resource.test(&expected) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
+            };
             let end_datetime = chrono::Local::now();
             match &test_result {
                 TestResult::Resource(resource_test_result) => {
@@ -458,7 +479,7 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results));
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceTestResult {
@@ -474,15 +495,16 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: test_result,
+                result: test_result.clone(),
             };
             result.results.push(resource_result);
+            progress.set_result( &serde_json::to_value(test_result)?);
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
             self.get_result_metadata(Operation::Test)
         );
-        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -499,25 +521,32 @@ impl Configurator {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        let mut pb_span = get_progress_bar_span(self.config.resources.len() as u64, self.progress_format)?;
-        pb_span.enter();
+        let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
         for resource in &resources {
-            pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
-            pb_span.pb_inc(1);
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Export '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
+            let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
+            };
             self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&export_result.actual_state)?);
+            progress.set_result(&serde_json::to_value(export_result)?);
+            progress.write_increment(1);
         }
 
         conf.metadata = Some(self.get_result_metadata(Operation::Export));
         result.result = Some(conf);
-        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -761,5 +790,23 @@ impl Configurator {
             }
         }
         Ok(Some(result))
+    }
+}
+
+fn get_failure_from_error(err: &DscError) -> Option<Failure> {
+    match err {
+        DscError::CommandExit(_resource, exit_code, reason) => {
+            Some(Failure {
+                message: reason.to_string(),
+                exit_code: *exit_code,
+            })
+        },
+        DscError::CommandExitFromManifest(_resource, exit_code, reason) => {
+            Some(Failure {
+                message: reason.to_string(),
+                exit_code: *exit_code,
+            })
+        },
+        _ => None,
     }
 }
