@@ -74,7 +74,7 @@ Describe 'tracing tests' {
         param($level)
 
         $configYaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: trace
               type: Test/Trace

@@ -1,6 +1,6 @@
 # example showing use of specific metadata to indicate this config requires admin to run
 # this will fail to even try to run the config if the user is root or elevated as administrator
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
   Microsoft.DSC:
     securityContext: restricted

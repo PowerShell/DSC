@@ -9,9 +9,9 @@ Describe 'Configruation variables tests' {
         $out.results[0].result.actualState.output | Should -BeExactly 'myOutput is: Hello world!, myObject is: baz'
     }
 
-    It 'Duplicated variable takes last value' {
-        $configYaml = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+  It 'Duplicated variable takes last value' {
+    $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 variables:
   myVariable: foo
   myVariable: bar
@@ -27,9 +27,9 @@ resources:
         $out.results[0].result.actualState.output | Should -Be 'bar'
     }
 
-    It 'Missing variable returns error' {
-        $configYaml = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+  It 'Missing variable returns error' {
+    $configYaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 variables:
   hello: world
 resources:

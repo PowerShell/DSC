@@ -4,7 +4,7 @@
 Describe 'dsc config set tests' {
     It 'can use _exist with resources that support and do not support it' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Exist
               type: Test/Exist
