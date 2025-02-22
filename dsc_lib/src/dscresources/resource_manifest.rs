@@ -1,13 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use schemars::JsonSchema;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-use crate::dscerror::DscError;
+use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -23,7 +24,8 @@ pub enum Kind {
 pub struct ResourceManifest {
     /// The version of the resource manifest schema.
     #[serde(rename = "$schema")]
-    pub schema_version: ManifestSchemaUri,
+    #[schemars(schema_with = "ResourceManifest::recognized_schema_uris_subschema")]
+    pub schema_version: String,
     /// The namespaced name of the resource.
     #[serde(rename = "type")]
     pub resource_type: String,
@@ -68,30 +70,6 @@ pub struct ResourceManifest {
     /// Details how to get the schema of the resource.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schema: Option<SchemaKind>,
-}
-
-// Defines the valid and recognized canonical URIs for the manifest schema
-#[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub enum ManifestSchemaUri {
-    #[default]
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.json")]
-    Version2024_04,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json")]
-    Bundled2024_04,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.vscode.json")]
-    VSCode2024_04,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.json")]
-    Version2023_10,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.json")]
-    Bundled2023_10,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.vscode.json")]
-    VSCode2023_10,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json")]
-    Version2023_08,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json")]
-    Bundled2023_08,
-    #[serde(rename = "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.vscode.json")]
-    VSCode2023_08,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -254,6 +232,20 @@ pub struct ListMethod {
     pub executable: String,
     /// The arguments to pass to the command to perform a List.
     pub args: Option<Vec<String>>,
+}
+
+impl DscRepoSchema for ResourceManifest {
+    const SCHEMA_FILE_BASE_NAME: &'static str = "manifest";
+    const SCHEMA_FOLDER_PATH: &'static str = "resource";
+    const SCHEMA_SHOULD_BUNDLE: bool = true;
+
+    fn schema_metadata() -> schemars::schema::Metadata {
+        schemars::schema::Metadata {
+            title: Some(t!("dscresources.resource_manifest.resourceManifestSchemaTitle").into()),
+            description: Some(t!("dscresources.resource_manifest.resourceManifestSchemaDescription").into()),
+            ..Default::default()
+        }
+    }
 }
 
 /// Import a resource manifest from a JSON value.
