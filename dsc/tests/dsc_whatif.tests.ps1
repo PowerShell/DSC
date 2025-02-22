@@ -7,7 +7,7 @@ Describe 'whatif tests' {
 
     It 'config set whatif when actual state matches desired state' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Hello
               type: Microsoft.DSC.Debug/Echo
@@ -28,7 +28,7 @@ Describe 'whatif tests' {
     It 'config set whatif when actual state does not match desired state' -Skip:(!$IsWindows) {
         # TODO: change/create cross-plat resource that implements set without just matching desired state
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Registry
               type: Microsoft.Windows/Registry
@@ -52,7 +52,7 @@ Describe 'whatif tests' {
 
     It 'config set whatif for delete is not supported' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Delete
               type: Test/Delete
@@ -72,7 +72,7 @@ Describe 'whatif tests' {
 
     It 'actual execution of WhatIf resource' {
         $config_yaml = @"
-        `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: WhatIf
           type: Test/WhatIf
@@ -90,7 +90,7 @@ Describe 'whatif tests' {
 
     It 'what-if execution of WhatIf resource' {
         $config_yaml = @"
-        `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: WhatIf
           type: Test/WhatIf
