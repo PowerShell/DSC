@@ -33,6 +33,23 @@ Describe 'PowerShell adapter resource tests' {
         $res.results[0].result.actualState.result[0].properties.EnumProp | Should -BeExactly 'Expected'
     }
 
+    It 'Get does not work on config when module does not exist' {
+        
+        $yaml = @'
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: Working with class-based resources
+              type: Microsoft.DSC/PowerShell
+              properties:
+                resources:
+                - name: Class-resource Info
+                  type: TestClassResourceNotExist/TestClassResourceNotExist
+'@
+        $yaml | dsc -l trace config get -f - 2> "$TestDrive/tracing.txt"
+        $LASTEXITCODE | Should -Be 2
+        "$TestDrive/tracing.txt" | Should -FileContentMatch 'DSC resource TestClassResourceNotExist/TestClassResourceNotExist module not found.'
+    }
+
     It 'Test works on config with class-based resources' {
 
         $r = Get-Content -Raw $pwshConfigPath | dsc config test -f -
