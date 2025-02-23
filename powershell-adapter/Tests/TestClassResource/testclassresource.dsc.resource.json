@@ -1,0 +1,22 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "type": "TestClassResource/TestClassResource",
+    "description": "Manage test class",
+    "tags": [
+        "Windows"
+    ],
+    "version": "0.1.0",
+    "schema": {
+    "command": {
+      "executable": "pwsh",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-Command",
+        "$Input | ./psDscAdapter/powershell.resource.ps1 Schema"
+      ],
+      "input": "stdin"
+    }
+  }
+}
