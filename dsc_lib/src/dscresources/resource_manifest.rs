@@ -246,6 +246,16 @@ impl DscRepoSchema for ResourceManifest {
             ..Default::default()
         }
     }
+
+    fn validate_schema_uri(&self) -> Result<(), DscError> {
+        match Self::is_recognized_schema_uri(&self.schema_version) {
+            true => Ok(()),
+            false => Err(DscError::UnrecognizedSchemaUri(
+                self.schema_version.clone(),
+                Self::recognized_schema_uris(),
+            ))
+        }
+    }
 }
 
 /// Import a resource manifest from a JSON value.
@@ -287,4 +297,51 @@ pub fn import_manifest(manifest: Value) -> Result<ResourceManifest, DscError> {
 pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
     Version::parse(version)?;
     Ok(())
+}
+
+#[allow(unused_imports)]
+mod test {
+    use serde_json::json;
+
+    use crate::{dscerror::DscError, dscresources::resource_manifest::{import_manifest, ResourceManifest}, schemas::DscRepoSchema};
+
+    #[test]
+    fn test_validate_schema_uri_with_invalid_uri() {
+        let invalid_uri = "https://invalid.schema.uri".to_string();
+
+        let manifest = ResourceManifest{
+            schema_version: invalid_uri.clone(),
+            resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".to_string(),
+            version: "0.1.0".to_string(),
+            ..Default::default()
+        };
+
+        let ref result = manifest.validate_schema_uri();
+
+        assert!(result.as_ref().is_err());
+
+        match result.as_ref().unwrap_err() {
+            DscError::UnrecognizedSchemaUri(actual, recognized) => {
+                assert_eq!(actual, &invalid_uri);
+                assert_eq!(recognized, &ResourceManifest::recognized_schema_uris())
+            },
+            _ => {
+                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_schema_uri_with_valid_uri() {
+        let manifest = ResourceManifest{
+            schema_version: ResourceManifest::default_schema_id_uri(),
+            resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".to_string(),
+            version: "0.1.0".to_string(),
+            ..Default::default()
+        };
+
+        let result = manifest.validate_schema_uri();
+
+        assert!(result.is_ok());
+    }
 }

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-use crate::schemas::DscRepoSchema;
+use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -165,6 +165,16 @@ impl DscRepoSchema for Configuration {
             ..Default::default()
         }
     }
+
+    fn validate_schema_uri(&self) -> Result<(), DscError> {
+        match Self::is_recognized_schema_uri(&self.schema) {
+            true => Ok(()),
+            false => Err(DscError::UnrecognizedSchemaUri(
+                self.schema.clone(),
+                Self::recognized_schema_uris(),
+            ))
+        }
+    }
 }
 
 impl Configuration {
@@ -197,5 +207,48 @@ impl Resource {
 impl Default for Resource {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[allow(unused_imports)]
+mod test {
+    use serde_json::json;
+
+    use crate::{configure::config_doc::Configuration, dscerror::DscError, dscresources::resource_manifest::{import_manifest, ResourceManifest}, schemas::DscRepoSchema};
+
+    #[test]
+    fn test_validate_schema_uri_with_invalid_uri() {
+        let invalid_uri = "https://invalid.schema.uri".to_string();
+
+        let manifest = Configuration{
+            schema: invalid_uri.clone(),
+            ..Default::default()
+        };
+
+        let ref result = manifest.validate_schema_uri();
+
+        assert!(result.as_ref().is_err());
+
+        match result.as_ref().unwrap_err() {
+            DscError::UnrecognizedSchemaUri(actual, recognized) => {
+                assert_eq!(actual, &invalid_uri);
+                assert_eq!(recognized, &Configuration::recognized_schema_uris())
+            },
+            _ => {
+                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
+            }
+        }
+    }
+
+    #[test]
+    fn test_validate_schema_uri_with_valid_uri() {
+        let manifest = Configuration{
+            schema: Configuration::default_schema_id_uri(),
+            ..Default::default()
+        };
+
+        let result = manifest.validate_schema_uri();
+
+        assert!(result.is_ok());
     }
 }

@@ -2,6 +2,8 @@
 
 use schemars::{schema::{Metadata, Schema}, JsonSchema};
 
+use crate::dscerror::DscError;
+
 /// Defines the URI prefix for the hosted schemas.
 /// 
 /// While the schemas are currently hosted in the GitHub repository, DSC provides the shortened
@@ -446,6 +448,26 @@ pub trait DscRepoSchema : JsonSchema {
             Self::SCHEMA_FOLDER_PATH,
             Self::SCHEMA_SHOULD_BUNDLE
         )
+    }
+
+    /// Indicates whether a given string is a recognized shema URI.
+    fn is_recognized_schema_uri(uri: &String) -> bool {
+        Self::recognized_schema_uris().contains(uri)
+    }
+
+    /// Validates the `$schema` keyword for deserializing instances.
+    /// 
+    /// This method simplifies the validation of a type that has the `$schema` keyword and expects
+    /// that instances of the type in data indicate which schema version DSC should use to validate
+    /// them.
+    /// 
+    /// This method includes a default implementation to avoid requiring the implementation for
+    /// types that don't define the `$schema` keyword in their serialized form.
+    /// 
+    /// Any DSC type that serializes with the `$schema` keyword **must** define this
+    /// method to actually validate the instance. 
+    fn validate_schema_uri(&self) -> Result<(), DscError> {
+        Ok(())
     }
 }
 

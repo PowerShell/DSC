@@ -319,7 +319,9 @@ schemaNotAvailable = "No Schema found and `validate` is not supported"
 securityContext = "Security context"
 utf8Conversion = "UTF-8 conversion"
 unknown = "Unknown"
+unrecognizedSchemaUri = "Unrecognized $schema URI"
 validation = "Validation"
+validSchemaUrisAre = "Valid schema URIs are"
 setting = "Setting"
 
 [progress]
