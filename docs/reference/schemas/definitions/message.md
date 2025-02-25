@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a structured message returned from a 'dsc config' command.
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       Structured message schema reference
 ---
@@ -15,7 +15,7 @@ A message emitted by a DSC Resource with associated metadata.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/definitions/message.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/definitions/message.json
 Type:          object
 ```
 
@@ -69,7 +69,7 @@ Indicates the severity of the message.
 ```yaml
 Type:         string
 Required:     true
-Valid Values: [Error, Warning, Information]
+Valid Values: [error, warning, information]
 ```
 
 [01]: resourceType.md

@@ -26,14 +26,14 @@ function Write-Trace {
     )
 
     $trace = [pscustomobject]@{
-        $level = $message
+        $level.ToLower() = $message
     } | ConvertTo-Json -Compress
 
     $host.ui.WriteErrorLine($trace)
 }
 
 function IsConfiguration($obj) {
-    if ($null -ne $obj.metadata -and $null -ne $obj.metadata.'Microsoft.DSC' -and $obj.metadata.'Microsoft.DSC'.context -eq 'Configuration') {
+    if ($null -ne $obj.metadata -and $null -ne $obj.metadata.'Microsoft.DSC' -and $obj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
         return $true
     }
 
@@ -65,9 +65,9 @@ if ($Operation -eq 'List')
 
         $z = [pscustomobject]@{
             type = $fullResourceTypeName;
-            kind = 'Resource';
+            kind = 'resource';
             version = $version_string;
-            capabilities = @('Get');
+            capabilities = @('get');
             path = "";
             directory = "";
             implementedAs = "";

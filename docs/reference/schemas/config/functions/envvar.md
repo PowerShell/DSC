@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'envvar' DSC configuration document function
-ms.date:     03/01/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       envvar
 ---
@@ -35,7 +35,7 @@ This configuration echoes that folder with the `Test/Echo` resource.
 
 ```yaml
 # ./examples/envvar.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo 'DSC_CONFIG_ROOT' in envvar
     type: Test/Echo

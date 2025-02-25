@@ -15,7 +15,7 @@ Describe 'Expressions tests' {
     ) {
         param($text, $expected)
         $yaml = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
   test:
     type: object
@@ -55,7 +55,7 @@ resources:
     ) {
         param($expression)
         $yaml = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: echo
   type: Microsoft.DSC.Debug/Echo

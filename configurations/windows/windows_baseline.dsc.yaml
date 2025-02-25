@@ -1,13 +1,13 @@
 # This configuration validates a Windows system against a security baseline configuration
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
   Microsoft.DSC:
-    securityContext: Elevated
+    securityContext: elevated
 resources:
 - name: Validate the OS is Windows
   type: Microsoft.DSC/Assertion
   properties:
-    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
     - name: os
       type: Microsoft/OSInfo
@@ -18,7 +18,7 @@ resources:
   dependsOn: 
     - "[resourceId('Microsoft.DSC/Assertion','Validate the OS is Windows')]"
   properties:
-    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
       - name: Default RDP port
         type: Microsoft.Windows/Registry

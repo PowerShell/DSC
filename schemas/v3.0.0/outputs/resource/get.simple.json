@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/outputs/resource/get.simple.json",
+  "title": "dsc resource get result (simple)",
+  "description": "Describes the return data for a single DSC Resource instance from the `dsc resource get` command. This data is returned for instances that aren't group resources, adapter resources, or nested inside a group or adapter resource.\nWhen you use `dsc resource get` for a group or adapter resource, the command returns an array of full test result objects that include the name and type for the nested instances.",
+  "type": "object",
+  "required": [
+    "actualState"
+  ],
+  "properties": {
+    "actualState": {
+      "title": "Actual state",
+      "description": "This property always represents the current state of the DSC Resource instance as returned by its `get` method. DSC validates this return value against the DSC Resource's schema.",
+      "type": "object"
+    }
+  }
+}

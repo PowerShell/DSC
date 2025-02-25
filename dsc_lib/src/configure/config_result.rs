@@ -7,6 +7,7 @@ use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 use crate::configure::config_doc::{Configuration, Metadata};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum MessageLevel {
     Error,
     Warning,

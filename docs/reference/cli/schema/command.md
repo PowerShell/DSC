@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc schema' command
-ms.date:     06/24/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       dsc schema
 ---
@@ -25,6 +25,22 @@ integrating tool.
 
 The application uses these schemas to validate data internally when it's received or represent the
 output for one of the application's commands.
+
+> [!NOTE]
+> Currently, the schemas returned by the `dsc schema` command and those published to GitHub are
+> not the same. The published schemas more fully describe and validate the data than the schemas
+> emitted by the command. The DSC team is working to canonicalize the schemas returned from the
+> command.
+>
+> Both the published schemas and those returned from this command correctly validate the data. The
+> schemas returned from this command are less strict than the published schemas. Even though data
+> validates against the schemas returned by this command, DSC may raise errors when processing the
+> data. For example, the returned schema for versions indicates that the valid value is a string -
+> but if you specify a string that isn't a semantic version, DSC raises an error. In that case, the
+> data passed the schema validation but was incorrect.
+>
+> Until the schemas are canonicalized, consider using the published schemas when indpendently
+> testing your configuration documents and resource manifests with a JSON Schema validation tool.
 
 ## Examples
 

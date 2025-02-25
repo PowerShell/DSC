@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/purge.json",
+  "title": "Purge",
+  "description": "Indicates that only the components described in the DSC Resource should exist. If other components exist, the DSC Resource is out of the desired state. When enforcing desired state, the DSC Resource removes unmanaged components.",
+  "type": [
+    "boolean",
+    "null"
+  ],
+  "writeOnly": true
+}

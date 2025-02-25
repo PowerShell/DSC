@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a resource instance in a Desired State Configuration document.
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Configuration document resource instance schema
 ---
@@ -15,7 +15,7 @@ Defines a DSC Resource instance in a configuration document.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.resource.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.resource.json
 Type:          object
 ```
 

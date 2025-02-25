@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn test_simple_order() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn test_duplicate_name() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: First
           type: Test/Null
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_missing_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn test_multiple_same_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn test_circular_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn test_multiple_dependencies() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Third
           type: Test/Null
@@ -236,7 +236,7 @@ mod tests {
     #[test]
     fn test_complex_circular_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Third
           type: Test/Null
@@ -262,7 +262,7 @@ mod tests {
     #[test]
     fn test_complex_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Third
           type: Test/Null

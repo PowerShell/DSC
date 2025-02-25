@@ -1,6 +1,6 @@
 ---
-description: JSON schema reference for the '_rebootRequested' well-known DSC Resource property.
-ms.date:     01/17/2024
+description: JSON schema reference for the '_rebootRequested' canonical DSC Resource property.
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Resource _rebootRequested property schema
 ---
@@ -15,15 +15,15 @@ Indicates whether an instance is in the desired state.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/rebootRequested.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/rebootRequested.json
 Type:          [boolean, 'null']
 ReadOnly:      true
 ```
 
 ## Description
 
-The `_rebootRequested` property indicates whether a resource instance requires a reboot after a set
-operation.
+The `_rebootRequested` canonical property indicates whether a resource instance requires a reboot
+after a set operation.
 
 If the resource determines during a set operation that the node needs to reboot before the state
 change takes full effect, it should return the instance's data with the `_rebootRequested` property
@@ -43,6 +43,8 @@ snippet:
 
 ```json
 "_rebootRequested": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/rebootRequested.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/rebootRequested.json"
 }
 ```
+
+<!-- TODO: Enumerate the other available URIs and describe which to select and why -->

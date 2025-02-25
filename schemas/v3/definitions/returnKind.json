@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/returnKind.json",
+  "title": "Return Kind",
+  "type": "string",
+  "enum": [
+    "state",
+    "stateAndDiff"
+  ],
+  "default": "state",
+  "$comment": "While the enumeration for return kind is the same for the `set` and `test`\nmethod, the way it changes the behavior of the command isn't. The description\nkeyword isn't included here because the respective schemas for those methods\ndocument the behavior themselves."
+}

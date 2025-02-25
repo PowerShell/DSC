@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json",
+  "title": "Reboot Requested",
+  "description": "Indicates that the set operation requires a reboot before it's fully complete.",
+  "type": [
+    "boolean",
+    "null"
+  ],
+  "readOnly": true
+}

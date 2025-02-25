@@ -14,5 +14,5 @@ markdownDescription: |-
 # Definition
 type: string
 enum:
-  - Actual
-  - WhatIf
+  - actual
+  - whatIf

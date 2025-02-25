@@ -24,21 +24,21 @@ properties:
     title: Resource capabilities
     description: >-
       Defines the list of DSC operations the resource is compatible with. If the resource doesn't
-      list a given operation, like `Set` or `Export`, the resource can't be used for those
-      operations. The exception to this is `Test` - DSC uses synthetic testing for resources that
-      don't have the `Test` capability.
+      list a given operation, like `set` or `export`, the resource can't be used for those
+      operations. The exception to this is `test` - DSC uses synthetic testing for resources that
+      don't have the `test` capability.
     type: array
     items:
       type: string
       enum:
-        - Get
-        - Set
-        - SetHandlesExist
-        - WhatIf
-        - Test
-        - Delete
-        - Export
-        - Resolve
+        - get
+        - set
+        - setHandlesExist
+        - whatIf
+        - test
+        - delete
+        - export
+        - resolve
   description:
     title: Resource Description
     description: >-
@@ -69,7 +69,7 @@ properties:
           implementations built into DSC.
         type: string
         enum:
-          - Command
+          - command
       
       # Need to understand how this works to document it more usefully
       - title: Custom implementation

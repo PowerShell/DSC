@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/outputs/resource/set.full.json",
+  "title": "dsc resource set result (full)",
+  "description": "Describes the return data for the full result of the `set` operation for a\nresource instance. This data is returned:\n\n- For every instance in a configuration document when you use the\n  `dsc config set` command.\n\n- For nested instances of a group or adapter resource when you use the\n  `dsc resource set` command.",
+  "type": "object",
+  "required": [
+    "metadata",
+    "name",
+    "result",
+    "type"
+  ],
+  "properties": {
+    "metadata": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/metadata/resourceInstanceResult.json"
+    },
+    "name": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/instanceName.json"
+    },
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceType.json"
+    },
+    "result": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/outputs/resource/set.json"
+    }
+  }
+}

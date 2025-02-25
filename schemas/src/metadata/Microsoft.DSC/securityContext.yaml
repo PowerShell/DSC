@@ -5,17 +5,17 @@ $id: <HOST>/<PREFIX>/<VERSION>/metadata/Microsoft.DSC/securityContext.yaml
 title: Security context
 description: >-
   Defines the security context that DSC was run under. If the value for this metadata property is
-  `Elevated`, DSC was run as root (non-Windows) or an elevated session with Administrator
-  privileges (on Windows). If the value is `Restricted`, DSC was run as a normal user or account in
+  `elevated`, DSC was run as root (non-Windows) or an elevated session with Administrator
+  privileges (on Windows). If the value is `restricted`, DSC was run as a normal user or account in
   a non-elevated session.
 markdownDescription: |-
   Defines the security context that DSC was run under. If the value for this metadata property is
-  `Elevated`, DSC was run as `root` (non-Windows) or an elevated session with Administrator
-  privileges (on Windows). If the value is `Restricted`, DSC was run as a normal user or account in
+  `elevated`, DSC was run as `root` (non-Windows) or an elevated session with Administrator
+  privileges (on Windows). If the value is `restricted`, DSC was run as a normal user or account in
   a non-elevated session.
 # Definition
 type:  string
 enum:
-  - Current
-  - Elevated
-  - Restricted
+  - current
+  - elevated
+  - restricted

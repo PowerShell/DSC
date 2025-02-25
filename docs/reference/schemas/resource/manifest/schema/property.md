@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'schema' property in a DSC Resource manifest
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Resource manifest schema property schema reference
 ---
@@ -15,7 +15,7 @@ Defines how to retrieve the JSON Schema that validates a DSC Resource instance.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.schema.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.schema.json
 Type:          object
 ```
 

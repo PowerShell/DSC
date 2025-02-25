@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'resourceId' DSC configuration document function
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       resourceId
 ---
@@ -37,7 +37,7 @@ The following configuration uses the `resourceId()` function to reference the in
 
 ```yaml
 # resourceId.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Tailspin Key
     type: Microsoft.Windows/Registry
@@ -62,12 +62,12 @@ resource instance named 'IsWindows' as a dependency of the `Example Key` resourc
 
 ```yaml
 # resourceId.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: IsWindows
     type: DSC/AssertionGroup
     properties:
-      $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+      $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
       resources:
         - name: os
           type: Microsoft/OSInfo

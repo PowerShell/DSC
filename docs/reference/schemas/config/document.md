@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a Desired State Configuration document.
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Configuration document schema reference
 ---
@@ -15,7 +15,7 @@ The YAML or JSON file that defines a DSC Configuration.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json
 Type:          object
 ```
 
@@ -29,7 +29,14 @@ A configuration document can be defined as either YAML or JSON. For ease of auth
 recommends drafting configuration documents in YAML.
 
 For DSC's authoring tools to recognize a file as a DSC Configuration document, the filename must
-end with `.dsc.config.json`, `.dsc.config.yml`, or `.dsc.config.yaml`.
+end with one of the following:
+
+- `.dsc.config.json`
+- `.dsc.config.yml`
+- `.dsc.config.yaml`.
+- `.dsc.json`
+- `.dsc.yml`
+- `.dsc.yaml`
 
 You can use configuration document functions to dynamically determine values in the document at
 runtime. For more information, see [DSC Configuration document functions reference][01]
@@ -46,29 +53,23 @@ The rest of this document describes the schema DSC uses to validation configurat
 
 Every configuration document must include these properties:
 
-- [$schema]
-- [resources]
+- [$schema](#schema)
+- [resources](#resources)
 
 ## Properties
 
 ### $schema
 
-The `$schema` property indicates the canonical URL for the version of this schema that the document
-adheres to. DSC uses this property when validating the configuration document before any
-configuration operations.
+The `$schema` property indicates the URI that resolves to the version of this schema that the
+document adheres to. DSC uses this property when validating and processing the configuration
+document.
 
-There are currently 3 published versions of the schema, compatible with different versions of DSC:
-
-- `2024/04` is the latest version of the schema, compatible with DSC version 3.0.0-preview.7 and
-  later.
-- `2023/10` is the previous version of the schema, compatible with DSC versions `3.0.0-alpha.4` and
-  `3.0.0-alpha.5`.
-- `2023/08` is the first version of the schema, compatible with DSC versions `3.0.0-alpha.1` through
-  `3.0.0-alpha.3`.
-
-This documentation is for the latest version of the schema. You should update your configuration
-documents and resource manifests to the latest version of the schema. Prior versions don't work
-with new releases of DSC. The schemas remain published, but won't get any updates.
+The JSON schemas for DSC are published in multiple versions and forms. This documentation is for
+the latest version of the schema. As a convenience, you can specify either the full URI for the
+schema hosted in GitHub or use the shorter `aka.ms` URI. You can specify the schema for a specific
+semantic version, the latest schema for a minor version, or the latest schema for a major version
+of DSC. For more information about schema URIs and versioning, see
+[DSC JSON Schema URIs](../schema-uris.md).
 
 For every version of the schema, there are three valid urls:
 
@@ -79,12 +80,12 @@ For every version of the schema, there are three valid urls:
 
 - `.../bundled/config/document.json`
 
-  The URL to the bundled schema. When it's used for validation, the validating client only needs to
-  retrieve this schema.
+  The URL to the canonically bundled schema. When it's used for validation, the validating client
+  only needs to retrieve this schema.
 
   This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can still
   validate the document when it uses this schema, other tools may error or behave in unexpected
-  ways.
+  ways if they don't fully support the 2020-12 specification.
 
 - `.../bundled/config/document.vscode.json`
 
@@ -100,15 +101,24 @@ Type:        string
 Required:    true
 Format:      URI
 ValidValues: [
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/config/document.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/config/document.vscode.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.vscode.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/config/document.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3/config/document.json
+               https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.0/config/document.json
+               https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.0.0/config/document.json
+               https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json
              ]
 ```
 
@@ -142,7 +152,7 @@ For more information about defining parameters in a configuration, see
 ```yaml
 Type:                object
 Required:            false
-ValidPropertySchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.parameter.json
+ValidPropertySchema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.parameter.json
 ```
 
 ### variables
@@ -178,7 +188,7 @@ For more information about defining a valid resource instance in a configuration
 Type:             array
 Required:         true
 MinimumItemCount: 1
-ValidItemSchema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.resource.json
+ValidItemSchema:  https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.resource.json
 ```
 
 <!-- Link reference definitions -->

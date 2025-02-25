@@ -7,6 +7,7 @@ use args::{Args, SubCommand};
 use clap::Parser;
 use dsc_lib::dscresources::resource_manifest::{ResourceManifest, GetMethod, Kind};
 use dsc_lib::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
+use dsc_lib::schemas::DscRepoSchema;
 
 fn main() {
     let args = Args::parse();
@@ -26,7 +27,7 @@ fn main() {
                 require_adapter: Some("Test/TestGroup".to_string()),
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
-                    schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
+                    schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
                     resource_type: "Test/TestResource1".to_string(),
                     kind: Some(Kind::Resource),
                     version: "1.0.0".to_string(),
@@ -51,7 +52,7 @@ fn main() {
                 require_adapter: Some("Test/TestGroup".to_string()),
                 manifest: Some(serde_json::to_value(ResourceManifest {
                     description: Some("This is a test resource.".to_string()),
-                    schema_version: dsc_lib::dscresources::resource_manifest::ManifestSchemaUri::Version2023_10,
+                    schema_version: dsc_lib::dscresources::resource_manifest::ResourceManifest::default_schema_id_uri(),
                     resource_type: "Test/TestResource2".to_string(),
                     kind: Some(Kind::Resource),
                     version: "1.0.1".to_string(),

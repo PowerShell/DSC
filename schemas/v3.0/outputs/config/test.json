@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/outputs/config/test.json",
+  "title": "DSC Configuration test command result",
+  "description": "Represents the data structure returned by the `dsc config test` command.",
+  "type": "object",
+  "required": [
+    "metadata",
+    "results",
+    "messages",
+    "hadErrors"
+  ],
+  "properties": {
+    "metadata": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0/metadata/configurationDocumentResult.json"
+    },
+    "results": {
+      "title": "Results",
+      "description": "The results of the `test` method for every DSC Resource instance in the DSC Configuration Document with the instance's name and type.",
+      "type": "array",
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3.0/outputs/resource/test.full.json"
+      }
+    },
+    "messages": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0/definitions/messages.json"
+    },
+    "hadErrors": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0/definitions/hadErrors.json"
+    }
+  }
+}

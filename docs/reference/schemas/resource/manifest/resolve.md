@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'resolve' property in a DSC Resource manifest
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Resource manifest resolve property schema reference
 ---
@@ -16,7 +16,7 @@ source.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.resolve.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.resolve.json
 Type:          object
 ```
 

@@ -4,12 +4,12 @@
 Describe 'dsc config test tests' {
     It 'Assertion works correctly' {
         $configYaml = @'
- $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+ $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
  resources:
    - name: Operating System Assertion
      type: Microsoft.DSC/Assertion
      properties:
-       $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+       $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
        resources:
          - name: Is64BitOS
            type: Microsoft/OSInfo

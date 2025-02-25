@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'min' DSC configuration document function
-ms.date:     04/09/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       min
 ---
@@ -30,7 +30,7 @@ This configuration returns the smallest number from a list of integers.
 
 ```yaml
 # min.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo minimum value
   type: Test/Echo
@@ -61,7 +61,7 @@ function more readable.
 
 ```yaml
 # min.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo integer array
   type: Test/Echo

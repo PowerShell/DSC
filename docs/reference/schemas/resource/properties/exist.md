@@ -1,6 +1,6 @@
 ---
-description: JSON schema reference for the '_exist' well-known DSC Resource property.
-ms.date:     10/05/2023
+description: JSON schema reference for the '_exist' canonical DSC Resource property.
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Resource _exist property schema
 ---
@@ -15,17 +15,17 @@ Indicates whether an instance should exist.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/exist.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/exist.json
 Type:          boolean
 DefaultValue:  true
 ```
 
 ## Description
 
-The `_exist` property indicates that the resource can enforce whether instances exist, handling
-whether an instance should be added, updated, or removed during a set operation. This property
-provides shared semantics for DSC Resources and integrating tools, but doesn't enable any
-additional built-in processing with DSC.
+The `_exist` canonical property indicates that the resource can enforce whether instances exist,
+handling whether an instance should be added, updated, or removed during a set operation. This
+property provides shared semantics for DSC Resources and integrating tools. Resources that define
+this property indicate to DSC that they adhere to the contract for the canonical property.
 
 Resources should only define this property when their implementation adheres to the following
 behavior contract:
@@ -44,6 +44,8 @@ snippet:
 
 ```json
 "_exist": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/exist.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/exist.json"
 }
 ```
+
+<!-- TODO: Enumerate the other available URIs and describe which to select and why -->

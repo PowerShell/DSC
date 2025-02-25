@@ -1,6 +1,6 @@
 ---
 description: Reference for available functions in a Desired State Configuration document.
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Configuration document functions reference
 ---
@@ -107,7 +107,7 @@ the [base64()][base64] function.
 
 ```yaml
 # overview.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Double quoted syntax
     type: Test/Echo
@@ -157,7 +157,7 @@ output of the [concat()][concat] function, combining the strings `a` and `b` int
 
 ```yaml
 # overview.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo the concatenated strings 'a' and 'b'
     type: Test/Echo
@@ -190,7 +190,7 @@ nested functions shown in the third instance to base64.
 
 ```yaml
 # overview.example.3.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo the concatenated strings 'a' and 'b' as base64
     type: Test/Echo
@@ -301,7 +301,7 @@ can access an object's properties in a configuration document.
 
 ```yaml
 # overview.example.4.properties.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 # Minimal definition of the parameters
 parameters:
   data: { type: object }
@@ -366,7 +366,7 @@ The next configuration document shows how you can access nested object propertie
 
 ```yaml
 # overview.example.4.nested.properties.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 # Minimal definition of the parameters
 parameters:
   data: { type: object }
@@ -410,7 +410,7 @@ The following configuration document shows how you can access items in an array.
 
 ```yaml
 # overview.example.4.items.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 # Minimal definition of the parameters
 parameters:
   data: { type: object }
@@ -469,7 +469,7 @@ The following configuration document shows how you can access items in a nested 
 
 ```yaml
 # overview.example.4.nested.items.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 # Minimal definition of the parameters
 parameters:
   data: { type: object }
@@ -512,7 +512,7 @@ together to access values in complex objects.
 
 ```yaml
 # overview.example.4.mixed.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 # Minimal definition of the parameters
 parameters:
   data: { type: object }
@@ -541,7 +541,7 @@ dsc config --parameters-file $params get --path $config
 ```
 
 ```yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 # Minimal definition of the parameters
 parameters:
   data: { type: object }

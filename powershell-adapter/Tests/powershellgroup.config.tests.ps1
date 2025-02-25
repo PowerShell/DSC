@@ -69,7 +69,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'Export works on config with class-based resources' {
 
         $yaml = @'
-            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
@@ -81,7 +81,7 @@ Describe 'PowerShell adapter resource tests' {
         $out = $yaml | dsc config export -f -
         $LASTEXITCODE | Should -Be 0
         $res = $out | ConvertFrom-Json
-        $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
+        $res.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
         $res.'resources' | Should -Not -BeNullOrEmpty
         $res.resources[0].properties.result.count | Should -Be 5
         $res.resources[0].properties.result[0].Name | Should -Be "Object1"
@@ -90,7 +90,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Export fails when class-based resource does not implement' {
         $yaml = @'
-            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
@@ -114,7 +114,7 @@ Describe 'PowerShell adapter resource tests' {
         try {
             $psmp = "`$env:PSModulePath"+[System.IO.Path]::PathSeparator+$TestDrive
             $yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
@@ -127,7 +127,7 @@ Describe 'PowerShell adapter resource tests' {
             $out = $yaml | dsc config export -f -
             $LASTEXITCODE | Should -Be 0
             $res = $out | ConvertFrom-Json
-            $res.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
+            $res.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
             $res.'resources' | Should -Not -BeNullOrEmpty
             $res.resources[0].properties.result.count | Should -Be 5
             $res.resources[0].properties.result[0].Name | Should -Be "Object1"
@@ -142,7 +142,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'DSCConfigRoot macro is working when config is from a file' {
 
         $yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell
@@ -167,7 +167,7 @@ Describe 'PowerShell adapter resource tests' {
     It 'DSC_CONFIG_ROOT env var is cwd when config is piped from stdin' {
 
         $yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Working with class-based resources
               type: Microsoft.DSC/PowerShell

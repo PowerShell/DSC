@@ -113,6 +113,9 @@ pub enum DscError {
         message: String,
     },
 
+    #[error("{t}: {0}.  {t2}: {1:?}", t = t!("dscerror.unrecognizedSchemaUri"), t2 = t!("dscerror.validSchemaUrisAre"))]
+    UnrecognizedSchemaUri(String, Vec<String>),
+
     #[error("{t}: {0}", t = t!("dscerror.validation"))]
     Validation(String),
 
