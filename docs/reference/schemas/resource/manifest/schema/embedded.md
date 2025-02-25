@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the embedded instance schema in a DSC Resource manifest
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       DSC Resource manifest embedded schema reference
 ---
@@ -15,7 +15,7 @@ Defines a JSON Schema that validates a DSC Resource instance.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.schema.json#/properties/embedded
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.schema.json#/properties/embedded
 Type:          object
 ```
 
@@ -103,11 +103,11 @@ whether an instance should be added, updated, or removed during a set operation.
 provides shared semantics for DSC Resources and integrating tools, but doesn't enable any
 additional built-in processing with DSC.
 
-If defined, this property must be a reference to the schema for the well-known property:
+If defined, this property must be a reference to the schema for the canonical property:
 
 ```json
 "_exist": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/exist.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/exist.json"
 }
 ```
 
@@ -119,11 +119,11 @@ The read-only `_inDesiredState` property indicates whether a resource instance i
 state. This property is mandatory for command-based DSC Resources that define the [test][02]
 property.
 
-If defined, this property must be a reference to the schema for the well-known property:
+If defined, this property must be a reference to the schema for the canonical property:
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/inDesiredState.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/inDesiredState.json"
 }
 ```
 
@@ -135,11 +135,11 @@ Resources that need to distinguish between whether unmanaged entries in a list a
 removed can define the write-only `_purge` property. This property provides shared semantics for
 DSC Resources and integrating tools, but doesn't enable any built-in processing with DSC.
 
-If defined, this property must be a reference to the schema for the well-known property:
+If defined, this property must be a reference to the schema for the canonical property:
 
 ```json
 "_purge": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/purge.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/purge.json"
 }
 ```
 
@@ -151,11 +151,11 @@ The read-only `_rebootRequested` property indicates whether a resource instance 
 after a set operation. To use DSC's built-in reboot notification processing, resources must define
 this property in their manifest.
 
-If defined, this property must be a reference to the schema for the well-known property:
+If defined, this property must be a reference to the schema for the canonical property:
 
 ```json
 "_rebootRequested": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/properties/rebootRequested.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/rebootRequested.json"
 }
 ```
 
