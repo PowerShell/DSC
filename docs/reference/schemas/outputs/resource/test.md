@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc resource test' command.
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       dsc resource test result schema reference
 ---
@@ -15,7 +15,7 @@ The result output from the `dsc resource test` command.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/outputs/resource/test.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/outputs/resource/test.json
 Type:          object
 ```
 

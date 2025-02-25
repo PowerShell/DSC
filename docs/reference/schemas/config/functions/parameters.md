@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'parameters' DSC configuration document function
-ms.date:     02/05/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       parameters
 ---
@@ -35,7 +35,7 @@ The configuration uses the `parameters()` function to echo the value of the `mes
 
 ```yaml
 # parameters.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
   message:
     type:         string

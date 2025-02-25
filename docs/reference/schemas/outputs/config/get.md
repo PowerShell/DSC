@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the data returned by the 'dsc config get' command.
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       dsc config get result schema reference
 ---
@@ -15,7 +15,7 @@ The result output from the `dsc config get` command.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/outputs/config/get.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/outputs/config/get.json
 Type:          object
 ```
 
