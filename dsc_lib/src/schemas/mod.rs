@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 //! Contains helpers for JSON schemas and DSC
 
 use schemars::{schema::{Metadata, Schema}, JsonSchema};
@@ -27,7 +30,8 @@ impl std::fmt::Display for SchemaUriPrefix {
 
 impl SchemaUriPrefix {
     /// Returns every known URI prefix for convenient iteration.
-    #[must_use] pub fn all() -> Vec<SchemaUriPrefix> {
+    #[must_use]
+    pub fn all() -> Vec<SchemaUriPrefix> {
         vec![
             Self::AkaDotMs,
             Self::Github,
@@ -66,7 +70,8 @@ impl SchemaForm {
     /// The extension for [`Bundled`] and [`Canonical`] schemas is `.json`
     /// 
     /// The extension for [`VSCode`] schemas is `.vscode.json`
-    #[must_use] pub fn to_extension(&self) -> String {
+    #[must_use]
+    pub fn to_extension(&self) -> String {
         match self {
             Self::Bundled | Self::Canonical => ".json".to_string(),
             Self::VSCode => ".vscode.json".to_string(),
@@ -78,7 +83,8 @@ impl SchemaForm {
     /// The [`Bundled`] and [`VSCode`] schemas are always published in the `bundled` folder
     /// immediately beneath the version folder. The [`Canonical`] schemas use the folder path
     /// as defined for that schema.
-    #[must_use] pub fn to_folder_prefix(&self) -> String {
+    #[must_use]
+    pub fn to_folder_prefix(&self) -> String {
         match self {
             Self::Bundled | Self::VSCode  => "bundled/".to_string(),
             Self::Canonical => String::new(),
@@ -86,7 +92,8 @@ impl SchemaForm {
     }
 
     /// Returns every schema form for convenient iteration.
-    #[must_use] pub fn all() -> Vec<SchemaForm> {
+    #[must_use]
+    pub fn all() -> Vec<SchemaForm> {
         vec![
             Self::Bundled,
             Self::VSCode,
@@ -144,7 +151,8 @@ impl std::fmt::Display for RecognizedSchemaVersion {
 
 impl RecognizedSchemaVersion {
     /// Returns every recognized schema version for convenient iteration.
-    #[must_use] pub fn all() -> Vec<RecognizedSchemaVersion> {
+    #[must_use]
+    pub fn all() -> Vec<RecognizedSchemaVersion> {
         vec![
             Self::V3,
             Self::V3_0,
@@ -153,17 +161,20 @@ impl RecognizedSchemaVersion {
     }
 
     //// Returns the latest version with major, minor, and patch segments, like `3.0.0`.
-    #[must_use] pub fn latest() -> RecognizedSchemaVersion {
+    #[must_use]
+    pub fn latest() -> RecognizedSchemaVersion {
         Self::V3_0_0
     }
 
     /// Returns the latest minor version for the latest major version, like `3.0`.
-    #[must_use] pub fn latest_minor() -> RecognizedSchemaVersion {
+    #[must_use]
+    pub fn latest_minor() -> RecognizedSchemaVersion {
         Self::V3_0
     }
 
     /// Returns the latest major version, like `3`
-    #[must_use] pub fn latest_major() -> RecognizedSchemaVersion {
+    #[must_use]
+    pub fn latest_major() -> RecognizedSchemaVersion {
         Self::V3
     }
 }
@@ -251,7 +262,8 @@ pub(crate) fn get_recognized_schema_uris(
 /// 
 /// This is a convenience function used by the [`DscRepoSchema`] trait. It's not intended for
 /// direct use.
-#[must_use] pub(crate) fn get_recognized_uris_subschema(
+#[must_use]
+pub(crate) fn get_recognized_uris_subschema(
     metadata: Metadata,
     schema_file_base_name: &str,
     schema_folder_path: &str,
@@ -352,7 +364,8 @@ pub trait DscRepoSchema : JsonSchema {
     /// default when creating an instance is the latest major version of the schema with the
     /// `aka.ms` prefix. If the schema is published in the bundled form, the default is for the
     /// bundled schema. Otherwise, the default is for the canonical (non-bundled) schema.
-    #[must_use] fn default_schema_id_uri() -> String {
+    #[must_use]
+    fn default_schema_id_uri() -> String {
         get_default_schema_uri(
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
@@ -361,7 +374,8 @@ pub trait DscRepoSchema : JsonSchema {
     }
 
     /// Returns the schema URI for a given version, form, and prefix.
-    #[must_use] fn get_schema_id_uri(
+    #[must_use]
+    fn get_schema_id_uri(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm,
         uri_prefix: SchemaUriPrefix
@@ -379,7 +393,8 @@ pub trait DscRepoSchema : JsonSchema {
     /// version.
     /// 
     /// If the type isn't published in bundled form, this function returns `None`.
-    #[must_use] fn get_enhanced_schema_id_uri(schema_version: RecognizedSchemaVersion) -> Option<String> {
+    #[must_use]
+    fn get_enhanced_schema_id_uri(schema_version: RecognizedSchemaVersion) -> Option<String> {
         if !Self::SCHEMA_SHOULD_BUNDLE {
             return None;
         }
@@ -395,7 +410,8 @@ pub trait DscRepoSchema : JsonSchema {
 
     /// Returns the URI for the canonical (non-bundled) form of the schema with the default
     /// prefix for a given version.
-    #[must_use] fn get_canonical_schema_id_uri(schema_version: RecognizedSchemaVersion) -> String {
+    #[must_use]
+    fn get_canonical_schema_id_uri(schema_version: RecognizedSchemaVersion) -> String {
         get_recognized_schema_uri(
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
@@ -407,7 +423,8 @@ pub trait DscRepoSchema : JsonSchema {
 
     /// Returns the URI for the bundled form of the schema with the default prefix for a given
     /// version.
-    #[must_use] fn get_bundled_schema_id_uri(schema_version: RecognizedSchemaVersion) -> Option<String> {
+    #[must_use]
+    fn get_bundled_schema_id_uri(schema_version: RecognizedSchemaVersion) -> Option<String> {
         if !Self::SCHEMA_SHOULD_BUNDLE {
             return None;
         }
@@ -426,7 +443,8 @@ pub trait DscRepoSchema : JsonSchema {
     /// This convenience function generates a vector containing every recognized JSON Schema `$id`
     /// URI for a specific schema. It handles returning the schemas for every recognized prefix,
     /// version, and form.
-    #[must_use] fn recognized_schema_uris() -> Vec<String> {
+    #[must_use]
+    fn recognized_schema_uris() -> Vec<String> {
         get_recognized_schema_uris(
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
@@ -441,7 +459,8 @@ pub trait DscRepoSchema : JsonSchema {
     /// recognized and validated. This method generates the appropriate subschema with every
     /// valid URI for the schema's `$id` without needing to regularly update an enum for each
     /// schema and release.
-    #[must_use] fn recognized_schema_uris_subschema(_: &mut schemars::gen::SchemaGenerator) -> Schema {
+    #[must_use]
+    fn recognized_schema_uris_subschema(_: &mut schemars::gen::SchemaGenerator) -> Schema {
         get_recognized_uris_subschema(
             Self::schema_metadata(),
             Self::SCHEMA_FILE_BASE_NAME,
@@ -451,7 +470,8 @@ pub trait DscRepoSchema : JsonSchema {
     }
 
     /// Indicates whether a given string is a recognized shema URI.
-    #[must_use] fn is_recognized_schema_uri(uri: &String) -> bool {
+    #[must_use]
+    fn is_recognized_schema_uri(uri: &String) -> bool {
         Self::recognized_schema_uris().contains(uri)
     }
 
@@ -476,7 +496,7 @@ pub trait DscRepoSchema : JsonSchema {
     }
 }
 
-#[allow(unused_imports)]
+#[cfg(test)]
 mod test {
     use serde::{Deserialize, Serialize};
 
