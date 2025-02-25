@@ -248,9 +248,10 @@ impl DscRepoSchema for ResourceManifest {
     }
 
     fn validate_schema_uri(&self) -> Result<(), DscError> {
-        match Self::is_recognized_schema_uri(&self.schema_version) {
-            true => Ok(()),
-            false => Err(DscError::UnrecognizedSchemaUri(
+        if Self::is_recognized_schema_uri(&self.schema_version) {
+            Ok(())
+        } else {
+            Err(DscError::UnrecognizedSchemaUri(
                 self.schema_version.clone(),
                 Self::recognized_schema_uris(),
             ))
