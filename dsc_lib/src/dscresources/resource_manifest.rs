@@ -300,11 +300,13 @@ pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
     Ok(())
 }
 
-#[allow(unused_imports)]
+#[cfg(test)]
 mod test {
-    use serde_json::json;
-
-    use crate::{dscerror::DscError, dscresources::resource_manifest::{import_manifest, ResourceManifest}, schemas::DscRepoSchema};
+    use crate::{
+        dscerror::DscError,
+        dscresources::resource_manifest::ResourceManifest,
+        schemas::DscRepoSchema
+    };
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {

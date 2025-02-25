@@ -211,11 +211,13 @@ impl Default for Resource {
     }
 }
 
-#[allow(unused_imports)]
+#[cfg(test)]
 mod test {
-    use serde_json::json;
-
-    use crate::{configure::config_doc::Configuration, dscerror::DscError, dscresources::resource_manifest::{import_manifest, ResourceManifest}, schemas::DscRepoSchema};
+    use crate::{
+        configure::config_doc::Configuration,
+        dscerror::DscError,
+        schemas::DscRepoSchema
+    };
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
