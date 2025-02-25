@@ -19,6 +19,7 @@
           "json",
           "set"
         ],
+        "implementsPretest": true,
         "input": "stdin",
         "return": "state"
     },
