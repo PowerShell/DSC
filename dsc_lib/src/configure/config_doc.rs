@@ -167,9 +167,10 @@ impl DscRepoSchema for Configuration {
     }
 
     fn validate_schema_uri(&self) -> Result<(), DscError> {
-        match Self::is_recognized_schema_uri(&self.schema) {
-            true => Ok(()),
-            false => Err(DscError::UnrecognizedSchemaUri(
+        if Self::is_recognized_schema_uri(&self.schema) {
+            Ok(())
+        } else {
+            Err(DscError::UnrecognizedSchemaUri(
                 self.schema.clone(),
                 Self::recognized_schema_uris(),
             ))
