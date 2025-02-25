@@ -12,6 +12,7 @@ pub struct ConfigurationResourceStartedEvent {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum ConfigurationResourceCompletionStatus {
     Success,
     Failure,

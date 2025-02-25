@@ -14,7 +14,7 @@ Describe 'Include tests' {
 
     It 'Include invalid config file' {
         $invalidConfig = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             properties:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -26,7 +26,7 @@ Describe 'Include tests' {
         $invalidConfig | Set-Content -Path $invalidConfigPath
 
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -41,7 +41,7 @@ Describe 'Include tests' {
 
     It 'Include config file with default parameters' {
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -67,7 +67,7 @@ Describe 'Include tests' {
         $includeContent = (Get-Content $osinfoConfigPath -Raw).Replace("`n", "`n" + (' ' * 20))
 
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -97,7 +97,7 @@ Describe 'Include tests' {
         $includeContent = (Get-Content $osinfoJsonPath -Raw).Replace("`n", "").Replace('"', '\"')
 
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -121,7 +121,7 @@ Describe 'Include tests' {
 
     It 'Include config with parameters file' {
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -148,7 +148,7 @@ Describe 'Include tests' {
         $parametersContent = (Get-Content $parametersContentFile -Raw).Replace("`n", "").Replace('"', '\"')
 
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -179,7 +179,7 @@ Describe 'Include tests' {
         param($config, $parameters)
 
         $configYaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -211,7 +211,7 @@ Describe 'Include tests' {
         }
 
         $configYaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -236,7 +236,7 @@ Describe 'Include tests' {
 
     It 'Multiple includes' {
         $echoConfig = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: one
   type: Microsoft.DSC.Debug/Echo
@@ -252,7 +252,7 @@ resources:
         $directorySeparator = [System.IO.Path]::DirectorySeparatorChar.ToString().Replace('\', '\\')
 
         $nestedIncludeConfig = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: nested
   type: Microsoft.DSC/Include
@@ -264,7 +264,7 @@ resources:
         $nestedIncludeConfig | Set-Content -Path $nestedIncludeConfigPath -Encoding utf8
 
         $includeConfig = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: include
   type: Microsoft.DSC/Include
@@ -288,7 +288,7 @@ resources:
 
     It 'Set with include works' {
         $echoConfig = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: one
   type: Microsoft.DSC.Debug/Echo
@@ -304,7 +304,7 @@ resources:
         $directorySeparator = [System.IO.Path]::DirectorySeparatorChar.ToString().Replace('\', '\\')
 
         $includeConfig = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: nested
   type: Microsoft.DSC/Include

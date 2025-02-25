@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource list' command
-ms.date:     06/24/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       dsc resource list
 ---
@@ -309,24 +309,24 @@ a summary table for the returned resources. The summary table includes the follo
 displayed in the listed order:
 
 - **Type** - The fully qualified type name of the resource.
-- **Kind** - Whether the resource is an `Adapter`, `Group`, or typical `Resource`. For more
-  information, see [DSC Resource kind schema reference][03].
+- **Kind** - Whether the resource is an `adapter`, `group`, `importer`, or typical `Resource`. For
+  more information, see [DSC Resource kind schema reference][03].
 - **Version** - The semantic version of the resource.
 - **Caps** - A display of the resource's [capabilities][04] as flags. The capabilities are
   displayed in the following order, using a `-` instead of the appropriate letter if the resource
   doesn't have a specific capability:
 
-  - `g` indicates that the resource has the [Get capability][05].
-  - `s` indicates that the resource has the [Set capability][06]
-  - `x` indicates that the resource has the [SetHandlesExist capability][07]
-  - `w` indicates that the resource has the [WhatIf capability][08]
-  - `t` indicates that the resource has the [Test capability][09]
-  - `d` indicates that the resource has the [Delete capability][10]
-  - `e` indicates that the resource has the [Export capability][11]
-  - `r` indicates that the resource has the [Resolve capability][12]
+  - `g` indicates that the resource has the [get capability][05].
+  - `s` indicates that the resource has the [set capability][06]
+  - `x` indicates that the resource has the [setHandlesExist capability][07]
+  - `w` indicates that the resource has the [whatIf capability][08]
+  - `t` indicates that the resource has the [test capability][09]
+  - `d` indicates that the resource has the [delete capability][10]
+  - `e` indicates that the resource has the [export capability][11]
+  - `r` indicates that the resource has the [resolve capability][12]
 
   For example, the `Microsoft.Windows/Registry` resource has the following capabilities: `gs--d-`,
-  indicating it has the `Get`, `Set`, and `Delete` capabilities.
+  indicating it has the `get`, `set`, and `delete` capabilities.
 - **RequireAdapter** - The fully qualified type name of the adapter resource that DSC uses to
   invoke the returned resource.
 - **Description** - The short description of the resource's purpose and usage.

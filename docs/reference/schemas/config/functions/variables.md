@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'variables' DSC configuration document function
-ms.date:     08/22/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       variables
 ---
@@ -35,7 +35,7 @@ example synopsis
 
 ```yaml
 # variables.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 variables:
   message: Hello, world!
 resources:

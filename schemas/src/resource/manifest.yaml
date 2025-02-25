@@ -60,6 +60,7 @@ defaultSnippets:
     body:
       ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      kind:                     group
       version:                  '${3:0.1.0}'
       description:               ${4:Synopsis for the resource's purpose}
       get:
@@ -100,6 +101,7 @@ defaultSnippets:
     body:
       ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
+      kind:                     adapter
       version:                  '${3:0.1.0}'
       description:               ${4:Synopsis for the resource's purpose}
       get:
@@ -145,7 +147,7 @@ defaultSnippets:
     body:
       ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
-      kind:                      Import
+      kind:                      importer
       version:                  '${3:0.1.0}'
       description:               ${4:Synopsis for the resource's purpose}
       resolve:
@@ -519,13 +521,13 @@ properties:
 allOf:
   # Adapter resources must define the adapter command
   - if:
-      properties: { kind: { const: Adapter } }
+      properties: { kind: { const: adapter } }
       required: [kind]
     then:
       required: [adapter]
   # Importer resources must define resolve, all others must define get
   - if:
-      properties: { kind: { const: Import } }
+      properties: { kind: { const: importer } }
       required: [kind]
     then:
       required: [resolve]

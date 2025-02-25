@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json",
+  "title": "Resource kind",
+  "description": "Defines whether the resource is a normal DSC Resource, a group resource, or an adapter resource. This property is only required for group resources.",
+  "type": "string",
+  "enum": [
+    "Resource",
+    "Adapter",
+    "Group",
+    "Import"
+  ]
+}
