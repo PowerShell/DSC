@@ -35,4 +35,24 @@ Describe 'tests for runcommandonset get' {
         '{ "arguments": "foo" }' | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f -
         $LASTEXITCODE | Should -Be 2
     }
+
+    It 'Input provided via configuration doc' {
+        $config_yaml = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: get
+              type: Microsoft.DSC.Transitional/RunCommandOnSet
+              properties:
+                executable: foo
+                arguments:
+                - "bar"
+"@
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.hadErrors | Should -BeFalse
+        $out.results.Count | Should -Be 1
+        $out.results[0].type | Should -BeExactly 'Microsoft.DSC.Transitional/RunCommandOnSet'
+        $out.results[0].result.actualState.executable | Should -BeExactly 'foo'
+        $out.results[0].result.actualState.arguments[0] | Should -BeExactly 'bar'
+    }
 }
