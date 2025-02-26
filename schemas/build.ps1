@@ -646,7 +646,7 @@ process {
         $SchemaContent = $SchemaContent -replace '<VERSION>',          $Config.version
         $SchemaContent = $SchemaContent -replace '<DOCS_BASE_URL>',    $Config.docs_base_url
         $SchemaContent = $SchemaContent -replace '<DOCS_VERSION_PIN>', $Config.docs_version_pin
-        $SchemaContent = $SchemaContent -replace '(?m)\.yaml$"?,?',    '.json'
+        $SchemaContent = $SchemaContent -replace '(?m)\.yaml"?,?\s*$', '.json'
         $SchemaPath    = $_.FullName    -replace 'src',                $Config.version
         $SchemaFolder  = Split-Path -Parent $SchemaPath
         if (-not (Test-Path -Path ($SchemaFolder))) {

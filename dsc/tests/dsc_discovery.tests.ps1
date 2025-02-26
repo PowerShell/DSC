@@ -23,7 +23,7 @@ Describe 'tests for resource discovery' {
     It 'Use DSC_RESOURCE_PATH instead of PATH when defined' {
         $resourceJson = @'
         {
-            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "DSC/TestPathResource",
             "version": "0.1.0",
             "get": {
@@ -45,7 +45,7 @@ Describe 'tests for resource discovery' {
         param($extension)
 
         $resourceYaml = @'
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
         type: DSC/TestYamlResource
         version: 0.1.0
         get:
@@ -62,7 +62,7 @@ Describe 'tests for resource discovery' {
         param($extension)
 
         $resourceInput = @'
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
         type: DSC/TestYamlResource
         version: 0.1.0
         get:
@@ -77,7 +77,7 @@ Describe 'tests for resource discovery' {
     It 'warns on invalid semver' {
         $manifest = @'
         {
-            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Test/InvalidSemver",
             "version": "1.1.0..1",
             "get": {

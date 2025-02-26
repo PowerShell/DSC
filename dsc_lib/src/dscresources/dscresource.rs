@@ -45,6 +45,7 @@ pub struct DscResource {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum Capability {
     /// The resource supports retriving configuration.
     Get,

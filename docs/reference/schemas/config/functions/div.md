@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'div' DSC configuration document function
-ms.date:     03/19/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       div
 ---
@@ -32,7 +32,7 @@ integers.
 
 ```yaml
 # div.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Dividing integers
   type: Test/Echo
@@ -63,7 +63,7 @@ full integer value without the remainder. It doesn't round the result up to 3.
 
 ```yaml
 # div.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Dividing nested functions
   type: Test/Echo

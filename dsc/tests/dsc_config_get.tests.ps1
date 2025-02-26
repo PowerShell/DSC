@@ -33,7 +33,7 @@ Describe 'dsc config get tests' {
 
     It 'can accept the use of --output-format as a subcommand' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
@@ -47,8 +47,8 @@ Describe 'dsc config get tests' {
         $result.results[0].type | Should -BeExactly 'Microsoft.DSC.Debug/Echo'
         $result.results[0].result.actualState.output | Should -Be 'hello'
         $result.metadata.'Microsoft.DSC'.version | Should -BeLike '3.*'
-        $result.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Get'
-        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
+        $result.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'get'
+        $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
         $result.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
         $result.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
         $result.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty
@@ -58,7 +58,7 @@ Describe 'dsc config get tests' {
 
     It 'json progress for config subcommand' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Echo 1
               type: Microsoft.DSC.Debug/Echo
@@ -150,7 +150,7 @@ Describe 'dsc config get tests' {
 
     It 'contentVersion is ignored' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             contentVersion: 1.0.0.0
             resources:
             - name: Echo
