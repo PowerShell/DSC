@@ -565,6 +565,11 @@ if ($packageType -eq 'msixbundle') {
             $displayName += "-Preview"
         }
     }
+    else {
+        # appx requires a version in the format of major.minor.build.revision with revision being 0
+        $productVersion += ".0"
+    }
+
     Write-Verbose -Verbose "Product version is $productVersion"
     $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
 
