@@ -16,8 +16,15 @@ param(
     [switch]$UseCratesIO,
     [switch]$UpdateLockFile,
     [switch]$Audit,
-    [switch]$UseCFSAuth
+    [switch]$UseCFSAuth,
+    [switch]$Clean,
+    [switch]$Verbose
 )
+
+$env:RUSTC_LOG=$null
+if ($Verbose) {
+    $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
+}
 
 if ($GetPackageVersion) {
     $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
@@ -317,6 +324,10 @@ if (!$SkipBuild) {
                             }
 
                             cargo audit fix
+                        }
+
+                        if ($Clean) {
+                            cargo clean
                         }
 
                         cargo build @flags
