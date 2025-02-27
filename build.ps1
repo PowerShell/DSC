@@ -521,7 +521,7 @@ function Find-MakeAppx() {
     $makeappx
 }
 
-$productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
+$productVersion = (((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1').Trim()
 
 if ($packageType -eq 'msixbundle') {
     if (!$IsWindows) {
