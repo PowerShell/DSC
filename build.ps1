@@ -123,8 +123,15 @@ function Find-LinkExe {
     }
 }
 
+$channel = 'stable'
 if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
     $rustup = 'rustup'
+} elseif ($null -ne (Get-Command msrustup -ErrorAction Ignore)) {
+    $rustup = 'msrustup'
+    $channel = 'ms-stable'
+    if ($architecture -eq 'current') {
+        $env:MSRUSTUP_TOOLCHAIN = "$architecture"
+    }
 } else {
     $rustup = 'echo'
 }
@@ -191,7 +198,7 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
-    & $rustup target add $architecture
+    & $rustup target add --toolchain $channel $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -343,10 +350,10 @@ if (!$SkipBuild) {
             $binary = Split-Path $project -Leaf
 
             if ($IsWindows) {
-                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore
+                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore -Verbose
             }
             else {
-                Copy-Item "$path/$binary" $target -ErrorAction Ignore
+                Copy-Item "$path/$binary" $target -ErrorAction Ignore -Verbose
             }
 
             if (Test-Path "./copy_files.txt") {
