@@ -141,8 +141,7 @@ extends:
             }
             $env:PATH += ";$LLVMBIN"
             write-verbose -verbose (gcm clang.exe | out-string)
-            msrustup target add $(buildName)
-            ./build.ps1 -Verbose -Clean -Release -Architecture $(buildName) -SkipLinkCheck
+            ./build.ps1 -Verbose -Release -Architecture $(buildName) -SkipLinkCheck
           displayName: 'Build $(buildName)'
           env:
             ob_restore_phase: true
@@ -303,7 +302,7 @@ extends:
         - pwsh: |
             apt update
             apt -y install musl-tools
-            ./build.ps1 -Verbose -Clean -Release -Architecture x86_64-unknown-linux-musl
+            ./build.ps1 -Verbose -Release -Architecture x86_64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build x86_64-unknown-linux-musl'
@@ -343,7 +342,7 @@ extends:
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
-            ./build.ps1 -Verbose -Clean -Release -Architecture aarch64-unknown-linux-musl
+            ./build.ps1 -Verbose -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
           displayName: 'Build aarch64-unknown-linux-musl'
@@ -376,7 +375,7 @@ extends:
           env:
             ob_restore_phase: true
         - pwsh: |
-            ./build.ps1 -Verbose -Clean -Release -Architecture $(buildName)
+            ./build.ps1 -Verbose -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
             Write-Host "##vso[artifact.upload containerfolder=release;artifactname=release]$(ob_outputDirectory)/DSC-$(PackageVersion)-$(buildName).tar.gz"
