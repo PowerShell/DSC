@@ -180,7 +180,7 @@ extends:
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -PackageType zip -Architecture $(buildName) -Release
-            Copy-Item ./bin/*.zip "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.zip "$(ob_outputDirectory)" -Verbose
           displayName: 'Zip $(buildName)'
           condition: succeeded()
         - pwsh: |
@@ -286,7 +286,7 @@ extends:
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             ./build.ps1 -PackageType zip -Architecture $(buildName) -Release
-            Copy-Item ./bin/*.zip "$(ob_outputDirectory)"
+            Copy-Item ./bin/*.zip "$(ob_outputDirectory)" -Verbose
           displayName: 'Zip $(buildName)'
           condition: succeeded()
         - pwsh: |
