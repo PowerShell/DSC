@@ -198,7 +198,6 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
-    & $rustup target add --toolchain $channel $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -206,6 +205,8 @@ else {
 }
 
 if (!$SkipBuild) {
+    & $rustup target add --toolchain $channel $architecture
+
     if (Test-Path $target) {
         Remove-Item $target -Recurse -ErrorAction Ignore
     }
