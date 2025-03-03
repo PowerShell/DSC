@@ -18,6 +18,5 @@ if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
     cargo install tree-sitter-cli
 }
 
-Invoke-NativeCommand 'tree-sitter init --update'
 Invoke-NativeCommand 'tree-sitter generate --build'
 Invoke-NativeCommand 'tree-sitter test'
