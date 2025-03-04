@@ -311,10 +311,10 @@ extends:
         steps:
         - checkout: self
         - download: current
-          artifact: drop_BuildAndSign_BuildWinx64
+          artifact: drop_BuildAndSign_BuildWin_x64
           patterns: '*.msix'
         - download: current
-          artifact: drop_BuildAndSign_BuildWinarm64
+          artifact: drop_BuildAndSign_BuildWin_arm64
           patterns: '*.msix'
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
