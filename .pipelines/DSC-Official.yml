@@ -317,8 +317,8 @@ extends:
         - pwsh: |
             Set-Location "$(Build.SourcesDirectory)/DSC"
             $null = New-Item -ItemType Directory -Path "./bin/msix" -Force -ErrorAction Ignore
-            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWinx64/*.msix" ./bin/msix -Verbose
-            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWinarm64/*.msix" ./bin/msix -Verbose
+            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
+            Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
             ./build.ps1 -PackageType msixbundle
             Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
