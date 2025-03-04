@@ -189,6 +189,10 @@ extends:
             Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()
+        - publish:
+          artifact: drop_BuildAndSign_BuildWin_$(ob_artifactSuffix)
+          displayName: Publish BuildWin_$(ob_artifactSuffix)
+          condition: succeeded()
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -294,6 +298,10 @@ extends:
             ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
             Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
           displayName: 'Create msix for $(buildName)'
+          condition: succeeded()
+        - publish:
+          artifact: drop_BuildAndSign_BuildWin_$(ob_artifactSuffix)
+          displayName: Publish BuildWin_$(ob_artifactSuffix)
           condition: succeeded()
 
       - job: CreateMsixBundle
