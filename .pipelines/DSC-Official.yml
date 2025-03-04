@@ -92,7 +92,6 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_artifactSuffix: x64
           repoRoot: '$(Build.SourcesDirectory)\DSC'
           signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
@@ -189,10 +188,6 @@ extends:
             Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
           displayName: 'Create msix for $(buildName)'
           condition: succeeded()
-        - publish:
-          artifact: drop_BuildAndSign_BuildWin_$(ob_artifactSuffix)
-          displayName: Publish BuildWin_$(ob_artifactSuffix)
-          condition: succeeded()
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -201,7 +196,6 @@ extends:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-          ob_artifactSuffix: arm64
           repoRoot: '$(Build.SourcesDirectory)\DSC'
           signSrcPath: '$(Build.SourcesDirectory)\out'
           ob_sdl_sbom_enabled: true
@@ -298,10 +292,6 @@ extends:
             ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
             Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
           displayName: 'Create msix for $(buildName)'
-          condition: succeeded()
-        - publish:
-          artifact: drop_BuildAndSign_BuildWin_$(ob_artifactSuffix)
-          displayName: Publish BuildWin_$(ob_artifactSuffix)
           condition: succeeded()
 
       - job: CreateMsixBundle
