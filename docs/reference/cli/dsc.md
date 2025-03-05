@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc' command
-ms.date:     02/05/2024
+ms.date:     3/05/2025
 ms.topic:    reference
 title:       dsc
 ---
@@ -69,17 +69,10 @@ example, `dsc config --help` or `dsc config set --help`.
 
 ## Options
 
-### -h, --help
-
-Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
-
-```yaml
-Type:      Boolean
-Mandatory: false
-```
-
 ### -l, --trace-level
+
+<a id="-l"></a>
+<a id="--trace-level"></a>
 
 Defines the minimum message level DSC should emit during an operation. Messages in DSC are
 categorized by their level.
@@ -103,13 +96,18 @@ When the log level is `error`, DSC only emits error messages. DSC ignores every 
 lower log level.
 
 ```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: warning
-ValidValues:  [error, warning, info, debug, trace]
+Type         : string
+Mandatory    : false
+DefaultValue : warning
+ValidValues  : [error, warning, info, debug, trace]
+LongSyntax   : --trace-level <TRACE_LEVEL>
+ShortSyntax  : -l <TRACE_LEVEL>
 ```
 
 ### -f, --trace-format
+
+<a id="-f"></a>
+<a id="--trace-format"></a>
 
 Defines the output format to use when emitting trace messages on stderr. DSC supports the following
 formats:
@@ -121,27 +119,71 @@ formats:
   line number as properties.
 
 ```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: default
-ValidValues:  [default, plaintext, json]
+Type         : string
+Mandatory    : false
+DefaultValue : default
+ValidValues  : [default, plaintext, json]
+LongSyntax   : --trace-format <TRACE_FORMAT>
+ShortSyntax  : -f <TRACE_FORMAT>
+```
+
+### -p, --progress-format
+
+<a id="-p"></a>
+<a id="--progress-format"></a>
+
+Defines the progress format to use when emitting progress messages on stderr. DSC supports the following
+formats:
+
+- `default` - Shows a progress bar if DSC detects that it's being called interactively. Otherwise, DSC doesn't show any progress.
+- `none` - Doesn't show any progress.
+- `json` - Emits progress as compressed JSON objects with the timestamp, level, message, and
+  line number as properties.
+
+```yaml
+Type         : string
+Mandatory    : false
+DefaultValue : default
+ValidValues  : [default, none, json]
+LongSyntax   : --progress-format <PROGRESS_FORMAT>
+ShortSyntax  : -p <PROGRESS_FORMAT>
 ```
 
 ### -V, --version
 
+<a id="-v"></a>
+<a id="--version"></a>
+
 Displays the version of the application. When you specify this option, the application ignores all
-options and arguments after this one.
+options and arguments except for [--help](#--help), which overrides this option.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --version
+ShortSyntax : -V
+```
+
+### -h, --help
+
+<a id="-h"></a>
+<a id="--help"></a>
+
+Displays the help for the current command or subcommand. When you specify this option, the
+application ignores all other options and arguments.
+
+```yaml
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
 
 ## Environment Variables
 
-By default, the `dsc` command searches for command-based DSC Resource manifests in the folders
-defined by the `PATH` environment variable. If the `DSC_RESOURCE_PATH` environment variable is
-defined, `dsc` searches the folders in `DSC_RESOURCE_PATH` instead of `PATH`.
+By default, the `dsc` command searches for DSC resource manifests in the folders defined by the
+`PATH` environment variable. If the `DSC_RESOURCE_PATH` environment variable is defined, `dsc`
+searches the folders in `DSC_RESOURCE_PATH` instead of `PATH`.
 
 The `DSC_RESOURCE_PATH` environment must be an environment variable that follows the same
 conventions as the `PATH` environment variable for the operating system. Separate folder paths with
