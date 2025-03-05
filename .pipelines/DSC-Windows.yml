@@ -30,7 +30,7 @@ steps:
   inputs:
     rustVersion: ms-stable
     toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
-    additionalTargets: $(buildName)
+    additionalTargets: ${{ parameters.buildName }}
   displayName: Install Rust
   env:
     ob_restore_phase: true
@@ -42,8 +42,8 @@ steps:
     }
     $env:PATH += ";$LLVMBIN"
     write-verbose -verbose (gcm clang.exe | out-string)
-    ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
-  displayName: 'Build $(buildName)'
+    ./build.ps1 -Release -Architecture ${{ parameters.buildName }} -SkipLinkCheck
+  displayName: 'Build ${{ parameters.buildName }}'
   env:
     ob_restore_phase: true
   condition: succeeded()
@@ -52,17 +52,17 @@ steps:
   env:
     ob_restore_phase: true
 - pwsh: |
-    $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
-    $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
-    $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
+    $null = New-Item -ItemType Directory -Path "${{ parameters.PackageRoot }}" -ErrorAction Ignore
+    $null = New-Item -ItemType Directory -Path "${{ parameters.PackageRoot }}/out" -ErrorAction Ignore
+    $null = New-Item -ItemType Directory -Path "${{ parameters.signSrcPath }}" -ErrorAction Ignore
     # workaround known issue of building in OneBranch copying from TMP folder
-    $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
+    $null = New-Item -ItemType Directory -Path "${{ parameters.signSrcPath }}" -ErrorAction Ignore
     # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
     write-host 'Binaries in $(env:CARGO_TARGET_DIR)'
-    Copy-Item -Path "$env:CARGO_TARGET_DIR/$(buildName)/$(BuildConfiguration)/*.exe" -Destination "$(signSrcPath)" -Verbose
-    Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Recurse -Destination "$(signSrcPath)" -Verbose -Force
-    write-host 'Binaries in $(signSrcPath)'
-    dir -r "$(signSrcPath)"
+    Copy-Item -Path "$env:CARGO_TARGET_DIR/${{ parameters.buildName }}/${{ parameters.BuildConfiguration }}/*.exe" -Destination "${{ parameters.signSrcPath }}" -Verbose
+    Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/${{ parameters.buildName }}/${{ parameters.BuildConfiguration }}/*" -Recurse -Destination "${{ parameters.signSrcPath }}" -Verbose -Force
+    write-host 'Binaries in ${{ parameters.signSrcPath }}'
+    dir -r "${{ parameters.signSrcPath }}"
   displayName: Copy built binaries
   env:
     ob_restore_phase: true
@@ -77,23 +77,23 @@ steps:
       **\*.ps1;
       **\*.psd1;
       **\*.psm1;
-    search_root: $(signSrcPath)
+    search_root: ${{ parameters.signSrcPath }}
 - task: CopyFiles@2
   displayName: "Copy signed files to build target dir"
   inputs:
-    SourceFolder: "$(signSrcPath)"
+    SourceFolder: "${{ parameters.signSrcPath }}"
     Contents: '**'
-    TargetFolder: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
+    TargetFolder: $(Build.SourcesDirectory)/DSC/bin/${{ parameters.buildName }}/${{ parameters.BuildConfiguration }}
     OverWrite: true
 - pwsh: |
     Set-Location "$(Build.SourcesDirectory)/DSC"
-    ./build.ps1 -PackageType zip -Architecture $(buildName) -Release
+    ./build.ps1 -PackageType zip -Architecture ${{ parameters.buildName }} -Release
     Copy-Item ./bin/*.zip "$(Build.ArtifactStagingDirectory)" -Verbose
-  displayName: 'Zip $(buildName)'
+  displayName: 'Zip ${{ parameters.buildName }}'
   condition: succeeded()
 - pwsh: |
     Set-Location "$(Build.SourcesDirectory)/DSC"
-    ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
+    ./build.ps1 -PackageType msix -Architecture ${{ parameters.buildName }} -Release -UseX64MakeAppx
     Copy-Item ./bin/msix/*.msix "$(Build.ArtifactStagingDirectory)" -Verbose
-  displayName: 'Create msix for $(buildName)'
+  displayName: 'Create msix for ${{ parameters.buildName }}'
   condition: succeeded()
