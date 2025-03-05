@@ -87,14 +87,14 @@ extends:
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
         steps:
-        - template: .pipelines/DSC-Windows.yml
+        - template: .pipelines/DSC-Windows.yml@self
           parameters:
             buildName: x86_64-pc-windows-msvc
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
         steps:
-        - template: .pipelines/DSC-Windows.yml
+        - template: .pipelines/DSC-Windows.yml@self
           parameters:
             buildName: aarch64-pc-windows-msvc
 
