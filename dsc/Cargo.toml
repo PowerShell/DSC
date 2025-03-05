@@ -1,6 +1,6 @@
 [package]
 name = "dsc"
-version = "3.0.0-rc.1"
+version = "3.1.0-preview.1"
 edition = "2021"
 
 [profile.release]
@@ -17,9 +17,9 @@ crossterm = { version = "0.28" }
 ctrlc = { version = "3.4" }
 dsc_lib = { path = "../dsc_lib" }
 indicatif = { version = "0.17" }
-jsonschema = { version = "0.28", default-features = false }
+jsonschema = { version = "0.29", default-features = false }
 path-absolutize = { version = "3.1" }
-rust-i18n = { version = "3" }
+rust-i18n = { version = "3.1" }
 schemars = { version = "0.8" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
