@@ -205,7 +205,9 @@ else {
 }
 
 if (!$SkipBuild) {
-    & $rustup target add --toolchain $channel $architecture
+    if ($architecture -ne 'Current') {
+        & $rustup target add --toolchain $channel $architecture
+    }
 
     if (Test-Path $target) {
         Remove-Item $target -Recurse -ErrorAction Ignore
