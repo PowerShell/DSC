@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc config' command
-ms.date:     02/05/2024
+ms.date:     3/05/2025
 ms.topic:    reference
 title:       dsc config
 ---
@@ -64,6 +64,9 @@ information. For example, `dsc config --help` or `dsc config set --help`.
 
 ### -f, --parameters_file
 
+<a id="-f"></a>
+<a id="--parameters-file"></a>
+
 Specifies the path to a data file containing the parameters to pass to the configuration as JSON or
 YAML. When you specify this option, DSC interprets the keys in the data file as parameters and uses
 the specified values. The values in the data file override any defaults defined in the
@@ -73,39 +76,74 @@ The data file must contain an object with the `parameters` key. The value of the
 must be an object where each key is the name of a defined parameter and each value is a valid value
 for that parameter.
 
-This option can't be used with the `--parameters` option. Choose whether to pass the parameters as
-a data string with the `--parameters` option or in a data file with the `--parameters_file` option.
+This option is mutually exclusive with the `--parameters` option.
 
 For more information about defining parameters in a configuration document, see
 [DSC Configuration document parameter schema][06]. For more information about using parameters in
 configuration document, see the [parameters function reference][07].
 
+```yaml
+Type        : string
+Mandatory   : false
+LongSyntax  : --parameters-file <PARAMETERS_FILE>
+ShortSyntax : -f <PARAMETERS_FILE>
+```
+
 ### -p, --parameters
 
-Specifies the parameters to pass to the configuration as a JSON or YAML string. When you specify
-this option, DSC interprets the keys in the data string as parameters and uses the specified
-values. The values in the data string override any defaults defined in the configuration itself.
+<a id="-p"></a>
+<a id="--parameters"></a>
+
+Specifies the parameters to pass to the configuration document as a string of data formatted as
+JSON or YAML. When you specify this option, DSC interprets the keys in the data string as
+parameters and uses the specified values. The values in the data string override any defaults
+defined in the configuration document itself.
 
 The data string must contain an object with the `parameters` key. The value of the `parameters` key
 must be an object where each key is the name of a defined parameter and each value is a valid value
 for that parameter.
 
-This option can't be used with the `--parameters_file` option. Choose whether to pass the
-parameters as a data string with the `--parameters` option or in a data file with the
-`--parameters_file` option.
+This option is mutually exclusive with the `--parameters_file` option.
 
 For more information about defining parameters in a configuration document, see
 [DSC Configuration document parameter schema][06]. For more information about using parameters in
 configuration document, see the [parameters function reference][07].
 
-### -h, --help
+```yaml
+Type        : string
+Mandatory   : false
+LongSyntax  : --parameters <PARAMETERS>
+ShortSyntax : -p <PARAMETERS>
+```
 
-Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
+### -r, --system-root
+
+<a id="-r"></a>
+<a id="--system-root"></a>
+
+Use this option to specify the path to the operating system root when you aren't targeting the
+current running OS.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : string
+Mandatory   : false
+LongSyntax  : --system-root <SYSTEM_ROOT>
+ShortSyntax : -r <SYSTEM_ROOT>
+```
+
+### -h, --help
+
+<a id="-h"></a>
+<a id="--help"></a>
+
+Displays the help for the current command or subcommand. When you specify this option, the
+application ignores all other options and arguments.
+
+```yaml
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
 
 ## Environment variables

@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc completer' command
-ms.date:     01/17/2024
+ms.date:     3/05/2025
 ms.topic:    reference
 title:       dsc completer
 ---
@@ -78,27 +78,32 @@ shell the application returns a completion script for:
 - `zsh` - [Z SHell (ZSH)][05]
 
 ```yaml
-Type:        String
-Mandatory:   true
-ValidValues: [
-               bash,
-               elvish,
-               fish,
-               powershell,
-               zsh,
-             ]
+Type        : string
+Mandatory   : true
+ValidValues : [
+                bash,
+                elvish,
+                fish,
+                powershell,
+                zsh,
+              ]
 ```
 
 ## Options
 
 ### -h, --help
 
+<a id="-h"></a>
+<a id="--help"></a>
+
 Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
+application ignores all other options and arguments.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
 
 [01]: https://www.gnu.org/software/bash/
