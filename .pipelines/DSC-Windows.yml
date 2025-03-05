@@ -1,20 +1,13 @@
 parameters:
   - name: buildName
     type: string
-
-variables:
-  buildName: x86_64-pc-windows-msvc
-  PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
-  ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
-  ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
-  repoRoot: '$(Build.SourcesDirectory)\DSC'
-  signSrcPath: '$(Build.SourcesDirectory)\out'
-  ob_sdl_sbom_enabled: true
-  ob_signing_setup_enabled: true
-  ob_sdl_codeql_compiled_enabled: true
-
-pool:
-  type: windows
+  - name: signSrcPath
+    type: string
+  - name: PackageRoot
+    type: string
+  - name: BuildConfiguration
+    type: string
+    default: Release
 
 steps:
 - checkout: self
@@ -95,12 +88,12 @@ steps:
 - pwsh: |
     Set-Location "$(Build.SourcesDirectory)/DSC"
     ./build.ps1 -PackageType zip -Architecture $(buildName) -Release
-    Copy-Item ./bin/*.zip "$(ob_outputDirectory)" -Verbose
+    Copy-Item ./bin/*.zip "$(Build.ArtifactStagingDirectory)" -Verbose
   displayName: 'Zip $(buildName)'
   condition: succeeded()
 - pwsh: |
     Set-Location "$(Build.SourcesDirectory)/DSC"
     ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
-    Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
+    Copy-Item ./bin/msix/*.msix "$(Build.ArtifactStagingDirectory)" -Verbose
   displayName: 'Create msix for $(buildName)'
   condition: succeeded()

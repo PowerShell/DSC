@@ -86,17 +86,39 @@ extends:
 
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
+        variables:
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          signSrcPath: '$(Build.SourcesDirectory)\out'
+          ob_sdl_sbom_enabled: true
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: true
+        pool:
+          type: windows
         steps:
         - template: .pipelines/DSC-Windows.yml@self
           parameters:
             buildName: x86_64-pc-windows-msvc
+            signSrcPath: '$(signSrcPath)'
+            PackageRoot: '$(PackageRoot)'
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
+        variables:
+          ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          signSrcPath: '$(Build.SourcesDirectory)\out'
+          ob_sdl_sbom_enabled: true
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: true
+        pool:
+          type: windows
         steps:
         - template: .pipelines/DSC-Windows.yml@self
           parameters:
             buildName: aarch64-pc-windows-msvc
+            signSrcPath: '$(signSrcPath)'
+            PackageRoot: '$(PackageRoot)'
 
       - job: CreateMsixBundle
         dependsOn:
