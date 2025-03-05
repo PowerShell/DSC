@@ -1,0 +1,106 @@
+parameters:
+  - name: buildName
+    type: string
+
+variables:
+  buildName: x86_64-pc-windows-msvc
+  PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+  ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
+  ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+  repoRoot: '$(Build.SourcesDirectory)\DSC'
+  signSrcPath: '$(Build.SourcesDirectory)\out'
+  ob_sdl_sbom_enabled: true
+  ob_signing_setup_enabled: true
+  ob_sdl_codeql_compiled_enabled: true
+
+pool:
+  type: windows
+
+steps:
+- checkout: self
+  env:
+    ob_restore_phase: true
+- task: CodeQL3000Init@0 # Add CodeQL Init task right before your 'Build' step.
+  inputs:
+    Enabled: true
+    AnalyzeInPipeline: true
+    Language: rust
+  env:
+    ob_restore_phase: true
+- pwsh: |
+    $tmpdir = "$(Agent.TempDirectory)"
+    Write-Host "##vso[task.setvariable variable=CARGO_TARGET_DIR;]$tmpdir"
+  displayName: 🛠️ Workaround for the LoadLibrary ACCESS_VIOLATION OneBranch issue
+  env:
+    ob_restore_phase: true
+- task: RustInstaller@1
+  inputs:
+    rustVersion: ms-stable
+    toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+    additionalTargets: $(buildName)
+  displayName: Install Rust
+  env:
+    ob_restore_phase: true
+- pwsh: |
+    Set-Location "$(Build.SourcesDirectory)/DSC"
+    $LLVMBIN = "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin"
+    if (!(Test-Path $LLVMBIN)) {
+      throw "LLVM path '$LLVMBIN' does not exist"
+    }
+    $env:PATH += ";$LLVMBIN"
+    write-verbose -verbose (gcm clang.exe | out-string)
+    ./build.ps1 -Release -Architecture $(buildName) -SkipLinkCheck
+  displayName: 'Build $(buildName)'
+  env:
+    ob_restore_phase: true
+  condition: succeeded()
+- task: CodeQL3000Finalize@0 # Add CodeQL Finalize task right after your 'Build' step.
+  condition: always()
+  env:
+    ob_restore_phase: true
+- pwsh: |
+    $null = New-Item -ItemType Directory -Path "$(PackageRoot)" -ErrorAction Ignore
+    $null = New-Item -ItemType Directory -Path "$(PackageRoot)/out" -ErrorAction Ignore
+    $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
+    # workaround known issue of building in OneBranch copying from TMP folder
+    $null = New-Item -ItemType Directory -Path "$(signSrcPath)" -ErrorAction Ignore
+    # copy only the exes from the TMP folder since it contains intermediately built files we don't want to sign
+    write-host 'Binaries in $(env:CARGO_TARGET_DIR)'
+    Copy-Item -Path "$env:CARGO_TARGET_DIR/$(buildName)/$(BuildConfiguration)/*.exe" -Destination "$(signSrcPath)" -Verbose
+    Copy-Item -Path "$(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)/*" -Recurse -Destination "$(signSrcPath)" -Verbose -Force
+    write-host 'Binaries in $(signSrcPath)'
+    dir -r "$(signSrcPath)"
+  displayName: Copy built binaries
+  env:
+    ob_restore_phase: true
+  condition: succeeded()
+- task: onebranch.pipeline.signing@1
+  displayName: Sign 1st party files
+  inputs:
+    command: 'sign'
+    signing_profile: external_distribution
+    files_to_sign: |
+      **\*.exe;
+      **\*.ps1;
+      **\*.psd1;
+      **\*.psm1;
+    search_root: $(signSrcPath)
+- task: CopyFiles@2
+  displayName: "Copy signed files to build target dir"
+  inputs:
+    SourceFolder: "$(signSrcPath)"
+    Contents: '**'
+    TargetFolder: $(Build.SourcesDirectory)/DSC/bin/$(buildName)/$(BuildConfiguration)
+    OverWrite: true
+- pwsh: |
+    Set-Location "$(Build.SourcesDirectory)/DSC"
+    ./build.ps1 -PackageType zip -Architecture $(buildName) -Release
+    Copy-Item ./bin/*.zip "$(ob_outputDirectory)" -Verbose
+  displayName: 'Zip $(buildName)'
+  condition: succeeded()
+- pwsh: |
+    Set-Location "$(Build.SourcesDirectory)/DSC"
+    ./build.ps1 -PackageType msix -Architecture $(buildName) -Release -UseX64MakeAppx
+    Copy-Item ./bin/msix/*.msix "$(ob_outputDirectory)" -Verbose
+  displayName: 'Create msix for $(buildName)'
+  condition: succeeded()
