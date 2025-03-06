@@ -283,11 +283,29 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                     return Err(DscError::Operation(t!("dscresources.commandResource.failedParseJson", executable = &test.executable, stdout = stdout, stderr = stderr, err = err).to_string()))
                 }
             };
-            let diff_properties = get_diff(&expected_value, &actual_value);
+            // if actual state contains _inDesiredState, we use that to determine if the resource is in desired state
+            let mut in_desired_state: Option<bool> = None;
+            if let Some(in_desired_state_value) = actual_value.get("_inDesiredState") {
+                if let Some(desired_state) = in_desired_state_value.as_bool() {
+                    in_desired_state = Some(desired_state);
+                } else {
+                    return Err(DscError::Operation(t!("dscresources.commandResource.inDesiredStateNotBool").to_string()));
+                }
+            }
+
+            let mut diff_properties: Vec<String> = Vec::new();
+            match in_desired_state {
+                Some(true) => {
+                    // if _inDesiredState is true, we don't need to check for diff properties
+                },
+                Some(false) | None => {
+                    diff_properties = get_diff(&expected_value, &actual_value);
+                }
+            }
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
-                in_desired_state: diff_properties.is_empty(),
+                in_desired_state: in_desired_state.unwrap_or(diff_properties.is_empty()),
                 diff_properties,
             }))
         },
