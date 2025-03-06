@@ -32,4 +32,31 @@ Describe 'dsc config test tests' {
             $out.results[0].result.differingProperties | Should -Contain 'resources'
         }
     }
+
+    It '_inDesiredState returned is used when: <inDesiredState>' -TestCases @(
+        @{ inDesiredState = $true }
+        @{ inDesiredState = $false }
+    ) {
+        param($inDesiredState)
+
+        $configYaml = @"
+  `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+  resources:
+    - name: Test
+      type: Test/InDesiredState
+      properties:
+        _inDesiredState: $inDesiredState
+        value: Hello
+"@
+
+        $out = dsc config test -i $configYaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.inDesiredState | Should -Be $inDesiredState
+        if ($inDesiredState) {
+            $out.results[0].result.differingProperties | Should -BeNullOrEmpty
+        }
+        else {
+            $out.results[0].result.differingProperties | Should -Contain 'value'
+        }
+    }
 }
