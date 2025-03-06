@@ -76,7 +76,7 @@ fn main() {
                 }
             };
             in_desired_state.value_one = 1;
-            in_desired_state.value_two= 2;
+            in_desired_state.value_two = 2;
             serde_json::to_string(&in_desired_state).unwrap()
         },
         SubCommand::Schema { subcommand } => {
