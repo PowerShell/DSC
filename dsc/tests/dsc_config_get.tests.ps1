@@ -166,4 +166,20 @@ Describe 'dsc config get tests' {
         $result.results[0].result.actualState.output | Should -Be 'hello'
         $LASTEXITCODE | Should -Be 0
     }
+
+    It 'no properties is supported' {
+        $config_yaml = @'
+            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: OS
+              type: Microsoft/OSInfo
+'@
+        $result = dsc config get -i $config_yaml | ConvertFrom-Json
+        $result.hadErrors | Should -BeFalse
+        $result.results.Count | Should -Be 1
+        $result.results[0].Name | Should -Be 'OS'
+        $result.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
+        $result.results[0].result.actualState.family | Should -BeIn @('Windows', 'Linux', 'macOS')
+        $LASTEXITCODE | Should -Be 0
+    }
 }
