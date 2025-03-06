@@ -151,7 +151,14 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
         return Ok(serde_json::to_string(&properties)?);
     }
 
-    Ok(serde_json::to_string(&properties)?)
+    match properties {
+        Some(properties) => {
+            Ok(serde_json::to_string(&properties)?)
+        },
+        _ => {
+            Ok(String::new())
+        }
+    }
 }
 
 fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
