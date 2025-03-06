@@ -283,11 +283,12 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                     return Err(DscError::Operation(t!("dscresources.commandResource.failedParseJson", executable = &test.executable, stdout = stdout, stderr = stderr, err = err).to_string()))
                 }
             };
+            let in_desired_state = get_desired_state(&actual_value)?;
             let diff_properties = get_diff(&expected_value, &actual_value);
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
-                in_desired_state: diff_properties.is_empty(),
+                in_desired_state: in_desired_state.unwrap_or(diff_properties.is_empty()),
                 diff_properties,
             }))
         },
@@ -302,10 +303,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
+            let in_desired_state = get_desired_state(&actual_value)?;
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
-                in_desired_state: diff_properties.is_empty(),
+                in_desired_state: in_desired_state.unwrap_or(diff_properties.is_empty()),
                 diff_properties,
             }))
         },
@@ -333,6 +335,19 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             }))
         },
     }
+}
+
+fn get_desired_state(actual: &Value) -> Result<Option<bool>, DscError> {
+    // if actual state contains _inDesiredState, we use that to determine if the resource is in desired state
+    let mut in_desired_state: Option<bool> = None;
+    if let Some(in_desired_state_value) = actual.get("_inDesiredState") {
+        if let Some(desired_state) = in_desired_state_value.as_bool() {
+            in_desired_state = Some(desired_state);
+        } else {
+            return Err(DscError::Operation(t!("dscresources.commandResource.inDesiredStateNotBool").to_string()));
+        }
+    }
+    Ok(in_desired_state)
 }
 
 fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
