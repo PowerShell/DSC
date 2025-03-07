@@ -63,7 +63,7 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
     };
 
     if resource.kind == Kind::Exporter {
-        for instance in export_result.actual_state.iter() {
+        for instance in &export_result.actual_state {
             let resource = serde_json::from_value::<Resource>(instance.clone())?;
             conf.resources.push(resource);
         }
