@@ -213,6 +213,10 @@ pub enum ResourceSubCommand {
     Export {
         #[clap(short, long, help = t!("args.resource").to_string())]
         resource: String,
+        #[clap(short, long, help = t!("args.input").to_string(), conflicts_with = "file")]
+        input: Option<String>,
+        #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
+        file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     },
