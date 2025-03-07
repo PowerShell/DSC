@@ -14,6 +14,7 @@ use crate::{dscerror::DscError, schemas::DscRepoSchema};
 #[serde(rename_all = "camelCase")]
 pub enum Kind {
     Adapter,
+    Exporter,
     Group,
     Importer,
     Resource,
