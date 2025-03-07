@@ -1,0 +1,21 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Demonstrate file and log compatibility from PSDesiredStateConfiguration in Windows
+  type: Microsoft.Windows/WindowsPowerShell
+  properties:
+    resources:
+    - name: File
+      type: PSDesiredStateConfiguration/File
+      properties:
+        Ensure: "Present"
+        DestinationPath: "C:\\Temp\\DSC_SimpleWFolderXYZ"
+        Type: "Directory"
+    - name: Log
+      type: PSDesiredStateConfiguration/Log
+      properties:
+        Message: "Finished running resource with ID DirectoryExists."
+      dependsOn:
+      - "[resourceId('PSDesiredStateConfiguration/File','File')]"
