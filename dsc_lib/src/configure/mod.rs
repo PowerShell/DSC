@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata};
+use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
@@ -62,14 +62,21 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
         _ => resource.export(input)?
     };
 
-    for (i, instance) in export_result.actual_state.iter().enumerate() {
-        let mut r = config_doc::Resource::new();
-        r.resource_type.clone_from(&resource.type_name);
-        r.name = format!("{}-{i}", r.resource_type);
-        let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
-        r.properties = escape_property_values(&props)?;
+    if resource.kind == Kind::Exporter {
+        for instance in export_result.actual_state.iter() {
+            let resource = serde_json::from_value::<Resource>(instance.clone())?;
+            conf.resources.push(resource);
+        }
+    } else {
+        for (i, instance) in export_result.actual_state.iter().enumerate() {
+            let mut r = config_doc::Resource::new();
+            r.resource_type.clone_from(&resource.type_name);
+            r.name = format!("{}-{i}", r.resource_type);
+            let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
+            r.properties = escape_property_values(&props)?;
 
-        conf.resources.push(r);
+            conf.resources.push(r);
+        }
     }
 
     Ok(export_result)
