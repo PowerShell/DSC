@@ -97,7 +97,7 @@ actualState:
             $resource = $obj | y2j | ConvertFrom-Json
             $resource | Should -Not -BeNullOrEmpty
             $resource.Type | Should -BeLike '*/*'
-            $resource.Kind | Should -BeIn ('resource', 'group', 'importer', 'adapter')
+            $resource.Kind | Should -BeIn ('resource', 'group', 'exporter', 'importer', 'adapter')
         }
     }
 
