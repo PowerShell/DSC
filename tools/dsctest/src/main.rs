@@ -5,6 +5,7 @@ mod args;
 mod delete;
 mod exist;
 mod exit_code;
+mod export;
 mod sleep;
 mod trace;
 mod whatif;
@@ -15,6 +16,7 @@ use schemars::schema_for;
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
+use crate::export::Export;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::whatif::WhatIf;
@@ -65,6 +67,22 @@ fn main() {
             }
             input
         },
+        SubCommand::Export { input } => {
+            let export = match serde_json::from_str::<Export>(&input) {
+                Ok(export) => export,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            for i in 0..export.count {
+                let instance = Export {
+                    count: i
+                };
+                println!("{}", serde_json::to_string(&instance).unwrap());
+            }
+            String::new()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Delete => {
@@ -75,6 +93,9 @@ fn main() {
                 },
                 Schemas::ExitCode => {
                     schema_for!(ExitCode)
+                },
+                Schemas::Export => {
+                    schema_for!(Export)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
@@ -120,5 +141,7 @@ fn main() {
         },
     };
 
-    println!("{json}");
+    if !json.is_empty() {
+        println!("{json}");
+    }
 }

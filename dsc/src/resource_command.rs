@@ -259,8 +259,7 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: Option<&OutputForma
     }
 }
 
-pub fn export(dsc: &mut DscManager, resource_type: &str, format: Option<&OutputFormat>) {
-    let mut input = String::new();
+pub fn export(dsc: &mut DscManager, resource_type: &str, mut input: String, format: Option<&OutputFormat>) {
     let Some(dsc_resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);

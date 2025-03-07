@@ -545,9 +545,10 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             dsc.find_resources(&[resource.to_string()], progress_format);
             resource_command::schema(&dsc, resource, output_format.as_ref());
         },
-        ResourceSubCommand::Export { resource, output_format } => {
+        ResourceSubCommand::Export { resource, input, file, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
-            resource_command::export(&mut dsc, resource, output_format.as_ref());
+            let parsed_input = get_input(input.as_ref(), file.as_ref());
+            resource_command::export(&mut dsc, resource, parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
