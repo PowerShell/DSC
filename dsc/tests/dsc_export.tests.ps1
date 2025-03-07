@@ -88,6 +88,18 @@ Describe 'resource export tests' {
       $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
 
+    It 'Export can be called on resource with input' {
+        $out = '{"count":3}' | dsc resource export -r Test/Export -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.resources.count | Should -Be 3
+        $out.resources[0].type | Should -BeExactly 'Test/Export'
+        $out.resources[0].properties.count | Should -Be 0
+        $out.resources[1].type | Should -BeExactly 'Test/Export'
+        $out.resources[1].properties.count | Should -Be 1
+        $out.resources[2].type | Should -BeExactly 'Test/Export'
+        $out.resources[2].properties.count | Should -Be 2
+    }
+
     It 'Export can be called on a configuration with the use of --output-format as a subcommand' {
 
       $yaml = @'
