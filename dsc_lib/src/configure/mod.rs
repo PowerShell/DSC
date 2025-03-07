@@ -530,7 +530,7 @@ impl Configurator {
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
-        conf.metadata = self.config.metadata.clone();
+        conf.metadata.clone_from(&self.config.metadata);
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
