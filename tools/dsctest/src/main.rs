@@ -7,6 +7,7 @@ mod exist;
 mod exit_code;
 mod in_desired_state;
 mod export;
+mod exporter;
 mod sleep;
 mod trace;
 mod whatif;
@@ -14,11 +15,13 @@ mod whatif;
 use args::{Args, Schemas, SubCommand};
 use clap::Parser;
 use schemars::schema_for;
+use serde_json::Map;
 use crate::delete::Delete;
 use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
 use crate::in_desired_state::InDesiredState;
 use crate::export::Export;
+use crate::exporter::{Exporter, Resource};
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::whatif::WhatIf;
@@ -97,6 +100,26 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::Exporter { input } => {
+            let exporter = match serde_json::from_str::<Exporter>(&input) {
+                Ok(exporter) => exporter,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            for type_name in exporter.type_names {
+                let mut resource = Resource {
+                    name: "test".to_string(),
+                    r#type: type_name,
+                    properties: Map::new(),
+                };
+                resource.properties.insert("foo".to_string(), serde_json::Value::String("bar".to_string()));
+                resource.properties.insert("hello".to_string(), serde_json::Value::String("world".to_string()));
+                println!("{}", serde_json::to_string(&resource).unwrap());
+            }
+            String::new()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Delete => {
@@ -113,6 +136,9 @@ fn main() {
                 },
                 Schemas::Export => {
                     schema_for!(Export)
+                },
+                Schemas::Exporter => {
+                    schema_for!(Exporter)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
