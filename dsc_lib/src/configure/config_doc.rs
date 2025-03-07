@@ -72,6 +72,8 @@ pub struct MicrosoftDscMetadata {
 pub struct Metadata {
     #[serde(rename = "Microsoft.DSC", skip_serializing_if = "Option::is_none")]
     pub microsoft: Option<MicrosoftDscMetadata>,
+    #[serde(flatten)]
+    pub other: Map<String, Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -85,7 +87,7 @@ pub struct Configuration {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<HashMap<String, Parameter>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub variables: Option<HashMap<String, Value>>,
+    pub variables: Option<Map<String, Value>>,
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
@@ -110,7 +112,7 @@ pub struct Parameter {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<HashMap<String, Value>>,
+    pub metadata: Option<Map<String, Value>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -144,7 +146,7 @@ pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<HashMap<String, Value>>,
+    pub metadata: Option<Map<String, Value>>,
 }
 
 impl Default for Configuration {

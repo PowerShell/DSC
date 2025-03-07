@@ -278,7 +278,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -426,7 +427,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -497,7 +499,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -527,6 +530,7 @@ impl Configurator {
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
+        conf.metadata.clone_from(&self.config.metadata);
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
@@ -552,7 +556,17 @@ impl Configurator {
             progress.write_increment(1);
         }
 
-        conf.metadata = Some(self.get_result_metadata(Operation::Export));
+        let export_metadata = self.get_result_metadata(Operation::Export);
+        match conf.metadata {
+            Some(mut metadata) => {
+                metadata.microsoft = export_metadata.microsoft;
+                conf.metadata = Some(metadata);
+            },
+            _ => {
+                conf.metadata = Some(export_metadata);
+            },
+        }
+
         result.result = Some(conf);
         Ok(result)
     }
@@ -685,7 +699,8 @@ impl Configurator {
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
                 }
-            )
+            ),
+            other: Map::new(),
         }
     }
 

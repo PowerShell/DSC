@@ -105,4 +105,22 @@ Describe 'resource export tests' {
       $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
       $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
+
+    It 'Export for config preserves metadata' {
+        $yaml = @'
+          $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+          metadata:
+            winget:
+              processor: dscv3
+            hello: world
+          resources:
+            - name: OS
+              type: Microsoft/OSInfo
+'@
+        $out = $yaml | dsc config export -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.metadata.winget.processor | Should -BeExactly 'dscv3'
+        $out.metadata.hello | Should -BeExactly 'world'
+        $out.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'export'
+    }
 }
