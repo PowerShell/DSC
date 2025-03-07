@@ -278,7 +278,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -426,7 +427,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -497,7 +499,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -696,7 +699,8 @@ impl Configurator {
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
                 }
-            )
+            ),
+            other: Map::new(),
         }
     }
 
