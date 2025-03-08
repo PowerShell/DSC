@@ -1,5 +1,9 @@
 _version = 1
 
+[configure.config_doc]
+configurationDocumentSchemaTitle = "Configuration document schema URI"
+configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
+
 [configure.constraints]
 minLengthIsNull = "Parameter '%{name}' has minimum length constraint but is null"
 notMinLength = "Parameter '%{name}' has minimum length constraint of %{min_length} but is %{length}"
@@ -143,6 +147,10 @@ diffKeyMissing = "diff: key '%{key}' missing"
 diffKeyNotObject = "diff: key '%{key}' is not an object"
 diffArraySize = "diff: arrays have different lengths"
 diffMissingItem = "diff: actual array missing expected item"
+
+[dscresources.resource_manifest]
+resourceManifestSchemaTitle = "Resource manifest schema URI"
+resourceManifestSchemaDescription = "Defines the JSON Schema the resource manifest adheres to."
 
 [functions]
 invalidArgType = "Invalid argument type"
@@ -311,8 +319,13 @@ schemaNotAvailable = "No Schema found and `validate` is not supported"
 securityContext = "Security context"
 utf8Conversion = "UTF-8 conversion"
 unknown = "Unknown"
+unrecognizedSchemaUri = "Unrecognized $schema URI"
 validation = "Validation"
+validSchemaUrisAre = "Valid schema URIs are"
 setting = "Setting"
+
+[progress]
+failedToSerialize = "Failed to serialize progress JSON: %{json}"
 
 [util]
 foundSetting = "Found setting '%{name}' in %{path}"

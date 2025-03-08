@@ -21,7 +21,7 @@
                 'PSEdition_Core',
                 'Linux',
                 'Mac')
-            DscCapabilities = @('Get', 'Test')
+            DscCapabilities = @('get', 'test')
         }
     }
 }

@@ -16,8 +16,15 @@ param(
     [switch]$UseCratesIO,
     [switch]$UpdateLockFile,
     [switch]$Audit,
-    [switch]$UseCFSAuth
+    [switch]$UseCFSAuth,
+    [switch]$Clean,
+    [switch]$Verbose
 )
+
+$env:RUSTC_LOG=$null
+if ($Verbose) {
+    $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
+}
 
 if ($GetPackageVersion) {
     $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
@@ -36,6 +43,7 @@ $filesForWindowsPackage = @(
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
     'NOTICE.txt',
     'osinfo.exe',
     'osinfo.dsc.resource.json',
@@ -64,6 +72,7 @@ $filesForLinuxPackage = @(
     'apt.dsc.resource.json',
     'apt.dsc.resource.sh',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
@@ -83,6 +92,7 @@ $filesForMacPackage = @(
     'brew.dsc.resource.json',
     'brew.dsc.resource.sh',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
@@ -113,8 +123,15 @@ function Find-LinkExe {
     }
 }
 
+$channel = 'stable'
 if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
     $rustup = 'rustup'
+} elseif ($null -ne (Get-Command msrustup -ErrorAction Ignore)) {
+    $rustup = 'msrustup'
+    $channel = 'ms-stable'
+    if ($architecture -eq 'current') {
+        $env:MSRUSTUP_TOOLCHAIN = "$architecture"
+    }
 } else {
     $rustup = 'echo'
 }
@@ -181,7 +198,6 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
-    & $rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -189,6 +205,10 @@ else {
 }
 
 if (!$SkipBuild) {
+    if ($architecture -ne 'Current') {
+        & $rustup target add --toolchain $channel $architecture
+    }
+
     if (Test-Path $target) {
         Remove-Item $target -Recurse -ErrorAction Ignore
     }
@@ -316,6 +336,10 @@ if (!$SkipBuild) {
                             cargo audit fix
                         }
 
+                        if ($Clean) {
+                            cargo clean
+                        }
+
                         cargo build @flags
                     }
                 }
@@ -329,10 +353,10 @@ if (!$SkipBuild) {
             $binary = Split-Path $project -Leaf
 
             if ($IsWindows) {
-                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore
+                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore -Verbose
             }
             else {
-                Copy-Item "$path/$binary" $target -ErrorAction Ignore
+                Copy-Item "$path/$binary" $target -ErrorAction Ignore -Verbose
             }
 
             if (Test-Path "./copy_files.txt") {
@@ -507,7 +531,7 @@ function Find-MakeAppx() {
     $makeappx
 }
 
-$productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
+$productVersion = (((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1').Trim()
 
 if ($packageType -eq 'msixbundle') {
     if (!$IsWindows) {
@@ -562,6 +586,11 @@ if ($packageType -eq 'msixbundle') {
             $displayName += "-Preview"
         }
     }
+    else {
+        # appx requires a version in the format of major.minor.build.revision with revision being 0
+        $productVersion += ".0"
+    }
+
     Write-Verbose -Verbose "Product version is $productVersion"
     $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
 

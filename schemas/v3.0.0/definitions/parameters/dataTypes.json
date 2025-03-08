@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/definitions/parameters/dataTypes.json",
+  "title": "Data Types",
+  "description": "Defines the data type for the parameter value.",
+  "type": "string",
+  "enum": [
+    "string",
+    "secureString",
+    "int",
+    "bool",
+    "object",
+    "secureObject",
+    "array"
+  ]
+}

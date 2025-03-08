@@ -1,5 +1,5 @@
 {
-    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "description": "Takes a single-command line to execute on DSC set operation",
     "type": "Microsoft.DSC.Transitional/RunCommandOnSet",
     "version": "0.1.0",
@@ -19,6 +19,7 @@
           "json",
           "set"
         ],
+        "implementsPretest": true,
         "input": "stdin",
         "return": "state"
     },

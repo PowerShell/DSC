@@ -85,4 +85,29 @@ Describe 'tests for runcommandonset set' {
         $actual | Should -BeLike "*$expected_logging*"
         $LASTEXITCODE | Should -Be 2
     }
+
+    It 'Input provided via configuration doc' {
+        $command = "Write-Output Hello | Out-File " + $TestDrive + "/output.txt" + " -Append"
+        $config_yaml = @"
+            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            resources:
+            - name: set
+              type: Microsoft.DSC.Transitional/RunCommandOnSet
+              properties:
+                executable: pwsh
+                arguments:
+                - -Command
+                - $command
+"@
+        $out = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.hadErrors | Should -BeFalse
+        $out.results.Count | Should -Be 1
+        $out.results[0].type | Should -BeExactly 'Microsoft.DSC.Transitional/RunCommandOnSet'
+        $out.results[0].result.afterState.executable | Should -BeExactly 'pwsh'
+        $out.results[0].result.afterState.arguments[0] | Should -BeExactly '-Command'
+        Get-Content $TestDrive/output.txt  | Should -BeExactly 'Hello'
+        $out = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        Get-Content $TestDrive/output.txt  | Should -BeExactly @('Hello', 'Hello')
+    }
 }

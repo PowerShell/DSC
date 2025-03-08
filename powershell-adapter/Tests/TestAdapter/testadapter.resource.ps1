@@ -36,12 +36,12 @@ switch ($Operation) {
     'List' {
             @{
                 type           = "Test/TestCase"
-                kind           = 'Resource'
+                kind           = 'resource'
                 version        = '1'
-                capabilities   = @('Get', 'Set', 'Test', 'Export')
+                capabilities   = @('get', 'set', 'test', 'export')
                 path           = $PSScriptRoot
                 directory      = Split-Path $PSScriptRoot
-                implementedAs  = 'Adapter'
+                implementedAs  = 'adapter'
                 author         = 'Test'
                 properties     = @('TestCaseId', 'Input', 'Result')
                 requireAdapter = 'Test/TestAdapter'

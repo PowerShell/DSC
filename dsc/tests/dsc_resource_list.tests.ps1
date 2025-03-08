@@ -10,9 +10,9 @@ Describe 'Tests for listing resources' {
         $resources.type | Should -Contain 'Microsoft.DSC/Assertion'
         $resources.type | Should -Contain 'Microsoft.DSC/Group'
         $resources.type | Should -Contain 'Microsoft/OSInfo'
-        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/Group' }).Kind | Should -BeExactly 'Group'
-        ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'Resource'
-        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/PowerShell' }).Kind | Should -BeExactly 'Adapter'
+        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/Group' }).Kind | Should -BeExactly 'group'
+        ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'resource'
+        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/PowerShell' }).Kind | Should -BeExactly 'adapter'
     }
 
     It 'dsc resource list --tags "<tags>" and --description "<description> work' -TestCases @(
@@ -66,7 +66,9 @@ Describe 'Tests for listing resources' {
         foreach ($line in $lines) {
             $jp = $line | ConvertFrom-Json
             if ($jp.activity) { # if line is a progress message
-                $jp.percent_complete | Should -BeIn (0..100)
+                $jp.id | Should -Not -BeNullOrEmpty
+                $jp.totalItems | Should -Not -BeNullOrEmpty
+                $jp.completedItems | Should -Not -BeNullOrEmpty
                 $ProgressMessagesFound = $True
             }
         }
@@ -77,8 +79,8 @@ Describe 'Tests for listing resources' {
         $resource = dsc resource list Microsoft/OSInfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $resource.capabilities.Count | Should -Be 2
-        $resource.capabilities | Should -Contain 'Get'
-        $resource.capabilities | Should -Contain 'Export'
+        $resource.capabilities | Should -Contain 'get'
+        $resource.capabilities | Should -Contain 'export'
     }
 
     It 'Invalid adapter returns an error' {

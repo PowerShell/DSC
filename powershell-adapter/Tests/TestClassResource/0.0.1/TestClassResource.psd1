@@ -40,8 +40,8 @@ DscResourcesToExport = @('TestClassResource', 'NoExport')
 PrivateData = @{
     PSData = @{
         DscCapabilities = @(
-            'Get'
-            'Test'
+            'get'
+            'test'
         )
     }
 }

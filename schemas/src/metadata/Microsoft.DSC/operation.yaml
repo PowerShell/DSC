@@ -12,7 +12,7 @@ markdownDescription: |-
 # Definition
 type: string
 enum:
-  - Get
-  - Set
-  - Test
-  - Export
+  - get
+  - set
+  - test
+  - export

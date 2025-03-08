@@ -1,13 +1,13 @@
 # Example for grouping and groups in groups
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
   Microsoft.DSC:
-    requiredSecurityContext: Current # this is the default and just used as an example indicating this config works for admins and non-admins
+    requiredSecurityContext: current # this is the default and just used as an example indicating this config works for admins and non-admins
 resources:
 - name: Last Group
   type: Microsoft.DSC/Group
   properties:
-    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
     - name: Last
       type: Microsoft.DSC.Debug/Echo
@@ -18,7 +18,7 @@ resources:
 - name: First Group
   type: Microsoft.DSC/Group
   properties:
-    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
     - name: First
       type: Microsoft.DSC.Debug/Echo
@@ -27,7 +27,7 @@ resources:
     - name: Nested Group
       type: Microsoft.DSC/Group
       properties:
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Nested Second
           type: Microsoft.DSC.Debug/Echo
