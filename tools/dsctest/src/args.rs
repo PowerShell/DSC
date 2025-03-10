@@ -9,6 +9,7 @@ pub enum Schemas {
     Exist,
     ExitCode,
     InDesiredState,
+    Export,
     Sleep,
     Trace,
     WhatIf,
@@ -45,6 +46,11 @@ pub enum SubCommand {
     #[clap(name = "in-desired-state", about = "Specify if the resource is in the desired state")]
     InDesiredState {
         #[clap(name = "input", short, long, help = "The input to the in desired state command as JSON")]
+        input: String,
+    },
+    #[clap(name = "export", about = "Export instances")]
+    Export {
+        #[clap(name = "input", short, long, help = "The input to the export command as JSON")]
         input: String,
     },
 
