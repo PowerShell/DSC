@@ -119,68 +119,70 @@ impl RegistryHelper {
             Err(e) => return self.handle_error_or_what_if(e)
         };
 
-        let value_data = match &self.config.value_data {
-            Some(value_data) => value_data,
-            None => &RegistryValueData::None,
-        };
+        if let Some(value_name) = &self.config.value_name {
+            let value_data = match &self.config.value_data {
+                Some(value_data) => value_data,
+                None => &RegistryValueData::None,
+            };
 
-        let Ok(value_name) = U16CString::from_str(self.config.value_name.as_ref().unwrap()) else {
-            return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueName".to_string()));
-        };
+            let Ok(value_name) = U16CString::from_str(&value_name) else {
+                return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueName".to_string()));
+            };
 
-        let data = match value_data {
-            RegistryValueData::String(s) => {
-                let Ok(utf16) = U16CString::from_str(s) else {
-                    return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
-                };
-                Data::String(utf16)
-            },
-            RegistryValueData::ExpandString(s) => {
-                let Ok(utf16) = U16CString::from_str(s) else {
-                    return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
-                };
-                Data::ExpandString(utf16)
-            },
-            RegistryValueData::Binary(b) => {
-                Data::Binary(b.clone())
-            },
-            RegistryValueData::DWord(d) => {
-                Data::U32(*d)
-            },
-            RegistryValueData::MultiString(m) => {
-                let mut m16: Vec<UCString<u16>> = Vec::<UCString<u16>>::new();
-                for s in m {
+            let data = match value_data {
+                RegistryValueData::String(s) => {
                     let Ok(utf16) = U16CString::from_str(s) else {
                         return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
                     };
-                    m16.push(utf16);
-                }
-                Data::MultiString(m16)
-            },
-            RegistryValueData::QWord(q) => {
-                Data::U64(*q)
-            },
-            RegistryValueData::None => {
-                Data::None
-            },
-        };
-
-        if self.what_if {
-            return Ok(Some(Registry {
-                key_path: self.config.key_path.clone(),
-                value_data: match data {
-                    Data::None => None,
-                    _ => Some(convert_reg_value(&data)?),
+                    Data::String(utf16)
                 },
-                value_name: self.config.value_name.clone(),
-                metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
-                ..Default::default()
-            }));
-        }
+                RegistryValueData::ExpandString(s) => {
+                    let Ok(utf16) = U16CString::from_str(s) else {
+                        return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
+                    };
+                    Data::ExpandString(utf16)
+                },
+                RegistryValueData::Binary(b) => {
+                    Data::Binary(b.clone())
+                },
+                RegistryValueData::DWord(d) => {
+                    Data::U32(*d)
+                },
+                RegistryValueData::MultiString(m) => {
+                    let mut m16: Vec<UCString<u16>> = Vec::<UCString<u16>>::new();
+                    for s in m {
+                        let Ok(utf16) = U16CString::from_str(s) else {
+                            return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
+                        };
+                        m16.push(utf16);
+                    }
+                    Data::MultiString(m16)
+                },
+                RegistryValueData::QWord(q) => {
+                    Data::U64(*q)
+                },
+                RegistryValueData::None => {
+                    Data::None
+                },
+            };
 
-        if let Some(reg_key) = reg_key {
-            reg_key.set_value(&value_name, &data)?;
-        };
+            if self.what_if {
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    value_data: match data {
+                        Data::None => None,
+                        _ => Some(convert_reg_value(&data)?),
+                    },
+                    value_name: self.config.value_name.clone(),
+                    metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
+                    ..Default::default()
+                }));
+            }
+
+            if let Some(reg_key) = reg_key {
+                reg_key.set_value(&value_name, &data)?;
+            };
+        }
 
         if self.what_if {
             return Ok(Some(Registry {
