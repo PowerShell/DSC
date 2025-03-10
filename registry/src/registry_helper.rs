@@ -125,7 +125,7 @@ impl RegistryHelper {
                 None => &RegistryValueData::None,
             };
 
-            let Ok(value_name) = U16CString::from_str(&value_name) else {
+            let Ok(value_name) = U16CString::from_str(value_name) else {
                 return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueName".to_string()));
             };
 
