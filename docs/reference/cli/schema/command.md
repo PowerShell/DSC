@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc schema' command
-ms.date:     02/28/2025
+ms.date:     3/05/2025
 ms.topic:    reference
 title:       dsc schema
 ---
@@ -45,6 +45,8 @@ output for one of the application's commands.
 ## Examples
 
 ### Example 1 - Retrieve the schema for the dsc resource get command result
+
+<a id="example-1"></a>
 
 ```sh
 dsc schema --type get-result
@@ -170,65 +172,102 @@ definitions:
 
 ### -t, --type
 
+<a id="-t"></a>
+<a id="--type"></a>
+
 This option is mandatory for the `schema` command. The value for this option determines which
 schema the application returns:
 
-- `dsc-resource` ([reference documentation][01]) - Represents a DSC Resource as returned from the
-  `dsc resource list` command.
-- `resource-manifest` ([reference documentation][02]) - Validates a command-based DSC Resource's
-  manifest. If the manifest is invalid, DSC raises an error.
-- `get-result` ([reference documentation][03]) - Represents the output from the `dsc resource get`
-  command.
-- `set-result` ([reference documentation][04]) - Represents the output from the `dsc resource set`
-  command.
-- `test-result` ([reference documentation][05]) - Represents the output from the
-  `dsc resource test` command.
-- `configuration` ([reference documentation][06]) - Validates a DSC Configuration document. If the
-  document is invalid, DSC raises an error.
-- `configuration-get-result` ([reference documentation][07]) - Represents the output from the
-  `dsc config get` command.
-- `configuration-set-result` ([reference documentation][08]) - Represents the output from the
-  `dsc config set` command.
-- `configuration-test-result` ([reference documentation][09]) - Represents the output from the
-  `dsc config test` command.
+- `configuration` ([reference documentation][06]) - Validates a DSC Configuration document. If the document is invalid, DSC raises an error.
+- `dsc-resource` ([reference documentation][01]) - Represents a DSC Resource as returned from the `dsc resource list` command.
+- `resource-manifest` ([reference documentation][02]) - Validates a command resource's manifest. If the manifest is invalid, DSC raises an error.
+- `include` ([reference documentation](../../../reference/resources/microsoft/dsc/include/index.md)) - represents the instance schema for the built-in `Microsoft.DSC/Include` importer resource.
+- `configuration-get-result` ([reference documentation][07]) - Represents the output from the `dsc config get` command.
+- `configuration-set-result` ([reference documentation][08]) - Represents the output from the `dsc config set` command.
+- `configuration-test-result` ([reference documentation][09]) - Represents the output from the `dsc config test` command.
+- `get-result` ([reference documentation][03]) - Represents the output from the `dsc resource get` command.
+- `resolve-result` ([reference documentation]) - Represents the resolved form of the configuration document an `importer` resource emits.
+- `set-result` ([reference documentation][04]) - Represents the output from the `dsc resource set` command.
+- `test-result` ([reference documentation][05]) - Represents the output from the `dsc resource test` command.
 
 ```yaml
-Type:        String
+Type:        string
 Mandatory:   true
 ValidValues: [
-               dsc-resource,
-               resource-manifest,
-               get-result,
-               set-result,
-               test-result,
-               configuration,
-               configuration-get-result,
-               configuration-set-result,
+               configuration
+               dsc-resource
+               resource-manifest
+               include
+               configuration-get-result
+               configuration-set-result
                configuration-test-result
+               get-result
+               resolve-result
+               set-result
+               test-result
              ]
+LongSyntax  : --type <TYPE>
+ShortSyntax : -t <TYPE>
 ```
 
-### -f, --format
+### -o, --output-format
 
-The `--format` option controls the console output format for the command. If the command output is
-redirected or captured as a variable, the output is always JSON.
+<a id="-o"></a>
+<a id="--output-format"></a>
+
+The `--output-format` option controls which format DSC uses for the data the command returns. The
+available formats are:
+
+- `json` to emit the data as a [JSON Line][aa].
+- `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
+- `yaml` to emit the data as YAML.
+
+The default output format depends on whether DSC detects that the output is being redirected or
+captured as a variable:
+
+- If the command isn't being redirected or captured, DSC displays the output as the `yaml` format
+  in the console.
+- If the command output is redirected or captured, DSC emits the data as the `json` format to
+  stdout.
+
+When you use this option, DSC uses the specified format regardless of whether the command is being
+redirected or captured.
+
+When the command isn't redirected or captured, the output in the console is formatted for improved
+readability. When the command isn't redirected or captured, the output include terminal sequences
+for formatting.
 
 ```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: yaml
-ValidValues:  [json, pretty-json, yaml]
+Type        : string
+Mandatory   : false
+ValidValues : [json, pretty-json, yaml]
+LongSyntax  : --output-format <OUTPUT_FORMAT>
+ShortSyntax : -o <OUTPUT_FORMAT>
 ```
+
+[aa]: https://jsonlines.org/
 
 ### -h, --help
 
+<a id="-h"></a>
+<a id="--help"></a>
+
 Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
+application ignores all other options and arguments.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
+
+## Output
+
+This command returns formatted data representing a JSON Schema specified by the [--type option](#--type).
+
+For more information about the formatting of the output data, see the
+[--output-format option](#--output-format).
 
 [01]: ../../schemas/outputs/resource/list.md
 [02]: ../../schemas/resource/manifest/root.md
