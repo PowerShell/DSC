@@ -4,5 +4,5 @@ resources:
 - name: Delete empty directory
   type: Microsoft.DSC/Directory
   properties:
-    path: "[path('d:\\', 'temp', 'testdir')]"
+    path: "[path(envar(TEMP), 'testdir')]"
     _exist: false

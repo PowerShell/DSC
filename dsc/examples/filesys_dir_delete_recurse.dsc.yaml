@@ -4,6 +4,6 @@ resources:
 - name: Delete non-empty directory
   type: Microsoft.DSC/Directory
   properties:
-    path: "[path('d:\\', 'temp', 'testdir')]"
+    path: "[path(envar(TEMP), 'testdir')]"
     recurse: true
     _exist: false

@@ -4,6 +4,6 @@ resources:
 - name: Set file content
   type: Microsoft.DSC/FileContent
   properties:
-    path: "[path('d:\\', 'temp', 'a.txt')]"
+    path: "[path(envar(TEMP), 'test-file-resource.txt')]"
     content: "Hello, World!"
     _exist: true

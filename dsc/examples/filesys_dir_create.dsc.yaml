@@ -4,5 +4,5 @@ resources:
 - name: Create empty directory
   type: Microsoft.DSC/Directory
   properties:
-    path: "[path('d:\\', 'temp', 'testdir')]"
+    path: "[path(envar(TEMP), 'test-file-resource.txt')]"
     _exist: true
