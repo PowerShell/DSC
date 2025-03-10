@@ -72,7 +72,10 @@ impl RegistryHelper {
             Ok(Registry {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
-                value_data: Some(convert_reg_value(&value)?),
+                value_data: match value {
+                    Data::None => None,
+                    _ => Some(convert_reg_value(&value)?)
+                },
                 ..Default::default()
             })
         } else {
@@ -100,7 +103,7 @@ impl RegistryHelper {
                     };
 
                     if self.what_if {
-                        what_if_metadata.push(t!("registry_helper.whatIfCreateKey", "subkey" => subkey).to_string());
+                        what_if_metadata.push(t!("registry_helper.whatIfCreateKey", subkey = subkey).to_string());
                     }
                     else {
                         reg_key = reg_key.create(path, Security::CreateSubKey)?;
@@ -116,59 +119,68 @@ impl RegistryHelper {
             Err(e) => return self.handle_error_or_what_if(e)
         };
 
-        if let Some(value_data) = &self.config.value_data {
-            let Ok(value_name) = U16CString::from_str(self.config.value_name.as_ref().unwrap()) else {
-                return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueName".to_string()));
-            };
+        let value_data = match &self.config.value_data {
+            Some(value_data) => value_data,
+            None => &RegistryValueData::None,
+        };
 
-            let data = match value_data {
-                RegistryValueData::String(s) => {
+        let Ok(value_name) = U16CString::from_str(self.config.value_name.as_ref().unwrap()) else {
+            return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueName".to_string()));
+        };
+
+        let data = match value_data {
+            RegistryValueData::String(s) => {
+                let Ok(utf16) = U16CString::from_str(s) else {
+                    return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
+                };
+                Data::String(utf16)
+            },
+            RegistryValueData::ExpandString(s) => {
+                let Ok(utf16) = U16CString::from_str(s) else {
+                    return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
+                };
+                Data::ExpandString(utf16)
+            },
+            RegistryValueData::Binary(b) => {
+                Data::Binary(b.clone())
+            },
+            RegistryValueData::DWord(d) => {
+                Data::U32(*d)
+            },
+            RegistryValueData::MultiString(m) => {
+                let mut m16: Vec<UCString<u16>> = Vec::<UCString<u16>>::new();
+                for s in m {
                     let Ok(utf16) = U16CString::from_str(s) else {
                         return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
                     };
-                    Data::String(utf16)
-                },
-                RegistryValueData::ExpandString(s) => {
-                    let Ok(utf16) = U16CString::from_str(s) else {
-                        return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
-                    };
-                    Data::ExpandString(utf16)
-                },
-                RegistryValueData::Binary(b) => {
-                    Data::Binary(b.clone())
-                },
-                RegistryValueData::DWord(d) => {
-                    Data::U32(*d)
-                },
-                RegistryValueData::MultiString(m) => {
-                    let mut m16: Vec<UCString<u16>> = Vec::<UCString<u16>>::new();
-                    for s in m {
-                        let Ok(utf16) = U16CString::from_str(s) else {
-                            return self.handle_error_or_what_if(RegistryError::Utf16Conversion("valueData".to_string()));
-                        };
-                        m16.push(utf16);
-                    }
-                    Data::MultiString(m16)
-                },
-                RegistryValueData::QWord(q) => {
-                    Data::U64(*q)
-                },
-            };
+                    m16.push(utf16);
+                }
+                Data::MultiString(m16)
+            },
+            RegistryValueData::QWord(q) => {
+                Data::U64(*q)
+            },
+            RegistryValueData::None => {
+                Data::None
+            },
+        };
 
-            if self.what_if {
-                return Ok(Some(Registry {
-                    key_path: self.config.key_path.clone(),
-                    value_data: Some(convert_reg_value(&data)?),
-                    value_name: self.config.value_name.clone(),
-                    metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
-                    ..Default::default()
-                }));
-            }
-
-            if let Some(reg_key) = reg_key {
-                reg_key.set_value(&value_name, &data)?;
-            };
+        if self.what_if {
+            return Ok(Some(Registry {
+                key_path: self.config.key_path.clone(),
+                value_data: match data {
+                    Data::None => None,
+                    _ => Some(convert_reg_value(&data)?),
+                },
+                value_name: self.config.value_name.clone(),
+                metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
+                ..Default::default()
+            }));
         }
+
+        if let Some(reg_key) = reg_key {
+            reg_key.set_value(&value_name, &data)?;
+        };
 
         if self.what_if {
             return Ok(Some(Registry {
@@ -222,8 +234,12 @@ impl RegistryHelper {
         let parent_key: RegKey;
         let mut subkeys: Vec<&str> = Vec::new();
         let parent_key_path = get_parent_key_path(&self.subkey);
-        let subkey_name = &self.subkey[parent_key_path.len() + 1..];
-        subkeys.push(subkey_name);
+        let subkey_name = if parent_key_path.is_empty() { &self.subkey } else {
+            &self.subkey[parent_key_path.len() + 1..]
+        };
+        if !subkey_name.is_empty() {
+            subkeys.push(subkey_name);
+        }
         let mut current_key_path = parent_key_path;
 
         loop {
@@ -316,6 +332,7 @@ fn convert_reg_value(value: &Data) -> Result<RegistryValueData, RegistryError> {
             Ok(RegistryValueData::MultiString(m))
         },
         Data::U64(q) => Ok(RegistryValueData::QWord(*q)),
+        Data::None => Ok(RegistryValueData::None),
         _ => Err(RegistryError::UnsupportedValueDataType)
     }
 }

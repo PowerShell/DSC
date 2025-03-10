@@ -12,6 +12,7 @@ pub enum RegistryValueData {
     DWord(u32),
     MultiString(Vec<String>),
     QWord(u64),
+    None,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
