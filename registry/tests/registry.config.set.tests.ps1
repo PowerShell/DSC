@@ -91,6 +91,12 @@ Describe 'registry config set tests' {
         $out.results[0].result.afterState.valueName | Should -BeExactly 'Test'
         $out.results[0].result.afterState.valueData | Should -BeNullOrEmpty
 
+        $out = dsc config get -i $configYaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.keyPath | Should -BeExactly 'HKCU\1'
+        $out.results[0].result.actualState.valueName | Should -BeExactly 'Test'
+        $out.results[0].result.actualState.valueData | Should -BeNullOrEmpty
+
         Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
     }
 }

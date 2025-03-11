@@ -72,10 +72,7 @@ impl RegistryHelper {
             Ok(Registry {
                 key_path: self.config.key_path.clone(),
                 value_name: Some(value_name.clone()),
-                value_data: match value {
-                    Data::None => None,
-                    _ => Some(convert_reg_value(&value)?)
-                },
+                value_data: convert_reg_value(&value)?,
                 ..Default::default()
             })
         } else {
@@ -169,10 +166,7 @@ impl RegistryHelper {
             if self.what_if {
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
-                    value_data: match data {
-                        Data::None => None,
-                        _ => Some(convert_reg_value(&data)?),
-                    },
+                    value_data: convert_reg_value(&data)?,
                     value_name: self.config.value_name.clone(),
                     metadata: if what_if_metadata.is_empty() { None } else { Some(Metadata { what_if: Some(what_if_metadata) })},
                     ..Default::default()
@@ -323,18 +317,18 @@ fn get_parent_key_path(key_path: &str) -> &str {
     }
 }
 
-fn convert_reg_value(value: &Data) -> Result<RegistryValueData, RegistryError> {
+fn convert_reg_value(value: &Data) -> Result<Option<RegistryValueData>, RegistryError> {
     match value {
-        Data::String(s) => Ok(RegistryValueData::String(s.to_string_lossy())),
-        Data::ExpandString(s) => Ok(RegistryValueData::ExpandString(s.to_string_lossy())),
-        Data::Binary(b) => Ok(RegistryValueData::Binary(b.clone())),
-        Data::U32(d) => Ok(RegistryValueData::DWord(*d)),
+        Data::String(s) => Ok(Some(RegistryValueData::String(s.to_string_lossy()))),
+        Data::ExpandString(s) => Ok(Some(RegistryValueData::ExpandString(s.to_string_lossy()))),
+        Data::Binary(b) => Ok(Some(RegistryValueData::Binary(b.clone()))),
+        Data::U32(d) => Ok(Some(RegistryValueData::DWord(*d))),
         Data::MultiString(m) => {
             let m: Vec<String> = m.iter().map(|s| s.to_string_lossy()).collect();
-            Ok(RegistryValueData::MultiString(m))
+            Ok(Some(RegistryValueData::MultiString(m)))
         },
-        Data::U64(q) => Ok(RegistryValueData::QWord(*q)),
-        Data::None => Ok(RegistryValueData::None),
+        Data::U64(q) => Ok(Some(RegistryValueData::QWord(*q))),
+        Data::None => Ok(None),
         _ => Err(RegistryError::UnsupportedValueDataType)
     }
 }
