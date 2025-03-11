@@ -33,14 +33,14 @@ fn main() {
                     println!("{}", json);
                 }
                 None => {
-                    let dir = match is_directory_type(input.as_str()) {
+                    match is_directory_type(input.as_str()) {
                         Some(dir) => {
                             let dir = get_dir(&dir).unwrap();
                             let json = serde_json::to_string(&dir).unwrap();
                             println!("{}", json);
                         }
                         None => {
-                            let filecontent = match is_filecontent_type(input.as_str()) {
+                            match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
                                     let filecontent = get_file_content(&filecontent).unwrap();
                                     let json = serde_json::to_string(&filecontent).unwrap();
@@ -66,14 +66,14 @@ fn main() {
                     println!("{}", json);
                 }
                 None => {
-                    let dir = match is_directory_type(input.as_str()) {
+                    match is_directory_type(input.as_str()) {
                         Some(dir) => {
                             let dir = delete_dir(&dir).unwrap();
                             let json = serde_json::to_string(&dir).unwrap();
                             println!("{}", json);
                         }
                         None => {
-                            let filecontent = match is_filecontent_type(input.as_str()) {
+                            match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
                                     let filecontent = delete_file_content(&filecontent).unwrap();
                                     let json = serde_json::to_string(&filecontent).unwrap();
@@ -100,14 +100,14 @@ fn main() {
                     debug!("File set successfully.");
                 }
                 None => {
-                    let dir = match is_directory_type(input.as_str()) {
+                    match is_directory_type(input.as_str()) {
                         Some(dir) => {
                             let dir = set_dir(&dir).unwrap();
                             let json = serde_json::to_string(&dir).unwrap();
                             println!("{}", json);
                         }
                         None => {
-                            let filecontent = match is_filecontent_type(input.as_str()) {
+                            match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
                                     let filecontent = set_file_content(&filecontent).unwrap();
                                     let json = serde_json::to_string(&filecontent).unwrap();
@@ -134,7 +134,7 @@ fn main() {
                     debug!("File exported successfully.");
                 }
                 None => {
-                    let dir = match is_directory_type(input.as_str()) {
+                    match is_directory_type(input.as_str()) {
                         Some(dir) => {
                             let exported_dir = export_dir_path(&dir).unwrap();
                             let json = serde_json::to_string(&exported_dir).unwrap();
@@ -142,7 +142,7 @@ fn main() {
                             debug!("File exported successfully.");
                         }
                         None => {
-                            let filecontent = match is_filecontent_type(input.as_str()) {
+                            match is_filecontent_type(input.as_str()) {
                                 Some(filecontent) => {
                                     let filecontent = get_file_content(&filecontent).unwrap();
                                     let json = serde_json::to_string(&filecontent).unwrap();

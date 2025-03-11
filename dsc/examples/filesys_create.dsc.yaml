@@ -1,8 +1,9 @@
 # Example configuration mixing native app resources with classic PS resources
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Create empty file
   type: Microsoft.DSC/File
   properties:
-    path: "[path(envar(TEMP), 'test-file-resource.txt')]"
+    path: "[envvar('TEMP')]"
+    name: 'test-file-resource.txt'
     _exist: true

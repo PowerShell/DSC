@@ -98,7 +98,7 @@ pub fn export_dir_path(dir: &Directory) -> Result<Directory, Box<dyn std::error:
                 for entry in dir {
                     let entry = entry?;
                     let path = entry.path();
-                    let f = File::new(path.to_str().unwrap());
+                    let f = File::new(path.to_str().unwrap(), path.file_name().unwrap().to_str().unwrap());
                     files.push(get_file(&f)?);
                 }
                 files
@@ -110,7 +110,7 @@ pub fn export_dir_path(dir: &Directory) -> Result<Directory, Box<dyn std::error:
         }
         false => {
             let path = Path::new(path);
-            let f = File::new(path.to_str().unwrap());
+            let f = File::new(path.to_str().unwrap(), path.file_name().unwrap().to_str().unwrap());
             let file = get_file(&f)?;
             let parent = path.parent();
             match parent {

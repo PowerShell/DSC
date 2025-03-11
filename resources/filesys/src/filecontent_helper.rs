@@ -25,9 +25,10 @@ impl FileContent {
     ///
     /// * `string` - The string for the Path
     #[must_use]
-    pub fn new(path: &str) -> FileContent {
+    pub fn new(path: &str, name: &str) -> FileContent {
         FileContent {
             path: path.to_string(),
+            name: name.to_string(),
             content: None,
             hash: None,
             encoding: Some(Encoding::Utf8),
