@@ -135,4 +135,30 @@ Describe 'resource export tests' {
         $out.metadata.hello | Should -BeExactly 'world'
         $out.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'export'
     }
+
+    It 'Works with Exporter resource' {
+      $yaml = @'
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+  - name: export this
+    type: Test/Exporter
+    properties:
+      typeNames:
+        - Test/Foo
+        - Test/Bar
+'@
+      $out = dsc config export -i $yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.resources | Should -HaveCount 2
+      $out.resources[0].type | Should -BeExactly 'Test/Foo'
+      $out.resources[0].name | Should -BeExactly 'test'
+      $out.resources[0].properties.psobject.properties | Should -HaveCount 2
+      $out.resources[0].properties.foo | Should -BeExactly 'bar'
+      $out.resources[0].properties.hello | Should -BeExactly 'world'
+      $out.resources[1].type | Should -BeExactly 'Test/Bar'
+      $out.resources[1].name | Should -BeExactly 'test'
+      $out.resources[1].properties.psobject.properties | Should -HaveCount 2
+      $out.resources[1].properties.foo | Should -BeExactly 'bar'
+      $out.resources[1].properties.hello | Should -BeExactly 'world'
+    }
 }
