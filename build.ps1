@@ -354,6 +354,7 @@ if (!$SkipBuild) {
 
             if ($IsWindows) {
                 Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore -Verbose
+                Copy-Item "$path/$binary.pdb" $target -ErrorAction Ignore -Verbose
             }
             else {
                 Copy-Item "$path/$binary" $target -ErrorAction Ignore -Verbose

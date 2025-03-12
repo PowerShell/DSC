@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata};
+use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
@@ -62,14 +62,21 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
         _ => resource.export(input)?
     };
 
-    for (i, instance) in export_result.actual_state.iter().enumerate() {
-        let mut r = config_doc::Resource::new();
-        r.resource_type.clone_from(&resource.type_name);
-        r.name = format!("{}-{i}", r.resource_type);
-        let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
-        r.properties = escape_property_values(&props)?;
+    if resource.kind == Kind::Exporter {
+        for instance in &export_result.actual_state {
+            let resource = serde_json::from_value::<Resource>(instance.clone())?;
+            conf.resources.push(resource);
+        }
+    } else {
+        for (i, instance) in export_result.actual_state.iter().enumerate() {
+            let mut r = config_doc::Resource::new();
+            r.resource_type.clone_from(&resource.type_name);
+            r.name = format!("{}-{i}", r.resource_type);
+            let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
+            r.properties = escape_property_values(&props)?;
 
-        conf.resources.push(r);
+            conf.resources.push(r);
+        }
     }
 
     Ok(export_result)
@@ -278,7 +285,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -426,7 +434,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -497,7 +506,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -527,6 +537,7 @@ impl Configurator {
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
+        conf.metadata.clone_from(&self.config.metadata);
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
@@ -552,7 +563,17 @@ impl Configurator {
             progress.write_increment(1);
         }
 
-        conf.metadata = Some(self.get_result_metadata(Operation::Export));
+        let export_metadata = self.get_result_metadata(Operation::Export);
+        match conf.metadata {
+            Some(mut metadata) => {
+                metadata.microsoft = export_metadata.microsoft;
+                conf.metadata = Some(metadata);
+            },
+            _ => {
+                conf.metadata = Some(export_metadata);
+            },
+        }
+
         result.result = Some(conf);
         Ok(result)
     }
@@ -685,7 +706,8 @@ impl Configurator {
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
                 }
-            )
+            ),
+            other: Map::new(),
         }
     }
 
