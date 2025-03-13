@@ -689,20 +689,14 @@ if ($packageType -eq 'msixbundle') {
         $architecture
     }
 
-    $packageName = "DSC-$productVersion-$productArchitecture.tar"
+    Write-Verbose -Verbose "Creating tar.gz file"
+    $packageName = "DSC-$productVersion-$productArchitecture.tar.gz"
     $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
-    tar cvf $tarFile -C $tgzTarget .
+    tar -czvf $tarFile -C $tgzTarget .
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create tar file"
+        throw "Failed to create tar.gz file"
     }
-    Write-Host -ForegroundColor Green "`nTar file is created at $tarFile"
-
-    $gzFile = "$tarFile.gz"
-    gzip -c $tarFile > $gzFile
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create gz file"
-    }
-    Write-Host -ForegroundColor Green "`nGz file is created at $gzFile"
+    Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
 }
 
 $env:RUST_BACKTRACE=1
