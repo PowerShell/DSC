@@ -4,7 +4,7 @@
 use crate::discovery::discovery_trait::ResourceDiscovery;
 use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
-use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest};
+use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
 use crate::progress::{ProgressBar, ProgressFormat};
@@ -22,6 +22,7 @@ use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, info, trace, warn};
+use which::which;
 
 use crate::util::get_setting;
 use crate::util::get_exe_path;
@@ -531,32 +532,45 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
         Kind::Resource
     };
 
-    // all command based resources are required to support `get`
-    let mut capabilities = if manifest.get.is_some() {
-        vec![Capability::Get]
-    } else {
-        vec![]
-    };
+    let mut capabilities: Vec<Capability> = vec![];
+    if let Some(get) = &manifest.get {
+        verify_executable(&manifest.resource_type, "get", &get.executable);
+        capabilities.push(Capability::Get);
+    }
     if let Some(set) = &manifest.set {
+        verify_executable(&manifest.resource_type, "set", &set.executable);
         capabilities.push(Capability::Set);
         if set.handles_exist == Some(true) {
             capabilities.push(Capability::SetHandlesExist);
         }
     }
-    if manifest.what_if.is_some() {
+    if let Some(what_if) = &manifest.what_if {
+        verify_executable(&manifest.resource_type, "what_if", &what_if.executable);
         capabilities.push(Capability::WhatIf);
     }
-    if manifest.test.is_some() {
+    if let Some(test) = &manifest.test {
+        verify_executable(&manifest.resource_type, "test", &test.executable);
         capabilities.push(Capability::Test);
     }
-    if manifest.delete.is_some() {
+    if let Some(delete) = &manifest.delete {
+        verify_executable(&manifest.resource_type, "delete", &delete.executable);
         capabilities.push(Capability::Delete);
     }
-    if manifest.export.is_some() {
+    if let Some(export) = &manifest.export {
+        verify_executable(&manifest.resource_type, "export", &export.executable);
         capabilities.push(Capability::Export);
     }
-    if manifest.resolve.is_some() {
+    if let Some(resolve) = &manifest.resolve {
+        verify_executable(&manifest.resource_type, "resolve", &resolve.executable);
         capabilities.push(Capability::Resolve);
+    }
+    if let Some(schema) = &manifest.schema {
+        match schema {
+            SchemaKind::Command(command) => {
+                verify_executable(&manifest.resource_type, "schema", &command.executable);
+            },
+            _ => {}
+        }
     }
 
     let resource = DscResource {
@@ -573,6 +587,12 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     };
 
     Ok(resource)
+}
+
+fn verify_executable(resource: &str, operation: &str, executable: &str) {
+    if which(executable).is_err() {
+        warn!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
+    }
 }
 
 fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<DscResource>>, needed_resource_types: &Vec<String>) -> LinkedHashMap<String, Vec<DscResource>>

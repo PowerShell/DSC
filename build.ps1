@@ -377,7 +377,13 @@ if (!$SkipBuild) {
                 }
             }
 
-            Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+            # skip copying WindowsPowerShell resource on non-Windows
+            if (!$IsWindows) {
+                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+            }
+            else {
+                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+            }
 
             # be sure that the files that should be executable are executable
             if ($IsLinux -or $IsMacOS) {
