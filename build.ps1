@@ -696,6 +696,13 @@ if ($packageType -eq 'msixbundle') {
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create tar.gz file"
     }
+
+    # check it's valid
+    $out = file $tarFile
+    if ($out -notmatch 'gzip compressed data') {
+        throw "Invalid tar.gz file"
+    }
+
     Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
 }
 
