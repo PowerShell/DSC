@@ -564,13 +564,8 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
         verify_executable(&manifest.resource_type, "resolve", &resolve.executable);
         capabilities.push(Capability::Resolve);
     }
-    if let Some(schema) = &manifest.schema {
-        match schema {
-            SchemaKind::Command(command) => {
-                verify_executable(&manifest.resource_type, "schema", &command.executable);
-            },
-            _ => {}
-        }
+    if let Some(SchemaKind::Command(command)) = &manifest.schema {
+        verify_executable(&manifest.resource_type, "schema", &command.executable);
     }
 
     let resource = DscResource {
