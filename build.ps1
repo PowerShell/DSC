@@ -380,7 +380,7 @@ if (!$SkipBuild) {
             if ($IsWindows) {
                 Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
             }
-            else { # don't copy WindowsPowerShell resource maisource manifest
+            else { # don't copy WindowsPowerShell resource manifest
                 Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
             }
 
