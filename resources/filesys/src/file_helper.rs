@@ -14,10 +14,9 @@ impl File {
     ///
     /// * `string` - The string for the Path
     #[must_use]
-    pub fn new(path: &str, name: &str) -> File {
+    pub fn new(path: &str) -> File {
         File {
             path: path.to_string(),
-            name: name.to_string(),
             size: None,
             hash: None,
             exist: None,
@@ -26,7 +25,7 @@ impl File {
 }
 
 pub fn get_file(file: &File) -> Result<File, Box<dyn std::error::Error>> {
-    println!("In get_file");
+    debug!("In get_file");
     match compare_file_state(file) {
         Ok(f) => {
             Ok(f)
@@ -41,12 +40,12 @@ pub fn set_file(file: &File) -> Result<File, Box<dyn std::error::Error>> {
     match compare_file_state(file) {
         Ok(_) => {
             debug!("In set_file");
-            debug!("file exist {:?}", file_exists(file.path.as_str(), file.name.as_str()));
+            debug!("file exist {:?}", file_exists(file.path.as_str()));
             debug!("expected file exist {:?}", file.exist.unwrap_or(true));
 
-            let resolved_path = Path::new(file.path.as_str()).join(file.name.as_str());
+            let resolved_path = Path::new(file.path.as_str());
 
-            match (file_exists(file.path.as_str(), file.name.as_str()), file.exist.unwrap_or(true)) {
+            match (file_exists(file.path.as_str()), file.exist.unwrap_or(true)) {
 
                 // if the current file exists and expected state is exist == false, delete it
                 (true, false) => {
@@ -58,16 +57,23 @@ pub fn set_file(file: &File) -> Result<File, Box<dyn std::error::Error>> {
                 // if the current file does not exist and expected state is exist == true, create it
                 (false, true) => {
                     debug!("Creating file: {:?}", resolved_path);
+
+                    if let Some(parent) = resolved_path.parent() {
+                        if !parent.exists() {
+                            fs::create_dir_all(parent)?;
+                        }
+                    }
+
                     fsFile::create(resolved_path)?;
-                    let new_file = File::new(file.path.as_str(), file.name.as_str());
+                    let new_file = File::new(file.path.as_str());
 
                     Ok(get_file(&new_file)?)
                 }
 
                 // if the current file exists and expected state is exist == true or both are false update and return
                 (true, true) | (false, false) => {
-                    println!("Updating file: {:?}", resolved_path);
-                    let new_file = File::new(file.path.as_str(), file.name.as_str());
+                    debug!("Updating file: {:?}", resolved_path);
+                    let new_file = File::new(file.path.as_str());
                     Ok(get_file(&new_file)?)
                 }
             }
@@ -103,21 +109,17 @@ pub fn delete_file(file: &File) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn compare_file_state(file: &File) -> Result<File, Box<dyn std::error::Error>> {
-    let resolved_path = Path::new(file.path.as_str()).join(file.name.as_str());
-    println!("Resolved path: {:?}", resolved_path);
+    let resolved_path = Path::new(file.path.as_str());
+    debug!("Resolved path: {:?}", resolved_path);
     match resolved_path.is_dir() {
         true => {
-            // debug!("Path is a directory");
-            // let mut updated_file = file.clone();
-            // updated_file.exist = Some(false);
-            // return Ok(updated_file)
             return Err("Path is a directory")?
         }
         false => {}
     }
-    let f: fsFile = match fsFile::open(resolved_path.clone()) {
+    let f: fsFile = match fsFile::open(resolved_path) {
         Ok(f) => {
-            debug!("File found: {:?}", resolved_path.clone());
+            debug!("File found: {:?}", resolved_path);
             f
         },
         Err(e) => {
@@ -168,7 +170,6 @@ pub fn calculate_hash(path: &str) -> Result<String, Box<dyn std::error::Error>> 
     Ok(digest)
 }
 
-fn file_exists(path: &str, name: &str) -> bool {
-    let resolved_path = Path::new(path).join(name);
-    return resolved_path.exists();
+fn file_exists(path: &str) -> bool {
+    return Path::new(path).exists();
 }

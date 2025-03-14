@@ -10,8 +10,6 @@ pub struct File {
     /// The path to the file.
     pub path: String,
 
-    pub name: String,
-
     /// The file size.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
@@ -51,9 +49,6 @@ pub struct FileContent
 {
     /// The path to the file.
     pub path: String,
-
-    /// The file name.
-    pub name: String,
 
     /// The file hash. If not provided, the hash is calculated from the content.
     #[serde(skip_serializing_if = "Option::is_none")]

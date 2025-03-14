@@ -98,7 +98,7 @@ pub fn export_dir_path(dir: &Directory) -> Result<Directory, Box<dyn std::error:
                 for entry in dir {
                     let entry = entry?;
                     let path = entry.path();
-                    let f = File::new(path.to_str().unwrap(), path.file_name().unwrap().to_str().unwrap());
+                    let f = File::new(path.to_str().unwrap());
                     files.push(get_file(&f)?);
                 }
                 files
@@ -110,7 +110,7 @@ pub fn export_dir_path(dir: &Directory) -> Result<Directory, Box<dyn std::error:
         }
         false => {
             let path = Path::new(path);
-            let f = File::new(path.to_str().unwrap(), path.file_name().unwrap().to_str().unwrap());
+            let f = File::new(path.to_str().unwrap());
             let file = get_file(&f)?;
             let parent = path.parent();
             match parent {
@@ -140,6 +140,22 @@ pub fn delete_dir(dir: &Directory) -> Result<(), Box<dyn std::error::Error>> {
             }
             else {
                 debug!("Deleting directory: {:?}", d.path);
+
+                // Check if the directory is empty
+                let entries = fs::read_dir(d.path.to_string())?;
+                let mut is_empty = true;
+                for entry in entries {
+                    let entry = entry?;
+                    if entry.path().is_dir() {
+                        is_empty = false;
+                        break;
+                    }
+                }
+
+                if !is_empty {
+                    return Err("Directory is not empty")?;
+                }
+
                 fs::remove_dir(d.path)?;
                 return Ok(());
             }

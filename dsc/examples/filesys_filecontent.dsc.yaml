@@ -4,7 +4,6 @@ resources:
 - name: Set file content
   type: Microsoft.DSC/FileContent
   properties:
-    path: '[path(envvar('TEMP'))]''
-    name: 'test-file-resource.txt'
+    path: "[path(envvar('TEMP'), 'test-file-resource.txt')]"
     content: "Hello, World!"
     _exist: true

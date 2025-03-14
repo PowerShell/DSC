@@ -4,5 +4,5 @@ resources:
 - name: Create empty file
   type: Microsoft.DSC/File
   properties:
-    path: "[path(envvar('TEMP'), 'test-file-resource.txt')]"
+    path: "[path(envvar('TEMP'), 'test-dir-resource', 'test-file-resource.txt')]"
     _exist: true

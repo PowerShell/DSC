@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::config::{FileContent, Encoding};
+use std::fs;
 use std::path::Path;
 use std::io;
 use std::io::Write;
@@ -25,10 +26,9 @@ impl FileContent {
     ///
     /// * `string` - The string for the Path
     #[must_use]
-    pub fn new(path: &str, name: &str) -> FileContent {
+    pub fn new(path: &str) -> FileContent {
         FileContent {
             path: path.to_string(),
-            name: name.to_string(),
             content: None,
             hash: None,
             encoding: Some(Encoding::Utf8),
@@ -62,6 +62,12 @@ pub fn set_file_content(filecontent: &FileContent) -> Result<FileContent, Box<dy
     }
     else if !path.exists() && !file_expected_exists {
         return Ok(filecontent.clone())
+    }
+
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)?;
+        }
     }
 
     let mut file = std::fs::File::create(path)?;

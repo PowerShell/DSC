@@ -23,138 +23,194 @@ const EXIT_INVALID_INPUT: i32 = 2;
 fn main() {
     let args = Args::parse();
     match args.subcommand {
-        args::SubCommand::Get { input } => {
+        args::SubCommand::Get { input, schema_type } => {
             debug!("Getting at path: {}", input);
-
-            match is_file_type(input.as_str()) {
-                Some(file) => {
-                    let file = get_file(&file).unwrap();
-                    let json = serde_json::to_string(&file).unwrap();
-                    println!("{}", json);
+            match schema_type {
+                args::FileSystemObjectType::File => {
+                    debug!("Getting file at path: {}", input);
+                    match parse_file(input) {
+                        Some(parsed_file) => {
+                            let file = get_file(&parsed_file).unwrap();
+                            let json = serde_json::to_string(&file).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for file.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
                 }
-                None => {
-                    match is_directory_type(input.as_str()) {
-                        Some(dir) => {
-                            let dir = get_dir(&dir).unwrap();
+                args::FileSystemObjectType::Directory => {
+                    debug!("Getting directory at path: {}", input);
+                    match parse_directory(input) {
+                        Some(parsed_directory) => {
+                            let dir = get_dir(&parsed_directory).unwrap();
                             let json = serde_json::to_string(&dir).unwrap();
                             println!("{}", json);
                         }
                         None => {
-                            match is_filecontent_type(input.as_str()) {
-                                Some(filecontent) => {
-                                    let filecontent = get_file_content(&filecontent).unwrap();
-                                    let json = serde_json::to_string(&filecontent).unwrap();
-                                    println!("{}", json);
-                                }
-                                None => {
-                                    error!("Invalid input.");
-                                    exit(EXIT_INVALID_INPUT);
-                                }
-                            };
+                            error!("Invalid input for directory.");
+                            exit(EXIT_INVALID_INPUT);
                         }
-                    };
+                    }
+                }
+                args::FileSystemObjectType::FileContent => {
+                    debug!("Getting file content at path: {}", input);
+                    match parse_filecontent(input) {
+                        Some(parsed_filecontent) => {
+                            let filecontent = get_file_content(&parsed_filecontent).unwrap();
+                            let json = serde_json::to_string(&filecontent).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for file content.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
                 }
             };
         }
-        args::SubCommand::Delete { input } => {
+
+        args::SubCommand::Delete { input, schema_type} => {
             debug!("Deleting file at path: {}", input);
 
-            match is_file_type(input.as_str()) {
-                Some(file) => {
-                    let file = delete_file(&file).unwrap();
-                    let json = serde_json::to_string(&file).unwrap();
-                    println!("{}", json);
+            match schema_type {
+                args::FileSystemObjectType::File => {
+                    debug!("Deleting file at path: {}", input);
+                    match parse_file(input) {
+                        Some(parsed_file) => {
+                            let file = delete_file(&parsed_file).unwrap();
+                            let json = serde_json::to_string(&file).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for file.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
                 }
-                None => {
-                    match is_directory_type(input.as_str()) {
-                        Some(dir) => {
-                            let dir = delete_dir(&dir).unwrap();
+                args::FileSystemObjectType::Directory => {
+                    debug!("Deleting directory at path: {}", input);
+                    match parse_directory(input) {
+                        Some(parsed_directory) => {
+                            let dir = delete_dir(&parsed_directory).unwrap();
                             let json = serde_json::to_string(&dir).unwrap();
                             println!("{}", json);
                         }
                         None => {
-                            match is_filecontent_type(input.as_str()) {
-                                Some(filecontent) => {
-                                    let filecontent = delete_file_content(&filecontent).unwrap();
-                                    let json = serde_json::to_string(&filecontent).unwrap();
-                                    println!("{}", json);
-                                }
-                                None => {
-                                    error!("Invalid input.");
-                                    exit(EXIT_INVALID_INPUT);
-                                }
-                            };
+                            error!("Invalid input for directory.");
+                            exit(EXIT_INVALID_INPUT);
                         }
-                    };
+                    }
+                }
+                args::FileSystemObjectType::FileContent => {
+                    debug!("Deleting file content at path: {}", input);
+                    match parse_filecontent(input) {
+                        Some(parsed_filecontent) => {
+                            let filecontent = delete_file_content(&parsed_filecontent).unwrap();
+                            let json = serde_json::to_string(&filecontent).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for file content.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
                 }
             };
         }
-        args::SubCommand::Set { input } => {
+        args::SubCommand::Set { input, schema_type } => {
             debug!("Setting file at path: {}", input);
-
-            match is_file_type(input.as_str()) {
-                Some(file) => {
-                    let file = set_file(&file).unwrap();
-                    let json = serde_json::to_string(&file).unwrap();
-                    println!("{}", json);
-                    debug!("File set successfully.");
+            match schema_type {
+                args::FileSystemObjectType::File => {
+                    debug!("Setting file at path: {}", input);
+                    match parse_file(input) {
+                        Some(parsed_file) => {
+                            let file = set_file(&parsed_file).unwrap();
+                            let json = serde_json::to_string(&file).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for file.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
                 }
-                None => {
-                    match is_directory_type(input.as_str()) {
-                        Some(dir) => {
-                            let dir = set_dir(&dir).unwrap();
+                args::FileSystemObjectType::Directory => {
+                    debug!("Setting directory at path: {}", input);
+                    match parse_directory(input) {
+                        Some(parsed_directory) => {
+                            let dir = set_dir(&parsed_directory).unwrap();
                             let json = serde_json::to_string(&dir).unwrap();
                             println!("{}", json);
                         }
                         None => {
-                            match is_filecontent_type(input.as_str()) {
-                                Some(filecontent) => {
-                                    let filecontent = set_file_content(&filecontent).unwrap();
-                                    let json = serde_json::to_string(&filecontent).unwrap();
-                                    println!("{}", json);
-                                }
-                                None => {
-                                    error!("Invalid input.");
-                                    exit(EXIT_INVALID_INPUT);
-                                }
-                            };
+                            error!("Invalid input for directory.");
+                            exit(EXIT_INVALID_INPUT);
                         }
-                    };
+                    }
+                }
+                args::FileSystemObjectType::FileContent => {
+                    debug!("Setting file content at path: {}", input);
+                    match parse_filecontent(input) {
+                        Some(parsed_filecontent) => {
+                            let filecontent = set_file_content(&parsed_filecontent).unwrap();
+                            let json = serde_json::to_string(&filecontent).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for file content.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
                 }
             };
         }
-        args::SubCommand::Export { input } => {
+        args::SubCommand::Export { input, schema_type } => {
             debug!("Exporting file at path: {}", input);
 
-            match is_file_type(input.as_str()) {
-                Some(file) => {
-                    let file = export_file_path(&file).unwrap();
-                    let json = serde_json::to_string(&file).unwrap();
-                    println!("{}", json);
-                    debug!("File exported successfully.");
-                }
-                None => {
-                    match is_directory_type(input.as_str()) {
-                        Some(dir) => {
-                            let exported_dir = export_dir_path(&dir).unwrap();
-                            let json = serde_json::to_string(&exported_dir).unwrap();
+            match schema_type {
+                args::FileSystemObjectType::File => {
+                    debug!("Exporting file at path: {}", input);
+                    match parse_file(input) {
+                        Some(parsed_file) => {
+                            let file = export_file_path(&parsed_file).unwrap();
+                            let json = serde_json::to_string(&file).unwrap();
                             println!("{}", json);
-                            debug!("File exported successfully.");
                         }
                         None => {
-                            match is_filecontent_type(input.as_str()) {
-                                Some(filecontent) => {
-                                    let filecontent = get_file_content(&filecontent).unwrap();
-                                    let json = serde_json::to_string(&filecontent).unwrap();
-                                    println!("{}", json);
-                                }
-                                None => {
-                                    error!("Invalid input.");
-                                    exit(EXIT_INVALID_INPUT);
-                                }
-                            };
+                            error!("Invalid input for file.");
+                            exit(EXIT_INVALID_INPUT);
                         }
-                    };
+                    }
+                }
+                args::FileSystemObjectType::Directory => {
+                    debug!("Exporting directory at path: {}", input);
+                    match parse_directory(input) {
+                        Some(parsed_directory) => {
+                            let dir = export_dir_path(&parsed_directory).unwrap();
+                            let json = serde_json::to_string(&dir).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for directory.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
+                }
+                args::FileSystemObjectType::FileContent => {
+                    debug!("Exporting file content at path: {}", input);
+                    match parse_filecontent(input) {
+                        Some(parsed_filecontent) => {
+                            let filecontent = get_file_content(&parsed_filecontent).unwrap();
+                            let json = serde_json::to_string(&filecontent).unwrap();
+                            println!("{}", json);
+                        }
+                        None => {
+                            error!("Invalid input for file content.");
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    }
                 }
             };
         }
@@ -182,8 +238,8 @@ fn main() {
     exit(EXIT_SUCCESS);
 }
 
-fn is_file_type(input: &str) -> Option<File> {
-    let file: File = match serde_json::from_str(input) {
+fn parse_file(input: String) -> Option<File> {
+    let file: File = match serde_json::from_str(input.to_string().as_str()) {
         Ok(input) => input,
         Err(_) => return None,
     };
@@ -191,8 +247,8 @@ fn is_file_type(input: &str) -> Option<File> {
     Some(file)
 }
 
-fn is_directory_type(input: &str) -> Option<Directory> {
-    let dir: Directory = match serde_json::from_str(input) {
+fn parse_directory(input: String) -> Option<Directory> {
+    let dir: Directory = match serde_json::from_str(input.to_string().as_str()) {
         Ok(input) => input,
         Err(_) => return None,
     };
@@ -200,8 +256,8 @@ fn is_directory_type(input: &str) -> Option<Directory> {
     Some(dir)
 }
 
-fn is_filecontent_type(input: &str) -> Option<FileContent> {
-    let filecontent: FileContent = match serde_json::from_str(input) {
+fn parse_filecontent(input: String) -> Option<FileContent> {
+    let filecontent: FileContent = match serde_json::from_str(input.to_string().as_str()) {
         Ok(input) => input,
         Err(_) => return None,
     };

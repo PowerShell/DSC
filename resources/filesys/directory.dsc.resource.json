@@ -10,7 +10,9 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
-            }
+            },
+            "--schema-type",
+            "directory"
         ],
         "input": "stdin",
         "implementsPretest": false
@@ -22,7 +24,9 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
-            }
+            },
+            "--schema-type",
+            "directory"
         ],
         "input": "stdin"
     },
@@ -33,7 +37,9 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
-            }
+            },
+            "--schema-type",
+            "directory"
         ],
         "input": "stdin"
     },
@@ -44,7 +50,9 @@
             {
                 "jsonInputArg": "--input",
                 "mandatory": true
-            }
+            },
+            "--schema-type",
+            "directory"
         ],
         "input": "stdin"
     },
