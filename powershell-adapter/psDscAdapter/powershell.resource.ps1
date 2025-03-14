@@ -46,9 +46,7 @@ if ($Operation -eq 'ClearCache') {
 }
 
 if ('Validate' -ne $Operation) {
-    # write $jsonInput to STDERR for debugging
-    $trace = @{'debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
-    $host.ui.WriteErrorLine($trace)
+    Write-DscTrace -Operation Debug -Message "jsonInput=$jsonInput"
 
     # load private functions of psDscAdapter stub module
     if ($PSVersionTable.PSVersion.Major -le 5) {
@@ -135,16 +133,14 @@ switch ($Operation) {
     { @('Get','Set','Test','Export') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
-            $trace = @{'debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
             exit 1
         }
 
         # only need to cache the resources that are used
         $dscResourceModules = $desiredState | ForEach-Object { $_.Type.Split('/')[0] }
         if ($null -eq $dscResourceModules) {
-            $trace = @{'debug' = 'ERROR: Could not get list of DSC resource types from provided JSON.' } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            Write-DscTrace -Operation Error -Message 'Could not get list of DSC resource types from provided JSON.'
             exit 1
         }
 
@@ -162,21 +158,28 @@ switch ($Operation) {
             }
         }
 
+        $inDesiredState = $true
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
             $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
             if ($null -eq $actualState) {
-                $trace = @{'debug' = 'ERROR: Incomplete GET for resource ' + $ds.Name } | ConvertTo-Json -Compress
-                $host.ui.WriteErrorLine($trace)
+                Write-DscTrace -Operation Error -Message 'Incomplete GET for resource ' + $ds.Name
                 exit 1
+            }
+            if ($null -ne $actualState.Properties -and $actualState.Properties.InDesiredState -eq $false) {
+                $inDesiredState = $false
             }
             $result += $actualState
         }
     
         # OUTPUT json to stderr for debug, and to stdout
-        $result = @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
-        $trace = @{'debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        if ($Operation -eq 'Test') {
+            $result = @{ result = $result; _inDesiredState = $inDesiredState } | ConvertTo-Json -Depth 10 -Compress
+        }
+        else {
+            $result = @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
+        }
+        Write-DscTrace -Operation Debug -Message "jsonOutput=$result"
         return $result
     }
     'Validate' {
