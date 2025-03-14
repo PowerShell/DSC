@@ -377,12 +377,11 @@ if (!$SkipBuild) {
                 }
             }
 
-            # skip copying WindowsPowerShell resource on non-Windows
-            if (!$IsWindows) {
-                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
-            }
-            else {
+            if ($IsWindows) {
                 Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+            }
+            else { # don't copy WindowsPowerShell resource maisource manifest
+                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable
