@@ -183,4 +183,41 @@ Describe 'tests for resource discovery' {
         $out = dsc resource schema -r abc/def
         $LASTEXITCODE | Should -Be 7
     }
+
+    It 'Verify warning message when executable not found for: <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'set' }
+        @{ operation = 'test' }
+        @{ operation = 'delete' }
+        @{ operation = 'export' }
+        @{ operation = 'resolve' }
+        @{ operation = 'whatIf' }
+    ) {
+        param($operation)
+
+        $manifest = @"
+        {
+            "`$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+            "type": "Test/ExecutableNotFound",
+            "version": "0.1.0",
+            "$operation": {
+                "executable": "doesNotExist"
+            }
+        }
+"@
+        $oldPath = $env:DSC_RESOURCE_PATH
+        try {
+            $env:DSC_RESOURCE_PATH = $testdrive
+            Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
+            $out = dsc resource list 'Test/ExecutableNotFound' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.Count | Should -Be 1
+            $out.Type | Should -BeExactly 'Test/ExecutableNotFound'
+            $out.Kind | Should -BeExactly 'resource'
+            Get-Content -Path "$testdrive/error.txt" | Should -Match "WARN.*?Executable 'doesNotExist' not found"
+        }
+        finally {
+            $env:DSC_RESOURCE_PATH = $oldPath
+        }
+    }
 }

@@ -82,6 +82,7 @@ progressSearching = "Searching for resources"
 foundResourceManifest = "Found resource manifest: %{path}"
 adapterFound = "Resource adapter '%{adapter}' found"
 resourceFound = "Resource '%{resource}' found"
+executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
