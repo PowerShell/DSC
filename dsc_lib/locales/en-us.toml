@@ -160,6 +160,10 @@ diffMissingItem = "diff: actual array missing expected item"
 resourceManifestSchemaTitle = "Resource manifest schema URI"
 resourceManifestSchemaDescription = "Defines the JSON Schema the resource manifest adheres to."
 
+[extensions.extension_manifest]
+extensionManifestSchemaTitle = "Extension manifest schema URI"
+extensionManifestSchemaDescription = "Defines the JSON Schema the extension manifest adheres to."
+
 [functions]
 invalidArgType = "Invalid argument type"
 invalidArguments = "Invalid argument(s)"
