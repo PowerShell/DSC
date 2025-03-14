@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource schema' command
-ms.date:     06/24/2024
+ms.date:     3/05/2025
 ms.topic:    reference
 title:       dsc resource schema
 ---
@@ -9,7 +9,7 @@ title:       dsc resource schema
 
 ## Synopsis
 
-Returns the JSON Schema for instances of a resource.
+Returns the JSON Schema for validating instances of a resource.
 
 ## Syntax
 
@@ -32,7 +32,9 @@ include lightweight documentation for the properties with the `title` and `descr
 
 ### Example 1 - Get the schema for a resource
 
-This example returns the schema for the `OSInfo` command-based DSC Resource.
+<a id="example-1"></a>
+
+This example returns the schema for the `OSInfo` command resource.
 
 ```sh
 dsc resource schema --resource Microsoft/OSInfo
@@ -164,7 +166,10 @@ properties:
 
 ### -r, --resource
 
-Specifies the fully qualified type name of the DSC Resource to retrieve the instance schema from,
+<a id="-r"></a>
+<a id="--resource"></a>
+
+Specifies the fully qualified type name of the DSC Resource to retrieve the instance schema for,
 like `Microsoft.Windows/Registry`.
 
 The fully qualified type name syntax is: `<owner>[.<group>][.<area>]/<name>`, where:
@@ -174,33 +179,68 @@ The fully qualified type name syntax is: `<owner>[.<group>][.<area>]/<name>`, wh
 - The `name` identifies the component the resource manages.
 
 ```yaml
-Type:      String
-Mandatory: true
+Type        : string
+Mandatory   : true
+LongSyntax  : --resource <RESOURCE>
+ShortSyntax : -r <RESOURCE>
 ```
 
-### -f, --format
+### -o, --output-format
 
-The `--format` option controls the console output format for the command. If the command output is
-redirected or captured as a variable, the output is always JSON.
+<a id="-o"></a>
+<a id="--output-format"></a>
+
+The `--output-format` option controls which format DSC uses for the data the command returns. The
+available formats are:
+
+- `json` to emit the data as a [JSON Line][aa].
+- `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
+- `yaml` to emit the data as YAML.
+
+The default output format depends on whether DSC detects that the output is being redirected or
+captured as a variable:
+
+- If the command isn't being redirected or captured, DSC displays the output as the `yaml` format
+  in the console.
+- If the command output is redirected or captured, DSC emits the data as the `json` format to
+  stdout.
+
+When you use this option, DSC uses the specified format regardless of whether the command is being
+redirected or captured.
+
+When the command isn't redirected or captured, the output in the console is formatted for improved
+readability. When the command isn't redirected or captured, the output include terminal sequences
+for formatting.
 
 ```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: yaml
-ValidValues:  [json, pretty-json, yaml]
+Type        : string
+Mandatory   : false
+ValidValues : [json, pretty-json, yaml]
+LongSyntax  : --output-format <OUTPUT_FORMAT>
+ShortSyntax : -o <OUTPUT_FORMAT>
 ```
+
+[aa]: https://jsonlines.org/
 
 ### -h, --help
 
+<a id="-h"></a>
+<a id="--help"></a>
+
 Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
+application ignores all other options and arguments.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
 
 ## Output
 
-This command returns a JSON object representing the JSON schema for an instance of the specified
+This command returns formatted data representing the JSON schema for an instance of the specified
 DSC Resource.
+
+For more information about the formatting of the output data, see the
+[--output-format option](#--output-format).

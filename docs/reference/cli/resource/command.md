@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource' command
-ms.date:     09/06/2023
+ms.date:     3/05/2025
 ms.topic:    reference
 title:       dsc resource
 ---
@@ -69,19 +69,24 @@ dsc resource help [<SUBCOMMAND>]
 For example, `dsc resource help` gets the help for this command. `dsc resource help list`
 gets the help for the `list` subcommand.
 
-You can also use the [--help](#-h---help) option on the command or subcommand to display the help
+You can also use the [--help](#--help) option on the command or subcommand to display the help
 information. For example, `dsc resource --help` or `dsc resource set --help`.
 
 ## Options
 
 ### -h, --help
 
+<a id="-h"></a>
+<a id="--help"></a>
+
 Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
+application ignores all other options and arguments.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
 
 [01]: ../config/command.md
