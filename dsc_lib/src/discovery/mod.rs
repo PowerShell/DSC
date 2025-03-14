@@ -9,6 +9,7 @@ use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress
 use std::collections::BTreeMap;
 use tracing::error;
 
+#[derive(Clone)]
 pub struct Discovery {
     pub resources: BTreeMap<String, DscResource>,
 }

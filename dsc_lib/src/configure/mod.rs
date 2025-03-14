@@ -248,9 +248,18 @@ impl Configurator {
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Get '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let discovery = &self.discovery.clone();
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
+            };
+            let properties = match &dsc_resource.kind {
+                Kind::Group => {
+                    // if Group resource, we leave it to the resource to handle expressions
+                    resource.properties.clone()
+                },
+                _ => {
+                    self.invoke_property_expressions(resource.properties.as_ref())?
+                },
             };
             debug!("resource_type {}", &resource.resource_type);
             let filter = add_metadata(&dsc_resource.kind, properties)?;
@@ -325,9 +334,18 @@ impl Configurator {
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Set '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let discovery = &self.discovery.clone();
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
+            };
+            let properties = match &dsc_resource.kind {
+                Kind::Group => {
+                    // if Group resource, we leave it to the resource to handle expressions
+                    resource.properties.clone()
+                },
+                _ => {
+                    self.invoke_property_expressions(resource.properties.as_ref())?
+                },
             };
             debug!("resource_type {}", &resource.resource_type);
 
@@ -469,9 +487,18 @@ impl Configurator {
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Test '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let discovery = &self.discovery.clone();
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
+            };
+            let properties = match &dsc_resource.kind {
+                Kind::Group => {
+                    // if Group resource, we leave it to the resource to handle expressions
+                    resource.properties.clone()
+                },
+                _ => {
+                    self.invoke_property_expressions(resource.properties.as_ref())?
+                },
             };
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
@@ -544,9 +571,18 @@ impl Configurator {
         for resource in &resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Export '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let discovery = &self.discovery.clone();
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            };
+            let properties = match &dsc_resource.kind {
+                Kind::Group => {
+                    // if Group resource, we leave it to the resource to handle expressions
+                    resource.properties.clone()
+                },
+                _ => {
+                    self.invoke_property_expressions(resource.properties.as_ref())?
+                },
             };
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
