@@ -232,6 +232,18 @@ impl Configurator {
         &self.config
     }
 
+    fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
+        match resource_kind {
+            Kind::Group => {
+                // if Group resource, we leave it to the resource to handle expressions
+                Ok(resource.properties.clone())
+            },
+            _ => {
+                Ok(self.invoke_property_expressions(resource.properties.as_ref())?)
+            },
+        }
+    }
+
     /// Invoke the get operation on a resource.
     ///
     /// # Returns
@@ -252,15 +264,7 @@ impl Configurator {
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
-            let properties = match &dsc_resource.kind {
-                Kind::Group => {
-                    // if Group resource, we leave it to the resource to handle expressions
-                    resource.properties.clone()
-                },
-                _ => {
-                    self.invoke_property_expressions(resource.properties.as_ref())?
-                },
-            };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
@@ -338,15 +342,7 @@ impl Configurator {
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
-            let properties = match &dsc_resource.kind {
-                Kind::Group => {
-                    // if Group resource, we leave it to the resource to handle expressions
-                    resource.properties.clone()
-                },
-                _ => {
-                    self.invoke_property_expressions(resource.properties.as_ref())?
-                },
-            };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
 
             // see if the properties contains `_exist` and is false
@@ -491,15 +487,7 @@ impl Configurator {
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
-            let properties = match &dsc_resource.kind {
-                Kind::Group => {
-                    // if Group resource, we leave it to the resource to handle expressions
-                    resource.properties.clone()
-                },
-                _ => {
-                    self.invoke_property_expressions(resource.properties.as_ref())?
-                },
-            };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
@@ -575,15 +563,7 @@ impl Configurator {
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
-            let properties = match &dsc_resource.kind {
-                Kind::Group => {
-                    // if Group resource, we leave it to the resource to handle expressions
-                    resource.properties.clone()
-                },
-                _ => {
-                    self.invoke_property_expressions(resource.properties.as_ref())?
-                },
-            };
+            let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {
