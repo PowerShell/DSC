@@ -232,6 +232,18 @@ impl Configurator {
         &self.config
     }
 
+    fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
+        match resource_kind {
+            Kind::Group => {
+                // if Group resource, we leave it to the resource to handle expressions
+                Ok(resource.properties.clone())
+            },
+            _ => {
+                Ok(self.invoke_property_expressions(resource.properties.as_ref())?)
+            },
+        }
+    }
+
     /// Invoke the get operation on a resource.
     ///
     /// # Returns
@@ -245,13 +257,14 @@ impl Configurator {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
+        let discovery = &self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Get '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
@@ -322,13 +335,14 @@ impl Configurator {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
+        let discovery = &self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Set '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
 
             // see if the properties contains `_exist` and is false
@@ -466,13 +480,14 @@ impl Configurator {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
+        let discovery = &self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Test '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
@@ -541,13 +556,14 @@ impl Configurator {
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
+        let discovery = &self.discovery.clone();
         for resource in &resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Export '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
+            let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {

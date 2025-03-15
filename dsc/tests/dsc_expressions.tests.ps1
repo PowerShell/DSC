@@ -79,4 +79,32 @@ string.
 "@.Replace("`r", "")
       $out.results[1].result.actualState.output | Should -BeExactly "This is a single-quote: '"
     }
+
+    It 'Nested Group resource does not invoke expressions' {
+      $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Nested Group
+  type: Microsoft.DSC/Group
+  properties:
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+    - name: Deeply nested OSInfo
+      type: Microsoft/OSInfo
+      properties: {}
+    - name: Deeply nested echo
+      type: Microsoft.DSC.Debug/Echo
+      properties:
+        output:  >-
+          [reference(
+            resourceId('Microsoft/OSInfo', 'Deeply nested OSInfo')
+          )]
+      dependsOn:
+        - "[resourceId('Microsoft/OSInfo', 'Deeply nested OSInfo')]"
+'@
+
+      $out = dsc config get -i $yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results[0].result[1].result.actualState.output.family | Should -BeExactly $out.results[0].result[0].result.actualState.family
+    }
 }
