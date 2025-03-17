@@ -69,7 +69,7 @@ Describe 'FileSys resoure tests' {
         $resultDirPath | Should -Not -Exist
     }
 
-    It 'Filesys resource cannot delete a non-empty directory' -Pending {
+    It 'Filesys resource cannot delete a non-empty directory' {
         if (Test-Path $testDir) {
             Remove-Item -Path $testDir -Force -Recurse
         }
@@ -78,10 +78,8 @@ Describe 'FileSys resoure tests' {
         New-Item -Path (Join-Path $testDir $testFileName) -ItemType File -Force | Out-Null
 
         $resultJson = dsc config set -f "$PSScriptRoot/../examples/filesys_dir_delete.dsc.yaml" | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $resultJson.hadErrors | Should -BeFalse
-        $resultDirPath = $resultJson.results.result.afterState.path
-        $resultDirPath | Should -Not -Exist
+        $LASTEXITCODE | Should -Not -Be 0
+        $testDir | Should -Exist
     }
 
     It 'Filesys resource can delete a directory recursively' {

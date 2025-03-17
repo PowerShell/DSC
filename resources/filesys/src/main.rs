@@ -18,7 +18,8 @@ mod dir_helpers;
 mod filecontent_helper;
 
 const EXIT_SUCCESS: i32 = 0;
-const EXIT_INVALID_INPUT: i32 = 2;
+const EXIT_INVALID_INPUT: i32 = 1;
+const EXIT_JSON_SERIALIZATION_FAILED: i32 = 2;
 
 fn main() {
     let args = Args::parse();
@@ -30,9 +31,21 @@ fn main() {
                     debug!("Getting file at path: {}", input);
                     match parse_file(input) {
                         Some(parsed_file) => {
-                            let file = get_file(&parsed_file).unwrap();
-                            let json = serde_json::to_string(&file).unwrap();
-                            println!("{}", json);
+                            match get_file(&parsed_file) {
+                                Ok(file) => {
+                                    match serde_json::to_string(&file) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file: {}", e);
+                                            exit(EXIT_JSON_SERIALIZATION_FAILED);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to get file: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file.");
@@ -44,9 +57,21 @@ fn main() {
                     debug!("Getting directory at path: {}", input);
                     match parse_directory(input) {
                         Some(parsed_directory) => {
-                            let dir = get_dir(&parsed_directory).unwrap();
-                            let json = serde_json::to_string(&dir).unwrap();
-                            println!("{}", json);
+                           match get_dir(&parsed_directory) {
+                                Ok(dir) => {
+                                    match serde_json::to_string(&dir) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize directory: {}", e);
+                                            exit(EXIT_JSON_SERIALIZATION_FAILED);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to get directory: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                           }
                         }
                         None => {
                             error!("Invalid input for directory.");
@@ -58,9 +83,21 @@ fn main() {
                     debug!("Getting file content at path: {}", input);
                     match parse_filecontent(input) {
                         Some(parsed_filecontent) => {
-                            let filecontent = get_file_content(&parsed_filecontent).unwrap();
-                            let json = serde_json::to_string(&filecontent).unwrap();
-                            println!("{}", json);
+                            match get_file_content(&parsed_filecontent) {
+                                Ok(filecontent) => {
+                                    match serde_json::to_string(&filecontent) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file content: {}", e);
+                                            exit(EXIT_JSON_SERIALIZATION_FAILED);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to get file content: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file content.");
@@ -79,9 +116,21 @@ fn main() {
                     debug!("Deleting file at path: {}", input);
                     match parse_file(input) {
                         Some(parsed_file) => {
-                            let file = delete_file(&parsed_file).unwrap();
-                            let json = serde_json::to_string(&file).unwrap();
-                            println!("{}", json);
+                            match delete_file(&parsed_file) {
+                                Ok(file) => {
+                                    match serde_json::to_string(&file) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to delete file: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file.");
@@ -93,9 +142,21 @@ fn main() {
                     debug!("Deleting directory at path: {}", input);
                     match parse_directory(input) {
                         Some(parsed_directory) => {
-                            let dir = delete_dir(&parsed_directory).unwrap();
-                            let json = serde_json::to_string(&dir).unwrap();
-                            println!("{}", json);
+                            match delete_dir(&parsed_directory) {
+                                Ok(dir) => {
+                                    match serde_json::to_string(&dir) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize directory: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to delete directory: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for directory.");
@@ -107,9 +168,21 @@ fn main() {
                     debug!("Deleting file content at path: {}", input);
                     match parse_filecontent(input) {
                         Some(parsed_filecontent) => {
-                            let filecontent = delete_file_content(&parsed_filecontent).unwrap();
-                            let json = serde_json::to_string(&filecontent).unwrap();
-                            println!("{}", json);
+                            match delete_file_content(&parsed_filecontent) {
+                                Ok(filecontent) => {
+                                    match serde_json::to_string(&filecontent) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file content: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to delete file content: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file content.");
@@ -126,9 +199,21 @@ fn main() {
                     debug!("Setting file at path: {}", input);
                     match parse_file(input) {
                         Some(parsed_file) => {
-                            let file = set_file(&parsed_file).unwrap();
-                            let json = serde_json::to_string(&file).unwrap();
-                            println!("{}", json);
+                            match set_file(&parsed_file) {
+                                Ok(file) => {
+                                    match serde_json::to_string(&file) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to set file: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file.");
@@ -140,9 +225,21 @@ fn main() {
                     debug!("Setting directory at path: {}", input);
                     match parse_directory(input) {
                         Some(parsed_directory) => {
-                            let dir = set_dir(&parsed_directory).unwrap();
-                            let json = serde_json::to_string(&dir).unwrap();
-                            println!("{}", json);
+                            match set_dir(&parsed_directory) {
+                                Ok(dir) => {
+                                    match serde_json::to_string(&dir) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize directory: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to set directory: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for directory.");
@@ -154,9 +251,21 @@ fn main() {
                     debug!("Setting file content at path: {}", input);
                     match parse_filecontent(input) {
                         Some(parsed_filecontent) => {
-                            let filecontent = set_file_content(&parsed_filecontent).unwrap();
-                            let json = serde_json::to_string(&filecontent).unwrap();
-                            println!("{}", json);
+                            match set_file_content(&parsed_filecontent) {
+                                Ok(filecontent) => {
+                                    match serde_json::to_string(&filecontent) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file content: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to set file content: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file content.");
@@ -174,9 +283,21 @@ fn main() {
                     debug!("Exporting file at path: {}", input);
                     match parse_file(input) {
                         Some(parsed_file) => {
-                            let file = export_file_path(&parsed_file).unwrap();
-                            let json = serde_json::to_string(&file).unwrap();
-                            println!("{}", json);
+                            match export_file_path(&parsed_file) {
+                                Ok(file) => {
+                                    match serde_json::to_string(&file) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to export file: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file.");
@@ -188,9 +309,21 @@ fn main() {
                     debug!("Exporting directory at path: {}", input);
                     match parse_directory(input) {
                         Some(parsed_directory) => {
-                            let dir = export_dir_path(&parsed_directory).unwrap();
-                            let json = serde_json::to_string(&dir).unwrap();
-                            println!("{}", json);
+                            match export_dir_path(&parsed_directory) {
+                                Ok(dir) => {
+                                    match serde_json::to_string(&dir) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize directory: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to export directory: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for directory.");
@@ -202,9 +335,21 @@ fn main() {
                     debug!("Exporting file content at path: {}", input);
                     match parse_filecontent(input) {
                         Some(parsed_filecontent) => {
-                            let filecontent = get_file_content(&parsed_filecontent).unwrap();
-                            let json = serde_json::to_string(&filecontent).unwrap();
-                            println!("{}", json);
+                            match get_file_content(&parsed_filecontent) {
+                                Ok(filecontent) => {
+                                    match serde_json::to_string(&filecontent) {
+                                        Ok(json) => println!("{}", json),
+                                        Err(e) => {
+                                            error!("Failed to serialize file content: {}", e);
+                                            exit(EXIT_INVALID_INPUT);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("Failed to export file content: {}", e);
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
                         }
                         None => {
                             error!("Invalid input for file content.");
@@ -218,18 +363,33 @@ fn main() {
             match schema_type {
                 args::FileSystemObjectType::File => {
                     let schema = schema_for!(File);
-                    let json = serde_json::to_string(&schema).unwrap();
-                    println!("{}", json);
+                    match serde_json::to_string(&schema) {
+                        Ok(json) => println!("{}", json),
+                        Err(e) => {
+                            error!("Failed to serialize file schema: {}", e);
+                            exit(EXIT_JSON_SERIALIZATION_FAILED);
+                        }
+                    }
                 }
                 args::FileSystemObjectType::Directory => {
                     let schema = schema_for!(Directory);
-                    let json = serde_json::to_string(&schema).unwrap();
-                    println!("{}", json);
+                    match serde_json::to_string(&schema){
+                        Ok(json) => println!("{}", json),
+                        Err(e) => {
+                            error!("Failed to serialize directory schema: {}", e);
+                            exit(EXIT_JSON_SERIALIZATION_FAILED);
+                        }
+                    }
                 }
                 args::FileSystemObjectType::FileContent => {
                     let schema = schema_for!(FileContent);
-                    let json = serde_json::to_string(&schema).unwrap();
-                    println!("{}", json);
+                    match serde_json::to_string(&schema) {
+                        Ok(json) => println!("{}", json),
+                        Err(e) => {
+                            error!("Failed to serialize file content schema: {}", e);
+                            exit(EXIT_JSON_SERIALIZATION_FAILED);
+                        }
+                    }
                 }
             }
         }
