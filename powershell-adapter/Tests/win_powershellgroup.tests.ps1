@@ -87,4 +87,41 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
             "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
         }
     }
+
+    It '_inDesiredState is returned correction: <Context>' -Skip:(!$IsWindows) -TestCases @(
+        @{ Context = 'Both running'; FirstState = 'Running'; SecondState = 'Running' }
+        @{ Context = 'Both stopped'; FirstState = 'Stopped'; SecondState = 'Stopped' }
+        @{ Context = 'First Stopped'; FirstState = 'Stopped'; SecondState = 'Running' }
+        @{ Context = 'First Running'; FirstState = 'Running'; SecondState = 'Stopped' }
+      ) {
+          param($Context, $FirstState, $SecondState)
+          $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Use Windows PowerShell resources
+    type: Microsoft.Windows/WindowsPowerShell
+    properties:
+      resources:
+      - name: Check Spooler service 1
+        type: PsDesiredStateConfiguration/Service
+        properties:
+          Name: Spooler
+          State: $FirstState
+      - name: Check Spooler service 2
+        type: PsDesiredStateConfiguration/Service
+        properties:
+          Name: Spooler
+          State: $SecondState    
+"@
+
+        $inDesiredState = if ($FirstState -eq $SecondState) {
+          $FirstState -eq (Get-Service Spooler).Status
+        } else {
+          $false
+        }
+
+        $out = dsc config test -i $yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.inDesiredState | Should -Be $inDesiredState
+    }
 }
