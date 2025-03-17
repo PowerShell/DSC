@@ -208,9 +208,9 @@ The following list of tables defines the recognized URIs for the configuration d
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/config/document.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -222,9 +222,9 @@ The following list of tables defines the recognized URIs for the configuration d
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json` |
 
 ### Resource manifest schema
 
@@ -250,9 +250,9 @@ The following list of tables defines the recognized URIs for the resource manife
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -264,9 +264,9 @@ The following list of tables defines the recognized URIs for the resource manife
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json` |
 
 ### Output schema for dsc config get command
 
@@ -292,9 +292,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/get.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/get.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/get.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/get.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/get.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/get.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/get.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/get.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/get.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -306,9 +306,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/get.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/get.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/get.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/get.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/get.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/get.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/get.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/get.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/get.vscode.json` |
 
 ### Output schema for dsc config set command
 
@@ -334,9 +334,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/set.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/set.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/set.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/set.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/set.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/set.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/set.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/set.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/set.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -348,9 +348,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/set.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/set.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/set.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/set.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/set.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/set.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/set.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/set.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/set.vscode.json` |
 
 ### Output schema for dsc config test command
 
@@ -376,9 +376,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/test.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/test.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/test.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/test.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/test.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/test.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/config/test.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/config/test.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/config/test.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -390,9 +390,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/test.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/test.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/test.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/test.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/test.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/test.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/config/test.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/config/test.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/config/test.vscode.json` |
 
 ### Output schema for dsc resource get command
 
@@ -418,9 +418,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/get.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/get.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/get.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/get.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/get.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/get.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/get.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/get.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/get.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -432,9 +432,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/get.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/get.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/get.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/get.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/get.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/get.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/get.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/get.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/get.vscode.json` |
 
 ### Output schema for dsc resource list command
 
@@ -460,9 +460,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/list.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/list.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/list.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/list.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/list.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/list.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/list.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/list.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/list.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -474,9 +474,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/list.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/list.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/list.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/list.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/list.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/list.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/list.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/list.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/list.vscode.json` |
 
 ### Output schema for dsc resource schema command
 
@@ -502,9 +502,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/schema.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/schema.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/schema.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/schema.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/schema.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/schema.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/schema.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/schema.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/schema.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -516,9 +516,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/schema.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/schema.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/schema.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/schema.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/schema.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/schema.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/schema.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/schema.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/schema.vscode.json` |
 
 ### Output schema for dsc resource set command
 
@@ -544,9 +544,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/set.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/set.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/set.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/set.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/set.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/set.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/set.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/set.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/set.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -558,9 +558,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/set.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/set.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/set.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/set.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/set.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/set.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/set.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/set.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/set.vscode.json` |
 
 ### Output schema for dsc resource test command
 
@@ -586,9 +586,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/test.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/test.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/test.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/test.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/test.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/test.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/resource/test.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/resource/test.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/resource/test.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -600,9 +600,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/test.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/test.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/test.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/test.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/test.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/test.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/resource/test.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/resource/test.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/resource/test.vscode.json` |
 
 ### Output schema for dsc schema command
 
@@ -628,9 +628,9 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/schema.json`            |
   | Canonically bundled     | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/schema.json`          |
   | Canonically bundled     | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/schema.json`        |
-  | Enhanced Authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/schema.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/schema.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/schema.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://aka.ms/dsc/schemas/v3/bundled/outputs/schema.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://aka.ms/dsc/schemas/v3.0/bundled/outputs/schema.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://aka.ms/dsc/schemas/v3.0.0/bundled/outputs/schema.vscode.json` |
 
 - GitHub URIs by version and form:
 
@@ -642,6 +642,6 @@ The following list of tables defines the recognized URIs for the output schema:
   | Canonically bundled     | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/schema.json`            |
   | Canonically bundled     | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/schema.json`          |
   | Canonically bundled     | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/schema.json`        |
-  | Enhanced Authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/schema.vscode.json`     |
-  | Enhanced Authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/schema.vscode.json`   |
-  | Enhanced Authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/schema.vscode.json` |
+  | Enhanced authoring      | `v3`     | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/outputs/schema.vscode.json`     |
+  | Enhanced authoring      | `v3.0`   | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/outputs/schema.vscode.json`   |
+  | Enhanced authoring      | `v3.0.0` | `https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/outputs/schema.vscode.json` |
