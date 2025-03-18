@@ -4,6 +4,11 @@
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError};
 use std::collections::BTreeMap;
 
+pub enum DiscoveryKind {
+    Resource,
+    Extension,
+}
+
 pub trait ResourceDiscovery {
     fn discover_resources(&mut self, filter: &str) -> Result<(), DscError>;
     fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError>;
