@@ -172,7 +172,7 @@ DSC operations.
 First, use the `dsc resource list` command to see what capabilities the `Registry` resource has.
 
 ```powershell
-$resource = dsc resource list Microsoft.WIndows/Registry | ConvertFrom-Json
+$resource = dsc resource list Microsoft.Windows/Registry | ConvertFrom-Json
 $resource.capabilities
 ```
 
