@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource set' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource set
 ---
@@ -9,7 +9,7 @@ title:       dsc resource set
 
 ## Synopsis
 
-Invokes the set operation of a resource.
+Enforces the desired state for a resource instance.
 
 ## Syntax
 
@@ -47,7 +47,7 @@ DSC raises an error.
 
 > [!IMPORTANT]
 > The `dsc resource set` command always invokes the `set` operation for the resource. Resources
-> may, but aren't required to, implement logic that pretests an instance for the `set` operation.
+> might, but aren't required to, implement logic that pretests an instance for the `set` operation.
 >
 > This is different from how [dsc config set][02] works, where DSC always tests an instance, either
 > synthetically or by invoking the `test` operation for the resource, and only invokes `set` for an
@@ -188,7 +188,7 @@ ShortSyntax : -f <FILE>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][02].
+- `json` to emit the data as a [JSON Line][04].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
@@ -215,8 +215,6 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
-[aa]: https://jsonlines.org/
-
 ### -h, --help
 
 <a id="-h"></a>
@@ -236,12 +234,15 @@ ShortSyntax : -h
 
 This command returns a formatted data object that includes the actual state of the instance before and after
 the set operation, and the list of properties that the set operation modified. For more
-information, see [dsc resource set result schema][04].
+information, see [dsc resource set result schema][05].
 
 For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
+<!-- Link reference definitions -->
+[zz]: https://jsonlines.org/
 [01]: ../config/set.md
 [02]: ../config/set.md
 [03]: ../../schemas/resource/manifest/set.md#implementspretest
-[04]: ../../schemas/outputs/resource/set.md
+[04]: https://jsonlines.org/
+[05]: ../../schemas/outputs/resource/set.md

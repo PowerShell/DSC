@@ -3,7 +3,7 @@ description: >
   Examples showing how you can invoke the Microsoft.Windows/Registry resource with DSC to create, modify, and delete
   a registry key value.
 
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 ms.topic: reference
 title: Manage a registry value
 ---
@@ -16,7 +16,7 @@ registry value exists and its data. These examples manage the `ManagedValue` reg
 
 ## Test whether a value exists
 
-The following snippet shows how you can use the resource with the `dsc resource test` command
+The following snippet shows how you can use the resource with the [dsc resource test][01] command
 to check whether the `ManagedValue` registry value exists.
 
 ```powershell
@@ -50,17 +50,18 @@ The `inDesiredState` field of the result object is set to `false`, indicating th
 instance isn't in the desired state. The `differingProperties` field indicates that the
 `_exist` property is mismatched between the desired state and actual state.
 
-In this case, the `valueName` property isn't returned from the resource. When the actual state of a `Registry`
-resource instance doesn't specify the `valueName` property and `_exist` is false, it indicates that the _key_ doesn't exist.
+In this case, the `valueName` property isn't returned from the resource. When the actual state of a
+`Registry` resource instance doesn't specify the `valueName` property and `_exist` is false, it
+indicates that the _key_ doesn't exist.
 
-Because the resource uses the [_exist canonical resource property](../../../../../schemas/resource/properties/exist.md), we know that:
+Because the resource uses the [_exist canonical resource property][02], we know that:
 
 - This result indicates that the
 registry key doesn't exist on the system.
 - The resource will create the instance during a **Set** operation.
 
 To show the difference, first use the following snippet to create the registry key with the
-[dsc resource set](../../../../../cli/resource/set.md) command.
+[dsc resource set][03] command.
 
 ```powershell
 dsc resource set --resource Microsoft.Windows/Registry --input @'
@@ -94,7 +95,7 @@ state and `_exist` is defined as `false` - the key exists but the value doesn't.
 
 ## Ensure a registry value exists
 
-In the previous section the desired state of the instance tested for whether the `ManagedValue`
+In the previous section, the desired state of the instance tested for whether the `ManagedValue`
 registry value existed. However, the Registry API requires _creating_ a registry value to define
 data for the value. Before you can use the **Set** operation to create the value, the desired state
 must define the `valueData` property.
@@ -239,7 +240,7 @@ The resource reports that it changed the `valueData` property and shows the actu
 
 ## Remove a registry value
 
-The following snippet shows how you can use the `dsc resource delete` command to remove the
+The following snippet shows how you can use the [dsc resource delete][04] command to remove the
 `ManagedValue` registry value.
 
 ```powershell
@@ -278,3 +279,9 @@ dsc resource delete --resource Microsoft.Windows/Registry --input @'
 keyPath: HKCU\DscExamples
 '@
 ```
+
+<!-- Link reference definitions -->
+[01]: ../../../../../cli/resource/test.md
+[02]: ../../../../../schemas/resource/properties/exist.md
+[03]: ../../../../../cli/resource/set.md
+[04]: ../../../../../cli/resource/delete.md

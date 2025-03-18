@@ -2,7 +2,7 @@
 description: >-
   Learn how to use Microsoft's Desired State Configuration platform to manage the state of a
   machine as code.
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 title: Get started with DSC
 ---
 
@@ -41,13 +41,13 @@ dsc resource list
 DSC outputs a table showing the available resources and summary information about each resource.
 
 ```Output
-Type                                        Kind      Version  Capabilities  RequireAdapter  Description                                                                
+Type                                        Kind      Version  Capabilities  RequireAdapter  Description
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Microsoft.DSC.Debug/Echo                    Resource  1.0.0    gs--t---
 Microsoft.DSC.Transitional/RunCommandOnSet  Resource  0.1.0    gs------                      Takes a single-command line to execute on DSC set operation
-Microsoft.DSC/Assertion                     Group     0.1.0    gs--t---                      `test` will be invoked for all resources in the supplied configuration.    
+Microsoft.DSC/Assertion                     Group     0.1.0    gs--t---                      `test` will be invoked for all resources in the supplied configuration.
 Microsoft.DSC/Group                         Group     0.1.0    gs--t---                      All resources in the supplied configuration is treated as a group.
-Microsoft.DSC/Include                       Importer  0.1.0    gs--t---                      Allows including a configuration file with optional parameter file.        
+Microsoft.DSC/Include                       Importer  0.1.0    gs--t---                      Allows including a configuration file with optional parameter file.
 Microsoft.DSC/PowerShell                    Adapter   0.1.0    gs--t-e-                      Resource adapter to classic DSC Powershell resources.
 Microsoft.Windows/RebootPending             Resource  0.1.0    g-------                      Returns info about pending reboot.
 Microsoft.Windows/Registry                  Resource  0.1.0    gs-w-d--                      Manage Windows Registry keys and values
@@ -59,7 +59,7 @@ Microsoft/Process                           Resource  0.1.0    gs--t-e-         
 
 Together, the columns describe each resource:
 
-- The **Type** column defines the fully qualified type name for a resource. This identifies the
+- The **Type** column defines the fully qualified type name for a resource. This name identifies the
   resource on a system and in a configuration document.
 - The **Kind** column indicates how you can use the resource.
   - `Adapter` indicates that the resource is an adapter resource and enables you to configure
@@ -107,17 +107,15 @@ Count Name
   961 Microsoft.Windows/WMI
 ```
 
-The first command saves the output of `dsc resource list` to the `$resources` variable as an array
-of PowerShell objects. WHen you first ran the `dsc resource list` command, the output in the
-terminal was a table view. By default, when DSC detects that its output is being redirected to a
-file, variable, or another command in the pipeline, it emits JSON representing the output.
-Converting the JSON into a PowerShell object with the `ConvertFrom-Json` cmdlet enables you to
-treat the output like any other PowerShell object.
+The output of `dsc resource list` is saved to the `$resources` variable as an array of PowerShell
+objects. When you first ran the `dsc resource list` command, the output in the terminal was a table
+view. By default, when DSC detects output redirection, it formats the output as JSON. Converting the
+JSON into a PowerShell object with the `ConvertFrom-Json` cmdlet enables you to treat the output
+like any other PowerShell object.
 
-The second command uses the `Group-Object` cmdlet to summarize the available adapted resources,
-grouped by the adapter that they require. The specific count for adapted resources depends on the
-machine you're using and whether you've installed any PowerShell modules that export any PSDSC
-resources.
+The `Group-Object` cmdlet summarizes the available adapted resources, grouped by the adapter that
+they require. The specific count for adapted resources depends on the machine you're using and the
+installed PowerShell modules that export any PSDSC resources.
 
 Run the following command to display only the resources available with the
 `Microsoft.Windows/WindowsPowerShell` adapter.
@@ -164,7 +162,7 @@ For more information about the command, see [dsc resource list][03].
 
 ## Invoke a resource
 
-You can use DSC to directly invoke a resource. When you invoke a resource, you are performing a
+You can use DSC to directly invoke a resource. When you invoke a resource, you're performing a
 specific operation on an _instance_ of the resource. A resource instance is a specific item the
 resource represents. The following examples use the `Microsoft.Windows/Registry` resource to invoke
 DSC operations.
@@ -172,7 +170,7 @@ DSC operations.
 First, use the `dsc resource list` command to see what capabilities the `Registry` resource has.
 
 ```powershell
-$resource = dsc resource list Microsoft.WIndows/Registry | ConvertFrom-Json
+$resource = dsc resource list Microsoft.Windows/Registry | ConvertFrom-Json
 $resource.capabilities
 ```
 
@@ -212,8 +210,8 @@ For this example:
   want to manage. `keyPath` is a _required_ property for the `Registry` resource - you always need
   to specify it.
 - The `valueName` property identifies which registry value to manage for the registry key.
-- The `_exist` canonical property indicates whether the registry value should exist. In this example,
-  it's set to `true`, indicating the instance should exist.
+- The `_exist` canonical property indicates whether the registry value should exist. In this
+  example, the value is `true`, which indicates that the instance should exist.
 
 Run the following command to get the current state of the registry key:
 
@@ -300,7 +298,7 @@ The output indicates that the resource created the missing instance.
 Invoking resources directly is useful, but tedious for defining the desired state of a system. You
 can define a DSC configuration document to describe a set of resource instances together.
 
-Copy the following codeblock and save it in a file named `example.dsc.config.yaml`.
+Copy the following code block and save it in a file named `example.dsc.config.yaml`.
 
 ```yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -401,8 +399,8 @@ hadErrors: false
 
 The output shows that:
 
-- The `Registry` instance is in the desired state. This is because the key was created earlier in
-  this article when invoking the **Set** operation directly.
+- The `Registry` instance is in the desired state. Earlier in this article, you created the key by
+  invoking the **Set** operation directly.
 
 - The adapted `Environment` PSDSC resource reports that the `DSC_EXAMPLE` environment variable is
   _not_ in the desired state.
@@ -533,9 +531,9 @@ hadErrors: false
 <!-- Link reference definitions -->
 
 [01]: ../overview.md#installation
-[02]: https://learn.microsoft.com/windows/terminal/
+[02]: /windows/terminal/
 [03]: ../reference/cli/resource/list.md
 [04]: ../glossary.md
-[05]: ../concepts/configurations.md
-[06]: ../concepts/resources.md
-[07]: ../reference/cli/dsc.md
+[05]: ../concepts/configuration-documents/overview.md
+[06]: ../concepts/resources/overview.md
+[07]: ../reference/cli/index.md

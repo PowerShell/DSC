@@ -2,7 +2,7 @@
 description: >-
   Learn about Microsoft's Desired State Configuration platform, including what it does and when
   it should be used.
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 ms.topic: overview
 title:  Microsoft Desired State Configuration overview
 ---
@@ -12,7 +12,7 @@ title:  Microsoft Desired State Configuration overview
 Microsoft's Desired State Configuration (DSC) is a declarative configuration platform. With DSC,
 the state of a machine is described using a format that should be clear to understand even if the
 reader isn't a subject matter expert. Unlike imperative tools, with DSC the definition of an
-application environment is separate from the script logic that implements how it's delivered.
+application environment is separate from programming logic that enforces that definition.
 
 The DSC command line application (`dsc`) abstracts the management of software components
 declaratively and idempotently. DSC runs on Linux, macOS, and Windows without any external
@@ -21,7 +21,7 @@ dependencies.
 With DSC, you can:
 
 - Author DSC Resources to manage your systems in any language.
-- Invoke individual resources.
+- Invoke individual resources directly.
 - Create configuration documents that define the desired state of a system.
 
 ## Configuration Documents
@@ -41,19 +41,22 @@ used with the **Get** and **Test** operations to retrieve the current state of a
 and validate whether it's in the desired state. Most resources also support enforcing the desired
 state with the **Set** operation.
 
-Example scenarios include how to update the contents of a file, how to run a utility that changes
-the state of a machine, or how to configure settings of an application.
+Example scenarios include:
+
+- How to update the contents of a file.
+- How to run a utility that changes the state of a machine.
+- How to configure settings of an application.
 
 ### Differences from PowerShell DSC
 
 DSC differs from PowerShell Desired State Configuration (PSDSC) in a few important ways:
 
 - DSC doesn't _depend_ on PowerShell, Windows PowerShell, or the [PSDesiredStateConfiguration][01]
-  PowerSHell module. DSC provides full compatibility with PSDSC resources through the
+  PowerShell module. DSC provides full compatibility with PSDSC resources through the
   `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` _adapter resources_.
 
   With the `Microsoft.DSC/PowerShell` adapter resource, you can use any PSDSC resource implemented
-  as a PowerShell class . The resource handles discovering, validating, and invoking PSDSC
+  as a PowerShell class. The resource handles discovering, validating, and invoking PSDSC
   resources in PowerShell. The resource is included in the DSC install package for every platform.
 
   With the `Microsoft.Windows/WindowsPowerShell` adapter resource, you can use any PSDSC resource
@@ -96,17 +99,20 @@ winget search DesiredStateConfiguration
 ```Output
 Name                              Id           Version Source
 ---------------------------------------------------------------
+DesiredStateConfiguration         9NVTPZWRC6KQ Unknown msstore
 DesiredStateConfiguration-Preview 9PCX3HX4HZ0Z Unknown msstore
 ```
 
-Install DSC using the `id` parameter
+Install DSC using the `id` parameter:
 
 ```powershell
-winget install --id Microsoft.DesiredStateConfiguration --source winget
+# Install latest stable
+winget install --id 9NVTPZWRC6KQ --source msstore
 ```
 
 ```powershell
-winget install --id Microsoft.DesiredStateConfiguration.Preview --source winget
+# Install latest preview
+winget install --id 9PCX3HX4HZ0Z --source msstore
 ```
 
 ## Integrating with DSC
@@ -132,10 +138,10 @@ For more information, see [DSC JSON Schema reference overview][06].
 <!-- link references -->
 [01]: https://github.com/powershell/psdesiredstateconfiguration
 [02]: https://github.com/PowerShell/DSC/releases/latest
-[03]: https://learn.microsoft.com/windows/package-manager/winget
-[04]: https://learn.microsoft.com/azure/dev-box/overview-what-is-microsoft-dev-box
-[05]: https://learn.microsoft.com/azure/governance/machine-configuration/overview
+[03]: /windows/package-manager/winget
+[04]: /azure/dev-box/overview-what-is-microsoft-dev-box
+[05]: /azure/governance/machine-configuration/overview
 [06]: ./reference/schemas/overview.md
 [07]: ./concepts/resources/anatomy.md
-[08]: ./reference/cli/dsc.md
-[09]: https://learn.microsoft.com/windows/package-manager/configuration/
+[08]: ./reference/cli/index.md
+[09]: /windows/package-manager/configuration/

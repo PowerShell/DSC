@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'registry config' command
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       registry config
 ---
@@ -91,7 +91,7 @@ Mandatory: false
 ```
 
 <!-- Link references -->
-[01]: ../../../resources/microsoft/windows/registry/index.md
+[01]: ../../../resources/Microsoft/Windows/Registry/index.md
 [02]: ./get.md
 [03]: ./set.md
 [04]: ./delete.md

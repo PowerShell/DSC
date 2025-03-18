@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'registry' command
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       registry
 ---
@@ -120,11 +120,11 @@ Mandatory: false
 ```
 
 <!-- Link reference definitions -->
-[01]: ../../../concepts/resources/index.md
-[02]: ../../resources/microsoft/windows/registry/index.md
-[03]: ./query/command.md
-[04]: ./set/command.md
-[05]: ./remove/command.md
-[06]: ./find/command.md
-[07]: ./config/command.md
-[08]: ./schema/command.md
+[01]: ../../../concepts/resources/overview.md
+[02]: ../../resources/Microsoft/Windows/Registry/index.md
+[03]: ./query/index.md
+[04]: ./set/index.md
+[05]: ./remove/index.md
+[06]: ./find/index.md
+[07]: ./config/index.md
+[08]: ./schema/index.md

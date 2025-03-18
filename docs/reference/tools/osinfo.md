@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'osinfo' command
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       osinfo command reference
 ---
@@ -96,4 +96,4 @@ The following code block shows the output with newlines and indentation for read
 ```
 
 <!-- Link references -->
-[01]: ../resources/microsoft/osinfo/index.md
+[01]: ../resources/Microsoft/OSInfo/index.md

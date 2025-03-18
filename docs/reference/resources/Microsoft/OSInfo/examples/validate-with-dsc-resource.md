@@ -2,7 +2,7 @@
 description: >
   Validate operating system information with the Microsoft/OSInfo DSC Resource
   and the dsc resource commands.
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 ms.topic: reference
 title: Validate operating system information with dsc resource
 ---
@@ -20,7 +20,7 @@ information about an operating system with the `dsc resource` commands.
 
 ## Getting the operating system information
 
-The [dsc resource get][02] command returns an instance of the resource. The `Microsoft/OSInfo`
+The [dsc resource get][01] command returns an instance of the resource. The `Microsoft/OSInfo`
 resource doesn't require any instance properties to return the instance. The resource returns the
 available information for the operating system.
 
@@ -75,11 +75,11 @@ actualState:
 
 ## Testing the operating system information
 
-DSC can use the resource to validate the operating system information. When using the
-[dsc resource test][03] command, input JSON representing the desired state of the instance is
+DSC can use the resource to validate the operating system information. When you use the
+[dsc resource test][02] command, input JSON representing the desired state of the instance is
 required. The JSON must define at least one instance property to validate.
 
-The resource doesn't implement the [test operation][01]. It relies on the synthetic testing feature
+The resource doesn't implement the [test operation][03]. It relies on the synthetic testing feature
 of DSC instead. The synthetic test uses a case-sensitive equivalency comparison between the actual
 state of the instance properties and the desired state. If any property value isn't an exact match,
 DSC considers the instance to be out of the desired state.
@@ -186,7 +186,7 @@ differingProperties: []
 
 # [Windows](#tab/windows)
 
-This test checks whether the `family` property for the instance is `windows`.  It passes the desired
+This test checks whether the `family` property for the instance is `windows`. It passes the desired
 state for the instance to the command from stdin with the `--file` (`-f`) option.
 
 ```powershell
@@ -240,6 +240,6 @@ differingProperties: []
 ---
 
 <!-- Link reference -->
-[01]: ../../../../concepts/resources.md#test-operations
-[02]: ../../../../cli/resource/get.md
-[03]: ../../../../cli/resource/test.md
+[01]: ../../../../cli/resource/get.md
+[02]: ../../../../cli/resource/test.md
+[03]: ../../../../../concepts/resources/overview.md#test-operations

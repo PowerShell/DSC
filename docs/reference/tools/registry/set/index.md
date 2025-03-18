@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'registry set' command
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       registry set
 ---

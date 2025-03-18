@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource delete' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource delete
 ---
@@ -9,7 +9,7 @@ title:       dsc resource delete
 
 ## Synopsis
 
-Invokes the delete operation of a resource.
+Removes a resource instance from the system.
 
 ## Syntax
 

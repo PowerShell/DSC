@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc config' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc config
 ---
@@ -57,12 +57,12 @@ dsc config help [<SUBCOMMAND>]
 For example, `dsc config help` gets the help for this command. `dsc config help set` gets the help
 for the `set` subcommand.
 
-You can also use the [--help](#-h---help) option on the command or subcommand to display the help
+You can also use the [--help](#--help) option on the command or subcommand to display the help
 information. For example, `dsc config --help` or `dsc config set --help`.
 
 ## Options
 
-### -f, --parameters_file
+### -f, --parameters-file
 
 <a id="-f"></a>
 <a id="--parameters-file"></a>
@@ -160,11 +160,11 @@ containing the specified configuration document.
 You can use the [envvar][08] configuration function to reference that folder path for resource
 instances in the configuration.
 
-[01]: ../resource/command.md
-[02]: export.md
-[03]: get.md
-[04]: set.md
-[05]: test.md
+[01]: ../resource/index.md
+[02]: ./export.md
+[03]: ./get.md
+[04]: ./set.md
+[05]: ./test.md
 [06]: ../../schemas/config/parameter.md
 [07]: ../../schemas/config/functions/parameters.md
 [08]: ../../schemas/config/functions/envvar.md

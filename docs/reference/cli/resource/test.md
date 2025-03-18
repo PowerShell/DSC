@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource test' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource test
 ---
@@ -9,7 +9,7 @@ title:       dsc resource test
 
 ## Synopsis
 
-Invokes the test operation of a resource.
+Validates the actual state of a resource instance against a desired state.
 
 ## Syntax
 
@@ -172,7 +172,7 @@ ShortSyntax : -f <FILE>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][aa].
+- `json` to emit the data as a [JSON Line][02].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
@@ -199,7 +199,7 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
-[aa]: https://jsonlines.org/
+
 
 ### -h, --help
 
@@ -221,10 +221,12 @@ ShortSyntax : -h
 This command returns a formatted data object that includes the desired state of the instance, the
 actual state, the list of properties that are out of the desired state, and a boolean value
 indicating whether the instance is in the desired state. For more information, see
-[dsc resource test result schema][02].
+[dsc resource test result schema][03].
 
 For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
+<!-- Link reference definitions -->
 [01]: ../config/test.md
-[02]: ../../schemas/outputs/resource/test.md
+[02]: https://jsonlines.org/
+[03]: ../../schemas/outputs/resource/test.md

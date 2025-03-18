@@ -3,16 +3,16 @@ title: "Glossary: Desired State Configuration"
 description: >-
   A glossary of terms for Microsoft Desired State Configuration (DSC)
 ms.topic: glossary
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 ---
 
 # Glossary: Desired State Configuration
 
-Microsoft Desired State Configuration (DSC) uses several terms that may have different definitions
-elsewhere. This document lists the terms, their meanings, and shows how they're formatted in the
-documentation.
+Microsoft Desired State Configuration (DSC) uses several terms that might have different
+definitions elsewhere. This document lists the terms, their meanings, and shows how they're
+formatted in the documentation.
 
-<!-- markdownlint-disable MD028 MD036 -->
+<!-- markdownlint-disable MD028 MD036 MD024 -->
 
 ## Configuration terms
 
@@ -27,7 +27,7 @@ The JSON or YAML data that defines a list of resource instances and their desire
 
 #### Examples
 
-> A DSC Configuration Document may be formatted as JSON or YAML.
+> A DSC Configuration Document can be formatted as JSON or YAML.
 
 > Define the `scope` variable in the document as `machine`.
 
@@ -52,7 +52,7 @@ resources.
 
 ### DSC resource instance
 
-A single item configured by a DSC resource. A resource may manage any number of instances. Each
+A single item configured by a DSC resource. A resource can manage any number of instances. Each
 instance uniquely represents an item, like a specific file or a software package.
 
 A DSC configuration document defines the desired state for one or more instances.
@@ -87,7 +87,7 @@ determine how to invoke the resource and how to validate the resource instance p
 ### DSC group resource
 
 A _group resource_ is a resource with a `resources` property that takes an array of resource
-instances and processes them. Group resources may apply special handling to their nested resource
+instances and processes them. Group resources can apply special handling to their nested resource
 instances, like changing the user the resources run as.
 
 #### Guidelines
@@ -100,8 +100,8 @@ instances, like changing the user the resources run as.
 
 ### Nested resource instance
 
-A resource instance that's included in the `resources` property of a group resource or adapter
-resource.
+A resource instance defined in the `resources` property of a group or adapter
+resource instance.
 
 #### Guidelines
 
@@ -117,7 +117,7 @@ resource.
 
 ### DSC adapter resource
 
-An _adapter resource_ is a group resource that enables the use of non-command resources with
+An _adapter resource_ is a group resource that enables the use of noncommand resources with
 DSC. Every nested resource instance must be a resource type the adapter supports.
 
 #### Guidelines
@@ -136,7 +136,7 @@ DSC. Every nested resource instance must be a resource type the adapter supports
 A resource implemented in PowerShell is a PowerShell resource.
 
 Any PowerShell resource that is compatible with PowerShell DSC is a PowerShell DSC resource (PSDSC
-resource). PSDSC resources are further distinguished by their implementation:
+resource). The implementation of a PSDSC resource further distinguishes those resources:
 
 - Class-Based - A PSDSC resource defined as a PowerShell class in a PowerShell module is a
   _class-based_ PSDSC resource.
@@ -164,7 +164,7 @@ resource). PSDSC resources are further distinguished by their implementation:
 - **Subsequent mentions:** PSDSC resources.
 - When discussing a specific type of PowerShell resource, always specify the type prefix, like
   _class-based PSDSC resources_.
-- The PSDSC prefix may be omitted when the context is clearly or only about PowerShell DSC
+- The PSDSC prefix can be omitted when the context is clearly or only about PowerShell DSC
   resources, like a tutorial for authoring a class-based resource.
 
 <!-- vale alex.Condescending = YES -->
@@ -181,7 +181,7 @@ resource). PSDSC resources are further distinguished by their implementation:
 ### DSC Resource manifest
 
 The data file that defines the metadata and implementation of a command-based resource. A resource
-manifest may be authored in either JSON or YAML.
+manifest can be authored in either JSON or YAML.
 
 #### Guidelines
 
@@ -254,7 +254,7 @@ Resources describe their properties with their [instance schema](#resource-insta
 `properties` keyword.
 
 Some properties are [canonical](#canonical-resource-properties), [key](#key-resource-properties),
-[read-only](#read-only-resource-properties) or [write-only](#write-only-resource-properties)
+[read-only](#read-only-resource-properties), or [write-only](#write-only-resource-properties)
 properties.
 
 #### Guidelines
@@ -270,7 +270,7 @@ properties.
 ### Key resource properties
 
 The key properties of a resource uniquely identify an instance of the resource. No two instances of
-a resource in a configuration may have identical key properties.
+a resource in a configuration can have identical key properties.
 
 If two instances have the same key properties but different values for the other properties, the
 configuration will never be in the desired state and DSC will reconfigure the instance during every
@@ -329,9 +329,9 @@ properties, see [DSC canonical properties][01]
 
 ### Read-only resource properties
 
-Read-only resource properties of a resource describe non-configurable information about an instance
-that the resource returns. This may include metadata like the last time a file was modified or the
-latest available version of a package.
+Read-only resource properties of a resource describe nonconfigurable information about an instance
+that the resource returns. Examples include metadata, such as the last time a file was modified, or
+the latest available version of a package.
 
 Resources indicate which properties are read-only in their instance schema by defining the
 `readOnly` keyword as `true`.
@@ -359,7 +359,7 @@ Resources indicate which properties are read-only in their instance schema by de
 ### Write-only resource properties
 
 Write-only properties of a resource instance describe options that influence how the resource
-behaves, but can't be returned from the machine. Examples of write-only proeprties include
+behaves, but can't be returned from the machine. Examples of write-only properties include
 credentials required for configuring the resource and the
 [_purge][02] canonical property.
 
@@ -404,9 +404,9 @@ their adapted resources.
 
 ### Desired State Configuration
 
-Microsoft's Desired State Configuration (DSC) is a declarative configuration platform, where the
-state of a machine is described using a format that should be clear to understand even if the
-reader isn't a subject matter expert.
+Microsoft's Desired State Configuration (DSC) is a declarative configuration platform. With DSC,
+you describe the state of a machine in a format that anyone can read and understand, not just
+subject matter experts.
 
 #### Guidelines
 

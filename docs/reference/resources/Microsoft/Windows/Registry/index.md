@@ -1,6 +1,6 @@
 ---
 description: Microsoft.Windows/Registry resource reference documentation
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       Microsoft.Windows/Registry
 ---
@@ -66,7 +66,7 @@ The resource has the following capabilities:
 
 - `get` - You can use the resource to retrieve the actual state of an instance.
 - `set` - You can use the resource to enforce the desired state for an instance.
-- `whatIf` - The resource is able to report how it will change system state during a **Set**
+- `whatIf` - The resource is able to report how it would change system state during a **Set**
   operation in what-if mode.
 - `delete` - You can use the resource to directly remove an instance from the system.
 
@@ -76,12 +76,12 @@ the desired state. For more information about resource capabilities, see
 
 ## Examples
 
-1. [Manage a registry key](examples/manage-a-registry-key) - Shows how to create and delete
-   registry keys with the `dsc resource` commands.
-1. [Manage a registry value](examples/manage-a-registry-value.md) - Shows how to create, modify,
-   and delete registry values with the `dsc resource` commands.
-1. [Configure registry keys and values](examples/configure-registry-keys-and-values.md) - Shows how
-   to define registry keys and values in a configuration document.
+1. [Manage a registry key][03] - Shows how to create and delete registry keys with the
+   `dsc resource` commands.
+1. [Manage a registry value][04] - Shows how to create, modify, and delete registry values with the
+   `dsc resource` commands.
+1. [Configure registry keys and values][05] - Shows how to define registry keys and values in a
+   configuration document.
 
 ## Properties
 
@@ -90,14 +90,14 @@ The following list describes the properties for the resource.
 - **Required properties:** <a id="required-properties"></a> The following properties are always
   required when defining an instance of the resource. An instance that doesn't define each of these
   properties is invalid. For more information, see the "Required resource properties" section in
-  [DSC resource properties][03]
+  [DSC resource properties][06]
 
   - [keyPath](#keypath) - The path to the registry key.
 
 - **Key properties:** <a id="key-properties"> The following properties uniquely identify an
   instance. If two instances of a resource have the same values for their key properties, the
   instances are conflicting. For more information about key properties, see the "Key resource
-  properties" section in [DSC resource properties][04].
+  properties" section in [DSC resource properties][07].
 
   - [keyPath](#keypath) (required) - The path to the registry key.
   - [valueName](#valuename) (optional) - The name of the registry value.
@@ -109,15 +109,15 @@ The following list describes the properties for the resource.
   - [valueData](#valuedata) - The data for a registry value.
   - [valueName](#valuename) - The name of the registry value.
 
-- **Read-only properties:** <a id="read-only-properties"></a> The following properties are returned
-  by the resource but aren't configurable. For more information about read-only properties, see the
-  "Read-only resource properties" section in [DSC resource properties][05].
+- **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following
+  properties, but they aren't configurable. For more information about read-only properties, see
+  the "Read-only resource properties" section in [DSC resource properties][08].
 
   - [_metadata](#_metadata) - Defines metadata returned by the resource.
 
 ### keyPath
 
-<details open><summary><code>keyPath</code> property metadata</summary>
+<details><summary>Expand for <code>keyPath</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -130,7 +130,7 @@ IsWriteOnly      : false
 </details>
 
 Defines the path to the registry key for the instance. The path must start with a valid hive
-identifier. Each segment of the path must be separated by a backslash (`\`).
+identifier. Separate each segment of the path with a backslash (`\`).
 
 The following table describes the valid hive identifiers for the key path.
 
@@ -144,7 +144,7 @@ The following table describes the valid hive identifiers for the key path.
 
 ### _exist
 
-<details open><summary><code>_exist</code> property metadata</summary>
+<details><summary>Expand for <code>_exist</code> property metadata</summary>
 
 ```yaml
 Type             : boolean
@@ -164,7 +164,7 @@ The default value for this property when not specified for an instance is `true`
 
 ### valueData
 
-<details open><summary><code>valueData</code> property metadata</summary>
+<details><summary>Expand for <code>valueData</code> property metadata</summary>
 
 ```yaml
 Type                 :  object
@@ -196,11 +196,11 @@ instance that defines `valueData` without `valueName` is invalid.
 - [QWord](#qword-valuedata) - Defines the value as a 64-bit unsigned integer (`REG_QWORD`).
 
 For more information on registry value data types, see
-[Registry value types][06].
+[Registry value types][09].
 
 #### String valueData
 
-<details open><summary><code>valueData.String</code> subproperty metadata</summary>
+<details><summary>Expand for <code>valueData.String</code> subproperty metadata</summary>
 
 ```yaml
 Type : string
@@ -213,7 +213,7 @@ terminating the string.
 
 #### ExpandString valueData
 
-<details open><summary><code>valueData.ExpandString</code> subproperty metadata</summary>
+<details><summary>Expand for <code>valueData.ExpandString</code> subproperty metadata</summary>
 
 ```yaml
 Type : string
@@ -226,7 +226,7 @@ environment variables, like `%PATH%`. The resource handles terminating the strin
 
 #### MultiString valueData
 
-<details open><summary><code>valueData.MultiString</code> subproperty metadata</summary>
+<details><summary>Expand for <code>valueData.MultiString</code> subproperty metadata</summary>
 
 ```yaml
 Type              : array
@@ -242,7 +242,7 @@ handles terminating the strings.
 
 #### Binary valueData
 
-<details open><summary><code>valueData.Binary</code> subproperty metadata</summary>
+<details><summary>Expand for <code>valueData.Binary</code> subproperty metadata</summary>
 
 ```yaml
 Type                       : array
@@ -259,7 +259,7 @@ unsigned integers.
 
 #### DWord valueData
 
-<details open><summary><code>valueData.DWord</code> sub-property metadata</summary>
+<details><summary>Expand for <code>valueData.DWord</code> subproperty metadata</summary>
 
 ```yaml
 Type                  : integer
@@ -273,7 +273,7 @@ Defines the registry value data as a 32-bit unsigned integer.
 
 #### QWord valueData
 
-<details open><summary><code>valueData.QWord</code> subproperty metadata</summary>
+<details><summary>Expand for <code>valueData.QWord</code> subproperty metadata</summary>
 
 ```yaml
 Type                  : integer
@@ -287,7 +287,7 @@ Defines the registry value data as a 64-bit unsigned integer.
 
 ### valueName
 
-<details open><summary><code>valueName</code> property metadata</summary>
+<details><summary>Expand for <code>valueName</code> property metadata</summary>
 
 ```yaml
 Type:  string
@@ -301,7 +301,7 @@ specifying the `valueData` property.
 
 ### _metadata
 
-<details open><summary><code>_metadata</code> property metadata</summary>
+<details><summary>Expand for <code>_metadata</code> property metadata</summary>
 
 ```yaml
 Type         : object
@@ -324,7 +324,7 @@ operations, the return data from the resource doesn't include this property.
 
 #### whatIf
 
-<details open><summary><code>_metadata.whatIf</code> subproperty metadata</summary>
+<details><summary>Expand for <code>_metadata.whatIf</code> subproperty metadata</summary>
 
 ```yaml
 Type              : array
@@ -343,7 +343,7 @@ operation without the `--what-if` flag.
 
 The following snippet contains the JSON Schema that validates an instance of the resource. The
 validating schema only includes schema keywords that affect how the instance is validated. All
-non-validating keywords are omitted.
+nonvalidating keywords are omitted.
 
 ```json
 {
@@ -456,15 +456,18 @@ Indicates the resource operation failed because the result couldn't be serialize
 
 ## See also
 
-- [Microsoft/OSInfo resource][07]
-- For more information about the Windows Registry, see [About the Registry][08]
+- [Microsoft/OSInfo resource][10]
+- For more information about the Windows Registry, see [About the Registry][11]
 
 <!-- Link definitions -->
-[01]: https://learn.microsoft.com/windows/win32/sysinfo/registry-key-security-and-access-rights
+[01]: /windows/win32/sysinfo/registry-key-security-and-access-rights
 [02]: ../../../../../concepts/resources/capabilities.md
-[03]: ../../../../../concepts/resources/properties.md#required-resource-properties
-[04]: ../../../../../concepts/resources/properties.md#key-resource-properties
-[05]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
-[06]: https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-value-types
-[07]: https://learn.microsoft.com/powershell/dsc/resource/Microsoft/OSInfo
-[08]: https://learn.microsoft.com/windows/win32/sysinfo/about-the-registry
+[03]: ./examples/manage-a-registry-key.md
+[04]: ./examples/manage-a-registry-value.md
+[05]: ./examples/configure-registry-keys-and-values.md
+[06]: ../../../../../concepts/resources/properties.md#required-resource-properties
+[07]: ../../../../../concepts/resources/properties.md#key-resource-properties
+[08]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
+[09]: /en-us/windows/win32/sysinfo/registry-value-types
+[10]: ../../osinfo/index.md
+[11]: /windows/win32/sysinfo/about-the-registry
