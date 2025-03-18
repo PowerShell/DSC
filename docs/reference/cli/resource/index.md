@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource
 ---
@@ -89,10 +89,10 @@ LongSyntax  : --help
 ShortSyntax : -h
 ```
 
-[01]: ../config/command.md
-[02]: list.md
-[03]: export.md
-[04]: get.md
-[05]: set.md
-[06]: test.md
-[07]: schema.md
+[01]: ../config/index.md
+[02]: ./list.md
+[03]: ./export.md
+[04]: ./get.md
+[05]: ./set.md
+[06]: ./test.md
+[07]: ./schema.md

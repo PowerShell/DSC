@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'registry config delete' command
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       registry config delete
 ---
@@ -100,5 +100,5 @@ ShortSyntax : -h
 ```
 
 <!-- Link references -->
-[01]: ../../../resources/microsoft/windows/registry/index.md#keypath
-[02]: ../../../resources/microsoft/windows/registry/index.md#valuename
+[01]: ../../../resources/Microsoft/Windows/Registry/index.md#keypath
+[02]: ../../../resources/Microsoft/Windows/Registry/index.md#valuename

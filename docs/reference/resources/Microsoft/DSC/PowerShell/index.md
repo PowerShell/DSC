@@ -1,6 +1,6 @@
 ---
 description: Microsoft.DSC/PowerShell resource reference documentation
-ms.date:     03/03/2025
+ms.date:     03/18/2025
 ms.topic:    reference
 title:       Microsoft/OSInfo
 ---
@@ -65,7 +65,7 @@ for each platform.
 The adapter versions the cache. The current version is `1`. If the version of the cache on a
 machine differs from the current version, the adapter refreshes the cache.
 
-The adapter checks whether the cache is stale on each run and refresh it if:
+The adapter checks whether the cache is stale on each run and refreshes it if:
 
 - The `PSModulePath` environmental variable is updated.
 - Any module is added or removed from the `PSModulePath`.

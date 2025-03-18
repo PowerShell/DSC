@@ -3,7 +3,7 @@ description: >
   Examples showing how you can invoke the Microsoft.Windows/Registry with DSC to create and delete
   a registry key.
 
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 ms.topic: reference
 title: Manage a registry key
 ---
@@ -16,7 +16,7 @@ user hive.
 
 ## Test whether a key exists
 
-The following snippet shows how you can use the resource with the `dsc resource test` command
+The following snippet shows how you can use the resource with the [dsc resource test][01] command
 to check whether the `ManagedKey` registry key exists.
 
 ```powershell
@@ -46,7 +46,7 @@ The `inDesiredState` field of the result object is set to `false`, indicating th
 instance isn't in the desired state. The `differingProperties` field indicates that the
 `_exist` property is mismatched between the desired state and actual state.
 
-Because the resource uses the [_exist canonical resource property](../../../../../schemas/resource/properties/exist.md), we know that:
+Because the resource uses the [_exist canonical resource property][02], we know that:
 
 - This result indicates that the
 registry key doesn't exist on the system.
@@ -54,8 +54,8 @@ registry key doesn't exist on the system.
 
 ## Ensure a registry key exists
 
-To set the system to the desired state and create the registry key, use the
-[dsc resource set](../../../../../cli/resource/set.md) command.
+To set the system to the desired state and create the registry key, use the [dsc resource set][03]
+command.
 
 ```powershell
 dsc resource set --resource Microsoft.Windows/Registry --input $instance
@@ -91,7 +91,7 @@ differingProperties: []
 
 ## Remove a key
 
-The following snippet shows how you can use the `dsc resource delete` command to remove the
+The following snippet shows how you can use the [dsc resource delete][04] command to remove the
 registry key.
 
 ```powershell
@@ -131,3 +131,7 @@ keyPath: HKCU\DscExamples
 ```
 
 <!-- Link reference definitions -->
+[01]: ../../../../../cli/resource/test.md
+[02]: ../../../../../schemas/resource/properties/exist.md
+[03]: ../../../../../cli/resource/set.md
+[04]: ../../../../../cli/resource/delete.md

@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc completer' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc completer
 ---
@@ -109,5 +109,5 @@ ShortSyntax : -h
 [01]: https://www.gnu.org/software/bash/
 [02]: https://elv.sh/
 [03]: https://fishshell.com/
-[04]: https://learn.microsoft.com/powershell/scripting/overview
+[04]: /powershell/scripting/overview
 [05]: https://zsh.sourceforge.io/

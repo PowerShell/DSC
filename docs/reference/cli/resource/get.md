@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource get' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource get
 ---
@@ -9,7 +9,7 @@ title:       dsc resource get
 
 ## Synopsis
 
-Invokes the get operation of a resource.
+Retrieves the actual state of a resource instance.
 
 ## Syntax
 
@@ -145,8 +145,8 @@ actualState:
 
 ### -a, --all
 
-<a id="-r"></a>
-<a id="--resource"></a>
+<a id="-a"></a>
+<a id="--all"></a>
 
 Specifies that the command should return every instance of the specified DSC Resource instead of a
 specific instance.
@@ -232,7 +232,8 @@ ShortSyntax : -f <FILE>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][aa]. When you use the [--all option](#--all), each instance is returned as a JSON Line.
+- `json` to emit the data as a [JSON Line][03]. When you use the [--all option](#--all), each
+  instance is returned as a JSON Line.
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML. When you use the `--all` option, each instance is returned as a
   YAML document with the `---` document separator between each returned instance.
@@ -260,8 +261,6 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
-[aa]: https://jsonlines.org/
-
 ### -h, --help
 
 <a id="-h"></a>
@@ -279,8 +278,9 @@ ShortSyntax : -h
 
 ## Output
 
-By default, this command returns a formatted data object that includes the actual state of the instance. When
-the `--all` option is specified, the command returns the formatted data for each instance.
+By default, this command returns a formatted data object that includes the actual state of the
+instance. When the `--all` option is specified, the command returns the formatted data for each
+instance.
 
 For more information about the structure of the output JSON, see
 [dsc resource get result schema][04].
@@ -288,6 +288,7 @@ For more information about the structure of the output JSON, see
 For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
+<!-- Link reference definitions -->
 [01]: ../config/get.md
 [02]: ../../schemas/resource/manifest/export.md
 [03]: https://jsonlines.org/

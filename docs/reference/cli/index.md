@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc
 ---
@@ -22,7 +22,7 @@ dsc [Options] <COMMAND>
 ### completer
 
 The `completer` command returns a shell script that, when executed, registers completions for the
-given shell. For more information, see [completer][01].
+given shell. For more information, see [dsc completer][01].
 
 ### config
 
@@ -32,7 +32,7 @@ The `config` command manages a DSC Configuration document. You can use it to:
 - Test whether a configuration is in the desired state.
 - Set a configuration to the desired state.
 
-For more information, see [config][02].
+For more information, see [dsc config][02].
 
 ### resource
 
@@ -44,12 +44,12 @@ The `resource` command manages a DSC Resource. You can use it to:
 - Test whether a resource instance is in the desired state.
 - Set a resource instance to the desired state.
 
-For more information, see [resource][03]
+For more information, see [dsc resource][03]
 
 ### schema
 
 The `schema` command returns the JSON schema for a specific DSC type. For more information, see
-[schema][04].
+[dsc schema][04].
 
 ### help
 
@@ -64,7 +64,7 @@ dsc help <COMMAND> [<SUBCOMMAND>]
 For example, `dsc help config` gets the help for the `config` subcommand. `dsc help config set`
 gets the help for the `config set` subcommand.
 
-You can also use the [--help](#-h---help) option on a command to display the help information. For
+You can also use the [--help](#--help) option on a command to display the help information. For
 example, `dsc config --help` or `dsc config set --help`.
 
 ## Options
@@ -89,7 +89,7 @@ set to any value in the list, DSC emits messages at that level and above.
 > [!WARNING]
 > The `trace` level output emits all JSON input/output that DSC processes during execution. DSC
 > doesn't sanitize the JSON before emitting it. This trace level is only intended for developer
-> use. Never redirect `trace` level output to storage as it may contain sensitive information.
+> use. Never redirect `trace` level output to storage as it might contain sensitive information.
 
 For example, when the log level is `debug`, DSC emits messages for every log level except `trace`.
 When the log level is `error`, DSC only emits error messages. DSC ignores every message with a
@@ -132,13 +132,14 @@ ShortSyntax  : -f <TRACE_FORMAT>
 <a id="-p"></a>
 <a id="--progress-format"></a>
 
-Defines the progress format to use when emitting progress messages on stderr. DSC supports the following
-formats:
+Defines the progress format to use when emitting progress messages on stderr. DSC supports the
+following formats:
 
-- `default` - Shows a progress bar if DSC detects that it's being called interactively. Otherwise, DSC doesn't show any progress.
+- `default` - Shows a progress bar if DSC detects that it's being called interactively. Otherwise,
+  DSC doesn't show any progress.
 - `none` - Doesn't show any progress.
-- `json` - Emits progress as compressed JSON objects with the timestamp, level, message, and
-  line number as properties.
+- `json` - Emits progress as compressed JSON objects with the timestamp, level, message, and line
+  number as properties.
 
 ```yaml
 Type         : string
@@ -209,7 +210,7 @@ execution of the command.
 DSC expects input strings to use UTF-8 encoding. When you pass input from stdin or the path to a
 file, ensure that the input is encoded as UTF-8.
 
-[01]: completer/command.md
-[02]: config/command.md
-[03]: resource/command.md
-[04]: schema/command.md
+[01]: completer/index.md
+[02]: config/index.md
+[03]: resource/index.md
+[04]: schema/index.md

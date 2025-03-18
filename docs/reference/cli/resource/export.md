@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource export' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource export
 ---
@@ -9,7 +9,7 @@ title:       dsc resource export
 
 ## Synopsis
 
-Generates a configuration document that defines the existing instances of a resource.
+Generates a configuration document that defines the existing instances of a specific resource.
 
 ## Syntax
 
@@ -56,7 +56,7 @@ ShortSyntax : -r <RESOURCE>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][aa].
+- `json` to emit the data as a [JSON Line][02].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
@@ -83,8 +83,6 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
-[aa]: https://jsonlines.org/
-
 ### -h, --help
 
 <a id="-h"></a>
@@ -104,10 +102,12 @@ ShortSyntax : -h
 
 This command returns formatted data that defines a configuration document including every instance of
 the resources declared in the input configuration. For more information, see
-[DSC Configuration document schema reference][02].
+[DSC Configuration document schema reference][03].
 
 For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
+<!-- Link reference definitions -->
 [01]: ../../schemas/resource/manifest/export.md
-[02]: ../../schemas/config/document.md
+[02]: https://jsonlines.org/
+[03]: ../../schemas/config/document.md

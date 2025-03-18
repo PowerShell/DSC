@@ -3,7 +3,7 @@ description: >-
   This article aims to guide you through methods to output from PowerShell in formats that are
   friendly for screen readers, enhancing the accessibility of your scripts.
 ms.custom: experience
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 title: Improve the accessibility of DSC output in PowerShell
 ---
 
@@ -102,7 +102,7 @@ dsc resource list -a Microsoft.Windows/WindowsPowerShell |
     Format-List
 ```
 
-## Additional reading
+## Related content
 
 - [Improve the accessibility of output in PowerShell][01]
 - [Out-GridView][02]

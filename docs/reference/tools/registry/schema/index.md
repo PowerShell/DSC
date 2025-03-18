@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'registry schema' command
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       registry schema
 ---
@@ -85,4 +85,4 @@ Mandatory: false
 ```
 
 <!-- Link references -->
-[01]: ../../../resources/microsoft/windows/registry/index.md
+[01]: ../../../resources/Microsoft/Windows/Registry/index.md

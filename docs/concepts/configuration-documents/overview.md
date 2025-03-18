@@ -1,9 +1,9 @@
 ---
 description: >-
   DSC configuration documents are YAML or JSON data files that define the desired state of a system
-  declaratively. They are used to retrieve, validate, and enforce the state of multiple resource
+  declaratively. They're used to retrieve, validate, and enforce the state of multiple resource
   instances.
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 title: DSC configuration documents
 ---
 
@@ -28,7 +28,7 @@ Configuration documents are YAML or JSON files that contain a single object. The
 properties define how DSC processes the document. The top-level properties for a document are:
 
 - `$schema` (required) - Defines the URI for the JSON Schema the document adheres to. DSC
-  uses this to know how to validate and interpret the document.
+  uses this URI to know how to validate and interpret the document.
 - `resources` (required) - Defines the collection of resource instances the document manages.
 - `metadata` (optional) - Defines an arbitrary set of annotations for the document. Except for
   metadata within the `Microsoft.DSC` property, DSC doesn't validate this data or use it directly.
@@ -38,11 +38,11 @@ properties define how DSC processes the document. The top-level properties for a
 
   DSC applies validation to the `Microsoft.DSC` property. For more information, see the
   [DSC Configuration document metadata schema][02] reference.
-- `parameters` (optional) - Defines a set of runtime options for the configuration. Parameters can
-  be referenced by resource instances to reduce duplicate definitions or enable dynamic values.
+- `parameters` (optional) - Defines a set of runtime options for the configuration. Resource
+  instances can reference parameters to reduce duplicate definitions or enable dynamic values.
   Parameters can have default values and can be set on any configuration operation.
-- `variables` (optional) - Defines a set of reusable values for the configuration. Variables can be
-  referenced by resource instances to reduce duplicate definitions.
+- `variables` (optional) - Defines a set of reusable values for the configuration. Resource
+  instances can reference variables to reduce duplicate definitions.
 
 ## Defining a configuration document
 
@@ -101,9 +101,11 @@ incompatible state for the instance on every run.
 ## Getting the current state of a configuration
 
 The `dsc config get` command retrieves the current state of the resource instances defined in a
-configuration document. DSC also collects any message emitted by the resources during the
-operation, indicates whether any of the resources raised an error, and provides metadata about the
-operation as a whole and for each resource instance.
+configuration document. When you use this command, DSC also:
+
+- Collects any message emitted by the resources during the operation.
+- Indicates whether any of the resources raised an error.
+- Provides metadata about the operation as a whole and for each resource instance.
 
 ```sh
 dsc config get --file ./example.config.dsc.yaml
@@ -143,9 +145,11 @@ state. The result for each instance includes:
 - Whether the instance is in the desired state.
 - The list of properties that are out of the desired state, if any.
 
-DSC also collects any message emitted by the resources during the operation, indicates whether any
-of the resources raised an error, and provides metadata about the operation as a whole and for each
-resource instance.
+When you use this command, DSC also:
+
+- Collects any message emitted by the resources during the operation.
+- Indicates whether any of the resources raised an error.
+- Provides metadata about the operation as a whole and for each resource instance.
 
 ```sh
 dsc config test --file /example.config.dsc.yaml
@@ -194,9 +198,11 @@ their desired state. The result for each instance includes:
 - The state of the instance after the operation.
 - Which properties the operation changed, if any.
 
-DSC also collects any message emitted by the resources during the operation, indicates whether any
-of the resources raised an error, and provides metadata about the operation as a whole and for each
-resource instance.
+When you use this command, DSC also:
+
+- Collects any message emitted by the resources during the operation.
+- Indicates whether any of the resources raised an error.
+- Provides metadata about the operation as a whole and for each resource instance.
 
 ```sh
 dsc config set --file ./example.config.dsc.yaml
@@ -241,9 +247,9 @@ hadErrors: false
 - [DSC Configuration document schema reference][05]
 - [Command line reference for the 'dsc config' command][06]
 
-[01]: ../resources/index.md.md
+[01]: ../resources/overview.md
 [02]: ../../reference/schemas/config/metadata.md#microsoftdsc
 [03]: ../../reference/schemas/config/document.md
-[04]: ../resources/index.md#resource-type-names
+[04]: ../resources/overview.md#resource-type-names
 [05]: ../../reference/schemas/config/document.md
-[06]: ../../reference/cli/config/command.md
+[06]: ../../reference/cli/config/index.md

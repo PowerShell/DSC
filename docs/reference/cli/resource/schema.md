@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource schema' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource schema
 ---
@@ -9,7 +9,7 @@ title:       dsc resource schema
 
 ## Synopsis
 
-Returns the JSON Schema for validating instances of a resource.
+Restrieves the JSON Schema for validating instances of a resource.
 
 ## Syntax
 
@@ -23,9 +23,9 @@ The `schema` subcommand returns the JSON schema for a instances of a specific DS
 uses these schemas to validate the input for the `get`, `set`, and `test` subcommands and when
 validating the instances in a DSC Configuration document.
 
-Integrating tools may use these schemas for validation or to enhance the configuration authoring
+Integrating tools can use these schemas for validation or to enhance the configuration authoring
 experience. A resource's instance schema defines the valid structure for an instance, including
-which properties are mandatory and what their values should be. The instance schemas may also
+which properties are mandatory and what their values should be. The instance schemas can also
 include lightweight documentation for the properties with the `title` and `description` keywords.
 
 ## Examples
@@ -193,7 +193,7 @@ ShortSyntax : -r <RESOURCE>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][aa].
+- `json` to emit the data as a [JSON Line][01].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
@@ -220,8 +220,6 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
-[aa]: https://jsonlines.org/
-
 ### -h, --help
 
 <a id="-h"></a>
@@ -244,3 +242,6 @@ DSC Resource.
 
 For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
+
+<!-- Link reference definitions -->
+[01]: https://jsonlines.org/

@@ -1,6 +1,6 @@
 ---
 description: Microsoft/OSInfo DSC resource reference documentation
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       Microsoft/OSInfo
 ---
@@ -51,7 +51,7 @@ of DSC instead. The synthetic test uses a case-sensitive equivalency comparison 
 state of the instance properties and the desired state. If any property value isn't an exact match,
 DSC considers the instance to be out of the desired state.
 
-The instance properties returned by this resource depends on the operating system `family` as
+The instance properties returned by this resource depend on the operating system `family` as
 listed in the following table:
 
 | `family`  |                Returned instance properties                |
@@ -94,8 +94,9 @@ For more information about resource capabilities, see
 
 The following list describes the properties for the resource.
 
-- **Required properties:** <a id="required-properties"></a> This resource has no required properties.
-- **Key properties:** <a id="key-properties"></a> This resource has no key properties.
+- **Required properties:** <a id="required-properties"></a> This resource doesn't have any required
+  properties.
+- **Key properties:** <a id="key-properties"></a> This resource doesn't have any key properties.
 - **Instance properties:** <a id="instance-properties"></a> The following properties are optional.
   They define the desired state for an instance of the resource.
 
@@ -105,15 +106,15 @@ The following list describes the properties for the resource.
   - [edition](#edition) - Defines the edition for Windows systems.
   - [family](#family) - Defines whether the system is Linux, macOS, or Windows.
   - [version](#version) - Defines the version of the operating system.
-- **Read-only properties:** <a id="read-only-properties"></a> The following properties are returned
-  by the resource but aren't configurable. For more information about read-only properties, see the
-  "Read-only resource properties" section in [DSC resource properties][05].
+- **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following
+  properties, but they aren't configurable. For more information about read-only properties, see
+  the "Read-only resource properties" section in [DSC resource properties][05].
 
   - [$id](#id) - Returns the unique ID for the OSInfo instance data type.
 
 ### architecture
 
-<details open><summary><code>architecture</code> property metadata</summary>
+<details><summary>Expand for <code>architecture</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -130,7 +131,7 @@ doesn't return this property for Windows machines.
 
 ### bitness
 
-<details open><summary><code>bitness</code> property metadata</summary>
+<details><summary>Expand for <code>bitness</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -148,7 +149,7 @@ can't determine this information, it returns a value of `unknown`.
 
 ### codename
 
-<details open><summary><code>codename</code> property metadata</summary>
+<details><summary>Expand for <code>codename</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -165,7 +166,7 @@ resource only returns this property for Linux machines.
 
 ### edition
 
-<details open><summary><code>edition</code> property metadata</summary>
+<details><summary>Expand for <code>edition</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -182,7 +183,7 @@ returns this property for Windows machines.
 
 ### family
 
-<details open><summary><code>family</code> property metadata</summary>
+<details><summary>Expand for <code>family</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -197,7 +198,7 @@ ValidValues      : [Linux, macOS, Windows]
 
 ### version
 
-<details open><summary><code>version</code> property metadata</summary>
+<details><summary>Expand for <code>version</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -213,7 +214,7 @@ Defines the version of the operating system as a string.
 
 ### $id
 
-<details open><summary><code>$id</code> property metadata</summary>
+<details><summary>Expand for <code>$id</code> property metadata</summary>
 
 ```yaml
 Type             : string
@@ -249,8 +250,8 @@ operation failure.
 - [Command line reference for the osinfo command][06]
 
 <!-- Link references -->
-[01]: ../../../concepts/resources.md#test-operations
-[02]: ../../../../../concepts/resources/capabilities.md
+[01]: ../../../../concepts/resources/overview.md#test-operations
+[02]: ../../../../concepts/resources/capabilities.md
 [03]: examples/validate-with-dsc-resource.md
 [04]: examples/validate-in-a-configuration.md
 [05]: ../../../../concepts/resources/properties.md#read-only-resource-properties

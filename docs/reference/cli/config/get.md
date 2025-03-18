@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc config get' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc config get
 ---

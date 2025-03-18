@@ -2,7 +2,7 @@
 description: >-
   DSC Resources provide a standardized interface for idempotently managing the settings of a
   system. They use a declarative syntax to define what the desired state should be.
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 title: DSC Resources
 ---
 
@@ -26,18 +26,18 @@ DSC supports several kinds of resources:
 - A resource defined with a resource manifest is a _command_ resource. DSC uses the manifest
   to determine how to invoke the resource and how to validate the resource instance properties.
 - A _group resource_ is a command resource with a `resources` property that takes an array of
-  resource instances and processes them. Group resources may apply special handling to their nested
+  resource instances and processes them. Group resources can apply special handling to their nested
   resource instances, like changing the user the resources run as.
-- An _adapter resource_ is a group resource that enables the use of non-command resources with DSC.
-  For example, the `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WIndowsPowerShell` adapter
+- An _adapter resource_ is a group resource that enables the use of noncommand resources with DSC.
+  For example, the `Microsoft.DSC/PowerShell` and `Microsoft.Windows/WindowsPowerShell` adapter
   resources enable the use of PowerShell DSC (PSDSC) resources in DSC, invoking the resources in
   PowerShell and Windows PowerShell respectively.
 
 ## Resource type names
 
-Resources are identified by their fully qualified type name. The type name is used to specify a
-resource in configuration documents and as the value of the `--resource` flag when using the
-`dsc resource *` commands.
+Every resource has a fully qualified type name, which identifies the resource. You use the type
+name to specify a resource in configuration documents and as the value of the `--resource` flag
+when using the `dsc resource *` commands.
 
 The fully qualified type name of a resource uses the following syntax:
 
@@ -60,7 +60,7 @@ instance schema.
 
 Properties are optional by default. Resources can be invoked directly or declared in a
 configuration with only the properties that are relevant to the current task or purpose. You don't
-need to declare every property for an instance. Properties may have default values for their
+need to declare every property for an instance. Properties can have default values for their
 desired state.
 
 Most properties are one of the basic types:
@@ -75,7 +75,7 @@ Most properties are one of the basic types:
 Complex properties require the property value to be an object with defined subproperties. The
 subproperties can be basic or complex, but they're usually a basic type.
 
-Resources may define their properties as read-only or write-only:
+Resources can define their properties as read-only or write-only:
 
 - A _read-only resource property_ defines metadata about an instance that the resource can retrieve
   but that a user can't directly set. You can't specify read-only properties in the desired state
@@ -92,7 +92,7 @@ canonical property in its instance schema indicates that the resource manages in
 created and deleted. If a resource has the `_exist` canonical property and the `delete` capability,
 DSC can handle invoking the **Delete** operation instead of **Set** when the desired state
 indicates the instance shouldn't exist. For more information about the available canonical
-properties, see [DSC canonical properties](../reference/schemas/resource/properties/overview.md).
+properties, see [DSC canonical properties][02].
 
 ## Listing resources
 
@@ -124,7 +124,7 @@ Microsoft/Process                           Resource  0.1.0    gs--t-e-         
 ```
 
 You can filter the results by a resource's type name, description, and tags. For more information,
-see [dsc resource list][02]
+see [dsc resource list][03]
 
 ## Invoking resources
 
@@ -241,8 +241,8 @@ changedProperties:
 
 ### Delete operations
 
-Some resources implement the **Delete** operation for convenience. This enables you to invoke the
-resource to remove an instance from the system.
+Some resources implement the **Delete** operation for convenience. This operation enables you to
+invoke the resource to remove an instance from the system.
 
 Use the `dsc resource delete` command to invoke the operation. When you invoke the **Delete**
 operation, DSC returns no output unless there's an error.
@@ -258,7 +258,7 @@ dsc resource delete --resource Microsoft.Windows/Registry --input '{
 ### Export operations
 
 Some resources implement the **Export** operation, which returns every instance of the resource on
-the system. This can help you discover how a machine is currently configured.
+the system. This operation can help you discover how a machine is currently configured.
 
 Use the `dsc resource export` command to invoke the operation. When you invoke the **Export**
 operation, DSC returns an array of resources instance definitions you can copy into a configuration
@@ -267,9 +267,10 @@ document.
 ## Declaring resource instances
 
 DSC configuration documents enable managing more than one resource or resource instance at a time.
-Configuration documents declare a collection of resource instances and their desired state. This
-makes it possible to model complex desired states by composing different resources and instances
-together, like defining a security baseline for compliance or the settings for a web farm.
+Configuration documents declare a collection of resource instances and their desired state.
+Configuration documents make it possible to model complex desired states by composing different
+resources and instances together, like defining a security baseline for compliance or the settings
+for a web farm.
 
 A resource instance declaration always includes:
 
@@ -297,13 +298,14 @@ resources:
 
 ## See also
 
-- [Anatomy of a DSC command resource][03] to learn about authoring resources in your language
+- [Anatomy of a DSC command resource][04] to learn about authoring resources in your language
   of choice.
-- [Configuration Documents][04] to learn about using resources in a configuration document.
-- [Command line reference for the 'dsc resource' command][05]
+- [DSC configuration documents][05] to learn about using resources in a configuration document.
+- [Command line reference for the 'dsc resource' command][06]
 
 [01]: ../../reference/schemas/definitions/resourceType.md
-[02]: ../../reference/cli/resource/list.md
-[03]: anatomy.md
-[04]: ../configuration-documents/index.md
-[05]: ../../reference/cli/resource/command.md
+[02]: ../../reference/schemas/resource/properties/overview.md
+[03]: ../../reference/cli/resource/list.md
+[04]: ./anatomy.md
+[05]: ../configuration-documents/overview.md
+[06]: ../../reference/cli/resource/index.md

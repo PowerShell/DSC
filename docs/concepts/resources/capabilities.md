@@ -2,9 +2,9 @@
 description: >-
   Describes the capabilities of DSC resources, how DSC discovers them, and how
   the capabilities affect resource behavior and usage.
-ms.date:     03/18/2025
+ms.date:     03/25/2025
 ms.topic:    conceptual
-title:       DSC resource properties
+title:       DSC resource capabilities
 ---
 
 # DSC resource capabilities
@@ -50,17 +50,17 @@ A command resource has this capability when it defines the [set.handlesExist][09
 
 ## whatIf
 
-A resource with the `whatIf` capability indicates that you can use the [Set](03) operation in
-what-if mode to have the resource return explicit information about how it will modify state in an
+A resource with the `whatIf` capability indicates that you can use the [Set][03] operation in
+what-if mode to have the resource return explicit information about how it would modify state in an
 actual **Set** operation.
 
-When a resource doesn't have this capability, DSC synthesizes how the resource will change and
+When a resource doesn't have this capability, DSC synthesizes how the resource would change an
 instance by converting the **Test** result for the instance into a **Set** result. The
 synthetic operation can't indicate potential issues or changes that can't be determined by
 comparing the result of the **Test** operation against the resource's desired state. For example,
 the credentials used to test a resource might be valid for that operation, but not have permissions
 to actually modify the system state. Only a resource with this capability can fully report whether
-and how the resource will change system state.
+and how the resource would change system state.
 
 A resource has this capability when it defines the [whatIf][10] property in its resource manifest.
 
@@ -82,16 +82,18 @@ resource. DSC performs the synthetic test by:
    the desired state.
 
 Synthetic testing can't account for all resource behaviors. For example, if a package resource
-allows users to define a version range for the package, the **Get** operation will return the
-actual version of the package, like `1.2.3`. If the user specified the version range `~1` (NPM syntax indicating the package should be latest released semantic version with major version `1`), DSC would
-compare the desired state `~1` against the actual state `1.2.3` and consider the package to be in
-the incorrect state, even if `1.2.3` is actually the latest release matching the version pin.
+allows users to define a version range for the package, the **Get** operation returns the
+actual version of the package, like `1.2.3`. If the user specified the version range `~1` (NPM
+syntax indicating the package should be latest released semantic version with major version `1`),
+DSC would compare the desired state `~1` against the actual state `1.2.3` and consider the package
+to be in the incorrect state, even if `1.2.3` is actually the latest release matching the version
+pin.
 
 Any resource that has properties which can't use a strict case-sensitive comparison check should
 have this capability.
 
-A command resource has this capability when it defines the
-[test][12] property in its resource manifest.
+A command resource has this capability when it defines the [test][12] operation in its resource
+manifest.
 
 ## delete
 
@@ -111,7 +113,7 @@ For resources with the `delete` capability and the [_exist][07] canonical resour
   the resource when the desired state defines `_exist` as `false`.
 
 Resources with the `delete` capability that don't have the `_exist` canonical resource property
-must implement their **Set** operation to handle removing instances. DSC cannot infer existence
+must implement their **Set** operation to handle removing instances. DSC can't infer existence
 semantics without the `_exist` property.
 
 A command resource has this capability when it defines the [delete][14] property in its resource
@@ -168,7 +170,7 @@ manifest.
 [16]: ../../reference/cli/resource/export.md
 [17]: ../../reference/cli/resource/get.md#--all
 [18]: ../../reference/schemas/resource/manifest/export.md
-[19]: ../resources/kinds.md#importer
+[19]: ../resources/kinds.md#importer-resources
 [20]: ../../reference/schemas/resource/manifest/resolve.md
 [21]: operations.md
 [22]: kinds.md

@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc schema' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc schema
 ---
@@ -34,10 +34,10 @@ output for one of the application's commands.
 >
 > Both the published schemas and those returned from this command correctly validate the data. The
 > schemas returned from this command are less strict than the published schemas. Even though data
-> validates against the schemas returned by this command, DSC may raise errors when processing the
-> data. For example, the returned schema for versions indicates that the valid value is a string -
-> but if you specify a string that isn't a semantic version, DSC raises an error. In that case, the
-> data passed the schema validation but was incorrect.
+> validates against the schemas returned by this command, DSC might raise errors when processing
+> the data. For example, the returned schema for versions indicates that the valid value is a
+> string - but if you specify a string that isn't a semantic version, DSC raises an error. In that
+> case, the data passed the schema validation but was incorrect.
 >
 > Until the schemas are canonicalized, consider using the published schemas when indpendently
 > testing your configuration documents and resource manifests with a JSON Schema validation tool.
@@ -178,17 +178,28 @@ definitions:
 This option is mandatory for the `schema` command. The value for this option determines which
 schema the application returns:
 
-- `configuration` ([reference documentation][06]) - Validates a DSC Configuration document. If the document is invalid, DSC raises an error.
-- `dsc-resource` ([reference documentation][01]) - Represents a DSC Resource as returned from the `dsc resource list` command.
-- `resource-manifest` ([reference documentation][02]) - Validates a command resource's manifest. If the manifest is invalid, DSC raises an error.
-- `include` ([reference documentation](../../../reference/resources/microsoft/dsc/include/index.md)) - represents the instance schema for the built-in `Microsoft.DSC/Include` importer resource.
-- `configuration-get-result` ([reference documentation][07]) - Represents the output from the `dsc config get` command.
-- `configuration-set-result` ([reference documentation][08]) - Represents the output from the `dsc config set` command.
-- `configuration-test-result` ([reference documentation][09]) - Represents the output from the `dsc config test` command.
-- `get-result` ([reference documentation][03]) - Represents the output from the `dsc resource get` command.
-- `resolve-result` ([reference documentation]) - Represents the resolved form of the configuration document an `importer` resource emits.
-- `set-result` ([reference documentation][04]) - Represents the output from the `dsc resource set` command.
-- `test-result` ([reference documentation][05]) - Represents the output from the `dsc resource test` command.
+- `configuration` ([reference documentation][01]) - Validates a DSC Configuration document. If the
+  document is invalid, DSC raises an error.
+- `dsc-resource` ([reference documentation][02]) - Represents a DSC Resource as returned from the
+  `dsc resource list` command.
+- `resource-manifest` ([reference documentation][03]) - Validates a command resource's manifest. If
+  the manifest is invalid, DSC raises an error.
+- `include` <!-- ([reference documentation][04]) --> - represents the instance schema for the
+  built-in `Microsoft.DSC/Include` importer resource.
+- `configuration-get-result` ([reference documentation][05]) - Represents the output from the
+  `dsc config get` command.
+- `configuration-set-result` ([reference documentation][06]) - Represents the output from the
+  `dsc config set` command.
+- `configuration-test-result` ([reference documentation][07]) - Represents the output from the
+  `dsc config test` command.
+- `get-result` ([reference documentation][08]) - Represents the output from the `dsc resource get`
+  command.
+- `resolve-result` <!-- ([reference documentation][09]) --> - Represents the resolved form of the
+  configuration document an `importer` resource emits.
+- `set-result` ([reference documentation][10]) - Represents the output from the `dsc resource set`
+  command.
+- `test-result` ([reference documentation][11]) - Represents the output from the
+  `dsc resource test` command.
 
 ```yaml
 Type:        string
@@ -218,7 +229,7 @@ ShortSyntax : -t <TYPE>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][aa].
+- `json` to emit the data as a [JSON Line][12].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
@@ -245,8 +256,6 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
-[aa]: https://jsonlines.org/
-
 ### -h, --help
 
 <a id="-h"></a>
@@ -264,17 +273,21 @@ ShortSyntax : -h
 
 ## Output
 
-This command returns formatted data representing a JSON Schema specified by the [--type option](#--type).
+This command returns formatted data representing a JSON Schema specified by the
+[--type option](#--type).
 
 For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
-[01]: ../../schemas/outputs/resource/list.md
-[02]: ../../schemas/resource/manifest/root.md
-[03]: ../../schemas/outputs/resource/get.md
-[04]: ../../schemas/outputs/resource/set.md
-[05]: ../../schemas/outputs/resource/test.md
-[06]: ../../schemas/config/document.md
-[07]: ../../schemas/outputs/config/get.md
-[08]: ../../schemas/outputs/config/set.md
-[09]: ../../schemas/outputs/config/test.md
+[01]: ../../schemas/config/document.md
+[02]: ../../schemas/outputs/resource/list.md
+[03]: ../../schemas/resource/manifest/root.md
+[04]: ../../../reference/resources/microsoft/dsc/include/index.md
+[05]: ../../schemas/outputs/config/get.md
+[06]: ../../schemas/outputs/config/set.md
+[07]: ../../schemas/outputs/config/test.md
+[08]: ../../schemas/outputs/resource/get.md
+[09]: ../../schemas/resource/stdout/resolve
+[10]: ../../schemas/outputs/resource/set.md
+[11]: ../../schemas/outputs/resource/test.md
+[12]: https://jsonlines.org/

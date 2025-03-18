@@ -2,7 +2,7 @@
 description: >
   Examples showing how you can use the Microsoft.Windows/Registry resource to manage registry keys
   and values in a DSC configuration document.
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 ms.topic: reference
 title: Configure registry keys and values
 ---
@@ -26,8 +26,8 @@ Copy the configuration document and save it as `registry.config.dsc.yaml`.
 
 ## Test the configuration
 
-Use the **Test** operation on the configuration document to see whether the system is in the
-desired state.
+To see whether the system is in the desired state, use the [dsc config test][01] command on the
+configuration document.
 
 ```powershell
 dsc config test --file ./registry.config.dsc.yaml
@@ -122,18 +122,18 @@ differingProperties:
 ```
 
 The actual state for the instance reports that `_exist` is `false` and doesn't include the
-`valueName` property. For the `Registry` resource, this indicates that the registry key itself
-doesn't exist. In this case, the `Registry` resource is reporting that the `DscExamples` registry
-key in the current user hive doesn't exist. When the key exists but the value doesn't, the actual
-state includes the `valueName` property.
+`valueName` property. For the `Registry` resource, this result indicates that the registry key
+itself doesn't exist. In this case, the `Registry` resource is reporting that the `DscExamples`
+registry key in the current user hive doesn't exist. When the key exists but the value doesn't, the
+actual state includes the `valueName` property.
 
 Together, the results show that none of the instances in the configuration are in the desired
 state.
 
 ## Enforce the configuration
 
-To update the system to the desired state, use the [dsc config set](../../../../../cli/config/set.md)
-command on the configuration document.
+To update the system to the desired state, use the [dsc config set][02] command on the
+configuration document.
 
 ```powershell
 dsc config set --file ./registry.config.dsc.yaml
@@ -234,3 +234,7 @@ To return your system to its original state:
    ```powershell
    dsc config set --file ./registry.cleanup.config.dsc.yaml
    ```
+
+<!-- Link reference definitions -->
+[01]: ../../../../../cli/config/test.md
+[02]: ../../../../../cli/config/set.md

@@ -2,7 +2,7 @@
 description: >
   Use the Microsoft/OSInfo resource to Use the Microsoft/OSInfo resource to validate operating
   system in a DSC Configuration Document.
-ms.date: 03/18/2025
+ms.date: 03/25/2025
 ms.topic: reference
 title: Validate operating system information in a configuration
 ---
@@ -35,7 +35,7 @@ configuration is applied on a 64-bit operating system.
 ## Getting the current state
 
 To get the current state of the instances in the configuration document, use the
-[dsc config get][aa] command with the [--file][ab] option.
+[dsc config get][01] command with the [--file][02] option.
 
 # [Linux](#tab/linux)
 
@@ -61,7 +61,7 @@ The output depends on whether the operating system is 32-bit or 64-bit.
 
 # [32-bit Linux](#tab/32bit/linux)
 
-Applied to a 32-bit Linux operating system, the get result shows that the `Is64BitOS` instance is
+For a 32-bit Linux operating system, the get result shows that the `Is64BitOS` instance is
 out of the desired state because the `bitness` property is `32`.
 
 ```yaml
@@ -97,7 +97,7 @@ hadErrors: false
 
 # [64-bit Linux](#tab/64bit/linux)
 
-Applied to a 64-bit Linux operating system, the get result shows that the `Is64BitOS` instance is
+For a 64-bit Linux operating system, the get result shows that the `Is64BitOS` instance is
 in the desired state.
 
 ```yaml
@@ -133,7 +133,7 @@ hadErrors: false
 
 # [32-bit macOS](#tab/32bit/macos)
 
-Applied to a 32-bit macOS operating system, the get result shows that the `Is64BitOS` instance is
+For a 32-bit macOS operating system, the get result shows that the `Is64BitOS` instance is
 out of the desired state because the `bitness` property is `32`.
 
 ```yaml
@@ -168,7 +168,7 @@ hadErrors: false
 
 # [64-bit macOS](#tab/64bit/macos)
 
-Applied to a 64-bit macOS operating system, the get result shows that the `Is64BitOS` instance is
+For a 64-bit macOS operating system, the get result shows that the `Is64BitOS` instance is
 in the desired state.
 
 ```yaml
@@ -203,7 +203,7 @@ hadErrors: false
 
 # [32-bit Windows](#tab/32bit/windows)
 
-Applied to a 32-bit Windows operating system, the get result shows that the `Is64BitOS` instance is
+For a 32-bit Windows operating system, the get result shows that the `Is64BitOS` instance is
 out of the desired state because the `bitness` property is `32`.
 
 ```yaml
@@ -238,7 +238,7 @@ hadErrors: false
 
 # [64-bit Windows](#tab/64bit/windows)
 
-Applied to a 64-bit Windows operating system, the get result shows that the `Is64BitOS` instance is
+For a 64-bit Windows operating system, the get result shows that the `Is64BitOS` instance is
 in the desired state.
 
 ```yaml
@@ -273,27 +273,31 @@ hadErrors: false
 
 ---
 
-## Enforcing the desired state
+## Verify the desired state
 
-To enforce the desired state of the instances in the configuration document, pass the contents of
-the document to the `dsc config set` command.
+DSC can use the resource to validate the operating system information in a configuration with the [dsc config test][03] command. When you use the `dsc config test` command, DSC invokes the **Test** operation against every resource in the configuration document.
+
+The `Microsoft/OSInfo` resource doesn't implement the [test operation][04]. It relies on the
+synthetic testing feature of DSC instead. The synthetic test uses a case-sensitive equivalency
+comparison between the actual state of the instance properties and the desired state. If any
+property value isn't an exact match, DSC considers the instance to be out of the desired state.
 
 # [Linux](#tab/linux)
 
 ```bash
-echo configuration | dsc config set
+dsc config set --file ./osinfo.config.dsc.yaml
 ```
 
 # [macOS](#tab/macos)
 
 ```zsh
-echo configuration | dsc config set
+dsc config set --file ./osinfo.config.dsc.yaml
 ```
 
 # [Windows](#tab/windows)
 
 ```powershell
-$Configuration | dsc config set
+dsc config set --file .\osinfo.config.dsc.yaml
 ```
 
 ---
@@ -613,3 +617,9 @@ hadErrors: false
 ```
 
 ---
+
+<!-- Link reference definitions -->
+[01]: ../../../../cli/config/get.md
+[02]: ../../../../cli/config/get.md#--file
+[03]: ../../../../cli/config/test.md
+[04]: ../../../../../concepts/resources/operations.md#test-operation

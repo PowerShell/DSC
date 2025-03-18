@@ -1,3 +1,11 @@
+---
+description: >-
+  Describes what a DSC resource instance is and how to use them with DSC.
+ms.date:     03/25/2025
+ms.topic:    conceptual
+title:       DSC resource instances
+---
+
 # DSC resource instances
 
 DSC resources manage _instances_ of a configurable component. For example, the
@@ -6,7 +14,7 @@ and value is a different instance of the resource.
 
 Every command resource defines a [resource instance schema][01] that describes how to validate and
 manage an instance of the resource with a JSON Schema. [Adapter resources][02] implement the
-[Validate operation][03] to enable validating adapted resource instances, which may not have JSON
+[Validate operation][03] to enable validating adapted resource instances, which might not have JSON
 Schemas to describe their properties.
 
 If you specify an invalid definition for a resource instance, DSC raises an error before invoking
@@ -14,19 +22,19 @@ any operations on the instance.
 
 ## Nested resource instances
 
-The resource instances declared in [adapter resources] and [group resources] or resolved by
-[importer resources] are called _nested resource instances_.
+The resource instances declared in [adapter resources][04] and [group resources][05] or resolved by
+[importer resources][06] are called _nested resource instances_.
 
 For nested instances, a resource instance is _adjacent_ if:
 
-- It's declared in the same group or adapter instance.
-- It's resolved by the same importer instance.
+- The instance is declared in the same group or adapter instance.
+- The instance is resolved from the same importer instance.
 
 A resource instance is _external_ to a nested instance if:
 
-- It's declared outside of the group or adapter instance
-- It's resolved by a different importer instance
-- It's nested inside an adjacent group, adapter, or importer instance.
+- The instance is declared outside of the group or adapter instance
+- The instance is resolved from a different importer instance
+- The instance is nested inside an adjacent group, adapter, or importer instance.
 
 For top-level instances, other instances at the top-level are adjacent. All other instances are
 external.
@@ -82,8 +90,8 @@ The following matrix defines the relations of each instance in the configuration
 
 ### Referencing nested instances
 
-Nested resource instances have limitations for the [dependsOn][04] property and the
-[reference()][05] configuration function.
+Nested resource instances have limitations for the [dependsOn][07] property and the
+[reference()][08] configuration function.
 
 1. You can only reference adjacent instances. You can't reference a nested instance from outside of
    the instance that declares or resolves it. You can't use a reference to a resource outside of
@@ -325,13 +333,19 @@ resources:
 
 ## See also
 
-- [DSC resource kinds](kinds.md)
-- [DSC resource operations](operations.md)
-- [DSC configuration documents](../configuration-documents/index.md)
+- [DSC resource kinds][09]
+- [DSC resource operations][10]
+- [DSC configuration documents][11]
 
 <!-- Link reference definitions -->
 [01]: ../../reference/schemas/resource/manifest/root.md#schema
-[02]: kinds.md#adapter-resources
-[03]: operations.md#validate-operation
-[04]: ../../reference/schemas/config/resource.md#dependson
-[05]: ../../reference/schemas/config/functions/reference.md
+[02]: ./kinds.md#adapter-resources
+[03]: ./operations.md#validate-operation
+[04]: ./kinds.md#adapter-resources
+[05]: ./kinds.md#group-resources
+[06]: ./kinds.md#importer-resources
+[07]: ../../reference/schemas/config/resource.md#dependson
+[08]: ../../reference/schemas/config/functions/reference.md
+[09]: ./kinds.md
+[10]: ./operations.md
+[11]: ../configuration-documents/overview.md

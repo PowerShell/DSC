@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc resource list' command
-ms.date:     3/05/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc resource list
 ---
@@ -9,7 +9,7 @@ title:       dsc resource list
 
 ## Synopsis
 
-Returns the list of available DSC Resources with an optional filter.
+Retrieves the list of available DSC Resources with an optional filter.
 
 ## Syntax
 
@@ -139,7 +139,7 @@ Microsoft/OSInfo            Resource  0.1.0    g-----e-                      Ret
 
 ### Example 6 - List resources for a specific adapter
 
-When the command includes the **adapter** option, DSC checks for any discovered resource adapters
+When the command includes the `--adapter` option, DSC checks for any discovered resource adapters
 with a matching name. If it discovers any, it then calls the `list` operation for the adapter and
 adds the returned list of adapted resources to the discovered resource list. DSC applies any
 further filters specified with the command after this enumeration.
@@ -160,7 +160,7 @@ dsc resource list --adapter Microsoft.Windows/WindowsPowerShell *Windows*
 ### RESOURCE_NAME
 
 Specifies an optional filter to apply for the type names of discovered DSC Resources. The filter
-may include wildcards (`*`). The filter isn't case-sensitive.
+can include wildcards (`*`). The filter isn't case-sensitive.
 
 When this argument is specified, DSC filters the results to include only resources where the
 resource type name matches the filter.
@@ -242,7 +242,7 @@ ShortSyntax : -t <TAGS>
 The `--output-format` option controls which format DSC uses for the data the command returns. The
 available formats are:
 
-- `json` to emit the data as a [JSON Line][aa].
+- `json` to emit the data as a [JSON Line][02].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
 
@@ -269,8 +269,6 @@ LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
-[aa]: https://jsonlines.org/
-
 ### -h, --help
 
 <a id="-h"></a>
@@ -290,7 +288,7 @@ ShortSyntax : -h
 
 This command returns a formatted array containing an object for each resource that includes the
 resource's type, version, manifest settings, and other metadata. For more information, see
-[dsc resource list result schema][02].
+[dsc resource list result schema][03].
 
 If the output of the command isn't captured or redirected, it displays in the console by default as
 a summary table for the returned resources. The summary table includes the following columns,
@@ -298,20 +296,20 @@ displayed in the listed order:
 
 - **Type** - The fully qualified type name of the resource.
 - **Kind** - Whether the resource is an `adapter`, `group`, `importer`, or typical `Resource`. For
-  more information, see [DSC Resource kind schema reference][03].
+  more information, see [DSC Resource kind schema reference][04].
 - **Version** - The semantic version of the resource.
-- **Capabilities** - A display of the resource's [capabilities][04] as flags. The capabilities are
+- **Capabilities** - A display of the resource's [capabilities][05] as flags. The capabilities are
   displayed in the following order, using a `-` instead of the appropriate letter if the resource
   doesn't have a specific capability:
 
-  - `g` indicates that the resource has the [get capability][05].
-  - `s` indicates that the resource has the [set capability][06]
-  - `x` indicates that the resource has the [setHandlesExist capability][07]
-  - `w` indicates that the resource has the [whatIf capability][08]
-  - `t` indicates that the resource has the [test capability][09]
-  - `d` indicates that the resource has the [delete capability][10]
-  - `e` indicates that the resource has the [export capability][11]
-  - `r` indicates that the resource has the [resolve capability][12]
+  - `g` indicates that the resource has the [get capability][06].
+  - `s` indicates that the resource has the [set capability][07]
+  - `x` indicates that the resource has the [setHandlesExist capability][08]
+  - `w` indicates that the resource has the [whatIf capability][09]
+  - `t` indicates that the resource has the [test capability][10]
+  - `d` indicates that the resource has the [delete capability][11]
+  - `e` indicates that the resource has the [export capability][12]
+  - `r` indicates that the resource has the [resolve capability][13]
 
   For example, the `Microsoft.Windows/Registry` resource has the following capabilities: `gs--d-`,
   indicating it has the `get`, `set`, and `delete` capabilities.
@@ -323,15 +321,16 @@ For more information about the formatting of the output data, see the
 [--output-format option](#--output-format).
 
 <!-- Link reference definitions -->
-[01]: ../dsc.md#environment-variables
-[02]: ../../schemas/outputs/resource/list.md
-[03]: ../../schemas/definitions/resourceKind.md
-[04]: ../../schemas/outputs/resource/list.md#capabilities
-[05]: ../../schemas/outputs/resource/list.md#capability-get
-[06]: ../../schemas/outputs/resource/list.md#capability-set
-[07]: ../../schemas/outputs/resource/list.md#capability-sethandlesexist
-[08]: ../../schemas/outputs/resource/list.md#capability-whatif
-[09]: ../../schemas/outputs/resource/list.md#capability-test
-[10]: ../../schemas/outputs/resource/list.md#capability-delete
-[11]: ../../schemas/outputs/resource/list.md#capability-export
-[12]: ../../schemas/outputs/resource/list.md#capability-resolve
+[01]: ../index.md#environment-variables
+[02]: https://jsonlines.org/
+[03]: ../../schemas/outputs/resource/list.md
+[04]: ../../schemas/definitions/resourceKind.md
+[05]: ../../schemas/outputs/resource/list.md#capabilities
+[06]: ../../schemas/outputs/resource/list.md#capability-get
+[07]: ../../schemas/outputs/resource/list.md#capability-set
+[08]: ../../schemas/outputs/resource/list.md#capability-sethandlesexist
+[09]: ../../schemas/outputs/resource/list.md#capability-whatif
+[10]: ../../schemas/outputs/resource/list.md#capability-test
+[11]: ../../schemas/outputs/resource/list.md#capability-delete
+[12]: ../../schemas/outputs/resource/list.md#capability-export
+[13]: ../../schemas/outputs/resource/list.md#capability-resolve

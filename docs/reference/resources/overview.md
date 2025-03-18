@@ -14,7 +14,7 @@ This document lists the available resources and links to the reference documenta
 - [Microsoft.DSC.Transitional/RunCommandOnSet](./microsoft/dsc/transitional/runcomandonset/resource.md)
 - [Microsoft.Windows/RebootPending](./microsoft/windows/rebootpending/resource.md)
 - [Microsoft.Windows/Registry](./microsoft/windows/registry/resource.md)
-- [Microsoft.WIndows/WindowsPowerShell](./microsoft/windows/windowspowershell/resource.md)
+- [Microsoft.Windows/WindowsPowerShell](./microsoft/windows/windowspowershell/resource.md)
 - [Microsoft.Windows/WMI](./microsoft/windows/wmi/resource.md)
 
 ## Built-in assertion resources
