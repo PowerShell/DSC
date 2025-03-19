@@ -24,6 +24,9 @@ class TestClassResource : BaseTestClass
     [string] $Prop1
 
     [DscProperty()]
+    [hashtable] $HashTableProp
+
+    [DscProperty()]
     [string] $EnumProp
 
     [string] $NonDscProperty # This property shouldn't be in results data
