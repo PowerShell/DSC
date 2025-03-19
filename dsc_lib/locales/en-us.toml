@@ -67,6 +67,7 @@ parameterNotArray = "Parameter '%{name}' is not an array"
 parameterNotObject = "Parameter '%{name}' is not an object"
 invokePropertyExpressions = "Invoke property expressions"
 invokeExpression = "Invoke property expression for %{name}: %{value}"
+adapterNotFound = "Adapter '%{adapter}' not found for resource '%{resource}'"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"

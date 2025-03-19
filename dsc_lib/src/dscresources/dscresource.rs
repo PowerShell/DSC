@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::config_doc::ExecutionKind, dscresources::resource_manifest::Kind};
+use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator}, dscresources::resource_manifest::Kind};
 use dscerror::DscError;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 use tracing::{debug, info};
 
@@ -191,6 +191,31 @@ pub trait Invoke {
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            // create new configuration with adapter and use this as the resource
+            let mut configuration = Configuration::new();
+            let mut property_map = Map::new();
+            property_map.insert("name".to_string(), Value::String(self.type_name.clone()));
+            property_map.insert("type".to_string(), Value::String(self.type_name.clone()));
+            let mut resource_properties = Map::new();
+            for property in &self.properties {
+                resource_properties.insert(property.clone(), Value::Null);
+            }
+            property_map.insert("properties".to_string(), Value::Object(resource_properties));
+            let adapter_resource = Resource {
+                name: self.type_name.clone(),
+                resource_type: adapter.clone(),
+                depends_on: None,
+                metadata: None,
+                properties: Some(property_map),
+            };
+            configuration.resources.push(adapter_resource);
+            let config_json = serde_json::to_string(&configuration)?;
+            let mut configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
+            let result = configurator.invoke_get()?;
+            return Ok(result.results[0].result.clone());
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
