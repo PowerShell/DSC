@@ -13,7 +13,7 @@ function Write-DscTrace {
         [string]$Message
     )
 
-    $trace = @{$Operation = $Message } | ConvertTo-Json -Compress
+    $trace = @{$Operation.ToLower() = $Message } | ConvertTo-Json -Compress
     $host.ui.WriteErrorLine($trace)
 }
 
@@ -412,7 +412,7 @@ function Invoke-DscOperation {
     'PowerShell version: ' + $psVersion | Write-DscTrace
 
     # get details from cache about the DSC resource, if it exists
-    $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo
+    $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
 
     # if the resource is found in the cache, get the actual state
     if ($cachedDscResourceInfo) {
