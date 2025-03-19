@@ -189,7 +189,7 @@ switch ($Operation) {
         @{ valid = $true } | ConvertTo-Json
     }
     Default {
-        Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
+        Write-DscTrace -Operation Error -Message 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
     }
 }
 

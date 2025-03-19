@@ -201,13 +201,15 @@ impl Invoke for DscResource {
             for property in &self.properties {
                 resource_properties.insert(property.clone(), Value::Null);
             }
+            let mut resources_map = Map::new();
             property_map.insert("properties".to_string(), Value::Object(resource_properties));
+            resources_map.insert("resources".to_string(), Value::Object(property_map));
             let adapter_resource = Resource {
                 name: self.type_name.clone(),
                 resource_type: adapter.clone(),
                 depends_on: None,
                 metadata: None,
-                properties: Some(property_map),
+                properties: Some(resources_map),
             };
             configuration.resources.push(adapter_resource);
             let config_json = serde_json::to_string(&configuration)?;

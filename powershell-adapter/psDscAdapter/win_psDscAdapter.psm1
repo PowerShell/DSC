@@ -377,7 +377,7 @@ function Invoke-DscOperation {
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
                     Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property)"
-                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property -ErrorAction Stop
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
                         $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
