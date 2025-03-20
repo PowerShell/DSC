@@ -55,12 +55,9 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, adapter_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
-    let export_result = match adapter_resource {
-        Some(_) => adapter_resource.unwrap().export(input)?,
-        _ => resource.export(input)?
-    };
+    let export_result = resource.export(input)?;
 
     if resource.kind == Kind::Exporter {
         for instance in &export_result.actual_state {
@@ -566,7 +563,7 @@ impl Configurator {
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));

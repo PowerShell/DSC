@@ -167,33 +167,10 @@ elseif ($Operation -eq 'Get')
             }
         }
     }
-    else # we are processing an individual resource call
+    else
     {
-        $type_fields = $inputobj_pscustomobj.adapted_dsc_type -split "/"
-        $wmi_namespace = $type_fields[0].Replace('.','\')
-        $wmi_classname = $type_fields[1]
-
-        #TODO: add filtering based on supplied properties of $inputobj_pscustomobj
-        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
-
-        if ($wmi_instances)
-        {
-            # TODO: there's duplicate code here between configuration and non-configuration execution and should be refactored into a helper
-            $wmi_instance = $wmi_instances[0]
-            $result = @{}
-            $wmi_instance.psobject.properties | %{
-                if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
-                {
-                    $result[$_.Name] = $_.Value
-                }
-            }
-        }
-        else
-        {
-            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-CimInstance returns this resource type"
-            Write-Trace $errmsg
-            exit 1
-        }
+        Write-Trace -Level Error -message "Operation requires a configuration object as input"
+        exit 1
     }
 
     $result | ConvertTo-Json -Compress

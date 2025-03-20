@@ -92,6 +92,32 @@ impl DscResource {
             manifest: None,
         }
     }
+
+    fn create_config_for_adapter(self, adapter: &str) -> Result<Configurator, DscError> {
+        // create new configuration with adapter and use this as the resource
+        let mut configuration = Configuration::new();
+        let mut property_map = Map::new();
+        property_map.insert("name".to_string(), Value::String(self.type_name.clone()));
+        property_map.insert("type".to_string(), Value::String(self.type_name.clone()));
+        let mut resource_properties = Map::new();
+        for property in &self.properties {
+            resource_properties.insert(property.clone(), Value::Null);
+        }
+        let mut resources_map = Map::new();
+        property_map.insert("properties".to_string(), Value::Object(resource_properties));
+        resources_map.insert("resources".to_string(), Value::Object(property_map));
+        let adapter_resource = Resource {
+            name: self.type_name.clone(),
+            resource_type: adapter.to_string(),
+            depends_on: None,
+            metadata: None,
+            properties: Some(resources_map),
+        };
+        configuration.resources.push(adapter_resource);
+        let config_json = serde_json::to_string(&configuration)?;
+        let configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
+        Ok(configurator)
+    }
 }
 
 impl Default for DscResource {
@@ -192,28 +218,7 @@ impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            // create new configuration with adapter and use this as the resource
-            let mut configuration = Configuration::new();
-            let mut property_map = Map::new();
-            property_map.insert("name".to_string(), Value::String(self.type_name.clone()));
-            property_map.insert("type".to_string(), Value::String(self.type_name.clone()));
-            let mut resource_properties = Map::new();
-            for property in &self.properties {
-                resource_properties.insert(property.clone(), Value::Null);
-            }
-            let mut resources_map = Map::new();
-            property_map.insert("properties".to_string(), Value::Object(resource_properties));
-            resources_map.insert("resources".to_string(), Value::Object(property_map));
-            let adapter_resource = Resource {
-                name: self.type_name.clone(),
-                resource_type: adapter.clone(),
-                depends_on: None,
-                metadata: None,
-                properties: Some(resources_map),
-            };
-            configuration.resources.push(adapter_resource);
-            let config_json = serde_json::to_string(&configuration)?;
-            let mut configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
+            let mut configurator = self.clone().create_config_for_adapter(adapter)?;
             let result = configurator.invoke_get()?;
             return Ok(result.results[0].result.clone());
         }
@@ -234,6 +239,12 @@ impl Invoke for DscResource {
 
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter)?;
+            let result = configurator.invoke_set(false)?;
+            return Ok(result.results[0].result.clone());
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -250,6 +261,12 @@ impl Invoke for DscResource {
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter)?;
+            let result = configurator.invoke_test()?;
+            return Ok(result.results[0].result.clone());
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -294,6 +311,12 @@ impl Invoke for DscResource {
 
     fn delete(&self, filter: &str) -> Result<(), DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter)?;
+            configurator.invoke_set(false)?;
+            return Ok(());
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -310,6 +333,10 @@ impl Invoke for DscResource {
 
     fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeValidate", resource = self.type_name));
+        if self.require_adapter.is_some() {
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeValidateNotSupported", resource = self.type_name).to_string()));
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -326,6 +353,10 @@ impl Invoke for DscResource {
 
     fn schema(&self) -> Result<String, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSchema", resource = self.type_name));
+        if self.require_adapter.is_some() {
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeSchemaNotSupported", resource = self.type_name).to_string()));
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
                 Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
@@ -342,6 +373,22 @@ impl Invoke for DscResource {
 
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter)?;
+            let result = configurator.invoke_export()?;
+            let Some(configuration) = result.result else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
+            };
+            let mut export_result = ExportResult {
+                actual_state: Vec::new(),
+            };
+            for resource in configuration.resources {
+                let value = serde_json::to_value(resource)?;
+                export_result.actual_state.push(value);
+            }
+            return Ok(export_result);
+        }
+
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
@@ -351,6 +398,10 @@ impl Invoke for DscResource {
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeResolve", resource = self.type_name));
+        if self.require_adapter.is_some() {
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeResolveNotSupported", resource = self.type_name).to_string()));
+        }
+
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };

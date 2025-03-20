@@ -50,9 +50,7 @@ switch ($Operation) {
     }
     { @('Get','Set','Test','Export') -contains $_ } {
 
-        # TestCase 1 = 'Verify adapted_dsc_type field'
         if (($inputobj.TestCaseId -eq 1 ) -or ($_ -eq 'Export')){
-            $result = $inputobj.adapted_dsc_type -eq 'Test/TestCase'
             $result = @{'TestCaseId'=1; 'Input'=''; result = $result } | ConvertTo-Json -Depth 10 -Compress
             return $result
         }

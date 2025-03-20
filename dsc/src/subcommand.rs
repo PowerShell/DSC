@@ -548,30 +548,30 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
         ResourceSubCommand::Export { resource, input, file, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
             let parsed_input = get_input(input.as_ref(), file.as_ref());
-            resource_command::export(&mut dsc, resource, parsed_input, output_format.as_ref());
+            resource_command::export(&mut dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
             if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
             else {
                 let parsed_input = get_input(input.as_ref(), path.as_ref());
-                resource_command::get(&dsc, resource, parsed_input, output_format.as_ref());
+                resource_command::get(&dsc, resource, &parsed_input, output_format.as_ref());
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::set(&dsc, resource, parsed_input, output_format.as_ref());
+            resource_command::set(&dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::test(&dsc, resource, parsed_input, output_format.as_ref());
+            resource_command::test(&dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref());
-            resource_command::delete(&dsc, resource, parsed_input);
+            resource_command::delete(&dsc, resource, &parsed_input);
         },
     }
 }
