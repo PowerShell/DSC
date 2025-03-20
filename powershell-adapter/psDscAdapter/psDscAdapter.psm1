@@ -101,7 +101,7 @@ function FindAndParseResourceDefinitions {
         return
     }
 
-    if (([System.IO.Path]::GetExtension($filePath) -ne ".psm1") -and ([System.IO.Path]::GetExtension($filePath) -ne ".ps1")) {
+    if (".psm1", ".ps1" -notcontains ([System.IO.Path]::GetExtension($filePath))) {
         return
     }
     
@@ -159,9 +159,8 @@ function LoadPowerShellClassResourcesFromModule {
     "Loading resources from module '$($moduleInfo.Path)'" | Write-DscTrace -Operation Trace
     
     if ($moduleInfo.RootModule) {
-        if (([System.IO.Path]::GetExtension($moduleInfo.RootModule) -ne ".psm1") -and
-            ([System.IO.Path]::GetExtension($moduleInfo.RootModule) -ne ".ps1") -and
-            (-not $z.NestedModules)) {
+        if (".psm1", ".ps1" -notcontains ([System.IO.Path]::GetExtension($moduleInfo.RootModule)) -and
+            (-not $moduleInfo.NestedModules)) {
             "RootModule is neither psm1 nor ps1 '$($moduleInfo.RootModule)'" | Write-DscTrace -Operation Trace
             return [System.Collections.Generic.List[DscResourceInfo]]::new()
         }
@@ -326,7 +325,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*psm1", "*.mof" -ea Ignore | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | % {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
