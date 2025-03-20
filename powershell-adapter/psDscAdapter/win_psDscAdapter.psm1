@@ -57,11 +57,13 @@ function Invoke-DscCacheRefresh {
     $cacheFilePath = if ($IsWindows) {
         # PS 6+ on Windows
         Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-    } else {
+    }
+    else {
         # either WinPS or PS 6+ on Linux/Mac
         if ($PSVersionTable.PSVersion.Major -le 5) {
             Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-        } else {
+        }
+        else {
             Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
         }
     }
@@ -72,17 +74,17 @@ function Invoke-DscCacheRefresh {
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            "Incompartible version of cache in file '"+$cache.CacheSchemaVersion+"' (expected '"+$script:CurrentCacheSchemaVersion+"')" | Write-DscTrace
-        } else {
+            "Incompartible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')" | Write-DscTrace
+        }
+        else {
             $dscResourceCacheEntries = $cache.ResourceCache
 
             if ($dscResourceCacheEntries.Count -eq 0) {
                 # if there is nothing in the cache file - refresh cache
                 $refreshCache = $true
-               "Filtered DscResourceCache cache is empty" | Write-DscTrace
+                "Filtered DscResourceCache cache is empty" | Write-DscTrace
             }
-            else
-            {
+            else {
                 "Checking cache for stale entries" | Write-DscTrace
 
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
@@ -98,26 +100,26 @@ function Invoke-DscCacheRefresh {
                             # Truncate DateTime to seconds
                             $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
 
-                            if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime)))
-                            {
+                            if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
                                 "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
                                 $refreshCache = $true
                                 break
                             }
-                        } else {
+                        }
+                        else {
                             "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
                             $refreshCache = $true
                             break
                         }
                     }
 
-                    if ($refreshCache) {break}
+                    if ($refreshCache) { break }
                 }
 
                 if (-not $refreshCache) {
                     "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
 
                     $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
                     $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
@@ -229,20 +231,20 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1","*.psd1","*psm1","*.mof" -ea Ignore | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*psm1", "*.mof" -ea Ignore | % {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
             $dscResourceCacheEntries += [dscResourceCacheEntry]@{
                 Type            = "$moduleName/$($dscResource.Name)"
                 DscResourceInfo = $DscResourceInfo
-                LastWriteTimes = $lastWriteTimes
+                LastWriteTimes  = $lastWriteTimes
             }
         }
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | %{Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue}
+        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
@@ -363,7 +365,14 @@ function Invoke-DscOperation {
                 }
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
-                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { 
+                    if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
+                        $property[$_.Name] = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                    }
+                    else {
+                        $property[$_.Name] = $_.Value
+                    }
+                }
 
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
@@ -410,12 +419,12 @@ function Invoke-DscOperation {
                         }
                         'Test' {
                             $Result = $dscResourceInstance.Test()
-                            $addToActualState.properties = [psobject]@{'InDesiredState'=$Result} 
+                            $addToActualState.properties = [psobject]@{'InDesiredState' = $Result } 
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
                             $method = $t.GetMethod('Export')
-                            $resultArray = $method.Invoke($null,$null)
+                            $resultArray = $method.Invoke($null, $null)
                             $addToActualState = $resultArray
                         }
                     }
