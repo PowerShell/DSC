@@ -129,37 +129,6 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
     Ok(result)
 }
 
-/// Add the type property value to the JSON.
-///
-/// # Arguments
-///
-/// * `json` - The JSON to add the type property to
-/// * `type_name` - The type name to add
-///
-/// # Returns
-///
-/// * `String` - The JSON with the type property added
-#[must_use]
-pub fn add_type_name_to_json(json: String, type_name: String) -> String
-{
-    let mut map:HashMap<String,String> = HashMap::new();
-    map.insert(String::from("adapted_dsc_type"), type_name);
-
-    let mut j = json;
-    if j.is_empty()
-    {
-        j = String::from("{}");
-    }
-
-    match add_fields_to_json(&j, &map) {
-        Ok(json) => json,
-        Err(err) => {
-            error!("JSON: {err}");
-            exit(EXIT_JSON_ERROR);
-        }
-    }
-}
-
 /// Get the JSON schema for requested type.
 ///
 /// # Arguments

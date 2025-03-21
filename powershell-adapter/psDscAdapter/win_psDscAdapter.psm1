@@ -231,7 +231,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*psm1", "*.mof" -ea Ignore | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | % {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
@@ -292,14 +292,8 @@ function Get-DscResourceObject {
         }
     }
     else {
-        # mimic a config object with a single resource
-        $type = $inputObj.adapted_dsc_type
-        $inputObj.psobject.properties.Remove('adapted_dsc_type')
-        $desiredState += [dscResourceObject]@{
-            name       = $adapterName
-            type       = $type
-            properties = $inputObj
-        }
+        Write-DscTrace -Operation Error -Message 'Unexpected input format. Please ensure the input is a valid DSC configuration.'
+        exit 1
     }
     return $desiredState
 }
@@ -377,7 +371,7 @@ function Invoke-DscOperation {
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
                     Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property)"
-                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property -ErrorAction Stop
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
                         $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }

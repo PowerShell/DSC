@@ -380,14 +380,8 @@ function Get-DscResourceObject {
         }
     }
     else {
-        # mimic a config object with a single resource
-        $type = $inputObj.adapted_dsc_type
-        $inputObj.psobject.properties.Remove('adapted_dsc_type')
-        $desiredState += [dscResourceObject]@{
-            name       = $adapterName
-            type       = $type
-            properties = $inputObj
-        }
+        Write-DscTrace -Operation Error -Message 'Unexpected input format. The input must be a configuration object.'
+        exit 1
     }
     return $desiredState
 }

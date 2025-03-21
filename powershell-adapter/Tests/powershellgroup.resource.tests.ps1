@@ -224,7 +224,7 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Verify adapted_dsc_type field in Get' {
+    It 'Verify invoke Get on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
@@ -240,7 +240,7 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Verify adapted_dsc_type field in Set' {
+    It 'Verify invoke Set on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
@@ -257,7 +257,7 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Verify adapted_dsc_type field in Test' {
+    It 'Verify invoke Test on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
@@ -273,7 +273,7 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Verify adapted_dsc_type field in Export' {
+    It 'Verify invoke Export on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
