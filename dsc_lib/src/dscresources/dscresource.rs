@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator}, dscresources::resource_manifest::Kind};
-use crate::dscresources::invoke_result::ResourceGetResponse;
+use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use dscerror::DscError;
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -219,10 +219,10 @@ impl Invoke for DscResource {
             let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
             let result = configurator.invoke_get()?;
             let GetResult::Resource(ref resource_result) = result.results[0].result else {
-                return Err(DscError::Operation(t!("dscresources.dscresource.invokeGetReturnedNoResult", resource = self.type_name).to_string()));
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "get", resource = self.type_name).to_string()));
             };
             let properties = resource_result.actual_state
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actual_state", r#type = "object").to_string()))?
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", r#type = "object").to_string()))?
                 .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
                 .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "array").to_string()))?[0]
                 .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "object").to_string()))?
@@ -252,7 +252,28 @@ impl Invoke for DscResource {
         if let Some(adapter) = &self.require_adapter {
             let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
             let result = configurator.invoke_set(false)?;
-            return Ok(result.results[0].result.clone());
+            let SetResult::Resource(ref resource_result) = result.results[0].result else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "set", resource = self.type_name).to_string()));
+            };
+            let before_state = resource_result.before_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "beforeState", r#type = "object").to_string()))?
+                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let after_state = resource_result.after_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "afterState", r#type = "object").to_string()))?
+                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let diff = get_diff(&before_state, &after_state);
+            let set_result = SetResult::Resource(ResourceSetResponse {
+                before_state: before_state.clone(),
+                after_state: after_state.clone(),
+                changed_properties: if diff.is_empty() { None } else { Some(diff) },
+            });
+            return Ok(set_result);
         }
 
         match &self.implemented_as {
@@ -274,7 +295,29 @@ impl Invoke for DscResource {
         if let Some(adapter) = &self.require_adapter {
             let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
             let result = configurator.invoke_test()?;
-            return Ok(result.results[0].result.clone());
+            let TestResult::Resource(ref resource_result) = result.results[0].result else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "test", resource = self.type_name).to_string()));
+            };
+            let desired_state = resource_result.desired_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "desiredState", r#type = "object").to_string()))?
+                .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", r#type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", r#type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let actual_state = resource_result.actual_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", r#type = "object").to_string()))?
+                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", r#type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let diff_properties = get_diff(&desired_state, &actual_state);
+            let test_result = TestResult::Resource(ResourceTestResponse {
+                desired_state,
+                actual_state,
+                in_desired_state: resource_result.in_desired_state,
+                diff_properties,
+            });
+            return Ok(test_result);
         }
 
         match &self.implemented_as {
