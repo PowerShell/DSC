@@ -82,7 +82,6 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
 // they are re-used to apply configuration
 fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<String, Value>>, DscError> {
-    debug!("{}", t!("configure.mod.escapePropertyValues"));
     let mut result: Map<String, Value> = Map::new();
     for (name, value) in properties {
         match value {

@@ -30,7 +30,7 @@ if ($jsonInput -ne '@{}') {
     $inputobj = $jsonInput | ConvertFrom-Json
 }
 
-$jsonInput | Write-DscTrace
+"Input: $jsonInput" | Write-DscTrace
 
 switch ($Operation) {
     'List' {
@@ -48,13 +48,18 @@ switch ($Operation) {
                 description    = 'TestCase resource'
             } | ConvertTo-Json -Compress
     }
-    { @('Get','Set','Test','Export') -contains $_ } {
+    { @('Get','Set','Test') -contains $_ } {
+        "Operation: $Operation" | Write-DscTrace
 
-        if (($inputobj.TestCaseId -eq 1 ) -or ($_ -eq 'Export')){
-            $result = @{'TestCaseId'=1; 'Input'=''; result = $result } | ConvertTo-Json -Depth 10 -Compress
-            return $result
+        if (($inputobj.resources.properties.TestCaseId -eq 1 ) -or ($_ -eq 'Export')){
+            "Is TestCaseId 1" | Write-DscTrace
+            @{result = @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 1; 'Input' = ''}})} | ConvertTo-Json -Depth 10 -Compress
         }
 
+    }
+    'Export' {
+        @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 1; 'Input' = ''}}) | ConvertTo-Json -Depth 10 -Compress
+        @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' =2 ; 'Input' = ''}}) | ConvertTo-Json -Depth 10 -Compress
     }
     'Validate' {
         @{ valid = $true } | ConvertTo-Json

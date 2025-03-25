@@ -500,6 +500,7 @@ function Invoke-DscOperation {
             }
         }
 
+        "Output: $($addToActualState | ConvertTo-Json -Depth 10 -Compress)" | Write-DscTrace -Operation Trace
         return $addToActualState
     }
     else {

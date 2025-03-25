@@ -41,8 +41,7 @@
         "$Input | ./testadapter.resource.ps1 Set"
       ],
       "input": "stdin",
-      "implementsPretest": true,
-      "return": "state"
+      "implementsPretest": true
       },
     "test": {
       "executable": "pwsh",
@@ -53,8 +52,7 @@
         "-Command",
         "$Input | ./testadapter.resource.ps1 Test"
       ],
-      "input": "stdin",
-      "return": "state"
+      "input": "stdin"
       },
     "export": {
       "executable": "pwsh",
@@ -65,8 +63,7 @@
         "-Command",
         "$Input | ./testadapter.resource.ps1 Export"
       ],
-      "input": "stdin",
-      "return": "state"
+      "input": "stdin"
       },
     "validate": {
         "executable": "pwsh",
