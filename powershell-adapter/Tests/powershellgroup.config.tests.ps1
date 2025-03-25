@@ -230,7 +230,7 @@ Describe 'PowerShell adapter resource tests' {
       }
       'set' {
         $out.results[0].result.beforeState.Name | Should -BeExactly 'TestClassResource1' -Because $text
-        $out.results[0].result.afterState | Should -BeNullOrEmpty
+        $out.results[0].result.afterState.Name | Should -BeExactly 'TestClassResource1' -Because $text
       }
       'test' {
         $out.results[0].result.actualState.InDesiredState | Should -BeFalse -Because $text

@@ -297,14 +297,17 @@ Describe 'PowerShell adapter resource tests' {
     }
 
     It 'Dsc can process large resource output' -Pending {
-        $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
+        try {
+            $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
 
-        $r = dsc -l trace resource export -r TestClassResource/TestClassResource 2> $TestDrive/tracing.txt
-        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
-        $res = $r | ConvertFrom-Json
-        $res.resources[0].properties.result.count | Should -Be 5000
-
-        $env:TestClassResourceResultCount = $null
+            $r = dsc -l trace resource export -r TestClassResource/TestClassResource 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
+            $res = $r | ConvertFrom-Json
+            $res.resources[0].properties.result.count | Should -Be 5000
+        }
+        finally {
+            $env:TestClassResourceResultCount = $null
+        }
     }
 
     It 'Verify that there are no cache rebuilds for several sequential executions' {
