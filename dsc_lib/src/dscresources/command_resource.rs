@@ -855,15 +855,15 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
             }
         }
         else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
-            if let Some(msg) = json_obj.get("Error") {
+            if let Some(msg) = json_obj.get("error") {
                 error!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Warning") {
+            } else if let Some(msg) = json_obj.get("warn") {
                 warn!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Info") {
+            } else if let Some(msg) = json_obj.get("info") {
                 info!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Debug") {
+            } else if let Some(msg) = json_obj.get("debug") {
                 debug!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Trace") {
+            } else if let Some(msg) = json_obj.get("trace") {
                 trace!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line

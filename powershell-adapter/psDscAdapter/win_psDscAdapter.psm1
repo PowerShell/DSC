@@ -13,7 +13,7 @@ function Write-DscTrace {
         [string]$Message
     )
 
-    $trace = @{$Operation = $Message } | ConvertTo-Json -Compress
+    $trace = @{$Operation.ToLower() = $Message } | ConvertTo-Json -Compress
     $host.ui.WriteErrorLine($trace)
 }
 
@@ -324,7 +324,7 @@ function Invoke-DscOperation {
     'PSDesiredStateConfiguration module version: ' + $moduleVersion | Write-DscTrace
 
     # get details from cache about the DSC resource, if it exists
-    $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo
+    $cachedDscResourceInfo = $dscResourceCache | Where-Object Type -EQ $DesiredState.type | ForEach-Object DscResourceInfo | Select-Object -First 1
 
     # if the resource is found in the cache, get the actual state
     if ($cachedDscResourceInfo) {
@@ -367,6 +367,7 @@ function Invoke-DscOperation {
 
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
+                    Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property)"
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
@@ -381,6 +382,7 @@ function Invoke-DscOperation {
                     $addToActualState.properties = $ResultProperties
                 }
                 catch {
+                    $_.Exception | Format-List * -Force | Out-String | Write-DscTrace -Operation Debug
                     'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
