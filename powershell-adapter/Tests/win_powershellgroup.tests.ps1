@@ -111,17 +111,20 @@ resources:
         type: PsDesiredStateConfiguration/Service
         properties:
           Name: Spooler
-          State: $SecondState    
+          State: $SecondState
 "@
 
         $inDesiredState = if ($FirstState -eq $SecondState) {
-          $FirstState -eq (Get-Service Spooler).Status
+          $status = (Get-Service Spooler).Status
+          Write-Verbose -Verbose "Status: $status"
+          $FirstState -eq $status
         } else {
           $false
         }
 
-        $out = dsc config test -i $yaml | ConvertFrom-Json
+        $out = dsc config test -i $yaml
+        $res = $out | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.inDesiredState | Should -Be $inDesiredState
+        $out.results[0].result.inDesiredState | Should -Be $inDesiredState -Because ($out | Out-String)
     }
 }
