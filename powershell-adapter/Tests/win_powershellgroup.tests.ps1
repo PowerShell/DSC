@@ -125,6 +125,6 @@ resources:
         $out = dsc config test -i $yaml
         $res = $out | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.inDesiredState | Should -Be $inDesiredState -Because ($out | Out-String)
+        $res.results[0].result.inDesiredState | Should -Be $inDesiredState -Because ($out | Out-String)
     }
 }
