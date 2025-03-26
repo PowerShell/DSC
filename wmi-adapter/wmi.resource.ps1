@@ -81,7 +81,7 @@ elseif ($Operation -eq 'Get')
 
     $result = @()
 
-    foreach($r in $inputobj_pscustomobj.resources)
+    foreach ($r in $inputobj_pscustomobj.resources)
     {
         $type_fields = $r.type -split "/"
         $wmi_namespace = $type_fields[0].Replace('.','\')
@@ -133,7 +133,7 @@ elseif ($Operation -eq 'Get')
 
         if ($wmi_instances)
         {
-            $instance_result = @{}
+            $instance_result = [ordered]@{}
             # TODO: for a `Get`, they key property must be provided so a specific instance is returned rather than just the first
             $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
             $wmi_instance.psobject.properties | %{
@@ -153,11 +153,11 @@ elseif ($Operation -eq 'Get')
                 }
             }
 
-            $result += @($instance_result)
+            $result += [pscustomobject]@{ name = $r.name; type = $r.type; properties = $instance_result }
         }
     }
 
-    $result | ConvertTo-Json -Compress
+    @{result = $result } | ConvertTo-Json -Depth 10 -Compress
 }
 elseif ($Operation -eq 'Validate')
 {
