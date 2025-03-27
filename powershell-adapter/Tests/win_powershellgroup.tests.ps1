@@ -111,7 +111,7 @@ resources:
         type: PsDesiredStateConfiguration/Service
         properties:
           Name: Spooler
-          State: $SecondState    
+          State: $SecondState
 "@
 
         $inDesiredState = if ($FirstState -eq $SecondState) {
