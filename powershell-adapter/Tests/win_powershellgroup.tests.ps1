@@ -115,16 +115,13 @@ resources:
 "@
 
         $inDesiredState = if ($FirstState -eq $SecondState) {
-          $status = (Get-Service Spooler).Status
-          Write-Verbose -Verbose "Status: $status"
-          $FirstState -eq $status
+          $FirstState -eq (Get-Service Spooler).Status
         } else {
           $false
         }
 
-        $out = dsc config test -i $yaml
-        $res = $out | ConvertFrom-Json
+        $out = dsc config test -i $yaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $res.results[0].result.inDesiredState | Should -Be $inDesiredState -Because ($out | Out-String)
+        $out.results[0].result.inDesiredState | Should -Be $inDesiredState
     }
 }
