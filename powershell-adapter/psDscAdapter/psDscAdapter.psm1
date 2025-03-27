@@ -362,27 +362,14 @@ function Get-DscResourceObject {
     $inputObj = $jsonInput | ConvertFrom-Json
     $desiredState = [System.Collections.Generic.List[Object]]::new()
 
-    # catch potential for improperly formatted configuration input
-    if ($inputObj.resources -and -not $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        'The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace -Operation Warn
-    }
-
-    $adapterName = 'Microsoft.DSC/PowerShell'
-
-    if ($null -ne $inputObj.metadata -and $null -ne $inputObj.metadata.'Microsoft.DSC' -and $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        # change the type from pscustomobject to dscResourceObject
-        $inputObj.resources | ForEach-Object -Process {
-            $desiredState += [dscResourceObject]@{
-                name       = $_.name
-                type       = $_.type
-                properties = $_.properties
-            }
+    $inputObj.resources | ForEach-Object -Process {
+        $desiredState += [dscResourceObject]@{
+            name       = $_.name
+            type       = $_.type
+            properties = $_.properties
         }
     }
-    else {
-        Write-DscTrace -Operation Error -Message 'Unexpected input format. The input must be a configuration object.'
-        exit 1
-    }
+
     return $desiredState
 }
 
@@ -535,7 +522,7 @@ class dscResourceCache {
     [dscResourceCacheEntry[]] $ResourceCache
 }
 
-# format expected for configuration and resource output
+# format expected for configuration output
 class dscResourceObject {
     [string] $name
     [string] $type

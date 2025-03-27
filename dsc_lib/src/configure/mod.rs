@@ -709,7 +709,6 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    context: None,
                     version: Some(env!("CARGO_PKG_VERSION").to_string()),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),

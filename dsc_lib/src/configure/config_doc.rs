@@ -11,13 +11,6 @@ use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum ContextKind {
-    Configuration,
-    Resource,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
 pub enum SecurityContextKind {
     Current,
     Elevated,
@@ -63,9 +56,6 @@ pub struct MicrosoftDscMetadata {
     /// The security context of the configuration operation, can be specified to be required
     #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
     pub security_context: Option<SecurityContextKind>,
-    /// Identifies if the operation is part of a configuration
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub context: Option<ContextKind>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
