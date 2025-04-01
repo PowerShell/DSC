@@ -9,10 +9,10 @@ description: >-
 
 type: string
 enum:
-  - Resource
-  - Adapter
-  - Group
-  - Import
+  - resource
+  - adapter
+  - group
+  - importer
 
 # VS Code only
 
@@ -21,35 +21,38 @@ markdownDescription: |
   [_Online Documentation_][01]
   ***
 
-  Defines whether the resource is a normal DSC Resource, a group resource, or an adapter
-  resource. This property is only required for group resources.
+  Defines how DSC should interpret the resource - as a typical resource, an adapter, a group, or an
+  importer. This property is required for group, exporter, and importer resources.
 
   DSC infers the default value for this property based on whether the [adapter][02] property is
   defined in the manifest:
 
-  - If the `adapter` property is defined in the manifest, the default `kind` is `Adapter`.
-  - If the `adapter` property is not defined in the manifest, the default `kind` is `Resource`.
+  - If the `adapter` property is defined in the manifest, the default `kind` is `adapter`.
+  - If the `adapter` property is not defined in the manifest, the default `kind` is `resource`.
+
+  For more information about the different kinds of DSC resources, see [DSC resource kinds][01]
 
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#kind
+  [01]: <DOCS_BASE_URL>/concepts/resources/kinds?<DOCS_VERSION_PIN>
 
 markdownEnumDescriptions:
-  - | # Resource
+  - | # resource
       <!-- force a line break -->
 
-      Indicates that the manifest is for a standard command-based DSC Resource.
-  - | # Adapter
+      Indicates that the manifest is for a typical DSC command resource.
+  - | # adapter
       <!-- force a line break -->
 
-      Indicates that the manifest is for an adapter resource that enables the use of
-      non-command-based resources with DSC.
-  - | # Group
+      Indicates that the manifest is for a resource that enables the use of non-command resources
+      with DSC.
+  - | # group
       <!-- force a line break -->
 
-      Indicates that the manifest is for a group resource that processes an array of nested
-      resource instances.
-  - | # Import
+      Indicates that the manifest is for a resource that processes an array of nested resource
+      instances.
+  - | # importer
       <!-- force a line break -->
 
-      Indicates that the manifest is for an import resource that resolves an external source to DSC
-      resource instances. The resolved instances are processed as nested instances for the import
+      Indicates that the manifest is for a resource that resolves an external source to DSC
+      resource instances. DSC processes the resolved instances as nested instances for the importer
       resource.
