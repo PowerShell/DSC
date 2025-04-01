@@ -40,7 +40,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
         $r = '{"DestinationPath":"' + $testFile.replace('\','\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.DestinationPath | Should -Be "$testFile"
+        $res.actualState.DestinationPath | Should -Be "$testFile"
     }
 
     It 'Set works on Binary "File" resource' -Skip:(!$IsWindows){
@@ -58,7 +58,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
         $r = '{"GetScript": "@{result = $(Get-Content ' + $testFile.replace('\','\\') + ')}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.result | Should -Be 'test'
+        $res.actualState.result | Should -Be 'test'
     }
 
     It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows){

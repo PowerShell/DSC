@@ -67,7 +67,6 @@ noParameters = "No parameters specified"
 [resource_command]
 implementedAs = "implemented as"
 invalidOperationOnAdapter = "Can not perform this operation on the adapter itself"
-adapterNotFound = "Adapter not found"
 setInputEmpty = "Desired input is empty"
 testInputEmpty = "Expected input is required"
 

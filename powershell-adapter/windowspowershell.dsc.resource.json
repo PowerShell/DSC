@@ -41,8 +41,7 @@
         "$Input | ./psDscAdapter/powershell.resource.ps1 Set"
       ],
       "input": "stdin",
-      "preTest": true,
-      "return": "state"
+      "preTest": true
       },
     "test": {
       "executable": "powershell",
