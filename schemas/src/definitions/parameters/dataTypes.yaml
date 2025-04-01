@@ -75,7 +75,7 @@ markdownEnumDescriptions:
   - | # int
       _Integer values are numbers without a fractional part._
 
-      > Integer values may be limited by integrating tools or the DSC Resources they're used with.
+      > Integer values may be limited by integrating tools or the DSC resources they're used with.
       > DSC itself supports integer values between `-9223372036854775808` and `9223372036854775807`.
       >
       > For more information, see the [_Online Documentation_][01].

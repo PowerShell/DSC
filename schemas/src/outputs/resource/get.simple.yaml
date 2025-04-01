@@ -3,7 +3,7 @@ $id:     <HOST>/<PREFIX>/<VERSION>/outputs/resource/get.simple.yaml
 
 title: dsc resource get result (simple)
 description: >-
-  Describes the return data for a single DSC Resource instance from the
+  Describes the return data for a single DSC resource instance from the
   `dsc resource get` command. This data is returned for instances that aren't
   group resources, adapter resources, or nested inside a group or adapter
   resource.
@@ -19,7 +19,7 @@ properties:
   actualState:
     title: Actual state
     description: >-
-      This property always represents the current state of the DSC Resource
+      This property always represents the current state of the DSC resource
       instance as returned by its `get` method. DSC validates this return value
-      against the DSC Resource's schema.
+      against the DSC resource's schema.
     type: object

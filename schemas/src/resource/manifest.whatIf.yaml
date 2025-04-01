@@ -4,15 +4,15 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.whatIf.yaml
 
 title: What-if method
 description: >-
-  Defines how DSC must call the DSC Resource to indicate whether and how the set command will
-  modify an instance and how to process the output from the DSC Resource.
+  Defines how DSC must call the DSC resource to indicate whether and how the set command will
+  modify an instance and how to process the output from the DSC resource.
 markdownDescription: | # VS Code only
   ***
   [_Online Documentation_][01]
   ***
 
-  Defines how DSC must call the DSC Resource to indicate whether and how the set command will
-  modify an instance and how to process the output from the DSC Resource. If a resource doesn't
+  Defines how DSC must call the DSC resource to indicate whether and how the set command will
+  modify an instance and how to process the output from the DSC resource. If a resource doesn't
   define this method in the manifest, DSC synthesizes this behavior by converting the result of
   the test operation for the resource into the [set result][02].
 
@@ -134,10 +134,10 @@ properties:
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/whatif?<DOCS_VERSION_PIN>#input
   implementsPretest:
-    title: Resource Performs Pre-Test
+    title: Resource performs pre-test
     description: >-
-      Defines whether the DSC Resource performs its own test to ensure idempotency when calling the
-      `set --what-if` command. Set this value to `true` if the DSC Resource tests input before
+      Defines whether the DSC resource performs its own test to ensure idempotency when calling the
+      `set --what-if` command. Set this value to `true` if the DSC resource tests input before
       processing how it will modify system state.
     type: boolean
     default: false
@@ -147,16 +147,16 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines whether the DSC Resource performs its own test to ensure idempotency when calling the
-      `set --what-if` command . Set this value to `true` if the DSC Resource tests input before
+      Defines whether the DSC resource performs its own test to ensure idempotency when calling the
+      `set --what-if` command . Set this value to `true` if the DSC resource tests input before
       processing how it will modify system state.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/whatif?<DOCS_VERSION_PIN>#implementspretest
   handlesExist:
-    title: Resource handles _exist property
+    title: Resource handles `_exist` property
     description: >-
-      Defines whether the DSC Resource has its own built-in handling for the `_exist` common
-      property. Set this value to `true` if the DSC Resource handles instance deletion internally
+      Defines whether the DSC resource has its own built-in handling for the `_exist` common
+      property. Set this value to `true` if the DSC resource handles instance deletion internally
       when receiving a `set --what-if` command where the instance defines the `_exist` property as
       `false`.
     type: boolean
@@ -167,8 +167,8 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines whether the DSC Resource has its own built-in handling for the [`_exist`][02] common
-      property. Set this value to `true` if the DSC Resource handles instance deletion internally
+      Defines whether the DSC resource has its own built-in handling for the [`_exist`][02] common
+      property. Set this value to `true` if the DSC resource handles instance deletion internally
       when receiving a `set --what-if` command where the instance defines the `_exist` property as
       `false`.
 
@@ -176,8 +176,8 @@ properties:
       [02]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
   return:
     description: >-
-      Defines whether the command returns a JSON blob of the DSC Resource's expected state after a
-      set operation in what-if mode or the state and an array of the properties the DSC Resource
+      Defines whether the command returns a JSON blob of the DSC resource's expected state after a
+      set operation in what-if mode or the state and an array of the properties the DSC resource
       would modify.
     $ref: /<PREFIX>/<VERSION>/definitions/returnKind.yaml
     # VS Code only
@@ -186,8 +186,8 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines whether the command returns a JSON blob of the DSC Resource's expected state after a
-      set operation in what-if mode or the state and an array of the properties the DSC Resource
+      Defines whether the command returns a JSON blob of the DSC resource's expected state after a
+      set operation in what-if mode or the state and an array of the properties the DSC resource
       would modify.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/whatif?<DOCS_VERSION_PIN>#return

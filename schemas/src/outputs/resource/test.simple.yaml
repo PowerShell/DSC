@@ -4,7 +4,7 @@ $id:     <HOST>/<PREFIX>/<VERSION>/outputs/resource/test.simple.yaml
 
 title: dsc resource test result (simple)
 description: >-
-  Describes the return data for a single DSC Resource instance from the
+  Describes the return data for a single DSC resource instance from the
   `dsc resource test` command. This data is returned for instances that aren't
   group resources, adapter resources, or nested inside a group or adapter
   resource.
@@ -23,16 +23,16 @@ properties:
   desiredState:
     title: Desired state
     description: >-
-      This property always represents the desired state of the DSC Resource
+      This property always represents the desired state of the DSC resource
       instance as specified to DSC.
     type: object
   actualState:
     title: Actual state
     description: >-
-      This property always represents the current state of the DSC Resource
-      instance as returned by its `test` method or, if the DSC Resource doesn't
+      This property always represents the current state of the DSC resource
+      instance as returned by its `test` method or, if the DSC resource doesn't
       define the `test` method, by its `get` method. DSC validates this return
-      value against the DSC Resource's schema.
+      value against the DSC resource's schema.
     type: object
   inDesiredState:
     title: Instance is in the desired state
@@ -43,7 +43,7 @@ properties:
     title: Differing properties
     description: >-
       This property always represents the list of property names for the DSC
-      Resource instance that aren't in the desired state. When this property
+      resource instance that aren't in the desired state. When this property
       is an empty array, the instance is in the desired state.
     type: array
     default: []
