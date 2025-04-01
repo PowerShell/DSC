@@ -179,6 +179,10 @@ properties:
       Defines whether the command returns a JSON blob of the DSC resource's state after the set
       operation or the state and an array of the properties the DSC resource modified.
 
+      When a manifest doesn't define `set.return`, DSC doesn't expect the resource to emit any
+      JSON to stdout. Instead, DSC invokes the **Get** operation for the resource to construct
+      the result object, retrieving the actual state of the resource after the **Set** operation.
+
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#return
     markdownEnumDescriptions:
       - | # state
