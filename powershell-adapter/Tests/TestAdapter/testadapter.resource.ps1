@@ -51,7 +51,7 @@ switch ($Operation) {
     { @('Get','Set','Test') -contains $_ } {
         "Operation: $Operation" | Write-DscTrace
 
-        if (($inputobj.resources.properties.TestCaseId -eq 1 ) -or ($_ -eq 'Export')){
+        if ($inputobj.resources.properties.TestCaseId -eq 1) {
             "Is TestCaseId 1" | Write-DscTrace
             @{result = @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 1; 'Input' = ''}})} | ConvertTo-Json -Depth 10 -Compress
         }
@@ -59,7 +59,7 @@ switch ($Operation) {
     }
     'Export' {
         @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 1; 'Input' = ''}}) | ConvertTo-Json -Depth 10 -Compress
-        @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' =2 ; 'Input' = ''}}) | ConvertTo-Json -Depth 10 -Compress
+        @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 2; 'Input' = ''}}) | ConvertTo-Json -Depth 10 -Compress
     }
     'Validate' {
         @{ valid = $true } | ConvertTo-Json
