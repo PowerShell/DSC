@@ -10,12 +10,15 @@ description: >-
 
 markdownDescription: | # VS Code only
   ***
-  [_Online Documentation_][01]
+  [_Online Documentation_][00]
   ***
 
   Defines how DSC must call the DSC resource to resolve an external source to nested DSC
   configuration document. Define this method for [importer resources][02] and set the [kind][03]
   property in the manifest root to `importer`.
+
+  For more information about the output DSC expects the resource to emit for this command, see
+  [Resolve resource operation stdout][01].
 
   DSC sends data to the command in three ways:
 
@@ -32,7 +35,8 @@ markdownDescription: | # VS Code only
   You must define the `input` property, one JSON input argument in the `args` property array, or
   both.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/resolve?<DOCS_VERSION_PIN>
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/resolve?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/resolve?<DOCS_VERSION_PIN>
   [02]: <DOCS_BASE_URL>/reference/schemas/definitions/resourceKind?<DOCS_VERSION_PIN>#importer-resources
   [03]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#kind
 
