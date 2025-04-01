@@ -133,6 +133,7 @@ properties:
       Defines whether the command returns a JSON blob of the DSC resource's current state or the
       state and an array of the properties that are out of the desired state.
     $ref: /<PREFIX>/<VERSION>/definitions/returnKind.yaml
+    default: state
     # VS Code only
     markdownDescription: |
       ***

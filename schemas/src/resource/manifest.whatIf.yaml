@@ -40,6 +40,7 @@ markdownDescription: | # VS Code only
 type: object
 required:
   - executable
+  - return
 properties:
   executable:
     $ref: /<PREFIX>/<VERSION>/definitions/commandExecutable.yaml
@@ -189,6 +190,15 @@ properties:
       Defines whether the command returns a JSON blob of the DSC resource's expected state after a
       set operation in what-if mode or the state and an array of the properties the DSC resource
       would modify.
+
+      Unlike the `set.return` property, you must specify a value for `whatIf.return` for the
+      resource to function correctly. When you don't define `set.return` in your resource manifest,
+      DSC invokes the **Get** operation on the resource after the **Set** operation to construct
+      the result with the final state of the resource.
+
+      For what-if operations, the resource doesn't actually change the system, so invoking the
+      **Get** operation after the what-if command executes will always show the final state to
+      be the same as the before state.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/whatif?<DOCS_VERSION_PIN>#return
     markdownEnumDescriptions:
