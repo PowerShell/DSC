@@ -2,17 +2,16 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.yaml
 
-title: Command-based DSC Resource Manifest
+title: DSC resource manifest
 description: >-
-  Defines the information DSC and integrating require to process and call a command-based DSC
-  Resource.
+  Defines the information DSC and integrating require to process and call a DSC command resource.
 markdownDescription: | # VS Code only
   ***
   [_Online Documentation_][01]
   ***
 
-  Defines the information DSC and integrating require to process and call a command-based DSC
-  Resource. For DSC to use a manifest on a system, the manifest file must:
+  Defines the information DSC and integrating require to process and call a DSC command resource.
+  For DSC to use a manifest on a system, the manifest file must:
 
   1. Be discoverable in the `PATH` environment variable.
   1. Follow the naming convention `<name>.dsc.resource.json`.
@@ -96,8 +95,8 @@ defaultSnippets:
 
   - label: ' Define a resource (adapter)'
     markdownDescription: |-
-      Defines an adapter resource that enables users to define non-command-based DSC Resources in
-      the configuration.
+      Defines an adapter resource that enables users to define non-command DSC resources in the
+      configuration.
     body:
       ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
@@ -197,7 +196,7 @@ properties:
   $schema:
     title: Manifest Schema
     description: >-
-      This property must be the canonical URL of the Command-based DSC Resource Manifest schema
+      This property must be the canonical URL of the Command-based DSC resource Manifest schema
       that the manifest is implemented for.
     type:   string
     format: uri
@@ -217,8 +216,8 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      This property must be one of the canonical URLs for the version of the Command-based DSC
-      Resource Manifest schema that the manifest is implemented for.
+      This property must be one of the canonical URLs for the version of the DSC resource manifest
+      schema that the manifest is implemented for.
       
       For every version of the schema, there are three valid urls:
 
@@ -379,7 +378,7 @@ properties:
   version:
     title: Resource Semantic Version
     description: >-
-      The semantic version (semver) of the DSC Resource. This version identifies the DSC Resource,
+      The semantic version (semver) of the DSC resource. This version identifies the DSC resource,
       not the version of the application it manages.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
     markdownDescription: | # VS Code only
@@ -387,7 +386,7 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      The semantic version ([semver][02]) of the DSC Resource. This version identifies the DSC
+      The semantic version ([semver][02]) of the DSC resource. This version identifies the DSC
       Resource, not the version of the application it manages.
 
       This value uses the [suggested regular expression][03] to validate whether the string is valid
@@ -411,14 +410,14 @@ properties:
   description:
     title: Resource Description
     description: >-
-      A short synopsis of the DSC Resource's purpose.
+      A short synopsis of the DSC resource's purpose.
     type: string
     markdownDescription: | # VS Code only
       ***
       [_Online Documentation_][01]
       ***
 
-      Defines a short synopsis of the DSC Resource's purpose.
+      Defines a short synopsis of the DSC resource's purpose.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#description-1
   kind:
@@ -468,9 +467,9 @@ properties:
     # command/method objects too?
     title: Exit Codes
     description: >-
-      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      This property defines a map of valid exit codes for the DSC resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
-      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+      property to indicate human-readable semantic meanings for the DSC resource's exit codes.
     type: object
     propertyNames:
       pattern: "^-?[0-9]+$"
@@ -495,9 +494,9 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      This property defines a map of valid exit codes for the DSC resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
-      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+      property to indicate human-readable semantic meanings for the DSC resource's exit codes.
 
       Define the keys in this property as strings representing a valid 32-bit signed integer. You
       can't use alternate formats for the exit code. For example, instead of the hexadecimal value

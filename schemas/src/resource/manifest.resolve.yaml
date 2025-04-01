@@ -4,7 +4,7 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.resolve.yaml
 
 title: Resolve method
 description: >-
-  Defines how DSC must call the DSC Resource to resolve a nested configuration document from an
+  Defines how DSC must call the DSC resource to resolve a nested configuration document from an
   external source. Define this method for importer resources where the resource kind is set to
   `Import`.
 

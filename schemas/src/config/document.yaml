@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
 $schema:     https://json-schema.org/draft/2020-12/schema
 $id:         <HOST>/<PREFIX>/<VERSION>/config/document.yaml
-title:       DSC Configuration Document schema
-description: Describes a valid DSC Configuration Document.
+title:       DSC configuration document schema
+description: Describes a valid DSC configuration document.
 
 markdownDescription: | # VS Code only
   ***
   [_Online Documentation_][01]
   ***
 
-  Describes a valid DSC Configuration Document.
+  Describes a valid DSC configuration document.
 
-  DSC Configurations enable users to define state by combining different DSC Resources. A
+  DSC configurations enable users to define state by combining different DSC resources. A
   configuration document uses parameters and variables to pass to a set of one or more resources
   that define a desired state.
 
@@ -26,7 +26,7 @@ properties:
   $schema:
     title: Schema
     description: >-
-      This property must be the canonical URL of the DSC Configuration Document schema that the
+      This property must be the canonical URL of the DSC configuration document schema that the
       document is implemented for.
     type: string
     format: uri
@@ -46,7 +46,7 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      This property must be the canonical URL of the DSC Configuration Document schema that the
+      This property must be the canonical URL of the DSC configuration document schema that the
       document is implemented for.
 
       For every version of the schema, there are three valid urls:
@@ -206,7 +206,7 @@ properties:
           > unexpected ways.
 
   parameters:
-    title: DSC Configuration document parameters
+    title: DSC configuration document parameters
     description: >-
       Defines runtime options for the configuration. Users and integrating tools can override use
       the defined parameters to pass alternate values to the configuration.
@@ -318,8 +318,8 @@ properties:
             - ${3:secondValue}
 
   resources:
-    title:       DSC Configuration document resources
-    description: Defines a list of DSC Resource instances for the configuration to manage.
+    title:       DSC configuration document resources
+    description: Defines a list of DSC resource instances for the configuration to manage.
     type:        array
     minItems:    1
     items:
@@ -330,7 +330,7 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      Defines a list of DSC Resource instances for the configuration to manage.
+      Defines a list of DSC resource instances for the configuration to manage.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/config/document?<DOCS_VERSION_PIN>#resources
 

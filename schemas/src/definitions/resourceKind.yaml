@@ -4,7 +4,7 @@ $id: <HOST>/<PREFIX>/<VERSION>/definitions/resourceKind.yaml
 
 title: Resource kind
 description: >-
-  Defines whether the resource is a normal DSC Resource, a group resource, or an adapter
+  Defines whether the resource is a normal DSC resource, a group resource, or an adapter
   resource. This property is only required for group resources.
 
 type: string

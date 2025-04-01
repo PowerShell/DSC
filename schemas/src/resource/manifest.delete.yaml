@@ -4,7 +4,7 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.delete.yaml
 
 title: Delete method
 description: >-
-  Defines how DSC must call the DSC Resource to delete an instance. Define this method for
+  Defines how DSC must call the DSC resource to delete an instance. Define this method for
   resources as an alternative to handling the `_exist` property in a `set` operation, which can
   lead to highly complex code. If the `set` operation for the resource is able to handle deleting
   an instance when `_exist` is `false`, set the `handlesExist` property of the set method
@@ -15,7 +15,7 @@ markdownDescription: | # VS Code only
   [_Online Documentation_][01]
   ***
 
-  Defines how DSC must call the DSC Resource to delete an instance. Define this method for
+  Defines how DSC must call the DSC resource to delete an instance. Define this method for
   resources as an alternative to handling the [`_exist`][02] property in a `set` operation, which
   can lead to highly complex code. If the `set` method for the resource is able to handle deleting
   an instance when `_exist` is `false`, set the [`handlesExist`][03] property of the set method
