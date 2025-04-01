@@ -321,7 +321,7 @@ properties:
     title:       DSC configuration document resources
     description: Defines a list of DSC resource instances for the configuration to manage.
     type:        array
-    minItems:    1
+    minItems:    0
     items:
       $ref: /<PREFIX>/<VERSION>/config/document.resource.yaml
     # VS Code only
