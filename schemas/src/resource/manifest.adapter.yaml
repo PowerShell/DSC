@@ -27,12 +27,16 @@ properties:
       Defines how DSC must call the DSC resource adapter to list its supported DSC resources.
     markdownDescription: | # VS Code only
       ***
-      [_Online Documentation_][01]
+      [_Online Documentation_][00]
       ***
 
       Defines how DSC must call the DSC resource adapter to list its supported DSC resources.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>#list
+      For more information about the output DSC expects from the resource for this command,
+      see [List resource operation stdout][01].
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/adapter?<DOCS_VERSION_PIN>#list
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/list?<DOCS_VERSION_PIN>
     type: object
     required:
       - executable

@@ -8,15 +8,18 @@ description: >-
   modify an instance and how to process the output from the DSC resource.
 markdownDescription: | # VS Code only
   ***
-  [_Online Documentation_][01]
+  [_Online Documentation_][00]
   ***
 
   Defines how DSC must call the DSC resource to indicate whether and how the set command will
   modify an instance and how to process the output from the DSC resource. If a resource doesn't
-  define this method in the manifest, DSC synthesizes this behavior by converting the result of
-  the test operation for the resource into the [set result][02].
+  define this command in the manifest, DSC synthesizes this behavior by converting the result of
+  the test operation for the resource into the [set result][01].
 
-  This method definition has the same structure as the [set method][03] in the resource manifest.
+  This command definition has the same structure as the [set command][02] in the resource manifest.
+
+  For more information about the output DSC expects the resource to emit for this command, see
+  [What-if resource operation stdout][03].
 
   DSC sends data to the command in three ways:
 
@@ -33,9 +36,10 @@ markdownDescription: | # VS Code only
   You must define the `input` property, one JSON input argument in the `args` property array, or
   both.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/whatif?<DOCS_VERSION_PIN>
-  [02]: <DOCS_BASE_URL>/reference/schemas/outputs/resource/set?<DOCS_VERSION_PIN>
-  [03]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/whatif?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/outputs/resource/set?<DOCS_VERSION_PIN>
+  [02]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>
+  [03]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/whatif?<DOCS_VERSION_PIN>
 
 type: object
 required:

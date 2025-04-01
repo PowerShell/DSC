@@ -74,13 +74,17 @@ properties:
     # VS Code only
     markdownDescription: |
       ***
-      [_Online Documentation_][01]
+      [_Online Documentation_][00]
       ***
 
       Defines how DSC must call the DSC resource to get the JSON Schema for validating a JSON blob
       representing an instance of the DSC resource.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
+      For more information about the output DSC expects the resource to emit for this command, see
+      [Schema resource command stdout][01].
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/schema?<DOCS_VERSION_PIN>
     defaultSnippets:
       - label: ' Define without arguments'
         markdownDescription: |

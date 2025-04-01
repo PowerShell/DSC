@@ -12,17 +12,19 @@ description: >-
 
 markdownDescription: | # VS Code only
   ***
-  [_Online Documentation_][01]
+  [_Online Documentation_][00]
   ***
 
   Defines how DSC must call the DSC resource to delete an instance. Define this method for
-  resources as an alternative to handling the [`_exist`][02] property in a `set` operation, which
+  resources as an alternative to handling the [`_exist`][01] property in a `set` operation, which
   can lead to highly complex code. If the `set` method for the resource is able to handle deleting
-  an instance when `_exist` is `false`, set the [`handlesExist`][03] property of the set method
+  an instance when `_exist` is `false`, set the [`handlesExist`][02] property of the set method
   definition to `true` instead.
 
   If you define the delete method in a resource manifest, ensure that you also define the
-  [`_exist`][02] property in the [JSON schema for the resource's properties][04].
+  [`_exist`][01] property in the [JSON schema for the resource's properties][03].
+
+  DSC doesn't expect this command to return any output to stdout.
 
   DSC sends data to the command in three ways:
 
@@ -39,10 +41,10 @@ markdownDescription: | # VS Code only
   You must define the `input` property, one JSON input argument in the `args` property array, or
   both.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/delete?<DOCS_VERSION_PIN>
-  [02]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
-  [03]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#handlesExist
-  [04]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/delete?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/exist?<DOCS_VERSION_PIN>
+  [02]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/set?<DOCS_VERSION_PIN>#handlesExist
+  [03]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>
 
 type: object
 required:
