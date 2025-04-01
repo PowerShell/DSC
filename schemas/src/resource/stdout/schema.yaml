@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/stdout/schema.yaml
+
+title: Schema resource command stdout
+description: >-
+  Represents the JSON Schema that validates instances of the resource. DSC expects a resource that
+  defines the `schema.command` field in its resource manifest to return this value for that
+  command.
+markdownDescription: | # VS Code only
+  ***
+  [_Online Documentation_][00]
+  ***
+
+  Represents the JSON Schema that validates instances of the resource. DSC expects a resource that
+  defines the [`schema.command`][01] field in its resource manifest to return this value for that
+  command.
+
+  The output must be a JSON object. The object must be a valid JSON Schema. For more information
+  about what DSC expects for resource instance JSON Schemas, see
+  [DSC Resource manifest embedded schema reference][02], which describes the expectations in full.
+
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/export?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/command?<DOCS_VERSION_PIN>
+  [02]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>
+
+type: object
+required:
+      - $schema
+      - type
+      - properties

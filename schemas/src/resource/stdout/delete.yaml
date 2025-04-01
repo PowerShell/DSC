@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/stdout/get.yaml
+
+title: Delete resource operation stdout
+description: >-
+  DSC does not expect the **Delete** operation for a resource to return any JSON to stdout.
+markdownDescription: | # VS Code only
+  ***
+  [_Online Documentation_][00]
+  ***
+
+  DSC does not expect the **Delete** operation for a resource to return any JSON to stdout.
+
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/delete?<DOCS_VERSION_PIN>
+
+type: 'null'
