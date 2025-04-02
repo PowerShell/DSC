@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc schema' command
-ms.date:     02/28/2025
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc schema
 ---
@@ -34,10 +34,10 @@ output for one of the application's commands.
 >
 > Both the published schemas and those returned from this command correctly validate the data. The
 > schemas returned from this command are less strict than the published schemas. Even though data
-> validates against the schemas returned by this command, DSC may raise errors when processing the
-> data. For example, the returned schema for versions indicates that the valid value is a string -
-> but if you specify a string that isn't a semantic version, DSC raises an error. In that case, the
-> data passed the schema validation but was incorrect.
+> validates against the schemas returned by this command, DSC might raise errors when processing
+> the data. For example, the returned schema for versions indicates that the valid value is a
+> string - but if you specify a string that isn't a semantic version, DSC raises an error. In that
+> case, the data passed the schema validation but was incorrect.
 >
 > Until the schemas are canonicalized, consider using the published schemas when indpendently
 > testing your configuration documents and resource manifests with a JSON Schema validation tool.
@@ -45,6 +45,8 @@ output for one of the application's commands.
 ## Examples
 
 ### Example 1 - Retrieve the schema for the dsc resource get command result
+
+<a id="example-1"></a>
 
 ```sh
 dsc schema --type get-result
@@ -170,72 +172,122 @@ definitions:
 
 ### -t, --type
 
+<a id="-t"></a>
+<a id="--type"></a>
+
 This option is mandatory for the `schema` command. The value for this option determines which
 schema the application returns:
 
-- `dsc-resource` ([reference documentation][01]) - Represents a DSC Resource as returned from the
-  `dsc resource list` command.
-- `resource-manifest` ([reference documentation][02]) - Validates a command-based DSC Resource's
-  manifest. If the manifest is invalid, DSC raises an error.
-- `get-result` ([reference documentation][03]) - Represents the output from the `dsc resource get`
-  command.
-- `set-result` ([reference documentation][04]) - Represents the output from the `dsc resource set`
-  command.
-- `test-result` ([reference documentation][05]) - Represents the output from the
-  `dsc resource test` command.
-- `configuration` ([reference documentation][06]) - Validates a DSC Configuration document. If the
+- `configuration` ([reference documentation][01]) - Validates a DSC Configuration document. If the
   document is invalid, DSC raises an error.
-- `configuration-get-result` ([reference documentation][07]) - Represents the output from the
+- `dsc-resource` ([reference documentation][02]) - Represents a DSC Resource as returned from the
+  `dsc resource list` command.
+- `resource-manifest` ([reference documentation][03]) - Validates a command resource's manifest. If
+  the manifest is invalid, DSC raises an error.
+- `include` <!-- ([reference documentation][04]) --> - represents the instance schema for the
+  built-in `Microsoft.DSC/Include` importer resource.
+- `configuration-get-result` ([reference documentation][05]) - Represents the output from the
   `dsc config get` command.
-- `configuration-set-result` ([reference documentation][08]) - Represents the output from the
+- `configuration-set-result` ([reference documentation][06]) - Represents the output from the
   `dsc config set` command.
-- `configuration-test-result` ([reference documentation][09]) - Represents the output from the
+- `configuration-test-result` ([reference documentation][07]) - Represents the output from the
   `dsc config test` command.
+- `get-result` ([reference documentation][08]) - Represents the output from the `dsc resource get`
+  command.
+- `resolve-result` <!-- ([reference documentation][09]) --> - Represents the resolved form of the
+  configuration document an `importer` resource emits.
+- `set-result` ([reference documentation][10]) - Represents the output from the `dsc resource set`
+  command.
+- `test-result` ([reference documentation][11]) - Represents the output from the
+  `dsc resource test` command.
 
 ```yaml
-Type:        String
+Type:        string
 Mandatory:   true
 ValidValues: [
-               dsc-resource,
-               resource-manifest,
-               get-result,
-               set-result,
-               test-result,
-               configuration,
-               configuration-get-result,
-               configuration-set-result,
+               configuration
+               dsc-resource
+               resource-manifest
+               include
+               configuration-get-result
+               configuration-set-result
                configuration-test-result
+               get-result
+               resolve-result
+               set-result
+               test-result
              ]
+LongSyntax  : --type <TYPE>
+ShortSyntax : -t <TYPE>
 ```
 
-### -f, --format
+### -o, --output-format
 
-The `--format` option controls the console output format for the command. If the command output is
-redirected or captured as a variable, the output is always JSON.
+<a id="-o"></a>
+<a id="--output-format"></a>
+
+The `--output-format` option controls which format DSC uses for the data the command returns. The
+available formats are:
+
+- `json` to emit the data as a [JSON Line][12].
+- `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
+- `yaml` to emit the data as YAML.
+
+The default output format depends on whether DSC detects that the output is being redirected or
+captured as a variable:
+
+- If the command isn't being redirected or captured, DSC displays the output as the `yaml` format
+  in the console.
+- If the command output is redirected or captured, DSC emits the data as the `json` format to
+  stdout.
+
+When you use this option, DSC uses the specified format regardless of whether the command is being
+redirected or captured.
+
+When the command isn't redirected or captured, the output in the console is formatted for improved
+readability. When the command isn't redirected or captured, the output include terminal sequences
+for formatting.
 
 ```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: yaml
-ValidValues:  [json, pretty-json, yaml]
+Type        : string
+Mandatory   : false
+ValidValues : [json, pretty-json, yaml]
+LongSyntax  : --output-format <OUTPUT_FORMAT>
+ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
 ### -h, --help
 
+<a id="-h"></a>
+<a id="--help"></a>
+
 Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
+application ignores all other options and arguments.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
 
-[01]: ../../schemas/outputs/resource/list.md
-[02]: ../../schemas/resource/manifest/root.md
-[03]: ../../schemas/outputs/resource/get.md
-[04]: ../../schemas/outputs/resource/set.md
-[05]: ../../schemas/outputs/resource/test.md
-[06]: ../../schemas/config/document.md
-[07]: ../../schemas/outputs/config/get.md
-[08]: ../../schemas/outputs/config/set.md
-[09]: ../../schemas/outputs/config/test.md
+## Output
+
+This command returns formatted data representing a JSON Schema specified by the
+[--type option](#--type).
+
+For more information about the formatting of the output data, see the
+[--output-format option](#--output-format).
+
+[01]: ../../schemas/config/document.md
+[02]: ../../schemas/outputs/resource/list.md
+[03]: ../../schemas/resource/manifest/root.md
+[04]: ../../../reference/resources/microsoft/dsc/include/index.md
+[05]: ../../schemas/outputs/config/get.md
+[06]: ../../schemas/outputs/config/set.md
+[07]: ../../schemas/outputs/config/test.md
+[08]: ../../schemas/outputs/resource/get.md
+[09]: ../../schemas/resource/stdout/resolve
+[10]: ../../schemas/outputs/resource/set.md
+[11]: ../../schemas/outputs/resource/test.md
+[12]: https://jsonlines.org/

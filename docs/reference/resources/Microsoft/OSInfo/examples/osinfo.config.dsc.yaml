@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Operating System Assertion
+    type: Microsoft.DSC/Assertion
+    properties:
+      $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+      resources:
+        - name: Is64BitOS
+          type: Microsoft/OSInfo
+          properties:
+            bitness: '32'
