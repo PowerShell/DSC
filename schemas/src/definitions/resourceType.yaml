@@ -2,9 +2,9 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: <HOST>/<PREFIX>/<VERSION>/definitions/resourceType.yaml
 
-title: DSC Resource fully qualified type name
+title: DSC resource fully qualified type name
 description: |
-  The namespaced name of the DSC Resource, using the syntax:
+  The namespaced name of the DSC resource, using the syntax:
 
   owner[.group][.area]/name
 
@@ -22,7 +22,7 @@ markdownDescription: |
   [_Online Documentation_][01]
   ***
 
-  The namespaced name of the DSC Resource, using the syntax:
+  The namespaced name of the DSC resource, using the syntax:
 
   ```yaml
   owner[.group][.area]/name

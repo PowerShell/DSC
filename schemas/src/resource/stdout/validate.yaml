@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/stdout/validate.yaml
+
+title: Validate resource operation stdout
+description: >-
+  Defines the JSON DSC expects a resource to emit to stdout for the **Validate** operation.
+markdownDescription: | # VS Code only
+  ***
+  [_Online Documentation_][00]
+  ***
+
+  Defines the JSON DSC expects a resource to emit to stdout for the **Validate** operation.
+
+  DSC expects the resource to return a JSON object that indicates whether the instance is valid and
+  optionally a string indicating how the resource is invalid.
+
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/validate?<DOCS_VERSION_PIN>
+
+type: object
+required: [valid]
+properties:
+  valid:
+    title: Instance validity
+    description: >-
+      Indicates whether the instance is valid for the resource.
+    markdownDescription: |-
+      ***
+      [_Online Documentation_][00]
+      ***
+
+      Indicates whether the instance is valid for the resource. When the value is `true`, the
+      instance is valid for the resource.
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/validate?<DOCS_VERSION_PIN>#valid
+  reason:
+    title: Reason instance is invalid
+    description: >-
+      Describes how and why the instance is invalid for the resource.
+    markdownDescription: |-
+      ***
+      [_Online Documentation_][00]
+      ***
+
+      Describes how and why the instance is invalid for the resource. Always define this property
+      in the output object when `valid` is `false`. Don't define this property in the output object
+      when `valid` is `true`.
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/validate?<DOCS_VERSION_PIN>#reason

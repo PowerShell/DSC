@@ -2,7 +2,7 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: <HOST>/<PREFIX>/<VERSION>/outputs/config/test.yaml
 
-title: DSC Configuration test command result
+title: Result for `dsc config test` command
 description: >-
   Represents the data structure returned by the `dsc config test` command.
 
@@ -18,8 +18,8 @@ properties:
   results:
     title: Results
     description: >-
-      The results of the `test` method for every DSC Resource instance in the
-      DSC Configuration Document with the instance's name and type.
+      The results of the `test` method for every DSC resource instance in the
+      DSC configuration document with the instance's name and type.
     type: array
     items:
       $ref: /<PREFIX>/<VERSION>/outputs/resource/test.full.yaml
