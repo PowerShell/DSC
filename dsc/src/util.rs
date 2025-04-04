@@ -543,18 +543,19 @@ pub fn set_dscconfigroot(config_path: &str) -> String
 /// # Returns
 /// 
 /// * `bool` - True if the test result is in the desired state, false otherwise
+#[must_use]
 pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
     match &test_result.result {
         TestResult::Resource(result) => {
-            return result.in_desired_state;
+            result.in_desired_state
         },
         TestResult::Group(results) => {
             for result in results {
-                if !in_desired_state(&result) {
+                if !in_desired_state(result) {
                     return false;
                 }
             }
-            return true;
+            true
         }
     }
 }
