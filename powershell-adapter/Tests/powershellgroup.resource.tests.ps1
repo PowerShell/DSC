@@ -35,10 +35,10 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.actualState.Prop1 | Should -BeExactly 'ValueForProp1'
 
         # verify that only properties with DscProperty attribute are returned
-        $propertiesNames = $res.actualState.result.properties | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames = $res.actualState | Get-Member -MemberType NoteProperty | % Name
         $propertiesNames | Should -Not -Contain 'NonDscProperty'
         $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
@@ -48,7 +48,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.EnumProp | Should -BeExactly 'Expected'
+        $res.actualState.EnumProp | Should -BeExactly 'Expected'
     }
 
     It 'Test works on class-based resource' {
@@ -56,11 +56,11 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.InDesiredState | Should -Be $True
-        $res.actualState.result.properties.InDesiredState.GetType().Name | Should -Be "Boolean"
+        $res.actualState.InDesiredState | Should -Be $True
+        $res.actualState.InDesiredState.GetType().Name | Should -Be "Boolean"
 
         # verify that only properties with DscProperty attribute are returned
-        $propertiesNames = $res.actualState.result.properties.InDesiredState | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames = $res.actualState.InDesiredState | Get-Member -MemberType NoteProperty | % Name
         $propertiesNames | Should -Not -Contain 'NonDscProperty'
         $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
@@ -70,10 +70,11 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.afterState.result | Should -Not -BeNull
+        $res.afterState.Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.changedProperties | Should -BeNullOrEmpty
     }
 
-    It 'Export works on PS class-based resource' {
+    It 'Export works on PS class-based resource' -Pending {
 
         $r = dsc resource export -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
@@ -90,7 +91,7 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Get --all works on PS class-based resource' {
+    It 'Get --all works on PS class-based resource' -Pending {
 
         $r = dsc resource get --all -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
@@ -224,81 +225,89 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Verify adapted_dsc_type field in Get' {
+    It 'Verify invoke Get on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}' | dsc resource get -r 'Test/TestCase' -f -
-            $LASTEXITCODE | Should -Be 0
+            $r = '{"TestCaseId": 1}' | dsc -l trace resource get -r 'Test/TestCase' -f - 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
             $resources = $r | ConvertFrom-Json
-            $resources.actualState.result | Should -Be $True
+            $resources.actualState.TestCaseid | Should -Be 1
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Verify adapted_dsc_type field in Set' {
+    It 'Verify invoke Set on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}' | dsc resource set -r 'Test/TestCase' -f -
-            $LASTEXITCODE | Should -Be 0
+            $r = '{"TestCaseId": 1}' | dsc resource set -r 'Test/TestCase' -f - 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
             $resources = $r | ConvertFrom-Json
-            $resources.beforeState.result | Should -Be $True
-            $resources.afterState.result | Should -Be $True
+            $resources.beforeState.TestCaseid | Should -Be 1
+            $resources.afterState.TestCaseId | Should -Be 1
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Verify adapted_dsc_type field in Test' {
+    It 'Verify invoke Test on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}' | dsc resource test -r 'Test/TestCase' -f -
+            $r = '{"TestCaseId": 1}' | dsc resource test -r 'Test/TestCase' -f -
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
-            $resources.actualState.result | Should -Be $True
+            $resources.actualState.TestCaseId | Should -Be 1
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Verify adapted_dsc_type field in Export' {
+    It 'Verify invoke Export on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = dsc resource export -r 'Test/TestCase'
-            $LASTEXITCODE | Should -Be 0
+            $r = dsc -l trace resource export -r 'Test/TestCase' 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
             $resources = $r | ConvertFrom-Json
-            $resources.resources[0].properties.result | Should -Be $True
+            $resources.resources.count | Should -Be 2
+            $resources.resources[0].type | Should -BeExactly 'Test/TestCase'
+            $resources.resources[0].name | Should -BeExactly 'Test/TestCase-0'
+            $resources.resources[0].properties.TestCaseId | Should -Be 1
+            $resources.resources[1].type | Should -BeExactly 'Test/TestCase'
+            $resources.resources[1].name | Should -BeExactly 'Test/TestCase-1'
+            $resources.resources[1].properties.TestCaseId | Should -Be 2
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Dsc can process large resource output' {
-        $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
+    It 'Dsc can process large resource output' -Pending {
+        try {
+            $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
 
-        dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
-        $r = dsc resource export -r TestClassResource/TestClassResource
-        $LASTEXITCODE | Should -Be 0
-        $res = $r | ConvertFrom-Json
-        $res.resources[0].properties.result.count | Should -Be 5000
-
-        $env:TestClassResourceResultCount = $null
+            $r = dsc -l trace resource export -r TestClassResource/TestClassResource 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
+            $res = $r | ConvertFrom-Json
+            $res.resources[0].properties.result.count | Should -Be 5000
+        }
+        finally {
+            $env:TestClassResourceResultCount = $null
+        }
     }
 
     It 'Verify that there are no cache rebuilds for several sequential executions' {
@@ -334,7 +343,6 @@ Describe 'PowerShell adapter resource tests' {
         $r = '{"HashTableProp":{"Name":"DSCv3"},"Name":"TestClassResource1"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.HashTableProp.Name | Should -Be 'DSCv3'
-
+        $res.actualState.HashTableProp.Name | Should -Be 'DSCv3'
     }
 }

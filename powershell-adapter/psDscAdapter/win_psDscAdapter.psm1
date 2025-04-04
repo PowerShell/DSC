@@ -231,7 +231,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*psm1", "*.mof" -ea Ignore | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | % {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
@@ -268,11 +268,6 @@ function Get-DscResourceObject {
     $inputObj = $jsonInput | ConvertFrom-Json
     $desiredState = [System.Collections.Generic.List[Object]]::new()
 
-    # catch potential for improperly formatted configuration input
-    if ($inputObj.resources -and -not $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        'The input has a top level property named "resources" but is not a configuration. If the input should be a configuration, include the property: "metadata": {"Microsoft.DSC": {"context": "Configuration"}}' | Write-DscTrace -Operation Warn
-    }
-
     # match adapter to version of powershell
     if ($PSVersionTable.PSVersion.Major -le 5) {
         $adapterName = 'Microsoft.Windows/WindowsPowerShell'
@@ -281,26 +276,15 @@ function Get-DscResourceObject {
         $adapterName = 'Microsoft.DSC/PowerShell'
     }
 
-    if ($null -ne $inputObj.metadata -and $null -ne $inputObj.metadata.'Microsoft.DSC' -and $inputObj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        # change the type from pscustomobject to dscResourceObject
-        $inputObj.resources | ForEach-Object -Process {
-            $desiredState += [dscResourceObject]@{
-                name       = $_.name
-                type       = $_.type
-                properties = $_.properties
-            }
-        }
-    }
-    else {
-        # mimic a config object with a single resource
-        $type = $inputObj.adapted_dsc_type
-        $inputObj.psobject.properties.Remove('adapted_dsc_type')
+    # change the type from pscustomobject to dscResourceObject
+    $inputObj.resources | ForEach-Object -Process {
         $desiredState += [dscResourceObject]@{
-            name       = $adapterName
-            type       = $type
-            properties = $inputObj
+            name       = $_.name
+            type       = $_.type
+            properties = $_.properties
         }
     }
+
     return $desiredState
 }
 
@@ -377,7 +361,7 @@ function Invoke-DscOperation {
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
                     Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property)"
-                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
+                    $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property -ErrorAction Stop
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
                         $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }

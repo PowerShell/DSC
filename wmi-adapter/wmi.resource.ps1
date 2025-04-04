@@ -32,14 +32,6 @@ function Write-Trace {
     $host.ui.WriteErrorLine($trace)
 }
 
-function IsConfiguration($obj) {
-    if ($null -ne $obj.metadata -and $null -ne $obj.metadata.'Microsoft.DSC' -and $obj.metadata.'Microsoft.DSC'.context -eq 'configuration') {
-        return $true
-    }
-
-    return $false
-}
-
 if ($Operation -eq 'List')
 {
     $clases = Get-CimClass
@@ -89,114 +81,83 @@ elseif ($Operation -eq 'Get')
 
     $result = @()
 
-    if (IsConfiguration $inputobj_pscustomobj) # we are processing a config batch
+    foreach ($r in $inputobj_pscustomobj.resources)
     {
-        foreach($r in $inputobj_pscustomobj.resources)
+        $type_fields = $r.type -split "/"
+        $wmi_namespace = $type_fields[0].Replace('.','\')
+        $wmi_classname = $type_fields[1]
+
+        # TODO: identify key properties and add WHERE clause to the query
+        if ($r.properties)
         {
-            $type_fields = $r.type -split "/"
-            $wmi_namespace = $type_fields[0].Replace('.','\')
-            $wmi_classname = $type_fields[1]
-
-            # TODO: identify key properties and add WHERE clause to the query
-            if ($r.properties)
+            $query = "SELECT $($r.properties.psobject.properties.name -join ',') FROM $wmi_classname"
+            $where = " WHERE "
+            $useWhere = $false
+            $first = $true
+            foreach ($property in $r.properties.psobject.properties)
             {
-                $query = "SELECT $($r.properties.psobject.properties.name -join ',') FROM $wmi_classname"
-                $where = " WHERE "
-                $useWhere = $false
-                $first = $true
-                foreach ($property in $r.properties.psobject.properties)
+                # TODO: validate property against the CIM class to give better error message
+                if ($null -ne $property.value)
                 {
-                    # TODO: validate property against the CIM class to give better error message
-                    if ($null -ne $property.value)
+                    $useWhere = $true
+                    if ($first)
                     {
-                        $useWhere = $true
-                        if ($first)
-                        {
-                            $first = $false
-                        }
-                        else
-                        {
-                            $where += " AND "
-                        }
+                        $first = $false
+                    }
+                    else
+                    {
+                        $where += " AND "
+                    }
 
-                        if ($property.TypeNameOfValue -eq "System.String")
-                        {
-                            $where += "$($property.Name) = '$($property.Value)'"
-                        }
-                        else
-                        {
-                            $where += "$($property.Name) = $($property.Value)"
-                        }
+                    if ($property.TypeNameOfValue -eq "System.String")
+                    {
+                        $where += "$($property.Name) = '$($property.Value)'"
+                    }
+                    else
+                    {
+                        $where += "$($property.Name) = $($property.Value)"
                     }
                 }
-                if ($useWhere)
-                {
-                    $query += $where
-                }
-                Write-Trace -Level Trace -message "Query: $query"
-                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Stop
             }
-            else
+            if ($useWhere)
             {
-                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
+                $query += $where
             }
+            Write-Trace -Level Trace -message "Query: $query"
+            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Stop
+        }
+        else
+        {
+            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
+        }
 
-            if ($wmi_instances)
-            {
-                $instance_result = @{}
-                # TODO: for a `Get`, they key property must be provided so a specific instance is returned rather than just the first
-                $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
-                $wmi_instance.psobject.properties | %{
-                    if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
+        if ($wmi_instances)
+        {
+            $instance_result = [ordered]@{}
+            # TODO: for a `Get`, they key property must be provided so a specific instance is returned rather than just the first
+            $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
+            $wmi_instance.psobject.properties | %{
+                if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
+                {
+                    if ($r.properties)
                     {
-                        if ($r.properties)
-                        {
-                            if ($r.properties.psobject.properties.name -contains $_.Name)
-                            {
-                                $instance_result[$_.Name] = $_.Value
-                            }
-                        }
-                        else
+                        if ($r.properties.psobject.properties.name -contains $_.Name)
                         {
                             $instance_result[$_.Name] = $_.Value
                         }
                     }
-                }
-
-                $result += @($instance_result)
-            }
-        }
-    }
-    else # we are processing an individual resource call
-    {
-        $type_fields = $inputobj_pscustomobj.adapted_dsc_type -split "/"
-        $wmi_namespace = $type_fields[0].Replace('.','\')
-        $wmi_classname = $type_fields[1]
-
-        #TODO: add filtering based on supplied properties of $inputobj_pscustomobj
-        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
-
-        if ($wmi_instances)
-        {
-            # TODO: there's duplicate code here between configuration and non-configuration execution and should be refactored into a helper
-            $wmi_instance = $wmi_instances[0]
-            $result = @{}
-            $wmi_instance.psobject.properties | %{
-                if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim")))
-                {
-                    $result[$_.Name] = $_.Value
+                    else
+                    {
+                        $instance_result[$_.Name] = $_.Value
+                    }
                 }
             }
-        }
-        else
-        {
-            $errmsg = "Can not find type " + $inputobj_pscustomobj.type + "; please ensure that Get-CimInstance returns this resource type"
-            Write-Trace $errmsg
-            exit 1
+
+            $result += [pscustomobject]@{ name = $r.name; type = $r.type; properties = $instance_result }
         }
     }
 
-    $result | ConvertTo-Json -Compress
+    @{result = $result } | ConvertTo-Json -Depth 10 -Compress
 }
 elseif ($Operation -eq 'Validate')
 {

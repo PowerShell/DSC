@@ -46,7 +46,7 @@ Describe 'PowerShell adapter resource tests' {
 '@
     $yaml | dsc -l trace config get -f - 2> "$TestDrive/tracing.txt"
     $LASTEXITCODE | Should -Be 2
-    "$TestDrive/tracing.txt" | Should -FileContentMatch 'DSC resource TestClassResourceNotExist/TestClassResourceNotExist module not found.'
+    "$TestDrive/tracing.txt" | Should -FileContentMatch "DSC resource 'TestClassResourceNotExist/TestClassResourceNotExist' module not found."
   }
 
   It 'Test works on config with class-based resources' {
@@ -201,5 +201,40 @@ Describe 'PowerShell adapter resource tests' {
     $out = $yaml | dsc config get -f - | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.results.result.actualState.result.properties.HashTableProp.Name | Should -BeExactly 'DSCv3'
+  }
+
+  It 'Config calling PS Resource directly works for <operation>' -TestCases @(
+    @{ Operation = 'get' }
+    @{ Operation = 'set' }
+    @{ Operation = 'test' }
+  ) {
+    param($Operation)
+
+    $yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Class-resource Info
+              type: TestClassResource/TestClassResource
+              properties:
+                Name: 'TestClassResource1'
+                HashTableProp: 
+                  Name: 'DSCv3'
+"@
+
+    $out = dsc config $operation -i $yaml | ConvertFrom-Json
+    $text = dsc config $operation -i $yaml | Out-String
+    $LASTEXITCODE | Should -Be 0
+    switch ($Operation) {
+      'get' {
+        $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+      }
+      'set' {
+        $out.results[0].result.beforeState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+        $out.results[0].result.afterState.Name | Should -BeExactly 'TestClassResource1' -Because $text
+      }
+      'test' {
+        $out.results[0].result.actualState.InDesiredState | Should -BeFalse -Because $text
+      }
+    }
   }
 }

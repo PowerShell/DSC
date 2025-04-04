@@ -55,12 +55,9 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, adapter_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
-    let export_result = match adapter_resource {
-        Some(_) => adapter_resource.unwrap().export(input)?,
-        _ => resource.export(input)?
-    };
+    let export_result = resource.export(input)?;
 
     if resource.kind == Kind::Exporter {
         for instance in &export_result.actual_state {
@@ -85,7 +82,6 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
 // they are re-used to apply configuration
 fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<String, Value>>, DscError> {
-    debug!("{}", t!("configure.mod.escapePropertyValues"));
     let mut result: Map<String, Value> = Map::new();
     for (name, value) in properties {
         match value {
@@ -566,7 +562,7 @@ impl Configurator {
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -713,7 +709,6 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    context: None,
                     version: Some(env!("CARGO_PKG_VERSION").to_string()),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),

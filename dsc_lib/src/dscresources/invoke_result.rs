@@ -136,7 +136,7 @@ pub struct ValidateResult {
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ExportResult {
-    /// The state of the resource as it was returned by the Get method.
+    /// The state of the resource as it was returned by the Export method.
     #[serde(rename = "actualState")]
     pub actual_state: Vec<Value>,
 }
