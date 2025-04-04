@@ -14,6 +14,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "./psDscAdapter/powershell.resource.ps1 List"
         ]
@@ -26,6 +28,8 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./psDscAdapter/powershell.resource.ps1 Get"
       ],
@@ -37,6 +41,8 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./psDscAdapter/powershell.resource.ps1 Set"
       ],
@@ -49,6 +55,8 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./psDscAdapter/powershell.resource.ps1 Test"
       ],
@@ -61,6 +69,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
           ]
