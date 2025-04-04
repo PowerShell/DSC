@@ -73,6 +73,7 @@ testInputEmpty = "Expected input is required"
 [subcommand]
 actualStateNotObject = "actual_state is not an object"
 unexpectedTestResult = "Unexpected Group TestResult"
+assertionFailed = "Assertion failed for resource '%{resource_type}'"
 message = "message"
 currentDirectory = "current directory"
 noParameters = "No parameters specified"

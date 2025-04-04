@@ -58,6 +58,8 @@ pub enum SubCommand {
         // Used to inform when DSC is used as a group resource to modify it's output
         #[clap(long, hide = true)]
         as_group: bool,
+        #[clap(long, hide = true)]
+        as_assert: bool,
         // Used to inform when DSC is used as a include group resource
         #[clap(long, hide = true)]
         as_include: bool,
