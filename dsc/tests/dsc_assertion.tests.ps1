@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Assertion resource tests' {
+Describe 'Assertion resource tests' -Skip:(!$IsWindows) {
     It 'Example works for <operation>' -TestCases @(
         @{ operation = 'get' }
         @{ operation = 'set' }
