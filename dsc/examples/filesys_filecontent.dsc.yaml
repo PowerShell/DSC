@@ -1,0 +1,9 @@
+# Example configuration mixing native app resources with classic PS resources
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Set file content
+  type: Microsoft.DSC/FileContent
+  properties:
+    path: "[path(envvar('TEMP'), 'test-file-resource.txt')]"
+    content: "Hello, World!"
+    _exist: true
