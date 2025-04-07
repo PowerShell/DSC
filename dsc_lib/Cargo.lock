@@ -449,7 +449,7 @@ dependencies = [
  "tracing-indicatif",
  "tree-sitter",
  "tree-sitter-dscexpression",
- "tree-sitter-rust",
+ "tree-sitter-rust 0.24.0",
  "uuid",
  "which",
 ]
@@ -1756,7 +1756,7 @@ dependencies = [
  "cc",
  "tree-sitter",
  "tree-sitter-language",
- "tree-sitter-rust",
+ "tree-sitter-rust 0.23.2",
 ]
 
 [[package]]
@@ -1770,6 +1770,16 @@ name = "tree-sitter-rust"
 version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4d64d449ca63e683c562c7743946a646671ca23947b9c925c0cfbe65051a4af"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-rust"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b9b18034c684a2420722be8b2a91c9c44f2546b631c039edf575ccba8c61be1"
 dependencies = [
  "cc",
  "tree-sitter-language",
