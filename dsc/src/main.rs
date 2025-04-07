@@ -49,11 +49,11 @@ fn main() {
             let mut cmd = Args::command();
             generate(shell, &mut cmd, "dsc", &mut io::stdout());
         },
-        SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_include } => {
+        SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
             if let Some(file_name) = parameters_file {
                 info!("{}: {file_name}", t!("main.readingParametersFile"));
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_include, progress_format),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format),
                     Err(err) => {
                         error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
                         exit(util::EXIT_INVALID_INPUT);
@@ -61,7 +61,7 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_include, progress_format);
+                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
             }
         },
         SubCommand::Resource { subcommand } => {

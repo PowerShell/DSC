@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, set_dscconfigroot, validate_json};
+use crate::util::{DSC_CONFIG_ROOT, EXIT_DSC_ERROR, EXIT_DSC_ASSERTION_FAILED, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR, get_schema, write_output, get_input, in_desired_state, set_dscconfigroot, validate_json};
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -106,7 +106,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool)
+pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool, as_assert: &bool)
 {
     match configurator.invoke_test() {
         Ok(result) => {
@@ -115,6 +115,10 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     let mut result_configuration = Configuration::new();
                     result_configuration.resources = Vec::new();
                     for test_result in result.results {
+                        if *as_assert && !in_desired_state(&test_result) {
+                            error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
+                            exit(EXIT_DSC_ASSERTION_FAILED);
+                        }
                         let properties = match test_result.result {
                             TestResult::Resource(test_response) => {
                                 if test_response.actual_state.is_object() {
@@ -150,6 +154,10 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                 else if *as_get {
                     let mut group_result = Vec::<ResourceGetResult>::new();
                     for test_result in result.results {
+                        if *as_assert && !in_desired_state(&test_result) {
+                            error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
+                            exit(EXIT_DSC_ASSERTION_FAILED);
+                        }
                         group_result.push(test_result.into());
                     }
                     match serde_json::to_string(&group_result) {
@@ -161,6 +169,14 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     }
                 }
                 else {
+                    if *as_assert {
+                        for test_result in &result.results {
+                            if !in_desired_state(test_result) {
+                                error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
+                                exit(EXIT_DSC_ASSERTION_FAILED);
+                            }
+                        }
+                    }
                     match serde_json::to_string(&(result.results)) {
                         Ok(json) => json,
                         Err(err) => {
@@ -252,7 +268,7 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_include: &bool, progress_format: ProgressFormat) {
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
@@ -363,7 +379,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             config_set(&mut configurator, output_format.as_ref(), as_group);
         },
         ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
-            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config);
+            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config, as_assert);
         },
         ConfigSubCommand::Validate { input, file, output_format} => {
             let mut result = ValidateResult {

@@ -3,6 +3,7 @@
 
 use crate::args::{DscType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
+use dsc_lib::configure::config_result::ResourceTestResult;
 use dsc_lib::{
     configure::{
         config_doc::Configuration,
@@ -54,6 +55,7 @@ pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
 pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
+pub const EXIT_DSC_ASSERTION_FAILED: i32 = 8;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
@@ -555,4 +557,31 @@ pub fn set_dscconfigroot(config_path: &str) -> String
     env::set_var(DSC_CONFIG_ROOT, config_root_path);
 
     full_path.to_string_lossy().into_owned()
+}
+
+
+/// Check if the test result is in the desired state.
+/// 
+/// # Arguments
+/// 
+/// * `test_result` - The test result to check
+/// 
+/// # Returns
+/// 
+/// * `bool` - True if the test result is in the desired state, false otherwise
+#[must_use]
+pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
+    match &test_result.result {
+        TestResult::Resource(result) => {
+            result.in_desired_state
+        },
+        TestResult::Group(results) => {
+            for result in results {
+                if !in_desired_state(result) {
+                    return false;
+                }
+            }
+            true
+        }
+    }
 }
