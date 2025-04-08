@@ -29,7 +29,7 @@ serde_yaml = { version = "0.9" }
 thiserror = "2.0"
 security_context_lib = { path = "../security_context_lib" }
 semver = "1.0"
-tokio = { version = "1.41", features = ["full"] }
+tokio = { version = "1.43", features = ["full"] }
 tracing = "0.1"
 tracing-indicatif = { version = "0.3" }
 tree-sitter = "0.25"
