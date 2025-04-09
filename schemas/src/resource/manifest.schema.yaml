@@ -4,12 +4,12 @@ $id: <HOST>/<PREFIX>/<VERSION>/resource/manifest.schema.yaml
 
 title: Instance Schema
 description: >-
-  Defines how DSC must validate a JSON blob representing an instance of the DSC Resource.
+  Defines how DSC must validate a JSON blob representing an instance of the DSC resource.
 
 # While the current implementation is somewhat confusing in the schema, I
 # think it's actually easier to document. Mainly, the complexity comes from
 # the expected object having exactly one property with exclusive key names.
-# If a DSC Resource could specify a combination of these values, the schema
+# If a DSC resource could specify a combination of these values, the schema
 # would be less complex.
 type: object
 oneOf:
@@ -19,8 +19,8 @@ properties:
   command:
     title: Instance Schema Command
     description: >-
-      Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob
-      representing an instance of the DSC Resource.
+      Defines how DSC must call the DSC resource to get the JSON Schema for validating a JSON blob
+      representing an instance of the DSC resource.
     type: object
     required:
       - executable
@@ -74,13 +74,17 @@ properties:
     # VS Code only
     markdownDescription: |
       ***
-      [_Online Documentation_][01]
+      [_Online Documentation_][00]
       ***
 
-      Defines how DSC must call the DSC Resource to get the JSON Schema for validating a JSON blob
-      representing an instance of the DSC Resource.
+      Defines how DSC must call the DSC resource to get the JSON Schema for validating a JSON blob
+      representing an instance of the DSC resource.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
+      For more information about the output DSC expects the resource to emit for this command, see
+      [Schema resource command stdout][01].
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#command
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/schema?<DOCS_VERSION_PIN>
     defaultSnippets:
       - label: ' Define without arguments'
         markdownDescription: |
@@ -100,14 +104,14 @@ properties:
     title: Embedded Instance Schema
     description: >-
       Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the
-      DSC Resource.
+      DSC resource.
     markdownDescription: | # VS Code only
       ***
       [_Online Documentation_][01]
       ***
 
       Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the
-      DSC Resource.
+      DSC resource.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>
     type: object
@@ -119,24 +123,24 @@ properties:
       type:
         title: Instance Type
         description: >-
-          Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always
+          Defines the JSON type for an instance of the DSC resource. DSC resource instances always
           have the `object` type.
-        # Ensures the DSC Resource is always an object
+        # Ensures the DSC resource is always an object
         const: object
         markdownDescription: | # VS Code only
           ***
           [_Online Documentation_][01]
           ***
 
-          Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always
+          Defines the JSON type for an instance of the DSC resource. DSC resource instances always
           have the `object` type.
 
           [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>#type
       $schema:
-        # Ensures the DSC Resource always uses a schema we can understand
-        title: DSC Resource instance schema dialect
+        # Ensures the DSC resource always uses a schema we can understand
+        title: DSC resource instance schema dialect
         description: >-
-          Defines which dialect of JSON Schema the DSC Resource is using to validate instances.
+          Defines which dialect of JSON Schema the DSC resource is using to validate instances.
         type: string
         format: uri-reference
         enum:
@@ -149,7 +153,7 @@ properties:
           [_Online Documentation_][01]
           ***
 
-          Defines the JSON type for an instance of the DSC Resource. DSC Resource instances always
+          Defines the JSON type for an instance of the DSC resource. DSC resource instances always
           have the `object` type. DSC only supports JSON Schema Draft 07 and later.
 
           [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>#type
@@ -185,9 +189,9 @@ properties:
 
               [01]: https://json-schema.org/specification-links.html#draft-7
       $id:
-        title: DSC Resource instance schema ID
+        title: DSC resource instance schema ID
         description: >-
-          Defines the unique ID for the DSC Resource's instance schema. If the instance schema is
+          Defines the unique ID for the DSC resource's instance schema. If the instance schema is
           published to its own public URI, set this keyword to that URI.
         # Currently optional - maybe we should require this?
         type: string
@@ -197,7 +201,7 @@ properties:
           [_Online Documentation_][01]
           ***
 
-          Defines the unique ID for the DSC Resource's instance schema. If the instance schema is
+          Defines the unique ID for the DSC resource's instance schema. If the instance schema is
           published to its own public URI, set this keyword to that URI.
 
           [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/property?<DOCS_VERSION_PIN>#id
@@ -339,7 +343,7 @@ properties:
           _exist:
             title: 'Standard Property: _exist'
             description: >-
-              Indicates that the DSC Resource uses the standard `_exist` property to specify
+              Indicates that the DSC resource uses the standard `_exist` property to specify
               whether an instance should exist as a boolean value that defaults to `true`.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/exist.yaml
@@ -367,9 +371,9 @@ properties:
           _inDesiredState:
             title: 'Standard Property: _inDesiredState'
             description: >-
-              Indicates that the DSC Resource returns this value for it's own `test` method. This
+              Indicates that the DSC resource returns this value for it's own `test` method. This
               read-only property is mandatory when the manifest defines the `test` property. It
-              shouldn't be included if the DSC Resource relies on DSC's synthetic testing.
+              shouldn't be included if the DSC resource relies on DSC's synthetic testing.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/inDesiredState.yaml
             # VS Code only
@@ -378,16 +382,16 @@ properties:
               [_Online Documentation_][01]
               ***
 
-              Indicates that the DSC Resource returns this value for it's own `test` method. This
+              Indicates that the DSC resource returns this value for it's own `test` method. This
               property is mandatory when the manifest defines the `test` property. It shouldn't
-              be included if the DSC Resource relies on DSC's synthetic testing.
+              be included if the DSC resource relies on DSC's synthetic testing.
 
               [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/indesiredstate?<DOCS_VERSION_PIN>
           _purge:
             title: 'Standard Property: _purge'
             description: >-
-              Indicates that the DSC Resource uses the standard `_purge` property to specify
-              whether the DSC Resource should remove all non-specified members when it manages
+              Indicates that the DSC resource uses the standard `_purge` property to specify
+              whether the DSC resource should remove all non-specified members when it manages
               an array of members or values.
             const:
               $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/purge.yaml
@@ -397,8 +401,8 @@ properties:
               [_Online Documentation_][01]
               ***
 
-              Indicates that the DSC Resource uses the standard `_purge` property to specify
-              whether the DSC Resource should remove all non-specified members when it manages
+              Indicates that the DSC resource uses the standard `_purge` property to specify
+              whether the DSC resource should remove all non-specified members when it manages
               an array of members or values.
 
               [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/purge?<DOCS_VERSION_PIN>
@@ -416,7 +420,7 @@ properties:
               [_Online Documentation_][01]
               ***
 
-              Indicates that the DSC Resource uses the standard `_rebootRequested` property to
+              Indicates that the DSC resource uses the standard `_rebootRequested` property to
               report whether the machine should be rebooted after the `set` method executes.
 
               [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/rebootrequested?<DOCS_VERSION_PIN>
@@ -469,7 +473,7 @@ markdownDescription: |
   [_Online Documentation_][01]
   ***
 
-  Defines how DSC must validate a JSON blob representing an instance of the DSC Resource.
+  Defines how DSC must validate a JSON blob representing an instance of the DSC resource.
 
   The JSON schema can be defined dynamically with the `command` property or statically with the
   `embedded` property.

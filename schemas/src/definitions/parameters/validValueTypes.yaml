@@ -4,7 +4,7 @@ $id:     <HOST>/<PREFIX>/<VERSION>/definitions/parameters/validValueTypes.yaml
 
 $comment: |
   This schema fragment makes it a little easier to compose the valid properties
-  for DSC Configuration document parameters. As-written, values must be one of
+  for DSC configuration document parameters. As-written, values must be one of
   those on this list - the schema definition for dataType excludes `null` and
   numbers with fractional parts, like `3.5`.
 
