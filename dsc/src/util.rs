@@ -330,11 +330,11 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     if !policy_is_used {
         if let Some(v) = trace_level_arg {
             tracing_setting.level = v.clone();
-        };
+        }
         if let Some(v) = trace_format_arg {
             tracing_setting.format = v.clone();
-        };
-    };
+        }
+    }
 
     // convert to 'tracing' crate type
     let tracing_level = match tracing_setting.level {
@@ -421,7 +421,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
 
     if let Err(err) = compiled_schema.validate(json) {
         return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed"))));
-    };
+    }
 
     Ok(())
 }
