@@ -316,7 +316,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         if *what_if {
             configurator.context.execution_type = ExecutionKind::WhatIf;
         }
-    };
+    }
 
     let parameters: Option<serde_json::Value> = match if new_parameters.is_some() {
         &new_parameters
@@ -407,7 +407,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
                         error!("{err}");
                         result.valid = false;
                     }
-                };
+                }
             }
 
             let Ok(json) = serde_json::to_string(&result) else {

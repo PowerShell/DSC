@@ -163,7 +163,6 @@ fn check_debug() {
                 }
             } else {
                 eprintln!("{}", t!("main.debugEventUnexpectedError", e = event : {:?}));
-                continue;
             }
         }
     }
