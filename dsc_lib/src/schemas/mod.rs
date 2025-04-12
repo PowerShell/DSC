@@ -219,7 +219,7 @@ pub(crate) fn get_recognized_schema_uri(
 /// 
 /// Parameters:
 /// 
-///- `schema_file_base_name` - specify the base name for the schema file, like `document` for
+/// - `schema_file_base_name` - specify the base name for the schema file, like `document` for
 ///   the configuration document schema or `manifest` for the resource manifest schema.
 /// - `schema_folder_path` - specify the folder path for the schema file relative to the version
 ///   folder, like `config` for the configuration document schema or `resource` for the resource
@@ -300,7 +300,7 @@ pub(crate) fn get_recognized_uris_subschema(
 /// 
 /// Parameters:
 /// 
-///- `schema_file_base_name` - specify the base name for the schema file, like `document` for
+/// - `schema_file_base_name` - specify the base name for the schema file, like `document` for
 ///   the configuration document schema or `manifest` for the resource manifest schema.
 /// - `schema_folder_path` - specify the folder path for the schema file relative to the version
 ///   folder, like `config` for the configuration document schema or `resource` for the resource

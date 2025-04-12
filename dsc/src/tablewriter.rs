@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT License.
+
 use crossterm::terminal::size;
 
 pub struct Table {
@@ -45,6 +48,7 @@ impl Table {
     }
 
     /// Print the table to the console.
+    #[allow(clippy::format_push_string)]
     pub fn print(&self) {
         let (width, _) = size().unwrap_or((80, 25));
         // make header bright green
