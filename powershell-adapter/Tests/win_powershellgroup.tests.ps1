@@ -133,35 +133,46 @@ Write-Host 'Hello from TestModule!'
         $yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
-  - name: File resource
-    type: PSDesiredStateConfiguration/File
+  - name: File
+    type: Microsoft.Windows/WindowsPowerShell
     properties:
-      DestinationPath: $testdrive\test.txt
-  - name: File assertion
+      resources:
+        - name: File
+          type: PSDesiredStateConfiguration/File
+          properties:
+            DestinationPath: $testdrive\test.txt
+  - name: File present
     type: Microsoft.DSC/Assertion
     properties:
-    `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-    resources:
-    - name: File
-      type: PSDesiredStateConfiguration/File
-      properties:
-        DestinationPath: $testdrive\test.txt
+      `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+      resources:
+        - name: Use powershell adapter
+          type: Microsoft.Windows/WindowsPowerShell
+          properties:
+            resources:
+              - name: File present
+                type: PSDesiredStateConfiguration/File
+                properties:
+                  DestinationPath: $testDrive\test.txt
     dependsOn:
-    - "[resourceId('PSDesiredStateConfiguration/File', 'File resource')]"
+      - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
   - name: TestPSRepository
     type: DscResources/TestPSRepository
     properties: 
       Name: NuGet
     dependsOn:
-      - "[resourceId('PSDesiredStateConfiguration/File', 'File resource')]"
-      - "[resourceId('Microsoft.DSC/Assertion', 'File assertion')]"
+      - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
+      - "[resourceId('Microsoft.DSC/Assertion', 'File present')]"
 "@
-        $r = dsc config test -i $yaml | ConvertFrom-Json
+        # outputting to file because dsc doesn't handle the yaml string correctly when dependsOn is used
+        $filePath = "$testdrive\test.assertion.dsc.resource.yaml"
+        $yaml | Set-Content -Path $filePath -Force
+        $r = dsc config test -f $filePath | ConvertFrom-Json
+        $r = dsc config test -f "$testdrive\test.assertion.dsc.resource.yaml" | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $r.results[0].result.inDesiredState | Should -Be $true
         $cache = Get-Content -Raw -Path $cacheFilePath
         $cache.ResourceCache | Should -Contain @('DscResources/TestPSRepository', 'PSDesiredStateConfiguration/File')
-
 
         # Clean up the test module directory
         Remove-Item -Path "$testModuleDir" -Recurse -Force -ErrorAction Ignore
