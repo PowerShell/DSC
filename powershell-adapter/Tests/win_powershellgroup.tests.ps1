@@ -88,9 +88,9 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     # }
 
     It 'Verify if assertion is used that no module is cleared in the cache' -Skip:(!$IsWindows) {
-        BeforeAll {
-            New-Item -Path "$testdrive\test.txt" -ItemType File -Force | Out-Null
-        }
+        # create a test file in the test drive
+        $testFile = "$testdrive\test.txt"
+        New-Item -Path $testFile -ItemType File -Force | Out-Null
 
         # remove cache file
         $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
@@ -140,7 +140,7 @@ resources:
         - name: File
           type: PSDesiredStateConfiguration/File
           properties:
-            DestinationPath: $testdrive\test.txt
+            DestinationPath: $testfile
   - name: File present
     type: Microsoft.DSC/Assertion
     properties:
@@ -153,7 +153,7 @@ resources:
               - name: File present
                 type: PSDesiredStateConfiguration/File
                 properties:
-                  DestinationPath: $testDrive\test.txt
+                  DestinationPath: $testFile
     dependsOn:
       - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
   - name: TestPSRepository
