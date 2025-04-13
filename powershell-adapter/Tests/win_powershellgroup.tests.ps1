@@ -164,17 +164,15 @@ resources:
       - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
       - "[resourceId('Microsoft.DSC/Assertion', 'File present')]"
 "@
-        # outputting to file because dsc doesn't handle the yaml string correctly when dependsOn is used
+        # output to file for Windows PowerShell 5.1
         $filePath = "$testdrive\test.assertion.dsc.resource.yaml"
         $yaml | Set-Content -Path $filePath -Force
         dsc config test -f $filePath 2> "$TestDrive/error.txt"
         $LASTEXITCODE | Should -Be 1
 
-        $cache = Get-Content -Raw -Path $cacheFilePath
-        $cache.ResourceCache | Should -Contain @('PSTestModule/TestPSRepository', 'PSDesiredStateConfiguration/File')
-
-        # Clean up the test module directory
-        Remove-Item -Path "$testModuleDir" -Recurse -Force -ErrorAction Ignore
+        $cache = Get-Content -Path $cacheFilePath -Raw | ConvertFrom-Json
+        $cache.ResourceCache.Type | Should -Contain 'PSTestModule/TestPSRepository'
+        $cache.ResourceCache.Type | Should -Contain 'PSDesiredStateConfiguration/File'
     }
 
     It '_inDesiredState is returned correction: <Context>' -Skip:(!$IsWindows) -TestCases @(
