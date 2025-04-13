@@ -30,7 +30,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
         $r = dsc resource list --adapter Microsoft.Windows/WindowsPowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        ($resources | ? {$_.Type -eq 'PSDesiredStateConfiguration/File'}).Count | Should -Be 1
+        ($resources | Where-Object {$_.Type -eq 'PSDesiredStateConfiguration/File'}).Count | Should -Be 1
     }
 
     It 'Get works on Binary "File" resource' -Skip:(!$IsWindows){
@@ -72,7 +72,6 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     }
 
     It 'Verify that there are no cache rebuilds for several sequential executions' -Skip:(!$IsWindows) {
-
         # remove cache file
         $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
         Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
@@ -82,10 +81,90 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
 
         # next executions following shortly after should Not rebuild the cache
-        1..3 | %{
+        1..3 | ForEach-Object {
             dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
             "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
         }
+    }
+
+    It 'Verify if assertion is used that no module is cleared in the cache' -Skip:(!$IsWindows) {
+        BeforeAll {
+            New-Item -Path "$testdrive\test.txt" -ItemType File -Force | Out-Null
+        }
+
+        # remove cache file
+        $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
+        Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
+
+        # build the cache
+        dsc resource list --adapter Microsoft.Windows/WindowsPowerShell | Out-Null
+
+        # Create a test module in the test drive
+        $testModuleDir = "$testdrive\TestModule\1.0.0"
+        New-Item -Path $testModuleDir -ItemType Directory -Force | Out-Null
+
+        $manifestContent = @"
+        @{
+            RootModule = 'TestModule.psm1'
+            ModuleVersion = '1.0.0'
+            GUID = $([guid]::NewGuid().Guid)
+            Author = 'Microsoft Corporation'
+            CompanyName = 'Microsoft Corporation'
+            Copyright = '(c) Microsoft Corporation. All rights reserved.'
+            Description = 'Test module for DSC tests'
+            PowerShellVersion = '5.1'
+            DscResourcesToExport = @()
+            FunctionsToExport = @()
+            CmdletsToExport = @()
+            VariablesToExport = @()
+            AliasesToExport = @()
+        }
+"@
+        Set-Content -Path "$testModuleDir\TestModule.psd1" -Value $manifestContent
+
+        $scriptContent = @"
+Write-Host 'Hello from TestModule!'
+"@
+        Set-Content -Path "$testModuleDir\TestModule.psm1" -Value $scriptContent
+
+        # Add the test module directory to PSModulePath
+        $env:PSModulePath += [System.IO.Path]::PathSeparator + $testdrive
+
+        $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: File resource
+    type: PSDesiredStateConfiguration/File
+    properties:
+      DestinationPath: $testdrive\test.txt
+  - name: File assertion
+    type: Microsoft.DSC/Assertion
+    properties:
+    `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+    - name: File
+      type: PSDesiredStateConfiguration/File
+      properties:
+        DestinationPath: $testdrive\test.txt
+    dependsOn:
+    - "[resourceId('PSDesiredStateConfiguration/File', 'File resource')]"
+  - name: TestPSRepository
+    type: DscResources/TestPSRepository
+    properties: 
+      Name: NuGet
+    dependsOn:
+      - "[resourceId('PSDesiredStateConfiguration/File', 'File resource')]"
+      - "[resourceId('Microsoft.DSC/Assertion', 'File assertion')]"
+"@
+        $r = dsc config test -i $yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $r.results[0].result.inDesiredState | Should -Be $true
+        $cache = Get-Content -Raw -Path $cacheFilePath
+        $cache.ResourceCache | Should -Contain @('DscResources/TestPSRepository', 'PSDesiredStateConfiguration/File')
+
+
+        # Clean up the test module directory
+        Remove-Item -Path "$testModuleDir" -Recurse -Force -ErrorAction Ignore
     }
 
     It '_inDesiredState is returned correction: <Context>' -Skip:(!$IsWindows) -TestCases @(
