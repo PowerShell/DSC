@@ -4,16 +4,19 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.validate.yaml
 
 title: Validate Method
 description: >-
-  Defines how DSC must call the DSC Resource to validate the state of an instance. This method is
-  mandatory for DSC Group Resources. It's ignored for all other DSC Resources.
+  Defines how DSC must call the DSC resource to validate the state of an instance. This method is
+  mandatory for DSC group resources. It's ignored for all other DSC resources.
 
 markdownDescription: | # VS Code only
   ***
-  [_Online Documentation_][01]
+  [_Online Documentation_][00]
   ***
 
-  Defines how DSC must call the DSC Resource to validate the state of an instance. This method is
-  mandatory for DSC Group Resources. It's ignored for all other DSC Resources.
+  Defines how DSC must call the DSC resource to validate the state of an instance. This method is
+  mandatory for DSC group resources. It's ignored for all other DSC resources.
+
+  For more information about the output DSC expects the resource to emit for this command, see
+  [Validate resource operation stdout][01].
 
   DSC sends data to the command in three ways:
 
@@ -30,7 +33,8 @@ markdownDescription: | # VS Code only
   You must define the `input` property, one JSON input argument in the `args` property array, or
   both.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/validate?<DOCS_VERSION_PIN>
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/validate?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/validate?<DOCS_VERSION_PIN>
 
 type: object
 required:

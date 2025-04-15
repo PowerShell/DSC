@@ -4,7 +4,7 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/properties/exist.yaml
 
 title: Instance should exist
 description: >-
-  Indicates whether the DSC Resource instance should exist.
+  Indicates whether the DSC resource instance should exist.
 
 type:    boolean
 default: true
@@ -16,7 +16,7 @@ markdownDescription: |
   [_Online Documentation_][01]
   ***
 
-  Indicates whether the DSC Resource instance should exist. For DSC Resources that define the
+  Indicates whether the DSC resource instance should exist. For DSC resources that define the
   [delete method in their manifest][02], DSC calls the `delete` method for the resource when an
   instance defines `_exist` as `false` and the instance exists.
 
