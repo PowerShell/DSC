@@ -11,6 +11,7 @@
       "pass-through",
       "config",
       "--as-group",
+      "--as-assert",
       "test",
       "--as-get",
       {
@@ -26,6 +27,7 @@
       "pass-through",
       "config",
       "--as-group",
+      "--as-assert",
       "test",
       {
         "jsonInputArg": "--input",
@@ -42,6 +44,7 @@
       "pass-through",
       "config",
       "--as-group",
+      "--as-assert",
       "test",
       "--as-config",
       {
@@ -59,7 +62,8 @@
     "4": "Invalid input format",
     "5": "Resource instance failed schema validation",
     "6": "Command cancelled",
-    "7": "Resource not found"
+    "7": "Resource not found",
+    "8": "Assertion failed"
   },
   "validate": {
     "executable": "dsc",

@@ -814,8 +814,8 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
                     map.insert(key, array.join(","));
                 },
                 Value::Null => {
-                    continue;
-                }
+                    // ignore null values
+                },  
                 Value::Object(_) => {
                     return Err(DscError::Operation(t!("dscresources.commandResource.invalidKey", key = key).to_string()));
                 },
@@ -884,13 +884,13 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
                 trace!("PID {process_id}: {trace_line}");
                 return trace_line;
-            };
+            }
         } else {
             // the line is not a valid json - return it as filtered stderr_line
             trace!("PID {process_id}: {}", trace_line);
             return trace_line;
         }
-    };
+    }
 
     ""
 }

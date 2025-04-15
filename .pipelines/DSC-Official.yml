@@ -207,7 +207,7 @@ extends:
             apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
-            rustup default stable-aarch64-unknown-linux-musl
+            msrustup default stable-aarch64-unknown-linux-musl
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }

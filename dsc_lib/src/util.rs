@@ -152,7 +152,7 @@ pub fn get_exe_path() -> Result<PathBuf, DscError> {
     if let Ok(exe) = env::current_exe() {
         if let Ok(target_path) = fs::read_link(exe.clone()) {
             return Ok(target_path);
-        };
+        }
 
         return Ok(exe);
     }

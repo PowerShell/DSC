@@ -199,7 +199,7 @@ pub fn schema(dsc: &DscManager, resource_type: &str, format: Option<&OutputForma
                     error!("Error: {err}");
                     exit(EXIT_JSON_ERROR);
                 }
-            };
+            }
             write_object(&json, format, false);
         }
         Err(err) => {

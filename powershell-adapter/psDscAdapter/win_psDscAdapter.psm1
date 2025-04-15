@@ -127,7 +127,6 @@ function Invoke-DscCacheRefresh {
                     $diff = $hs_cache
 
                     "PSModulePath diff '$diff'" | Write-DscTrace
-
                     if ($diff.Count -gt 0) {
                         $refreshCache = $true
                     }
@@ -154,10 +153,17 @@ function Invoke-DscCacheRefresh {
             }
             $DscResources = [System.Collections.Generic.List[Object]]::new()
             $Modules = [System.Collections.Generic.List[Object]]::new()
+            $filteredResources = @()
             foreach ($m in $module) {
                 $DscResources += Get-DscResource -Module $m
                 $Modules += Get-Module -Name $m -ListAvailable
+
+                # Grab all DSC resources to filter out of the cache
+                $filteredResources += $dscResources | Where-Object -Property ModuleName -NE $null | ForEach-Object { [System.String]::Concat($_.ModuleName, '/', $_.Name) }
             }
+
+            # Exclude the one module that was passed in as a parameter
+            $existingDscResourceCacheEntries = $cache.ResourceCache | Where-Object -Property Type -NotIn $filteredResources
         }
         elseif ('PSDesiredStateConfiguration' -eq $module -and $PSVersionTable.PSVersion.Major -le 5 ) {
             # the resources in Windows should only load in Windows PowerShell
@@ -247,6 +253,13 @@ function Invoke-DscCacheRefresh {
         $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
+
+        if ($existingDscResourceCacheEntries) {
+            $cache.ResourceCache += $existingDscResourceCacheEntries
+
+            # Make sure all resource cache entries are returned
+            $dscResourceCacheEntries = $cache.ResourceCache
+        }
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer

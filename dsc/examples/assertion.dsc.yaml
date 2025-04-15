@@ -23,5 +23,5 @@ resources:
         keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
         valueName: SystemRoot
         valueData:
-          # this is deliberately set to z: drive so that the assertion fails
-          String: Z:\Windows
+          # this is deliberately set to L: drive so that the assertion fails
+          String: L:\Windows

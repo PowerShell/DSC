@@ -124,14 +124,14 @@ function Find-LinkExe {
 }
 
 $channel = 'stable'
-if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
-    $rustup = 'rustup'
-} elseif ($null -ne (Get-Command msrustup -ErrorAction Ignore)) {
+if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
     $rustup = 'msrustup'
     $channel = 'ms-stable'
     if ($architecture -eq 'current') {
         $env:MSRUSTUP_TOOLCHAIN = "$architecture"
     }
+} elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
+        $rustup = 'rustup'
 } else {
     $rustup = 'echo'
 }

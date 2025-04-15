@@ -152,7 +152,7 @@ impl CommandDiscovery {
                     }
                 }
             }
-        };
+        }
 
         if let Ok(final_resource_path) = env::join_paths(paths.clone()) {
             debug!("{}", t!("discovery.commandDiscovery.usingResourcePath", path = final_resource_path.to_string_lossy()));
@@ -334,9 +334,8 @@ impl ResourceDiscovery for CommandDiscovery {
                         },
                         Result::Err(err) => {
                             warn!("Failed to parse resource: {line} -> {err}");
-                            continue;
                         }
-                    };
+                    }
                 }
 
                 adapter_progress.write_increment(1);
@@ -625,11 +624,11 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
             let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
             if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {
                 lookup_table_changed = true;
-            };
+            }
         } else {
             info!("Resource '{resource_name}' in 'adapted_resources' is missing 'require_adapter' field.");
         }
-    };
+    }
 
     if lookup_table_changed {
         save_adapted_resources_lookup_table(&lookup_table);

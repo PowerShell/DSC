@@ -21,15 +21,14 @@ Describe 'dsc config test tests' {
              family: Windows
 '@
 
-        $out = dsc config test -i $configYaml | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-
+        $out = dsc config test -i $configYaml 2> "$TestDrive/trace.log" | ConvertFrom-Json
         if ($IsWindows) {
+            $LASTEXITCODE | Should -Be 0
             $out.results[0].result.inDesiredState | Should -BeTrue
-        }
-        else {
-            $out.results[0].result.inDesiredState | Should -BeFalse
-            $out.results[0].result.differingProperties | Should -Contain 'resources'
+        } else {
+            $LASTEXITCODE | Should -Be 2
+            $log = Get-Content "$TestDrive/trace.log" -Raw
+            $log | Should -Match '.*Assertion failed.*'
         }
     }
 

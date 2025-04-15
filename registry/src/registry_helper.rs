@@ -175,7 +175,7 @@ impl RegistryHelper {
 
             if let Some(reg_key) = reg_key {
                 reg_key.set_value(&value_name, &data)?;
-            };
+            }
         }
 
         if self.what_if {

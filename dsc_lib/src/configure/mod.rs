@@ -88,7 +88,6 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
             Value::Object(object) => {
                 let value = escape_property_values(&object.clone())?;
                 result.insert(name.clone(), serde_json::to_value(value)?);
-                continue;
             },
             Value::Array(array) => {
                 let mut result_array: Vec<Value> = Vec::new();
@@ -97,7 +96,6 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
                         Value::Object(object) => {
                             let value = escape_property_values(&object.clone())?;
                             result_array.push(serde_json::to_value(value)?);
-                            continue;
                         },
                         Value::Array(_) => {
                             return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
@@ -779,7 +777,6 @@ impl Configurator {
                     Value::Object(object) => {
                         let value = self.invoke_property_expressions(Some(object))?;
                         result.insert(name.clone(), serde_json::to_value(value)?);
-                        continue;
                     },
                     Value::Array(array) => {
                         let mut result_array: Vec<Value> = Vec::new();
@@ -788,7 +785,6 @@ impl Configurator {
                                 Value::Object(object) => {
                                     let value = self.invoke_property_expressions(Some(object))?;
                                     result_array.push(serde_json::to_value(value)?);
-                                    continue;
                                 },
                                 Value::Array(_) => {
                                     return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
@@ -821,7 +817,7 @@ impl Configurator {
                             result.insert(name.clone(), Value::String(string_result.to_string()));
                         } else {
                             result.insert(name.clone(), statement_result);
-                        };
+                        }
                     },
                     _ => {
                         result.insert(name.clone(), value.clone());
