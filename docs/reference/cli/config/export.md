@@ -1,6 +1,6 @@
 ---
 description: Command line reference for the 'dsc config export' command
-ms.date:     09/06/2023
+ms.date:     03/25/2025
 ms.topic:    reference
 title:       dsc config export
 ---
@@ -13,22 +13,22 @@ Generates a configuration document that defines the existing instances of a set 
 
 ## Syntax
 
-### Configuration document from stdin
+### Configuration document from file
 
 ```sh
-<document-string> | dsc config export [Options]
+dsc config export [Options] --file <FILE>
 ```
 
 ### Configuration document from option string
 
 ```sh
-dsc config export [Options] --document <document-string>
+dsc config export [Options] --input <INPUT>
 ```
 
-### Configuration document from file
+### Configuration document from stdin
 
 ```sh
-dsc config export [Options] --path <document-filepath>
+cat <FILE> | dsc config export [Options] --file -
 ```
 
 ## Description
@@ -36,10 +36,10 @@ dsc config export [Options] --path <document-filepath>
 The `export` subcommand generates a configuration document that includes every instance of a set of
 resources.
 
-The configuration document must be passed to this command as JSON or YAML over stdin, as a string
-with the **document** option, or from a file with the **path** option.
+The configuration document must be passed to this command as JSON or YAML with the `--input` or
+`--file` option.
 
-The input configuration defines the resources to export. DSC ignores any properties specified for
+The input document defines the resources to export. DSC ignores any properties specified for
 the resources in the input configuration for the operation, but the input document and any
 properties for resource instances must still validate against the configuration document and
 resource instance schemas.
@@ -49,65 +49,158 @@ configuration. Only define each resource type once. If the configuration documen
 resource instance where the resource type isn't exportable or has already been declared in the
 configuration, DSC raises an error.
 
+## Examples
+
+### Example 1 - Test whether a configuration's resource instances are in the desired state
+
+<a id="example-1"></a>
+
+The command inspects the system to return a configuration document containing every discovered
+instance of the resources defined in the configuration document saved as `example.dsc.config.yaml`.
+It passes the configuration document to the command from stdin using the `--file` option.
+
+```yaml
+# example.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Operating system information
+  type: Microsoft/OSInfo
+  properties: {}
+- name: Processes
+  type: Microsoft/Process
+  properties: {}
+```
+
+```sh
+cat ./example.dsc.config.yaml | dsc config export --file -
+```
+
+### Example 2 - Passing a file to read as the configuration document
+
+<a id="example-2"></a>
+
+The command uses the `--file` option to export resources from the configuration defined in the
+`example.dsc.config.yaml` file.
+
+```sh
+dsc config export --file ./example.dsc.config.yaml
+```
+
+### Example 3 - Passing a configuration document as a variable
+
+<a id="example-3"></a>
+
+The command uses the `--input` option to exoirt resources from the configuration stored in the
+`$desired` variable.
+
+```sh
+dsc config export --input $desired
+```
+
 ## Options
 
-### -d, --document
+### -i, --input
 
-Specifies the configuration document to export from as a JSON or YAML object. DSC validates the
-document against the configuration document schema. If the validation fails, DSC raises an error.
+<a id="-i"></a>
+<a id="--input"></a>
 
-This option can't be used with configuration document over stdin or the `--path` option. Choose
-whether to pass the configuration document to the command over stdin, from a file with the `--path`
-option, or with the `--document` option.
+Specifies the configuration document to validate state for.
+
+The document must be a string containing a JSON or YAML object. DSC validates the document against
+the configuration document schema. If the validation fails, DSC raises an error.
+
+This option is mutually exclusive with the `--file` option.
 
 ```yaml
-Type:      String
-Mandatory: false
+Type        : string
+Mandatory   : false
+LongSyntax  : --input <INPUT>
+ShortSyntax : -i <INPUT>
 ```
 
-### -p, --path
+### -f, --file
 
-Defines the path to a configuration document to export instead of piping the document from stdin or
-passing it as a string with the `--document` option. The specified file must contain a
-configuration document as a JSON or YAML object. DSC validates the document against the
-configuration document schema. If the validation fails, or if the specified file doesn't exist, DSC
-raises an error.
+<a id="-f"></a>
+<a id="--file"></a>
 
-This option is mutually exclusive with the `--document` option. When you use this option, DSC
-ignores any input from stdin.
+Defines the path to a configuration document to validate state for.
+
+The specified file must contain a configuration document as a JSON or YAML object. DSC validates
+the document against the configuration document schema. If the validation fails, or if the
+specified file doesn't exist, DSC raises an error.
+
+You can also use this option to pass a configuration document from stdin, as shown in
+[Example 1](#example-1).
+
+This option is mutually exclusive with the `--input` option.
 
 ```yaml
-Type:      String
-Mandatory: false
+Type        : string
+Mandatory   : false
+LongSyntax  : --file <FILE>
+ShortSyntax : -f <FILE>
 ```
 
-### -f, --format
+### -o, --output-format
 
-The `--format` option controls the console output format for the command. If the command output is
-redirected or captured as a variable, the output is always JSON.
+<a id="-o"></a>
+<a id="--output-format"></a>
+
+The `--output-format` option controls which format DSC uses for the data the command returns. The
+available formats are:
+
+- `json` to emit the data as a [JSON Line][02].
+- `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
+- `yaml` to emit the data as YAML.
+
+The default output format depends on whether DSC detects that the output is being redirected or
+captured as a variable:
+
+- If the command isn't being redirected or captured, DSC displays the output as the `yaml` format
+  in the console.
+- If the command output is redirected or captured, DSC emits the data as the `json` format to
+  stdout.
+
+When you use this option, DSC uses the specified format regardless of whether the command is being
+redirected or captured.
+
+When the command isn't redirected or captured, the output in the console is formatted for improved
+readability. When the command isn't redirected or captured, the output include terminal sequences
+for formatting.
 
 ```yaml
-Type:         String
-Mandatory:    false
-DefaultValue: yaml
-ValidValues:  [json, pretty-json, yaml]
+Type        : string
+Mandatory   : false
+ValidValues : [json, pretty-json, yaml]
+LongSyntax  : --output-format <OUTPUT_FORMAT>
+ShortSyntax : -o <OUTPUT_FORMAT>
 ```
 
 ### -h, --help
 
+<a id="-h"></a>
+<a id="--help"></a>
+
 Displays the help for the current command or subcommand. When you specify this option, the
-application ignores all options and arguments after this one.
+application ignores all other options and arguments.
 
 ```yaml
-Type:      Boolean
-Mandatory: false
+Type        : boolean
+Mandatory   : false
+LongSyntax  : --help
+ShortSyntax : -h
 ```
 
 ## Output
 
-This command returns JSON output that defines a configuration document including every instance of
-the resources declared in the input configuration. For more information, see
-[DSC Configuration document schema reference][02].
+This command returns formatted data that defines a configuration document including every instance
+of the resources declared in the input configuration. For more information, see
+[DSC Configuration document schema reference][03].
 
+For more information about the formatting of the output data, see the
+[--output-format option](#--output-format).
+
+<!-- Link reference definitions -->
 [01]: ../../schemas/resource/manifest/export.md
-[02]: ../../schemas/config/document.md
+[02]: https://jsonlines.org/
+[03]: ../../schemas/config/document.md
