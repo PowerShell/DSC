@@ -29,6 +29,9 @@ class TestClassResource : BaseTestClass
     [DscProperty()]
     [string] $EnumProp
 
+    [DscProperty()]
+    [PSCredential] $Credential
+
     [string] $NonDscProperty # This property shouldn't be in results data
 
     hidden

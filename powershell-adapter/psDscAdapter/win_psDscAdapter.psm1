@@ -364,7 +364,12 @@ function Invoke-DscOperation {
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { 
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
-                        $property[$_.Name] = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                        if ($_.Name -like '*Credential*' -and $_.Value.Username -and $_.Value.Password) {
+                            $property[$_.Name] = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                        }
+                        else {
+                            $property[$_.Name] = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }    
+                        }
                     }
                     else {
                         $property[$_.Name] = $_.Value
@@ -373,7 +378,7 @@ function Invoke-DscOperation {
 
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
-                    Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property)"
+                    Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)"
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property -ErrorAction Stop
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
@@ -402,7 +407,18 @@ function Invoke-DscOperation {
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
-                            $dscResourceInstance.$($_.Name) = $_.Value
+                            # handle input objects by converting them to a hash table
+                            if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
+                                if ($_.Name -like '*Credential*' -and $_.Value.Username -and $_.Value.Password) {
+                                    $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                                }
+                                else {
+                                    $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                                }
+                            }
+                            else {
+                                $dscResourceInstance.$($_.Name) = $_.Value
+                            }
                         }
                     }
 
@@ -444,9 +460,23 @@ function Invoke-DscOperation {
                 }
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
-                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
+                    if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
+                        if ($_.Name -Like '*Credential*' -and $_.Value.Username -and $_.Value.Password) {
+                            $property[$_.Name] = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                        }
+                        else {
+                            $property[$_.Name] = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                        }
+                    }
+                    else {
+                        $property[$_.Name] = $_.Value
+                    }
+                }
+
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
+                    Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)"
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
                         $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }

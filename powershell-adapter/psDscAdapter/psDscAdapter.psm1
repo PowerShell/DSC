@@ -421,13 +421,11 @@ function Invoke-DscOperation {
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
-                                Write-DscTrace -Message "The object is a PSCustomObject"
-                                $_.Value.psobject.properties | ForEach-Object -Begin {
-                                    $propertyHash = @{}
-                                } -Process {
-                                    $propertyHash[$_.Name] = $_.Value
-                                } -End {
-                                    $dscResourceInstance.$($_.Name) = $propertyHash
+                                if ($_.Name -like '*Credential*' -and $_.Value.Username -and $_.Value.Password) {
+                                    $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                                }
+                                else {
+                                    $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                                 }
                             }
                             else {
