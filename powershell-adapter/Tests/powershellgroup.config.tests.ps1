@@ -237,4 +237,22 @@ Describe 'PowerShell adapter resource tests' {
       }
     }
   }
+
+  It 'Config works with credential object' {
+    $yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: Class-resource Info
+          type: TestClassResource/TestClassResource
+          properties:
+            Name: 'TestClassResource'
+            Credential:
+              UserName: 'User'
+              Password: 'Password'
+"@
+    $out = dsc config get -i $yaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.result[0].properties.Credential.UserName | Should -Be 'User'
+    $out.results[0].result.actualState.result[0].properties.Credential.Password | Should -BeNullOrEmpty
+  }
 }

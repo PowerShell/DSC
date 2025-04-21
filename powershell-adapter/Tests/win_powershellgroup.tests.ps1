@@ -211,4 +211,25 @@ resources:
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.inDesiredState | Should -Be $inDesiredState
     }
+
+    It 'Should be able to test against a service with credentials' -Skip:(!$IsWindows) {
+        $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Test service 
+    type: Microsoft.Windows/WindowsPowerShell 
+    properties: 
+      resources:
+      - name: Test service
+        type: PSDesiredStateConfiguration/Service
+        properties:
+          Name: 'W32Time'
+          Credential:
+            Username: "User"
+            Password: "Password"
+"@
+        $out = dsc config test -i $yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.inDesiredState | Should -Be $false
+    }
 }
