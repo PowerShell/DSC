@@ -251,9 +251,8 @@ Describe 'PowerShell adapter resource tests' {
               Password: 'Password'
 "@
     $out = dsc config get -i $yaml | ConvertFrom-Json
-    Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
     $LASTEXITCODE | Should -Be 0
-    $out.results.result.actualState.result.properties.Credential.UserName | Should -Be 'User'
-    $out.results.result.actualState.result.properties.Credential.Password.Length | Should -Not -BeNullOrEmpty
+    $out.results.result.actualstate.Credential.UserName | Should -Be 'User'
+    $out.results.result.actualState.result.Credential.Password.Length | Should -Be 8
   }
 }
