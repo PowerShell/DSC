@@ -228,6 +228,7 @@ resources:
             Username: "User"
             Password: "Password"
 "@
+        dsc -l trace config test -i $yaml
         $out = dsc config test -i $yaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.inDesiredState | Should -Be $false
