@@ -416,12 +416,19 @@ function Invoke-DscOperation {
 
                     $ValidProperties = $cachedDscResourceInfo.Properties.Name
 
+                    $ValidProperties | ConvertTo-Json | Write-DscTrace -Operation Trace
+
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
-                                if ($_.Name -like '*Credential*' -and $_.Value.Username -and $_.Value.Password) {
+                                $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Value 
+                                if ($validateProperty.PropertyType -eq 'PSCredential') {
+                                    if (-not $_.Value.Username -and -not $_.Value.Password) {
+                                        "Credential property '$($_.Name)' requires both username and password input object" | Write-DscTrace -Operation Error
+                                        exit 1
+                                    }
                                     $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
                                 }
                                 else {
