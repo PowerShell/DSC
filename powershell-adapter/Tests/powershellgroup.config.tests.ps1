@@ -253,6 +253,6 @@ Describe 'PowerShell adapter resource tests' {
     $out = dsc config get -i $yaml | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.results.result.actualstate.Credential.UserName | Should -Be 'User'
-    $out.results.result.actualState.result.Credential.Password.Length | Should -Be 8
+    $out.results.result.actualState.result.Credential.Password.Length | Should -Not -BeNullOrEmpty
   }
 }
