@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::dscresources::resource_manifest::ArgKind;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use semver::Version;
@@ -10,6 +9,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
+use crate::extensions::discover::DiscoverMethod;
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -32,14 +32,6 @@ pub struct ExtensionManifest {
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
     pub exit_codes: Option<HashMap<i32, String>>,
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct DiscoverMethod {
-    /// The command to run to get the state of the resource.
-    pub executable: String,
-    /// The arguments to pass to the command to perform a Get.
-    pub args: Option<Vec<ArgKind>>,
 }
 
 impl DscRepoSchema for ExtensionManifest {

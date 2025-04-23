@@ -67,6 +67,9 @@ parameterNotObject = "Parameter '%{name}' is not an object"
 invokePropertyExpressions = "Invoke property expressions"
 invokeExpression = "Invoke property expression for %{name}: %{value}"
 
+[discovery.mod]
+extensionUnexpcted = "Extension '%{extension}' not expected"
+
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
@@ -79,9 +82,11 @@ discoverResources = "Discovering resources using filter: %{filter}"
 invalidAdapterFilter = "Could not build Regex filter for adapter name"
 progressSearching = "Searching for resources"
 foundResourceManifest = "Found resource manifest: %{path}"
+extensionFound = "Extension '%{extension}' found"
 adapterFound = "Resource adapter '%{adapter}' found"
 resourceFound = "Resource '%{resource}' found"
 executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
+extensionInvalidVersion = "Extension '%{extension}' version '%{version}' is invalid"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"

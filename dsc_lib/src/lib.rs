@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::discovery::command_discovery::ManifestResource;
+use crate::discovery::discovery_trait::DiscoveryKind;
 use crate::progress::ProgressFormat;
 
 use configure::config_doc::ExecutionKind;
@@ -12,6 +14,7 @@ pub mod configure;
 pub mod discovery;
 pub mod dscerror;
 pub mod dscresources;
+pub mod extensions;
 pub mod functions;
 pub mod parser;
 pub mod progress;
@@ -48,8 +51,8 @@ impl DscManager {
         self.discovery.find_resource(name)
     }
 
-    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<DscResource> {
-        self.discovery.list_available_resources(type_name_filter, adapter_name_filter, progress_format)
+    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ManifestResource> {
+        self.discovery.list_available(kind, type_name_filter, adapter_name_filter, progress_format)
     }
 
     pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) {

@@ -1,12 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::discovery_trait::ResourceDiscovery;
+use crate::discovery::discovery_trait::{ResourceDiscovery, DiscoveryKind};
 use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
 use crate::dscerror::DscError;
+use crate::extensions::dscextension::{self, DscExtension};
+use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
 use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
@@ -17,8 +19,6 @@ use std::collections::{BTreeMap, HashSet, HashMap};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
-use std::fs::File;
-use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, info, trace, warn};
@@ -27,10 +27,20 @@ use which::which;
 use crate::util::get_setting;
 use crate::util::get_exe_path;
 
+const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
+const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
+
+#[derive(Clone)]
+pub enum ManifestResource {
+    Resource(DscResource),
+    Extension(DscExtension),
+}
+
 pub struct CommandDiscovery {
     // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
-    resources: BTreeMap<String, Vec<DscResource>>,
     adapters: BTreeMap<String, Vec<DscResource>>,
+    resources: BTreeMap<String, Vec<DscResource>>,
+    extensions: BTreeMap<String, DscExtension>,
     adapted_resources: BTreeMap<String, Vec<DscResource>>,
     progress_format: ProgressFormat,
 }
@@ -60,8 +70,9 @@ impl Default for ResourcePathSetting {
 impl CommandDiscovery {
     pub fn new(progress_format: ProgressFormat) -> CommandDiscovery {
         CommandDiscovery {
-            resources: BTreeMap::new(),
             adapters: BTreeMap::new(),
+            resources: BTreeMap::new(),
+            extensions: BTreeMap::new(),
             adapted_resources: BTreeMap::new(),
             progress_format,
         }
@@ -170,7 +181,7 @@ impl Default for CommandDiscovery {
 
 impl ResourceDiscovery for CommandDiscovery {
 
-    fn discover_resources(&mut self, filter: &str) -> Result<(), DscError> {
+    fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
         info!("{}", t!("discovery.commandDiscovery.discoverResources", filter = filter));
 
         let regex_str = convert_wildcard_to_regex(filter);
@@ -184,8 +195,9 @@ impl ResourceDiscovery for CommandDiscovery {
         let mut progress = ProgressBar::new(1, self.progress_format)?;
         progress.write_activity(t!("discovery.commandDiscovery.progressSearching").to_string().as_str());
 
-        let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
         let mut adapters = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut extensions = BTreeMap::<String, DscExtension>::new();
 
         if let Ok(paths) = CommandDiscovery::get_resource_paths() {
             for path in paths {
@@ -203,10 +215,9 @@ impl ResourceDiscovery for CommandDiscovery {
                                 continue;
                             };
                             let file_name_lowercase = file_name.to_lowercase();
-                            if file_name_lowercase.ends_with(".dsc.resource.json") ||
-                                file_name_lowercase.ends_with(".dsc.resource.yaml") ||
-                                file_name_lowercase.ends_with(".dsc.resource.yml") {
-                                trace!("{}", t!("discovery.commandDiscovery.foundResourceManifest", path = path.to_string_lossy()));
+                            if (kind == &DiscoveryKind::Resource && DSC_RESOURCE_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) ||
+                                (kind == &DiscoveryKind::Extension && DSC_EXTENSION_EXTENSIONS.iter().any(|ext| file_name_lowercase.ends_with(ext))) {
+                                trace!("{}", t!("discovery.commandDiscovery.foundManifest", path = path.to_string_lossy()));
                                 let resource = match load_manifest(&path)
                                 {
                                     Ok(r) => r,
@@ -220,15 +231,38 @@ impl ResourceDiscovery for CommandDiscovery {
                                     },
                                 };
 
-                                if regex.is_match(&resource.type_name) {
-                                    if let Some(ref manifest) = resource.manifest {
-                                        let manifest = import_manifest(manifest.clone())?;
-                                        if manifest.kind == Some(Kind::Adapter) {
-                                            trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
-                                            insert_resource(&mut adapters, &resource, true);
-                                        } else {
-                                            trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
-                                            insert_resource(&mut resources, &resource, true);
+                                match resource {
+                                    ManifestResource::Extension(extension) => {
+                                        if regex.is_match(&extension.type_name) {
+                                            trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name));
+                                            // we only keep newest version of the extension so compare the version and only keep the newest
+                                            if let Some(existing_extension) = extensions.get_mut(&extension.type_name) {
+                                                let Ok(existing_version) = Version::parse(&existing_extension.version) else {
+                                                    return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = existing_extension.type_name, version = existing_extension.version).to_string()));
+                                                };
+                                                let Ok(new_version) = Version::parse(&extension.version) else {
+                                                    return Err(DscError::Operation(t!("discovery.commandDiscovery.extensionInvalidVersion", extension = extension.type_name, version = extension.version).to_string()));
+                                                };
+                                                if new_version > existing_version {
+                                                    extensions.insert(extension.type_name.clone(), extension.clone());
+                                                }
+                                            } else {
+                                                extensions.insert(extension.type_name.clone(), extension.clone());
+                                            }
+                                        }
+                                    },
+                                    ManifestResource::Resource(resource) => {
+                                        if regex.is_match(&resource.type_name) {
+                                            if let Some(ref manifest) = resource.manifest {
+                                                let manifest = import_manifest(manifest.clone())?;
+                                                if manifest.kind == Some(Kind::Adapter) {
+                                                    trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
+                                                    insert_resource(&mut adapters, &resource, true);
+                                                } else {
+                                                    trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
+                                                    insert_resource(&mut resources, &resource, true);
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -238,16 +272,18 @@ impl ResourceDiscovery for CommandDiscovery {
                 }
             }
         }
+
         progress.write_increment(1);
         debug!("Found {} matching non-adapter-based resources", resources.len());
-        self.resources = resources;
         self.adapters = adapters;
+        self.resources = resources;
+        self.extensions = extensions;
         Ok(())
     }
 
     fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError> {
         if self.resources.is_empty() && self.adapters.is_empty() {
-            self.discover_resources("*")?;
+            self.discover(&DiscoveryKind::Resource, "*")?;
         }
 
         if self.adapters.is_empty() {
@@ -352,24 +388,36 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
-    fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
+    fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<ManifestResource>>, DscError> {
 
         trace!("Listing resources with type_name_filter '{type_name_filter}' and adapter_name_filter '{adapter_name_filter}'");
-        let mut resources = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut resources = BTreeMap::<String, Vec<ManifestResource>>::new();
 
-        if adapter_name_filter.is_empty() {
-            self.discover_resources(type_name_filter)?;
-            resources.append(&mut self.resources);
-            resources.append(&mut self.adapters);
+        if *kind == DiscoveryKind::Resource {
+            if adapter_name_filter.is_empty() {
+                self.discover(kind, type_name_filter)?;
+                for (resource_name, resources_vec) in &self.resources {
+                    resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ManifestResource::Resource(r.clone())).collect());
+                }
+                for (adapter_name, adapter_vec) in &self.adapters {
+                    resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ManifestResource::Resource(r.clone())).collect());
+                }
+            } else {
+                self.discover(kind, "*")?;
+                self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
+
+                // add/update found adapted resources to the lookup_table
+                add_resources_to_lookup_table(&self.adapted_resources);
+
+                for (adapted_name, adapted_vec) in &self.adapted_resources {
+                    resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ManifestResource::Resource(r.clone())).collect());
+                }
+            }
         } else {
-            self.discover_resources("*")?;
-            self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
-
-            // add/update found adapted resources to the lookup_table
-            add_resources_to_lookup_table(&self.adapted_resources);
-
-            // note: in next line 'BTreeMap::append' will leave self.adapted_resources empty
-            resources.append(&mut self.adapted_resources);
+            self.discover(kind, type_name_filter)?;
+            for (extension_name, extension) in &self.extensions {
+                resources.insert(extension_name.clone(), vec![ManifestResource::Extension(extension.clone())]);
+            }
         }
 
         Ok(resources)
@@ -379,7 +427,7 @@ impl ResourceDiscovery for CommandDiscovery {
     fn find_resources(&mut self, required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
     {
         debug!("Searching for resources: {:?}", required_resource_types);
-        self.discover_resources("*")?;
+        self.discover( &DiscoveryKind::Resource, "*")?;
 
         // convert required_resource_types to lowercase to handle case-insentiive search
         let mut remaining_required_resource_types = required_resource_types.iter().map(|x| x.to_lowercase()).collect::<Vec<String>>();
@@ -458,6 +506,7 @@ impl ResourceDiscovery for CommandDiscovery {
 }
 
 // helper to insert a resource into a vector of resources in order of newest to oldest
+// TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource, skip_duplicate_version: bool) {
     if resources.contains_key(&resource.type_name) {
         let Some(resource_versions) = resources.get_mut(&resource.type_name) else {
@@ -499,26 +548,39 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
     }
 }
 
-fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let manifest: ResourceManifest = if path.extension() == Some(OsStr::new("json")) {
-        match serde_json::from_reader(reader) {
+fn load_manifest(path: &Path) -> Result<ManifestResource, DscError> {
+    let contents = fs::read_to_string(path)?;
+    if path.extension() == Some(OsStr::new("json")) {
+        if let Ok(manifest) = serde_json::from_str::<ResourceManifest>(&contents) {
+            let resource = load_resource_manifest(path, &manifest)?;
+            return Ok(ManifestResource::Resource(resource));
+        }
+        let manifest = match serde_json::from_str::<ExtensionManifest>(&contents) {
             Ok(manifest) => manifest,
             Err(err) => {
-                return Err(DscError::Manifest(path.to_string_lossy().to_string(), err));
+                return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
             }
-        }
+        };
+        let extension = load_extension_manifest(path, &manifest)?;
+        return Ok(ManifestResource::Extension(extension));
     }
     else {
-        match serde_yaml::from_reader(reader) {
+        if let Ok(manifest) = serde_yaml::from_str::<ResourceManifest>(&contents) {
+            let resource = load_resource_manifest(path, &manifest)?;
+            return Ok(ManifestResource::Resource(resource));
+        }
+        let manifest = match serde_yaml::from_str::<ExtensionManifest>(&contents) {
             Ok(manifest) => manifest,
             Err(err) => {
-                return Err(DscError::ManifestYaml(path.to_string_lossy().to_string(), err));
+                return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
             }
-        }
-    };
+        };
+        let extension = load_extension_manifest(path, &manifest)?;
+        return Ok(ManifestResource::Extension(extension));
+    }
+}
 
+fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
         return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
     }
@@ -581,6 +643,31 @@ fn load_manifest(path: &Path) -> Result<DscResource, DscError> {
     };
 
     Ok(resource)
+}
+
+fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
+    if let Err(err) = validate_semver(&manifest.version) {
+        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+    }
+
+    let mut capabilities: Vec<dscextension::Capability> = vec![];
+    if let Some(discover) = &manifest.discover {
+        verify_executable(&manifest.r#type, "discover", &discover.executable);
+        capabilities.push(dscextension::Capability::Discover);
+    }
+
+    let extension = DscExtension {
+        type_name: manifest.r#type.clone(),
+        description: manifest.description.clone(),
+        version: manifest.version.clone(),
+        capabilities,
+        path: path.to_str().unwrap().to_string(),
+        directory: path.parent().unwrap().to_str().unwrap().to_string(),
+        manifest: Some(serde_json::to_value(manifest)?),
+        ..Default::default()
+    };
+
+    Ok(extension)
 }
 
 fn verify_executable(resource: &str, operation: &str, executable: &str) {
