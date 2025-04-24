@@ -42,7 +42,7 @@ impl DscRepoSchema for ExtensionManifest {
     fn schema_metadata() -> schemars::schema::Metadata {
         schemars::schema::Metadata {
             title: Some(t!("extensions.extension_manifest.extensionManifestSchemaTitle").into()),
-            description: Some(t!("extensions.extension_manifest.extensioneManifestSchemaDescription").into()),
+            description: Some(t!("extensions.extension_manifest.extensionManifestSchemaDescription").into()),
             ..Default::default()
         }
     }
