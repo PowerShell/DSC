@@ -705,7 +705,17 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
         .block_on(run_process_async(executable, args, input, cwd, env, exit_codes))
 }
 
-fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
+/// Process the arguments for a command resource.
+///
+/// # Arguments
+///
+/// * `args` - The arguments to process
+/// * `value` - The value to use for JSON input arguments
+///
+/// # Returns
+///
+/// A vector of strings representing the processed arguments
+pub fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;

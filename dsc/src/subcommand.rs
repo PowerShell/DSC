@@ -624,7 +624,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
         write_table = true;
     }
     let mut include_separator = false;
-    for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), &String::new(), progress_format) {
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
         if let ManifestResource::Extension(extension) = manifest_resource {
             let mut capabilities = "-".to_string();
             let capability_types = [

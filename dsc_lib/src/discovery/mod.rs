@@ -9,7 +9,7 @@ use crate::extensions::dscextension::DscExtension;
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress::ProgressFormat};
 use std::collections::BTreeMap;
 use command_discovery::ManifestResource;
-use tracing::{debug, error};
+use tracing::error;
 
 #[derive(Clone)]
 pub struct Discovery {

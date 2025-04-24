@@ -81,12 +81,17 @@ usingResourcePath = "Using Resource Path: %{path}"
 discoverResources = "Discovering resources using filter: %{filter}"
 invalidAdapterFilter = "Could not build Regex filter for adapter name"
 progressSearching = "Searching for resources"
+extensionSearching = "Searching for extensions"
 foundResourceManifest = "Found resource manifest: %{path}"
 extensionFound = "Extension '%{extension}' found"
 adapterFound = "Resource adapter '%{adapter}' found"
 resourceFound = "Resource '%{resource}' found"
 executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
 extensionInvalidVersion = "Extension '%{extension}' version '%{version}' is invalid"
+invalidManifest = "Invalid manifest for resource '%{resource}'"
+extensionResourceFound = "Extension found resource '%{resource}'"
+callingExtension = "Calling extension '%{extension}' to discover resources"
+extensionFoundResources = "Extension '%{extension}' found %{count} resources"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -164,6 +169,9 @@ diffMissingItem = "diff: actual array missing expected item"
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
 resourceManifestSchemaDescription = "Defines the JSON Schema the resource manifest adheres to."
+
+[extensions.dscextension]
+discoverNoResults = "No results returned for discovery extension '%{extension}'"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -349,6 +357,8 @@ unknown = "Unknown"
 unrecognizedSchemaUri = "Unrecognized $schema URI"
 validation = "Validation"
 validSchemaUrisAre = "Valid schema URIs are"
+extension = "Extension"
+unsupportedCapability = "does not support capability"
 setting = "Setting"
 
 [progress]
