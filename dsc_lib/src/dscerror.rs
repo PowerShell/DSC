@@ -29,6 +29,9 @@ pub enum DscError {
     #[error("{t} {0} {t2} '{1}'", t = t!("dscerror.commandOperation"), t2 = t!("dscerror.forExecutable"))]
     CommandOperation(String, String),
 
+    #[error("{0}")]
+    Extension(String),
+
     #[error("{t} '{0}' {t2}: {1}", t = t!("dscerror.function"), t2 = t!("dscerror.error"))]
     Function(String, String),
 

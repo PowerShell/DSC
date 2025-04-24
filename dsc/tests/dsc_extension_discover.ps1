@@ -5,7 +5,8 @@ Describe 'Discover extension tests' {
     BeforeAll {
         $oldPath = $env:PATH
         $separator = [System.IO.Path]::PathSeparator
-        $env:PATH = "$PSScriptRoot$separator$oldPath"
+        $toolPath = Resolve-Path -Path "$PSScriptRoot/../../extensions/test/discover"
+        $env:PATH = "$toolPath$separator$oldPath"
     }
 
     AfterAll {
@@ -49,5 +50,44 @@ Describe 'Discover extension tests' {
         $out.results[0].result.actualState.Output | Should -BeExactly 'Hello One'
         $out.results[1].type | Should -BeExactly 'Test/DiscoveredTwo'
         $out.results[1].result.actualState.Output | Should -BeExactly 'Hello Two'
+    }
+
+    It 'Relative path from discovery will fail' {
+        $extension_json = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/DiscoverRelative",
+    "version": "0.1.0",
+    "description": "Test discover resource",
+    "discover": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-Command",
+            "./discover.ps1",
+            "-RelativePath"
+            ]
+    }
+}
+'@
+        Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
+        Copy-Item -Path "$toolPath/discover.ps1" -Destination $TestDrive | Out-Null
+        Copy-Item -Path "$toolPath/resources" -Destination $TestDrive -Recurse | Out-Null
+        $env:DSC_RESOURCE_PATH = $TestDrive
+        try {
+            $out = dsc extension list | ConvertFrom-Json
+            $out.Count | Should -Be 1
+            $out.type | Should -Be 'Test/DiscoverRelative'
+            $out = dsc resource list 2> $TestDrive/error.log
+            write-verbose -verbose (Get-Content -Path "$TestDrive/error.log" -Raw)
+            $LASTEXITCODE | Should -Be 0
+            $out | Should -BeNullOrEmpty
+            $errorMessage = Get-Content -Path "$TestDrive/error.log" -Raw
+            $errorMessage | Should -BeLike '*is not an absolute path*'
+        } finally {
+            $env:DSC_RESOURCE_PATH = $null
+        }
     }
 }
