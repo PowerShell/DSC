@@ -10,7 +10,7 @@
             "-NonInteractive",
             "-NoProfile",
             "-Command",
-            "'{\"Output\": \"One\"}'"
+            "'{\"Output\": \"Hello One\"}'"
         ]
     },
     "schema": {
