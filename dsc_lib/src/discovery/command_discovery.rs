@@ -182,6 +182,7 @@ impl Default for CommandDiscovery {
 
 impl ResourceDiscovery for CommandDiscovery {
 
+    #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
         info!("{}", t!("discovery.commandDiscovery.discoverResources", filter = filter));
 
@@ -291,7 +292,7 @@ impl ResourceDiscovery for CommandDiscovery {
         match kind {
             DiscoveryKind::Resource => {
                 // Now we need to call discover extensions and add those resource to the list of resources
-                for (_extension_name, extension) in self.extensions.iter() {
+                for extension in self.extensions.values() {
                     if extension.capabilities.contains(&ExtensionCapability::Discover) {
                         debug!("{}", t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
                         let discovered_resources = extension.discover()?;

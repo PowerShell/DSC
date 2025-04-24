@@ -64,6 +64,15 @@ impl DscExtension {
         }
     }
 
+    /// Perform discovery of resources using the extension.
+    ///
+    /// # Returns
+    ///
+    /// A result containing a vector of discovered resources or an error.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the discovery fails.
     pub fn discover(&self) -> Result<Vec<DscResource>, DscError> {
         let mut resources: Vec<DscResource> = Vec::new();
 
@@ -97,11 +106,9 @@ impl DscExtension {
                         }
                     };
                     let manifest_path = Path::new(&discover_result.resource_manifest_path);
+                    // Currently we don't support extensions discovering other extensions
                     if let ManifestResource::Resource(resource) = load_manifest(manifest_path)? {
                         resources.push(resource);
-                    } else {
-                        // ignore loading other types of manifests
-                        continue;
                     }
                 }
             }
