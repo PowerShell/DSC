@@ -5,7 +5,7 @@
     "description": "Discovers DSC resources packaged as AppX packages.",
     "author": "Microsoft Corporation",
     "discover": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
