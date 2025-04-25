@@ -74,7 +74,7 @@ function Invoke-DscCacheRefresh {
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            "Incompartible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')" | Write-DscTrace
+            "Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')" | Write-DscTrace
         }
         else {
             $dscResourceCacheEntries = $cache.ResourceCache
@@ -280,14 +280,6 @@ function Get-DscResourceObject {
     # normalize the INPUT object to an array of dscResourceObject objects
     $inputObj = $jsonInput | ConvertFrom-Json
     $desiredState = [System.Collections.Generic.List[Object]]::new()
-
-    # match adapter to version of powershell
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        $adapterName = 'Microsoft.Windows/WindowsPowerShell'
-    }
-    else {
-        $adapterName = 'Microsoft.DSC/PowerShell'
-    }
 
     # change the type from pscustomobject to dscResourceObject
     $inputObj.resources | ForEach-Object -Process {
