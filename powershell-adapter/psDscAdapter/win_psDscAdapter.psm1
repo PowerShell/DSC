@@ -365,9 +365,10 @@ function Invoke-DscOperation {
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { 
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                        if ($validateProperty.PropertyType -eq 'PSCredential') {
-                            if (-not $_.Value.Username -and -not $_.Value.Password) {
-                                "Credential property '$($_.Name)' requires both username and password input object" | Write-DscTrace -Operation Error
+                        $validateProperty | Write-DscTrace -Operation Debug
+                        if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                            if (-not $_.Value.Username -or -not $_.Value.Password) {
+                                "The PSCredential property '$($_.Name)' is missing required fields 'Username' and 'Password'" | Write-DscTrace -Operation Error
                                 exit 1
                             }
                             $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
@@ -415,9 +416,9 @@ function Invoke-DscOperation {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                                if ($validateProperty.PropertyType -eq 'PSCredential') {
-                                    if (-not $_.Value.Username -and -not $_.Value.Password) {
-                                        "Credential property '$($_.Name)' requires both username and password input object" | Write-DscTrace -Operation Error
+                                if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                                    if (-not $_.Value.Username -or -not $_.Value.Password) {
+                                        "The PSCredential property '$($_.Name)' is missing required fields 'Username' and 'Password'" | Write-DscTrace -Operation Error
                                         exit 1
                                     }
                                     $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
@@ -473,9 +474,9 @@ function Invoke-DscOperation {
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                        if ($validateProperty.PropertyType -eq 'PSCredential') {
-                            if (-not $_.Value.Username -and -not $_.Value.Password) {
-                                "Credential property '$($_.Name)' requires both username and password input object" | Write-DscTrace -Operation Error
+                        if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                            if (-not $_.Value.Username -or -not $_.Value.Password) {
+                                "The PSCredential property '$($_.Name)' is missing required fields 'Username' and 'Password'" | Write-DscTrace -Operation Error
                                 exit 1
                             }
                             $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
