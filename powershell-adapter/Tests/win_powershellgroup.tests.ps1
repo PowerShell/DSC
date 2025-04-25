@@ -213,7 +213,7 @@ resources:
     $out.results[0].result.inDesiredState | Should -Be $inDesiredState
   }
 
-  It 'Config works with credential object' {
+  It 'Config works with credential object' -Skip:(!$IsWindows) {
     BeforeAll {
       $script:winPSModule = Resolve-Path -Path (Join-Path $PSScriptRoot '..' 'powershell-adapter' 'psDscAdapter' 'win_psDscAdapter.psm1') | Select-Object -ExpandProperty Path
       Import-Module $winPSModule -Force -ErrorAction Stop
