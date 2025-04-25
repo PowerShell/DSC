@@ -224,7 +224,8 @@ resources:
               UserName: 'User'
               OtherProperty: 'Password'
 "@  
-    $out = dsc config get -i $yaml 2>&1 | Out-String
+      $out = dsc -l trace config get -i $yaml 2>&1 | Out-String
+    $out = dsc -l trace config get -i $yaml 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
     $out | Should -BeLike "*ERROR*The PSCredential property 'Credential' is missing required fields*"
