@@ -224,7 +224,7 @@ resources:
               UserName: 'User'
               OtherProperty: 'Password'
 "@  
-      $out = dsc -l trace config get -i $yaml 2>&1 | Out-String
+    dsc -l trace config get -i $yaml
     $out = dsc -l trace config get -i $yaml 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
