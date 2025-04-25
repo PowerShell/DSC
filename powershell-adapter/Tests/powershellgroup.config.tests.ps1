@@ -255,4 +255,22 @@ Describe 'PowerShell adapter resource tests' {
     $out.results.result.actualstate.Credential.UserName | Should -Be 'User'
     $out.results.result.actualState.result.Credential.Password.Length | Should -Not -BeNullOrEmpty
   }
+
+  It 'Config does not work when credential properties are missing required fields' {
+    $yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: Class-resource credential info
+          type: TestClassResource/TestClassResource
+          properties:
+            Name: 'TestClassResource'
+            Credential:
+              UserName: 'User'
+              OtherProperty: 'Password'
+"@  
+    $out = dsc config get -i $yaml 2>&1 | Out-String
+    $LASTEXITCODE | Should -Be 2
+    $out | Should -Not -BeNullOrEmpty
+    $out | Should -BeLike "*ERROR*The PSCredential property 'Credential' is missing required fields*"
+  }
 }
