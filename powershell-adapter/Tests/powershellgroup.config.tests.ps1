@@ -271,6 +271,6 @@ Describe 'PowerShell adapter resource tests' {
     $out = dsc config get -i $yaml 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
-    $out | Should -BeLike "*ERROR*The PSCredential property 'Credential' is missing required fields*"
+    $out | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*"
   }
 }
