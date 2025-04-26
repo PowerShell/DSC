@@ -17,6 +17,9 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
   }
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
+
+    # Remove after all the tests are done
+    Remove-Module $script:winPSModule -Force -ErrorAction Ignore
   }
 
   BeforeEach {
@@ -214,16 +217,12 @@ resources:
   }
 
   It 'Config works with credential object' -Skip:(!$IsWindows) {
-    BeforeAll {
-      $script:winPSModule = Resolve-Path -Path (Join-Path $PSScriptRoot '..' 'powershell-adapter' 'psDscAdapter' 'win_psDscAdapter.psm1') | Select-Object -ExpandProperty Path
+    BeforeDiscovery {
+      $script:winPSModule = Resolve-Path -Path (Join-Path $PSScriptRoot '..' 'psDscAdapter' 'win_psDscAdapter.psm1') | Select-Object -ExpandProperty Path
       Import-Module $winPSModule -Force -ErrorAction Stop
 
       # Mock the command to work on GitHub runners because Microsoft.PowerShell.Security is not available
       Mock -CommandName ConvertTo-SecureString -MockWith { [System.Security.SecureString]::new() }
-    }
-
-    AfterAll {
-      Remove-Module $script:winPSModule -Force -ErrorAction Ignore
     }
 
     $jsonInput = @{
@@ -243,7 +242,7 @@ resources:
     # Instead of calling dsc.exe we call the cmdlet directly to be able to test the output and mocks
     $resourceObject = Get-DscResourceObject -jsonInput $jsonInput
     $cacheEntry = Invoke-DscCacheRefresh -Module PSDesiredStateConfiguration
-
+  
     $out = Invoke-DscOperation -Operation Test -DesiredState $resourceObject -dscResourceCache $cacheEntry
     $LASTEXITCODE | Should -Be 0
     $out.properties.InDesiredState.InDesiredState | Should -Be $false
