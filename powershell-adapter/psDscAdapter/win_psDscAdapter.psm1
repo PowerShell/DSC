@@ -392,6 +392,9 @@ function Invoke-DscOperation {
                 }
                 catch {
                     $_.Exception | Format-List * -Force | Out-String | Write-DscTrace -Operation Debug
+                    if ($_.Exception.MessageId -eq 'DscResourceNotFound') {
+                        Write-DscTrace -Operation Warn -Message 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
+                    }
                     'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
@@ -446,7 +449,10 @@ function Invoke-DscOperation {
                     }
                 }
                 catch {
-                    
+                    $_.Exception | Format-List * -Force | Out-String | Write-DscTrace -Operation Debug
+                    if ($_.Exception.MessageId -eq 'DscResourceNotFound') {
+                        Write-DscTrace -Operation Warn -Message 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
+                    }
                     'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
