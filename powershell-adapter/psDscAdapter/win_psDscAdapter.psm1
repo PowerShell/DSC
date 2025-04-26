@@ -74,7 +74,7 @@ function Invoke-DscCacheRefresh {
         $cache = Get-Content -Raw $cacheFilePath | ConvertFrom-Json
         if ($cache.CacheSchemaVersion -ne $script:CurrentCacheSchemaVersion) {
             $refreshCache = $true
-            "Incompartible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')" | Write-DscTrace
+            "Incompatible version of cache in file '" + $cache.CacheSchemaVersion + "' (expected '" + $script:CurrentCacheSchemaVersion + "')" | Write-DscTrace
         }
         else {
             $dscResourceCacheEntries = $cache.ResourceCache
@@ -281,14 +281,6 @@ function Get-DscResourceObject {
     $inputObj = $jsonInput | ConvertFrom-Json
     $desiredState = [System.Collections.Generic.List[Object]]::new()
 
-    # match adapter to version of powershell
-    if ($PSVersionTable.PSVersion.Major -le 5) {
-        $adapterName = 'Microsoft.Windows/WindowsPowerShell'
-    }
-    else {
-        $adapterName = 'Microsoft.DSC/PowerShell'
-    }
-
     # change the type from pscustomobject to dscResourceObject
     $inputObj.resources | ForEach-Object -Process {
         $desiredState += [dscResourceObject]@{
@@ -364,7 +356,18 @@ function Invoke-DscOperation {
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { 
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
-                        $property[$_.Name] = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                        $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
+                        $validateProperty | Write-DscTrace -Operation Debug
+                        if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                            if (-not $_.Value.Username -or -not $_.Value.Password) {
+                                "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
+                                exit 1
+                            }
+                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                        }
+                        else {
+                            $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                        }
                     }
                     else {
                         $property[$_.Name] = $_.Value
@@ -373,7 +376,7 @@ function Invoke-DscOperation {
 
                 # using the cmdlet the appropriate dsc module, and handle errors
                 try {
-                    Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property)"
+                    Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)"
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property -ErrorAction Stop
 
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
@@ -402,7 +405,23 @@ function Invoke-DscOperation {
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
-                            $dscResourceInstance.$($_.Name) = $_.Value
+                            # handle input objects by converting them to a hash table
+                            if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
+                                $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
+                                if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                                    if (-not $_.Value.Username -or -not $_.Value.Password) {
+                                        "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
+                                        exit 1
+                                    }
+                                    $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                                }
+                                else {
+                                    $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                                }
+                            }
+                            else {
+                                $dscResourceInstance.$($_.Name) = $_.Value
+                            }
                         }
                     }
 
@@ -444,9 +463,28 @@ function Invoke-DscOperation {
                 }
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
-                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { $property[$_.Name] = $_.Value }
+                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
+                    if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
+                        $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
+                        if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                            if (-not $_.Value.Username -or -not $_.Value.Password) {
+                                "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
+                                exit 1
+                            }
+                            $property.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                        }
+                        else {
+                            $property.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
+                        }
+                    }
+                    else {
+                        $property[$_.Name] = $_.Value
+                    }
+                }
+
                 # using the cmdlet from PSDesiredStateConfiguration module in Windows
                 try {
+                    Write-DscTrace -Operation Debug -Message "Module: $($cachedDscResourceInfo.ModuleName), Name: $($cachedDscResourceInfo.Name), Property: $($property | ConvertTo-Json -Compress)"
                     $invokeResult = Invoke-DscResource -Method $Operation -ModuleName $cachedDscResourceInfo.ModuleName -Name $cachedDscResourceInfo.Name -Property $property
                     if ($invokeResult.GetType().Name -eq 'Hashtable') {
                         $invokeResult.keys | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }

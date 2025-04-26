@@ -416,18 +416,23 @@ function Invoke-DscOperation {
 
                     $ValidProperties = $cachedDscResourceInfo.Properties.Name
 
+                    $ValidProperties | ConvertTo-Json | Write-DscTrace -Operation Trace
+
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
-                                Write-DscTrace -Message "The object is a PSCustomObject"
-                                $_.Value.psobject.properties | ForEach-Object -Begin {
-                                    $propertyHash = @{}
-                                } -Process {
-                                    $propertyHash[$_.Name] = $_.Value
-                                } -End {
-                                    $dscResourceInstance.$($_.Name) = $propertyHash
+                                $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
+                                if ($validateProperty.PropertyType -eq 'PSCredential') {
+                                    if (-not $_.Value.Username -or -not $_.Value.Password) {
+                                        "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
+                                        exit 1
+                                    }
+                                    $dscResourceInstance.$($_.Name) = [System.Management.Automation.PSCredential]::new($_.Value.Username, (ConvertTo-SecureString -AsPlainText $_.Value.Password -Force))
+                                }
+                                else {
+                                    $dscResourceInstance.$($_.Name) = $_.Value.psobject.properties | ForEach-Object -Begin { $propertyHash = @{} } -Process { $propertyHash[$_.Name] = $_.Value } -End { $propertyHash }
                                 }
                             }
                             else {
