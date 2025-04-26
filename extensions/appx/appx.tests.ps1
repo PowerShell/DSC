@@ -3,7 +3,7 @@
 
 Describe 'Tests for Appx resource discovery' {
     BeforeAll {
-        $skip = (!$IsWindows -or ($null -eq (get-appxpackage -Name Microsoft.DesiredStateConfiguration-Preview)))
+        $skip = (!$IsWindows -or ($null -eq (Get-Command Get-AppxPackage -ErrorAction Ignore)) -or ($null -eq (get-appxpackage -Name Microsoft.DesiredStateConfiguration-Preview)))
     }
 
     It 'Should find DSC appx resources' -Skip:$skip {
@@ -16,5 +16,6 @@ Describe 'Tests for Appx resource discovery' {
                 break
             }
         }
+        $found | Should -Be $true
     }
 }
