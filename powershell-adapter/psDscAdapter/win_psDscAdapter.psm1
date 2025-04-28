@@ -25,7 +25,7 @@ if ($PSVersionTable.PSVersion.Major -gt 5) {
     $PSDesiredStateConfiguration = Import-Module $m -Force -PassThru
 }
 else {
-    $env:PSModulePath += ";$env:windir\System32\WindowsPowerShell\v1.0\Modules"
+    $env:PSModulePath = "$env:windir\System32\WindowsPowerShell\v1.0\Modules;$env:PSModulePath"
     $PSDesiredStateConfiguration = Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -PassThru -ErrorAction stop -ErrorVariable $importModuleError
     if (-not [string]::IsNullOrEmpty($importModuleError)) {
         'Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace -Operation Error
@@ -392,6 +392,9 @@ function Invoke-DscOperation {
                 }
                 catch {
                     $_.Exception | Format-List * -Force | Out-String | Write-DscTrace -Operation Debug
+                    if ($_.Exception.MessageId -eq 'DscResourceNotFound') {
+                        Write-DscTrace -Operation Warn -Message 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
+                    }
                     'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
@@ -446,7 +449,10 @@ function Invoke-DscOperation {
                     }
                 }
                 catch {
-                    
+                    $_.Exception | Format-List * -Force | Out-String | Write-DscTrace -Operation Debug
+                    if ($_.Exception.MessageId -eq 'DscResourceNotFound') {
+                        Write-DscTrace -Operation Warn -Message 'For Windows PowerShell, DSC resources must be installed with scope AllUsers'
+                    }
                     'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
