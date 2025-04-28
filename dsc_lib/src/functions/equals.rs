@@ -63,10 +63,10 @@ mod tests {
     }
 
     #[test]
-    fn array_equal() {
+    fn different_types() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals([1,2,3],[1,2,3])]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Bool(true));
+        let result = parser.parse_and_execute("[equals(1,'string')]", &Context::new()).unwrap();
+        assert_eq!(result, Value::Bool(false));
     }
 
     // TODO: Add tests for arrays once `createArray()` is implemented
