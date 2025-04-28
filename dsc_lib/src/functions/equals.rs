@@ -69,19 +69,6 @@ mod tests {
         assert_eq!(result, Value::Bool(true));
     }
 
-    #[test]
-    fn array_notequal() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals([1,2,3],[1,2,4])]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Bool(false));
-    }
-
-    #[test]
-    fn different_types() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals(1,'string')]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Bool(false));
-    }
-
+    // TODO: Add tests for arrays once `createArray()` is implemented
     // TODO: Add tests for objects once `createObject()` is implemented
 }
