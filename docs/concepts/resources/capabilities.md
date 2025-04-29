@@ -75,7 +75,17 @@ resource. DSC performs the synthetic test by:
 
 1. Invoking the **Get** operation on the resource to retrieve the actual state of the instance.
 1. Synthetically testing each property for the desired state of an instance against the actual
-   state returned. The synthetic test uses strict, case-sensitive equivalence.
+   state returned. The synthetic test:
+   
+   - Uses strict, case-sensitive equivalence for strings.
+   - Uses simple equivalence for numerical, boolean, and null values.
+   - For arrays, item order doesn't matter. Arrays are considered equivalent if both the desired
+     state and actual state arrays have the same number of items and if each item in the desired
+     state is contained in the actual state array.
+   - For objects, property order doesn't matter. The actual state of the resource can be a superset
+     of the desired state. Objects are considered equivalent if each specified property for the
+     desired state is equal to the same property for the actual state. If an actual state property
+     isn't defined in the desired state, DSC ignores that property for the synthetic test.
 1. If the desired state for a property and the actual state aren't the same, DSC marks the property
    as out of the desired state.
 1. If any properties are out of the desired state, DSC reports the entire instance as not being in

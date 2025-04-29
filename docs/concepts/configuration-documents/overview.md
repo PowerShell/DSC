@@ -152,7 +152,7 @@ When you use this command, DSC also:
 - Provides metadata about the operation as a whole and for each resource instance.
 
 ```sh
-dsc config test --file /example.config.dsc.yaml
+dsc config test --file ./example.config.dsc.yaml
 ```
 
 ```yaml

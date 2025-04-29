@@ -62,18 +62,6 @@ Invoke-Item .\myFile.csv
 
 The `Invoke-Item` command opens the file in the default application for CSV files.
 
-### HyperText Markup Language (HTML) format
-
-HTML files can be viewed by web browsers such as **Microsoft Edge**. The following example shows
-how to save the output of a command to an HTML file.
-
-```powershell
-dsc resource list | ConvertFrom-Json | ConvertTo-HTML | Out-File .\myFile.html
-Invoke-Item .\myFile.html
-```
-
-The `Invoke-Item` command opens the file in your default web browser.
-
 ## Reduce the amount of output
 
 One way to improve the accessibility of the output is to reduce the amount of output displayed in

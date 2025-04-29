@@ -39,7 +39,7 @@ If the JSON file validates against the schema, DSC can use the DSC Resource.
 
 At a minimum, the manifest must define:
 
-- The version of the DSC resource manifest JSON schema it's compatible with.
+- The semantic version (semver) of the DSC resource manifest JSON schema it's compatible with.
 - The fully qualified name of the resource, like `Microsoft.Windows/Registry`. The fully qualified
   name syntax is `<owner>[.<group>][.<area>]/<name>`. The group and area components of the fully
   qualified name enable organizing resources into namespaces.

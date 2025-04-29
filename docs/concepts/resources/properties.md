@@ -127,6 +127,9 @@ expectations. These reusable properties are called canonical resource properties
 Any resource that defines a canonical resource property in the instance schema must adhere to the
 requirements and behaviors defined for the canonical property.
 
+Canonical properties always begin with an underscore (`_`). Non-canonical property names should
+never begin with an underscore. The leading underscore is reserved for canonical property names.
+
 For more information about the available canonical properties, see
 [DSC canonical resource properties][02].
 
