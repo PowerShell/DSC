@@ -14,6 +14,7 @@ pub mod concat;
 pub mod create_array;
 pub mod div;
 pub mod envvar;
+pub mod equals;
 pub mod int;
 pub mod max;
 pub mod min;
@@ -73,6 +74,7 @@ impl FunctionDispatcher {
         functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
         functions.insert("div".to_string(), Box::new(div::Div{}));
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
+        functions.insert("equals".to_string(), Box::new(equals::Equals{}));
         functions.insert("int".to_string(), Box::new(int::Int{}));
         functions.insert("max".to_string(), Box::new(max::Max{}));
         functions.insert("min".to_string(), Box::new(min::Min{}));
