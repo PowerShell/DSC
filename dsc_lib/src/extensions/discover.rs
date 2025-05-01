@@ -15,6 +15,7 @@ pub struct DiscoverMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct DiscoverResult {
+    /// The path to the resource manifest, must be absolute.
     #[serde(rename = "resourceManifestPath")]
     pub resource_manifest_path: String,
 }
