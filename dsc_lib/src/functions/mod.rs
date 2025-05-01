@@ -14,7 +14,12 @@ pub mod concat;
 pub mod create_array;
 pub mod div;
 pub mod envvar;
+<<<<<<< HEAD
 pub mod equals;
+||||||| parent of 48e0e337 (Add `if()` function)
+=======
+pub mod r#if;
+>>>>>>> 48e0e337 (Add `if()` function)
 pub mod int;
 pub mod max;
 pub mod min;
@@ -75,6 +80,7 @@ impl FunctionDispatcher {
         functions.insert("div".to_string(), Box::new(div::Div{}));
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
         functions.insert("equals".to_string(), Box::new(equals::Equals{}));
+        functions.insert("if".to_string(), Box::new(r#if::If{}));
         functions.insert("int".to_string(), Box::new(int::Int{}));
         functions.insert("max".to_string(), Box::new(max::Max{}));
         functions.insert("min".to_string(), Box::new(min::Min{}));
