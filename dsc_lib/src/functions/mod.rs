@@ -14,12 +14,8 @@ pub mod concat;
 pub mod create_array;
 pub mod div;
 pub mod envvar;
-<<<<<<< HEAD
 pub mod equals;
-||||||| parent of 48e0e337 (Add `if()` function)
-=======
 pub mod r#if;
->>>>>>> 48e0e337 (Add `if()` function)
 pub mod int;
 pub mod max;
 pub mod min;
