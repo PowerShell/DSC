@@ -40,7 +40,7 @@ function Get-DSCResourceModules {
             }
         }
     }
-    
+
     return $dscModulePsd1List
 }
 
@@ -83,7 +83,7 @@ function Add-AstMembers {
         [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
         $prop.Name = $property.Name
         $prop.PropertyType = $property.PropertyType.TypeName.Name
-        $prop.IsMandatory = $isKeyProperty 
+        $prop.IsMandatory = $isKeyProperty
         $Properties.Add($prop)
     }
 }
@@ -104,7 +104,7 @@ function FindAndParseResourceDefinitions {
     if (".psm1", ".ps1" -notcontains ([System.IO.Path]::GetExtension($filePath))) {
         return
     }
-    
+
     "Loading resources from file '$filePath'" | Write-DscTrace -Operation Trace
     #TODO: Ensure embedded instances in properties are working correctly
     [System.Management.Automation.Language.Token[]] $tokens = $null
@@ -134,13 +134,13 @@ function FindAndParseResourceDefinitions {
                 $DscResourceInfo.Module = $filePath
                 $DscResourceInfo.Path = $filePath
                 #TODO: ModuleName, Version and ParentPath should be taken from psd1 contents
-                $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath) 
+                $DscResourceInfo.ModuleName = [System.IO.Path]::GetFileNameWithoutExtension($filePath)
                 $DscResourceInfo.ParentPath = [System.IO.Path]::GetDirectoryName($filePath)
                 $DscResourceInfo.Version = $moduleVersion
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
                 Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
-                
+
                 $resourceList.Add($DscResourceInfo)
             }
         }
@@ -157,7 +157,7 @@ function LoadPowerShellClassResourcesFromModule {
     )
 
     "Loading resources from module '$($moduleInfo.Path)'" | Write-DscTrace -Operation Trace
-    
+
     if ($moduleInfo.RootModule) {
         if (".psm1", ".ps1" -notcontains ([System.IO.Path]::GetExtension($moduleInfo.RootModule)) -and
             (-not $moduleInfo.NestedModules)) {
@@ -190,8 +190,8 @@ function LoadPowerShellClassResourcesFromModule {
     This function caches the results of the Get-DscResource call to optimize performance.
 
 .DESCRIPTION
-    This function is designed to improve the performance of DSC operations by caching the results of the Get-DscResource call. 
-    By storing the results, subsequent calls to Get-DscResource can retrieve the cached data instead of making a new call each time. 
+    This function is designed to improve the performance of DSC operations by caching the results of the Get-DscResource call.
+    By storing the results, subsequent calls to Get-DscResource can retrieve the cached data instead of making a new call each time.
     This can significantly speed up operations that need to repeatedly access DSC resources.
 
 .EXAMPLE
@@ -240,7 +240,7 @@ function Invoke-DscCacheRefresh {
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
-                    
+
                         if (Test-Path $_.Name) {
                             $file_LastWriteTime = (Get-Item $_.Name).LastWriteTime
                             # Truncate DateTime to seconds
@@ -289,7 +289,7 @@ function Invoke-DscCacheRefresh {
         "Cache file not found '$cacheFilePath'" | Write-DscTrace
         $refreshCache = $true
     }
-    
+
     if ($refreshCache) {
         'Constructing Get-DscResource cache' | Write-DscTrace
 
@@ -306,7 +306,7 @@ function Invoke-DscCacheRefresh {
                     $processedModuleNames.Add($mod.Name, $true)
 
                     # from several modules with the same name select the one with the highest version
-                    $selectedMod = $modules | Where-Object Name -EQ $mod.Name 
+                    $selectedMod = $modules | Where-Object Name -EQ $mod.Name
                     if ($selectedMod.Count -gt 1) {
                         "Found $($selectedMod.Count) modules with name '$($mod.Name)'" | Write-DscTrace -Operation Trace
                         $selectedMod = $selectedMod | Sort-Object -Property Version -Descending | Select-Object -First 1
@@ -407,7 +407,7 @@ function Invoke-DscOperation {
 
         # workaround: script based resources do not validate Get parameter consistency, so we need to remove any parameters the author chose not to include in Get-TargetResource
         switch ([dscResourceType]$cachedDscResourceInfo.ImplementationDetail) {
-  
+
             'ClassBased' {
                 try {
                     # load powershell class from external module
@@ -424,7 +424,7 @@ function Invoke-DscOperation {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                                if ($validateProperty.PropertyType -eq 'PSCredential') {
+                                if ($validateProperty -and $validateProperty.PropertyType -eq 'PSCredential') {
                                     if (-not $_.Value.Username -or -not $_.Value.Password) {
                                         "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                         exit 1
@@ -453,7 +453,7 @@ function Invoke-DscOperation {
                         }
                         'Test' {
                             $Result = $dscResourceInstance.Test()
-                            $addToActualState.properties = [psobject]@{'InDesiredState' = $Result } 
+                            $addToActualState.properties = [psobject]@{'InDesiredState' = $Result }
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
@@ -464,7 +464,7 @@ function Invoke-DscOperation {
                                     break
                                 }
                             }
-                            
+
                             if ($null -eq $method) {
                                 "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
                                 exit 1
@@ -481,7 +481,7 @@ function Invoke-DscOperation {
                     }
                 }
                 catch {
-                    
+
                     'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }

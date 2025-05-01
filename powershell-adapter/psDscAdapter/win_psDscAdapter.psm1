@@ -37,8 +37,8 @@ else {
     This function caches the results of the Get-DscResource call to optimize performance.
 
 .DESCRIPTION
-    This function is designed to improve the performance of DSC operations by caching the results of the Get-DscResource call. 
-    By storing the results, subsequent calls to Get-DscResource can retrieve the cached data instead of making a new call each time. 
+    This function is designed to improve the performance of DSC operations by caching the results of the Get-DscResource call.
+    By storing the results, subsequent calls to Get-DscResource can retrieve the cached data instead of making a new call each time.
     This can significantly speed up operations that need to repeatedly access DSC resources.
 
 .EXAMPLE
@@ -90,7 +90,7 @@ function Invoke-DscCacheRefresh {
                 foreach ($cacheEntry in $dscResourceCacheEntries) {
 
                     $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
-                    
+
                         if (Test-Path $_.Name) {
                             $file_LastWriteTime = (Get-Item $_.Name).LastWriteTimeUtc
                             # Truncate DateTime to seconds
@@ -138,7 +138,7 @@ function Invoke-DscCacheRefresh {
         "Cache file not found '$cacheFilePath'" | Write-DscTrace
         $refreshCache = $true
     }
-    
+
     if ($refreshCache) {
         'Constructing Get-DscResource cache' | Write-DscTrace
 
@@ -354,11 +354,11 @@ function Invoke-DscOperation {
                 }
 
                 # morph the INPUT object into a hashtable named "property" for the cmdlet Invoke-DscResource
-                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process { 
+                $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                        $validateProperty | Write-DscTrace -Operation Debug
-                        if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                        Write-DscTrace -Operation Debug -Message ($validateProperty | Out-String)
+                        if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
                             if (-not $_.Value.Username -or -not $_.Value.Password) {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                 exit 1
@@ -386,7 +386,7 @@ function Invoke-DscOperation {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
                         $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
-                    
+
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $ResultProperties
                 }
@@ -438,7 +438,7 @@ function Invoke-DscOperation {
                         }
                         'Test' {
                             $Result = $dscResourceInstance.Test()
-                            $addToActualState.properties = [psobject]@{'InDesiredState' = $Result } 
+                            $addToActualState.properties = [psobject]@{'InDesiredState' = $Result }
                         }
                         'Export' {
                             $t = $dscResourceInstance.GetType()
@@ -499,7 +499,7 @@ function Invoke-DscOperation {
                         # the object returned by WMI is a CIM instance with a lot of additional data. only return DSC properties
                         $invokeResult.psobject.Properties.name | Where-Object { 'CimClass', 'CimInstanceProperties', 'CimSystemProperties' -notcontains $_ } | ForEach-Object -Begin { $ResultProperties = @{} } -Process { $ResultProperties[$_] = $invokeResult.$_ }
                     }
-                    
+
                     # set the properties of the OUTPUT object from the result of Get-TargetResource
                     $addToActualState.properties = $ResultProperties
                 }
