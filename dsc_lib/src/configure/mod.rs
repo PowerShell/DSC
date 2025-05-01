@@ -405,12 +405,18 @@ impl Configurator {
                         let GetResult::Resource(after_result) = after_result else {
                             return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
                         };
-                        let before_value = serde_json::to_value(&before_response.actual_state)?;
-                        let after_value = serde_json::to_value(&after_result.actual_state)?;
+                        let diff = get_diff(&before_response.actual_state, &after_result.actual_state);
+                        let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
+                        // a `get` will return a `result` property, but an actual `set` will have that as `resources`
+                        if before.contains_key("result") && !before.contains_key("resources") {
+                            before.insert("resources".to_string() ,before["result"].clone());
+                            before.remove("result");
+                        }
+                        let before_value = serde_json::to_value(&before)?;
                         SetResult::Resource(ResourceSetResponse {
-                            before_state: before_response.actual_state,
+                            before_state: before_value.clone(),
                             after_state: after_result.actual_state,
-                            changed_properties: Some(get_diff(&before_value, &after_value)),
+                            changed_properties: Some(diff),
                         })
                     },
                     GetResult::Group(_) => {

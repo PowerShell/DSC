@@ -221,9 +221,10 @@ Describe 'PowerShell adapter resource tests' {
                   Name: 'DSCv3'
 "@
 
-    $out = dsc config $operation -i $yaml | ConvertFrom-Json
-    $text = dsc config $operation -i $yaml | Out-String
-    $LASTEXITCODE | Should -Be 0
+    $out = dsc -l trace config $operation -i $yaml 2> $TestDrive/tracing.txt
+    $text = $out | Out-String
+    $out = $out | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/tracing.txt)
     switch ($Operation) {
       'get' {
         $out.results[0].result.actualState.Name | Should -BeExactly 'TestClassResource1' -Because $text

@@ -5,7 +5,7 @@ use clap::ValueEnum;
 use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::{collections::HashMap, env, process::Stdio};
 use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
 use crate::dscerror::DscError;
@@ -146,11 +146,23 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         verify_json(resource, cwd, &stdout)?;
     }
 
-    let pre_state: Value = if exit_code == 0 {
+    let pre_state_value: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
     else {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    };
+    let pre_state = if pre_state_value.is_object() {
+        let mut pre_state_map: Map<String, Value> = serde_json::from_value(pre_state_value)?;
+
+        // if the resource is an adapter, then the `get` will return a `result`, but a full `set` expects the before state to be `resources`
+        if resource.kind == Some(Kind::Adapter) && pre_state_map.contains_key("result") && !pre_state_map.contains_key("resources") {
+            pre_state_map.insert("resources".to_string(), pre_state_map["result"].clone());
+            pre_state_map.remove("result");
+        }
+        serde_json::to_value(pre_state_map)?
+    } else {
+        pre_state_value
     };
 
     let mut env: Option<HashMap<String, String>> = None;
