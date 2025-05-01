@@ -409,7 +409,7 @@ impl Configurator {
                         let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
                         // a `get` will return a `result` property, but an actual `set` will have that as `resources`
                         if before.contains_key("result") && !before.contains_key("resources") {
-                            before.insert("resource".to_string() ,before["result"].clone());
+                            before.insert("resources".to_string() ,before["result"].clone());
                             before.remove("result");
                         }
                         let before_value = serde_json::to_value(&before)?;
