@@ -4,9 +4,10 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
-use rt_format::{Format, FormatArgument, ParsedFormat, Specifier};
+use rt_format::{Format as RtFormat, FormatArgument, ParsedFormat, Specifier};
 use rust_i18n::t;
 use serde_json::Value;
+use std::fmt;
 use std::fmt::{Error, Formatter, Write};
 
 impl FormatArgument for Value {
@@ -108,51 +109,10 @@ mod tests {
     }
 
     #[test]
-    fn strings_with_spaces() {
+    fn numbers_as_hex() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a ', ' ', ' b')]", &Context::new()).unwrap();
-        assert_eq!(result, "a   b");
+        let result = parser.parse_and_execute("[format('{0:x} {0:X}', 12, 13)]", &Context::new()).unwrap();
+        assert_eq!(result, "c D");
     }
 
-    #[test]
-    fn arrays() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat(createArray('a','b'), createArray('c','d'))]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), r#"["a","b","c","d"]"#);
-    }
-
-    #[test]
-    fn string_and_numbers() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', 1)]", &Context::new());
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn nested() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', concat('b', 'c'), 'd')]", &Context::new()).unwrap();
-        assert_eq!(result, "abcd");
-    }
-
-    #[test]
-    fn invalid_one_parameter() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a')]", &Context::new());
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn string_and_array() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', createArray('b','c'))]", &Context::new());
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn array_and_string() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat(createArray('a','b'), 'c')]", &Context::new());
-        assert!(result.is_err());
-    }
 }
