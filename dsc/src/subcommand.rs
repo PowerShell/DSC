@@ -17,7 +17,7 @@ use dsc_lib::{
         Configurator,
     },
     discovery::discovery_trait::DiscoveryKind,
-    discovery::command_discovery::ManifestResource,
+    discovery::command_discovery::ImportedManifest,
     dscerror::DscError,
     DscManager,
     dscresources::invoke_result::{
@@ -625,7 +625,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     }
     let mut include_separator = false;
     for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
-        if let ManifestResource::Extension(extension) = manifest_resource {
+        if let ImportedManifest::Extension(extension) = manifest_resource {
             let mut capabilities = "-".to_string();
             let capability_types = [
                 (ExtensionCapability::Discover, "d"),
@@ -683,7 +683,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
     }
     let mut include_separator = false;
     for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
-        if let ManifestResource::Resource(resource) = manifest_resource {
+        if let ImportedManifest::Resource(resource) = manifest_resource {
             let mut capabilities = "--------".to_string();
             let capability_types = [
                 (Capability::Get, "g"),

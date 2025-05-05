@@ -8,7 +8,7 @@ use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery};
 use crate::extensions::dscextension::DscExtension;
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress::ProgressFormat};
 use std::collections::BTreeMap;
-use command_discovery::ManifestResource;
+use command_discovery::ImportedManifest;
 use tracing::error;
 
 #[derive(Clone)]
@@ -42,12 +42,12 @@ impl Discovery {
     /// # Returns
     ///
     /// A vector of `DscResource` instances.
-    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ManifestResource> {
+    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];
 
-        let mut resources: Vec<ManifestResource> = Vec::new();
+        let mut resources: Vec<ImportedManifest> = Vec::new();
 
         for mut discovery_type in discovery_types {
 

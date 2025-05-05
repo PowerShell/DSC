@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 use std::{fmt::Display, path::Path};
 use tracing::info;
 
-use crate::{discovery::command_discovery::{load_manifest, ManifestResource}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}};
+use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}};
 
 use super::{discover::DiscoverResult, extension_manifest::ExtensionManifest};
 
@@ -110,7 +110,7 @@ impl DscExtension {
                     }
                     let manifest_path = Path::new(&discover_result.resource_manifest_path);
                     // Currently we don't support extensions discovering other extensions
-                    if let ManifestResource::Resource(resource) = load_manifest(manifest_path)? {
+                    if let ImportedManifest::Resource(resource) = load_manifest(manifest_path)? {
                         resources.push(resource);
                     }
                 }

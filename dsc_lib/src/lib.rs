@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::command_discovery::ManifestResource;
+use crate::discovery::command_discovery::ImportedManifest;
 use crate::discovery::discovery_trait::DiscoveryKind;
 use crate::progress::ProgressFormat;
 
@@ -51,7 +51,7 @@ impl DscManager {
         self.discovery.find_resource(name)
     }
 
-    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ManifestResource> {
+    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
         self.discovery.list_available(kind, type_name_filter, adapter_name_filter, progress_format)
     }
 

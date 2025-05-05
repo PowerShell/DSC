@@ -31,7 +31,7 @@ const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
 
 #[derive(Clone)]
-pub enum ManifestResource {
+pub enum ImportedManifest {
     Resource(DscResource),
     Extension(DscExtension),
 }
@@ -246,7 +246,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                 };
 
                                 match resource {
-                                    ManifestResource::Extension(extension) => {
+                                    ImportedManifest::Extension(extension) => {
                                         if regex.is_match(&extension.type_name) {
                                             trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name));
                                             // we only keep newest version of the extension so compare the version and only keep the newest
@@ -265,7 +265,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                             }
                                         }
                                     },
-                                    ManifestResource::Resource(resource) => {
+                                    ImportedManifest::Resource(resource) => {
                                         if regex.is_match(&resource.type_name) {
                                             if let Some(ref manifest) = resource.manifest {
                                                 let manifest = import_manifest(manifest.clone())?;
@@ -423,19 +423,19 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
-    fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<ManifestResource>>, DscError> {
+    fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<ImportedManifest>>, DscError> {
 
         trace!("Listing resources with type_name_filter '{type_name_filter}' and adapter_name_filter '{adapter_name_filter}'");
-        let mut resources = BTreeMap::<String, Vec<ManifestResource>>::new();
+        let mut resources = BTreeMap::<String, Vec<ImportedManifest>>::new();
 
         if *kind == DiscoveryKind::Resource {
             if adapter_name_filter.is_empty() {
                 self.discover(kind, type_name_filter)?;
                 for (resource_name, resources_vec) in &self.resources {
-                    resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ManifestResource::Resource(r.clone())).collect());
+                    resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
                 }
                 for (adapter_name, adapter_vec) in &self.adapters {
-                    resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ManifestResource::Resource(r.clone())).collect());
+                    resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
                 }
             } else {
                 self.discover(kind, "*")?;
@@ -445,13 +445,13 @@ impl ResourceDiscovery for CommandDiscovery {
                 add_resources_to_lookup_table(&self.adapted_resources);
 
                 for (adapted_name, adapted_vec) in &self.adapted_resources {
-                    resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ManifestResource::Resource(r.clone())).collect());
+                    resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
                 }
             }
         } else {
             self.discover(kind, type_name_filter)?;
             for (extension_name, extension) in &self.extensions {
-                resources.insert(extension_name.clone(), vec![ManifestResource::Extension(extension.clone())]);
+                resources.insert(extension_name.clone(), vec![ImportedManifest::Extension(extension.clone())]);
             }
         }
 
@@ -595,12 +595,12 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
 /// # Errors
 ///
 /// * Returns a `DscError` if the manifest could not be loaded or parsed.
-pub fn load_manifest(path: &Path) -> Result<ManifestResource, DscError> {
+pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
     let contents = fs::read_to_string(path)?;
     if path.extension() == Some(OsStr::new("json")) {
         if let Ok(manifest) = serde_json::from_str::<ExtensionManifest>(&contents) {
             let extension = load_extension_manifest(path, &manifest)?;
-            return Ok(ManifestResource::Extension(extension));
+            return Ok(ImportedManifest::Extension(extension));
         }
         let manifest = match serde_json::from_str::<ResourceManifest>(&contents) {
             Ok(manifest) => manifest,
@@ -609,12 +609,12 @@ pub fn load_manifest(path: &Path) -> Result<ManifestResource, DscError> {
             }
         };
         let resource = load_resource_manifest(path, &manifest)?;
-        return Ok(ManifestResource::Resource(resource));
+        return Ok(ImportedManifest::Resource(resource));
     }
 
     if let Ok(manifest) = serde_yaml::from_str::<ResourceManifest>(&contents) {
         let resource = load_resource_manifest(path, &manifest)?;
-        return Ok(ManifestResource::Resource(resource));
+        return Ok(ImportedManifest::Resource(resource));
     }
     let manifest = match serde_yaml::from_str::<ExtensionManifest>(&contents) {
         Ok(manifest) => manifest,
@@ -623,7 +623,7 @@ pub fn load_manifest(path: &Path) -> Result<ManifestResource, DscError> {
         }
     };
     let extension = load_extension_manifest(path, &manifest)?;
-    Ok(ManifestResource::Extension(extension))
+    Ok(ImportedManifest::Extension(extension))
 }
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
