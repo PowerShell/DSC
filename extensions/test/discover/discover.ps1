@@ -9,7 +9,7 @@ param(
 
 Get-ChildItem -Path $PSScriptRoot/resources/*.json | ForEach-Object {
     $resource = [pscustomobject]@{
-        resourceManifestPath = if ($RelativePath) {
+        manifestPath = if ($RelativePath) {
             Resolve-Path -Path $_.FullName -Relative
         } else {
             $_.FullName

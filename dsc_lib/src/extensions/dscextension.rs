@@ -105,10 +105,10 @@ impl DscExtension {
                             return Err(DscError::Json(err));
                         }
                     };
-                    if !Path::new(&discover_result.resource_manifest_path).is_absolute() {
-                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = discover_result.resource_manifest_path.clone()).to_string()));
+                    if !Path::new(&discover_result.manifest_path).is_absolute() {
+                        return Err(DscError::Extension(t!("extensions.dscextension.discoverNotAbsolutePath", extension = self.type_name.clone(), path = discover_result.manifest_path.clone()).to_string()));
                     }
-                    let manifest_path = Path::new(&discover_result.resource_manifest_path);
+                    let manifest_path = Path::new(&discover_result.manifest_path);
                     // Currently we don't support extensions discovering other extensions
                     if let ImportedManifest::Resource(resource) = load_manifest(manifest_path)? {
                         resources.push(resource);
