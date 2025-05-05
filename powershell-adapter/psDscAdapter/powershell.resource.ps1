@@ -45,6 +45,11 @@ if ($Operation -eq 'ClearCache') {
     exit 0
 }
 
+if ($PSVersionTable.PSVersion.Major -le 5) {
+    # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
+    $env:PSModulePath = ($env:PSModulePath -split ';' | Where-Object { $_ -notlike '*\powershell\*' }) -join ';'
+}
+
 if ('Validate' -ne $Operation) {
     Write-DscTrace -Operation Debug -Message "jsonInput=$jsonInput"
 

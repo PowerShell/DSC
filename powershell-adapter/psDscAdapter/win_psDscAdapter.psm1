@@ -54,19 +54,7 @@ function Invoke-DscCacheRefresh {
 
     $refreshCache = $false
 
-    $cacheFilePath = if ($IsWindows) {
-        # PS 6+ on Windows
-        Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-    }
-    else {
-        # either WinPS or PS 6+ on Linux/Mac
-        if ($PSVersionTable.PSVersion.Major -le 5) {
-            Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-        }
-        else {
-            Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
-        }
-    }
+    $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
 
     if (Test-Path $cacheFilePath) {
         "Reading from Get-DscResource cache file $cacheFilePath" | Write-DscTrace
