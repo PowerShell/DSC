@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use super::command_discovery::ImportedManifest;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DiscoveryKind {
     Resource,
     Extension,

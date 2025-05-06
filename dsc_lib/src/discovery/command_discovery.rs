@@ -184,7 +184,7 @@ impl ResourceDiscovery for CommandDiscovery {
 
     #[allow(clippy::too_many_lines)]
     fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
-        info!("{}", t!("discovery.commandDiscovery.discoverResources", filter = filter));
+        info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter));
 
         // if kind is DscResource, we need to discover extensions first
         if *kind == DiscoveryKind::Resource {
