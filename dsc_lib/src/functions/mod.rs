@@ -16,6 +16,7 @@ pub mod div;
 pub mod envvar;
 pub mod equals;
 pub mod r#if;
+pub mod format;
 pub mod int;
 pub mod max;
 pub mod min;
@@ -77,6 +78,7 @@ impl FunctionDispatcher {
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
         functions.insert("equals".to_string(), Box::new(equals::Equals{}));
         functions.insert("if".to_string(), Box::new(r#if::If{}));
+        functions.insert("format".to_string(), Box::new(format::Format{}));
         functions.insert("int".to_string(), Box::new(int::Int{}));
         functions.insert("max".to_string(), Box::new(max::Max{}));
         functions.insert("min".to_string(), Box::new(min::Min{}));

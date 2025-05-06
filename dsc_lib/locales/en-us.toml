@@ -200,6 +200,13 @@ notFound = "Environment variable not found"
 [functions.if]
 conditionNotBoolean = "Condition is not a boolean"
 
+[functions.format]
+experimental = "`format()` function is experimental"
+formatInvalid = "First `format()` argument must be a string"
+numberTooLarge = "Number is too large"
+invalidArgType = "Unsupported argument type"
+invalidFormatString = "Invalid format string"
+
 [functions.int]
 invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
