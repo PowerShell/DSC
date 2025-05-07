@@ -551,7 +551,7 @@ dependencies = [
 
 [[package]]
 name = "dsc"
-version = "3.1.0-preview.4"
+version = "3.1.0-preview.5"
 dependencies = [
  "clap",
  "clap_complete",
@@ -559,7 +559,7 @@ dependencies = [
  "ctrlc",
  "dsc_lib",
  "indicatif",
- "jsonschema 0.29.0",
+ "jsonschema",
  "path-absolutize",
  "rust-i18n",
  "schemars",
@@ -584,7 +584,7 @@ dependencies = [
  "clap",
  "derive_builder",
  "indicatif",
- "jsonschema 0.30.0",
+ "jsonschema",
  "linked-hash-map",
  "num-traits",
  "regex",
@@ -1052,30 +1052,6 @@ dependencies = [
 
 [[package]]
 name = "jsonschema"
-version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c59cb1733c34377b6067a0419befd7f25073c5249ec3b0614a482bf499e1df5"
-dependencies = [
- "ahash",
- "base64",
- "bytecount",
- "email_address",
- "fancy-regex 0.14.0",
- "fraction",
- "idna",
- "itoa",
- "num-cmp",
- "once_cell",
- "percent-encoding",
- "referencing 0.29.0",
- "regex-syntax 0.8.5",
- "serde",
- "serde_json",
- "uuid-simd",
-]
-
-[[package]]
-name = "jsonschema"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1b46a0365a611fbf1d2143104dcf910aada96fafd295bab16c60b802bf6fa1d"
@@ -1092,7 +1068,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "percent-encoding",
- "referencing 0.30.0",
+ "referencing",
  "regex",
  "regex-syntax 0.8.5",
  "serde",
@@ -1337,11 +1313,21 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "objc2-core-foundation"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "daeaf60f25471d26948a1c2f840e3f7d86f4109e3af4e8e4b5cd70c39690d925"
+checksum = "1c10c2894a6fed806ade6027bcd50662746363a9589d3ec9d9bef30a4e4bc166"
 dependencies = [
  "bitflags 2.9.0",
+]
+
+[[package]]
+name = "objc2-io-kit"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71c1c64d6120e51cd86033f67176b1cb66780c2efe34dec55176f77befd93c0a"
+dependencies = [
+ "libc",
+ "objc2-core-foundation",
 ]
 
 [[package]]
@@ -1503,20 +1489,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "referencing"
-version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce52678d53e5ee37e4af0a9036ca834d0cd34b33c82457c6b06a24f8d783344"
-dependencies = [
- "ahash",
- "fluent-uri",
- "once_cell",
- "parking_lot",
- "percent-encoding",
- "serde_json",
 ]
 
 [[package]]
@@ -1951,14 +1923,15 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.34.2"
+version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4b93974b3d3aeaa036504b8eefd4c039dced109171c1ae973f1dc63b2c7e4b2"
+checksum = "b897c8ea620e181c7955369a31be5f48d9a9121cb59fd33ecef9ff2a34323422"
 dependencies = [
  "libc",
  "memchr",
  "ntapi",
  "objc2-core-foundation",
+ "objc2-io-kit",
  "windows",
 ]
 
@@ -2055,9 +2028,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.44.2"
+version = "1.45.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6b88822cbe49de4185e3a4cbf8321dd487cf5fe0c5c65695fef6346371e9c48"
+checksum = "2513ca694ef9ede0fb23fe71a4ee4107cb102b9dc1930f6d0fd77aae068ae165"
 dependencies = [
  "backtrace",
  "bytes",
@@ -2520,12 +2493,24 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "windows"
-version = "0.57.0"
+version = "0.61.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12342cb4d8e3b046f3d80effd474a7a02447231330ef77d71daa6fbc40681143"
+checksum = "c5ee8f3d025738cb02bad7868bbb5f8a6327501e870bf51f1b455b0a2454a419"
 dependencies = [
- "windows-core 0.57.0",
- "windows-targets",
+ "windows-collections",
+ "windows-core 0.61.0",
+ "windows-future",
+ "windows-link",
+ "windows-numerics",
+]
+
+[[package]]
+name = "windows-collections"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3beeceb5e5cfd9eb1d76b381630e82c4241ccd0d27f1a39ed41b2760b255c5e8"
+dependencies = [
+ "windows-core 0.61.0",
 ]
 
 [[package]]
@@ -2539,21 +2524,32 @@ dependencies = [
 
 [[package]]
 name = "windows-core"
-version = "0.57.0"
+version = "0.61.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2ed2439a290666cd67ecce2b0ffaad89c2a56b976b736e6ece670297897832d"
+checksum = "4763c1de310c86d75a878046489e2e5ba02c649d185f21c67d4cf8a56d098980"
 dependencies = [
  "windows-implement",
  "windows-interface",
+ "windows-link",
  "windows-result",
- "windows-targets",
+ "windows-strings",
+]
+
+[[package]]
+name = "windows-future"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a1d6bbefcb7b60acd19828e1bc965da6fcf18a7e39490c5f8be71e54a19ba32"
+dependencies = [
+ "windows-core 0.61.0",
+ "windows-link",
 ]
 
 [[package]]
 name = "windows-implement"
-version = "0.57.0"
+version = "0.60.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9107ddc059d5b6fbfbffdfa7a7fe3e22a226def0b2608f72e9d552763d3e1ad7"
+checksum = "a47fddd13af08290e67f4acabf4b459f647552718f683a7b415d290ac744a836"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2562,9 +2558,9 @@ dependencies = [
 
 [[package]]
 name = "windows-interface"
-version = "0.57.0"
+version = "0.59.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29bee4b38ea3cde66011baa44dba677c432a78593e202392d1e9070cf2a7fca7"
+checksum = "bd9211b69f8dcdfa817bfd14bf1c97c9188afa36f4750130fcdf3f400eca9fa8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2573,17 +2569,36 @@ dependencies = [
 
 [[package]]
 name = "windows-link"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6dccfd733ce2b1753b03b6d3c65edf020262ea35e20ccdf3e288043e6dd620e3"
+checksum = "76840935b766e1b0a05c0066835fb9ec80071d4c09a16f6bd5f7e655e3c14c38"
+
+[[package]]
+name = "windows-numerics"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9150af68066c4c5c07ddc0ce30421554771e528bde427614c61038bc2c92c2b1"
+dependencies = [
+ "windows-core 0.61.0",
+ "windows-link",
+]
 
 [[package]]
 name = "windows-result"
-version = "0.1.2"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e383302e8ec8515204254685643de10811af0ed97ea37210dc26fb0032647f8"
+checksum = "c64fd11a4fd95df68efcfee5f44a294fe71b8bc6a91993e2791938abcc712252"
 dependencies = [
- "windows-targets",
+ "windows-link",
+]
+
+[[package]]
+name = "windows-strings"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a2ba9642430ee452d5a7aa78d72907ebe8cfda358e8cb7918a2050581322f97"
+dependencies = [
+ "windows-link",
 ]
 
 [[package]]
