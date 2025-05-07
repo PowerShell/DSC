@@ -73,50 +73,52 @@ function Invoke-DscCacheRefresh {
                 "Filtered DscResourceCache cache is empty" | Write-DscTrace
             }
             else {
-                "Checking cache for stale entries" | Write-DscTrace
+                "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                foreach ($cacheEntry in $dscResourceCacheEntries) {
+                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
 
-                    $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
+                $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
+                $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
+                $hs_cache.SymmetricExceptWith($hs_live)
+                $diff = $hs_cache
 
-                        if (Test-Path $_.Name) {
-                            $file_LastWriteTime = (Get-Item $_.Name).LastWriteTimeUtc
-                            # Truncate DateTime to seconds
-                            $file_LastWriteTime = $file_LastWriteTime.AddTicks( - ($file_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+                "PSModulePath diff '$diff'" | Write-DscTrace
+                if ($diff.Count -gt 0) {
+                    $refreshCache = $true
+                    # Get all resources
+                    $Module = $null
+                }
 
-                            $cache_LastWriteTime = [DateTime]$_.Value
-                            # Truncate DateTime to seconds
-                            $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+                if (-not $refreshCache) {
+                    "Checking cache for stale entries" | Write-DscTrace
 
-                            if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
-                                "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                    foreach ($cacheEntry in $dscResourceCacheEntries) {
+
+                        $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
+
+                            if (Test-Path $_.Name) {
+                                $file_LastWriteTime = (Get-Item $_.Name).LastWriteTimeUtc
+                                # Truncate DateTime to seconds
+                                $file_LastWriteTime = $file_LastWriteTime.AddTicks( - ($file_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+
+                                $cache_LastWriteTime = [DateTime]$_.Value
+                                # Truncate DateTime to seconds
+                                $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+
+                                if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
+                                    "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
+                                    $refreshCache = $true
+                                    break
+                                }
+                            }
+                            else {
+                                "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
                                 $refreshCache = $true
                                 break
                             }
                         }
-                        else {
-                            "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
-                            $refreshCache = $true
-                            break
-                        }
-                    }
 
-                    if ($refreshCache) { break }
-                }
-
-                if (-not $refreshCache) {
-                    "Checking cache for stale PSModulePath" | Write-DscTrace
-
-                    $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
-
-                    $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
-                    $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
-                    $hs_cache.SymmetricExceptWith($hs_live)
-                    $diff = $hs_cache
-
-                    "PSModulePath diff '$diff'" | Write-DscTrace
-                    if ($diff.Count -gt 0) {
-                        $refreshCache = $true
+                        if ($refreshCache) { break }
                     }
                 }
             }
