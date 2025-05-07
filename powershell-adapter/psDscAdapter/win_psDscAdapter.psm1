@@ -53,7 +53,7 @@ function Invoke-DscCacheRefresh {
     )
 
     $refreshCache = $false
-
+    $namedModules = [System.Collections.Generic.List[Object]]::new()
     $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
 
     if (Test-Path $cacheFilePath) {
@@ -83,10 +83,9 @@ function Invoke-DscCacheRefresh {
                 $diff = $hs_cache
 
                 "PSModulePath diff '$diff'" | Write-DscTrace
+                # TODO: Optimise for named module refresh
                 if ($diff.Count -gt 0) {
                     $refreshCache = $true
-                    # Get all resources
-                    $Module = $null
                 }
 
                 if (-not $refreshCache) {
@@ -94,7 +93,7 @@ function Invoke-DscCacheRefresh {
 
                     foreach ($cacheEntry in $dscResourceCacheEntries) {
 
-                        $cacheEntry.LastWriteTimes.PSObject.Properties | ForEach-Object {
+                        foreach ($_ in $cacheEntry.LastWriteTimes.PSObject.Properties) {
 
                             if (Test-Path $_.Name) {
                                 $file_LastWriteTime = (Get-Item $_.Name).LastWriteTimeUtc
@@ -118,8 +117,19 @@ function Invoke-DscCacheRefresh {
                             }
                         }
 
-                        if ($refreshCache) { break }
+                        if ($refreshCache) {
+                            $namedModules.Add($cacheEntry.DscResourceInfo.ModuleName)
+                            $refreshCache = $false
+                        }
                     }
+                }
+                if ($namedModules.Count -gt 0) {
+                    $refreshCache = $true
+                    if ($null -ne $Module) {
+                        $namedModules.AddRange(@($Module))
+                    }
+                    $namedModules = $namedModules | Sort-Object -Unique
+                    "Module list: $($namedModules -join ', ')" | Write-DscTrace
                 }
             }
         }
@@ -133,32 +143,32 @@ function Invoke-DscCacheRefresh {
         'Constructing Get-DscResource cache' | Write-DscTrace
 
         # create a list object to store cache of Get-DscResource
-        [dscResourceCacheEntry[]]$dscResourceCacheEntries = [System.Collections.Generic.List[Object]]::new()
+        $dscResourceCacheEntries = [System.Collections.Generic.List[dscResourceCacheEntry]]::new()
 
         # improve by performance by having the option to only get details for named modules
         # workaround for File and SignatureValidation resources that ship in Windows
-        if ($null -ne $module -and 'PSDesiredStateConfiguration' -ne $module) {
-            if ($module.gettype().name -eq 'string') {
-                $module = @($module)
-            }
+        if ($namedModules.Count -gt 0) {
             $DscResources = [System.Collections.Generic.List[Object]]::new()
             $Modules = [System.Collections.Generic.List[Object]]::new()
             $filteredResources = @()
-            foreach ($m in $module) {
-                $DscResources += Get-DscResource -Module $m
-                $Modules += Get-Module -Name $m -ListAvailable
-
-                # Grab all DSC resources to filter out of the cache
-                $filteredResources += $dscResources | Where-Object -Property ModuleName -NE $null | ForEach-Object { [System.String]::Concat($_.ModuleName, '/', $_.Name) }
+            foreach ($m in $namedModules) {
+                $DscResources.AddRange(@(Get-DscResource -Module $m))
+                $Modules.AddRange(@(Get-Module -Name $m -ListAvailable))
             }
 
+            if ('PSDesiredStateConfiguration' -in $namedModules -and $PSVersionTable.PSVersion.Major -le 5 ) {
+                # the resources in Windows should only load in Windows PowerShell
+                # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
+                $DscResources.AddRange(@(Get-DscResource | Where-Object -Property ParentPath -eq "$env:windir\system32\Configuration\BaseRegistration"))
+                $filteredResources = @(
+                    'PSDesiredStateConfiguration/File'
+                    'PSDesiredStateConfiguration/SignatureValidation'
+                )
+            }
+            # Grab all DSC resources to filter out of the cache
+            $filteredResources += $dscResources | Where-Object -Property ModuleName -NE $null | ForEach-Object { [System.String]::Concat($_.ModuleName, '/', $_.Name) }
             # Exclude the one module that was passed in as a parameter
-            $existingDscResourceCacheEntries = $cache.ResourceCache | Where-Object -Property Type -NotIn $filteredResources
-        }
-        elseif ('PSDesiredStateConfiguration' -eq $module -and $PSVersionTable.PSVersion.Major -le 5 ) {
-            # the resources in Windows should only load in Windows PowerShell
-            # workaround: the binary modules don't have a module name, so we have to special case File and SignatureValidation resources that ship in Windows
-            $DscResources = Get-DscResource | Where-Object { $_.modulename -eq 'PSDesiredStateConfiguration' -or ( $_.modulename -eq $null -and $_.parentpath -like "$env:windir\System32\Configuration\*" ) }
+            $existingDscResourceCacheEntries = @($cache.ResourceCache | Where-Object -Property Type -NotIn $filteredResources)
         }
         else {
             # if no module is specified, get all resources
@@ -237,25 +247,25 @@ function Invoke-DscCacheRefresh {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
-            $dscResourceCacheEntries += [dscResourceCacheEntry]@{
+            $dscResourceCacheEntries.Add([dscResourceCacheEntry]@{
                 Type            = "$moduleName/$($dscResource.Name)"
                 DscResourceInfo = $DscResourceInfo
                 LastWriteTimes  = $lastWriteTimes
+            })
+        }
+
+        if ($namedModules.Count -gt 0) {
+            # Make sure all resource cache entries are returned
+            foreach ($entry in $existingDscResourceCacheEntries) {
+                $dscResourceCacheEntries.Add([dscResourceCacheEntry]$entry)
             }
         }
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
-        $cache.ResourceCache = $dscResourceCacheEntries
+        $cache.ResourceCache = $dscResourceCacheEntries.ToArray()
         $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
-
-        if ($existingDscResourceCacheEntries) {
-            $cache.ResourceCache += $existingDscResourceCacheEntries
-
-            # Make sure all resource cache entries are returned
-            $dscResourceCacheEntries = $cache.ResourceCache
-        }
 
         # save cache for future use
         # TODO: replace this with a high-performance serializer
