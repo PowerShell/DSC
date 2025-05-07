@@ -1,6 +1,6 @@
 [package]
 name = "dsc"
-version = "3.1.0-preview.4"
+version = "3.1.0-preview.5"
 edition = "2021"
 
 [profile.release]
@@ -17,7 +17,7 @@ crossterm = { version = "0.29" }
 ctrlc = { version = "3.4" }
 dsc_lib = { path = "../dsc_lib" }
 indicatif = { version = "0.17" }
-jsonschema = { version = "0.29", default-features = false }
+jsonschema = { version = "0.30", default-features = false }
 path-absolutize = { version = "3.1" }
 rust-i18n = { version = "3.1" }
 schemars = { version = "0.8" }
@@ -25,7 +25,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = { version = "0.9" }
 syntect = { version = "5.0", features = ["default-fancy"], default-features = false }
-sysinfo = { version = "0.34" }
+sysinfo = { version = "0.35" }
 thiserror = "2.0"
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "json"] }
