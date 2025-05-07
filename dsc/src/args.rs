@@ -64,6 +64,11 @@ pub enum SubCommand {
         #[clap(long, hide = true)]
         as_include: bool,
     },
+    #[clap(name = "extension", about = t!("args.extensionAbout").to_string())]
+    Extension {
+        #[clap(subcommand)]
+        subcommand: ExtensionSubCommand,
+    },
     #[clap(name = "resource", about = t!("args.resourceAbout").to_string())]
     Resource {
         #[clap(subcommand)]
@@ -142,6 +147,17 @@ pub enum ConfigSubCommand {
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Subcommand)]
+pub enum ExtensionSubCommand {
+    #[clap(name = "list", about = t!("args.listExtensionAbout").to_string())]
+    List {
+        /// Optional filter to apply to the list of extensions
+        extension_name: Option<String>,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<OutputFormat>,
+    },
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]

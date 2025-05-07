@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, DscType, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, DscType, ExtensionSubCommand, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
@@ -16,6 +16,8 @@ use dsc_lib::{
         config_result::ResourceGetResult,
         Configurator,
     },
+    discovery::discovery_trait::DiscoveryKind,
+    discovery::command_discovery::ImportedManifest,
     dscerror::DscError,
     DscManager,
     dscresources::invoke_result::{
@@ -25,6 +27,7 @@ use dsc_lib::{
     },
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    extensions::dscextension::Capability as ExtensionCapability,
     progress::ProgressFormat,
 };
 use rust_i18n::t;
@@ -543,6 +546,22 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     Ok(())
 }
 
+pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) {
+    let mut dsc = match DscManager::new() {
+        Ok(dsc) => dsc,
+        Err(err) => {
+            error!("Error: {err}");
+            exit(EXIT_DSC_ERROR);
+        }
+    };
+
+    match subcommand {
+        ExtensionSubCommand::List{extension_name, output_format} => {
+            list_extensions(&mut dsc, extension_name.as_ref(), output_format.as_ref(), progress_format);
+        },
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) {
     let mut dsc = match DscManager::new() {
@@ -592,6 +611,62 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
     }
 }
 
+fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format: Option<&OutputFormat>, progress_format: ProgressFormat) {
+    let mut write_table = false;
+    let mut table = Table::new(&[
+        t!("subcommand.tableHeader_type").to_string().as_ref(),
+        t!("subcommand.tableHeader_version").to_string().as_ref(),
+        t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
+    ]);
+    if format.is_none() && io::stdout().is_terminal() {
+        // write as table if format is not specified and interactive
+        write_table = true;
+    }
+    let mut include_separator = false;
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
+        if let ImportedManifest::Extension(extension) = manifest_resource {
+            let mut capabilities = "-".to_string();
+            let capability_types = [
+                (ExtensionCapability::Discover, "d"),
+            ];
+
+            for (i, (capability, letter)) in capability_types.iter().enumerate() {
+                if extension.capabilities.contains(capability) {
+                    capabilities.replace_range(i..=i, letter);
+                }
+            }
+
+            if write_table {
+                table.add_row(vec![
+                    extension.type_name,
+                    extension.version,
+                    capabilities,
+                    extension.description.unwrap_or_default()
+                ]);
+            }
+            else {
+                // convert to json
+                let json = match serde_json::to_string(&extension) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_object(&json, format, include_separator);
+                include_separator = true;
+                // insert newline separating instances if writing to console
+                if io::stdout().is_terminal() { println!(); }
+            }
+        }
+    }
+
+    if write_table {
+        table.print();
+    }
+}
+
 fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
@@ -607,86 +682,88 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
         write_table = true;
     }
     let mut include_separator = false;
-    for resource in dsc.list_available_resources(resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
-        let mut capabilities = "--------".to_string();
-        let capability_types = [
-            (Capability::Get, "g"),
-            (Capability::Set, "s"),
-            (Capability::SetHandlesExist, "x"),
-            (Capability::WhatIf, "w"),
-            (Capability::Test, "t"),
-            (Capability::Delete, "d"),
-            (Capability::Export, "e"),
-            (Capability::Resolve, "r"),
-        ];
+    for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
+        if let ImportedManifest::Resource(resource) = manifest_resource {
+            let mut capabilities = "--------".to_string();
+            let capability_types = [
+                (Capability::Get, "g"),
+                (Capability::Set, "s"),
+                (Capability::SetHandlesExist, "x"),
+                (Capability::WhatIf, "w"),
+                (Capability::Test, "t"),
+                (Capability::Delete, "d"),
+                (Capability::Export, "e"),
+                (Capability::Resolve, "r"),
+            ];
 
-        for (i, (capability, letter)) in capability_types.iter().enumerate() {
-            if resource.capabilities.contains(capability) {
-                capabilities.replace_range(i..=i, letter);
+            for (i, (capability, letter)) in capability_types.iter().enumerate() {
+                if resource.capabilities.contains(capability) {
+                    capabilities.replace_range(i..=i, letter);
+                }
             }
-        }
 
-        // if description, tags, or write_table is specified, pull resource manifest if it exists
-        if let Some(ref resource_manifest) = resource.manifest {
-            let manifest = match import_manifest(resource_manifest.clone()) {
-                Ok(resource_manifest) => resource_manifest,
-                Err(err) => {
-                    error!("{} {}: {err}", t!("subcommand.invalidManifest"), resource.type_name);
+            // if description, tags, or write_table is specified, pull resource manifest if it exists
+            if let Some(ref resource_manifest) = resource.manifest {
+                let manifest = match import_manifest(resource_manifest.clone()) {
+                    Ok(resource_manifest) => resource_manifest,
+                    Err(err) => {
+                        error!("{} {}: {err}", t!("subcommand.invalidManifest"), resource.type_name);
+                        continue;
+                    }
+                };
+
+                // if description is specified, skip if resource description does not contain it
+                if description.is_some() &&
+                    (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
                     continue;
                 }
-            };
 
-            // if description is specified, skip if resource description does not contain it
-            if description.is_some() &&
-                (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
-                continue;
-            }
+                // if tags is specified, skip if resource tags do not contain the tags
+                if let Some(tags) = tags {
+                    let Some(manifest_tags) = manifest.tags else { continue; };
 
-            // if tags is specified, skip if resource tags do not contain the tags
-            if let Some(tags) = tags {
-                let Some(manifest_tags) = manifest.tags else { continue; };
-
-                let mut found = false;
-                for tag_to_find in tags {
-                    for tag in &manifest_tags {
-                        if tag.to_lowercase() == tag_to_find.to_lowercase() {
-                            found = true;
-                            break;
+                    let mut found = false;
+                    for tag_to_find in tags {
+                        for tag in &manifest_tags {
+                            if tag.to_lowercase() == tag_to_find.to_lowercase() {
+                                found = true;
+                                break;
+                            }
                         }
                     }
+                    if !found { continue; }
                 }
-                if !found { continue; }
+            } else {
+                // resource does not have a manifest but filtering on description or tags was requested - skip such resource
+                if description.is_some() || tags.is_some() {
+                    continue;
+                }
             }
-        } else {
-            // resource does not have a manifest but filtering on description or tags was requested - skip such resource
-            if description.is_some() || tags.is_some() {
-                continue;
-            }
-        }
 
-        if write_table {
-            table.add_row(vec![
-                resource.type_name,
-                format!("{:?}", resource.kind),
-                resource.version,
-                capabilities,
-                resource.require_adapter.unwrap_or_default(),
-                resource.description.unwrap_or_default()
-            ]);
-        }
-        else {
-            // convert to json
-            let json = match serde_json::to_string(&resource) {
-                Ok(json) => json,
-                Err(err) => {
-                    error!("JSON: {err}");
-                    exit(EXIT_JSON_ERROR);
-                }
-            };
-            write_object(&json, format, include_separator);
-            include_separator = true;
-            // insert newline separating instances if writing to console
-            if io::stdout().is_terminal() { println!(); }
+            if write_table {
+                table.add_row(vec![
+                    resource.type_name,
+                    format!("{:?}", resource.kind),
+                    resource.version,
+                    capabilities,
+                    resource.require_adapter.unwrap_or_default(),
+                    resource.description.unwrap_or_default()
+                ]);
+            }
+            else {
+                // convert to json
+                let json = match serde_json::to_string(&resource) {
+                    Ok(json) => json,
+                    Err(err) => {
+                        error!("JSON: {err}");
+                        exit(EXIT_JSON_ERROR);
+                    }
+                };
+                write_object(&json, format, include_separator);
+                include_separator = true;
+                // insert newline separating instances if writing to console
+                if io::stdout().is_terminal() { println!(); }
+            }
         }
     }
 
