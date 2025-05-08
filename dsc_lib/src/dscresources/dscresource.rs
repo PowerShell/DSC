@@ -437,11 +437,17 @@ impl Invoke for DscResource {
             let mut export_result = ExportResult {
                 actual_state: Vec::new(),
             };
+            debug!("Export result: {}", serde_json::to_string(&configuration)?);
             for resource in configuration.resources {
                 let Some(properties) = resource.properties else {
                     return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
                 };
-                export_result.actual_state.push(serde_json::to_value(properties["properties"].clone())?);
+                let results = properties
+                    .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                    .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?;
+                for result in results {
+                    export_result.actual_state.push(serde_json::to_value(result.clone())?);
+                }
             }
             return Ok(export_result);
         }
