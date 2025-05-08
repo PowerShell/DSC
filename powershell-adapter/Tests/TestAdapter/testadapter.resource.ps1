@@ -59,8 +59,8 @@ switch ($Operation) {
     }
     'Export' {
         @{result = @(
-            @{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 1; 'Input' = ''}},
-            @{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 2; 'Input' = ''}}
+            @{'TestCaseId' = 1; 'Input' = ''},
+            @{'TestCaseId' = 2; 'Input' = ''}
         )} | ConvertTo-Json -Depth 10 -Compress
     }
     'Validate' {
