@@ -446,9 +446,9 @@ function Invoke-DscOperation {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
                             $ValidProperties | ForEach-Object { 
-                                if ($raw_obj.$_ -is [System.Enum]) {
-                                    $Result[$_] = $raw_obj.$_.ToString()
-                                }
+                                # if ($raw_obj.$_ -is [System.Enum]) {
+                                #     $Result[$_] = $raw_obj.$_.ToString()
+                                # }
                                 else {
                                     $Result[$_] = $raw_obj.$_
                                 }
