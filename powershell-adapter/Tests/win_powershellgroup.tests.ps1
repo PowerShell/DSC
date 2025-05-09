@@ -271,7 +271,7 @@ resources:
     $out | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*"
   }
 
-  It 'List works with class-based DSC resources' -Skip:(!$IsWindows) {
+  It 'List works with class-based PS DSC resources' -Skip:(!$IsWindows) {
     BeforeDiscovery {
       $windowsPowerShellPath = Join-Path $env:SystemRoot 'System32' 'WindowsPowerShell' 'v1.0' 'Modules'
 
@@ -337,9 +337,17 @@ class PSClassResource {
     $resources.type | Should -Contain 'PSClassResource/PSClassResource'
   }
 
-  It 'Get works with class-based DSC resources' -Skip:(!$IsWindows) {
+  It 'Get works with class-based PS DSC resources' -Skip:(!$IsWindows) {
     
-    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName'} | ConvertTo-Json) | ConvertFrom-Json
+    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.actualState.Name | Should -Be 'TestName'
-} 
+  }
+
+  It 'Set works with class-based PS DSC resources' -Skip:(!$IsWindows) {
+    
+    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.afterstate.InDesiredState | Should -Be $true
+  }
+}
