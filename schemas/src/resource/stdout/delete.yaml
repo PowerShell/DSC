@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
 $schema: https://json-schema.org/draft/2020-12/schema
-$id:     <HOST>/<PREFIX>/<VERSION>/resource/stdout/get.yaml
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/stdout/delete.yaml
 
 title: Delete resource operation stdout
 description: >-
