@@ -62,7 +62,7 @@ Environment.Exit(0);
 void GetServices(string? name)
 {
     var services = ServiceController.GetServices();
-    var foundService = false;
+    WindowsService? windowsService = null;
     foreach (var service in services)
     {
         if (name is not null && service.ServiceName is not null && !service.ServiceName.Equals(name, StringComparison.OrdinalIgnoreCase))
@@ -70,26 +70,26 @@ void GetServices(string? name)
             continue;
         }
 
-        foundService = true;
-
-        var windowsService = new WindowsService
+        windowsService = new WindowsService
         {
             Name = service.ServiceName,
             DisplayName = service.DisplayName,
             Status = service.Status,
             StartType = service.StartType
         };
-
-
-        string json = JsonSerializer.Serialize(windowsService);
-        Console.WriteLine(json);
     }
 
-    if (name is not null && !foundService)
+    if (name is not null && windowsService is null)
     {
-        Console.Error.WriteLine($"Service '{name}' not found.");
-        Environment.Exit(1);
+        windowsService = new WindowsService
+        {
+            Name = name,
+            Exist = false
+        };
     }
+
+    string json = JsonSerializer.Serialize(windowsService);
+    Console.WriteLine(json);
 }
 
 
@@ -105,4 +105,6 @@ record WindowsService
     [JsonConverter(typeof(JsonStringEnumConverter))]
     [JsonPropertyName("startType")]
     public ServiceStartMode StartType { get; set; }
+    [JsonPropertyName("_exist")]
+    public bool? Exist { get; set; } = false;
 }
