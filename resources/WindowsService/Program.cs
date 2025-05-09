@@ -13,6 +13,7 @@ if (args.Length < 1)
 
 var operation = args[0].ToLowerInvariant();
 WindowsService? windowsService = null;
+WriteDebug( $"Operation: {operation}");
 
 switch (operation)
 {
@@ -23,6 +24,7 @@ switch (operation)
             Environment.Exit(1);
         }
         var jsonInput = args[2];
+        WriteTrace($"Input JSON: {jsonInput}");
         if (!string.IsNullOrEmpty(jsonInput))
         {
             try {
@@ -92,6 +94,31 @@ void GetServices(string? name)
     Console.WriteLine(json);
 }
 
+void WriteDebug(string message)
+{
+    var debugMessage = new DebugMessage { Debug = message };
+    string json = JsonSerializer.Serialize(debugMessage);
+    Console.Error.WriteLine(json);
+}
+
+void WriteTrace(string message)
+{
+    var traceMessage = new TraceMessage { Trace = message };
+    string json = JsonSerializer.Serialize(traceMessage);
+    Console.Error.WriteLine(json);
+}
+
+record DebugMessage
+{
+    [JsonPropertyName("debug")]
+    public string Debug { get; set; } = string.Empty;
+}
+
+record TraceMessage
+{
+    [JsonPropertyName("trace")]
+    public string Trace { get; set; } = string.Empty;
+}
 
 record WindowsService
 {
