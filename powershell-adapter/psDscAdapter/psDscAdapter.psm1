@@ -449,10 +449,12 @@ function Invoke-DscOperation {
                                 # if ($raw_obj.$_ -is [System.Enum]) {
                                 #     $Result[$_] = $raw_obj.$_.ToString()
                                 # }
-                                else {
-                                    $Result[$_] = $raw_obj.$_
-                                }
+                                # else {
+                                #     $Result[$_] = $raw_obj.$_
+                                # }
+                                $Result[$_] = $raw_obj.$_
                             }
+                            $Result[$_] = $raw_obj.$_
                             $addToActualState.properties = $Result
                         }
                         'Set' {
