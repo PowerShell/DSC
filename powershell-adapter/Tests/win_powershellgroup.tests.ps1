@@ -268,4 +268,69 @@ resources:
     $out | Should -Not -BeNullOrEmpty
     $out | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*"
   }
+
+  It 'List works with class-based DSC resources' -Skip:(!$IsWindows) {
+    BeforeDiscovery {
+      $windowsPowerShellPath = Join-Path $env:SystemRoot 'System32' 'WindowsPowerShell' 'v1.0' 'Modules'
+
+      $moduleFile = @"
+@{
+    RootModule           = 'PSClassResource.psm1'
+    ModuleVersion        = '0.1.0'
+    GUID                 = '1b2e177b-1819-4f51-8bc9-795dd8fae984'
+    Author               = 'Microsoft Corporation'
+    CompanyName          = 'Microsoft Corporation'
+    Copyright            = '(c) Microsoft Corporation. All rights reserved.'
+    Description          = 'DSC Resource for Windows PowerShell Class'
+    PowerShellVersion    = '5.1'
+    DscResourcesToExport = @(
+        'PSClassResource'
+    )
+    PrivateData          = @{
+        PSData = @{
+            Tags       = @(
+                'PSDscResource_PSClassResource'
+            )
+        }
+    }
+}
+"@
+      $moduleFilePath = Join-Path $windowsPowerShellPath 'PSClassResource' '0.1.0' 'PSClassResource.psd1'
+      if (-not (Test-Path -Path $moduleFilePath)) {
+        New-Item -Path $moduleFilePath -ItemType File -Value $moduleFile -Force | Out-Null
+      }
+
+
+      $module = @'
+[DSCResource()]
+class PSClassResource {
+    [DscProperty(Key)]
+    [string] $Name
+
+    PSClassResource() {
+    }
+
+    [PSClassResource] Get() {
+        return $this
+    }
+
+    [bool] Test() {
+        return $true
+    }
+
+    [void] Set() {
+        
+    }
+}
+'@
+
+      $modulePath = Join-Path $windowsPowerShellPath 'PSClassResource' '0.1.0' 'PSClassResource.psm1'
+      if (-not (Test-Path -Path $modulePath)) {
+        New-Item -Path $modulePath -ItemType File -Value $module -Force | Out-Null
+      }
+    }
+
+    $resources = dsc -l trace resource list --adapter Microsoft.Windows/WindowsPowerShell | ConvertFrom-Json
+    $resources.type | Should -Contain 'PSClassResource/PSClassResource'
+  }
 }

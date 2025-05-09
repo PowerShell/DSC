@@ -223,6 +223,12 @@ function Invoke-DscCacheRefresh {
                 }
             }
 
+            # workaround: Use GetTypeInstanceFromModule to get the type instance from the module and validate if it is a class-based resource
+            $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name -ErrorAction SilentlyContinue
+            if (-not ([string]::IsNullOrEmpty($classBased))) {
+                $dscResourceInfo.ImplementationDetail = 'ClassBased'
+            }
+
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
             Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | % {
