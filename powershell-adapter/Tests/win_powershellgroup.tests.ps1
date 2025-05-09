@@ -332,9 +332,10 @@ class PSClassResource {
       }
     }
 
-    $resources = dsc -l trace resource list --adapter Microsoft.Windows/WindowsPowerShell | ConvertFrom-Json
+    $out = dsc -l trace resource list --adapter Microsoft.Windows/WindowsPowerShell | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
-    $resources.type | Should -Contain 'PSClassResource/PSClassResource'
+    $out.type | Should -Contain 'PSClassResource/PSClassResource'
+    $out | Where-Object -Property type -EQ PSClassResource/PSClassResource | Select-Object -ExpandProperty implementedAs | Should -Be 1 # Class-based
   }
 
   It 'Get works with class-based PS DSC resources' -Skip:(!$IsWindows) {
