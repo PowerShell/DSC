@@ -12,4 +12,7 @@
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0-*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="*.dsc.resource.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

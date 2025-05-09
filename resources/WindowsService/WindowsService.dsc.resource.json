@@ -1,0 +1,37 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Windows/Service",
+    "description": "Manage Windows Services",
+    "tags": [
+        "Windows"
+    ],
+    "version": "0.1.0",
+    "get": {
+        "executable": "windowsservice",
+        "args": [
+            "get",
+            {
+                "jsonInputArg": "-input",
+                "mandatory": true
+            }
+        ]
+    },
+    "export": {
+        "executable": "windowsservice",
+        "args": [
+            "export"
+        ]
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "Invalid parameter"
+    },
+    "schema": {
+        "command": {
+            "executable": "windowsservice",
+            "args": [
+                "schema"
+            ]
+        }
+    }
+}
