@@ -1,0 +1,7 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Services
+  type: Microsoft.Windows/Service
+  properties:
+    name: doesnotexist
+    _exist: true
