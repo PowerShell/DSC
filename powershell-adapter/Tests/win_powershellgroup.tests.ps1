@@ -21,7 +21,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     # Remove after all the tests are done
     Remove-Module $script:winPSModule -Force -ErrorAction Ignore
 
-    Remove-Item -Path (Join-Path $env:SystemRoot 'System32' 'WindowsPowerShell' 'v1.0' 'Modules' 'PSClassResource') -Force -Recurse -ErrorAction Ignore
+    Remove-Item -Path (Join-Path $env:ProgramFiles 'WindowsPowerShell' 'Modules' 'PSClassResource') -Force -Recurse -ErrorAction Ignore
   }
 
   BeforeEach {
@@ -273,7 +273,7 @@ resources:
 
   It 'List works with class-based PS DSC resources' -Skip:(!$IsWindows) {
     BeforeDiscovery {
-      $windowsPowerShellPath = Join-Path $env:SystemRoot 'System32' 'WindowsPowerShell' 'v1.0' 'Modules'
+      $windowsPowerShellPath = Join-Path $env:ProgramFiles 'WindowsPowerShell' 'Modules'
 
       $moduleFile = @"
 @{
