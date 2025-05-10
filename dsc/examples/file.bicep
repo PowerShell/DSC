@@ -20,3 +20,5 @@ resource powerShellAdapter 'Microsoft.Windows/WindowsPowerShell@2025-01-07' = {
       ]
   }
 }
+
+// bicep build file.bicep
