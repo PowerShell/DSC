@@ -287,7 +287,6 @@ Describe 'PowerShell adapter resource tests' {
 "@
 
     $out = dsc config get -i $yaml | ConvertFrom-Json
-    Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
     $LASTEXITCODE | Should -Be 0
     $out.results.result.actualState.Ensure | Should -Be 'Present'
   }
@@ -305,7 +304,6 @@ Describe 'PowerShell adapter resource tests' {
 "@
 
     $out = dsc config export -i $yaml | ConvertFrom-Json
-    Write-Verbose -Message ($out | ConvertTo-Json -Depth 10 | Out-String) -Verbose
     $LASTEXITCODE | Should -Be 0
     $out.resources[0].properties.result.count | Should -Be 5
     $out.resources[0].properties.result[0].Name | Should -Be "Object1"
