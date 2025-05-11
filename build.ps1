@@ -38,6 +38,8 @@ if ($GetPackageVersion) {
 }
 
 $filesForWindowsPackage = @(
+    'appx.dsc.extension.json',
+    'appx-discover.ps1',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -250,7 +252,7 @@ if (!$SkipBuild) {
     }
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows")
+    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
