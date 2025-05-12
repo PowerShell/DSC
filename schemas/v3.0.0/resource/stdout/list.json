@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/stdout/list.json",
+  "title": "List resource operation stdout",
+  "description": "Defines the representation of an adapted resource in DSC. DSC expects every JSON Line emitted to stdout for the **List** operation to adhere to this schema.",
+  "type": "object",
+  "required": [
+    "type",
+    "kind",
+    "version",
+    "capabilities",
+    "path",
+    "directory",
+    "implementedAs",
+    "properties",
+    "requireAdapter"
+  ],
+  "properties": {
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceType.json"
+    },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceKind.json"
+    },
+    "version": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/semver.json"
+    },
+    "capabilities": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceCapabilities.json"
+    },
+    "path": {
+      "title": "Path",
+      "description": "Indicates the path to the adapted resource on the file system.",
+      "type": "string"
+    },
+    "directory": {
+      "title": "Directory",
+      "description": "Indicates the path to the folder containing the adapted resource on the file system."
+    },
+    "implementedAs": {
+      "title": "Custom implementation name",
+      "description": "Indicates that the adapted resource uses a custom implementation. The name can be used to distinguish between different implementations for the adapted resources.",
+      "type": "string"
+    },
+    "author": {
+      "title": "Author",
+      "description": "Indicates the name of the person or organization that developed and maintains the adapted Resource.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\w+( \\w+)*"
+    },
+    "properties": {
+      "title": "Properties",
+      "description": "Defines the adapted resource's property names.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$"
+      }
+    },
+    "requireAdapter": {
+      "title": "Required adapter",
+      "description": "Defines the fully qualified type name of the adapter that the adapted resource depends on. An adapter should always set this value to its own fully qualified resource type name.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceType.json"
+    }
+  }
+}

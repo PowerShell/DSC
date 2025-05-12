@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.parameter.json",
   "title": "Parameter",
-  "description": "Defines a runtime option for a DSC Configuration Document.",
+  "description": "Defines a runtime option for a DSC configuration document.",
   "type": "object",
   "required": [
     "type"

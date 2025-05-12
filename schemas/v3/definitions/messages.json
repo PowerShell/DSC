@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/messages.json",
   "title": "Messages",
-  "description": "A list of structured messages emitted by the DSC Resources during an operation.",
+  "description": "A list of structured messages emitted by the DSC resources during an operation.",
   "type": "array",
   "items": {
     "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/message.json"
