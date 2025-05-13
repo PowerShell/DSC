@@ -273,7 +273,8 @@ resources:
 
   It 'List works with class-based PS DSC resources' -Skip:(!$IsWindows) {
     BeforeDiscovery {
-      $windowsPowerShellPath = Join-Path $env:ProgramFiles 'WindowsPowerShell' 'Modules'
+      $windowsPowerShellPath = Join-Path $testDrive 'WindowsPowerShell' 'Modules'
+      $env:PSModulePath += [System.IO.Path]::PathSeparator + $windowsPowerShellPath
 
       $moduleFile = @"
 @{
