@@ -20,8 +20,6 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
 
     # Remove after all the tests are done
     Remove-Module $script:winPSModule -Force -ErrorAction Ignore
-
-    Remove-Item -Path (Join-Path $env:ProgramFiles 'WindowsPowerShell' 'Modules' 'PSClassResource') -Force -Recurse -ErrorAction Ignore
   }
 
   BeforeEach {
