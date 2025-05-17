@@ -2,6 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/definitions/hadErrors.json",
   "title": "Had Errors",
-  "description": "Indicates whether any of the DSC Resources returned a non-zero exit code.",
+  "description": "Indicates whether any of the DSC resources returned a non-zero exit code.",
   "type": "boolean"
 }

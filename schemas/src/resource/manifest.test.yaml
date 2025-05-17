@@ -4,15 +4,18 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.test.yaml
 
 title: Test Method
 description: >-
-  Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how
-  to process the output from the DSC Resource.
+  Defines how DSC must call the DSC resource to test if an instance is in the desired state and how
+  to process the output from the DSC resource.
 markdownDescription: | # VS Code only
   ***
-  [_Online Documentation_][01]
+  [_Online Documentation_][00]
   ***
 
-  Defines how DSC must call the DSC Resource to test if an instance is in the desired state and how
-  to process the output from the DSC Resource.
+  Defines how DSC must call the DSC resource to test if an instance is in the desired state and how
+  to process the output from the DSC resource.
+
+  For more information about the output DSC expects the resource to emit for this command, see
+  [Test resource operation stdout][01].
 
   DSC sends data to the command in three ways:
 
@@ -29,7 +32,8 @@ markdownDescription: | # VS Code only
   You must define the `input` property, one JSON input argument in the `args` property array, or
   both.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/test?<DOCS_VERSION_PIN>
 
 
 type: object
@@ -130,16 +134,17 @@ properties:
   return:
     title: Test Command Return Type
     description: >-
-      Defines whether the command returns a JSON blob of the DSC Resource's current state or the
+      Defines whether the command returns a JSON blob of the DSC resource's current state or the
       state and an array of the properties that are out of the desired state.
     $ref: /<PREFIX>/<VERSION>/definitions/returnKind.yaml
+    default: state
     # VS Code only
     markdownDescription: |
       ***
       [_Online Documentation_][01]
       ***
 
-      Defines whether the command returns a JSON blob of the DSC Resource's current state or the
+      Defines whether the command returns a JSON blob of the DSC resource's current state or the
       state and an array of the properties that are out of the desired state.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/test?<DOCS_VERSION_PIN>#return

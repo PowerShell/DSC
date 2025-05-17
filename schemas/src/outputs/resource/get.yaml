@@ -4,7 +4,7 @@ $id:     <HOST>/<PREFIX>/<VERSION>/outputs/resource/get.yaml
 
 title: dsc resource get result
 description: >-
-  Describes the return data for a DSC Resource instance from the
+  Describes the return data for a DSC resource instance from the
   `dsc resource get` command. The return data is either a single object that
   describes the actual state of a non-nested instance or an array of objects
   that describe the actual state of the nested instances for a group or adapter

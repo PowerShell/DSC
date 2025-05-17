@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
-  "title": "Command-based DSC Resource Manifest",
-  "description": "Defines the information DSC and integrating require to process and call a command-based DSC Resource.",
+  "title": "DSC resource manifest",
+  "description": "Defines the information DSC and integrating require to process and call a DSC command resource.",
   "type": "object",
   "required": [
     "$schema",
@@ -12,19 +12,28 @@
   "properties": {
     "$schema": {
       "title": "Manifest Schema",
-      "description": "This property must be the canonical URL of the Command-based DSC Resource Manifest schema that the manifest is implemented for.",
+      "description": "This property must be the canonical URL of the Command-based DSC resource Manifest schema that the manifest is implemented for.",
       "type": "string",
       "format": "uri",
       "enum": [
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.vscode.json"
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json"
       ]
     },
     "type": {
@@ -32,12 +41,12 @@
     },
     "version": {
       "title": "Resource Semantic Version",
-      "description": "The semantic version (semver) of the DSC Resource. This version identifies the DSC Resource, not the version of the application it manages.",
+      "description": "The semantic version (semver) of the DSC resource. This version identifies the DSC resource, not the version of the application it manages.",
       "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/semver.json"
     },
     "description": {
       "title": "Resource Description",
-      "description": "A short synopsis of the DSC Resource's purpose.",
+      "description": "A short synopsis of the DSC resource's purpose.",
       "type": "string"
     },
     "kind": {
@@ -82,7 +91,7 @@
     },
     "exitCodes": {
       "title": "Exit Codes",
-      "description": "This property defines a map of valid exit codes for the DSC Resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC Resource's exit codes.",
+      "description": "This property defines a map of valid exit codes for the DSC resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC resource's exit codes.",
       "type": "object",
       "propertyNames": {
         "pattern": "^-?[0-9]+$"
