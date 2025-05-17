@@ -16,6 +16,18 @@
             }
         ]
     },
+    "set": {
+        "executable": "windowsservice",
+        "args": [
+            "set",
+            {
+                "jsonInputArg": "-input",
+                "mandatory": true
+            }
+        ],
+        "setSupportsExist": false,
+        "implementsPretest": true
+    },
     "export": {
         "executable": "windowsservice",
         "args": [
@@ -24,7 +36,8 @@
     },
     "exitCodes": {
         "0": "Success",
-        "1": "Invalid parameter"
+        "1": "Invalid parameter",
+        "2": "Invalid input"
     },
     "schema": {
         "command": {

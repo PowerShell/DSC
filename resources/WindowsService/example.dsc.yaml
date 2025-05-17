@@ -1,7 +1,14 @@
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  status:
+    type: string
+    defaultValue: Running
+    allowedValues:
+      - Running
+      - Stopped
 resources:
 - name: Services
   type: Microsoft.Windows/Service
   properties:
-    name: sshd
-    status: Running
+    name: Spooler
+    status: "[parameters('status')]"
