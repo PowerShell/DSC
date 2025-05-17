@@ -75,7 +75,7 @@ function Invoke-DscCacheRefresh {
             else {
                 "Checking cache for stale PSModulePath" | Write-DscTrace
 
-                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
+                $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -Path $_ -Depth 1 -ErrorAction Ignore }
 
                 $hs_cache = [System.Collections.Generic.HashSet[string]]($cache.PSModulePaths)
                 $hs_live = [System.Collections.Generic.HashSet[string]]($m.FullName)
@@ -106,20 +106,15 @@ function Invoke-DscCacheRefresh {
 
                                 if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
                                     "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
-                                    $refreshCache = $true
+                                    $namedModules.Add($cacheEntry.DscResourceInfo.ModuleName)
                                     break
                                 }
                             }
                             else {
                                 "Detected non-existent cache entry '$($_.Name)'" | Write-DscTrace
-                                $refreshCache = $true
+                                $namedModules.Add($cacheEntry.DscResourceInfo.ModuleName)
                                 break
                             }
-                        }
-
-                        if ($refreshCache) {
-                            $namedModules.Add($cacheEntry.DscResourceInfo.ModuleName)
-                            $refreshCache = $false
                         }
                     }
                 }
