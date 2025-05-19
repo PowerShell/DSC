@@ -96,15 +96,10 @@ function Invoke-DscCacheRefresh {
                         foreach ($_ in $cacheEntry.LastWriteTimes.PSObject.Properties) {
 
                             if (Test-Path $_.Name) {
-                                $file_LastWriteTime = (Get-Item $_.Name).LastWriteTimeUtc
-                                # Truncate DateTime to seconds
-                                $file_LastWriteTime = $file_LastWriteTime.AddTicks( - ($file_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
+                                $file_LastWriteTime = (Get-Item $_.Name).LastWriteTime.ToFileTime()
+                                $cache_LastWriteTime = [long]$_.Value
 
-                                $cache_LastWriteTime = [DateTime]$_.Value
-                                # Truncate DateTime to seconds
-                                $cache_LastWriteTime = $cache_LastWriteTime.AddTicks( - ($cache_LastWriteTime.Ticks % [TimeSpan]::TicksPerSecond));
-
-                                if (-not ($file_LastWriteTime.Equals($cache_LastWriteTime))) {
+                                if ($file_LastWriteTime -ne $cache_LastWriteTime) {
                                     "Detected stale cache entry '$($_.Name)'" | Write-DscTrace
                                     $namedModules.Add($cacheEntry.DscResourceInfo.ModuleName)
                                     break
@@ -239,7 +234,7 @@ function Invoke-DscCacheRefresh {
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
             Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | % {
-                $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
+                $lastWriteTimes.Add($_.FullName, $_.LastWriteTime.ToFileTime())
             }
 
             $dscResourceCacheEntries.Add([dscResourceCacheEntry]@{
