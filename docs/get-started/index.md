@@ -235,7 +235,7 @@ Retrieving the current state of a resource is useful, but in practice you more o
 whether an instance is in the desired state. The `dsc resource test` command not only tells you
 whether an instance is out of state, but how it's out state.
 
-> {!NOTE}
+> [!NOTE]
 > Remember that the `Registry` resource doesn't have the `test` capability. Fortunately, that
 > doesn't mean that you can't use the **Test** operation for a resource. When a resource doesn't
 > have the `test` capability, it is indicating that the resource depends on DSC's synthetic test
@@ -333,6 +333,9 @@ resource instances. In this configuration, it defines two instances:
   make sure the PowerShell Gallery is available for use as a repository.
 - The second instance uses the `PSModule` PSDSC resource from the same module to make sure that the
   **Microsoft.WinGet.Client** module is installed.
+
+  > [!NOTE]
+  > When invoking resources from `WindowsPowerShell` adapter, Windows Remote Management (WinRM) needs to be configured properly on the system. For more information about configuring WinRM, see [Setting Up a WinRM Endpoint](/windows/win32/winrm/installation-and-configuration-for-windows-remote-management#to-configure-winrm-with-default-settings).
 
 Open a terminal with elevated permissions. PSDSC resources in Windows PowerShell need to run as
 administrator. In the elevated terminal, change directory to the folder where you saved the
