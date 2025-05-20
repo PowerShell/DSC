@@ -450,8 +450,7 @@ function Invoke-DscOperation {
                                     $Result[$_] = $raw_obj.$_.ToString()
 
                                 }
-                                else 
-                                {
+                                else {
                                     $Result[$_] = $raw_obj.$_
                                 }
                             }
@@ -486,11 +485,10 @@ function Invoke-DscOperation {
                                     if ($raw_obj.$_ -is [System.Enum]) {
                                         $Result_obj[$_] = $raw_obj.$_.ToString()
                                     }
-                                    else 
-                                    { 
+                                    else { 
                                         $Result_obj[$_] = $raw_obj.$_ 
                                     }
-                          }
+                                }
                                 $resultArray += $Result_obj
                             }
                             $addToActualState = $resultArray
