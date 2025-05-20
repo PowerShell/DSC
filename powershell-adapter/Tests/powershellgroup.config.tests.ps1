@@ -310,3 +310,4 @@ Describe 'PowerShell adapter resource tests' {
     $out.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
   }
 }
+
