@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 use std::{fmt::Display, path::Path};
-use tracing::info;
+use tracing::{info, trace};
 
 use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}};
 
@@ -99,6 +99,7 @@ impl DscExtension {
                 info!("{}", t!("extensions.dscextension.discoverNoResults", extension = self.type_name));
             } else {
                 for line in stdout.lines() {
+                    trace!("{}", t!("extensions.dscextension.extensionReturned", extension = self.type_name, line = line));
                     let discover_result: DiscoverResult = match serde_json::from_str(line) {
                         Ok(result) => result,
                         Err(err) => {

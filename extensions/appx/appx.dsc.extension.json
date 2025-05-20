@@ -1,9 +1,8 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "Microsoft.Windows.AppX/Discover",
+    "type": "Microsoft.Windows.Appx/Discover",
     "version": "0.1.0",
-    "description": "Discovers DSC resources packaged as AppX packages.",
-    "author": "Microsoft Corporation",
+    "description": "Discovers DSC resources packaged as Appx packages.",
     "discover": {
         "executable": "powershell",
         "args": [

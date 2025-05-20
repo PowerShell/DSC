@@ -1,5 +1,7 @@
-Get-AppxPackage | ForEach-Object {
-    Get-ChildItem -LiteralPath $_.InstallLocation -File -Include '*.dsc.resource.json','*.dsc.resource.yaml','*.dsc.resource.yml' | ForEach-Object {
-        @{ resourceManifestPath = $_.FullName } | ConvertTo-Json -Compress
+$packages = Get-AppxPackage
+foreach ($package in $packages) {
+    $manifests = Get-ChildItem -Path "$($package.InstallLocation)\*" -File -Include '*.dsc.resource.json','*.dsc.resource.yaml','*.dsc.resource.yml' -ErrorAction Ignore
+    foreach ($manifest in $manifests) {
+        @{ manifestPath = $manifest.FullName } | ConvertTo-Json -Compress
     }
 }
