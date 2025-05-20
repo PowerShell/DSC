@@ -48,8 +48,12 @@ impl Table {
     }
 
     /// Print the table to the console.
+    ///
+    /// # Arguments
+    ///
+    /// * `truncate` - Whether to truncate the table if it is too wide for the console
     #[allow(clippy::format_push_string)]
-    pub fn print(&self) {
+    pub fn print(&self, truncate: bool) {
         let (width, _) = size().unwrap_or((80, 25));
         // make header bright green
         println!("\x1b[1;32m");
@@ -62,7 +66,7 @@ impl Table {
             }
         }
         // if header row is too wide, truncate
-        if header_row.len() > width as usize {
+        if truncate && header_row.len() > width as usize {
             header_row.truncate(width as usize);
         }
 
@@ -80,7 +84,7 @@ impl Table {
             }
 
             // if row is too wide and last character is not a space, truncate and add ellipsis unicode character
-            if row_str.len() > width as usize {
+            if truncate && row_str.len() > width as usize {
                 row_str.truncate(width as usize);
                 if !row_str.ends_with(' ') {
                     row_str.pop();
