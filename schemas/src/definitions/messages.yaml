@@ -4,7 +4,7 @@ $id: <HOST>/<PREFIX>/<VERSION>/definitions/messages.yaml
 
 title: Messages
 description: >-
-  A list of structured messages emitted by the DSC Resources during an
+  A list of structured messages emitted by the DSC resources during an
   operation.
 
 type: array

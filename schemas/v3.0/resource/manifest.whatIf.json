@@ -2,10 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.whatIf.json",
   "title": "What-if method",
-  "description": "Defines how DSC must call the DSC Resource to indicate whether and how the set command will modify an instance and how to process the output from the DSC Resource.",
+  "description": "Defines how DSC must call the DSC resource to indicate whether and how the set command will modify an instance and how to process the output from the DSC resource.",
   "type": "object",
   "required": [
-    "executable"
+    "executable",
+    "return"
   ],
   "properties": {
     "executable": {
@@ -18,19 +19,19 @@
       "$ref": "/PowerShell/DSC/main/schemas/v3.0/definitions/inputKind.json"
     },
     "implementsPretest": {
-      "title": "Resource Performs Pre-Test",
-      "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set --what-if` command. Set this value to `true` if the DSC Resource tests input before processing how it will modify system state.",
+      "title": "Resource performs pre-test",
+      "description": "Defines whether the DSC resource performs its own test to ensure idempotency when calling the `set --what-if` command. Set this value to `true` if the DSC resource tests input before processing how it will modify system state.",
       "type": "boolean",
       "default": false
     },
     "handlesExist": {
-      "title": "Resource handles _exist property",
-      "description": "Defines whether the DSC Resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC Resource handles instance deletion internally when receiving a `set --what-if` command where the instance defines the `_exist` property as `false`.",
+      "title": "Resource handles `_exist` property",
+      "description": "Defines whether the DSC resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC resource handles instance deletion internally when receiving a `set --what-if` command where the instance defines the `_exist` property as `false`.",
       "type": "boolean",
       "default": false
     },
     "return": {
-      "description": "Defines whether the command returns a JSON blob of the DSC Resource's expected state after a set operation in what-if mode or the state and an array of the properties the DSC Resource would modify.",
+      "description": "Defines whether the command returns a JSON blob of the DSC resource's expected state after a set operation in what-if mode or the state and an array of the properties the DSC resource would modify.",
       "$ref": "/PowerShell/DSC/main/schemas/v3.0/definitions/returnKind.json"
     }
   },

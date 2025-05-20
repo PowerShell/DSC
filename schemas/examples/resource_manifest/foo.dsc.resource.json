@@ -1,5 +1,5 @@
 {
-    "$schema": "../2024/04/bundled/resource/manifest.vscode.json",
+    "$schema": "../../v3.0/bundled/resource/manifest.vscode.json",
     "type": "Example/Resource",
     "description": "An example resource using the schema.",
     "version": "0.1.0",

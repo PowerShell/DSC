@@ -4,5 +4,5 @@ $id: <HOST>/<PREFIX>/<VERSION>/definitions/hadErrors.yaml
 
 title: Had Errors
 description: >-
-  Indicates whether any of the DSC Resources returned a non-zero exit code.
+  Indicates whether any of the DSC resources returned a non-zero exit code.
 type: boolean

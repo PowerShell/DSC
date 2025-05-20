@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.set.json",
   "title": "Set Method",
-  "description": "Defines how DSC must call the DSC Resource to set the desired state of an instance and how to process the output from the DSC Resource.",
+  "description": "Defines how DSC must call the DSC resource to set the desired state of an instance and how to process the output from the DSC resource.",
   "type": "object",
   "required": [
     "executable"
@@ -18,19 +18,19 @@
       "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/inputKind.json"
     },
     "implementsPretest": {
-      "title": "Resource Performs Pre-Test",
-      "description": "Defines whether the DSC Resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC Resource tests input before modifying system state.",
+      "title": "Resource performs pre-test",
+      "description": "Defines whether the DSC resource performs its own test to ensure idempotency when calling the `set` command. Set this value to `true` if the DSC resource tests input before modifying system state.",
       "type": "boolean",
       "default": false
     },
     "handlesExist": {
-      "title": "Resource handles _exist property",
-      "description": "Defines whether the DSC Resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC Resource handles instance deletion internally when receiving a `set` command where the instance defines the `_exist` property as `false`.",
+      "title": "Resource handles `_exist` property",
+      "description": "Defines whether the DSC resource has its own built-in handling for the `_exist` common property. Set this value to `true` if the DSC resource handles instance deletion internally when receiving a `set` command where the instance defines the `_exist` property as `false`.",
       "type": "boolean",
       "default": false
     },
     "return": {
-      "description": "Defines whether the command returns a JSON blob of the DSC Resource's state after the set operation or the state and an array of the properties the DSC Resource modified.",
+      "description": "Defines whether the command returns a JSON blob of the DSC resource's state after the set operation or the state and an array of the properties the DSC resource modified.",
       "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/returnKind.json"
     }
   },

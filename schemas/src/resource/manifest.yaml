@@ -2,17 +2,16 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.yaml
 
-title: Command-based DSC Resource Manifest
+title: DSC resource manifest
 description: >-
-  Defines the information DSC and integrating require to process and call a command-based DSC
-  Resource.
+  Defines the information DSC and integrating require to process and call a DSC command resource.
 markdownDescription: | # VS Code only
   ***
   [_Online Documentation_][01]
   ***
 
-  Defines the information DSC and integrating require to process and call a command-based DSC
-  Resource. For DSC to use a manifest on a system, the manifest file must:
+  Defines the information DSC and integrating require to process and call a DSC command resource.
+  For DSC to use a manifest on a system, the manifest file must:
 
   1. Be discoverable in the `PATH` environment variable.
   1. Follow the naming convention `<name>.dsc.resource.json`.
@@ -96,8 +95,8 @@ defaultSnippets:
 
   - label: ' Define a resource (adapter)'
     markdownDescription: |-
-      Defines an adapter resource that enables users to define non-command-based DSC Resources in
-      the configuration.
+      Defines an adapter resource that enables users to define non-command DSC resources in the
+      configuration.
     body:
       ${escape_dollar:$}schema: <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
       type:                     '${1:owner.area.group}/${2:${TM_FILENAME_BASE/^(.*?)[\.]dsc[\.]resource/$1/}}'
@@ -197,28 +196,45 @@ properties:
   $schema:
     title: Manifest Schema
     description: >-
-      This property must be the canonical URL of the Command-based DSC Resource Manifest schema
+      This property must be the canonical URL of the Command-based DSC resource Manifest schema
       that the manifest is implemented for.
     type:   string
     format: uri
     enum:
-      - <HOST>/<PREFIX>/<VERSION>/resource/manifest.yaml
-      - <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
-      - <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.vscode.yaml
-      - <HOST>/<PREFIX>/2023/10/resource/manifest.yaml
-      - <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.yaml
-      - <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.vscode.yaml
-      - <HOST>/<PREFIX>/2023/08/resource/manifest.yaml
-      - <HOST>/<PREFIX>/2023/08/bundled/resource/manifest.yaml
-      - <HOST>/<PREFIX>/2023/08/bundled/resource/manifest.vscode.yaml
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json
+      - https://aka.ms/dsc/schemas/v3/resource/manifest.json
+      - https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
+      - https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json
+      - https://aka.ms/dsc/schemas/v3.0/resource/manifest.json
+      - https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json
+      - https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json
+      - https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json
+      - https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json
+      - https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json
     # VS Code Only
     markdownDescription: |
       ***
-      [_Online Documentation_][01]
+      [_Online Documentation_][00]
       ***
 
-      This property must be one of the canonical URLs for the version of the Command-based DSC
-      Resource Manifest schema that the manifest is implemented for.
+      The `$schema` property indicates the canonical URI of this schema that the manifest validates
+      against. This property is mandatory. DSC uses this value to validate the manifest against the
+      correct JSON schema.
+
+      The JSON schemas for DSC are published in multiple versions and forms. This documentation is
+      for the latest version of the schema. As a convenience, you can specify either the full URI
+      for the schema hosted in GitHub or use the shorter `aka.ms` URI. You can specify the schema
+      for a specific semantic version, the latest schema for a minor version, or the latest schema
+      for a major version of DSC. For more information about schema URIs and versioning, see
+      [DSC JSON Schema URIs][01].
       
       For every version of the schema, there are three valid urls:
 
@@ -252,134 +268,306 @@ properties:
       > validate the document when it uses this schema, other tools may error or behave in
       > unexpected ways.
 
-      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#schema
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#schema
+      [01]: <DOCS_BASE_URL>/reference/schemas/schema-uris?<DOCS_VERSION_PIN>
     markdownEnumDescriptions:
-      - | # <HOST>/<PREFIX>/<VERSION>/resource/manifest.yaml
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.yaml
           <!-- force a line break -->
 
-          > #### `<VERSION>` non-bundled
+          > #### `v3` non-bundled, canonical URI
           >
-          > Indicates that the resource manifest adheres to the `<VERSION>` schema. This URL
+          > Indicates that the resource manifest adheres to the `v3` schema. This URL
           > points to the canonical non-bundled schema. When it's used for validation, the
           > validating client needs to retrieve this schema and every schema it references.
-      - | # <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.yaml
+          >
+          > This URI is for the schemas in a major version folder. If you pin to a major version
+          > folder, like `v3`, the schemas you use will update with every nonbreaking release. You
+          > can use those schemas until you want or need to migrate to a new major version of DSC.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.yaml
           <!-- force a line break -->
 
-          > #### `<VERSION>` bundled
+          > #### `v3` bundled, canonical URI
           >
-          > Indicates that the resource manifest adheres to the `<VERSION>` schema. This URL
+          > Indicates that the resource manifest adheres to the `v3` schema. This URL
           > points to the bundled schema. When it's used for validation, the validating client
           > only needs to retrieve this schema.
           >
           > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
           > still validate the document when it uses this schema, other tools may error or behave
           > in unexpected ways.
-      - | # <HOST>/<PREFIX>/<VERSION>/bundled/resource/manifest.vscode.yaml
+          >
+          > This URI is for the schemas in a major version folder. If you pin to a major version
+          > folder, like `v3`, the schemas you use will update with every nonbreaking release. You
+          > can use those schemas until you want or need to migrate to a new major version of DSC.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.yaml
           <!-- force a line break -->
 
-          > #### `<VERSION>` enhanced authoring
+          > #### `v3` enhanced authoring, canonical URI
           >
-          > Indicates that the resource manifest adheres to the `<VERSION>` schema. This URL
-          > points to the enhanced authoring schema. This schema is much larger than the other
-          > schemas, as it includes additional definitions that provide contextual help and
-          > snippets that the others don't include.
+          > Indicates that the resource manifest adheres to the `v3` schema. This URL points to the
+          > enhanced authoring schema. This schema is much larger than the other schemas, as it
+          > includes additional definitions that provide contextual help and snippets that the
+          > others don't include.
           >
           > This schema uses keywords that are only recognized by VS Code. While DSC can still
           > validate the document when it uses this schema, other tools may error or behave in
           > unexpected ways.
-
-      - | # <HOST>/<PREFIX>/2023/10/resource/manifest.yaml
+          >
+          > This URI is for the schemas in a major version folder. If you pin to a major version
+          > folder, like `v3`, the schemas you use will update with every nonbreaking release. You
+          > can use those schemas until you want or need to migrate to a new major version of DSC.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.yaml
           <!-- force a line break -->
 
-          > #### `2023/10` non-bundled
+          > #### `v3.0` non-bundled, canonical URI
           >
-          > Indicates that the resource manifest adheres to the `2023/10` schema. This version
-          > is deprecated, and should only be used for compatibility with `alpha.5` and earlier.
-          > Migrate to using the `<VERSION>` of the schema 
-          >
-          > This URL points to the canonical non-bundled schema. When it's used for validation, the
+          > Indicates that the resource manifest adheres to the `v3.0` schema. This URL
+          > points to the canonical non-bundled schema. When it's used for validation, the
           > validating client needs to retrieve this schema and every schema it references.
-
-      - | # <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.yaml
+          >
+          > This URI is for the schemas in a minor version folder. If you pin to a minor version
+          > folder, like `v3.0`, the schemas you use will update with every patch release. Pinning
+          > to a minor version folder enables you to take advantage of fixes to the schemas without
+          > continually updating your schema URIs. However, to take advantage of any improvements
+          > or new features, you need to update the URI whenever a new minor version is released.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.yaml
           <!-- force a line break -->
 
-          > #### `2023/10` bundled
+          > #### `v3.0` bundled, canonical URI
           >
-          >Indicates that the resource manifest adheres to the `2023/10` schema. This version
-          > is deprecated, and should only be used for compatibility with `alpha.5` and earlier.
-          > Migrate to using the `<VERSION>` of the schema.
-          >
-          > This URL points to the bundled schema. When it's used for validation, the validating
-          > client only needs to retrieve this schema.
+          > Indicates that the resource manifest adheres to the `v3.0` schema. This URL
+          > points to the bundled schema. When it's used for validation, the validating client
+          > only needs to retrieve this schema.
           >
           > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
           > still validate the document when it uses this schema, other tools may error or behave
           > in unexpected ways.
-      - | # <HOST>/<PREFIX>/2023/10/bundled/resource/manifest.vscode.yaml
+          >
+          > This URI is for the schemas in a minor version folder. If you pin to a minor version
+          > folder, like `v3.0`, the schemas you use will update with every patch release. Pinning
+          > to a minor version folder enables you to take advantage of fixes to the schemas without
+          > continually updating your schema URIs. However, to take advantage of any improvements
+          > or new features, you need to update the URI whenever a new minor version is released.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.yaml
           <!-- force a line break -->
 
-          > #### `2023/10` enhanced authoring
+          > #### `v3.0` enhanced authoring, canonical URI
           >
-          >Indicates that the resource manifest adheres to the `2023/10` schema. This version
-          > is deprecated, and should only be used for compatibility with `alpha.5` and earlier.
-          > Migrate to using the `<VERSION>` of the schema.
-          >
-          > This URL points to the enhanced authoring schema. This schema is much larger than the
-          > other schemas, as it includes additional definitions that provide contextual help and
-          > snippets that the others don't include.
+          > Indicates that the resource manifest adheres to the `v3.0` schema. This URL points to
+          > the enhanced authoring schema. This schema is much larger than the other schemas, as it
+          > includes additional definitions that provide contextual help and snippets that the
+          > others don't include.
           >
           > This schema uses keywords that are only recognized by VS Code. While DSC can still
           > validate the document when it uses this schema, other tools may error or behave in
           > unexpected ways.
-      - | # <HOST>/<PREFIX>/2023/08/resource/manifest.yaml
+          >
+          > This URI is for the schemas in a minor version folder. If you pin to a minor version
+          > folder, like `v3.0`, the schemas you use will update with every patch release. Pinning
+          > to a minor version folder enables you to take advantage of fixes to the schemas without
+          > continually updating your schema URIs. However, to take advantage of any improvements
+          > or new features, you need to update the URI whenever a new minor version is released.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.yaml
           <!-- force a line break -->
 
-          > #### `2023/08` non-bundled
+          > #### `v3.0.0` non-bundled, canonical URI
           >
-          > Indicates that the resource manifest adheres to the `2023/08` schema. This version
-          > is deprecated, and should only be used for compatibility with `alpha.3` and earlier.
-          > Migrate to using the `<VERSION>` of the schema 
-          >
-          > This URL points to the canonical non-bundled schema. When it's used for validation, the
+          > Indicates that the resource manifest adheres to the `v3.0.0` schema. This URL
+          > points to the canonical non-bundled schema. When it's used for validation, the
           > validating client needs to retrieve this schema and every schema it references.
-
-      - | # <HOST>/<PREFIX>/2023/08/bundled/resource/manifest.yaml
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.0`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.yaml
           <!-- force a line break -->
 
-          > #### `2023/08` bundled
+          > #### `v3.0.0` bundled, canonical URI
           >
-          > Indicates that the resource manifest adheres to the `2023/08` schema. This version
-          > is deprecated, and should only be used for compatibility with `alpha.3` and earlier.
-          > Migrate to using the `<VERSION>` of the schema 
-          >
-          > This URL points to the bundled schema. When it's used for validation, the validating
-          > client only needs to retrieve this schema.
+          > Indicates that the resource manifest adheres to the `v3.0.0` schema. This URL
+          > points to the bundled schema. When it's used for validation, the validating client
+          > only needs to retrieve this schema.
           >
           > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
           > still validate the document when it uses this schema, other tools may error or behave
           > in unexpected ways.
-      - | # <HOST>/<PREFIX>/2023/08/bundled/resource/manifest.vscode.yaml
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.0`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.yaml
           <!-- force a line break -->
 
-          > #### `2023/08` enhanced authoring
+          > #### `v3.0.0` enhanced authoring, canonical URI
           >
-          > Indicates that the resource manifest adheres to the `2023/08` schema. This version
-          > is deprecated, and should only be used for compatibility with `alpha.3` and earlier.
-          > Migrate to using the `<VERSION>` of the schema 
-          >
-          > This URL points to the enhanced authoring schema. This schema is much larger than the
-          > other schemas, as it includes additional definitions that provide contextual help and
-          > snippets that the others don't include.
+          
+          > Indicates that the resource manifest adheres to the `v3.0.0` schema. This URL points to
+          > the enhanced authoring schema. This schema is much larger than the other schemas, as it
+          > includes additional definitions that provide contextual help and snippets that the
+          > others don't include.
           >
           > This schema uses keywords that are only recognized by VS Code. While DSC can still
           > validate the document when it uses this schema, other tools may error or behave in
           > unexpected ways.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.0`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+
+
+      - | # https://aka.ms/dsc/schemas/v3/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `v3` non-bundled, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3` schema. This URL
+          > points to the canonical non-bundled schema. When it's used for validation, the
+          > validating client needs to retrieve this schema and every schema it references.
+          >
+          > This URI is for the schemas in a major version folder. If you pin to a major version
+          > folder, like `v3`, the schemas you use will update with every nonbreaking release. You
+          > can use those schemas until you want or need to migrate to a new major version of DSC.
+      - | # https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `v3` bundled, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3` schema. This URL
+          > points to the bundled schema. When it's used for validation, the validating client
+          > only needs to retrieve this schema.
+          >
+          > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
+          > still validate the document when it uses this schema, other tools may error or behave
+          > in unexpected ways.
+          >
+          > This URI is for the schemas in a major version folder. If you pin to a major version
+          > folder, like `v3`, the schemas you use will update with every nonbreaking release. You
+          > can use those schemas until you want or need to migrate to a new major version of DSC.
+      - | # https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.yaml
+          <!-- force a line break -->
+
+          > #### `v3` enhanced authoring, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3` schema. This URL points to the
+          > enhanced authoring schema. This schema is much larger than the other schemas, as it
+          > includes additional definitions that provide contextual help and snippets that the
+          > others don't include.
+          >
+          > This schema uses keywords that are only recognized by VS Code. While DSC can still
+          > validate the document when it uses this schema, other tools may error or behave in
+          > unexpected ways.
+          >
+          > This URI is for the schemas in a major version folder. If you pin to a major version
+          > folder, like `v3`, the schemas you use will update with every nonbreaking release. You
+          > can use those schemas until you want or need to migrate to a new major version of DSC.
+      - | # https://aka.ms/dsc/schemas/v3.0/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0` non-bundled, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3.0` schema. This URL
+          > points to the canonical non-bundled schema. When it's used for validation, the
+          > validating client needs to retrieve this schema and every schema it references.
+          >
+          > This URI is for the schemas in a minor version folder. If you pin to a minor version
+          > folder, like `v3.0`, the schemas you use will update with every patch release. Pinning
+          > to a minor version folder enables you to take advantage of fixes to the schemas without
+          > continually updating your schema URIs. However, to take advantage of any improvements
+          > or new features, you need to update the URI whenever a new minor version is released.
+      - | # https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0` bundled, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3.0` schema. This URL
+          > points to the bundled schema. When it's used for validation, the validating client
+          > only needs to retrieve this schema.
+          >
+          > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
+          > still validate the document when it uses this schema, other tools may error or behave
+          > in unexpected ways.
+          >
+          > This URI is for the schemas in a minor version folder. If you pin to a minor version
+          > folder, like `v3.0`, the schemas you use will update with every patch release. Pinning
+          > to a minor version folder enables you to take advantage of fixes to the schemas without
+          > continually updating your schema URIs. However, to take advantage of any improvements
+          > or new features, you need to update the URI whenever a new minor version is released.
+      - | # https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0` enhanced authoring, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3.0` schema. This URL points to
+          > the enhanced authoring schema. This schema is much larger than the other schemas, as it
+          > includes additional definitions that provide contextual help and snippets that the
+          > others don't include.
+          >
+          > This schema uses keywords that are only recognized by VS Code. While DSC can still
+          > validate the document when it uses this schema, other tools may error or behave in
+          > unexpected ways.
+          >
+          > This URI is for the schemas in a minor version folder. If you pin to a minor version
+          > folder, like `v3.0`, the schemas you use will update with every patch release. Pinning
+          > to a minor version folder enables you to take advantage of fixes to the schemas without
+          > continually updating your schema URIs. However, to take advantage of any improvements
+          > or new features, you need to update the URI whenever a new minor version is released.
+      - | # https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.0` non-bundled, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3.0.0` schema. This URL
+          > points to the canonical non-bundled schema. When it's used for validation, the
+          > validating client needs to retrieve this schema and every schema it references.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.0`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.0` bundled, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3.0.0` schema. This URL
+          > points to the bundled schema. When it's used for validation, the validating client
+          > only needs to retrieve this schema.
+          >
+          > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
+          > still validate the document when it uses this schema, other tools may error or behave
+          > in unexpected ways.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.0`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.0` enhanced authoring, short URI
+          >
+          > Indicates that the resource manifest adheres to the `v3.0.0` schema. This URL points to
+          > the enhanced authoring schema. This schema is much larger than the other schemas, as it
+          > includes additional definitions that provide contextual help and snippets that the
+          > others don't include.
+          >
+          > This schema uses keywords that are only recognized by VS Code. While DSC can still
+          > validate the document when it uses this schema, other tools may error or behave in
+          > unexpected ways.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.0`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
   type:
     $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
   version:
     title: Resource Semantic Version
     description: >-
-      The semantic version (semver) of the DSC Resource. This version identifies the DSC Resource,
+      The semantic version (semver) of the DSC resource. This version identifies the DSC resource,
       not the version of the application it manages.
     $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
     markdownDescription: | # VS Code only
@@ -387,7 +575,7 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      The semantic version ([semver][02]) of the DSC Resource. This version identifies the DSC
+      The semantic version ([semver][02]) of the DSC resource. This version identifies the DSC
       Resource, not the version of the application it manages.
 
       This value uses the [suggested regular expression][03] to validate whether the string is valid
@@ -411,14 +599,14 @@ properties:
   description:
     title: Resource Description
     description: >-
-      A short synopsis of the DSC Resource's purpose.
+      A short synopsis of the DSC resource's purpose.
     type: string
     markdownDescription: | # VS Code only
       ***
       [_Online Documentation_][01]
       ***
 
-      Defines a short synopsis of the DSC Resource's purpose.
+      Defines a short synopsis of the DSC resource's purpose.
 
       [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/root?<DOCS_VERSION_PIN>#description-1
   kind:
@@ -468,9 +656,9 @@ properties:
     # command/method objects too?
     title: Exit Codes
     description: >-
-      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      This property defines a map of valid exit codes for the DSC resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
-      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+      property to indicate human-readable semantic meanings for the DSC resource's exit codes.
     type: object
     propertyNames:
       pattern: "^-?[0-9]+$"
@@ -495,9 +683,9 @@ properties:
       [_Online Documentation_][01]
       ***
 
-      This property defines a map of valid exit codes for the DSC Resource. DSC always interprets
+      This property defines a map of valid exit codes for the DSC resource. DSC always interprets
       exit code `0` as a successful operation and any other exit code as an error. Use this
-      property to indicate human-readable semantic meanings for the DSC Resource's exit codes.
+      property to indicate human-readable semantic meanings for the DSC resource's exit codes.
 
       Define the keys in this property as strings representing a valid 32-bit signed integer. You
       can't use alternate formats for the exit code. For example, instead of the hexadecimal value

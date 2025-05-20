@@ -30,7 +30,6 @@ properties:
       - endDatetime
       - duration
       - securityContext
-      - context
     properties:
       version:
         $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/version.yaml
@@ -46,5 +45,3 @@ properties:
         $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/duration.yaml
       securityContext:
         $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/securityContext.yaml
-      context:
-        $ref: /<PREFIX>/<VERSION>/metadata/Microsoft.DSC/context.yaml

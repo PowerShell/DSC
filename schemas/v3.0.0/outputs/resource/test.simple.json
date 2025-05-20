@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/outputs/resource/test.simple.json",
   "title": "dsc resource test result (simple)",
-  "description": "Describes the return data for a single DSC Resource instance from the `dsc resource test` command. This data is returned for instances that aren't group resources, adapter resources, or nested inside a group or adapter resource.\nWhen you use `dsc resource test` for a group or adapter resource, the command returns an array of full test result objects that include the name and type for the nested instances.",
+  "description": "Describes the return data for a single DSC resource instance from the `dsc resource test` command. This data is returned for instances that aren't group resources, adapter resources, or nested inside a group or adapter resource.\nWhen you use `dsc resource test` for a group or adapter resource, the command returns an array of full test result objects that include the name and type for the nested instances.",
   "type": "object",
   "required": [
     "desiredState",
@@ -13,12 +13,12 @@
   "properties": {
     "desiredState": {
       "title": "Desired state",
-      "description": "This property always represents the desired state of the DSC Resource instance as specified to DSC.",
+      "description": "This property always represents the desired state of the DSC resource instance as specified to DSC.",
       "type": "object"
     },
     "actualState": {
       "title": "Actual state",
-      "description": "This property always represents the current state of the DSC Resource instance as returned by its `test` method or, if the DSC Resource doesn't define the `test` method, by its `get` method. DSC validates this return value against the DSC Resource's schema.",
+      "description": "This property always represents the current state of the DSC resource instance as returned by its `test` method or, if the DSC resource doesn't define the `test` method, by its `get` method. DSC validates this return value against the DSC resource's schema.",
       "type": "object"
     },
     "inDesiredState": {
@@ -28,7 +28,7 @@
     },
     "differingProperties": {
       "title": "Differing properties",
-      "description": "This property always represents the list of property names for the DSC Resource instance that aren't in the desired state. When this property is an empty array, the instance is in the desired state.",
+      "description": "This property always represents the list of property names for the DSC resource instance that aren't in the desired state. When this property is an empty array, the instance is in the desired state.",
       "type": "array",
       "default": [],
       "items": {
