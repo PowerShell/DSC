@@ -307,7 +307,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 }
                 self.adapters = adapters;
                 // go through the resource and remove duplicates with same name and version
-                for (_resource_name, resource_vec) in &mut resources {
+                for resource_vec in resources.values_mut() {
                     let mut uniques: HashSet<String> = HashSet::new();
                     resource_vec.retain(|e| uniques.insert(e.version.clone()));
                 }
