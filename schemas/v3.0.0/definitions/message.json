@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/definitions/message.json",
   "title": "Message",
-  "description": "A message emitted by a DSC Resource with associated metadata.",
+  "description": "A message emitted by a DSC resource with associated metadata.",
   "type": "object",
   "required": [
     "name",
@@ -13,7 +13,7 @@
   "properties": {
     "name": {
       "title": "Message source instance name",
-      "description": "The short, human-readable name for the instance that emitted the message, as defined in the DSC Configuration Document.",
+      "description": "The short, human-readable name for the instance that emitted the message, as defined in the DSC configuration document.",
       "type": "string"
     },
     "type": {
@@ -21,7 +21,7 @@
     },
     "message": {
       "title": "Message content",
-      "description": "The actual content of the message as emitted by the DSC Resource.",
+      "description": "The actual content of the message as emitted by the DSC resource.",
       "type": "string",
       "minLength": 1
     },

@@ -19,8 +19,7 @@
         "startDatetime",
         "endDatetime",
         "duration",
-        "securityContext",
-        "context"
+        "securityContext"
       ],
       "properties": {
         "version": {
@@ -43,9 +42,6 @@
         },
         "securityContext": {
           "$ref": "/PowerShell/DSC/main/schemas/v3/metadata/Microsoft.DSC/securityContext.json"
-        },
-        "context": {
-          "$ref": "/PowerShell/DSC/main/schemas/v3/metadata/Microsoft.DSC/context.json"
         }
       }
     }
