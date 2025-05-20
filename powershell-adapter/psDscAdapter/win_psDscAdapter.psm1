@@ -227,7 +227,8 @@ function Invoke-DscCacheRefresh {
 
             # workaround: Use GetTypeInstanceFromModule to get the type instance from the module and validate if it is a class-based resource
             $classBased = GetTypeInstanceFromModule -modulename $moduleName -classname $dscResource.Name -ErrorAction Ignore
-            if (-not ([string]::IsNullOrEmpty($classBased))) {
+            if ($classBased -and ($classBased.CustomAttributes.AttributeType.Name -eq 'DscResourceAttribute')) {
+                "Detected class-based resource: $($dscResource.Name) => Type: $($classBased.BaseType.FullName)" | Write-DscTrace
                 $dscResourceInfo.ImplementationDetail = 'ClassBased'
             }
 
