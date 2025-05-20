@@ -90,4 +90,16 @@ Describe 'Discover extension tests' {
             $env:DSC_RESOURCE_PATH = $null
         }
     }
+
+    It 'Table can be not truncated' {
+        $output = dsc extension list --output-format table-no-truncate
+        $LASTEXITCODE | Should -Be 0
+        $foundWideLine = $false
+        foreach ($line in $output) {
+            if ($line.Length -gt [Console]::WindowWidth) {
+                $foundWideLine = $true
+            }
+        }
+        $foundWideLine | Should -BeTrue
+    }
 }

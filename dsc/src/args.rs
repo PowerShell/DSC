@@ -15,6 +15,14 @@ pub enum OutputFormat {
     Yaml,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum ListOutputFormat {
+    Json,
+    PrettyJson,
+    Yaml,
+    TableNoTruncate,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Deserialize)]
 pub enum TraceFormat {
     Default,
@@ -156,7 +164,7 @@ pub enum ExtensionSubCommand {
         /// Optional filter to apply to the list of extensions
         extension_name: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: Option<OutputFormat>,
+        output_format: Option<ListOutputFormat>,
     },
 }
 
@@ -174,7 +182,7 @@ pub enum ResourceSubCommand {
         #[clap(short, long, help = t!("args.tags").to_string())]
         tags: Option<Vec<String>>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: Option<OutputFormat>,
+        output_format: Option<ListOutputFormat>,
     },
     #[clap(name = "get", about = t!("args.resourceGet").to_string(), arg_required_else_help = true)]
     Get {
