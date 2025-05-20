@@ -429,7 +429,7 @@ version = "3.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90eeab0aa92f3f9b4e87f258c72b139c207d251f9cbc1080a0086b86a8870dd3"
 dependencies = [
- "nix",
+ "nix 0.29.0",
  "windows-sys 0.59.0",
 ]
 
@@ -551,7 +551,7 @@ dependencies = [
 
 [[package]]
 name = "dsc"
-version = "3.1.0-preview.5"
+version = "3.1.0-preview.6"
 dependencies = [
  "clap",
  "clap_complete",
@@ -602,7 +602,7 @@ dependencies = [
  "tracing-indicatif",
  "tree-sitter",
  "tree-sitter-dscexpression",
- "tree-sitter-rust 0.24.0",
+ "tree-sitter-rust",
  "uuid",
  "which",
 ]
@@ -1193,6 +1193,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "nix"
+version = "0.30.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
+dependencies = [
+ "bitflags 2.9.0",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
 name = "normpath"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1702,7 +1714,7 @@ name = "security_context_lib"
 version = "0.1.0"
 dependencies = [
  "is_elevated",
- "nix",
+ "nix 0.30.1",
 ]
 
 [[package]]
@@ -2196,7 +2208,7 @@ dependencies = [
  "cc",
  "tree-sitter",
  "tree-sitter-language",
- "tree-sitter-rust 0.23.2",
+ "tree-sitter-rust",
 ]
 
 [[package]]
@@ -2204,16 +2216,6 @@ name = "tree-sitter-language"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4013970217383f67b18aef68f6fb2e8d409bc5755227092d32efb0422ba24b8"
-
-[[package]]
-name = "tree-sitter-rust"
-version = "0.23.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4d64d449ca63e683c562c7743946a646671ca23947b9c925c0cfbe65051a4af"
-dependencies = [
- "cc",
- "tree-sitter-language",
-]
 
 [[package]]
 name = "tree-sitter-rust"
