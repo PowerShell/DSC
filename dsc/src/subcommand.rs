@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, DscType, ExtensionSubCommand, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, DscType, ExtensionSubCommand, ListOutputFormat, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
@@ -611,7 +611,7 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
     }
 }
 
-fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format: Option<&OutputFormat>, progress_format: ProgressFormat) {
+fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -654,7 +654,13 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_object(&json, format, include_separator);
+                let format = match format {
+                    Some(ListOutputFormat::Json) => Some(OutputFormat::Json),
+                    Some(ListOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
+                    Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
+                    _ => None,
+                };
+                write_object(&json, format.as_ref(), include_separator);
                 include_separator = true;
                 // insert newline separating instances if writing to console
                 if io::stdout().is_terminal() { println!(); }
@@ -663,11 +669,12 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     }
 
     if write_table {
-        table.print();
+        let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
+        table.print(truncate);
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&OutputFormat>, progress_format: ProgressFormat) {
+fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -677,7 +684,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
         t!("subcommand.tableHeader_adapter").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
-    if format.is_none() && io::stdout().is_terminal() {
+    if format == Some(&ListOutputFormat::TableNoTruncate) || (format.is_none() && io::stdout().is_terminal()) {
         // write as table if format is not specified and interactive
         write_table = true;
     }
@@ -759,7 +766,13 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
                         exit(EXIT_JSON_ERROR);
                     }
                 };
-                write_object(&json, format, include_separator);
+                let format = match format {
+                    Some(ListOutputFormat::Json) => Some(OutputFormat::Json),
+                    Some(ListOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
+                    Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
+                    _ => None,
+                };
+                write_object(&json, format.as_ref(), include_separator);
                 include_separator = true;
                 // insert newline separating instances if writing to console
                 if io::stdout().is_terminal() { println!(); }
@@ -768,6 +781,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
     }
 
     if write_table {
-        table.print();
+        let truncate = format != Some(&ListOutputFormat::TableNoTruncate);
+        table.print(truncate);
     }
 }

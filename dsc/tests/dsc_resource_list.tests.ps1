@@ -88,4 +88,17 @@ Describe 'Tests for listing resources' {
         $LASTEXITCODE | Should -Be 0
         $out | Should -BeLike "*ERROR*Adapter not found: foo`*"
     }
+
+    It 'Table is not truncated' {
+        $output = dsc resource list --output-format table-no-truncate
+        $LASTEXITCODE | Should -Be 0
+        $foundWideLine = $false
+        foreach ($line in $output) {
+            if ($line.Length -gt [Console]::WindowWidth) {
+                $foundWideLine = $true
+                break
+            }
+        }
+        $foundWideLine | Should -BeTrue
+    }
 }
