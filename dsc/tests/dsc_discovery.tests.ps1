@@ -243,6 +243,9 @@ Describe 'tests for resource discovery' {
             $out = dsc resource get -r 'Test/MyEcho' -i '{"output":"Custom"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $out.actualState.output | Should -BeExactly 'Custom'
+            dsc resource get -r 'Microsoft.DSC.Debug/Echo' -i '{"output":"Custom"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 7
+            Get-Content -Raw -Path "$testdrive/error.txt" | Should -Match "ERROR.*?Resource not found"
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
