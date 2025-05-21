@@ -220,4 +220,32 @@ Describe 'tests for resource discovery' {
             $env:DSC_RESOURCE_PATH = $oldPath
         }
     }
+
+    It 'DSC_RESOURCE_PATH should be used for executable lookup' {
+        $dscTest = Get-Command dscecho -ErrorAction Stop
+        $target = if ($IsWindows) {
+            'echoIt.exe'
+        } else {
+            'echoIt'
+        }
+        Copy-Item -Path "$($dscTest.Source)" -Destination "$testdrive\$target"
+        $manifest = Get-Content -Raw -Path "$(Split-Path -Path $dscTest.Source -Parent)\echo.dsc.resource.json" | ConvertFrom-Json
+        $manifest.type = 'Test/MyEcho'
+        $manifest.get.executable = $target
+        $manifest.set = $null
+        $manifest.test = $null
+        $manifest.schema.command.executable = $target
+        Set-Content -Path "$testdrive/test.dsc.resource.json" -Value ($manifest | ConvertTo-Json -Depth 10)
+
+        $oldPath = $env:DSC_RESOURCE_PATH
+        try {
+            $env:DSC_RESOURCE_PATH = $testdrive
+            $out = dsc resource get -r 'Test/MyEcho' -i '{"output":"Custom"}' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.actualState.output | Should -BeExactly 'Custom'
+        }
+        finally {
+            $env:DSC_RESOURCE_PATH = $oldPath
+        }
+    }
 }
