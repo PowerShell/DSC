@@ -274,4 +274,40 @@ Describe 'PowerShell adapter resource tests' {
     $out | Should -Not -BeNullOrEmpty
     $out | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*"
   }
+
+  It 'Config get is able to return proper enum value' {
+    $yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: Class-resource Info
+          type: TestClassResource/TestClassResource
+          properties:
+            Name: 'TestClassResource'
+            Ensure: 'Present'
+"@
+
+    $out = dsc config get -i $yaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results.result.actualState.Ensure | Should -Be 'Present'
+  }
+
+  It 'Config export is able to return proper enum value' {
+    $yaml = @"
+      `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+      resources:
+      - name: Working with class-based resources
+        type: Microsoft.DSC/PowerShell
+        properties:
+          resources:
+          - name: Class-resource Info
+            type: TestClassResource/TestClassResource
+"@
+
+    $out = dsc config export -i $yaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.resources[0].properties.result.count | Should -Be 5
+    $out.resources[0].properties.result[0].Name | Should -Be "Object1"
+    $out.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
+  }
 }
+
