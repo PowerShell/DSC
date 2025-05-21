@@ -1,12 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Tests for Appx resource discovery' {
-    BeforeAll {
-        $skip = (!$IsWindows -or ($null -eq (Get-Command Get-AppxPackage -ErrorAction Ignore)) -or ($null -eq (get-appxpackage -Name Microsoft.DesiredStateConfiguration-Preview)))
-    }
-
-    It 'Should find DSC appx resources' -Skip:$skip {
+Describe 'Tests for Appx resource discovery' -Skip:(!$IsWindows){
+    It 'Should find DSC appx resources' {
         $out = dsc resource list | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $found = $false
