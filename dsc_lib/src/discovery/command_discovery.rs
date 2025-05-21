@@ -567,7 +567,7 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
                 },
             };
             // if the version already exists, we might skip it
-            if !skip_duplicate_version && resource_instance_version == resource_version {
+            if skip_duplicate_version && resource_instance_version == resource_version {
                 return;
             }
 

@@ -170,6 +170,7 @@ resourceManifestSchemaDescription = "Defines the JSON Schema the resource manife
 [extensions.dscextension]
 discoverNoResults = "No results returned for discovery extension '%{extension}'"
 discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
+extensionReturned = "Extension '%{extension}' returned line: %{line}"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
