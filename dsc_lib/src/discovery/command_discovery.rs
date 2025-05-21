@@ -306,11 +306,6 @@ impl ResourceDiscovery for CommandDiscovery {
                     }
                 }
                 self.adapters = adapters;
-                // go through the resource and remove duplicates with same name and version
-                for resource_vec in resources.values_mut() {
-                    let mut uniques: HashSet<String> = HashSet::new();
-                    resource_vec.retain(|e| uniques.insert(e.version.clone()));
-                }
                 self.resources = resources;
             },
             DiscoveryKind::Extension => {
@@ -572,7 +567,7 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
                 },
             };
             // if the version already exists, we might skip it
-            if !skip_duplicate_version && resource_instance_version == resource_version {
+            if skip_duplicate_version && resource_instance_version == resource_version {
                 return;
             }
 
