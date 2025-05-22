@@ -10,5 +10,8 @@ resources:
 - name: Services
   type: Microsoft.Windows/Service
   properties:
-    name: Spooler
-    status: "[parameters('status')]"
+    services:
+      - name: Spooler
+        status: "[parameters('status')]"
+      - name: sshd
+        status: Running

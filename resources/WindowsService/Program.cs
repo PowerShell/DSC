@@ -16,7 +16,7 @@ if (args.Length < 1)
 }
 
 var operation = args[0].ToLowerInvariant();
-WindowsService? windowsService = null;
+WindowsServices? windowsServices = null;
 WriteDebug( $"Operation: {operation}");
 
 switch (operation)
@@ -31,24 +31,44 @@ switch (operation)
         WriteTrace($"Input JSON: {jsonInput}");
         if (!string.IsNullOrEmpty(jsonInput))
         {
-            try {
-                windowsService = JsonSerializer.Deserialize<WindowsService>(jsonInput);
-            } catch (JsonException ex) {
+            try
+            {
+                windowsServices = JsonSerializer.Deserialize<WindowsServices>(jsonInput);
+            }
+            catch (JsonException ex)
+            {
                 WriteError($"Failed to deserialize JSON: {ex.Message}");
                 Environment.Exit(EXIT_INVALID_ARG);
             }
         }
 
-        if (windowsService == null || string.IsNullOrEmpty(windowsService.Name))
+        WindowsServices resultServices = new WindowsServices();
+        foreach (var service in windowsServices?.Services ?? Enumerable.Empty<WindowsService>())
         {
-            WriteError("Property 'name' is required for 'get' operation.");
-            Environment.Exit(EXIT_INVALID_ARG);
+            if (service.Name is null)
+            {
+                WriteError("Property 'name' is required for 'get' operation.");
+                Environment.Exit(EXIT_INVALID_ARG);
+            }
+
+            var resultService = GetService(service.Name);
+            if (resultService is not null)
+            {
+                resultServices.Services.Add(resultService);
+            }
         }
-        GetServices(windowsService.Name);
+
+        var options = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+        string json = JsonSerializer.Serialize(resultServices, options);
+        Console.WriteLine(json);
+
         break;
     case "schema":
         var jsonOptions = JsonSerializerOptions.Default;
-        JsonNode schema = jsonOptions.GetJsonSchemaAsNode(typeof(WindowsService));
+        JsonNode schema = jsonOptions.GetJsonSchemaAsNode(typeof(WindowsServices));
         Console.WriteLine(schema.ToString());
         break;
     case "set":
@@ -62,63 +82,84 @@ switch (operation)
         if (!string.IsNullOrEmpty(jsonInput))
         {
             try {
-                windowsService = JsonSerializer.Deserialize<WindowsService>(jsonInput);
-                WriteTrace($"Deserialized JSON: {JsonSerializer.Serialize(windowsService)}");
+                windowsServices = JsonSerializer.Deserialize<WindowsServices>(jsonInput);
+                WriteTrace($"Deserialized JSON: {JsonSerializer.Serialize(windowsServices)}");
             } catch (JsonException ex) {
                 WriteError($"Failed to deserialize JSON: {ex.Message}");
                 Environment.Exit(EXIT_INVALID_ARG);
             }
         }
-        if (windowsService == null || string.IsNullOrEmpty(windowsService.Name))
+        foreach (var service in windowsServices?.Services ?? Enumerable.Empty<WindowsService>())
         {
-            WriteError("Property 'name' is required for 'set' operation.");
-            Environment.Exit(EXIT_INVALID_INPUT);
-        }
-        if (windowsService.Status is null)
-        {
-            WriteError("Property 'status' is required for 'set' operation.");
-            Environment.Exit(EXIT_INVALID_INPUT);
-        }
-        if (windowsService.Exist is not null && windowsService.Exist == false)
-        {
-            WriteError($"Resource does not support removing a service.");
-            Environment.Exit(EXIT_INVALID_INPUT);
-        }
-        if (windowsService.StartType is not null)
-        {
-            // TODO: Need to P/Invoke, use WMI, use sc.exe, use PowerShell, or write directly to registry to set the start type.
-            WriteError($"Setting service start type is not supported.");
-            Environment.Exit(EXIT_INVALID_INPUT);
-        }
-        if (windowsService.Status is not null)
-        {
-            WriteDebug($"Setting service status to {windowsService.Status}");
-            var service = new ServiceController(windowsService.Name);
-            try
+            if (string.IsNullOrEmpty(service.Name))
             {
-                if (windowsService.Status == ServiceControllerStatus.Running && service.Status != ServiceControllerStatus.Running)
-                {
-                    service.Start();
-                }
-                else if (windowsService.Status == ServiceControllerStatus.Stopped && service.Status != ServiceControllerStatus.Stopped)
-                {
-                    service.Stop();
-                }
-                service.WaitForStatus(windowsService.Status.Value);
+                WriteError("Property 'name' is required for 'set' operation.");
+                Environment.Exit(EXIT_INVALID_INPUT);
             }
-            catch (Exception ex)
+            if (service.Status is null)
             {
-                WriteError($"Failed to set service status: {ex.Message}");
-                if (ex.InnerException != null)
+                WriteError("Property 'status' is required for 'set' operation.");
+                Environment.Exit(EXIT_INVALID_INPUT);
+            }
+            if (service.Exist is not null && service.Exist == false)
+            {
+                WriteError($"Resource does not support removing a service.");
+                Environment.Exit(EXIT_INVALID_INPUT);
+            }
+            if (service.StartType is not null)
+            {
+                // TODO: Need to P/Invoke, use WMI, use sc.exe, use PowerShell, or write directly to registry to set the start type.
+                WriteError($"Setting service start type is not supported.");
+                Environment.Exit(EXIT_INVALID_INPUT);
+            }
+            if (service.Status is not null)
+            {
+                WriteDebug($"Setting service status to {service.Status}");
+                var serviceController = new ServiceController(service.Name);
+                try
                 {
-                    WriteError($"Inner exception: {ex.InnerException.Message}");
+                    if (service.Status == ServiceControllerStatus.Running && serviceController.Status != ServiceControllerStatus.Running)
+                    {
+                        serviceController.Start();
+                    }
+                    else if (service.Status == ServiceControllerStatus.Stopped && serviceController.Status != ServiceControllerStatus.Stopped)
+                    {
+                        serviceController.Stop();
+                    }
+                    serviceController.WaitForStatus(service.Status.Value);
                 }
-                Environment.Exit(EXIT_INVALID_ARG);
+                catch (Exception ex)
+                {
+                    WriteError($"Failed to set service status: {ex.Message}");
+                    if (ex.InnerException != null)
+                    {
+                        WriteError($"Inner exception: {ex.InnerException.Message}");
+                    }
+                    Environment.Exit(EXIT_INVALID_ARG);
+                }
             }
         }
         break;
     case "export":
-        GetServices(null);
+        WindowsServices services = new WindowsServices();
+        var allServices = ServiceController.GetServices();
+        foreach (var service in allServices)
+        {
+            var windowsService = new WindowsService
+            {
+                Name = service.ServiceName,
+                DisplayName = service.DisplayName,
+                Status = service.Status,
+                StartType = service.StartType
+            };
+            services.Services.Add(windowsService);
+        }
+        var exportOptions = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+        string exportJson = JsonSerializer.Serialize(services, exportOptions);
+        Console.WriteLine(exportJson);
         break;
     default:
         WriteError("Invalid action. Use get, export, or schema.");
@@ -128,7 +169,7 @@ switch (operation)
 
 Environment.Exit(EXIT_OK);
 
-void GetServices(string? name)
+WindowsService? GetService(string? name)
 {
     var services = ServiceController.GetServices();
     WindowsService? windowsService = null;
@@ -157,8 +198,7 @@ void GetServices(string? name)
         };
     }
 
-    string json = JsonSerializer.Serialize(windowsService);
-    Console.WriteLine(json);
+    return windowsService;
 }
 
 void WriteError(string message)
@@ -198,6 +238,12 @@ record TraceMessage
 {
     [JsonPropertyName("trace")]
     public string Trace { get; set; } = string.Empty;
+}
+
+record WindowsServices
+{
+    [JsonPropertyName("services")]
+    public List<WindowsService> Services { get; set; } = new List<WindowsService>();
 }
 
 record WindowsService

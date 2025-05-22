@@ -3,5 +3,6 @@ resources:
 - name: Services
   type: Microsoft.Windows/Service
   properties:
-    name: doesnotexist
-    _exist: true
+    services:
+      - name: doesnotexist
+        _exist: true
