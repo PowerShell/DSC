@@ -34,7 +34,7 @@ This configuration returns an integer, converting the string value `'4.7'` to `4
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo integer value
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[int('4.7')]"
 ```
@@ -46,7 +46,7 @@ dsc config get --document int.example.1.dsc.config.yaml config get
 ```yaml
 results:
 - name: Echo integer value of '4.7'
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 4

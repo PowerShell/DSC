@@ -35,7 +35,7 @@ integers.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Dividing integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[div(6,3)]"
 ```
@@ -47,7 +47,7 @@ dsc config get --document div.example.1.dsc.config.yaml config get
 ```yaml
 results:
 - name: Dividing integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 2
@@ -66,7 +66,7 @@ full integer value without the remainder. It doesn't round the result up to 3.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Dividing nested functions
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[div(mul(7,2), add(4,1))]"
 ```
@@ -78,7 +78,7 @@ dsc config get --document div.example.2.dsc.config.yaml
 ```yaml
 results:
 - name: Dividing nested functions
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 2

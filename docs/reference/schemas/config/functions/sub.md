@@ -34,7 +34,7 @@ integers.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Subtract integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[sub(7, 3)]"
 ```
@@ -46,7 +46,7 @@ dsc config get --document sub.example.1.dsc.config.yaml config get
 ```yaml
 results:
 - name: Subtract integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 4

@@ -40,7 +40,7 @@ variables:
   message: Hello, world!
 resources:
   - name: Echo message variable
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[variables('message')]"
 ```
@@ -55,7 +55,7 @@ results:
     Microsoft.DSC:
       duration: PT0.0883345S
   name: Echo message variable
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: Hello, world!

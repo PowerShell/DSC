@@ -33,7 +33,7 @@ This example document shows how you can use the `add()` function to return the s
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Sum of 3 and 5
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
   output: "[add(3, 5)]"
 ```
@@ -45,7 +45,7 @@ dsc config get --document add.example.1.dsc.config.yaml
 ```yaml
 results:
 - name: Sum of 3 and 5
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 8
@@ -63,7 +63,7 @@ configuration functions that return integer values.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Add nested function outputs
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[add(mul(2,3), div(6,3))]"
 ```
@@ -75,7 +75,7 @@ dsc config get --document add.example.2.dsc.config.yaml
 ```yaml
 results:
 - name: Add nested function outputs
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 8

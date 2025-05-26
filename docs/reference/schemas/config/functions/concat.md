@@ -38,7 +38,7 @@ The configuration uses the `concat()` function to join the strings `abc` and `de
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo 'abcdef'
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[concat('abc', 'def')]"
 ```
@@ -50,7 +50,7 @@ dsc --input-file concat.example.1.dsc.config.yaml config get
 ```yaml
 results:
 - name: Echo 'abcdef'
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: abcdef
@@ -67,7 +67,7 @@ The configuration uses the `concat()` function to return a combined array of str
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo ['a', 'b', 'c', 'd', 'e', 'f']
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: >-
       [concat(
@@ -83,7 +83,7 @@ dsc config get --document concat.example.2.dsc.config.yaml
 ```yaml
 results:
 - name: Echo ['a', 'b', 'c', 'd', 'e', 'f']
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
