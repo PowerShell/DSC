@@ -42,7 +42,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document createArray.example.1.dsc.config.yaml config get
+dsc config get --file createArray.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
@@ -75,7 +75,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document createArray.example.2.dsc.config.yaml
+dsc config get --file createArray.example.2.dsc.config.yaml
 ```
 
 ```yaml
@@ -115,7 +115,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document createArray.example.3.dsc.config.yaml
+dsc config get --file createArray.example.3.dsc.config.yaml
 ```
 
 ```yaml

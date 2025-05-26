@@ -57,7 +57,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document reference.example.1.dsc.config.yaml config get
+dsc config get --file reference.example.1.dsc.config.yaml config get
 ```
 
 ```yaml

@@ -40,7 +40,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document int.example.1.dsc.config.yaml config get
+dsc config get --file int.example.1.dsc.config.yaml config get
 ```
 
 ```yaml

@@ -41,7 +41,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document div.example.1.dsc.config.yaml config get
+dsc config get --file div.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
@@ -72,7 +72,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document div.example.2.dsc.config.yaml
+dsc config get --file div.example.2.dsc.config.yaml
 ```
 
 ```yaml

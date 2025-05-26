@@ -40,7 +40,7 @@ resources:
 ```
 
 ```bash
-dsc --input-file base64.example.1.dsc.config.yaml config get
+dsc --file base64.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
@@ -70,7 +70,7 @@ resources:
 ```
 
 ```bash
-dsc --input-file base64.example.2.dsc.config.yaml config get
+dsc --file base64.example.2.dsc.config.yaml config get
 ```
 
 ```yaml

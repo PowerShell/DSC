@@ -44,7 +44,7 @@ resources:
 ```
 
 ```bash
-dsc --input-file concat.example.1.dsc.config.yaml config get
+dsc config get --file concat.example.1.dsc.config.yaml
 ```
 
 ```yaml
@@ -77,7 +77,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document concat.example.2.dsc.config.yaml
+dsc config get --file concat.example.2.dsc.config.yaml
 ```
 
 ```yaml

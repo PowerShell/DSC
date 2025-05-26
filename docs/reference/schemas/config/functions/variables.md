@@ -46,7 +46,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document variables.example.1.dsc.config.yaml
+dsc config get --file variables.example.1.dsc.config.yaml
 ```
 
 ```yaml

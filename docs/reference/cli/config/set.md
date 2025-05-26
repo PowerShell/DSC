@@ -80,22 +80,22 @@ cat ./example.dsc.config.yaml | dsc config set --file -
 
 <a id="example-2"></a>
 
-The command uses the **path** option to enforce the configuration defined in the
+The command uses the **file** option to enforce the configuration defined in the
 `example.dsc.config.yaml` file.
 
 ```sh
-dsc config set --path ./example.dsc.config.yaml
+dsc config set --file ./example.dsc.config.yaml
 ```
 
 ### Example 3 - Passing a configuration document as a variable
 
 <a id="example-3"></a>
 
-The command uses the **document** option to enforce the configuration stored in the `$desired`
+The command uses the **input** option to enforce the configuration stored in the `$desired`
 variable.
 
 ```sh
-dsc config set --document $desired
+dsc config set --input $desired
 ```
 
 ## Options

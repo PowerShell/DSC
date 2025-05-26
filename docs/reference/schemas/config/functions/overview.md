@@ -126,7 +126,7 @@ resources:
 ```
 
 ```sh
-dsc --input-file overview.example.1.dsc.config.yaml config get
+dsc config get --file overview.example.1.dsc.config.yaml
 ```
 
 ```yaml
@@ -166,7 +166,7 @@ resources:
 ```
 
 ```sh
-dsc --input-file overview.example.2.dsc.config.yaml config get
+dsc config get --file overview.example.2.dsc.config.yaml
 ```
 
 ```yaml
@@ -218,7 +218,7 @@ resources:
 ```
 
 ```sh
-dsc --input-file overview.example.3.dsc.config.yaml config get
+dsc config get --file overview.example.3.dsc.config.yaml
 ```
 
 ```yaml
@@ -324,7 +324,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.properties.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -386,7 +386,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.nested.properties.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -488,7 +488,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.nested.items.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -537,7 +537,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.mixed.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml

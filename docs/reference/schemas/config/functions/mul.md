@@ -39,7 +39,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document mul.example.1.dsc.config.yaml config get
+dsc config get --file mul.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
@@ -68,7 +68,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document mul.example.2.dsc.config.yaml
+dsc config get --file mul.example.2.dsc.config.yaml
 ```
 
 ```yaml
