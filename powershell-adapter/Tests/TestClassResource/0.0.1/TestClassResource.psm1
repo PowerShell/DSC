@@ -119,6 +119,17 @@ class TestClassResource : BaseTestClass
 
         return $resultList.ToArray()
     }
+
+    [string] WhatIf() {
+        $out = @{
+            Name = $this.Name
+            _metadata = @{
+                whatIIf = "A test message from the WhatIf method of TestClassResource"
+            }
+        }
+
+        return ($out | ConvertTo-Json -Depth 10 -Compress)
+    }
 }
 
 [DscResource()]
@@ -146,7 +157,25 @@ class NoExport: BaseTestClass
     {
         return $this
     }
-}
+
+    static [NoExport[]] Export()
+    {
+        $resultList = [List[NoExport]]::new()
+        $resultCount = 5
+        if ($env:TestClassResourceResultCount) {
+            $resultCount = $env:TestClassResourceResultCount
+        }
+        1..$resultCount | %{
+            $obj = New-Object NoExport
+            $obj.Name = "Object$_"
+            $obj.Prop1 = "Property of object$_"
+            $resultList.Add($obj)
+        }
+
+        return $resultList.ToArray()
+    }
+    }
+
 
 function Test-World()
 {
