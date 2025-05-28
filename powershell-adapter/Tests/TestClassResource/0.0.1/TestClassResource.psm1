@@ -124,11 +124,11 @@ class TestClassResource : BaseTestClass
         $out = @{
             Name = $this.Name
             _metadata = @{
-                whatIIf = "A test message from the WhatIf method of TestClassResource"
+                whatIf = "A test message from the WhatIf method of TestClassResource"
             }
         }
 
-        return ($out | ConvertTo-Json -Depth 10 -Compress)
+        return $out
     }
 }
 

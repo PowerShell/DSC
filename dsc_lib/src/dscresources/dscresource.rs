@@ -253,7 +253,7 @@ impl Invoke for DscResource {
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, desired, &execution_type)?;
+            let mut configurator = self.clone().create_config_for_adapter(adapter, desired, execution_type)?;
             let result = configurator.invoke_set(false)?;
             let SetResult::Resource(ref resource_result) = result.results[0].result else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "set", resource = self.type_name).to_string()));
