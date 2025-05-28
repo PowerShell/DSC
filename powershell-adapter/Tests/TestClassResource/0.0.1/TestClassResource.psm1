@@ -13,15 +13,13 @@ enum Ensure {
     Absent
 }
 
-class BaseTestClass
-{
+class BaseTestClass {
     [DscProperty()]
     [string] $BaseProperty
 }
 
 [DscResource()]
-class TestClassResource : BaseTestClass
-{
+class TestClassResource : BaseTestClass {
     [DscProperty(Key)]
     [string] $Name
 
@@ -49,44 +47,36 @@ class TestClassResource : BaseTestClass
     [DscProperty()]
     [string] $HiddenDscProperty # This property should be in results data, but is an anti-pattern.
 
-    [void] Set()
-    {
+    [void] Set() {
     }
 
-    [bool] Test()
-    {
-        if (($this.Name -eq "TestClassResource1") -and ($this.Prop1 -eq "ValueForProp1"))
-        {
+    [bool] Test() {
+        if (($this.Name -eq "TestClassResource1") -and ($this.Prop1 -eq "ValueForProp1")) {
             return $true
         }
-        else
-        {
+        else {
             return $false
         }
     }
 
-    [TestClassResource] Get()
-    {
-        if ($this.Name -eq "TestClassResource1")
-        {
+    [TestClassResource] Get() {
+        if ($this.Name -eq "TestClassResource1") {
             $this.Prop1 = "ValueForProp1"
         }
-        else
-        {
+        else {
             $this.Prop1 = $env:DSC_CONFIG_ROOT
         }
         $this.EnumProp = ([EnumPropEnumeration]::Expected).ToString()
         return $this
     }
 
-    static [TestClassResource[]] Export()
-    {
+    static [TestClassResource[]] Export() {
         $resultList = [List[TestClassResource]]::new()
         $resultCount = 5
         if ($env:TestClassResourceResultCount) {
             $resultCount = $env:TestClassResourceResultCount
         }
-        1..$resultCount | %{
+        1..$resultCount | % {
             $obj = New-Object TestClassResource
             $obj.Name = "Object$_"
             $obj.Prop1 = "Property of object$_"
@@ -96,20 +86,17 @@ class TestClassResource : BaseTestClass
         return $resultList.ToArray()
     }
 
-    static [TestClassResource[]] Export([bool]$UseExport)
-    {
-        if ($UseExport) 
-        {
+    static [TestClassResource[]] Export([bool]$UseExport) {
+        if ($UseExport) {
             return [TestClassResource]::Export()
         }
-        else 
-        {
+        else {
             $resultList = [List[TestClassResource]]::new()
             $resultCount = 5
             if ($env:TestClassResourceResultCount) {
                 $resultCount = $env:TestClassResourceResultCount
             }
-            1..$resultCount | %{
+            1..$resultCount | % {
                 $obj = New-Object TestClassResource
                 $obj.Name = "Object$_"
                 $obj.Prop1 = "Property of object$_"
@@ -122,7 +109,7 @@ class TestClassResource : BaseTestClass
 
     [string] WhatIf() {
         $out = @{
-            Name = $this.Name
+            Name      = $this.Name
             _metadata = @{
                 whatIf = "A test message from the WhatIf method of TestClassResource"
             }
@@ -133,8 +120,7 @@ class TestClassResource : BaseTestClass
 }
 
 [DscResource()]
-class NoExport: BaseTestClass
-{
+class NoExport: BaseTestClass {
     [DscProperty(Key)]
     [string] $Name
 
@@ -144,40 +130,19 @@ class NoExport: BaseTestClass
     [DscProperty()]
     [string] $EnumProp
 
-    [void] Set()
-    {
+    [void] Set() {
     }
 
-    [bool] Test()
-    {
+    [bool] Test() {
         return $true
     }
 
-    [NoExport] Get()
-    {
+    [NoExport] Get() {
         return $this
     }
-
-    static [NoExport[]] Export()
-    {
-        $resultList = [List[NoExport]]::new()
-        $resultCount = 5
-        if ($env:TestClassResourceResultCount) {
-            $resultCount = $env:TestClassResourceResultCount
-        }
-        1..$resultCount | %{
-            $obj = New-Object NoExport
-            $obj.Name = "Object$_"
-            $obj.Prop1 = "Property of object$_"
-            $resultList.Add($obj)
-        }
-
-        return $resultList.ToArray()
-    }
-    }
+}
 
 
-function Test-World()
-{
+function Test-World() {
     "Hello world from PSTestModule!"
 }
