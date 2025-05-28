@@ -94,7 +94,7 @@ impl DscResource {
         }
     }
 
-    fn create_config_for_adapter(self, adapter: &str, input: &str) -> Result<Configurator, DscError> {
+    fn create_config_for_adapter(self, adapter: &str, input: &str, execution_type: &ExecutionKind) -> Result<Configurator, DscError> {
         // create new configuration with adapter and use this as the resource
         let mut configuration = Configuration::new();
         let mut property_map = Map::new();
@@ -115,7 +115,8 @@ impl DscResource {
         };
         configuration.resources.push(adapter_resource);
         let config_json = serde_json::to_string(&configuration)?;
-        let configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
+        let mut configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
+        configurator.context.execution_type = execution_type.clone();
         Ok(configurator)
     }
 }
@@ -218,7 +219,7 @@ impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+            let mut configurator = self.clone().create_config_for_adapter(adapter, filter, &ExecutionKind::Actual)?;
             let result = configurator.invoke_get()?;
             let GetResult::Resource(ref resource_result) = result.results[0].result else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "get", resource = self.type_name).to_string()));
@@ -252,7 +253,7 @@ impl Invoke for DscResource {
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
+            let mut configurator = self.clone().create_config_for_adapter(adapter, desired, &execution_type)?;
             let result = configurator.invoke_set(false)?;
             let SetResult::Resource(ref resource_result) = result.results[0].result else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "set", resource = self.type_name).to_string()));
@@ -295,7 +296,7 @@ impl Invoke for DscResource {
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
+            let mut configurator = self.clone().create_config_for_adapter(adapter, expected, &ExecutionKind::Actual)?;
             let result = configurator.invoke_test()?;
             let TestResult::Resource(ref resource_result) = result.results[0].result else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "test", resource = self.type_name).to_string()));
@@ -367,7 +368,7 @@ impl Invoke for DscResource {
     fn delete(&self, filter: &str) -> Result<(), DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+            let mut configurator = self.clone().create_config_for_adapter(adapter, filter, &ExecutionKind::Actual)?;
             configurator.invoke_set(false)?;
             return Ok(());
         }
@@ -429,7 +430,7 @@ impl Invoke for DscResource {
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
+            let mut configurator = self.clone().create_config_for_adapter(adapter, input, &ExecutionKind::Actual)?;
             let result = configurator.invoke_export()?;
             let Some(configuration) = result.result else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
