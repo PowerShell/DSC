@@ -29,7 +29,7 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
     for resource in &config.resources {
         // validate that the resource isn't specified more than once in the config
         if config.resources.iter().filter(|r| r.name == resource.name && r.resource_type == resource.resource_type).count() > 1 {
-            return Err(DscError::Validation(t!("configure.dependsOn.duplicateResource", resource_name = resource.name).to_string()));
+            return Err(DscError::Validation(t!("configure.dependsOn.duplicateResource", name = resource.name).to_string()));
         }
 
         let mut dependency_already_in_order = true;
