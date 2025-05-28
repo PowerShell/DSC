@@ -33,19 +33,19 @@ This configuration returns the smallest number from a list of integers.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo minimum value
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[min(3, 2, 5, 1, 7)]"
 ```
 
 ```bash
-dsc config get --document min.example.1.dsc.config.yaml config get
+dsc config get --file min.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
 results:
 - name: Echo minimum value
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 1
@@ -64,7 +64,7 @@ function more readable.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo integer array
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output:
     - 3
@@ -73,26 +73,26 @@ resources:
     - 1
     - 7
 - name: Echo minimum integer
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: >-
       [min(
         reference(
-          resourceId('Test/Echo', 'Echo integer array')
+          resourceId('Microsoft.DSC.Debug/Echo', 'Echo integer array')
         ).actualState.output
       )]
   dependsOn:
-  - "[resourceId('Test/Echo', 'Echo integer array')]"
+  - "[resourceId('Microsoft.DSC.Debug/Echo', 'Echo integer array')]"
 ```
 
 ```bash
-dsc config get --document min.example.2.dsc.config.yaml
+dsc config get --file min.example.2.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Echo integer array
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
@@ -102,7 +102,7 @@ results:
       - 1
       - 7
 - name: Echo minimum integer
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 1

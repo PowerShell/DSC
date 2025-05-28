@@ -22,7 +22,7 @@ dsc config test [Options] --file <FILE>
 ### Configuration document from option string
 
 ```sh
-dsc config test [Options] --document <INPUT>
+dsc config test [Options] --input <INPUT>
 ```
 
 ### Configuration document from stdin
