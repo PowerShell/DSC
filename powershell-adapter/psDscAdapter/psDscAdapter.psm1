@@ -548,27 +548,6 @@ function ValidateMethod {
     return $method
 }
 
-function GetResultProperties {
-    param (
-        [Parameter(Mandatory = $true)]
-        [psobject] $raw_obj,
-        [Parameter(Mandatory = $true)]
-        [string[]] $ValidProperties
-    )
-
-    $result = @{}
-    $ValidProperties | ForEach-Object {
-        if ($raw_obj.$_ -is [System.Enum]) {
-            $result[$_] = $raw_obj.$_.ToString()
-        }
-        else {
-            $result[$_] = $raw_obj.$_
-        }
-    }
-
-    return $result
-}
-
 # cached resource
 class dscResourceCacheEntry {
     [string] $Type
