@@ -518,7 +518,7 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -ErrorAction Stop -Output Detailed -Verbose
+    Invoke-Pester -ErrorAction Stop
 }
 
 function Find-MakeAppx() {

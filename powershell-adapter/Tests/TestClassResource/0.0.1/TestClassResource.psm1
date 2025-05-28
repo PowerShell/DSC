@@ -107,7 +107,7 @@ class TestClassResource : BaseTestClass {
         return $resultList.ToArray()
     }
 
-    [string] WhatIf() {
+    [hashtable] WhatIf() {
         $out = @{
             Name      = $this.Name
             _metadata = @{

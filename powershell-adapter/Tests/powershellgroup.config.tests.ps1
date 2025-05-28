@@ -101,7 +101,7 @@ Describe 'PowerShell adapter resource tests' {
     $out = $yaml | dsc config export -f - 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
-    $out | Should -BeLike "*ERROR*'Export' method not implemented by resource 'NoExport'*"
+    $out | Should -BeLike "*ERROR*Method 'Export' not implemented by resource 'NoExport'*"
   }
 
   It 'Custom psmodulepath in config works' {
@@ -322,11 +322,9 @@ Describe 'PowerShell adapter resource tests' {
             Ensure: 'Present'
 "@
     $out = dsc config set -i $yaml -w | ConvertFrom-Json
-
-    Write-Verbose -Message ("Output: $($out | ConvertTo-Json -Depth 10)") -Verbose
     $LASTEXITCODE | Should -Be 0
-    $out.results.result.afterstate.result[0].name | Should -Be "TestClassResource"
-    $out.results.result.afterstate.result[0]._metadata.whatIf | Should -Be "A test message from the WhatIf method of TestClassResource"
+    $out.results.result.afterstate.name | Should -Be "TestClassResource"
+    $out.results.result.afterstate._metadata.whatIf | Should -Be "A test message from the WhatIf method of TestClassResource"
   }
 }
 
