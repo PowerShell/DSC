@@ -321,10 +321,12 @@ Describe 'PowerShell adapter resource tests' {
             Name: 'TestClassResource'
             Ensure: 'Present'
 "@
-    $out = dsc -l trace config set -i $yaml -w | ConvertFrom-Json
+    $out = dsc config set -i $yaml -w | ConvertFrom-Json
+
+    Write-Verbose -Message ("Output: $($out | ConvertTo-Json -Depth 10)") -Verbose
     $LASTEXITCODE | Should -Be 0
-    $out.results.result.afterstate.Result[0].name | Should -Be "TestClassResource"
-    $out.results.result.afterState.result[0]._metadata.whatIf | Should -Be "A test message from the WhatIf method of TestClassResource"
+    $out.results.result.afterstate.result[0].name | Should -Be "TestClassResource"
+    $out.results.result.afterstate.result[0]._metadata.whatIf | Should -Be "A test message from the WhatIf method of TestClassResource"
   }
 }
 
