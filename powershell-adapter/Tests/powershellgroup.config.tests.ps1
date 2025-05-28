@@ -101,7 +101,7 @@ Describe 'PowerShell adapter resource tests' {
     $out = $yaml | dsc config export -f - 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
-    $out | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
+    $out | Should -BeLike "*ERROR*'Export' method not implemented by resource 'NoExport'*"
   }
 
   It 'Custom psmodulepath in config works' {
