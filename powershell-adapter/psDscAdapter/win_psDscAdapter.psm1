@@ -532,6 +532,33 @@ function GetTypeInstanceFromModule {
     return $instance
 }
 
+# ValidateMethod checks if the specified method exists in the class
+function ValidateMethod {
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('Export', 'WhatIf')]
+        [string] $operation,
+        [Parameter(Mandatory = $true)]
+        [object] $class
+    )
+
+    $t = $class.GetType()
+    $methods = $t.GetMethods() | Where-Object -Property Name -EQ $operation
+    $method = foreach ($mt in $methods) {
+        if ($mt.GetParameters().Count -eq 0) {
+            $mt
+            break
+        }
+    }
+
+    if ($null -eq $method) {
+        "Method '$operation' not implemented by resource '$($t.Name)'" | Write-DscTrace -Operation Error
+        exit 1
+    }
+
+    return $method
+}
+
 # cached resource
 class dscResourceCacheEntry {
     [string] $Type
