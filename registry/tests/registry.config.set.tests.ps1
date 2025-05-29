@@ -99,4 +99,30 @@ Describe 'registry config set tests' {
 
         Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
     }
+
+    It 'Should succeed when _exist is false and value does not exist' -Skip:(!$IsWindows) {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'reg'
+                    type = 'Microsoft.Windows/Registry'
+                    properties = @{
+                        keyPath = 'HKCU'
+                        valueName = 'Test'
+                        valueData = @{
+                            String = 'Test'
+                        }
+                        _exist = $false
+                    }
+                }
+            )
+        }
+
+        $out = dsc config set -i ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.afterState._exist | Should -Be $false
+
+        Get-ItemProperty -Path 'HKCU:\1\2' -Name 'Test' -ErrorAction Ignore | Should -BeNullOrEmpty
+    }
 }
