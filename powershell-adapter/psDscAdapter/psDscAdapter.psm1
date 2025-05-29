@@ -464,19 +464,7 @@ function Invoke-DscOperation {
                             $addToActualState.properties = [psobject]@{'InDesiredState' = $Result }
                         }
                         'Export' {
-                            $t = $dscResourceInstance.GetType()
-                            $methods = $t.GetMethods() | Where-Object { $_.Name -eq 'Export' }
-                            $method = foreach ($mt in $methods) {
-                                if ($mt.GetParameters().Count -eq 0) {
-                                    $mt
-                                    break
-                                }
-                            }
-
-                            if ($null -eq $method) {
-                                "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
-                                exit 1
-                            }
+                            $method = ValidateMethod -operation $Operation -class $dscResourceInstance
                             $resultArray = @()
                             $raw_obj_array = $method.Invoke($null, $null)
                             foreach ($raw_obj in $raw_obj_array) {

@@ -1,0 +1,8 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Class-resource Info
+  type: PSClassResource/PSClassResource
+# $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+# resources:
+# - name: Class-resource Info
+#   type: TestClassResource/TestClassResource
