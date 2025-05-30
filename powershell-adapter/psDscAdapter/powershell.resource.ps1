@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, ClearCache.')]
-    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
+    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'WhatIf', 'Validate', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
     [string]$jsonInput = '@{}'
@@ -135,7 +135,7 @@ switch ($Operation) {
             } | ConvertTo-Json -Compress
         }
     }
-    { @('Get','Set','Test','Export') -contains $_ } {
+    { @('Get','Set','Test','Export', 'WhatIf') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
             Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'

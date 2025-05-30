@@ -199,13 +199,13 @@ Describe 'PowerShell adapter resource tests' {
         $files | Copy-Item -Destination $path4
 
         $filePath = Join-Path $path1 'TestClassResource.psd1'
-        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.0`'") | Set-Content $filePath
+        (Get-Content -Raw $filePath).Replace("ModuleVersion        = '0.0.1'", "ModuleVersion = `'1.0`'") | Set-Content $filePath
         $filePath = Join-Path $path2 'TestClassResource.psd1'
-        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'1.1`'") | Set-Content $filePath
+        (Get-Content -Raw $filePath).Replace("ModuleVersion        = '0.0.1'", "ModuleVersion = `'1.1`'") | Set-Content $filePath
         $filePath = Join-Path $path3 'TestClassResource.psd1'
-        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0`'") | Set-Content $filePath
+        (Get-Content -Raw $filePath).Replace("ModuleVersion        = '0.0.1'", "ModuleVersion = `'2.0`'") | Set-Content $filePath
         $filePath = Join-Path $path4 'TestClassResource.psd1'
-        (Get-Content -Raw $filePath).Replace("ModuleVersion = `'0.0.1`'", "ModuleVersion = `'2.0.1`'") | Set-Content $filePath
+        (Get-Content -Raw $filePath).Replace("ModuleVersion        = '0.0.1'", "ModuleVersion = '2.0.1'") | Set-Content $filePath
 
 
         $oldPath = $env:PSModulePath
