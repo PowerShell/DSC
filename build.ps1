@@ -158,6 +158,10 @@ if ($null -ne $packageType) {
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
     }
+    else  {
+        Write-Verbose -Verbose "Rust found, updating..."
+        & rustup update
+    }
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
