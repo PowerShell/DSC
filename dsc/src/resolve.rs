@@ -77,26 +77,26 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     match file.read_to_end(&mut buffer) {
                         Ok(_) => (),
                         Err(err) => {
-                            return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToReadFile")));
+                            return Err(format!("{} '{}': {err}", t!("resolve.failedToReadFile"), include_path.display()));
                         }
                     }
                 },
                 Err(err) => {
-                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToOpenFile")));
+                    return Err(format!("{} '{}': {err}", t!("resolve.failedToOpenFile"), include_path.display()));
                 }
             }
             // convert the buffer to a string
             let include_content = match String::from_utf8(buffer) {
                 Ok(input) => input,
                 Err(err) => {
-                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFileContent")));
+                    return Err(format!("{} '{}': {err}", t!("resolve.invalidFileContent"), include_path.display()));
                 }
             };
 
             match parse_input_to_json(&include_content) {
                 Ok(json) => json,
                 Err(err) => {
-                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFile")));
+                    return Err(format!("{} '{}': {err}", t!("resolve.invalidFile"), include_path.display()));
                 }
             }
         },
@@ -120,13 +120,13 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     let parameters_json = match parse_input_to_json(&parameters) {
                         Ok(json) => json,
                         Err(err) => {
-                            return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.failedParseParametersFile")));
+                            return Err(format!("{} '{}': {err}", t!("resolve.failedParseParametersFile"), parameters_file.display()));
                         }
                     };
                     Some(parameters_json)
                 },
                 Err(err) => {
-                    return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.couldNotReadParametersFile")));
+                    return Err(format!("{} '{}': {err}", t!("resolve.couldNotReadParametersFile"), parameters_file.display()));
                 }
             }
         },
@@ -154,7 +154,7 @@ fn normalize_path(path: &Path) -> Result<PathBuf, String> {
     } else {
         // check that no components of the path are '..'
         if path.components().any(|c| c == std::path::Component::ParentDir) {
-            return Err(format!("{}: {path:?}", t!("resolve.invalidPath")));
+            return Err(format!("{}: {}", t!("resolve.invalidPath"), path.display())); 
         }
 
         // use DSC_CONFIG_ROOT env var as current directory
