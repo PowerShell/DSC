@@ -347,6 +347,8 @@ class PSClassResource {
     $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.actualState.Name | Should -Be 'TestName'
+    $propCount = $out.actualState | Get-Member -MemberType NoteProperty 
+    $propCount.Count | Should -Be 1 # Only the DscProperty should be returned
   }
 
   It 'Set works with class-based PS DSC resources' -Skip:(!$IsWindows) {
