@@ -55,7 +55,7 @@ jobs:
       run: ./build.ps1 -clippy -useCratesIO
     - name: Run tests
       shell: pwsh
-      run: ./build.ps1 -test
+      run: ./build.ps1 -test -useCratesIO
 
   build-macos:
 
