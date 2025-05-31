@@ -619,7 +619,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
     let manifest = match serde_yaml::from_str::<ExtensionManifest>(&contents) {
         Ok(manifest) => manifest,
         Err(err) => {
-            return Err(DscError::Manifest(t!("discovery.commandDiscovery.invalidManifest", resource = path.to_string_lossy()).to_string(), err));
+            return Err(DscError::Validation(format!("Invalid manifest {} version value: {err}", path.display())));
         }
     };
     let extension = load_extension_manifest(path, &manifest)?;
