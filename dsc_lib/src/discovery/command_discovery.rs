@@ -693,7 +693,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+        return Err(DscError::Validation(format!("Invalid manifest {} version value: {err}", path.display())));
     }
 
     let mut capabilities: Vec<dscextension::Capability> = vec![];
