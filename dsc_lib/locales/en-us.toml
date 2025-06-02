@@ -89,6 +89,7 @@ invalidManifest = "Invalid manifest for resource '%{resource}'"
 extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
+invalidManifestVersion = "Manifest '%{path}' has invalid version: %{err}"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -163,18 +164,10 @@ diffKeyNotObject = "diff: key '%{key}' is not an object"
 diffArraySize = "diff: arrays have different lengths"
 diffMissingItem = "diff: actual array missing expected item"
 
-[dscresources.resource_manifest]
-resourceManifestSchemaTitle = "Resource manifest schema URI"
-resourceManifestSchemaDescription = "Defines the JSON Schema the resource manifest adheres to."
-
 [extensions.dscextension]
 discoverNoResults = "No results returned for discovery extension '%{extension}'"
 discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
 extensionReturned = "Extension '%{extension}' returned line: %{line}"
-
-[extensions.extension_manifest]
-extensionManifestSchemaTitle = "Extension manifest schema URI"
-extensionManifestSchemaDescription = "Defines the JSON Schema the extension manifest adheres to."
 
 [functions]
 invalidArgType = "Invalid argument type"
