@@ -96,7 +96,7 @@ Describe 'tests for resource discovery' {
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
             $out = dsc resource list 2>&1
             write-verbose -verbose ($out | Out-String)
-            $out | Should -Match 'WARN.*?Validation.*?Invalid manifest.*?version'
+            $out | Should -Match 'WARN.*?Validation.*?invalid version' -Because ($out | Out-String)
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath

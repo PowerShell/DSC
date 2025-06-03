@@ -619,7 +619,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
     let manifest = match serde_yaml::from_str::<ExtensionManifest>(&contents) {
         Ok(manifest) => manifest,
         Err(err) => {
-            return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+            return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
         }
     };
     let extension = load_extension_manifest(path, &manifest)?;
@@ -628,7 +628,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
     }
 
     let kind = if let Some(kind) = manifest.kind.clone() {
@@ -693,7 +693,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
     }
 
     let mut capabilities: Vec<dscextension::Capability> = vec![];
