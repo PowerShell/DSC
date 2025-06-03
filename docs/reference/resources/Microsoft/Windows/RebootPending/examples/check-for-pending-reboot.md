@@ -35,7 +35,6 @@ actualState:
 The `rebootPending` property indicates whether the system requires a reboot (`true`) or not (`false`).
 
 > [!NOTE]
-> The `Microsoft.Windows/RebootPending` resource is read-only.
 > You can only use the **Get** operation to check the reboot status.
 > The resource does not support **Set**, **WhatIf**, **Export**, **Delete**, or **Test** operations.
 
