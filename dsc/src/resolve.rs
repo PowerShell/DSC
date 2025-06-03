@@ -77,26 +77,26 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     match file.read_to_end(&mut buffer) {
                         Ok(_) => (),
                         Err(err) => {
-                            return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToReadFile")));
+                            return Err(t!("resolve.failedToReadFile", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
                         }
                     }
                 },
                 Err(err) => {
-                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToOpenFile")));
+                    return Err(t!("resolve.failedToOpenFile", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
                 }
             }
             // convert the buffer to a string
             let include_content = match String::from_utf8(buffer) {
                 Ok(input) => input,
                 Err(err) => {
-                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFileContent")));
+                    return Err(t!("resolve.invalidFileContent", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
                 }
             };
 
             match parse_input_to_json(&include_content) {
                 Ok(json) => json,
                 Err(err) => {
-                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFile")));
+                    return Err(t!("resolve.invalidFile", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
                 }
             }
         },
@@ -104,7 +104,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
             match parse_input_to_json(&text) {
                 Ok(json) => json,
                 Err(err) => {
-                    return Err(format!("{}: {err}", t!("resolve.invalidFile")));
+                    return Err(t!("resolve.invalidContent", error = err.to_string()).to_string());
                 }
             }
         }
@@ -120,13 +120,13 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     let parameters_json = match parse_input_to_json(&parameters) {
                         Ok(json) => json,
                         Err(err) => {
-                            return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.failedParseParametersFile")));
+                            return Err(t!("resolve.failedParseParametersFile", path = parameters_file.to_string_lossy(), error = err.to_string()).to_string());
                         }
                     };
                     Some(parameters_json)
                 },
                 Err(err) => {
-                    return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.couldNotReadParametersFile")));
+                    return Err(t!("resolve.couldNotReadParametersFile", path = parameters_file.to_string_lossy(), error = err.to_string()).to_string());
                 }
             }
         },
@@ -134,7 +134,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
             let parameters_json = match parse_input_to_json(&text) {
                 Ok(json) => json,
                 Err(err) => {
-                    return Err(format!("{}: {err}", t!("resolve.failedParseParametersFile")));
+                    return Err(t!("resolve.invalidParametersContent", error = err.to_string()).to_string());
                 }
             };
             Some(parameters_json)
@@ -154,7 +154,7 @@ fn normalize_path(path: &Path) -> Result<PathBuf, String> {
     } else {
         // check that no components of the path are '..'
         if path.components().any(|c| c == std::path::Component::ParentDir) {
-            return Err(format!("{}: {path:?}", t!("resolve.invalidPath")));
+            return Err(t!("resolve.invalidPath", path = path.to_string_lossy()).to_string());
         }
 
         // use DSC_CONFIG_ROOT env var as current directory
