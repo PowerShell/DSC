@@ -322,6 +322,22 @@ class PSClassResource {
     [void] Set() {
         
     }
+
+    static [PSClassResource[]] Export()
+    {
+        $resultList = [System.Collections.Generic.List[PSClassResource]]::new()
+        $resultCount = 5
+        if ($env:PSClassResourceResultCount) {
+            $resultCount = $env:PSClassResourceResultCount
+        }
+        1..$resultCount | %{
+            $obj = New-Object PSClassResource
+            $obj.Name = "Object$_"
+            $resultList.Add($obj)
+        }
+
+        return $resultList.ToArray()
+    }
 }
 '@
 
@@ -349,5 +365,13 @@ class PSClassResource {
     $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.afterstate.InDesiredState | Should -Be $true
+  }
+
+  It 'Export works with class-based PS DSC resources' -Skip:(!$IsWindows) {
+    
+    $out = dsc resource export -r PSClassResource/PSClassResource | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out | Should -Not -BeNullOrEmpty
+    $out.resources.count | Should -Be 5
   }
 }
