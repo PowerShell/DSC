@@ -61,8 +61,8 @@ discovery. If the cache doesn't exist during discovery, the adapter creates it.
 The location of the cache depends on your operating system. The following table defines the path
 for the Windows platform.
 
-| Platform |                      Path                |
-| :------: | :----------------------------------------|
+| Platform | Path                                            |
+| :------: | :---------------------------------------------- |
 | Windows  | `%LOCALAPPDATA%\dsc\WindowsPSAdapterCache.json` |
 
 The adapter versions the cache. The current version is `1`. If the version of the cache on a
