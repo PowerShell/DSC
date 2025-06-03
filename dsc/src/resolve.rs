@@ -82,21 +82,21 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     }
                 },
                 Err(err) => {
-                    return Err(format!("{} '{}': {err}", t!("resolve.failedToOpenFile"), include_path.display()));
+                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToOpenFile")));
                 }
             }
             // convert the buffer to a string
             let include_content = match String::from_utf8(buffer) {
                 Ok(input) => input,
                 Err(err) => {
-                    return Err(format!("{} '{}': {err}", t!("resolve.invalidFileContent"), include_path.display()));
+                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFileContent")));
                 }
             };
 
             match parse_input_to_json(&include_content) {
                 Ok(json) => json,
                 Err(err) => {
-                    return Err(format!("{} '{}': {err}", t!("resolve.invalidFile"), include_path.display()));
+                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFile")));
                 }
             }
         },
@@ -120,13 +120,13 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     let parameters_json = match parse_input_to_json(&parameters) {
                         Ok(json) => json,
                         Err(err) => {
-                            return Err(format!("{} '{}': {err}", t!("resolve.failedParseParametersFile"), parameters_file.display()));
+                            return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.failedParseParametersFile")));
                         }
                     };
                     Some(parameters_json)
                 },
                 Err(err) => {
-                    return Err(format!("{} '{}': {err}", t!("resolve.couldNotReadParametersFile"), parameters_file.display()));
+                    return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.couldNotReadParametersFile")));
                 }
             }
         },
