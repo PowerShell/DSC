@@ -198,13 +198,13 @@ The `type` property identifies the adapted instance's PSDSC Resource. The value 
 must be the valid fully qualified type name for the resource.
 
 This adapter uses the following syntax for determining the fully qualified type name of a PSDSC
-resource implemented as a PowerShell class:
+resource implemented as a Windows PowerShell script-based:
 
 ```Syntax
-<module name>/<class name>
+<module name>/<script-based name>
 ```
 
-For example, if a PowerShell module named **TailspinToys** has a class-based PSDSC resource named
+For example, if a PowerShell module named **TailspinToys** has a script-based PSDSC resource named
 `TSToy`, the fully qualified type name for that resource is `TailspinToys/TSToy`.
 
 For more information about type names in DSC, see
