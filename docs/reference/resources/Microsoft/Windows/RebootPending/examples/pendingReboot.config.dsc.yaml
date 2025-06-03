@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Managed key
+  type: Microsoft.Windows/Registry
+  properties:
+    _exist: true
+    keyPath: HKCU\DscExamples\ManagedKey
+  dependsOn:
+  - "[resourceId('Microsoft.DSC/Assertion','Assert pending reboot')]"
+- name: Assert pending reboot
+  type: Microsoft.DSC/Assertion
+  properties:
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+    - name: Check pending reboot
+      type: Microsoft.Windows/RebootPending
+      properties:
+        rebootPending: true
