@@ -77,7 +77,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     match file.read_to_end(&mut buffer) {
                         Ok(_) => (),
                         Err(err) => {
-                            return Err(format!("{} '{}': {err}", t!("resolve.failedToReadFile"), include_path.display()));
+                            return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToReadFile")));
                         }
                     }
                 },
@@ -154,7 +154,7 @@ fn normalize_path(path: &Path) -> Result<PathBuf, String> {
     } else {
         // check that no components of the path are '..'
         if path.components().any(|c| c == std::path::Component::ParentDir) {
-            return Err(format!("{}: {}", t!("resolve.invalidPath"), path.display())); 
+            return Err(format!("{}: {path:?}", t!("resolve.invalidPath")));
         }
 
         // use DSC_CONFIG_ROOT env var as current directory
