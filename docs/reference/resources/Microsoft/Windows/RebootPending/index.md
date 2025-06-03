@@ -64,14 +64,14 @@ This resource does not support `set`, `whatIf`, `export`, `test`, or `delete` op
 
 ## Examples
 
-1. [Check for pending reboot][03] - Shows how to check if a system has a pending reboot using the `dsc resource get` command.
-2. [Use the RebootPending resource in a configuration][04] - Shows how to include the RebootPending resource in a configuration document to check reboot status.
+1. [Check for pending reboot][04] - Shows how to check if a system has a pending reboot using the `dsc resource get` command.
+2. [Use the RebootPending resource in a configuration][05] - Shows how to include the RebootPending resource in a configuration document to check reboot status.
 
 ## Properties
 
 The resource doesn't have any configurable properties. It's a read-only resource designed to detect a system's reboot status.
 
-- **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following properties. For more information about read-only properties, see the "Read-only resource properties" section in [DSC resource properties][08].
+- **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following properties. For more information about read-only properties, see the "Read-only resource properties" section in [DSC resource properties][03].
 
   - [rebootPending](#rebootpending) - Indicates whether the system has a pending reboot.  
 
@@ -113,16 +113,15 @@ The resource doesn't return any specific exit codes. It reports status through t
 
 ## See also
 
-- [Microsoft.Windows/Registry resource][10]
-- [Windows Registry][11]
+- [Microsoft.Windows/Registry resource][01]
 - [DSC resource capabilities][02]
-- [DSC resource properties][06]
+- [DSC resource properties][03]
+- [Check for pending reboot][04]
+- [Use the RebootPending resource in a configuration][05]
 
 <!-- Link definitions -->
+[01]: ../registry/index.md
 [02]: ../../../../../concepts/resources/capabilities.md
-[03]: ./examples/check-for-pending-reboot.md
-[04]: ./examples/use-rebootpending-in-configuration.md
-[06]: ../../../../../concepts/resources/properties.md
-[08]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
-[10]: ../registry/index.md
-[11]: /windows/win32/sysinfo/about-the-registry
+[03]: ../../../../../concepts/resources/properties.md
+[04]: ./examples/check-for-pending-reboot.md
+[05]: ./examples/use-rebootpending-in-configuration.md
