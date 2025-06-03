@@ -8,6 +8,8 @@
         "args": [
             "-NoLogo",
             "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
             "-NoProfile",
             "-Command",
             "./appx-discover.ps1"

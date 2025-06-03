@@ -200,7 +200,12 @@ impl RegistryHelper {
             Err(e) => return Err(e),
         };
         if let Some(value_name) = &self.config.value_name {
-            reg_key.delete_value(value_name)?;
+            match reg_key.delete_value(value_name) {
+                Ok(()) | Err(value::Error::NotFound(_, _)) => {
+                    // if the value doesn't exist, we don't need to do anything
+                },
+                Err(e) => return Err(RegistryError::RegistryValue(e)),
+            }
         } else {
             // to delete the key, we need to open the parent key first
             let parent_path = get_parent_key_path(&self.config.key_path);
@@ -215,7 +220,12 @@ impl RegistryHelper {
                 return Err(RegistryError::Utf16Conversion("subkey_name".to_string()));
             };
 
-            parent_reg_key.delete(subkey_name, true)?;
+            match parent_reg_key.delete(subkey_name, true) {
+                Ok(()) | Err(key::Error::NotFound(_, _)) => {
+                    // if the subkey doesn't exist, we don't need to do anything
+                },
+                Err(e) => return Err(RegistryError::RegistryKey(e)),
+            }
         }
         Ok(())
     }
