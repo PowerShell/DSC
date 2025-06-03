@@ -16,7 +16,7 @@ fn get_task_list() -> Vec<ProcessInfo>
     for (pid, process) in s.processes() {
         let mut p = ProcessInfo::new();
         p.pid = pid.as_u32();
-        p.name = format!("{}", process.name().display());
+        p.name = process.name().to_string_lossy().to_string();
         p.cmdline = format!("{:?}", process.cmd());
         result.push(p);
     }
