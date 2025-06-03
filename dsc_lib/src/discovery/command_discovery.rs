@@ -155,7 +155,7 @@ impl CommandDiscovery {
             if let Ok(new_path) = env::join_paths(paths.clone()) {
                 env::set_var("PATH", new_path);
             } else {
-                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedSetEnvPath").to_string()));
+                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
             }
         } else {
             // if exe home is not already in PATH env var then add it to env var and list of searched paths

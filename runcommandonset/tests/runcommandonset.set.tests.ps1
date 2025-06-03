@@ -2,19 +2,10 @@
 # Licensed under the MIT License.
 
 Describe 'tests for runcommandonset set' {
-    BeforeAll {
-        $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = Join-Path $PSScriptRoot ".."
-    }
-
     AfterEach {
         if (Test-Path $TestDrive/output.txt) {
             Remove-Item -Path $TestDrive/output.txt
         }
-    }
-
-    AfterAll {
-        $env:DSC_RESOURCE_PATH = $oldPath
     }
 
     It 'Input for executable and arguments can be sent to the resource' {
