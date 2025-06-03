@@ -9,4 +9,4 @@ resources:
         - name: Is64BitOS
           type: Microsoft/OSInfo
           properties:
-            bitness: '64'
+            bitness: '32'
