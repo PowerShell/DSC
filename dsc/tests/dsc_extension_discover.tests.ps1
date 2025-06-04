@@ -4,9 +4,8 @@
 Describe 'Discover extension tests' {
     BeforeAll {
         $oldPath = $env:PATH
-        $separator = [System.IO.Path]::PathSeparator
         $toolPath = Resolve-Path -Path "$PSScriptRoot/../../extensions/test/discover"
-        $env:PATH = "$toolPath$separator$oldPath"
+        $env:PATH = "$toolPath" + [System.IO.Path]::PathSeparator + $oldPath
     }
 
     AfterAll {
@@ -75,10 +74,10 @@ Describe 'Discover extension tests' {
         Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
         Copy-Item -Path "$toolPath/discover.ps1" -Destination $TestDrive | Out-Null
         Copy-Item -Path "$toolPath/resources" -Destination $TestDrive -Recurse | Out-Null
-        $env:DSC_RESOURCE_PATH = $TestDrive
+        $env:DSC_RESOURCE_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
         try {
             $out = dsc extension list | ConvertFrom-Json
-            $out.Count | Should -Be 1
+            $out.Count | Should -Be 1 -Because ($out | Out-String)
             $out.type | Should -Be 'Test/DiscoverRelative'
             $out = dsc resource list 2> $TestDrive/error.log
             write-verbose -verbose (Get-Content -Path "$TestDrive/error.log" -Raw)

@@ -2,15 +2,6 @@
 # Licensed under the MIT License.
 
 Describe 'tests for runcommandonset get' {
-    BeforeAll {
-        $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = Join-Path $PSScriptRoot ".."
-    }
-
-    AfterAll {
-        $env:DSC_RESOURCE_PATH = $oldPath
-    }
-
     It 'Input passed for executable, arguments, and exit code' {
         $json = @"
         {
@@ -21,6 +12,7 @@ Describe 'tests for runcommandonset get' {
 "@
 
         $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
         $result.actualState.arguments | Should -BeExactly @('bar', 'baz')
         $result.actualState.executable | Should -BeExactly 'foo'
         $result.actualState.exitCode | Should -BeExactly 5
