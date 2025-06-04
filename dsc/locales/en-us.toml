@@ -73,7 +73,7 @@ implementedAs = "implemented as"
 invalidOperationOnAdapter = "Can not perform this operation on the adapter itself"
 setInputEmpty = "Desired input is empty"
 testInputEmpty = "Expected input is required"
-jsonError = "JSNO: %{err}"
+jsonError = "JSON: %{err}"
 
 [subcommand]
 actualStateNotObject = "actual_state is not an object"
