@@ -160,7 +160,7 @@ if ($null -ne $packageType) {
     }
     else  {
         Write-Verbose -Verbose "Rust found, updating..."
-        & rustup update
+        & $rustup update
     }
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
