@@ -292,6 +292,12 @@ resources:
             Tags       = @(
                 'PSDscResource_PSClassResource'
             )
+            DscCapabilities = @(
+            'get'
+            'test'
+            'set'
+            'export'
+            )
         }
     }
 }
@@ -303,6 +309,11 @@ resources:
 
 
       $module = @'
+enum Ensure {
+    Present
+    Absent
+}
+
 [DSCResource()]
 class PSClassResource {
     [DscProperty(Key)]
@@ -312,6 +323,9 @@ class PSClassResource {
 
     hidden
     [string] $HiddenNonDscProperty
+
+    [DscProperty()]
+    [Ensure] $Ensure = [Ensure]::Present
 
     PSClassResource() {
     }
@@ -326,6 +340,23 @@ class PSClassResource {
 
     [void] Set() {
         
+    }
+
+    static [PSClassResource[]] Export()
+    {
+        $resultList = [System.Collections.Generic.List[PSClassResource]]::new()
+        $resultCount = 5
+        if ($env:PSClassResourceResultCount) {
+            $resultCount = $env:PSClassResourceResultCount
+        }
+        1..$resultCount | %{
+            $obj = New-Object PSClassResource
+            $obj.Name = "Object$_"
+            $obj.Ensure = [Ensure]::Present
+            $resultList.Add($obj)
+        }
+
+        return $resultList.ToArray()
     }
 }
 '@
@@ -357,4 +388,15 @@ class PSClassResource {
     $LASTEXITCODE | Should -Be 0
     $out.afterstate.InDesiredState | Should -Be $true
   }
+
+  It 'Export works with class-based PS DSC resources' -Skip:(!$IsWindows) {
+    
+    $out = dsc resource export -r PSClassResource/PSClassResource | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out | Should -Not -BeNullOrEmpty
+    $out.resources.count | Should -Be 5
+    $out.resources[0].properties.Ensure | Should -Be 'Present' # Check for enum property
+  }
 }
+
+

@@ -452,9 +452,21 @@ function Invoke-DscOperation {
                             $addToActualState.properties = [psobject]@{'InDesiredState' = $Result }
                         }
                         'Export' {
-                            $t = $dscResourceInstance.GetType()
-                            $method = $t.GetMethod('Export')
-                            $resultArray = $method.Invoke($null, $null)
+                            $method = ValidateMethod -operation $Operation -class $dscResourceInstance
+                            $resultArray = @()
+                            $raw_obj_array = $method.Invoke($null, $null)
+                            foreach ($raw_obj in $raw_obj_array) {
+                                $Result_obj = @{}
+                                $ValidProperties | ForEach-Object { 
+                                    if ($raw_obj.$_ -is [System.Enum]) {
+                                        $Result_obj[$_] = $raw_obj.$_.ToString()
+                                    }
+                                    else { 
+                                        $Result_obj[$_] = $raw_obj.$_ 
+                                    }
+                                }
+                                $resultArray += $Result_obj
+                            }
                             $addToActualState = $resultArray
                         }
                     }
@@ -544,6 +556,33 @@ function GetTypeInstanceFromModule {
     )
     $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
+}
+
+# ValidateMethod checks if the specified method exists in the class
+function ValidateMethod {
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('Export', 'WhatIf')]
+        [string] $operation,
+        [Parameter(Mandatory = $true)]
+        [object] $class
+    )
+
+    $t = $class.GetType()
+    $methods = $t.GetMethods() | Where-Object -Property Name -EQ $operation
+    $method = foreach ($mt in $methods) {
+        if ($mt.GetParameters().Count -eq 0) {
+            $mt
+            break
+        }
+    }
+
+    if ($null -eq $method) {
+        "Method '$operation' not implemented by resource '$($t.Name)'" | Write-DscTrace -Operation Error
+        exit 1
+    }
+
+    return $method
 }
 
 # cached resource
