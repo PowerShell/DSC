@@ -316,4 +316,31 @@ Describe 'Parameters tests' {
 
       $output | Should -Match "Parameter input failure:.*?$type"
     }
+
+    It 'Parameters can be read from STDIN' {
+      $params = @{
+        parameters = @{
+          osFamily = 'Windows'
+        }
+      } | ConvertTo-Json -Compress
+
+      $out = $params | dsc config -f - test -f "$PSScriptRoot/../examples/osinfo_parameters.dsc.yaml" 2> $TestDrive/error.log | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log | Out-String)
+      $out.results[0].result.desiredState.family | Should -BeExactly 'Windows'
+      $out.results[0].result.inDesiredState | Should -Be $IsWindows
+    }
+
+    It 'Parameters and input cannot both be from STDIN' {
+      $params = @{
+        parameters = @{
+          osFamily = 'Windows'
+        }
+      } | ConvertTo-Json -Compress
+
+      $out = $params | dsc config -f - test -f - 2> $TestDrive/error.log
+      $LASTEXITCODE | Should -Be 4
+      $out | Should -BeNullOrEmpty
+      $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
+      $errorMessage | Should -BeLike "*ERROR*Cannot read from STDIN for both parameters and input*"
+    }
 }
