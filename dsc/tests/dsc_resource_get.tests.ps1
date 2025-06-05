@@ -68,6 +68,6 @@ Describe 'resource get tests' {
         $out.family | Should -BeExactly $expectedFamily
         $out.version | Should -Not -BeNullOrEmpty
         $out.bitness | Should -BeIn @('32', '64')
-        $out.architecture | Should -BeIn @('x86', 'x64', 'arm64')
+        $out.architecture | Should -BeIn @('x86', 'x86_64', 'arm64')
     }
 }
