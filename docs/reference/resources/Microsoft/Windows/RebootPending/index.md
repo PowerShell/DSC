@@ -89,7 +89,8 @@ IsWriteOnly  : false
 
 </details>
 
-A boolean value that indicates whether the system has a pending reboot. `true` if a reboot is pending; otherwise, `false`.
+A boolean value that indicates whether the system has a pending reboot. This property is `true` if
+a reboot is pending and otherwise `false`.
 
 ## Instance validating schema
 
@@ -109,7 +110,18 @@ The following snippet contains the JSON Schema that validates an instance of the
 
 ## Exit codes
 
-The resource doesn't return any specific exit codes. It reports status through the `rebootPending` property.
+The resource returns the following exit codes from operations:
+
+- [0](#exit-code-0) - Success
+- [1](#exit-code-1) - Error
+
+### Exit code 0
+
+Indicates the resource operation completed without errors.
+
+### Exit code 1
+
+Indicates the resource operation failed.
 
 ## See also
 
