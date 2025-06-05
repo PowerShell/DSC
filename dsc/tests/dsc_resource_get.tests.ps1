@@ -48,4 +48,10 @@ Describe 'resource get tests' {
         $testError[0] | SHould -match 'error:'
         $LASTEXITCODE | Should -Be 2
     }
+
+    It '--output-format json-array returns single object' {
+        $out = dsc resource get -r Microsoft/Process --all --output-format json-array
+        $LASTEXITCODE | Should -Be 0
+        ($out | Measure-Object).Count | Should -Be 1
+    }
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::OutputFormat;
+use crate::args::{GetOutputFormat, OutputFormat};
 use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
 use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
@@ -47,7 +47,7 @@ pub fn get(dsc: &DscManager, resource_type: &str, input: &str, format: Option<&O
     }
 }
 
-pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputFormat>) {
+pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&GetOutputFormat>) {
     let input = String::new();
     let Some(resource) = get_resource(dsc, resource_type) else {
         error!("{}", DscError::ResourceNotFound(resource_type.to_string()).to_string());
@@ -68,6 +68,18 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputForm
         }
     };
 
+    if format == Some(&GetOutputFormat::JsonArray) {
+        let json = match serde_json::to_string(&export_result.actual_state) {
+            Ok(json) => json,
+            Err(err) => {
+                error!("{}", t!("resource_command.jsonError", err = err));
+                exit(EXIT_JSON_ERROR);
+            }
+        };
+        write_object(&json, Some(&OutputFormat::Json), false);
+        return;
+    }
+
     let mut include_separator = false;
     for instance in export_result.actual_state
     {
@@ -78,9 +90,14 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&OutputForm
         let json = match serde_json::to_string(&get_result) {
             Ok(json) => json,
             Err(err) => {
-                error!("JSON Error: {err}");
+                error!("{}", t!("resource_command.jsonError", err = err));
                 exit(EXIT_JSON_ERROR);
             }
+        };
+        let format = match format {
+            Some(&GetOutputFormat::PrettyJson) => Some(&OutputFormat::PrettyJson),
+            Some(&GetOutputFormat::Yaml) => Some(&OutputFormat::Yaml),
+            _ => Some(&OutputFormat::Json),
         };
         write_object(&json, format, include_separator);
         include_separator = true;

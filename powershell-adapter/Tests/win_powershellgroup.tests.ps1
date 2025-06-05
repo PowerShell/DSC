@@ -292,6 +292,12 @@ resources:
             Tags       = @(
                 'PSDscResource_PSClassResource'
             )
+            DscCapabilities = @(
+            'get'
+            'test'
+            'set'
+            'export'
+            )
         }
     }
 }
@@ -303,10 +309,23 @@ resources:
 
 
       $module = @'
+enum Ensure {
+    Present
+    Absent
+}
+
 [DSCResource()]
 class PSClassResource {
     [DscProperty(Key)]
     [string] $Name
+
+    [string] $NonDscProperty
+
+    hidden
+    [string] $HiddenNonDscProperty
+
+    [DscProperty()]
+    [Ensure] $Ensure = [Ensure]::Present
 
     PSClassResource() {
     }
@@ -333,6 +352,7 @@ class PSClassResource {
         1..$resultCount | %{
             $obj = New-Object PSClassResource
             $obj.Name = "Object$_"
+            $obj.Ensure = [Ensure]::Present
             $resultList.Add($obj)
         }
 
@@ -358,6 +378,8 @@ class PSClassResource {
     $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.actualState.Name | Should -Be 'TestName'
+    $propCount = $out.actualState | Get-Member -MemberType NoteProperty 
+    $propCount.Count | Should -Be 1 # Only the DscProperty should be returned
   }
 
   It 'Set works with class-based PS DSC resources' -Skip:(!$IsWindows) {
@@ -373,5 +395,7 @@ class PSClassResource {
     $LASTEXITCODE | Should -Be 0
     $out | Should -Not -BeNullOrEmpty
     $out.resources.count | Should -Be 5
+    $out.resources[0].properties.Ensure | Should -Be 'Present' # Check for enum property
   }
 }
+
