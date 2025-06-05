@@ -588,20 +588,16 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
-            if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
+            if *all {
+                resource_command::get_all(&dsc, resource, output_format.as_ref());
+            }
             else {
+                if *output_format == Some(GetOutputFormat::JsonArray) {
+                    error!("{}", t!("subcommand.jsonArrayNotSupported"));
+                    exit(EXIT_INVALID_ARGS);
+                }
                 let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-                let format = match output_format {
-                    Some(GetOutputFormat::Json) => Some(OutputFormat::Json),
-                    Some(GetOutputFormat::JsonArray) => {
-                        error!("{}", t!("subcommand.jsonArrayNotSupported"));
-                        exit(EXIT_INVALID_ARGS);
-                    },
-                    Some(GetOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
-                    Some(GetOutputFormat::Yaml) => Some(OutputFormat::Yaml),
-                    None => None,
-                };
-                resource_command::get(&dsc, resource, &parsed_input, format.as_ref());
+                resource_command::get(&dsc, resource, &parsed_input, output_format.as_ref());
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
