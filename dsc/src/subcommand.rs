@@ -592,6 +592,10 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                 resource_command::get_all(&dsc, resource, output_format.as_ref());
             }
             else {
+                if *output_format == Some(GetOutputFormat::JsonArray) {
+                    error!("{}", t!("subcommand.jsonArrayNotSupported"));
+                    exit(EXIT_INVALID_ARGS);
+                }
                 let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
                 resource_command::get(&dsc, resource, &parsed_input, output_format.as_ref());
             }
