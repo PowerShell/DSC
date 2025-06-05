@@ -85,7 +85,7 @@ Describe 'tests for resource input' {
     }
 '@
         $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = $TestDrive
+        $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
         Set-Content $TestDrive/EnvVarInput.dsc.resource.json -Value $manifest
     }
 

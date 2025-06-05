@@ -147,7 +147,7 @@ changedProperties:
 
         $oldPath = $env:DSC_RESOURCE_PATH
         try {
-            $env:DSC_RESOURCE_PATH = $TestDrive
+            $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest -f - --output-format $format | Out-String
             $LASTEXITCODE | Should -Be 0
             $out.Trim() | Should -BeExactly $expected
@@ -160,7 +160,7 @@ changedProperties:
     It 'set can be used on a resource that does not implement test' {
         $oldPath = $env:DSC_RESOURCE_PATH
         try {
-            $env:DSC_RESOURCE_PATH = $TestDrive
+            $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
             $out = '{ "test": true }' | dsc resource set -r Test/SetNoTest -f - | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $out.BeforeState.test | Should -Be $true

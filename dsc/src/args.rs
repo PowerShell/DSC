@@ -16,6 +16,14 @@ pub enum OutputFormat {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum GetOutputFormat {
+    Json,
+    JsonArray,
+    PrettyJson,
+    Yaml,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum ListOutputFormat {
     Json,
     PrettyJson,
@@ -195,7 +203,7 @@ pub enum ResourceSubCommand {
         #[clap(short = 'f', long, help = t!("args.file").to_string(), conflicts_with = "input")]
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
-        output_format: Option<OutputFormat>,
+        output_format: Option<GetOutputFormat>,
     },
     #[clap(name = "set", about = "Invoke the set operation to a resource", arg_required_else_help = true)]
     Set {

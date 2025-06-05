@@ -149,8 +149,16 @@ impl CommandDiscovery {
         let mut uniques: HashSet<PathBuf> = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
 
-        // if exe home is not already in PATH env var then add it to env var and list of searched paths
-        if !using_custom_path {
+        if using_custom_path {
+            // when using custom path, intent is to isolate the search of manifests and executables to the custom path
+            // so we replace the PATH with the custom path
+            if let Ok(new_path) = env::join_paths(paths.clone()) {
+                env::set_var("PATH", new_path);
+            } else {
+                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
+            }
+        } else {
+            // if exe home is not already in PATH env var then add it to env var and list of searched paths
             if let Some(exe_home) = get_exe_path()?.parent() {
                 let exe_home_pb = exe_home.to_path_buf();
                 if paths.contains(&exe_home_pb) {
@@ -619,7 +627,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
     let manifest = match serde_yaml::from_str::<ExtensionManifest>(&contents) {
         Ok(manifest) => manifest,
         Err(err) => {
-            return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+            return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
         }
     };
     let extension = load_extension_manifest(path, &manifest)?;
@@ -628,7 +636,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
     }
 
     let kind = if let Some(kind) = manifest.kind.clone() {
@@ -693,7 +701,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
     }
 
     let mut capabilities: Vec<dscextension::Capability> = vec![];
