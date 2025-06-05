@@ -343,4 +343,16 @@ Describe 'Parameters tests' {
       $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
       $errorMessage | Should -BeLike "*ERROR*Cannot read from STDIN for both parameters and input*"
     }
+
+    It 'Invalid parameters read from STDIN result in error' {
+      $params = @{
+        osFamily = 'Windows'
+      } | ConvertTo-Json -Compress
+
+      $out = $params | dsc config -f - test -f "$PSScriptRoot/../examples/osinfo_parameters.dsc.yaml" 2> $TestDrive/error.log
+      $LASTEXITCODE | Should -Be 4
+      $out | Should -BeNullOrEmpty
+      $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
+      $errorMessage | Should -BeLike "*ERROR*Parameter input failure: JSON: missing field ````parameters````*"
+    }
 }
