@@ -7,6 +7,11 @@ use utfx::{U16CString, UCString};
 use crate::config::{Metadata, Registry, RegistryValueData};
 use crate::error::RegistryError;
 
+rust_i18n::i18n!("locales", fallback = "en-us");
+
+mod error;
+pub mod config;
+
 pub struct RegistryHelper {
     config: Registry,
     hive: Hive,
