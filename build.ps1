@@ -59,6 +59,8 @@ $filesForWindowsPackage = @(
     'registry.exe',
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
+    'sshdconfig.exe',
+    'sshdconfig.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
@@ -83,7 +85,9 @@ $filesForLinuxPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'sshdconfig.exe',
+    'sshdconfig.dsc.resource.json',
 )
 
 $filesForMacPackage = @(
@@ -103,7 +107,9 @@ $filesForMacPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'sshdconfig.exe',
+    'sshdconfig.dsc.resource.json',
 )
 
 # the list of files other than the binaries which need to be executable
@@ -271,6 +277,7 @@ if (!$SkipBuild) {
         "powershell-adapter",
         "process",
         "runcommandonset",
+        "sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
         "y2j",
