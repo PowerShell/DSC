@@ -87,7 +87,7 @@ $filesForLinuxPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig.exe',
-    'sshdconfig.dsc.resource.json',
+    'sshdconfig.dsc.resource.json'
 )
 
 $filesForMacPackage = @(
@@ -109,7 +109,7 @@ $filesForMacPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig.exe',
-    'sshdconfig.dsc.resource.json',
+    'sshdconfig.dsc.resource.json'
 )
 
 # the list of files other than the binaries which need to be executable
