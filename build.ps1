@@ -269,6 +269,7 @@ if (!$SkipBuild) {
     # projects are in dependency order
     $projects = @(
         "tree-sitter-dscexpression",
+        "tree-sitter-ssh-server-config",
         "security_context_lib",
         "dsc_lib",
         "dsc",
@@ -284,8 +285,8 @@ if (!$SkipBuild) {
         "."
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
+    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
+    $skip_test_projects_on_windows = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
         $projects += $windows_projects
@@ -306,7 +307,8 @@ if (!$SkipBuild) {
         try {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
-            if ($project -eq 'tree-sitter-dscexpression') {
+            # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
+            if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
                 }

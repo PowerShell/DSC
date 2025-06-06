@@ -89,25 +89,6 @@ if (Test-Path $target) {
     Remove-Item $target -Recurse -ErrorAction Stop
 }
 New-Item -ItemType Directory $target > $null
-
-$failed = $false
-$project = 'tree-sitter-ssh-server-config'
-Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
-try {
-    Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
-    ./build.ps1
-    if ($LASTEXITCODE -ne 0) {
-        $failed = $true
-    }
-} finally {
-    Pop-Location
-}
-
-if ($failed) {
-    Write-Host -ForegroundColor Red "Tree-sitter build failed"
-    exit 1
-}
-
 ## Build format_json
 Write-Host -ForegroundColor Cyan "Building sshdconfig ... for $architecture"
 try {
