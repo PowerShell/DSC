@@ -9,7 +9,7 @@ const PREC = {
 }
 
 module.exports = grammar({
-  name: 'sshd_config',
+  name: 'ssh_server_config',
 
   extras: $ => [' ', '\t', '\r'],
 

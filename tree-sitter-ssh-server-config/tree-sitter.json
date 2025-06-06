@@ -1,20 +1,20 @@
 {
   "grammars": [
     {
-      "name": "sshd_config",
-      "camelcase": "sshd_config",
-      "scope": "source.sshd_config",
+      "name": "ssh_server_config",
+      "camelcase": "ssh_server_config",
+      "scope": "source.ssh_server_config",
       "path": ".",
       "file-types": null,
-      "injection-regex": "^sshd_config$"
+      "injection-regex": "^ssh_server_config$"
     }
   ],
   "metadata": {
     "version": "1.0.0",
     "license": "MIT",
-    "description": "sshd_config grammar for tree-sitter",
+    "description": "ssh_server_config grammar for tree-sitter",
     "links": {
-      "repository": "https://github.com/powershell/sshdconfig"
+      "repository": "https://github.com/powershell/dsc"
     }
   },
   "bindings": {
