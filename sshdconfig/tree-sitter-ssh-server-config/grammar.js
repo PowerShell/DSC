@@ -1,0 +1,47 @@
+//-------------------------------------------------------------------------------------------------------
+// Copyright (C) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//-------------------------------------------------------------------------------------------------------
+
+const PREC = {
+  MATCH: 2,
+  OPERATOR: 1,
+}
+
+module.exports = grammar({
+  name: 'sshd_config',
+
+  extras: $ => [' ', '\t', '\r'],
+
+  rules: {
+    server_config: $ => seq(repeat(choice($.comment, $.keyword)), repeat($.match)),
+
+    comment: $ => /#.*\n/,
+
+    keyword: $ => seq(
+      field('keyword', $.alphanumeric),
+      choice(seq(/[ \t]/, optional('=')), '='),
+      optional(field('operator', $.operator)),
+      field('arguments', $.arguments),
+      "\n"
+    ),
+
+    match: $ => seq(
+      token(prec(PREC.MATCH, /match/i)),
+      field('criteria', $.keyword),
+      repeat1(choice($.comment, $.keyword)),
+    ),
+
+    arguments: $ => repeat1(choice($.boolean, $.number, $._quotedString, $._commaSeparatedString)),
+
+    alphanumeric: $ => /[a-zA-Z0-9]+/i,
+    boolean: $ => choice('yes', 'no'),
+    number: $ => /\d+/,
+    operator: $ => token(prec(PREC.OPERATOR, /[-+\^]/)),
+    string: $ => /[^\r\n,"]+/,
+
+    _commaSeparatedString: $ => seq($.string, repeat(seq(',', $.string))),
+    _quotedString: $ => seq('\"', $.string, '\"'),
+  }
+
+});

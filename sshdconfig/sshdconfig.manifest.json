@@ -1,0 +1,20 @@
+{
+    "manifestVersion": "1.0",
+    "configuration": {
+      "get": {
+          "executable": "sshdconfig",
+          "args": [ "get" ],
+          "acceptStdin": true
+      },
+      "set": {
+          "executable": "sshdconfig",
+          "args": [ "set" ],
+          "acceptStdin": true
+      },
+      "test": {
+          "executable": "sshdconfig",
+          "args": [ "test" ],
+          "acceptStdin": true
+      }
+    }
+  }

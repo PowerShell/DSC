@@ -1,0 +1,21 @@
+=====
+missing space after keyword
+=====
+AuthorizedKeysFile"ARG"
+
+---
+
+(server_config
+  (ERROR
+    (alphanumeric)
+    (UNEXPECTED 'A')))
+=====
+missing argument after keyword
+=====
+AuthorizedKeysFile
+
+---
+
+(server_config
+  (ERROR
+    (alphanumeric)))
