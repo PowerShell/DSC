@@ -25,6 +25,10 @@ impl RegistryHelper {
     /// # Arguments
     ///
     /// * `config` - The string with registry configuration information.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
     pub fn new(config: &str) -> Result<Self, RegistryError> {
         let registry: Registry = match serde_json::from_str(config) {
             Ok(config) => config,
