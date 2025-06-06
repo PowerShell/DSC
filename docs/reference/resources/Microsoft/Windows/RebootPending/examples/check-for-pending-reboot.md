@@ -34,9 +34,17 @@ actualState:
 
 The `rebootPending` property indicates whether the system requires a reboot (`true`) or not (`false`).
 
-> [!NOTE]
-> You can only use the **Get** operation to check the reboot status.
-> The resource does not support **Set**, **WhatIf**, **Export**, **Delete**, or **Test** operations.
+> The resource doesn't implement the **Set**, **WhatIf**, **Export**, **Delete**, or **Test**
+> capabilities. You can't use this resource to enforce or export configurations.
+>
+> Note that even though the resource doesn't implement **Test**, you can still invoke the test
+> operation against the resource and use it in the `Microsoft.Dsc/Assertion` group resource. This
+> resource relies on the synthetic testing provided by DSC. For more information about synthetic
+> testing with DSC, see
+> [DSC resource capabiltiies](../../../../../concepts/resources/capabilities.md#test).
+>
+> For an example using this resource in an assertion, see
+> [Use the RebootPending resource in a configuration](./use-rebootpending-in-configuration.md).
 
 <!-- Link reference definitions -->
 [01]: ../../../../../cli/resource/get.md

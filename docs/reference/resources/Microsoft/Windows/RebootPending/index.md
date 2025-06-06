@@ -60,7 +60,13 @@ The resource has the following capabilities:
 
 - `get` - You can use the resource to retrieve the pending reboot status of a system.
 
-This resource does not support `set`, `whatIf`, `export`, `test`, or `delete` operations. For more information about resource capabilities, see [DSC resource capabilities][02].
+This resource doesn't implement the **Set**, **WhatIf**, **Export**, **Delete**, or **Test**
+capabilities. You can't use this resource to enforce or export configurations.
+
+Note that even though this resource doesn't implement **Test**, you can still invoke the test
+operation against this resource. This resource relies on the synthetic testing provided by DSC.
+
+For more information about resource capabilities, see [DSC resource capabilities][02].
 
 ## Examples
 
