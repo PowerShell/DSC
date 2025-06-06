@@ -271,7 +271,8 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
 }
 
 #[allow(clippy::too_many_lines)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
+#[allow(clippy::too_many_arguments)]
+pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parameters_from_stdin: bool, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
     let (new_parameters, json_string) = match subcommand {
         ConfigSubCommand::Get { input, file, .. } |
         ConfigSubCommand::Set { input, file, .. } |
@@ -279,7 +280,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         ConfigSubCommand::Validate { input, file, .. } |
         ConfigSubCommand::Export { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref());
+            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
             if *as_include {
                 let (new_parameters, config_json) = match get_contents(&document) {
                     Ok((parameters, config_json)) => (parameters, config_json),
@@ -295,7 +296,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
         },
         ConfigSubCommand::Resolve { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
-            let document = get_input(input.as_ref(), new_path.as_ref());
+            let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
             let (new_parameters, config_json) = match get_contents(&document) {
                 Ok((parameters, config_json)) => (parameters, config_json),
                 Err(err) => {
@@ -391,7 +392,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, mounte
             };
             if *as_include {
                 let new_path = initialize_config_root(file.as_ref());
-                let input = get_input(input.as_ref(), new_path.as_ref());
+                let input = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
@@ -582,40 +583,36 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
         },
         ResourceSubCommand::Export { resource, input, file, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), file.as_ref());
+            let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
             resource_command::export(&mut dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
-            if *all { resource_command::get_all(&dsc, resource, output_format.as_ref()); }
+            if *all {
+                resource_command::get_all(&dsc, resource, output_format.as_ref());
+            }
             else {
-                let parsed_input = get_input(input.as_ref(), path.as_ref());
-                let format = match output_format {
-                    Some(GetOutputFormat::Json) => Some(OutputFormat::Json),
-                    Some(GetOutputFormat::JsonArray) => {
-                        error!("{}", t!("subcommand.jsonArrayNotSupported"));
-                        exit(EXIT_INVALID_ARGS);
-                    },
-                    Some(GetOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
-                    Some(GetOutputFormat::Yaml) => Some(OutputFormat::Yaml),
-                    None => None,
-                };
-                resource_command::get(&dsc, resource, &parsed_input, format.as_ref());
+                if *output_format == Some(GetOutputFormat::JsonArray) {
+                    error!("{}", t!("subcommand.jsonArrayNotSupported"));
+                    exit(EXIT_INVALID_ARGS);
+                }
+                let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
+                resource_command::get(&dsc, resource, &parsed_input, output_format.as_ref());
             }
         },
         ResourceSubCommand::Set { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::set(&dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, input, file: path, output_format } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::test(&dsc, resource, &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, input, file: path } => {
             dsc.find_resources(&[resource.to_string()], progress_format);
-            let parsed_input = get_input(input.as_ref(), path.as_ref());
+            let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::delete(&dsc, resource, &parsed_input);
         },
     }
