@@ -1,16 +1,20 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-mod command_discovery;
-mod discovery_trait;
+pub mod command_discovery;
+pub mod discovery_trait;
 
-use crate::discovery::discovery_trait::ResourceDiscovery;
+use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery};
+use crate::extensions::dscextension::DscExtension;
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress::ProgressFormat};
 use std::collections::BTreeMap;
+use command_discovery::ImportedManifest;
 use tracing::error;
 
+#[derive(Clone)]
 pub struct Discovery {
     pub resources: BTreeMap<String, DscResource>,
+    pub extensions: BTreeMap<String, DscExtension>,
 }
 
 impl Discovery {
@@ -23,6 +27,7 @@ impl Discovery {
     pub fn new() -> Result<Self, DscError> {
         Ok(Self {
             resources: BTreeMap::new(),
+            extensions: BTreeMap::new(),
         })
     }
 
@@ -30,22 +35,23 @@ impl Discovery {
     ///
     /// # Arguments
     ///
+    /// * `kind` - The kind of discovery (e.g., Resource).
     /// * `type_name_filter` - The filter for the resource type name.
     /// * `adapter_name_filter` - The filter for the adapter name.
     ///
     /// # Returns
     ///
     /// A vector of `DscResource` instances.
-    pub fn list_available_resources(&mut self, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<DscResource> {
+    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery::CommandDiscovery::new(progress_format)),
         ];
 
-        let mut resources: Vec<DscResource> = Vec::new();
+        let mut resources: Vec<ImportedManifest> = Vec::new();
 
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.list_available_resources(type_name_filter, adapter_name_filter) {
+            let discovered_resources = match discovery_type.list_available(kind, type_name_filter, adapter_name_filter) {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");

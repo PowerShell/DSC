@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
@@ -18,8 +20,15 @@ param(
     [switch]$Audit,
     [switch]$UseCFSAuth,
     [switch]$SubmitWinGetManifest,
-    [string]$GitToken
+    [string]$GitToken,
+    [switch]$Clean,
+    [switch]$Verbose
 )
+
+$env:RUSTC_LOG=$null
+if ($Verbose) {
+    $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
+}
 
 if ($GetPackageVersion) {
     $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
@@ -31,6 +40,8 @@ if ($GetPackageVersion) {
 }
 
 $filesForWindowsPackage = @(
+    'appx.dsc.extension.json',
+    'appx-discover.ps1',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -117,8 +128,15 @@ function Find-LinkExe {
     }
 }
 
-if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
-    $rustup = 'rustup'
+$channel = 'stable'
+if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
+    $rustup = 'msrustup'
+    $channel = 'ms-stable'
+    if ($architecture -eq 'current') {
+        $env:MSRUSTUP_TOOLCHAIN = "$architecture"
+    }
+} elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
+        $rustup = 'rustup'
 } else {
     $rustup = 'echo'
 }
@@ -139,6 +157,10 @@ if ($null -ne $packageType) {
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
+    }
+    else  {
+        Write-Verbose -Verbose "Rust found, updating..."
+        & $rustup update
     }
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
@@ -191,6 +213,10 @@ if ($architecture -eq 'current') {
 }
 
 if (!$SkipBuild) {
+    if ($architecture -ne 'Current') {
+        & $rustup target add --toolchain $channel $architecture
+    }
+
     if (Test-Path $target) {
         Remove-Item $target -Recurse -ErrorAction Ignore
     }
@@ -229,7 +255,7 @@ if (!$SkipBuild) {
     }
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows")
+    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -311,6 +337,10 @@ if (!$SkipBuild) {
                             cargo audit fix
                         }
 
+                        if ($Clean) {
+                            cargo clean
+                        }
+
                         cargo build @flags
                     }
                 }
@@ -346,7 +376,12 @@ if (!$SkipBuild) {
                 }
             }
 
-            Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+            if ($IsWindows) {
+                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+            }
+            else { # don't copy WindowsPowerShell resource manifest
+                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+            }
 
             # be sure that the files that should be executable are executable
             if ($IsLinux -or $IsMacOS) {
@@ -497,7 +532,7 @@ function Find-MakeAppx() {
     $makeappx
 }
 
-$productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
+$productVersion = (((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1').Trim()
 
 if ($packageType -eq 'msixbundle') {
     if (!$IsWindows) {
@@ -550,6 +585,11 @@ if ($packageType -eq 'msixbundle') {
             $displayName += "-Preview"
         }
     }
+    else {
+        # appx requires a version in the format of major.minor.build.revision with revision being 0
+        $productVersion += ".0"
+    }
+
     Write-Verbose -Verbose "Product version is $productVersion"
     $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
 
@@ -674,20 +714,21 @@ if ($packageType -eq 'msixbundle') {
         $architecture
     }
 
-    $packageName = "DSC-$productVersion-$productArchitecture.tar"
+    Write-Verbose -Verbose "Creating tar.gz file"
+    $packageName = "DSC-$productVersion-$productArchitecture.tar.gz"
     $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
-    tar cvf $tarFile -C $tgzTarget .
+    tar -czvf $tarFile -C $tgzTarget .
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create tar file"
+        throw "Failed to create tar.gz file"
     }
-    Write-Host -ForegroundColor Green "`nTar file is created at $tarFile"
 
-    $gzFile = "$tarFile.gz"
-    gzip -c $tarFile > $gzFile
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create gz file"
+    # check it's valid
+    $out = file $tarFile
+    if ($out -notmatch 'gzip compressed data') {
+        throw "Invalid tar.gz file"
     }
-    Write-Host -ForegroundColor Green "`nGz file is created at $gzFile"
+
+    Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
 }
 
 function Submit-DSCWinGetAssets {

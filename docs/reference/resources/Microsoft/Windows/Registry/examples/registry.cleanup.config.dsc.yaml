@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Remove DscExamples key remaining subkeys or values
+    type: Microsoft.Windows/Registry
+    properties:
+      _exist: false
+      keyPath: HKCU\DscExamples

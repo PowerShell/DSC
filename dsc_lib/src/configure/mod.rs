@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata};
+use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
@@ -55,21 +55,25 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, adapter_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
-    let export_result = match adapter_resource {
-        Some(_) => adapter_resource.unwrap().export(input)?,
-        _ => resource.export(input)?
-    };
+    let export_result = resource.export(input)?;
 
-    for (i, instance) in export_result.actual_state.iter().enumerate() {
-        let mut r = config_doc::Resource::new();
-        r.resource_type.clone_from(&resource.type_name);
-        r.name = format!("{}-{i}", r.resource_type);
-        let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
-        r.properties = escape_property_values(&props)?;
+    if resource.kind == Kind::Exporter {
+        for instance in &export_result.actual_state {
+            let resource = serde_json::from_value::<Resource>(instance.clone())?;
+            conf.resources.push(resource);
+        }
+    } else {
+        for (i, instance) in export_result.actual_state.iter().enumerate() {
+            let mut r = config_doc::Resource::new();
+            r.resource_type.clone_from(&resource.type_name);
+            r.name = format!("{}-{i}", r.resource_type);
+            let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
+            r.properties = escape_property_values(&props)?;
 
-        conf.resources.push(r);
+            conf.resources.push(r);
+        }
     }
 
     Ok(export_result)
@@ -78,14 +82,12 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
 // they are re-used to apply configuration
 fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<String, Value>>, DscError> {
-    debug!("{}", t!("configure.mod.escapePropertyValues"));
     let mut result: Map<String, Value> = Map::new();
     for (name, value) in properties {
         match value {
             Value::Object(object) => {
                 let value = escape_property_values(&object.clone())?;
                 result.insert(name.clone(), serde_json::to_value(value)?);
-                continue;
             },
             Value::Array(array) => {
                 let mut result_array: Vec<Value> = Vec::new();
@@ -94,7 +96,6 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
                         Value::Object(object) => {
                             let value = escape_property_values(&object.clone())?;
                             result_array.push(serde_json::to_value(value)?);
-                            continue;
                         },
                         Value::Array(_) => {
                             return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
@@ -151,7 +152,14 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
         return Ok(serde_json::to_string(&properties)?);
     }
 
-    Ok(serde_json::to_string(&properties)?)
+    match properties {
+        Some(properties) => {
+            Ok(serde_json::to_string(&properties)?)
+        },
+        _ => {
+            Ok(String::new())
+        }
+    }
 }
 
 fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
@@ -218,6 +226,18 @@ impl Configurator {
         &self.config
     }
 
+    fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
+        match resource_kind {
+            Kind::Group => {
+                // if Group resource, we leave it to the resource to handle expressions
+                Ok(resource.properties.clone())
+            },
+            _ => {
+                Ok(self.invoke_property_expressions(resource.properties.as_ref())?)
+            },
+        }
+    }
+
     /// Invoke the get operation on a resource.
     ///
     /// # Returns
@@ -231,13 +251,14 @@ impl Configurator {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
+        let discovery = &self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Get '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
@@ -271,7 +292,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -307,13 +329,14 @@ impl Configurator {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
+        let discovery = &self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Set '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
 
             // see if the properties contains `_exist` and is false
@@ -382,12 +405,18 @@ impl Configurator {
                         let GetResult::Resource(after_result) = after_result else {
                             return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
                         };
-                        let before_value = serde_json::to_value(&before_response.actual_state)?;
-                        let after_value = serde_json::to_value(&after_result.actual_state)?;
+                        let diff = get_diff(&before_response.actual_state, &after_result.actual_state);
+                        let mut before: Map<String, Value> = serde_json::from_value(before_response.actual_state)?;
+                        // a `get` will return a `result` property, but an actual `set` will have that as `resources`
+                        if before.contains_key("result") && !before.contains_key("resources") {
+                            before.insert("resources".to_string() ,before["result"].clone());
+                            before.remove("result");
+                        }
+                        let before_value = serde_json::to_value(&before)?;
                         SetResult::Resource(ResourceSetResponse {
-                            before_state: before_response.actual_state,
+                            before_state: before_value.clone(),
                             after_state: after_result.actual_state,
-                            changed_properties: Some(get_diff(&before_value, &after_value)),
+                            changed_properties: Some(diff),
                         })
                     },
                     GetResult::Group(_) => {
@@ -419,7 +448,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -450,13 +480,14 @@ impl Configurator {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
+        let discovery = &self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Test '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
+            let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
@@ -490,7 +521,8 @@ impl Configurator {
                                 duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
                                 ..Default::default()
                             }
-                        )
+                        ),
+                        other: Map::new(),
                     }
                 ),
                 name: resource.name.clone(),
@@ -520,19 +552,21 @@ impl Configurator {
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
+        conf.metadata.clone_from(&self.config.metadata);
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
+        let discovery = &self.discovery.clone();
         for resource in &resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Export '{}'", resource.name).as_str());
-            let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
-            let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
+            let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
-            let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {
+            let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -545,7 +579,17 @@ impl Configurator {
             progress.write_increment(1);
         }
 
-        conf.metadata = Some(self.get_result_metadata(Operation::Export));
+        let export_metadata = self.get_result_metadata(Operation::Export);
+        match conf.metadata {
+            Some(mut metadata) => {
+                metadata.microsoft = export_metadata.microsoft;
+                conf.metadata = Some(metadata);
+            },
+            _ => {
+                conf.metadata = Some(export_metadata);
+            },
+        }
+
         result.result = Some(conf);
         Ok(result)
     }
@@ -669,7 +713,6 @@ impl Configurator {
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    context: None,
                     version: Some(env!("CARGO_PKG_VERSION").to_string()),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),
@@ -678,7 +721,8 @@ impl Configurator {
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
                 }
-            )
+            ),
+            other: Map::new(),
         }
     }
 
@@ -739,7 +783,6 @@ impl Configurator {
                     Value::Object(object) => {
                         let value = self.invoke_property_expressions(Some(object))?;
                         result.insert(name.clone(), serde_json::to_value(value)?);
-                        continue;
                     },
                     Value::Array(array) => {
                         let mut result_array: Vec<Value> = Vec::new();
@@ -748,7 +791,6 @@ impl Configurator {
                                 Value::Object(object) => {
                                     let value = self.invoke_property_expressions(Some(object))?;
                                     result_array.push(serde_json::to_value(value)?);
-                                    continue;
                                 },
                                 Value::Array(_) => {
                                     return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
@@ -781,7 +823,7 @@ impl Configurator {
                             result.insert(name.clone(), Value::String(string_result.to_string()));
                         } else {
                             result.insert(name.clone(), statement_result);
-                        };
+                        }
                     },
                     _ => {
                         result.insert(name.clone(), value.clone());

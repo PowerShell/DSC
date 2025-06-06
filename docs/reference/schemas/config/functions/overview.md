@@ -110,39 +110,39 @@ the [base64()][base64] function.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Double quoted syntax
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       text: "[base64('ab')]"
   - name: Folded block syntax
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       text: >-
         [base64('ab')]
   - name: Literal block syntax
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       text: |-
         [base64('ab')]
 ```
 
 ```sh
-dsc --input-file overview.example.1.dsc.config.yaml config get
+dsc config get --file overview.example.1.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Double quoted syntax
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: YWI=
 - name: Folded block syntax
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: YWI=
 - name: Literal block syntax
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: YWI=
@@ -160,19 +160,19 @@ output of the [concat()][concat] function, combining the strings `a` and `b` int
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo the concatenated strings 'a' and 'b'
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       text: "[concat('a', 'b')]"
 ```
 
 ```sh
-dsc --input-file overview.example.2.dsc.config.yaml config get
+dsc config get --file overview.example.2.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Echo the concatenated strings 'a' and 'b'
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: ab
@@ -193,19 +193,19 @@ nested functions shown in the third instance to base64.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo the concatenated strings 'a' and 'b' as base64
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       text: "[base64(concat('a', 'b'))]"
   - name: Echo the concatenated strings 'c' and 'd' as base64
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       text: "[base64(concat('c', 'd'))]"
   - name: Echo the concatenated base64 of strings 'ab' and 'cd'
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       text: "[concat(base64(concat('a', 'b')), base64(concat('c', 'd')))]"
   - name: Echo the concatenated base64 of strings 'ab' and 'cd' as base64
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       # text: "[base64(concat(base64(concat('a', 'b')), base64(concat('c', 'd'))))]"
       text: >-
@@ -218,28 +218,28 @@ resources:
 ```
 
 ```sh
-dsc --input-file overview.example.3.dsc.config.yaml config get
+dsc config get --file overview.example.3.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Echo the concatenated strings 'a' and 'b' as base64
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: YWI=
 - name: Echo the concatenated strings 'c' and 'd' as base64
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: Y2Q=
 - name: Echo the concatenated base64 of strings 'ab' and 'cd'
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: YWI=Y2Q=
 - name: Echo the concatenated base64 of strings 'ab' and 'cd' as base64
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       text: WVdJPVkyUT0=
@@ -296,7 +296,7 @@ parameters:
       - name: Nested third
 ```
 
-The first configuration document defines an instance of the `Test/Echo` resource to show how you
+The first configuration document defines an instance of the `Microsoft.DSC.Debug/Echo` resource to show how you
 can access an object's properties in a configuration document.
 
 ```yaml
@@ -309,7 +309,7 @@ parameters:
 
 resources:
   - name: Access the properties of an object
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output:
         # Accessing output object
@@ -324,7 +324,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.properties.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -333,7 +333,7 @@ results:
     Microsoft.DSC:
       duration: PT0.133791S
   name: Access the properties of an object
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
@@ -374,7 +374,7 @@ parameters:
 
 resources:
   - name: Access the properties of a nested object
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output:
         data.message.text:             "[parameters('data').message.text]"
@@ -386,7 +386,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.nested.properties.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -395,7 +395,7 @@ results:
     Microsoft.DSC:
       duration: PT0.0760186S
   name: Access the properties of an object
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
@@ -418,7 +418,7 @@ parameters:
 
 resources:
   - name: Access items in an array
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output:
         # Accessing output array
@@ -442,7 +442,7 @@ results:
     Microsoft.DSC:
       duration: PT0.0750682S
   name: Access items in an array
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
@@ -477,7 +477,7 @@ parameters:
 
 resources:
   - name: Access items in a nested array
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output:
         list[3][0]: "[parameters('list')[3][0]]"
@@ -488,7 +488,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.nested.items.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -497,7 +497,7 @@ results:
     Microsoft.DSC:
       duration: PT0.1349442S
   name: Access items in a nested array
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
@@ -520,7 +520,7 @@ parameters:
 
 resources:
   - name: Access values in complex objects and arrays
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output:
         # Accessing array items of an object property
@@ -537,7 +537,7 @@ resources:
 ```sh
 $params=overview.example.4.dsc.parameters.yaml
 $config=overview.example.4.mixed.dsc.config.yaml
-dsc config --parameters-file $params get --path $config
+dsc config --parameters-file $params get --file $config
 ```
 
 ```yaml
@@ -549,7 +549,7 @@ parameters:
 
 resources:
   - name: Access values in complex objects and arrays
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output:
         # Accessing array items of an object property

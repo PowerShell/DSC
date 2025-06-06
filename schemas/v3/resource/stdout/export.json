@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/stdout/export.json",
+  "title": "Export resource operation stdout",
+  "description": "Represents the actual state of a resource instance in DSC. DSC expects every JSON Line emitted to stdout for the **Export** operation to adhere to this schema.",
+  "type": "object"
+}

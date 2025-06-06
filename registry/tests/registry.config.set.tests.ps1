@@ -72,4 +72,77 @@ Describe 'registry config set tests' {
 
         Get-Item -Path 'HKCU:\1\2' -ErrorAction Ignore | Should -BeNullOrEmpty
     }
+
+    It 'Can set value without data' -Skip:(!$IsWindows) {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Key
+              type: Microsoft.Windows/Registry
+              properties:
+                keyPath: 'HKCU\1'
+                valueName: Test
+                _exist: true            
+'@
+
+        $out = dsc config set -i $configYaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.afterState.keyPath | Should -BeExactly 'HKCU\1'
+        $out.results[0].result.afterState.valueName | Should -BeExactly 'Test'
+        $out.results[0].result.afterState.valueData | Should -BeNullOrEmpty
+
+        $out = dsc config get -i $configYaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.keyPath | Should -BeExactly 'HKCU\1'
+        $out.results[0].result.actualState.valueName | Should -BeExactly 'Test'
+        $out.results[0].result.actualState.valueData | Should -BeNullOrEmpty
+
+        Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore
+    }
+
+    It 'Should succeed when _exist is false and value does not exist' -Skip:(!$IsWindows) {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'reg'
+                    type = 'Microsoft.Windows/Registry'
+                    properties = @{
+                        keyPath = 'HKCU'
+                        valueName = 'Test'
+                        valueData = @{
+                            String = 'Test'
+                        }
+                        _exist = $false
+                    }
+                }
+            )
+        }
+
+        $out = dsc config set -i ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.afterState._exist | Should -Be $false
+
+        Get-ItemProperty -Path 'HKCU:\1\2' -Name 'Test' -ErrorAction Ignore | Should -BeNullOrEmpty
+    }
+
+    It 'Should succeed when _exist is false and key does not exist' -Skip:(!$IsWindows) {
+        $config = @{
+            '$schema' = 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
+            resources = @(
+                @{
+                    name = 'reg'
+                    type = 'Microsoft.Windows/Registry'
+                    properties = @{
+                        keyPath = 'HKCU\1'
+                        _exist = $false
+                    }
+                }
+            )
+        }
+
+        $out = dsc config set -i ($config | ConvertTo-Json -Depth 10) | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.afterState._exist | Should -Be $false
+    }
 }

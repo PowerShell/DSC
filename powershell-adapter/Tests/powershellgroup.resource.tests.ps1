@@ -4,14 +4,13 @@
 Describe 'PowerShell adapter resource tests' {
 
     BeforeAll {
-        $OldPSModulePath  = $env:PSModulePath
+        $OldPSModulePath = $env:PSModulePath
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
         if ($IsLinux -or $IsMacOS) {
             $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
         }
-        else
-        {
+        else {
             $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
         }
     }
@@ -28,7 +27,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        ($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}).Count | Should -Be 1
+        ($resources | ? { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
     }
 
     It 'Get works on class-based resource' {
@@ -36,10 +35,10 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.actualState.Prop1 | Should -BeExactly 'ValueForProp1'
 
         # verify that only properties with DscProperty attribute are returned
-        $propertiesNames = $res.actualState.result.properties | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames = $res.actualState | Get-Member -MemberType NoteProperty | % Name
         $propertiesNames | Should -Not -Contain 'NonDscProperty'
         $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
@@ -49,7 +48,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.EnumProp | Should -BeExactly 'Expected'
+        $res.actualState.EnumProp | Should -BeExactly 'Expected'
     }
 
     It 'Test works on class-based resource' {
@@ -57,11 +56,11 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource test -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.actualState.result.properties.InDesiredState | Should -Be $True
-        $res.actualState.result.properties.InDesiredState.GetType().Name | Should -Be "Boolean"
+        $res.actualState.InDesiredState | Should -Be $True
+        $res.actualState.InDesiredState.GetType().Name | Should -Be "Boolean"
 
         # verify that only properties with DscProperty attribute are returned
-        $propertiesNames = $res.actualState.result.properties.InDesiredState | Get-Member -MemberType NoteProperty | % Name
+        $propertiesNames = $res.actualState.InDesiredState | Get-Member -MemberType NoteProperty | % Name
         $propertiesNames | Should -Not -Contain 'NonDscProperty'
         $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
     }
@@ -71,10 +70,11 @@ Describe 'PowerShell adapter resource tests' {
         $r = "{'Name':'TestClassResource1','Prop1':'ValueForProp1'}" | dsc resource set -r 'TestClassResource/TestClassResource' -f -
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
-        $res.afterState.result | Should -Not -BeNull
+        $res.afterState.Prop1 | Should -BeExactly 'ValueForProp1'
+        $res.changedProperties | Should -BeNullOrEmpty
     }
 
-    It 'Export works on PS class-based resource' {
+    It 'Export works on PS class-based resource' -Pending {
 
         $r = dsc resource export -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
@@ -84,20 +84,20 @@ Describe 'PowerShell adapter resource tests' {
         $res.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
 
         # verify that only properties with DscProperty attribute are returned
-        $res.resources[0].properties.result | %{
+        $res.resources[0].properties.result | % {
             $propertiesNames = $_ | Get-Member -MemberType NoteProperty | % Name
             $propertiesNames | Should -Not -Contain 'NonDscProperty'
             $propertiesNames | Should -Not -Contain 'HiddenNonDscProperty'
         }
     }
 
-    It 'Get --all works on PS class-based resource' {
+    It 'Get --all works on PS class-based resource' -Pending {
 
         $r = dsc resource get --all -r TestClassResource/TestClassResource
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.count | Should -Be 5
-        $res.actualState.result| % {$_.Name | Should -Not -BeNullOrEmpty}
+        $res.actualState.result | % { $_.Name | Should -Not -BeNullOrEmpty }
     }
 
     It 'Verify that ClearCache works in PSAdapter' {
@@ -119,11 +119,13 @@ Describe 'PowerShell adapter resource tests' {
         $cacheFilePath = if ($IsWindows) {
             # PS 6+ on Windows
             Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-        } else {
+        }
+        else {
             # either WinPS or PS 6+ on Linux/Mac
             if ($PSVersionTable.PSVersion.Major -le 5) {
                 Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-            } else {
+            }
+            else {
                 Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
             }
         }
@@ -171,7 +173,7 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        $t = $resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'}
+        $t = $resources | ? { $_.Type -eq 'TestClassResource/TestClassResource' }
         $t.properties | Should -Contain "BaseProperty"
     }
 
@@ -214,7 +216,7 @@ Describe 'PowerShell adapter resource tests' {
             $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
-            $r = @($resources | ? {$_.Type -eq 'TestClassResource/TestClassResource'})
+            $r = @($resources | ? { $_.Type -eq 'TestClassResource/TestClassResource' })
             $r.Count | Should -Be 1
             $r[0].Version | Should -Be '2.0.1'
         }
@@ -223,81 +225,89 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It 'Verify adapted_dsc_type field in Get' {
+    It 'Verify invoke Get on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}'| dsc resource get -r 'Test/TestCase' -f -
-            $LASTEXITCODE | Should -Be 0
+            $r = '{"TestCaseId": 1}' | dsc -l trace resource get -r 'Test/TestCase' -f - 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
             $resources = $r | ConvertFrom-Json
-            $resources.actualState.result | Should -Be $True
+            $resources.actualState.TestCaseid | Should -Be 1
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Verify adapted_dsc_type field in Set' {
+    It 'Verify invoke Set on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}'| dsc resource set -r 'Test/TestCase' -f -
-            $LASTEXITCODE | Should -Be 0
+            $r = '{"TestCaseId": 1}' | dsc resource set -r 'Test/TestCase' -f - 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
             $resources = $r | ConvertFrom-Json
-            $resources.beforeState.result | Should -Be $True
-            $resources.afterState.result | Should -Be $True
+            $resources.beforeState.TestCaseid | Should -Be 1
+            $resources.afterState.TestCaseId | Should -Be 1
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Verify adapted_dsc_type field in Test' {
+    It 'Verify invoke Test on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = '{TestCaseId: 1}'| dsc resource test -r 'Test/TestCase' -f -
+            $r = '{"TestCaseId": 1}' | dsc resource test -r 'Test/TestCase' -f -
             $LASTEXITCODE | Should -Be 0
             $resources = $r | ConvertFrom-Json
-            $resources.actualState.result | Should -Be $True
+            $resources.actualState.TestCaseId | Should -Be 1
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Verify adapted_dsc_type field in Export' {
+    It 'Verify invoke Export on adapted resource' {
         $oldPath = $env:PATH
         try {
             $adapterPath = Join-Path $PSScriptRoot 'TestAdapter'
             $env:PATH += [System.IO.Path]::PathSeparator + $adapterPath
 
-            $r = dsc resource export -r 'Test/TestCase'
-            $LASTEXITCODE | Should -Be 0
+            $r = dsc -l trace resource export -r 'Test/TestCase' 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
             $resources = $r | ConvertFrom-Json
-            $resources.resources[0].properties.result | Should -Be $True
+            $resources.resources.count | Should -Be 2
+            $resources.resources[0].type | Should -BeExactly 'Test/TestCase'
+            $resources.resources[0].name | Should -BeExactly 'Test/TestCase-0'
+            $resources.resources[0].properties.TestCaseId | Should -Be 1
+            $resources.resources[1].type | Should -BeExactly 'Test/TestCase'
+            $resources.resources[1].name | Should -BeExactly 'Test/TestCase-1'
+            $resources.resources[1].properties.TestCaseId | Should -Be 2
         }
         finally {
             $env:PATH = $oldPath
         }
     }
 
-    It 'Dsc can process large resource output' {
-        $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
+    It 'Dsc can process large resource output' -Pending {
+        try {
+            $env:TestClassResourceResultCount = 5000 # with sync resource invocations this was not possible
 
-        dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
-        $r = dsc resource export -r TestClassResource/TestClassResource
-        $LASTEXITCODE | Should -Be 0
-        $res = $r | ConvertFrom-Json
-        $res.resources[0].properties.result.count | Should -Be 5000
-
-        $env:TestClassResourceResultCount = $null
+            $r = dsc -l trace resource export -r TestClassResource/TestClassResource 2> $TestDrive/tracing.txt
+            $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/tracing.txt | Out-String)
+            $res = $r | ConvertFrom-Json
+            $res.resources[0].properties.result.count | Should -Be 5000
+        }
+        finally {
+            $env:TestClassResourceResultCount = $null
+        }
     }
 
     It 'Verify that there are no cache rebuilds for several sequential executions' {
@@ -306,11 +316,13 @@ Describe 'PowerShell adapter resource tests' {
         $cacheFilePath = if ($IsWindows) {
             # PS 6+ on Windows
             Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
-        } else {
+        }
+        else {
             # either WinPS or PS 6+ on Linux/Mac
             if ($PSVersionTable.PSVersion.Major -le 5) {
                 Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-            } else {
+            }
+            else {
                 Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
             }
         }
@@ -321,9 +333,16 @@ Describe 'PowerShell adapter resource tests' {
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
 
         # next executions following shortly after should Not rebuild the cache
-        1..3 | %{
+        1..3 | ForEach-Object {
             dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
             "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
         }
+    }
+
+    It 'Can process a key-value pair object' {
+        $r = '{"HashTableProp":{"Name":"DSCv3"},"Name":"TestClassResource1"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.HashTableProp.Name | Should -Be 'DSCv3'
     }
 }

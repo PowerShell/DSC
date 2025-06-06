@@ -35,7 +35,6 @@ circularDependency = "Circular dependency detected for resource named '%{resourc
 invocationOrder = "Resource invocation order"
 
 [configure.mod]
-escapePropertyValues = "Escape returned property values"
 nestedArraysNotSupported = "Nested arrays not supported"
 arrayElementCouldNotTransformAsString = "Array element could not be transformed as string"
 valueCouldNotBeTransformedAsString = "Property value '%{value}' could not be transformed as string"
@@ -73,22 +72,32 @@ couldNotReadSetting = "Could not read 'resourcePath' setting"
 appendingEnvPath = "Appending PATH to resourcePath"
 originalPath = "Original PATH: %{path}"
 failedGetEnvPath = "Failed to get PATH environment variable"
+failedJoinEnvPath = "Failed to join PATH environment variable"
 exeHomeAlreadyInPath = "Exe home is already in path: %{path}"
 addExeHomeToPath = "Adding exe home to path: %{path}"
 usingResourcePath = "Using Resource Path: %{path}"
-discoverResources = "Discovering resources using filter: %{filter}"
+discoverResources = "Discovering '%{kind}' using filter: %{filter}"
 invalidAdapterFilter = "Could not build Regex filter for adapter name"
 progressSearching = "Searching for resources"
+extensionSearching = "Searching for extensions"
 foundResourceManifest = "Found resource manifest: %{path}"
+extensionFound = "Extension '%{extension}' found"
 adapterFound = "Resource adapter '%{adapter}' found"
 resourceFound = "Resource '%{resource}' found"
+executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
+extensionInvalidVersion = "Extension '%{extension}' version '%{version}' is invalid"
+invalidManifest = "Invalid manifest for resource '%{resource}'"
+extensionResourceFound = "Extension found resource '%{resource}'"
+callingExtension = "Calling extension '%{extension}' to discover resources"
+extensionFoundResources = "Extension '%{extension}' found %{count} resources"
+invalidManifestVersion = "Manifest '%{path}' has invalid version: %{err}"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
 invokeGetUsing = "Invoking get '%{resource}' using '%{executable}'"
 verifyOutputUsing = "Verifying output of get '%{resource}' using '%{executable}'"
 groupGetResponse = "Group get response: %{response}"
-failedParseJson = "Failed to parse JSON from get %{executable}|%{stdout}|%{stderr} -> %{err}"
+failedParseJson = "Failed to parse JSON from 'get': executable = '%{executable}' stdout = '%{stdout}' stderr = '%{stderr}' -> %{err}"
 invokeSet = "Invoking set for '%{resource}'"
 noPretest = "No pretest, invoking test on '%{resource}'"
 syntheticWhatIf = "cannot process what-if execution type, as resource implements pre-test and does not support what-if"
@@ -99,7 +108,7 @@ setUnexpectedOutput = "Command did not return expected actual output"
 setUnexpectedDiff = "Command did not return expected diff output"
 invokeTest = "Invoking test for '%{resource}'"
 testSyntheticTest = "Resource '%{resource}' does not implement test, performing synthetic test"
-invokeTestUsing = "Invoking test on '%{resource}' using '{executable}'"
+invokeTestUsing = "Invoking test on '%{resource}' using '%{executable}'"
 testVerifyOutput = "Verifying output of test on '%{resource}' using '%{executable}'"
 testGroupTestResponse = "Import resource kind, returning group test response"
 testNoActualState = "No actual state returned"
@@ -129,6 +138,7 @@ validateJson = "Validating against JSON: %{json}"
 resourceInvalidJson = "Resource reported input JSON is not valid"
 invalidArrayKey = "Unsupported array value for key '%{key}'.  Only string and number is supported."
 invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, and array is supported."
+inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -137,9 +147,16 @@ invokeSet = "Invoking set for '%{resource}'"
 invokeTest = "Invoking test for '%{resource}'"
 invokeDelete = "Invoking delete for '%{resource}'"
 invokeValidate = "Invoking validate for '%{resource}'"
+invokeValidateNotSupported = "Invoking validate is not supported for adapted resource '%{resource}'"
 invokeSchema = "Invoking schema for '%{resource}'"
+invokeSchemaNotSupported = "Invoking schema is not supported for adapted resource '%{resource}'"
 invokeExport = "Invoking export for '%{resource}'"
+invokeExportReturnedNoResult = "Invoking export returned no result for '%{resource}'"
 invokeResolve = "Invoking resolve for '%{resource}'"
+invokeResolveNotSupported = "Invoking resolve is not supported for adapted resource '%{resource}'"
+invokeReturnedWrongResult = "Invoking '%{operation}' on '%{resource}' returned unexpected result"
+propertyIncorrectType = "Property '%{property}' is not of type '%{property_type}'"
+propertyNotFound = "Property '%{property}' not found"
 subDiff = "diff: sub diff for '%{key}'"
 diffArray = "diff: arrays differ for '%{key}'"
 diffNotArray = "diff: '%{key}' is not an array"
@@ -151,6 +168,15 @@ diffMissingItem = "diff: actual array missing expected item"
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
 resourceManifestSchemaDescription = "Defines the JSON Schema the resource manifest adheres to."
+
+[extensions.dscextension]
+discoverNoResults = "No results returned for discovery extension '%{extension}'"
+discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
+extensionReturned = "Extension '%{extension}' returned line: %{line}"
+
+[extensions.extension_manifest]
+extensionManifestSchemaTitle = "Extension manifest schema URI"
+extensionManifestSchemaDescription = "Defines the JSON Schema the extension manifest adheres to."
 
 [functions]
 invalidArgType = "Invalid argument type"
@@ -188,6 +214,16 @@ divideByZero = "Cannot divide by zero"
 
 [functions.envvar]
 notFound = "Environment variable not found"
+
+[functions.if]
+conditionNotBoolean = "Condition is not a boolean"
+
+[functions.format]
+experimental = "`format()` function is experimental"
+formatInvalid = "First `format()` argument must be a string"
+numberTooLarge = "Number is too large"
+invalidArgType = "Unsupported argument type"
+invalidFormatString = "Invalid format string"
 
 [functions.int]
 invalidInput = "invalid input string"
@@ -322,6 +358,8 @@ unknown = "Unknown"
 unrecognizedSchemaUri = "Unrecognized $schema URI"
 validation = "Validation"
 validSchemaUrisAre = "Valid schema URIs are"
+extension = "Extension"
+unsupportedCapability = "does not support capability"
 setting = "Setting"
 
 [progress]

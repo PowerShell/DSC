@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate.')]
+    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, ClearCache.')]
     [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
@@ -45,10 +45,13 @@ if ($Operation -eq 'ClearCache') {
     exit 0
 }
 
+if ($PSVersionTable.PSVersion.Major -le 5) {
+    # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
+    $env:PSModulePath = ($env:PSModulePath -split ';' | Where-Object { $_ -notlike '*\powershell\*' }) -join ';'
+}
+
 if ('Validate' -ne $Operation) {
-    # write $jsonInput to STDERR for debugging
-    $trace = @{'debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
-    $host.ui.WriteErrorLine($trace)
+    Write-DscTrace -Operation Debug -Message "jsonInput=$jsonInput"
 
     # load private functions of psDscAdapter stub module
     if ($PSVersionTable.PSVersion.Major -le 5) {
@@ -135,16 +138,14 @@ switch ($Operation) {
     { @('Get','Set','Test','Export') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
-            $trace = @{'debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
             exit 1
         }
 
         # only need to cache the resources that are used
         $dscResourceModules = $desiredState | ForEach-Object { $_.Type.Split('/')[0] }
         if ($null -eq $dscResourceModules) {
-            $trace = @{'debug' = 'ERROR: Could not get list of DSC resource types from provided JSON.' } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
+            Write-DscTrace -Operation Error -Message 'Could not get list of DSC resource types from provided JSON.'
             exit 1
         }
 
@@ -157,26 +158,33 @@ switch ($Operation) {
         # check if all the desired modules are in the cache
         $moduleInput | ForEach-Object {
             if ($dscResourceCache.type -notcontains $_) {
-                ('DSC resource {0} module not found.' -f $_) | Write-DscTrace -Operation Error
+                ("DSC resource '{0}' module not found." -f $_) | Write-DscTrace -Operation Error
                 exit 1
             }
         }
 
+        $inDesiredState = $true
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
             $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
             if ($null -eq $actualState) {
-                $trace = @{'debug' = 'ERROR: Incomplete GET for resource ' + $ds.Name } | ConvertTo-Json -Compress
-                $host.ui.WriteErrorLine($trace)
+                Write-DscTrace -Operation Error -Message 'Incomplete GET for resource ' + $ds.Name
                 exit 1
+            }
+            if ($null -ne $actualState.Properties -and $actualState.Properties.InDesiredState -eq $false) {
+                $inDesiredState = $false
             }
             $result += $actualState
         }
     
         # OUTPUT json to stderr for debug, and to stdout
-        $result = @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
-        $trace = @{'debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
-        $host.ui.WriteErrorLine($trace)
+        if ($Operation -eq 'Test') {
+            $result = @{ result = $result; _inDesiredState = $inDesiredState } | ConvertTo-Json -Depth 10 -Compress
+        }
+        else {
+            $result = @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
+        }
+        Write-DscTrace -Operation Debug -Message "jsonOutput=$result"
         return $result
     }
     'Validate' {
@@ -186,7 +194,7 @@ switch ($Operation) {
         @{ valid = $true } | ConvertTo-Json
     }
     Default {
-        Write-Error 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
+        Write-DscTrace -Operation Error -Message 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
     }
 }
 

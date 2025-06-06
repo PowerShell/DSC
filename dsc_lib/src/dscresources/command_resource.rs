@@ -5,7 +5,7 @@ use clap::ValueEnum;
 use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::{collections::HashMap, env, process::Stdio};
 use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
 use crate::dscerror::DscError;
@@ -146,11 +146,23 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         verify_json(resource, cwd, &stdout)?;
     }
 
-    let pre_state: Value = if exit_code == 0 {
+    let pre_state_value: Value = if exit_code == 0 {
         serde_json::from_str(&stdout)?
     }
     else {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
+    };
+    let pre_state = if pre_state_value.is_object() {
+        let mut pre_state_map: Map<String, Value> = serde_json::from_value(pre_state_value)?;
+
+        // if the resource is an adapter, then the `get` will return a `result`, but a full `set` expects the before state to be `resources`
+        if resource.kind == Some(Kind::Adapter) && pre_state_map.contains_key("result") && !pre_state_map.contains_key("resources") {
+            pre_state_map.insert("resources".to_string(), pre_state_map["result"].clone());
+            pre_state_map.remove("result");
+        }
+        serde_json::to_value(pre_state_map)?
+    } else {
+        pre_state_value
     };
 
     let mut env: Option<HashMap<String, String>> = None;
@@ -283,11 +295,12 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                     return Err(DscError::Operation(t!("dscresources.commandResource.failedParseJson", executable = &test.executable, stdout = stdout, stderr = stderr, err = err).to_string()))
                 }
             };
+            let in_desired_state = get_desired_state(&actual_value)?;
             let diff_properties = get_diff(&expected_value, &actual_value);
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
-                in_desired_state: diff_properties.is_empty(),
+                in_desired_state: in_desired_state.unwrap_or(diff_properties.is_empty()),
                 diff_properties,
             }))
         },
@@ -302,10 +315,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
+            let in_desired_state = get_desired_state(&actual_value)?;
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
-                in_desired_state: diff_properties.is_empty(),
+                in_desired_state: in_desired_state.unwrap_or(diff_properties.is_empty()),
                 diff_properties,
             }))
         },
@@ -333,6 +347,19 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             }))
         },
     }
+}
+
+fn get_desired_state(actual: &Value) -> Result<Option<bool>, DscError> {
+    // if actual state contains _inDesiredState, we use that to determine if the resource is in desired state
+    let mut in_desired_state: Option<bool> = None;
+    if let Some(in_desired_state_value) = actual.get("_inDesiredState") {
+        if let Some(desired_state) = in_desired_state_value.as_bool() {
+            in_desired_state = Some(desired_state);
+        } else {
+            return Err(DscError::Operation(t!("dscresources.commandResource.inDesiredStateNotBool").to_string()));
+        }
+    }
+    Ok(in_desired_state)
 }
 
 fn invoke_synthetic_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
@@ -678,7 +705,17 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
         .block_on(run_process_async(executable, args, input, cwd, env, exit_codes))
 }
 
-fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
+/// Process the arguments for a command resource.
+///
+/// # Arguments
+///
+/// * `args` - The arguments to process
+/// * `value` - The value to use for JSON input arguments
+///
+/// # Returns
+///
+/// A vector of strings representing the processed arguments
+pub fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
@@ -799,8 +836,8 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
                     map.insert(key, array.join(","));
                 },
                 Value::Null => {
-                    continue;
-                }
+                    // ignore null values
+                },  
                 Value::Object(_) => {
                     return Err(DscError::Operation(t!("dscresources.commandResource.invalidKey", key = key).to_string()));
                 },
@@ -855,27 +892,27 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
             }
         }
         else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
-            if let Some(msg) = json_obj.get("Error") {
+            if let Some(msg) = json_obj.get("error") {
                 error!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Warning") {
+            } else if let Some(msg) = json_obj.get("warn") {
                 warn!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Info") {
+            } else if let Some(msg) = json_obj.get("info") {
                 info!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Debug") {
+            } else if let Some(msg) = json_obj.get("debug") {
                 debug!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
-            } else if let Some(msg) = json_obj.get("Trace") {
+            } else if let Some(msg) = json_obj.get("trace") {
                 trace!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
                 trace!("PID {process_id}: {trace_line}");
                 return trace_line;
-            };
+            }
         } else {
             // the line is not a valid json - return it as filtered stderr_line
             trace!("PID {process_id}: {}", trace_line);
             return trace_line;
         }
-    };
+    }
 
     ""
 }
@@ -906,6 +943,8 @@ struct Trace {
     level: TraceLevel,
     fields: Fields,
     target: Option<String>,
+    // `tracing` crate uses snake_case, but we can allow for camelCase to be consistent with JSON
+    #[serde(alias = "lineNumber")]
     line_number: Option<u32>,
     #[serde(rename = "span")]
     _span: Option<HashMap<String, Value>>,

@@ -3,6 +3,7 @@
 
 use crate::args::{DscType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
+use dsc_lib::configure::config_result::ResourceTestResult;
 use dsc_lib::{
     configure::{
         config_doc::Configuration,
@@ -54,6 +55,7 @@ pub const EXIT_INVALID_INPUT: i32 = 4;
 pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
 pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
+pub const EXIT_DSC_ASSERTION_FAILED: i32 = 8;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
@@ -127,37 +129,6 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 
     let result = serde_json::to_string(&v)?;
     Ok(result)
-}
-
-/// Add the type property value to the JSON.
-///
-/// # Arguments
-///
-/// * `json` - The JSON to add the type property to
-/// * `type_name` - The type name to add
-///
-/// # Returns
-///
-/// * `String` - The JSON with the type property added
-#[must_use]
-pub fn add_type_name_to_json(json: String, type_name: String) -> String
-{
-    let mut map:HashMap<String,String> = HashMap::new();
-    map.insert(String::from("adapted_dsc_type"), type_name);
-
-    let mut j = json;
-    if j.is_empty()
-    {
-        j = String::from("{}");
-    }
-
-    match add_fields_to_json(&j, &map) {
-        Ok(json) => json,
-        Err(err) => {
-            error!("JSON: {err}");
-            exit(EXIT_JSON_ERROR);
-        }
-    }
 }
 
 /// Get the JSON schema for requested type.
@@ -359,11 +330,11 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     if !policy_is_used {
         if let Some(v) = trace_level_arg {
             tracing_setting.level = v.clone();
-        };
+        }
         if let Some(v) = trace_format_arg {
             tracing_setting.format = v.clone();
-        };
-    };
+        }
+    }
 
     // convert to 'tracing' crate type
     let tracing_level = match tracing_setting.level {
@@ -450,7 +421,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
 
     if let Err(err) = compiled_schema.validate(json) {
         return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed"))));
-    };
+    }
 
     Ok(())
 }
@@ -560,4 +531,31 @@ pub fn set_dscconfigroot(config_path: &str) -> String
     env::set_var(DSC_CONFIG_ROOT, config_root_path);
 
     full_path.to_string_lossy().into_owned()
+}
+
+
+/// Check if the test result is in the desired state.
+/// 
+/// # Arguments
+/// 
+/// * `test_result` - The test result to check
+/// 
+/// # Returns
+/// 
+/// * `bool` - True if the test result is in the desired state, false otherwise
+#[must_use]
+pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
+    match &test_result.result {
+        TestResult::Resource(result) => {
+            result.in_desired_state
+        },
+        TestResult::Group(results) => {
+            for result in results {
+                if !in_desired_state(result) {
+                    return false;
+                }
+            }
+            true
+        }
+    }
 }
