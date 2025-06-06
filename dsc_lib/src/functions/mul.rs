@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -24,11 +25,11 @@ impl Function for Mul {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        debug!("mul function");
+        debug!("{}", t!("functions.mul.invoked"));
         if let (Some(arg1), Some(arg2)) = (args[0].as_i64(), args[1].as_i64()) {
             Ok(Value::Number((arg1 * arg2).into()))
         } else {
-            Err(DscError::Parser("Invalid argument(s)".to_string()))
+            Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
         }
     }
 }

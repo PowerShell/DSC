@@ -21,7 +21,7 @@ Describe 'Invoke a resource test directly' {
         $out.inDesiredState | Should -Be $true
     }
 
-    It 'test returns proper error code if no input is provded' {
+    It 'test returns proper error code if no input is provided' {
         $out = dsc resource test -r Microsoft/OSInfo 2>&1
         $LASTEXITCODE | Should -Be 1
         $out | Should -BeLike '*ERROR*'

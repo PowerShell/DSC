@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use registry::{Data, Hive, RegKey, Security, key, value};
+use rust_i18n::t;
 use utfx::{U16CString, UCString};
 use crate::config::{Metadata, Registry, RegistryValueData};
 use crate::error::RegistryError;
@@ -99,7 +100,7 @@ impl RegistryHelper {
                     };
 
                     if self.what_if {
-                        what_if_metadata.push(format!("key: {subkey} not found, would create it"));
+                        what_if_metadata.push(t!("registry_helper.whatIfCreateKey", "subkey" => subkey).to_string());
                     }
                     else {
                         reg_key = reg_key.create(path, Security::CreateSubKey)?;
@@ -185,7 +186,7 @@ impl RegistryHelper {
             Ok(reg_key) => reg_key,
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
-                eprintln!("Key already does not exist");
+                eprintln!("{}", t!("registry_helper.removeErrorKeyNotExist"));
                 return Ok(());
             },
             Err(e) => return Err(e),
@@ -200,7 +201,8 @@ impl RegistryHelper {
 
             // get the subkey name
             let subkey_name = &self.config.key_path[parent_path.len() + 1..];
-            eprintln!("Deleting subkey '{subkey_name}' using {parent_reg_key}");
+
+            eprintln!("{}", t!("registry_helper.removeDeletingSubKey", name = subkey_name, parent = parent_reg_key));
             let Ok(subkey_name) = UCString::<u16>::from_str(subkey_name) else {
                 return Err(RegistryError::Utf16Conversion("subkey_name".to_string()));
             };

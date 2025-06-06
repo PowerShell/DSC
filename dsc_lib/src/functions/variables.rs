@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -24,15 +25,15 @@ impl Function for Variables {
     }
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
-        debug!("variables function");
+        debug!("{}", t!("functions.variables.invoked"));
         if let Some(key) = args[0].as_str() {
             if context.variables.contains_key(key) {
                 Ok(context.variables[key].clone())
             } else {
-                Err(DscError::Parser(format!("Variable '{key}' does not exist or has not been initialized yet")))
+                Err(DscError::Parser(t!("functions.variables.keyNotFound", key = key).to_string()))
             }
         } else {
-            Err(DscError::Parser("Invalid argument".to_string()))
+            Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
         }
     }
 }

@@ -38,6 +38,7 @@ $filesForWindowsPackage = @(
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
     'NOTICE.txt',
     'osinfo.exe',
     'osinfo.dsc.resource.json',
@@ -66,6 +67,7 @@ $filesForLinuxPackage = @(
     'apt.dsc.resource.json',
     'apt.dsc.resource.sh',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
@@ -85,6 +87,7 @@ $filesForMacPackage = @(
     'brew.dsc.resource.json',
     'brew.dsc.resource.sh',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
@@ -530,7 +533,12 @@ if ($packageType -eq 'msixbundle') {
             $productName += "-Preview"
         }
         # save preview number
-        $previewNumber = $productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1'
+        $previewNumber = [int]($productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1' | Out-String)
+        $productLabel = $productVersion.Split('-')[1]
+        if ($productLabel.StartsWith('rc')) {
+            # if RC, we increment by 100 to ensure it's newer than the last preview
+            $previewNumber += 100
+        }
         # remove label from version
         $productVersion = $productVersion.Split('-')[0]
         # replace revision number with preview number

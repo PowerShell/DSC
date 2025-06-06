@@ -74,7 +74,7 @@ Describe 'tracing tests' {
         param($level)
 
         $configYaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: trace
               type: Test/Trace
@@ -83,7 +83,7 @@ Describe 'tracing tests' {
 "@
 
         $out = (dsc -l $level config get -i $configYaml 2> $null) | ConvertFrom-Json
-        $out.results[0].result.actualState.level | Should -BeExactly $level
+        $out.results[0].result.actualState.level | Should -BeExactly $level -Because ($out | Out-String)
     }
 
     It 'Pass-through tracing should only emit JSON for child processes' {

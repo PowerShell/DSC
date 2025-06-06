@@ -3,6 +3,7 @@
 
 use clap::ValueEnum;
 use jsonschema::Validator;
+use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, env, process::Stdio};
@@ -25,7 +26,7 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 0x102;
 ///
 /// Error returned if the resource does not successfully get the current state
 pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Result<GetResult, DscError> {
-    debug!("Invoking get for '{}'", &resource.resource_type);
+    debug!("{}", t!("dscresources.commandResource.invokeGet", resource = &resource.resource_type));
     let mut command_input = CommandInput { env: None, stdin: None };
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
@@ -36,21 +37,21 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
         command_input = get_command_input(get.input.as_ref(), filter)?;
     }
 
-    info!("Invoking get '{}' using '{}'", &resource.resource_type, &get.executable);
+    info!("{}", t!("dscresources.commandResource.invokeGetUsing", resource = &resource.resource_type, executable = &get.executable));
     let (_exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     if resource.kind == Some(Kind::Resource) {
-        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &get.executable);
+        debug!("{}", t!("dscresources.commandResource.verifyOutputUsing", resource = &resource.resource_type, executable = &get.executable));
         verify_json(resource, cwd, &stdout)?;
     }
 
     let result: GetResult = if let Ok(group_response) = serde_json::from_str::<Vec<ResourceGetResult>>(&stdout) {
-        trace!("Group get response: {:?}", &group_response);
+        trace!("{}", t!("dscresources.commandResource.groupGetResponse", response = &group_response : {:?}));
         GetResult::Group(group_response)
     } else {
         let result: Value = match serde_json::from_str(&stdout) {
             Ok(r) => {r},
             Err(err) => {
-                return Err(DscError::Operation(format!("Failed to parse JSON from get {}|{}|{} -> {err}", &get.executable, stdout, stderr)))
+                return Err(DscError::Operation(t!("dscresources.commandResource.failedParseJson", executable = &get.executable, stdout = stdout, stderr = stderr, err = err).to_string()))
             }
         };
         GetResult::Resource(ResourceGetResponse{
@@ -74,7 +75,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
 /// Error returned if the resource does not successfully set the desired state
 #[allow(clippy::too_many_lines)]
 pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
-    debug!("Invoking set for '{}'", &resource.resource_type);
+    debug!("{}", t!("dscresources.commandResource.invokeSet", resource = &resource.resource_type));
     let operation_type: String;
     let mut is_synthetic_what_if = false;
     let set_method = match execution_type {
@@ -99,7 +100,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     // if resource doesn't implement a pre-test, we execute test first to see if a set is needed
     if !skip_test && set.pre_test != Some(true) {
-        info!("No pretest, invoking test {}", &resource.resource_type);
+        info!("{}", t!("dscresources.commandResource.noPretest", resource = &resource.resource_type));
         let test_result = invoke_test(resource, cwd, desired)?;
         if is_synthetic_what_if {
             return Ok(test_result.into());
@@ -128,7 +129,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     }
 
     if is_synthetic_what_if {
-        return Err(DscError::NotImplemented("cannot process what-if execution type, as resource implements pre-test and does not support what-if".to_string()));
+        return Err(DscError::NotImplemented(t!("dscresources.commandResource.syntheticWhatIf").to_string()));
     }
 
     let Some(get) = &resource.get else {
@@ -137,11 +138,11 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     let args = process_args(get.args.as_ref(), desired);
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
-    info!("Getting current state for set by invoking get '{}' using '{}'", &resource.resource_type, &get.executable);
+    info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &resource.resource_type, executable = &get.executable));
     let (exit_code, stdout, stderr) = invoke_command(&get.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     if resource.kind == Some(Kind::Resource) {
-        debug!("Verifying output of get '{}' using '{}'", &resource.resource_type, &get.executable);
+        debug!("{}", t!("dscresources.commandResource.setVerifyGet", resource = &resource.resource_type, executable = &get.executable));
         verify_json(resource, cwd, &stdout)?;
     }
 
@@ -174,14 +175,14 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         Some(ReturnKind::State) => {
 
             if resource.kind == Some(Kind::Resource) {
-                debug!("Verifying output of {} '{}' using '{}'", operation_type, &resource.resource_type, &set.executable);
+                debug!("{}", t!("dscresources.commandResource.setVerifyOutput", operation = operation_type, resource = &resource.resource_type, executable = &set.executable));
                 verify_json(resource, cwd, &stdout)?;
             }
 
             let actual_value: Value = match serde_json::from_str(&stdout){
                 Result::Ok(r) => {r},
                 Result::Err(err) => {
-                    return Err(DscError::Operation(format!("Failed to parse json from {} '{}'|'{}'|'{}' -> {err}", operation_type, &set.executable, stdout, stderr)))
+                    return Err(DscError::Operation(t!("dscresources.commandResource.failedParseJson", executable = &get.executable, stdout = stdout, stderr = stderr, err = err).to_string()))
                 }
             };
 
@@ -197,12 +198,12 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
             let mut lines = stdout.lines();
             let Some(actual_line) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "Command did not return expected actual output".to_string()));
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.setUnexpectedOutput").to_string()));
             };
             let actual_value: Value = serde_json::from_str(actual_line)?;
             // TODO: need schema for diff_properties to validate against
             let Some(diff_line) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "Command did not return expected diff output".to_string()));
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.setUnexpectedDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_line)?;
             Ok(SetResult::Resource(ResourceSetResponse {
@@ -248,9 +249,9 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Result<TestResult, DscError> {
-    debug!("Invoking test for '{}'", &resource.resource_type);
+    debug!("{}", t!("dscresources.commandResource.invokeTest", resource = &resource.resource_type));
     let Some(test) = &resource.test else {
-        info!("Resource '{}' does not implement test, performing synthetic test", &resource.resource_type);
+        info!("{}", t!("dscresources.commandResource.testSyntheticTest", resource = &resource.resource_type));
         return invoke_synthetic_test(resource, cwd, expected);
     };
 
@@ -259,16 +260,16 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
     let args = process_args(test.args.as_ref(), expected);
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
-    info!("Invoking test '{}' using '{}'", &resource.resource_type, &test.executable);
+    info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.resource_type, executable = &test.executable));
     let (exit_code, stdout, stderr) = invoke_command(&test.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     if resource.kind == Some(Kind::Resource) {
-        debug!("Verifying output of test '{}' using '{}'", &resource.resource_type, &test.executable);
+        debug!("{}", t!("dscresources.commandResource.testVerifyOutput", resource = &resource.resource_type, executable = &test.executable));
         verify_json(resource, cwd, &stdout)?;
     }
 
     if resource.kind == Some(Kind::Importer) {
-        debug!("Import resource kind, returning group test response");
+        debug!("{}", t!("dscresources.commandResource.testGroupTestResponse"));
         let group_test_response: Vec<ResourceTestResult> = serde_json::from_str(&stdout)?;
         return Ok(TestResult::Group(group_test_response));
     }
@@ -279,7 +280,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             let actual_value: Value = match serde_json::from_str(&stdout){
                 Result::Ok(r) => {r},
                 Result::Err(err) => {
-                    return Err(DscError::Operation(format!("Failed to parse json from test {}|{}|{} -> {err}", &test.executable, stdout, stderr)))
+                    return Err(DscError::Operation(t!("dscresources.commandResource.failedParseJson", executable = &test.executable, stdout = stdout, stderr = stderr, err = err).to_string()))
                 }
             };
             let diff_properties = get_diff(&expected_value, &actual_value);
@@ -294,11 +295,11 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             // command should be returning actual state as a JSON line and a list of properties that differ as separate JSON line
             let mut lines = stdout.lines();
             let Some(actual_value) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "No actual state returned".to_string()));
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoActualState").to_string()));
             };
             let actual_value: Value = serde_json::from_str(actual_value)?;
             let Some(diff_properties) = lines.next() else {
-                return Err(DscError::Command(resource.resource_type.clone(), exit_code, "No diff properties returned".to_string()));
+                return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
             Ok(TestResult::Resource(ResourceTestResponse {
@@ -379,7 +380,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
     let args = process_args(delete.args.as_ref(), filter);
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
-    info!("Invoking delete '{}' using '{}'", &resource.resource_type, &delete.executable);
+    info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = &resource.resource_type, executable = &delete.executable));
     let (_exit_code, _stdout, _stderr) = invoke_command(&delete.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
 
     Ok(())
@@ -401,7 +402,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
 pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> Result<ValidateResult, DscError> {
-    trace!("Invoking validate '{}' using: {}", &resource.resource_type, &config);
+    trace!("{}", t!("dscresources.commandResource.invokeValidateConfig", resource = &resource.resource_type, config = &config));
     // TODO: use schema to validate config if validate is not implemented
     let Some(validate) = resource.validate.as_ref() else {
         return Err(DscError::NotImplemented("validate".to_string()));
@@ -410,7 +411,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
     let args = process_args(validate.args.as_ref(), config);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
-    info!("Invoking validate '{}' using '{}'", &resource.resource_type, &validate.executable);
+    info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &resource.resource_type, executable = &validate.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&validate.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     let result: ValidateResult = serde_json::from_str(&stdout)?;
     Ok(result)
@@ -459,7 +460,7 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 /// Error returned if the resource does not successfully export the current state
 pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>) -> Result<ExportResult, DscError> {
     let Some(export) = resource.export.as_ref() else {
-        return Err(DscError::Operation(format!("Export is not supported by resource {}", &resource.resource_type)))
+        return Err(DscError::Operation(t!("dscresources.commandResource.exportNotSupported", resource = &resource.resource_type).to_string()))
     };
 
     let mut command_input: CommandInput = CommandInput { env: None, stdin: None };
@@ -483,11 +484,11 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
         let instance: Value = match serde_json::from_str(line){
             Result::Ok(r) => {r},
             Result::Err(err) => {
-                return Err(DscError::Operation(format!("Failed to parse json from export {}|{}|{} -> {err}", &export.executable, stdout, stderr)))
+                return Err(DscError::Operation(t!("dscresources.commandResource.failedParseJson", executable = &export.executable, stdout = stdout, stderr = stderr, err = err).to_string()))
             }
         };
         if resource.kind == Some(Kind::Resource) {
-            debug!("Verifying output of export '{}' using '{}'", &resource.resource_type, &export.executable);
+            debug!("{}", t!("dscresources.commandResource.exportVerifyOutput", resource = &resource.resource_type, executable = &export.executable));
             verify_json(resource, cwd, line)?;
         }
         instances.push(instance);
@@ -515,13 +516,13 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
 /// Error returned if the resource does not successfully resolve the input
 pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Result<ResolveResult, DscError> {
     let Some(resolve) = &resource.resolve else {
-        return Err(DscError::Operation(format!("Resolve is not supported by resource {}", &resource.resource_type)));
+        return Err(DscError::Operation(t!("dscresources.commandResource.resolveNotSupported", resource = &resource.resource_type).to_string()));
     };
 
     let args = process_args(resolve.args.as_ref(), input);
     let command_input = get_command_input(resolve.input.as_ref(), input)?;
 
-    info!("Invoking resolve '{}' using '{}'", &resource.resource_type, &resolve.executable);
+    info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.resource_type, executable = &resolve.executable));
     let (_exit_code, stdout, _stderr) = invoke_command(&resolve.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
     let result: ResolveResult = serde_json::from_str(&stdout)?;
     Ok(result)
@@ -575,20 +576,28 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
         }
     };
 
-    let stdout = child.stdout.take().expect("child did not have a handle to stdout");
-    let stderr = child.stderr.take().expect("child did not have a handle to stderr");
+    let Some(stdout) = child.stdout.take() else {
+        return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStdout").to_string(), executable.to_string()));
+    };
+    let Some(stderr) = child.stderr.take() else {
+        return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStderr").to_string(), executable.to_string()));
+    };
     let mut stdout_reader = BufReader::new(stdout).lines();
     let mut stderr_reader = BufReader::new(stderr).lines();
 
     if let Some(input) = input {
         trace!("Writing to command STDIN: {input}");
-        let mut stdin = child.stdin.take().expect("child did not have a handle to stdin");
-        stdin.write_all(input.as_bytes()).await.expect("could not write to stdin");
+        let Some(mut stdin) = child.stdin.take() else {
+            return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildStdin").to_string(), executable.to_string()));
+        };
+        if stdin.write_all(input.as_bytes()).await.is_err() {
+            return Err(DscError::CommandOperation(t!("dscresources.commandResource.processWriteStdin").to_string(), executable.to_string()));
+        }
         drop(stdin);
     }
 
     let Some(child_id) = child.id() else {
-        return Err(DscError::CommandOperation("Can't get child process id".to_string(), executable.to_string()));
+        return Err(DscError::CommandOperation(t!("dscresources.commandResource.processChildId").to_string(), executable.to_string()));
     };
 
     let child_task = tokio::spawn(async move {
@@ -621,7 +630,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     let stderr_result = stderr_task.await.unwrap();
 
     if let Some(code) = exit_code {
-        debug!("Process '{executable}' id {child_id} exited with code {code}");
+        debug!("{}", t!("dscresources.commandResource.processChildExit", executable = executable, id = child_id, code = code));
 
         if code != 0 {
             if let Some(exit_codes) = exit_codes {
@@ -634,8 +643,8 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 
         Ok((code, stdout_result, stderr_result))
     } else {
-        debug!("Process '{executable}' id {child_id} terminated by signal");
-        Err(DscError::CommandOperation("Process terminated by signal".to_string(), executable.to_string()))
+        debug!("{}", t!("dscresources.commandResource.processChildTerminated", executable = executable, id = child_id));
+        Err(DscError::CommandOperation(t!("dscresources.commandResource.processTerminated").to_string(), executable.to_string()))
     }
 }
 
@@ -660,7 +669,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 ///
 #[allow(clippy::implicit_hasher)]
 pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
-    debug!("Invoking command '{}' with args {:?}", executable, args);
+    debug!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
 
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -671,7 +680,7 @@ pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option
 
 fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
-        debug!("No args to process");
+        debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
     };
 
@@ -705,15 +714,15 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
     let mut stdin: Option<String> = None;
     match input_kind {
         Some(InputKind::Env) => {
-            debug!("Parsing input as environment variables");
+            debug!("{}", t!("dscresources.commandResource.parseAsEnvVars"));
             env = Some(json_to_hashmap(input)?);
         },
         Some(InputKind::Stdin) => {
-            debug!("Parsing input as stdin");
+            debug!("{}", t!("dscresources.commandResource.parseAsStdin"));
             stdin = Some(input.to_string());
         },
         None => {
-            debug!("No input kind specified");
+            debug!("{}", t!("dscresources.commandResource.noInput"));
             // leave input as none
         },
     }
@@ -726,17 +735,17 @@ fn get_command_input(input_kind: Option<&InputKind>, input: &str) -> Result<Comm
 
 fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(), DscError> {
 
-    debug!("Verify JSON for '{}'", resource.resource_type);
+    debug!("{}", t!("dscresources.commandResource.verifyJson", resource = resource.resource_type));
 
     // see if resource implements validate
     if resource.validate.is_some() {
-        trace!("Validating against JSON: {json}");
+        trace!("{}", t!("dscresources.commandResource.validateJson", json = json));
         let result = invoke_validate(resource, cwd, json)?;
         if result.valid {
             return Ok(());
         }
 
-        return Err(DscError::Validation("Resource reported input JSON is not valid".to_string()));
+        return Err(DscError::Validation(t!("dscresources.commandResource.resourceInvalidJson").to_string()));
     }
 
     // otherwise, use schema validation
@@ -750,12 +759,7 @@ fn verify_json(resource: &ResourceManifest, cwd: &str, json: &str) -> Result<(),
     };
     let json: Value = serde_json::from_str(json)?;
     if let Err(err) = compiled_schema.validate(&json) {
-        let mut error = String::new();
-        for e in err {
-            error.push_str(&format!("{e} "));
-        }
-
-        return Err(DscError::Schema(error));
+        return Err(DscError::Schema(err.to_string()));
     }
 
     Ok(())
@@ -788,7 +792,7 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
                                 array.push(n.to_string());
                             },
                             _ => {
-                                return Err(DscError::Operation(format!("Unsupported array value for key {key}.  Only string and number is supported.")));
+                                return Err(DscError::Operation(t!("dscresources.commandResource.invalidArrayKey", key = key).to_string()));
                             },
                         }
                     }
@@ -798,7 +802,7 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
                     continue;
                 }
                 Value::Object(_) => {
-                    return Err(DscError::Operation(format!("Unsupported value for key {key}.  Only string, bool, number, and array is supported.")));
+                    return Err(DscError::Operation(t!("dscresources.commandResource.invalidKey", key = key).to_string()));
                 },
             }
         }

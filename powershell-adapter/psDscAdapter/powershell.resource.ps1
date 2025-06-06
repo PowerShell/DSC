@@ -18,7 +18,7 @@ function Write-DscTrace {
         [string]$Message
     )
 
-    $trace = @{$Operation = $Message } | ConvertTo-Json -Compress
+    $trace = @{$Operation.ToLower() = $Message } | ConvertTo-Json -Compress
     $host.ui.WriteErrorLine($trace)
 }
 
@@ -47,7 +47,7 @@ if ($Operation -eq 'ClearCache') {
 
 if ('Validate' -ne $Operation) {
     # write $jsonInput to STDERR for debugging
-    $trace = @{'Debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
+    $trace = @{'debug' = 'jsonInput=' + $jsonInput } | ConvertTo-Json -Compress
     $host.ui.WriteErrorLine($trace)
 
     # load private functions of psDscAdapter stub module
@@ -92,7 +92,7 @@ switch ($Operation) {
                     $capabilities = $module.PrivateData.PSData.DscCapabilities
                 }
                 else {
-                    $capabilities = @('Get', 'Set', 'Test')
+                    $capabilities = @('get', 'set', 'test')
                 }
             }
 
@@ -119,7 +119,7 @@ switch ($Operation) {
             # OUTPUT dsc is expecting the following properties
             [resourceOutput]@{
                 type           = $dscResource.Type
-                kind           = 'Resource'
+                kind           = 'resource'
                 version        = [string]$DscResourceInfo.version
                 capabilities   = $capabilities
                 path           = $DscResourceInfo.Path
@@ -135,7 +135,7 @@ switch ($Operation) {
     { @('Get','Set','Test','Export') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
-            $trace = @{'Debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
+            $trace = @{'debug' = 'ERROR: Failed to create configuration object from provided input JSON.' } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
             exit 1
         }
@@ -143,23 +143,30 @@ switch ($Operation) {
         # only need to cache the resources that are used
         $dscResourceModules = $desiredState | ForEach-Object { $_.Type.Split('/')[0] }
         if ($null -eq $dscResourceModules) {
-            $trace = @{'Debug' = 'ERROR: Could not get list of DSC resource types from provided JSON.' } | ConvertTo-Json -Compress
+            $trace = @{'debug' = 'ERROR: Could not get list of DSC resource types from provided JSON.' } | ConvertTo-Json -Compress
             $host.ui.WriteErrorLine($trace)
             exit 1
         }
 
+        # get unique module names from the desiredState input
+        $moduleInput = $desiredState | Select-Object -ExpandProperty Type | Sort-Object -Unique
+
+        # refresh the cache with the modules that are available on the system
         $dscResourceCache = Invoke-DscCacheRefresh -module $dscResourceModules
-        if ($dscResourceCache.count -lt $dscResourceModules.count) {
-            $trace = @{'Debug' = 'ERROR: DSC resource module not found.' } | ConvertTo-Json -Compress
-            $host.ui.WriteErrorLine($trace)
-            exit 1
+
+        # check if all the desired modules are in the cache
+        $moduleInput | ForEach-Object {
+            if ($dscResourceCache.type -notcontains $_) {
+                ('DSC resource {0} module not found.' -f $_) | Write-DscTrace -Operation Error
+                exit 1
+            }
         }
 
         foreach ($ds in $desiredState) {
             # process the INPUT (desiredState) for each resource as dscresourceInfo and return the OUTPUT as actualState
             $actualState = $psDscAdapter.invoke( { param($op, $ds, $dscResourceCache) Invoke-DscOperation -Operation $op -DesiredState $ds -dscResourceCache $dscResourceCache }, $Operation, $ds, $dscResourceCache)
             if ($null -eq $actualState) {
-                $trace = @{'Debug' = 'ERROR: Incomplete GET for resource ' + $ds.Name } | ConvertTo-Json -Compress
+                $trace = @{'debug' = 'ERROR: Incomplete GET for resource ' + $ds.Name } | ConvertTo-Json -Compress
                 $host.ui.WriteErrorLine($trace)
                 exit 1
             }
@@ -168,7 +175,7 @@ switch ($Operation) {
     
         # OUTPUT json to stderr for debug, and to stdout
         $result = @{ result = $result } | ConvertTo-Json -Depth 10 -Compress
-        $trace = @{'Debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
+        $trace = @{'debug' = 'jsonOutput=' + $result } | ConvertTo-Json -Compress
         $host.ui.WriteErrorLine($trace)
         return $result
     }

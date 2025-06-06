@@ -1,6 +1,6 @@
 host:             https://raw.githubusercontent.com
 prefix:           PowerShell/DSC/main/schemas
-version:          2024/04
+version:          v3.0
 docs_base_url:    https://learn.microsoft.com/powershell/dsc
 docs_version_pin: view=dsc-3.0&preserve-view=true
 bundle_schemas:

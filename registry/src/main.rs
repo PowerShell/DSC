@@ -6,6 +6,10 @@ use crossterm::event;
 #[cfg(debug_assertions)]
 use std::env;
 
+// Init translations
+use rust_i18n::t;
+rust_i18n::i18n!("locales", fallback = "en-us");
+
 use args::Arguments;
 use clap::Parser;
 use registry_helper::RegistryHelper;
@@ -135,19 +139,20 @@ pub fn enable_tracing() {
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 
     if tracing::subscriber::set_global_default(subscriber).is_err() {
-        eprintln!("Unable to set global default tracing subscriber.  Tracing is diabled.");
+        eprintln!("{}", t!("main.tracingInitError"));
     }
 }
 
 #[cfg(debug_assertions)]
 fn check_debug() {
     if env::var("DEBUG_REGISTRY").is_ok() {
-        eprintln!("attach debugger to pid {} and press any key to continue", std::process::id());
+        eprintln!("{}", t!("main.debugAttach", pid = std::process::id()));
+
         loop {
             let event = match event::read() {
                 Ok(event) => event,
                 Err(err) => {
-                    eprintln!("Error: Failed to read event: {err}");
+                    eprintln!("{}", t!("main.debugEventReadError", "err" => err));
                     break;
                 }
             };
@@ -157,7 +162,7 @@ fn check_debug() {
                     break;
                 }
             } else {
-                eprintln!("Unexpected event: {event:?}");
+                eprintln!("{}", t!("main.debugEventUnexpectedError", e = event : {:?}));
                 continue;
             }
         }

@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -24,7 +25,7 @@ impl Function for Concat {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        debug!("concat function");
+        debug!("{}", t!("functions.concat.invoked"));
         let mut string_result = String::new();
         let mut array_result: Vec<String> = Vec::new();
         let mut input_type : Option<AcceptedArgKind> = None;
@@ -33,7 +34,7 @@ impl Function for Concat {
                 if input_type.is_none() {
                     input_type = Some(AcceptedArgKind::String);
                 } else if input_type != Some(AcceptedArgKind::String) {
-                    return Err(DscError::Parser("Arguments must all be strings".to_string()));
+                    return Err(DscError::Parser(t!("functions.concat.argsMustBeStrings").to_string()));
                 }
 
                 string_result.push_str(value.as_str().unwrap_or_default());
@@ -41,7 +42,7 @@ impl Function for Concat {
                 if input_type.is_none() {
                     input_type = Some(AcceptedArgKind::Array);
                 } else if input_type != Some(AcceptedArgKind::Array) {
-                    return Err(DscError::Parser("Arguments must all be arrays".to_string()));
+                    return Err(DscError::Parser(t!("functions.concat.argsMustBeArrays").to_string()));
                 }
 
                 if let Some(array) = value.as_array() {
@@ -53,12 +54,12 @@ impl Function for Concat {
                                 array_result.push(String::new());
                             }
                         } else {
-                            return Err(DscError::Parser("Only arrays of strings are valid".to_string()));
+                            return Err(DscError::Parser(t!("functions.concat.onlyArraysOfStrings").to_string()));
                         }
                     }
                 }
             } else {
-                return Err(DscError::Parser("Invalid argument type".to_string()));
+                return Err(DscError::Parser(t!("functions.invalidArgType").to_string()));
             }
         }
 
@@ -70,7 +71,7 @@ impl Function for Concat {
                 Ok(Value::Array(array_result.into_iter().map(Value::String).collect()))
             },
             _ => {
-                Err(DscError::Parser("Invalid argument type".to_string()))
+                Err(DscError::Parser(t!("functions.invalidArgType").to_string()))
             }
         }
     }

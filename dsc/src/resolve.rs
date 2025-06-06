@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use dsc_lib::configure::config_doc::Configuration;
 use dsc_lib::util::parse_input_to_json;
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -14,14 +13,30 @@ use tracing::{debug, info};
 use crate::util::DSC_CONFIG_ROOT;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct Include {
+pub enum IncludeKind {
     /// The path to the file to include.  Path is relative to the file containing the include
     /// and not allowed to reference parent directories.  If a configuration document is used
     /// instead of a file, then the path is relative to the current working directory.
     #[serde(rename = "configurationFile")]
-    pub configuration_file: String,
+    ConfigurationFile(String),
+    #[serde(rename = "configurationContent")]
+    ConfigurationContent(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum IncludeParametersKind {
     #[serde(rename = "parametersFile")]
-    pub parameters_file: Option<String>,
+    ParametersFile(String),
+    #[serde(rename = "parametersContent")]
+    ParametersContent(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct Include {
+    #[serde(flatten)]
+    pub configuration: IncludeKind,
+    #[serde(flatten)]
+    pub parameters: Option<IncludeParametersKind>,
 }
 
 /// Read the file specified in the Include input and return the content as a JSON string.
@@ -51,74 +66,83 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
         }
     };
 
-    let include_path = normalize_path(Path::new(&include.configuration_file))?;
+    let config_json = match include.configuration {
+        IncludeKind::ConfigurationFile(file_path) => {
+            let include_path = normalize_path(Path::new(&file_path))?;
 
-    // read the file specified in the Include input
-    let mut buffer: Vec<u8> = Vec::new();
-    match File::open(&include_path) {
-        Ok(mut file) => {
-            match file.read_to_end(&mut buffer) {
-                Ok(_) => (),
+            // read the file specified in the Include input
+            let mut buffer: Vec<u8> = Vec::new();
+            match File::open(&include_path) {
+                Ok(mut file) => {
+                    match file.read_to_end(&mut buffer) {
+                        Ok(_) => (),
+                        Err(err) => {
+                            return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToReadFile")));
+                        }
+                    }
+                },
                 Err(err) => {
-                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToReadFile")));
+                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToOpenFile")));
                 }
             }
-        },
-        Err(err) => {
-            return Err(format!("{} '{include_path:?}': {err}", t!("resolve.failedToOpenFile")));
-        }
-    }
-    // convert the buffer to a string
-    let include_content = match String::from_utf8(buffer) {
-        Ok(input) => input,
-        Err(err) => {
-            return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFileContent")));
-        }
-    };
+            // convert the buffer to a string
+            let include_content = match String::from_utf8(buffer) {
+                Ok(input) => input,
+                Err(err) => {
+                    return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFileContent")));
+                }
+            };
 
-    // try to deserialize the Include content as YAML first
-    let configuration: Configuration = match serde_yaml::from_str(&include_content) {
-        Ok(configuration) => configuration,
-        Err(_err) => {
-            // if that fails, try to deserialize it as JSON
-            match serde_json::from_str(&include_content) {
-                Ok(configuration) => configuration,
+            match parse_input_to_json(&include_content) {
+                Ok(json) => json,
                 Err(err) => {
                     return Err(format!("{} '{include_path:?}': {err}", t!("resolve.invalidFile")));
                 }
             }
-        }
-    };
-
-    // serialize the Configuration as JSON
-    let config_json = match serde_json::to_string(&configuration) {
-        Ok(json) => json,
-        Err(err) => {
-            return Err(format!("JSON: {err}"));
-        }
-    };
-
-    let parameters = if let Some(parameters_file) = include.parameters_file {
-        // combine the path with DSC_CONFIG_ROOT
-        let parameters_file = normalize_path(Path::new(&parameters_file))?;
-        info!("{} '{parameters_file:?}'", t!("resolve.resolvingParameters"));
-        match std::fs::read_to_string(&parameters_file) {
-            Ok(parameters) => {
-                let parameters_json = match parse_input_to_json(&parameters) {
-                    Ok(json) => json,
-                    Err(err) => {
-                        return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.failedParseParametersFile")));
-                    }
-                };
-                Some(parameters_json)
-            },
-            Err(err) => {
-                return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.failedResolveParametersFile")));
+        },
+        IncludeKind::ConfigurationContent(text) => {
+            match parse_input_to_json(&text) {
+                Ok(json) => json,
+                Err(err) => {
+                    return Err(format!("{}: {err}", t!("resolve.invalidFile")));
+                }
             }
         }
-    } else {
-        debug!("{}", t!("resolve.noParametersFile"));
-        None
+    };
+
+    let parameters = match include.parameters {
+        Some(IncludeParametersKind::ParametersFile(file_path)) => {
+            // combine the path with DSC_CONFIG_ROOT
+            let parameters_file = normalize_path(Path::new(&file_path))?;
+            info!("{} '{parameters_file:?}'", t!("resolve.resolvingParameters"));
+            match std::fs::read_to_string(&parameters_file) {
+                Ok(parameters) => {
+                    let parameters_json = match parse_input_to_json(&parameters) {
+                        Ok(json) => json,
+                        Err(err) => {
+                            return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.failedParseParametersFile")));
+                        }
+                    };
+                    Some(parameters_json)
+                },
+                Err(err) => {
+                    return Err(format!("{} '{parameters_file:?}': {err}", t!("resolve.couldNotReadParametersFile")));
+                }
+            }
+        },
+        Some(IncludeParametersKind::ParametersContent(text)) => {
+            let parameters_json = match parse_input_to_json(&text) {
+                Ok(json) => json,
+                Err(err) => {
+                    return Err(format!("{}: {err}", t!("resolve.failedParseParametersFile")));
+                }
+            };
+            Some(parameters_json)
+        },
+        None => {
+            debug!("{}", t!("resolve.noParameters"));
+            None
+        }
     };
 
     Ok((parameters, config_json))

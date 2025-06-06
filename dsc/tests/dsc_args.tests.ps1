@@ -5,7 +5,7 @@ Describe 'config argument tests' {
     BeforeAll {
         $manifest = @'
         {
-            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Test/Hello",
             "version": "0.1.0",
             "get": {
@@ -91,6 +91,16 @@ actualState:
         $out.Trim() | Should -BeExactly $expected
     }
 
+    It 'YAML output includes object separator' {
+        $out = dsc resource list -o yaml | Out-String
+        foreach ($obj in $out.Split('---')) {
+            $resource = $obj | y2j | ConvertFrom-Json
+            $resource | Should -Not -BeNullOrEmpty
+            $resource.Type | Should -BeLike '*/*'
+            $resource.Kind | Should -BeIn ('resource', 'group', 'importer', 'adapter')
+        }
+    }
+
     It 'can generate PowerShell completer' {
         $out = dsc completer powershell | Out-String
         Invoke-Expression $out
@@ -107,7 +117,7 @@ actualState:
         param($parameter)
 
         $yaml = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: os
   type: Microsoft/OSInfo
@@ -127,7 +137,7 @@ resources:
         param($parameter)
 
         $yaml = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: os
   type: Microsoft/OSInfo
@@ -232,7 +242,7 @@ resources:
         $a = dsc resource list '*' -a Test* -o json | ConvertFrom-Json
         foreach ($r in $a) {
             $r.requireAdapter.StartsWith("Test") | Should -Be $true
-            $r.kind | Should -Be "Resource"
+            $r.kind | Should -Be "resource"
         }
     }
 
@@ -243,7 +253,7 @@ resources:
         $r = $a[0]
         $r.requireAdapter | Should -Not -BeNullOrEmpty
         $r.requireAdapter.StartsWith("Test") | Should -Be $true
-        $r.kind | Should -Be "Resource"
+        $r.kind | Should -Be "resource"
     }
 
     It 'passing filepath to document arg should error' {
@@ -292,5 +302,11 @@ resources:
         dsc config --system-root /invalid/path get -f "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 1
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path does not exist: '/invalid/path'"
+    }
+
+    It '--progress-format can be None' {
+        dsc -p none resource list 2> $TestDrive/tracing.txt
+        $LASTEXITCODE | Should -Be 0
+        (Get-Content $TestDrive/tracing.txt -Raw) | Should -BeNullOrEmpty
     }
 }

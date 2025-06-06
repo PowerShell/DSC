@@ -8,7 +8,7 @@ Describe 'resource export tests' {
         $out = dsc resource export -r Microsoft/Process
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
-        $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
+        $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
         $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
@@ -25,7 +25,8 @@ Describe 'resource export tests' {
     It 'Export can be called on a configuration' {
 
         $yaml = @'
-            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            contentVersion: 1.2.3
             resources:
             - name: Processes
               type: Microsoft/Process
@@ -35,16 +36,18 @@ Describe 'resource export tests' {
         $out = $yaml | dsc config export -f -
         $LASTEXITCODE | Should -Be 0
         $config_with_process_list = $out | ConvertFrom-Json
-        $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
+        $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
         $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
         $config_with_process_list.resources.count | Should -BeGreaterThan 1
-        $config_with_process_list.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Export'
+        $config_with_process_list.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'export'
+        # contentVersion on export is always 1.0.0
+        $config_with_process_list.contentVersion | Should -BeExactly '1.0.0'
     }
 
     It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {
 
         $yaml = @'
-            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Processes
               type: Microsoft/Process
@@ -60,7 +63,7 @@ Describe 'resource export tests' {
     It 'Duplicate resource types in Configuration Export should not result in error' {
 
         $yaml = @'
-            $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Processes
               type: Microsoft/Process
@@ -80,7 +83,7 @@ Describe 'resource export tests' {
       $out = dsc resource export -r Microsoft/Process -o pretty-json
       $LASTEXITCODE | Should -Be 0
       $config_with_process_list = $out | ConvertFrom-Json
-      $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
+      $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
       $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
       $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }
@@ -88,7 +91,7 @@ Describe 'resource export tests' {
     It 'Export can be called on a configuration with the use of --output-format as a subcommand' {
 
       $yaml = @'
-          $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
           resources:
           - name: Processes
             type: Microsoft/Process
@@ -98,7 +101,7 @@ Describe 'resource export tests' {
       $out = $yaml | dsc config export -o pretty-json -f -
       $LASTEXITCODE | Should -Be 0
       $config_with_process_list = $out | ConvertFrom-Json
-      $config_with_process_list.'$schema' | Should -BeExactly 'https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json'
+      $config_with_process_list.'$schema' | Should -BeExactly 'https://aka.ms/dsc/schemas/v3/bundled/config/document.json'
       $config_with_process_list.'resources' | Should -Not -BeNullOrEmpty
       $config_with_process_list.resources.count | Should -BeGreaterThan 1
     }

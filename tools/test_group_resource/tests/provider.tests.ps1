@@ -22,9 +22,9 @@ Describe 'Resource adapter tests' {
     It 'Error if adapter resource is missing "requireAdapter" member' {
         $invalid_manifest = @'
         {
-            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Test/InvalidTestGroup",
-            "kind": "Adapter",
+            "kind": "adapter",
             "version": "0.1.0",
             "get": {
                 "executable": "test_group_resource",

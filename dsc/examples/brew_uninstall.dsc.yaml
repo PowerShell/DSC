@@ -1,15 +1,15 @@
 # Example to see if PowerShell 7 is installed, install it, or get all installed packages
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: assertions
   type: Microsoft.DSC/Assertion
   properties:
-    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
     - name: os_check
       type: Microsoft/OSInfo
       properties:
-        family: MacOS
+        family: macOS
 - name: brew
   type: DSC.PackageManagement/Brew
   properties:

@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a DSC Resource manifest
-ms.date:     06/24/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       Command-based DSC Resource manifest schema reference
 ---
@@ -15,7 +15,7 @@ The data file that defines a command-based DSC Resource.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json
 Type:          object
 ```
 
@@ -48,6 +48,13 @@ The `$schema` property indicates the canonical URI of this schema that the manif
 against. This property is mandatory. DSC uses this value to validate the manifest against the
 correct JSON schema.
 
+The JSON schemas for DSC are published in multiple versions and forms. This documentation is for
+the latest version of the schema. As a convenience, you can specify either the full URI for the
+schema hosted in GitHub or use the shorter `aka.ms` URI. You can specify the schema for a specific
+semantic version, the latest schema for a minor version, or the latest schema for a major version
+of DSC. For more information about schema URIs and versioning, see
+[DSC JSON Schema URIs](../schema-uris.md).
+
 For every version of the schema, there are three valid urls:
 
 - `.../resource/manifest.json`
@@ -57,12 +64,12 @@ For every version of the schema, there are three valid urls:
 
 - `.../bundled/resource/manifest.json`
 
-  The URL to the bundled schema. When it's used for validation, the validating client only needs to
-  retrieve this schema.
+  The URL to the canonically bundled schema. When it's used for validation, the validating client
+  only needs to retrieve this schema.
 
   This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can still
   validate the document when it uses this schema, other tools may error or behave in unexpected
-  ways.
+  ways if they don't fully support the 2020-12 specification.
 
 - `.../bundled/resource/manifest.vscode.json`
 
@@ -78,15 +85,24 @@ Type:        string
 Required:    true
 Format:      URI
 ValidValues: [
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/resource/manifest.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.vscode.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/resource/manifest.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/resource/manifest.vscode.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/resource/manifest.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.json
-               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/resource/manifest.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json
+               https://aka.ms/dsc/schemas/v3/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json
+               https://aka.ms/dsc/schemas/v3.0/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json
+               https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json
              ]
 ```
 

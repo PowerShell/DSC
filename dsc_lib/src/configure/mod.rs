@@ -4,30 +4,31 @@
 use crate::configure::config_doc::{ExecutionKind, Metadata};
 use crate::configure::parameters::Input;
 use crate::dscerror::DscError;
+use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff}, invoke_result::{SetResult, ResourceSetResponse}},
-    invoke_result::GetResult,
+    {dscresource::{Capability, Invoke, get_diff},
+    invoke_result::{GetResult, SetResult, TestResult,  ResourceSetResponse}},
     resource_manifest::Kind,
 };
 use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
+use crate::progress::{Failure, ProgressBar, ProgressFormat};
 use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
-use self::contraints::{check_length, check_number_limits, check_allowed_values};
-use indicatif::ProgressStyle;
+use self::constraints::{check_length, check_number_limits, check_allowed_values};
+use rust_i18n::t;
 use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
-use std::{collections::HashMap, mem};
-use tracing::{debug, info, trace, warn_span, Span};
-use tracing_indicatif::span_ext::IndicatifSpanExt;
+use std::collections::HashMap;
+use tracing::{debug, info, trace};
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
-pub mod contraints;
+pub mod constraints;
 pub mod depends_on;
 pub mod parameters;
 
@@ -37,6 +38,7 @@ pub struct Configurator {
     pub context: Context,
     discovery: Discovery,
     statement_parser: Statement,
+    progress_format: ProgressFormat,
 }
 
 /// Add the results of an export operation to a configuration.
@@ -53,7 +55,7 @@ pub struct Configurator {
 /// # Errors
 ///
 /// This function will return an error if the underlying resource fails.
-pub fn add_resource_export_results_to_configuration(resource: &DscResource, adapter_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<(), DscError> {
+pub fn add_resource_export_results_to_configuration(resource: &DscResource, adapter_resource: Option<&DscResource>, conf: &mut Configuration, input: &str) -> Result<ExportResult, DscError> {
 
     let export_result = match adapter_resource {
         Some(_) => adapter_resource.unwrap().export(input)?,
@@ -70,13 +72,13 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, adap
         conf.resources.push(r);
     }
 
-    Ok(())
+    Ok(export_result)
 }
 
 // for values returned by resources, they may look like expressions, so we make sure to escape them in case
 // they are re-used to apply configuration
 fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<String, Value>>, DscError> {
-    debug!("Escape returned property values");
+    debug!("{}", t!("configure.mod.escapePropertyValues"));
     let mut result: Map<String, Value> = Map::new();
     for (name, value) in properties {
         match value {
@@ -95,12 +97,12 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
                             continue;
                         },
                         Value::Array(_) => {
-                            return Err(DscError::Parser("Nested arrays not supported".to_string()));
+                            return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
                         },
                         Value::String(_) => {
                             // use as_str() so that the enclosing quotes are not included for strings
                             let Some(statement) = element.as_str() else {
-                                return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                             };
                             if statement.starts_with('[') && statement.ends_with(']') {
                                 result_array.push(Value::String(format!("[{statement}")));
@@ -118,7 +120,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
             Value::String(_) => {
                 // use as_str() so that the enclosing quotes are not included for strings
                 let Some(statement) = value.as_str() else {
-                    return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
+                    return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
                 };
                 if statement.starts_with('[') && statement.ends_with(']') {
                     result.insert(name.clone(), Value::String(format!("[{statement}")));
@@ -132,16 +134,6 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
         }
     }
     Ok(Some(result))
-}
-
-fn get_progress_bar_span(len: u64) -> Result<Span, DscError> {
-    // use warn_span since that is the default logging level but progress bars will be suppressed if error trace level is used
-    let pb_span = warn_span!("");
-    pb_span.pb_set_style(&ProgressStyle::with_template(
-        "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
-    )?);
-    pb_span.pb_set_length(len);
-    Ok(pb_span)
 }
 
 fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Result<String, DscError> {
@@ -176,12 +168,12 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
                     },
                     SecurityContextKind::Elevated => {
                         if get_security_context() != SecurityContext::Admin {
-                            return Err(DscError::SecurityContext("Elevated security context required".to_string()));
+                            return Err(DscError::SecurityContext(t!("configure.mod.elevationRequired").to_string()));
                         }
                     },
                     SecurityContextKind::Restricted => {
                         if get_security_context() != SecurityContext::User {
-                            return Err(DscError::SecurityContext("Restricted security context required".to_string()));
+                            return Err(DscError::SecurityContext(t!("configure.mod.restrictedRequired").to_string()));
                         }
                     },
                 }
@@ -202,7 +194,7 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
-    pub fn new(json: &str) -> Result<Configurator, DscError> {
+    pub fn new(json: &str, progress_format: ProgressFormat) -> Result<Configurator, DscError> {
         let discovery = Discovery::new()?;
         let mut config = Configurator {
             json: json.to_owned(),
@@ -210,6 +202,7 @@ impl Configurator {
             context: Context::new(),
             discovery,
             statement_parser: Statement::new()?,
+            progress_format,
         };
         config.validate_config()?;
         Ok(config)
@@ -237,11 +230,10 @@ impl Configurator {
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let pb_span = get_progress_bar_span(resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            Span::current().pb_inc(1);
-            pb_span.pb_set_message(format!("Get '{}'", resource.name).as_str());
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Get '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -250,9 +242,27 @@ impl Configurator {
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
             let start_datetime = chrono::Local::now();
-            let get_result = dsc_resource.get(&filter)?;
+            let get_result = match dsc_resource.get(&filter) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
+            };
             let end_datetime = chrono::Local::now();
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&get_result)?);
+            match &get_result {
+                GetResult::Resource(resource_result) => {
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.actual_state)?);
+                },
+                GetResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
+                },
+            }
             let resource_result = config_result::ResourceGetResult {
                 metadata: Some(
                     Metadata {
@@ -266,16 +276,16 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: get_result,
+                result: get_result.clone(),
             };
             result.results.push(resource_result);
+            progress.set_result(&serde_json::to_value(get_result)?);
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
             self.get_result_metadata(Operation::Get)
         );
-        std::mem::drop(pb_span_enter);
-        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -292,14 +302,14 @@ impl Configurator {
     /// # Errors
     ///
     /// This function will return an error if the underlying resource fails.
+    #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let pb_span = get_progress_bar_span(resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            Span::current().pb_inc(1);
-            pb_span.pb_set_message(format!("Set '{}'", resource.name).as_str());
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Set '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
@@ -321,31 +331,56 @@ impl Configurator {
             };
 
             let desired = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("desired: {desired}");
+            trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
             let end_datetime;
             let set_result;
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
-                debug!("Resource handles _exist or _exist is true");
+                debug!("{}", t!("configure.mod.handlesExist"));
                 start_datetime = chrono::Local::now();
-                set_result = dsc_resource.set(&desired, skip_test, &self.context.execution_type)?;
+                set_result = match dsc_resource.set(&desired, skip_test, &self.context.execution_type) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
                 end_datetime = chrono::Local::now();
             } else if dsc_resource.capabilities.contains(&Capability::Delete) {
                 if self.context.execution_type == ExecutionKind::WhatIf {
                     // TODO: add delete what-if support
-                    return Err(DscError::NotSupported("What-if execution not supported for delete".to_string()));
+                    return Err(DscError::NotSupported(t!("configure.mod.whatIfNotSupportedForDelete").to_string()));
                 }
-                debug!("Resource implements delete and _exist is false");
-                let before_result = dsc_resource.get(&desired)?;
+                debug!("{}", t!("configure.mod.implementsDelete"));
+                let before_result = match dsc_resource.get(&desired) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
                 start_datetime = chrono::Local::now();
-                dsc_resource.delete(&desired)?;
-                let after_result = dsc_resource.get(&desired)?;
+                if let Err(e) = dsc_resource.delete(&desired) {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                }
+                let after_result = match dsc_resource.get(&desired) {
+                    Ok(result) => result,
+                    Err(e) => {
+                        progress.set_failure(get_failure_from_error(&e));
+                        progress.write_increment(1);
+                        return Err(e);
+                    },
+                };
                 // convert get result to set result
                 set_result = match before_result {
                     GetResult::Resource(before_response) => {
                         let GetResult::Resource(after_result) = after_result else {
-                            return Err(DscError::NotSupported("Group resources not supported for delete".to_string()))
+                            return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
                         };
                         let before_value = serde_json::to_value(&before_response.actual_state)?;
                         let after_value = serde_json::to_value(&after_result.actual_state)?;
@@ -356,15 +391,26 @@ impl Configurator {
                         })
                     },
                     GetResult::Group(_) => {
-                        return Err(DscError::NotSupported("Group resources not supported for delete".to_string()));
+                        return Err(DscError::NotSupported(t!("configure.mod.groupNotSupportedForDelete").to_string()))
                     },
                 };
                 end_datetime = chrono::Local::now();
             } else {
-                return Err(DscError::NotImplemented(format!("Resource '{}' does not support `delete` and does not handle `_exist` as false", resource.resource_type)));
+                return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
             }
 
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&set_result)?);
+            match &set_result {
+                SetResult::Resource(resource_result) => {
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.after_state)?);
+                },
+                SetResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
+                },
+            }
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(
                     Metadata {
@@ -378,16 +424,16 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: set_result,
+                result: set_result.clone(),
             };
             result.results.push(resource_result);
+            progress.set_result(&serde_json::to_value(set_result)?);
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
             self.get_result_metadata(Operation::Set)
         );
-        mem::drop(pb_span_enter);
-        mem::drop(pb_span);
         Ok(result)
     }
 
@@ -403,22 +449,39 @@ impl Configurator {
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
-        let pb_span = get_progress_bar_span(resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         for resource in resources {
-            Span::current().pb_inc(1);
-            pb_span.pb_set_message(format!("Test '{}'", resource.name).as_str());
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Test '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
             debug!("resource_type {}", &resource.resource_type);
             let expected = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("expected: {expected}");
+            trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
-            let test_result = dsc_resource.test(&expected)?;
+            let test_result = match dsc_resource.test(&expected) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
+            };
             let end_datetime = chrono::Local::now();
-            self.context.outputs.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&test_result)?);
+            match &test_result {
+                TestResult::Resource(resource_test_result) => {
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_test_result.actual_state)?);
+                },
+                TestResult::Group(group) => {
+                    let mut results = Vec::<Value>::new();
+                    for result in group {
+                        results.push(serde_json::to_value(&result.result)?);
+                    }
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
+                },
+            }
             let resource_result = config_result::ResourceTestResult {
                 metadata: Some(
                     Metadata {
@@ -432,16 +495,16 @@ impl Configurator {
                 ),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
-                result: test_result,
+                result: test_result.clone(),
             };
             result.results.push(resource_result);
+            progress.set_result( &serde_json::to_value(test_result)?);
+            progress.write_increment(1);
         }
 
         result.metadata = Some(
             self.get_result_metadata(Operation::Test)
         );
-        std::mem::drop(pb_span_enter);
-        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -458,25 +521,32 @@ impl Configurator {
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
 
-        let pb_span = get_progress_bar_span(self.config.resources.len() as u64)?;
-        let pb_span_enter = pb_span.enter();
+        let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
         for resource in &resources {
-            Span::current().pb_inc(1);
-            pb_span.pb_set_message(format!("Export '{}'", resource.name).as_str());
+            progress.set_resource(&resource.name, &resource.resource_type);
+            progress.write_activity(format!("Export '{}'", resource.name).as_str());
             let properties = self.invoke_property_expressions(resource.properties.as_ref())?;
             let Some(dsc_resource) = self.discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             let input = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("input: {input}");
-            add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str())?;
+            trace!("{}", t!("configure.mod.exportInput", input = input));
+            let export_result = match add_resource_export_results_to_configuration(dsc_resource, Some(dsc_resource), &mut conf, input.as_str()) {
+                Ok(result) => result,
+                Err(e) => {
+                    progress.set_failure(get_failure_from_error(&e));
+                    progress.write_increment(1);
+                    return Err(e);
+                },
+            };
+            self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&export_result.actual_state)?);
+            progress.set_result(&serde_json::to_value(export_result)?);
+            progress.write_increment(1);
         }
 
         conf.metadata = Some(self.get_result_metadata(Operation::Export));
         result.result = Some(conf);
-        std::mem::drop(pb_span_enter);
-        std::mem::drop(pb_span);
         Ok(result)
     }
 
@@ -509,22 +579,22 @@ impl Configurator {
         // set default parameters first
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
-                info!("No parameters defined in configuration and no parameters input");
+                info!("{}", t!("configure.mod.noParameters"));
                 return Ok(());
             }
-            return Err(DscError::Validation("No parameters defined in configuration".to_string()));
+            return Err(DscError::Validation(t!("configure.mod.noParametersDefined").to_string()));
         };
 
         for (name, parameter) in parameters {
-            debug!("Processing parameter '{name}'");
+            debug!("{}", t!("configure.mod.processingParameter", name = name));
             if let Some(default_value) = &parameter.default_value {
-                debug!("Set default parameter '{name}'");
+                debug!("{}", t!("configure.mod.setDefaultParameter", name = name));
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
                         self.statement_parser.parse_and_execute(value, &self.context)?
                     } else {
-                        return Err(DscError::Parser("Default value as string is not defined".to_string()));
+                        return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
                     }
                 } else {
                     default_value.clone()
@@ -535,14 +605,14 @@ impl Configurator {
         }
 
         let Some(parameters_input) = parameters_input else {
-            debug!("No parameters input");
+            debug!("{}", t!("configure.mod.noParametersInput"));
             return Ok(());
         };
 
         trace!("parameters_input: {parameters_input}");
         let parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
         let Some(parameters_constraints) = &config.parameters else {
-            return Err(DscError::Validation("No parameters defined in configuration".to_string()));
+            return Err(DscError::Validation(t!("configure.mod.noParametersDefined").to_string()));
         };
         for (name, value) in parameters {
             if let Some(constraint) = parameters_constraints.get(&name) {
@@ -555,9 +625,9 @@ impl Configurator {
 
                 Configurator::validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                 if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
-                    info!("Set secure parameter '{name}'");
+                    info!("{}", t!("configure.mod.setSecureParameter", name = name));
                 } else {
-                    info!("Set parameter '{name}' to '{value}'");
+                    info!("{}", t!("configure.mod.setParameter", name = name, value = value));
                 }
 
                 self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
@@ -569,7 +639,7 @@ impl Configurator {
                 }
             }
             else {
-                return Err(DscError::Validation(format!("Parameter '{name}' not defined in configuration")));
+                return Err(DscError::Validation(t!("configure.mod.parameterNotDefined", name = name).to_string()));
             }
         }
         Ok(())
@@ -577,7 +647,7 @@ impl Configurator {
 
     fn set_variables(&mut self, config: &Configuration) -> Result<(), DscError> {
         let Some(variables) = &config.variables else {
-            debug!("No variables defined in configuration");
+            debug!("{}", t!("configure.mod.noVariables"));
             return Ok(());
         };
 
@@ -588,7 +658,7 @@ impl Configurator {
             else {
                 value.clone()
             };
-            info!("Set variable '{name}' to '{new_value}'");
+            info!("{}", t!("configure.mod.setVariable", name = name, value = new_value));
             self.context.variables.insert(name.to_string(), new_value);
         }
         Ok(())
@@ -616,27 +686,27 @@ impl Configurator {
         match parameter_type {
             DataType::String | DataType::SecureString => {
                 if !value.is_string() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not a string")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
                 }
             },
             DataType::Int => {
                 if !value.is_i64() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not an integer")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
                 }
             },
             DataType::Bool => {
                 if !value.is_boolean() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not a boolean")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
                 }
             },
             DataType::Array => {
                 if !value.is_array() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not an array")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
                 }
             },
             DataType::Object | DataType::SecureObject => {
                 if !value.is_object() {
-                    return Err(DscError::Validation(format!("Parameter '{name}' is not an object")));
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
                 }
             },
         }
@@ -650,13 +720,13 @@ impl Configurator {
 
         // Perform discovery of resources used in config
         let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
-        self.discovery.find_resources(&required_resources);
+        self.discovery.find_resources(&required_resources, self.progress_format);
         self.config = config;
         Ok(())
     }
 
     fn invoke_property_expressions(&mut self, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
-        debug!("Invoke property expressions");
+        debug!("{}", t!("configure.mod.invokePropertyExpressions"));
         if properties.is_none() {
             return Ok(None);
         }
@@ -664,7 +734,7 @@ impl Configurator {
         let mut result: Map<String, Value> = Map::new();
         if let Some(properties) = properties {
             for (name, value) in properties {
-                trace!("Invoke property expression for {name}: {value}");
+                trace!("{}", t!("configure.mod.invokeExpression", name = name, value = value));
                 match value {
                     Value::Object(object) => {
                         let value = self.invoke_property_expressions(Some(object))?;
@@ -681,16 +751,16 @@ impl Configurator {
                                     continue;
                                 },
                                 Value::Array(_) => {
-                                    return Err(DscError::Parser("Nested arrays not supported".to_string()));
+                                    return Err(DscError::Parser(t!("configure.mod.nestedArraysNotSupported").to_string()));
                                 },
                                 Value::String(_) => {
                                     // use as_str() so that the enclosing quotes are not included for strings
                                     let Some(statement) = element.as_str() else {
-                                        return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                                     };
                                     let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                                     let Some(string_result) = statement_result.as_str() else {
-                                        return Err(DscError::Parser("Array element could not be transformed as string".to_string()));
+                                        return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                                     };
                                     result_array.push(Value::String(string_result.to_string()));
                                 }
@@ -704,7 +774,7 @@ impl Configurator {
                     Value::String(_) => {
                         // use as_str() so that the enclosing quotes are not included for strings
                         let Some(statement) = value.as_str() else {
-                            return Err(DscError::Parser(format!("Property value '{value}' could not be transformed as string")));
+                            return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
                         };
                         let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                         if let Some(string_result) = statement_result.as_str() {
@@ -720,5 +790,23 @@ impl Configurator {
             }
         }
         Ok(Some(result))
+    }
+}
+
+fn get_failure_from_error(err: &DscError) -> Option<Failure> {
+    match err {
+        DscError::CommandExit(_resource, exit_code, reason) => {
+            Some(Failure {
+                message: reason.to_string(),
+                exit_code: *exit_code,
+            })
+        },
+        DscError::CommandExitFromManifest(_resource, exit_code, reason) => {
+            Some(Failure {
+                message: reason.to_string(),
+                exit_code: *exit_code,
+            })
+        },
+        _ => None,
     }
 }
