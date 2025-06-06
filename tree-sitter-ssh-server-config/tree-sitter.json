@@ -1,0 +1,28 @@
+{
+  "grammars": [
+    {
+      "name": "ssh_server_config",
+      "camelcase": "ssh_server_config",
+      "scope": "source.ssh_server_config",
+      "path": ".",
+      "file-types": null,
+      "injection-regex": "^ssh_server_config$"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": "ssh_server_config grammar for tree-sitter",
+    "links": {
+      "repository": "https://github.com/powershell/dsc"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": true,
+    "swift": false
+  }
+}
