@@ -205,7 +205,6 @@ if ($architecture -eq 'current') {
     $path = ".\target\$configuration"
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 } else {
-    & $rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
