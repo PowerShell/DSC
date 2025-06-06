@@ -1,8 +1,8 @@
 {
-  "name": "tree-sitter-sshd-config",
+  "name": "tree-sitter-ssh-server-config",
   "version": "1.0.0",
   "description": "sshd_config grammar for tree-sitter",
-  "repository": "https://github.com/powershell/sshdconfig",
+  "repository": "https://github.com/powershell/dsc",
   "license": "MIT",
   "main": "bindings/node",
   "types": "bindings/node",
