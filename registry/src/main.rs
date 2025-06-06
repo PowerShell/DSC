@@ -6,23 +6,18 @@ use crossterm::event;
 #[cfg(debug_assertions)]
 use std::env;
 
-// Init translations
-use rust_i18n::t;
-rust_i18n::i18n!("locales", fallback = "en-us");
-
 use args::Arguments;
 use clap::Parser;
-use registry_helper::RegistryHelper;
+use registry_lib::{config::Registry, RegistryHelper};
+use rust_i18n::t;
 use schemars::schema_for;
 use std::process::exit;
 use tracing::{debug, error};
 use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
-use crate::config::Registry;
 
 mod args;
-pub mod config;
-mod error;
-mod registry_helper;
+
+rust_i18n::i18n!("locales", fallback = "en-us");
 
 const EXIT_SUCCESS: i32 = 0;
 const EXIT_INVALID_INPUT: i32 = 2;
