@@ -8,7 +8,8 @@ AuthorizedKeysFile"ARG"
 (server_config
   (ERROR
     (alphanumeric)
-    (UNEXPECTED 'A')))
+    (UNEXPECTED 'A'))
+  (empty_line))
 =====
 missing argument after keyword
 =====
@@ -18,4 +19,5 @@ AuthorizedKeysFile
 
 (server_config
   (ERROR
-    (alphanumeric)))
+    (alphanumeric))
+  (empty_line))

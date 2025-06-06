@@ -348,3 +348,11 @@ port 1234
     (alphanumeric)
     (arguments
       (number))))
+====
+parse empty line
+====
+
+
+---
+(server_config
+  (empty_line))

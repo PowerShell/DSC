@@ -56,7 +56,7 @@ impl SshdConfigParser {
         }
         match node.kind() {
             "keyword" => self.parse_keyword_node(node, input, input_bytes),
-            "comment" => Ok(()),
+            "comment" | "empty_line" => Ok(()),
             _ => Err(SshdConfigError::ParserError(format!("unknown node type: {}", node.kind()))),
         }
     }
@@ -233,5 +233,14 @@ mod tests {
         let input = "hostkeyalgorithms ssh-ed25519-cert-v01@openssh.com\r\n hostkeyalgorithms ecdsa-sha2-nistp256-cert-v01@openssh.com\r\n";
         let result = parse_text_to_map(input);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn err() {
+        let code = r#"
+        "#;
+        let result = parse_text_to_map(code);
+        println!("{result:?}");
+        assert!(result.is_ok());
     }
 }

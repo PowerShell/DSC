@@ -14,8 +14,10 @@ module.exports = grammar({
   extras: $ => [' ', '\t', '\r'],
 
   rules: {
-    server_config: $ => seq(repeat(choice($.comment, $.keyword)), repeat($.match)),
+    server_config: $ => seq(repeat(choice($.empty_line, $.comment, $.keyword)), repeat($.match)),
 
+    // check for an empty line that is just a /n character
+    empty_line: $ => seq('\n'),
     comment: $ => /#.*\n/,
 
     keyword: $ => seq(
