@@ -31,3 +31,4 @@ utfx = "0.1"
 
 [build-dependencies]
 static_vcruntime = "2.0"
+cc="1.2"
