@@ -20,6 +20,11 @@ pub struct RegistryHelper {
 }
 
 impl RegistryHelper {
+    /// Create a new `RegistryHelper`.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The string with registry configuration information.
     pub fn new(config: &str) -> Result<Self, RegistryError> {
         let registry: Registry = match serde_json::from_str(config) {
             Ok(config) => config,
@@ -42,6 +47,15 @@ impl RegistryHelper {
         self.what_if = true;
     }
 
+    /// Get from registry.
+    ///
+    /// # Returns
+    ///
+    /// * `Registry` - The registry struct.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
     pub fn get(&self) -> Result<Registry, RegistryError> {
         let exist: bool;
         let (reg_key, _subkey) = match self.open(Security::Read) {
@@ -88,6 +102,15 @@ impl RegistryHelper {
         }
     }
 
+    /// Set in registry.
+    ///
+    /// # Returns
+    ///
+    /// * `Registry` - The registry struct.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
     pub fn set(&self) -> Result<Option<Registry>, RegistryError> {
         let mut what_if_metadata: Vec<String> = Vec::new();
         let reg_key = match self.open(Security::Write) {
@@ -194,6 +217,15 @@ impl RegistryHelper {
         Ok(None)
     }
 
+    /// Delete from registry.
+    ///
+    /// # Returns
+    ///
+    /// Nothing on success.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
     pub fn remove(&self) -> Result<(), RegistryError> {
         let (reg_key, _subkey) = match self.open(Security::AllAccess) {
             Ok(reg_key) => reg_key,
