@@ -19,6 +19,7 @@ pub enum OutputFormat {
 pub enum GetOutputFormat {
     Json,
     JsonArray,
+    PassThrough,
     PrettyJson,
     Yaml,
 }
