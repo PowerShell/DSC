@@ -739,7 +739,6 @@ function Submit-DSCWinGetAssets {
     )
 
     $project = 'PowerShell/DSC'
-    # TODO: Package identifier might change in the future
     $packageId = 'Microsoft.DSC'
     $restParameters = @{
         SslProtocol = 'Tls13'
@@ -750,6 +749,7 @@ function Submit-DSCWinGetAssets {
         Where-Object -Property prerelease -EQ $IsPreRelease.IsPresent |
          Select-Object -First 1 -Property assets).assets # ExpandProperty did not work
     # Grab the download URLs for supported WinGet
+    
     $downloadUrls = $assets.Where({ $_.content_type -in @('application/zip', 'application/octet-stream') }).browser_download_url
     
     if (-not (Get-Command wingetcreate -ErrorAction SilentlyContinue)) {
