@@ -204,7 +204,7 @@ switch ($Operation) {
         }
 
         $out = [resourceProperties]@{
-            schema               = 'http://json-schema.org/draft-04/schema#'
+            schema               = 'http://json-schema.org/draft-12/schema#'
             title                = ($cache.ResourceCache | Where-Object { $_.Type -eq 'TestClassResource/TestClassResource' }).Type
             type                 = 'object'
             required             = @($resourceInfoproperties | Where-Object { $_.IsMandatory -eq $true }).Name

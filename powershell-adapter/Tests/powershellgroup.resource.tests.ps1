@@ -339,24 +339,27 @@ Describe 'PowerShell adapter resource tests' {
         }
     }
 
-    It "Verify that Schema operation works on PS class-based resource" {
+    It 'Can process a key-value pair object' {
+        $r = '{"HashTableProp":{"Name":"DSCv3"},"Name":"TestClassResource1"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json
+        $res.actualState.HashTableProp.Name | Should -Be 'DSCv3'
+    }
+
+    It "Verify that schema operation works on PS class-based resource" {
         BeforeDiscovery {
             $resourceManifest = Resolve-Path -Path (Join-Path $PSScriptRoot 'TestClassResource' 'testclassresource.dsc.resource.json')
             $dest = Split-Path -Path ((Get-Command dsc).Source) -Parent
             $script:file = Copy-Item -Path $resourceManifest -Destination $dest -Force -PassThru
         }
 
+        # Rebuild the cache file first
+        dsc resource list --adapter Microsoft.DSC/PowerShell | Out-Null
+
         $r = dsc resource schema --resource TestClassResource/TestClassResource
         $properties = $r | ConvertFrom-Json
         $properties.required | Should -Not -BeNullOrEmpty
         $properties.properties.PSObject.properties.Name.Contains('BaseProperty') | Should -BeTrue
-    }
-    
-    It 'Can process a key-value pair object' {
-        $r = '{"HashTableProp":{"Name":"DSCv3"},"Name":"TestClassResource1"}' | dsc resource get -r 'TestClassResource/TestClassResource' -f -
-        $LASTEXITCODE | Should -Be 0
-        $res = $r | ConvertFrom-Json
-        $res.actualState.HashTableProp.Name | Should -Be 'DSCv3'
     }
 }
 
