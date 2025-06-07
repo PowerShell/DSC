@@ -1,0 +1,21 @@
+name: Publish to Winget
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: windows-latest # Action can only run on Windows
+    steps:
+      - name: Publish Microsoft.DSC ${{ github.event.release.prerelease && 'Preview' || 'Stable' }}
+        run: |
+          $assets = '${{ toJSON(github.event.release.assets) }}' | ConvertFrom-Json
+          $wingetRelevantAsset = $assets | Where-Object { $_.name -like '*.zip' } | Select-Object -First 1
+          $regex = [Regex]::New($env:REGEX)
+          $version = $regex.Match($wingetRelevantAsset.name).Groups[1].Value
+
+          $assets
+
+          $wingetPackage = "Microsoft.DSC${{ github.event.release.prerelease && '.Preview' || '' }}"
