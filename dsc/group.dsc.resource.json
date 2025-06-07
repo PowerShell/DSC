@@ -1,9 +1,9 @@
 {
-  "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
   "type": "Microsoft.DSC/Group",
   "version": "0.1.0",
   "description": "All resources in the supplied configuration is treated as a group.",
-  "kind": "Group",
+  "kind": "group",
   "get": {
     "executable": "dsc",
     "args": [
@@ -11,9 +11,12 @@
       "pass-through",
       "config",
       "--as-group",
-      "get"
-    ],
-    "input": "stdin"
+      "get",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ]
   },
   "set": {
     "executable": "dsc",
@@ -22,9 +25,12 @@
       "pass-through",
       "config",
       "--as-group",
-      "set"
+      "set",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
     ],
-    "input": "stdin",
     "implementsPretest": true,
     "return": "state"
   },
@@ -35,9 +41,12 @@
       "pass-through",
       "config",
       "--as-group",
-      "test"
+      "test",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
     ],
-    "input": "stdin",
     "return": "state"
   },
   "exitCodes": {
@@ -47,7 +56,8 @@
     "3": "JSON Serialization error",
     "4": "Invalid input format",
     "5": "Resource instance failed schema validation",
-    "6": "Command cancelled"
+    "6": "Command cancelled",
+    "7": "Resource not found"
   },
   "validate": {
     "executable": "dsc",
@@ -55,8 +65,11 @@
       "--trace-format",
       "pass-through",
       "config",
-      "validate"
-    ],
-    "input": "stdin"
+      "validate",
+      {
+        "jsonInputArg": "--input",
+        "mandatory": true
+      }
+    ]
   }
 }

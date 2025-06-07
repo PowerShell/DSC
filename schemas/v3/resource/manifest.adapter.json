@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.adapter.json",
+  "title": "Adapter",
+  "description": "Defines the DSC resource as a DSC resource adapter. A DSC resource adapter enables users to manage resources that don't have their own manifests with DSC.",
+  "type": "object",
+  "required": [
+    "list",
+    "config"
+  ],
+  "properties": {
+    "list": {
+      "title": "List Command",
+      "description": "Defines how DSC must call the DSC resource adapter to list its supported DSC resources.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/commandExecutable.json"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Command arguments",
+          "description": "Defines the list of arguments to pass to the command to return the list of supported DSC resources."
+        }
+      }
+    },
+    "config": {
+      "title": "Expected Configuration",
+      "description": "Defines whether the adapter expects to receive a full and unprocessed configuration as a single JSON blob over stdin or a sequence of JSON Lines for each child resource's configurations.",
+      "type": "string",
+      "enum": [
+        "full",
+        "sequence"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "config": "full",
+      "list": {
+        "executable": "pwsh",
+        "args": [
+          "-NoLogo",
+          "-NonInteractive",
+          "-NoProfile",
+          "-Command",
+          "./powershellgroup.resource.ps1 List"
+        ]
+      }
+    }
+  ]
+}

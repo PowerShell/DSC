@@ -1,34 +1,48 @@
 [package]
 name = "dsc_lib"
-version = "3.0.0"
+version = "3.1.0"
 edition = "2021"
 
+[profile.release]
+codegen-units = 1           # reduces binary size by ~2%
+debug = "full"              # No one needs an undebuggable release binary
+lto = true                  # reduces binary size by ~14%
+opt-level = "s"             # reduces binary size by ~25%
+panic = "abort"             # reduces binary size by ~50% in combination with -Zbuild-std-features=panic_immediate_abort
+split-debuginfo = "packed"  # generates a seperate *.dwp/*.dSYM so the binary can get stripped
+strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
+
 [dependencies]
-base64 = "0.22.1"
-chrono = "0.4.26"
-clap = { version = "4.5.17", features = ["derive"] }
-derive_builder ="0.20.1"
-indicatif = "0.17.0"
-jsonschema = "0.19.1"
-linked-hash-map = "0.5.6"
-num-traits = "0.2.14"
-regex = "1.7.0"
-reqwest = { version = "0.12.7", features = ["rustls-tls"], default-features = false }
-schemars = { version = "0.8.12", features = ["preserve_order"] }
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = { version = "1.0.128", features = ["preserve_order"] }
-serde_yaml = { version = "0.9.3" }
-thiserror = "1.0.0"
+base64 = "0.22"
+chrono = "0.4"
+clap = { version = "4.5", features = ["derive"] }
+derive_builder ="0.20"
+indicatif = "0.17"
+jsonschema = { version = "0.30", default-features = false }
+linked-hash-map = "0.5"
+num-traits = "0.2"
+regex = "1.11"
+rt-format = "0.3"
+rust-i18n = { version = "3.1" }
+# reqwest = { version = "0.12.8", features = ["native-tls"], default-features = false }
+schemars = { version = "0.8", features = ["preserve_order"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_yaml = { version = "0.9" }
+thiserror = "2.0"
 security_context_lib = { path = "../security_context_lib" }
-semver = "1.0.0"
-tokio = { version = "1.40.0", features = ["full"] }
-tracing = "0.1.37"
-tracing-indicatif = { version = "0.3.6" }
-tree-sitter = "0.23.0"
+semver = "1.0"
+tokio = { version = "1.45", features = ["full"] }
+tracing = "0.1"
+tracing-indicatif = { version = "0.3" }
+tree-sitter = "0.25"
+tree-sitter-rust = "0.24"
 tree-sitter-dscexpression = { path = "../tree-sitter-dscexpression" }
+uuid = { version = "1.17", features = ["v4"] }
+which = "7.0"
 
 [dev-dependencies]
-serde_yaml = "0.9.3"
+serde_yaml = "0.9"
 
 [build-dependencies]
-cc="1.1.20"
+cc="1.2"

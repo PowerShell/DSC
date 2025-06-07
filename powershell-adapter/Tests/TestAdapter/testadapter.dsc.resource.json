@@ -1,8 +1,8 @@
 {
-    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Test/TestAdapter",
     "version": "0.1.0",
-    "kind": "Adapter",
+    "kind": "adapter",
     "description": "Resource adapter for testing.",
     "tags": [
       "PowerShell"
@@ -41,8 +41,7 @@
         "$Input | ./testadapter.resource.ps1 Set"
       ],
       "input": "stdin",
-      "implementsPretest": true,
-      "return": "state"
+      "implementsPretest": true
       },
     "test": {
       "executable": "pwsh",
@@ -53,8 +52,7 @@
         "-Command",
         "$Input | ./testadapter.resource.ps1 Test"
       ],
-      "input": "stdin",
-      "return": "state"
+      "input": "stdin"
       },
     "export": {
       "executable": "pwsh",
@@ -65,8 +63,7 @@
         "-Command",
         "$Input | ./testadapter.resource.ps1 Export"
       ],
-      "input": "stdin",
-      "return": "state"
+      "input": "stdin"
       },
     "validate": {
         "executable": "pwsh",

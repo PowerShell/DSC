@@ -4,13 +4,16 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/manifest.export.yaml
 
 title: Export Method
 description: >-
-  Defines how DSC must call the DSC Resource to get the current state of every instance.
+  Defines how DSC must call the DSC resource to get the current state of every instance.
 markdownDescription: | # VS Code only
   ***
-  [_Online Documentation_][01]
+  [_Online Documentation_][00]
   ***
 
-  Defines how DSC must call the DSC Resource to get the current state of every instance.
+  Defines how DSC must call the DSC resource to get the current state of every instance.
+
+  For more information about the output DSC expects the resource to emit for this command, see
+  [Export resource operation stdout][01].
 
   DSC sends data to the command in three ways:
 
@@ -27,7 +30,8 @@ markdownDescription: | # VS Code only
   You must define the `input` property, one JSON input argument in the `args` property array, or
   both.
 
-  [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/export?<DOCS_VERSION_PIN>
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/export?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/export?<DOCS_VERSION_PIN>
 
 type: object
 required:

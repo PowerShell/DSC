@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'reference' DSC configuration document function
-ms.date:     03/20/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       reference
 ---
@@ -37,19 +37,19 @@ earlier instances. The instances don't need to be of the same type.
 
 ### Example 1 - Referencing a top-level instance
 
-In this example configuration, the `Test/Echo` resource instance echoes the `bitness` property of
+In this example configuration, the `Microsoft.DSC.Debug/Echo` resource instance echoes the `bitness` property of
 the `Microsoft/OSInfo` resource. It uses the `reference()` function to retrieve the actual state of
 the resource and uses the dot-path notation to access the **bitness** property of that resource.
 
 ```yaml
 # reference.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: System
   type: Microsoft/OSInfo
   properties: {}
 - name: Echo bitness
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[reference(resourceId('Microsoft/OSInfo', 'System')).actualState.bitness]"
   dependsOn:
@@ -57,7 +57,7 @@ resources:
 ```
 
 ```bash
-dsc config get --document reference.example.1.dsc.config.yaml config get
+dsc config get --file reference.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
@@ -72,7 +72,7 @@ results:
       edition: Windows 11 Enterprise
       bitness: '64'
 - name: Echo bitness
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: '64'

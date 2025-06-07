@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'int' DSC configuration document function
-ms.date:     06/13/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       int
 ---
@@ -31,22 +31,22 @@ This configuration returns an integer, converting the string value `'4.7'` to `4
 
 ```yaml
 # int.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo integer value
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[int('4.7')]"
 ```
 
 ```bash
-dsc config get --document int.example.1.dsc.config.yaml config get
+dsc config get --file int.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
 results:
 - name: Echo integer value of '4.7'
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 4

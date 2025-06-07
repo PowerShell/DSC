@@ -1,8 +1,8 @@
 {
-    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.Windows/WMI",
     "version": "0.1.0",
-    "kind": "Adapter",
+    "kind": "adapter",
     "description": "Resource adapter to WMI resources.",
     "tags": [
       "PowerShell"
@@ -14,6 +14,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "./wmi.resource.ps1 List"
         ]
@@ -26,6 +28,8 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./wmi.resource.ps1 Get"
       ],
@@ -37,6 +41,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "$Input | ./wmi.resource.ps1 Validate"
           ]

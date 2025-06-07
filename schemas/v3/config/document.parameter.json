@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.parameter.json",
+  "title": "Parameter",
+  "description": "Defines a runtime option for a DSC configuration document.",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/parameters/dataTypes.json"
+    },
+    "defaultValue": {
+      "title": "Default value",
+      "description": "Defines the default value for the parameter.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/parameters/validValueTypes.json"
+    },
+    "allowedValues": {
+      "title": "Allowed values",
+      "description": "Defines a list of valid values for the parameter. If the parameter is defined with any other values, it's invalid.",
+      "type": "array",
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/parameters/validValueTypes.json"
+      }
+    },
+    "description": {
+      "title": "Parameter description",
+      "description": "Defines a synopsis for the parameter explaining its purpose.",
+      "type": "string"
+    },
+    "metadata": {
+      "title": "Parameter metadata",
+      "description": "Defines a set of key-value pairs for the parameter. This metadata isn't validated.",
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "int"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "minValue": {
+            "title": "Minimum value",
+            "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
+            "type": "integer"
+          },
+          "maxValue": {
+            "title": "Maximum value",
+            "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "string"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "secureString"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "array"
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "minLength": {
+            "title": "Minimum length",
+            "description": "The minimum valid length for a `string`, `secureString`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxLength": {
+            "title": "Maximum length",
+            "description": "The maximum valid length for a `string`, `secureString`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "string"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "secureString"
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "string"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "secureObject"
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "object"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "int"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "integer"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "array"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "array"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "bool"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "defaultValue": {
+            "type": "boolean"
+          },
+          "allowedValues": {
+            "items": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

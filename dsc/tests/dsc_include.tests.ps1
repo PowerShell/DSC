@@ -12,9 +12,36 @@ Describe 'Include tests' {
         $logPath = Join-Path $TestDrive 'stderr.log'
     }
 
-    It 'Include config with default parameters' {
+    It 'Include invalid config file' {
+        $invalidConfig = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            properties:
+            - name: osinfo
+              type: Microsoft.DSC/Include
+              properties:
+                configurationFile: include/non-existing.dsc.yaml
+"@
+
+        $invalidConfigPath = Join-Path $TestDrive 'invalid_config.dsc.yaml'
+        $invalidConfig | Set-Content -Path $invalidConfigPath
+
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: osinfo
+              type: Microsoft.DSC/Include
+              properties:
+                configurationFile: $invalidConfigPath
+"@
+        $configPath = Join-Path $TestDrive 'config.dsc.yaml'
+        $config | Set-Content -Path $configPath
+        dsc config get -f $configPath
+        $LASTEXITCODE | Should -Be 2
+    }
+
+    It 'Include config file with default parameters' {
+        $config = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -23,7 +50,64 @@ Describe 'Include tests' {
 "@
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $config | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath | ConvertFrom-Json
+        $out = dsc config get -f $configPath | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        if ($IsWindows) {
+            $expectedOS = 'Windows'
+        } elseif ($IsLinux) {
+            $expectedOS = 'Linux'
+        } else {
+            $expectedOS = 'macOS'
+        }
+        $out.results[0].result[0].result.actualState.family | Should -Be $expectedOS
+    }
+
+    It 'Include config YAML content with default parameters' {
+        # since this is YAML, we need to ensure correct indentation
+        $includeContent = (Get-Content $osinfoConfigPath -Raw).Replace("`n", "`n" + (' ' * 20))
+
+        $config = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: osinfo
+              type: Microsoft.DSC/Include
+              properties:
+                configurationContent: |
+                    $includeContent
+"@
+
+        $configPath = Join-Path $TestDrive 'config.dsc.yaml'
+        $config | Set-Content -Path $configPath
+        $out = dsc config get -f $configPath | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        if ($IsWindows) {
+            $expectedOS = 'Windows'
+        } elseif ($IsLinux) {
+            $expectedOS = 'Linux'
+        } else {
+            $expectedOS = 'macOS'
+        }
+        $out.results[0].result[0].result.actualState.family | Should -Be $expectedOS
+    }
+
+    It 'Include config JSON content with default parameters' {
+        $osinfoJsonPath = Join-Path $PSScriptRoot '../examples/osinfo_parameters.dsc.json'
+
+        # for JSON, we can just have it as a single line
+        $includeContent = (Get-Content $osinfoJsonPath -Raw).Replace("`n", "").Replace('"', '\"')
+
+        $config = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: osinfo
+              type: Microsoft.DSC/Include
+              properties:
+                configurationContent: "$includeContent"
+"@
+
+        $configPath = Join-Path $TestDrive 'config.dsc.yaml'
+        $config | Set-Content -Path $configPath
+        $out = dsc config get -f $configPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $expectedOS = 'Windows'
@@ -37,7 +121,7 @@ Describe 'Include tests' {
 
     It 'Include config with parameters file' {
         $config = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -47,7 +131,34 @@ Describe 'Include tests' {
 "@
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $config | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath | ConvertFrom-Json
+        $out = dsc config get -f $configPath | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        if ($IsWindows) {
+            $expectedOS = 'Windows'
+        } elseif ($IsLinux) {
+            $expectedOS = 'Linux'
+        } else {
+            $expectedOS = 'macOS'
+        }
+        $out.results[0].result[0].result.actualState.family | Should -Be $expectedOS
+    }
+
+    It 'Include config with parameters content' {
+        $parametersContentFile = Join-Path $PSScriptRoot '../examples/osinfo.parameters.json'
+        $parametersContent = (Get-Content $parametersContentFile -Raw).Replace("`n", "").Replace('"', '\"')
+
+        $config = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: osinfo
+              type: Microsoft.DSC/Include
+              properties:
+                configurationFile: include/osinfo_parameters.dsc.yaml
+                parametersContent: "$parametersContent"
+"@
+        $configPath = Join-Path $TestDrive 'config.dsc.yaml'
+        $config | Set-Content -Path $configPath
+        $out = dsc config get -f $configPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $expectedOS = 'Windows'
@@ -68,7 +179,7 @@ Describe 'Include tests' {
         param($config, $parameters)
 
         $configYaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -79,7 +190,7 @@ Describe 'Include tests' {
 
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $configYaml | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath 2> $logPath
+        $out = dsc config get -f $configPath 2> $logPath
         $LASTEXITCODE | Should -Be 2
         $log = Get-Content -Path $logPath -Raw
         $log | Should -BeLike "*ERROR*"
@@ -100,7 +211,7 @@ Describe 'Include tests' {
         }
 
         $configYaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: osinfo
               type: Microsoft.DSC/Include
@@ -111,7 +222,7 @@ Describe 'Include tests' {
 
         $configPath = Join-Path $TestDrive 'config.dsc.yaml'
         $configYaml | Set-Content -Path $configPath
-        $out = dsc config get -p $configPath | ConvertFrom-Json
+        $out = dsc config get -f $configPath | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         if ($IsWindows) {
             $expectedOS = 'Windows'
@@ -125,7 +236,7 @@ Describe 'Include tests' {
 
     It 'Multiple includes' {
         $echoConfig = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: one
   type: Microsoft.DSC.Debug/Echo
@@ -141,7 +252,7 @@ resources:
         $directorySeparator = [System.IO.Path]::DirectorySeparatorChar.ToString().Replace('\', '\\')
 
         $nestedIncludeConfig = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: nested
   type: Microsoft.DSC/Include
@@ -153,7 +264,7 @@ resources:
         $nestedIncludeConfig | Set-Content -Path $nestedIncludeConfigPath -Encoding utf8
 
         $includeConfig = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: include
   type: Microsoft.DSC/Include
@@ -165,7 +276,7 @@ resources:
     configurationFile: $nestedIncludeConfigPath
 "@
 
-        $out = $includeConfig | dsc config get | ConvertFrom-Json
+        $out = $includeConfig | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result[0].result.actualState.output | Should -Be 'one'
         $out.results[1].result[0].name | Should -Be 'nested'
@@ -177,7 +288,7 @@ resources:
 
     It 'Set with include works' {
         $echoConfig = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: one
   type: Microsoft.DSC.Debug/Echo
@@ -193,7 +304,7 @@ resources:
         $directorySeparator = [System.IO.Path]::DirectorySeparatorChar.ToString().Replace('\', '\\')
 
         $includeConfig = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: nested
   type: Microsoft.DSC/Include
@@ -201,7 +312,7 @@ resources:
     configurationFile: "[concat('$echoConfigPathParent', '$directorySeparator', '$echoConfigPathLeaf')]"
 "@
 
-        $out = dsc config set -d $includeConfig | ConvertFrom-Json
+        $out = dsc config set -i $includeConfig | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].result.beforeState[0].name | Should -Be 'one'
         $out.results[0].result.beforeState[0].type | Should -Be 'Microsoft.DSC.Debug/Echo'
@@ -211,7 +322,7 @@ resources:
 
     It 'Test with include works' {
         $includeYaml = Join-Path $PSScriptRoot ../../dsc/examples/include.dsc.yaml
-        $out = dsc config test -p $includeYaml | ConvertFrom-Json
+        $out = dsc config test -f $includeYaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.results[0].type | Should -BeExactly 'Microsoft.DSC/Include'
         $out.results[0].result[0].name | Should -BeExactly 'os'

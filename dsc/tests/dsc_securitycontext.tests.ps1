@@ -13,7 +13,7 @@ Describe 'Tests for configuration security context metadata' {
     }
 
     It 'Require admin' {
-        $out = dsc config get -p $PSScriptRoot/../examples/require_admin.yaml
+        $out = dsc config get -f $PSScriptRoot/../examples/require_admin.yaml
         if ($isAdmin) {
             $LASTEXITCODE | Should -Be 0
             $out | Should -Not -BeNullOrEmpty
@@ -24,7 +24,7 @@ Describe 'Tests for configuration security context metadata' {
     }
 
     It 'Require non-admin' {
-        $out = dsc config get -p $PSScriptRoot/../examples/require_nonadmin.yaml
+        $out = dsc config get -f $PSScriptRoot/../examples/require_nonadmin.yaml
         if ($isAdmin) {
             $LASTEXITCODE | Should -Be 2
         }

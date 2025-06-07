@@ -1,0 +1,37 @@
+{
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
+  "parameters": {
+    "osFamily": {
+      "type": "string",
+      "defaultValue": "[concat('Win','dows')]",
+      "allowedValues": [
+        "Windows",
+        "Linux",
+        "macOS"
+      ]
+    }
+  },
+  "resources": [
+    {
+      "name": "os",
+      "type": "Microsoft/OSInfo",
+      "properties": {
+        "family": "[parameters('osFamily')]"
+      }
+    },
+    {
+      "name": "another os instance",
+      "type": "Microsoft/OSInfo",
+      "properties": {
+        "family": "macOS"
+      }
+    },
+    {
+      "name": "path",
+      "type": "Microsoft.DSC.Debug/Echo",
+      "properties": {
+        "output": "[envvar('PATH')]"
+      }
+    }
+  ]
+}

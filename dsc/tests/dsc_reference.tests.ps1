@@ -2,8 +2,13 @@
 # Licensed under the MIT License.
 
 Describe 'Tests for config using reference function' {
-    It 'Reference works' {
-        $out = dsc config get -p $PSScriptRoot/../examples/reference.dsc.yaml | ConvertFrom-Json
+    It 'Reference works for <operation>' -TestCases @(
+        @{ operation = 'get' },
+        @{ operation = 'test' }
+    ) {
+        param($operation)
+
+        $out = dsc config $operation -f $PSScriptRoot/../examples/reference.dsc.yaml | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $os = if ($IsWindows) {
             'Windows'

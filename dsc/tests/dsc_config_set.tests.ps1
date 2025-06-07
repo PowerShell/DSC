@@ -4,7 +4,7 @@
 Describe 'dsc config set tests' {
     It 'can use _exist with resources that support and do not support it' {
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Exist
               type: Test/Exist
@@ -15,7 +15,7 @@ Describe 'dsc config set tests' {
               properties:
                 _exist: false
 "@
-        $out = $config_yaml | dsc config set | ConvertFrom-Json
+        $out = $config_yaml | dsc config set -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 2
@@ -29,8 +29,8 @@ Describe 'dsc config set tests' {
         $out.results[1].result.afterState.deleteCalled | Should -BeTrue
         $out.results[1].result.afterState._exist | Should -BeFalse
         $out.metadata.'Microsoft.DSC'.version | Should -BeLike '3.*'
-        $out.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'Set'
-        $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'Actual'
+        $out.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'set'
+        $out.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'actual'
         $out.metadata.'Microsoft.DSC'.startDatetime | Should -Not -BeNullOrEmpty
         $out.metadata.'Microsoft.DSC'.endDatetime | Should -Not -BeNullOrEmpty
         $out.metadata.'Microsoft.DSC'.duration | Should -Not -BeNullOrEmpty

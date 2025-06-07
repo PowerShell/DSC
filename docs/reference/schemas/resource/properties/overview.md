@@ -1,24 +1,23 @@
 ---
 description: >-
-  Information about the list of well-known DSC Resource properties, including their purpose and how
+  Information about the list of canonical DSC Resource properties, including their purpose and how
   to add them to a resource's manifest.
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
-title:       DSC well-known properties
+title:       DSC canonical properties
 ---
 
-# DSC well-known properties
+# DSC canonical properties
 
-DSC has support for several well-known properties. Some well-known properties enable a DSC Resource
-to use built-in processing. The well-known properties always start with an underscore (`_`) and DSC
+DSC has support for several canonical properties. Some canonical properties enable a DSC Resource
+to use built-in processing. The canonical properties always start with an underscore (`_`) and DSC
 Resources that use these properties may not override or extend them.
 
 ## _exist
 
 The `_exist` property indicates that the resource can enforce whether instances exist, handling
 whether an instance should be added, updated, or removed during a set operation. This property
-provides shared semantics for DSC Resources and integrating tools, but doesn't enable any
-additional built-in processing with DSC.
+provides shared semantics for DSC Resources and integrating tools.
 
 For more information, see [DSC Resource _exist property schema][01].
 

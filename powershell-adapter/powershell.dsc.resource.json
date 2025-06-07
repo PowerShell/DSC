@@ -1,8 +1,8 @@
 {
-    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.DSC/PowerShell",
     "version": "0.1.0",
-    "kind": "Adapter",
+    "kind": "adapter",
     "description": "Resource adapter to classic DSC Powershell resources.",
     "tags": [
       "PowerShell"
@@ -14,6 +14,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "./psDscAdapter/powershell.resource.ps1 List"
         ]
@@ -26,6 +28,8 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./psDscAdapter/powershell.resource.ps1 Get"
       ],
@@ -37,12 +41,13 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./psDscAdapter/powershell.resource.ps1 Set"
       ],
       "input": "stdin",
-      "implementsPretest": true,
-      "return": "state"
+      "implementsPretest": true
       },
     "test": {
       "executable": "pwsh",
@@ -50,6 +55,8 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./psDscAdapter/powershell.resource.ps1 Test"
       ],
@@ -62,6 +69,8 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./psDscAdapter/powershell.resource.ps1 Export"
       ],
@@ -74,6 +83,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "$Input | ./psDscAdapter/powershell.resource.ps1 Validate"
           ],

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/outputs/resource/get.json",
+  "title": "dsc resource get result",
+  "description": "Describes the return data for a DSC resource instance from the `dsc resource get` command. The return data is either a single object that describes the actual state of a non-nested instance or an array of objects that describe the actual state of the nested instances for a group or adapter resource.",
+  "anyOf": [
+    {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0/outputs/resource/get.simple.json"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3.0/outputs/resource/get.full.json"
+      }
+    }
+  ]
+}

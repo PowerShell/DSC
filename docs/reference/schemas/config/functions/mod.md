@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'mod' DSC configuration document function
-ms.date:     03/19/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       mod
 ---
@@ -30,22 +30,22 @@ division for two integers.
 
 ```yaml
 # mod.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Remainder for integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
   output: "[mod(7, 5)]"
 ```
 
 ```bash
-dsc config get --document mod.example.1.dsc.config.yaml config get
+dsc config get --file mod.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
 results:
 - name: Remainder for integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 2
@@ -60,22 +60,22 @@ two other mathematical operations.
 
 ```yaml
 # mod.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Remainder for nested functions
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[mod(add(9, 5), mul(6, 2))]"
 ```
 
 ```bash
-dsc config get --document mod.example.2.dsc.config.yaml
+dsc config get --file mod.example.2.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Remainder for nested functions
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 2

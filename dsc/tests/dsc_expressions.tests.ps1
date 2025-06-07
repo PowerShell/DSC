@@ -15,7 +15,7 @@ Describe 'Expressions tests' {
     ) {
         param($text, $expected)
         $yaml = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
   test:
     type: object
@@ -41,8 +41,8 @@ resources:
   properties:
     output: "$text"
 "@
-        $debug = $yaml | dsc -l trace config get -f yaml 2>&1 | Out-String
-        $out = $yaml | dsc config get | ConvertFrom-Json
+        $debug = $yaml | dsc -l trace config get -o yaml -f - 2>&1 | Out-String
+        $out = $yaml | dsc config get -f - | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because $debug
         $out.results[0].result.actualState.output | Should -Be $expected -Because $debug
     }
@@ -55,21 +55,21 @@ resources:
     ) {
         param($expression)
         $yaml = @"
-`$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: echo
   type: Microsoft.DSC.Debug/Echo
   properties:
     output: "$expression"
 "@
-        $out = dsc config get -d $yaml 2>&1
+        $out = dsc config get -i $yaml 2>&1
         $LASTEXITCODE | Should -Be 2
         $out | Should -BeLike "*ERROR*"
     }
 
     It 'Multi-line string literals work' {
       $yamlPath = "$PSScriptRoot/../examples/multiline.dsc.yaml"
-      $out = dsc config get -p $yamlPath | ConvertFrom-Json
+      $out = dsc config get -f $yamlPath | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results[0].result.actualState.output | Should -BeExactly @"
 This is a
@@ -78,5 +78,33 @@ string.
 
 "@.Replace("`r", "")
       $out.results[1].result.actualState.output | Should -BeExactly "This is a single-quote: '"
+    }
+
+    It 'Nested Group resource does not invoke expressions' {
+      $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Nested Group
+  type: Microsoft.DSC/Group
+  properties:
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+    - name: Deeply nested OSInfo
+      type: Microsoft/OSInfo
+      properties: {}
+    - name: Deeply nested echo
+      type: Microsoft.DSC.Debug/Echo
+      properties:
+        output:  >-
+          [reference(
+            resourceId('Microsoft/OSInfo', 'Deeply nested OSInfo')
+          )]
+      dependsOn:
+        - "[resourceId('Microsoft/OSInfo', 'Deeply nested OSInfo')]"
+'@
+
+      $out = dsc config get -i $yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results[0].result[1].result.actualState.output.family | Should -BeExactly $out.results[0].result[0].result.actualState.family
     }
 }

@@ -30,33 +30,38 @@ if ($jsonInput -ne '@{}') {
     $inputobj = $jsonInput | ConvertFrom-Json
 }
 
-$jsonInput | Write-DscTrace
+"Input: $jsonInput" | Write-DscTrace
 
 switch ($Operation) {
     'List' {
             @{
                 type           = "Test/TestCase"
-                kind           = 'Resource'
+                kind           = 'resource'
                 version        = '1'
-                capabilities   = @('Get', 'Set', 'Test', 'Export')
+                capabilities   = @('get', 'set', 'test', 'export')
                 path           = $PSScriptRoot
                 directory      = Split-Path $PSScriptRoot
-                implementedAs  = 'Adapter'
+                implementedAs  = 'adapter'
                 author         = 'Test'
                 properties     = @('TestCaseId', 'Input', 'Result')
                 requireAdapter = 'Test/TestAdapter'
                 description    = 'TestCase resource'
             } | ConvertTo-Json -Compress
     }
-    { @('Get','Set','Test','Export') -contains $_ } {
+    { @('Get','Set','Test') -contains $_ } {
+        "Operation: $Operation" | Write-DscTrace
 
-        # TestCase 1 = 'Verify adapted_dsc_type field'
-        if (($inputobj.TestCaseId -eq 1 ) -or ($_ -eq 'Export')){
-            $result = $inputobj.adapted_dsc_type -eq 'Test/TestCase'
-            $result = @{'TestCaseId'=1; 'Input'=''; result = $result } | ConvertTo-Json -Depth 10 -Compress
-            return $result
+        if ($inputobj.resources.properties.TestCaseId -eq 1) {
+            "Is TestCaseId 1" | Write-DscTrace
+            @{result = @(@{name = $inputobj.resources.name; type = $inputobj.resources.type; properties = @{'TestCaseId' = 1; 'Input' = ''}})} | ConvertTo-Json -Depth 10 -Compress
         }
 
+    }
+    'Export' {
+        @{result = @(
+            @{'TestCaseId' = 1; 'Input' = ''},
+            @{'TestCaseId' = 2; 'Input' = ''}
+        )} | ConvertTo-Json -Depth 10 -Compress
     }
     'Validate' {
         @{ valid = $true } | ConvertTo-Json

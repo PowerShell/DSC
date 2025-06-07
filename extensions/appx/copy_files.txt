@@ -1,0 +1,2 @@
+appx-discover.ps1
+appx.dsc.extension.json

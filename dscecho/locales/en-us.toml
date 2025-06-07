@@ -1,0 +1,5 @@
+_version = 1
+
+[main]
+invalidJson = "Error JSON does not match schema"
+noInput = "No input provided."

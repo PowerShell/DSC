@@ -1,0 +1,372 @@
+_version = 1
+
+[configure.config_doc]
+configurationDocumentSchemaTitle = "Configuration document schema URI"
+configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
+
+[configure.constraints]
+minLengthIsNull = "Parameter '%{name}' has minimum length constraint but is null"
+notMinLength = "Parameter '%{name}' has minimum length constraint of %{min_length} but is %{length}"
+minLengthNotStringOrArray = "Parameter '%{name}' has minimum length constraint but is not a string or array"
+
+maxLengthIsNull = "Parameter '%{name}' has maximum length constraint but is null"
+maxLengthExceeded = "Parameter '%{name}' has maximum length constraint of %{max_length} but is %{length}"
+maxLengthNotStringOrArray = "Parameter '%{name}' has maximum length constraint but is not a string or array"
+
+minValueIsNull = "Parameter '%{name}' has minimum value constraint but is null"
+notMinValue = "Parameter '%{name}' has minimum value constraint of %{min_value} but is %{value}"
+minValueNotInteger = "Parameter '%{name}' has minimum value constraint but is not an integer"
+maxValueIsNull = "Parameter '%{name}' has maximum value constraint but is null"
+notMaxValue = "Parameter '%{name}' has maximum value constraint of %{max_value} but is %{value}"
+maxValueNotInteger = "Parameter '%{name}' has maximum value constraint but is not an integer"
+
+allowedValuesIsNull = "Parameter '%{name}' has allowed values constraint but is null"
+notAllowedValue = "Parameter '%{name}' has allowed values constraint but is not in the list of allowed values"
+allowedValuesNotStringOrInteger = "Parameter '%{name}' has allowed values constraint but is not a string or integer"
+
+[configure.dependsOn]
+duplicateResource = "Resource named '%{name}' is specified more than once in the configuration"
+syntaxIncorrect = "'dependsOn' syntax is incorrect: %{dependency}"
+dependencyNotFound = "'dependsOn' resource name '%{dependency_name}' does not exist for resource named '%{resource_name}'"
+dependencyTypeMismatch = "'dependsOn' resource type '%{resource_type}' does not match resource type '%{dependency_type}' for resource named '%{resource_name}'"
+resourceNotInOrder = "Resource not found in order"
+dependencyNotInOrder = "Dependency not found in order"
+circularDependency = "Circular dependency detected for resource named '%{resource}'"
+invocationOrder = "Resource invocation order"
+
+[configure.mod]
+nestedArraysNotSupported = "Nested arrays not supported"
+arrayElementCouldNotTransformAsString = "Array element could not be transformed as string"
+valueCouldNotBeTransformedAsString = "Property value '%{value}' could not be transformed as string"
+elevationRequired = "Elevated security context required"
+restrictedRequired = "Restricted security context required"
+desired = "Desired state: %{state}"
+handlesExist = "Resource handles _exist or _exist is true"
+whatIfNotSupportedForDelete = "What-if execution not supported for delete"
+implementsDelete = "Resource implements delete and _exist is false"
+groupNotSupportedForDelete = "Group resources not supported for delete"
+deleteNotSupported = "Resource '%{resource}' does not support `delete` and does not handle `_exist` as false"
+expectedState = "Expected state: %{state}"
+exportInput = "Export input: %{input}"
+noParameters = "No parameters defined in configuration and no parameters input"
+noParametersDefined = "No parameters defined in configuration"
+processingParameter = "Processing parameter '%{name}'"
+setDefaultParameter = "Set default parameter '%{name}'"
+defaultStringNotDefined = "Default value as string is not defined"
+noParametersInput = "No parameters input"
+setSecureParameter = "Set secure parameter '%{name}'"
+setParameter = "Set parameter '%{name}' to '%{value}'"
+parameterNotDefined = "Parameter '%{name}' is not defined in configuration"
+noVariables = "No variables defined in configuration"
+setVariable = "Set variable '%{name}' to '%{value}'"
+parameterNotString = "Parameter '%{name}' is not a string"
+parameterNotInteger = "Parameter '%{name}' is not an integer"
+parameterNotBoolean = "Parameter '%{name}' is not a boolean"
+parameterNotArray = "Parameter '%{name}' is not an array"
+parameterNotObject = "Parameter '%{name}' is not an object"
+invokePropertyExpressions = "Invoke property expressions"
+invokeExpression = "Invoke property expression for %{name}: %{value}"
+
+[discovery.commandDiscovery]
+couldNotReadSetting = "Could not read 'resourcePath' setting"
+appendingEnvPath = "Appending PATH to resourcePath"
+originalPath = "Original PATH: %{path}"
+failedGetEnvPath = "Failed to get PATH environment variable"
+failedJoinEnvPath = "Failed to join PATH environment variable"
+exeHomeAlreadyInPath = "Exe home is already in path: %{path}"
+addExeHomeToPath = "Adding exe home to path: %{path}"
+usingResourcePath = "Using Resource Path: %{path}"
+discoverResources = "Discovering '%{kind}' using filter: %{filter}"
+invalidAdapterFilter = "Could not build Regex filter for adapter name"
+progressSearching = "Searching for resources"
+extensionSearching = "Searching for extensions"
+foundResourceManifest = "Found resource manifest: %{path}"
+extensionFound = "Extension '%{extension}' found"
+adapterFound = "Resource adapter '%{adapter}' found"
+resourceFound = "Resource '%{resource}' found"
+executableNotFound = "Executable '%{executable}' not found for operation '%{operation}' for resource '%{resource}'"
+extensionInvalidVersion = "Extension '%{extension}' version '%{version}' is invalid"
+invalidManifest = "Invalid manifest for resource '%{resource}'"
+extensionResourceFound = "Extension found resource '%{resource}'"
+callingExtension = "Calling extension '%{extension}' to discover resources"
+extensionFoundResources = "Extension '%{extension}' found %{count} resources"
+invalidManifestVersion = "Manifest '%{path}' has invalid version: %{err}"
+
+[dscresources.commandResource]
+invokeGet = "Invoking get for '%{resource}'"
+invokeGetUsing = "Invoking get '%{resource}' using '%{executable}'"
+verifyOutputUsing = "Verifying output of get '%{resource}' using '%{executable}'"
+groupGetResponse = "Group get response: %{response}"
+failedParseJson = "Failed to parse JSON from 'get': executable = '%{executable}' stdout = '%{stdout}' stderr = '%{stderr}' -> %{err}"
+invokeSet = "Invoking set for '%{resource}'"
+noPretest = "No pretest, invoking test on '%{resource}'"
+syntheticWhatIf = "cannot process what-if execution type, as resource implements pre-test and does not support what-if"
+setGetCurrent = "Getting current state for set by invoking get on '%{resource}' using '%{executable}'"
+setVerifyGet = "Verifying output of get on '%{resource}' using '%{executable}'"
+setVerifyOutput = "Verifying output of %{operation} '%{resource}' using '%{executable}'"
+setUnexpectedOutput = "Command did not return expected actual output"
+setUnexpectedDiff = "Command did not return expected diff output"
+invokeTest = "Invoking test for '%{resource}'"
+testSyntheticTest = "Resource '%{resource}' does not implement test, performing synthetic test"
+invokeTestUsing = "Invoking test on '%{resource}' using '%{executable}'"
+testVerifyOutput = "Verifying output of test on '%{resource}' using '%{executable}'"
+testGroupTestResponse = "Import resource kind, returning group test response"
+testNoActualState = "No actual state returned"
+testNoDiff = "No diff properties returned"
+invokeDeleteUsing = "Invoking delete on '%{resource}' using '%{executable}'"
+invokeValidateConfig = "Invoking validate on '%{resource}' using '%{config}'"
+invokeValidateUsing = "Invoking validate on '%{resource}' using '%{executable}'"
+exportNotSupported = "Export is not supported by resource '%{resource}'"
+exportVerifyOutput = "Verifying output of export on '%{resource}' using '%{executable}'"
+resolveNotSupported = "Resolve is not supported by resource '%{resource}'"
+invokeResolveUsing = "Invoking resolve on '%{resource}' using '%{executable}'"
+processChildStdout = "child process did not have a handle to stdout"
+processChildStderr = "child process did not have a handle to stderr"
+processChildStdin = "child process did not have a handle to stdin"
+processWriteStdin = "could not write to stdin"
+processChildId = "Can't get child process id"
+processChildExit = "Process '%{executable}' id %{id} exited with code %{code}"
+processChildTerminated = "Process '%{executable}' id %{id} terminated by signal"
+processTerminated = "Process terminated by signal"
+commandInvoke = "Invoking command '%{executable}' with args %{args}"
+noArgs = "No args to process"
+parseAsEnvVars = "Parsing input as environment variables"
+parseAsStdin = "Parsing input as stdin"
+noInput = "No input kind specified"
+verifyJson = "Verify JSON for '%{resource}'"
+validateJson = "Validating against JSON: %{json}"
+resourceInvalidJson = "Resource reported input JSON is not valid"
+invalidArrayKey = "Unsupported array value for key '%{key}'.  Only string and number is supported."
+invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, and array is supported."
+inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
+
+[dscresources.dscresource]
+invokeGet = "Invoking get for '%{resource}'"
+customResourceNotSupported = "Custom resource not supported"
+invokeSet = "Invoking set for '%{resource}'"
+invokeTest = "Invoking test for '%{resource}'"
+invokeDelete = "Invoking delete for '%{resource}'"
+invokeValidate = "Invoking validate for '%{resource}'"
+invokeValidateNotSupported = "Invoking validate is not supported for adapted resource '%{resource}'"
+invokeSchema = "Invoking schema for '%{resource}'"
+invokeSchemaNotSupported = "Invoking schema is not supported for adapted resource '%{resource}'"
+invokeExport = "Invoking export for '%{resource}'"
+invokeExportReturnedNoResult = "Invoking export returned no result for '%{resource}'"
+invokeResolve = "Invoking resolve for '%{resource}'"
+invokeResolveNotSupported = "Invoking resolve is not supported for adapted resource '%{resource}'"
+invokeReturnedWrongResult = "Invoking '%{operation}' on '%{resource}' returned unexpected result"
+propertyIncorrectType = "Property '%{property}' is not of type '%{property_type}'"
+propertyNotFound = "Property '%{property}' not found"
+subDiff = "diff: sub diff for '%{key}'"
+diffArray = "diff: arrays differ for '%{key}'"
+diffNotArray = "diff: '%{key}' is not an array"
+diffKeyMissing = "diff: key '%{key}' missing"
+diffKeyNotObject = "diff: key '%{key}' is not an object"
+diffArraySize = "diff: arrays have different lengths"
+diffMissingItem = "diff: actual array missing expected item"
+
+[dscresources.resource_manifest]
+resourceManifestSchemaTitle = "Resource manifest schema URI"
+resourceManifestSchemaDescription = "Defines the JSON Schema the resource manifest adheres to."
+
+[extensions.dscextension]
+discoverNoResults = "No results returned for discovery extension '%{extension}'"
+discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
+extensionReturned = "Extension '%{extension}' returned line: %{line}"
+
+[extensions.extension_manifest]
+extensionManifestSchemaTitle = "Extension manifest schema URI"
+extensionManifestSchemaDescription = "Defines the JSON Schema the extension manifest adheres to."
+
+[functions]
+invalidArgType = "Invalid argument type"
+invalidArguments = "Invalid argument(s)"
+unknownFunction = "Unknown function '%{name}'"
+noArgsAccepted = "Function '%{name}' does not accept arguments"
+invalidArgCount = "Function '%{name}' requires exactly %{count} arguments"
+minArgsRequired = "Function '%{name}' requires at least %{count} arguments"
+argCountRequired = "Function '%{name}' requires between %{min_args} and %{max_args} arguments"
+noArrayArgs = "Function '%{name}' does not accept array arguments, accepted types are: %{accepted_args_string}"
+noBooleanArgs = "Function '%{name}' does not accept boolean arguments, accepted types are: %{accepted_args_string}"
+noNumberArgs = "Function '%{name}' does not accept number arguments, accepted types are: %{accepted_args_string}"
+noObjectArgs = "Function '%{name}' does not accept object arguments, accepted types are: %{accepted_args_string}"
+noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
+
+[functions.add]
+invoked = "add function"
+
+[functions.concat]
+invoked = "concat function"
+argsMustBeStrings = "Arguments must all be strings"
+argsMustBeArrays = "Arguments must all be arrays"
+onlyArraysOfStrings = "Arguments must all be arrays of strings"
+
+[functions.createArray]
+invoked = "createArray function"
+argsMustAllBeArrays = "Arguments must all be arrays"
+argsMustAllBeIntegers = "Arguments must all be integers"
+argsMustAllBeObjects = "Arguments must all be objects"
+argsMustAllBeStrings = "Arguments must all be strings"
+
+[functions.div]
+invoked = "div function"
+divideByZero = "Cannot divide by zero"
+
+[functions.envvar]
+notFound = "Environment variable not found"
+
+[functions.if]
+conditionNotBoolean = "Condition is not a boolean"
+
+[functions.format]
+experimental = "`format()` function is experimental"
+formatInvalid = "First `format()` argument must be a string"
+numberTooLarge = "Number is too large"
+invalidArgType = "Unsupported argument type"
+invalidFormatString = "Invalid format string"
+
+[functions.int]
+invalidInput = "invalid input string"
+parseStringError = "unable to parse string to int"
+castError = "unable to cast to int"
+parseNumError = "unable to parse number to int"
+
+[functions.max]
+emptyArray = "Array cannot be empty"
+integersOnly = "Array must contain only integers"
+noMax = "Unable to find max value"
+
+[functions.min]
+invoked = "min function"
+emptyArray = "Array cannot be empty"
+integersOnly = "Input must only contain integers"
+noMin = "Unable to find min value"
+
+[functions.mod]
+divideByZero = "Cannot divide by zero"
+
+[functions.mul]
+invoked = "mul function"
+
+[functions.parameters]
+invoked = "parameters function"
+traceKey = "parameters key: %{key}"
+keyNotString = "Parameter '%{key}' is not a string"
+keyNotFound = "Parameter '%{key}' not found in context"
+
+[functions.path]
+traceArgs = "Executing path function with args: %{args}"
+argsMustBeStrings = "Arguments must all be strings"
+
+[functions.reference]
+invoked = "reference function"
+keyNotFound = "Invalid resourceId or resource has not executed yet: %{key}"
+
+[functions.resourceId]
+incorrectTypeFormat = "Type argument must contain exactly one slash"
+invalidFirstArgType = "Invalid argument type for first parameter"
+incorrectNameFormat = "Name argument cannot contain a slash"
+invalidSecondArgType = "Invalid argument type for second parameter"
+
+[functions.sub]
+invoked = "sub function"
+
+[functions.systemRoot]
+invoked = "systemRoot function"
+
+[functions.variables]
+invoked = "variables function"
+keyNotFound = "Variable '%{key}' does not exist or has not been initialized yet"
+
+[parser.expression]
+functionNodeNotFound = "Function node not found"
+parsingFunction = "Parsing function '%{name}'"
+parsingAccessor = "Parsing accessor '%{name}'"
+accessorParsingError = "Error parsing accessor"
+parsingMemberAccessor = "Parsing member accessor '%{name}'"
+memberNotFound = "Member name not found"
+parsingIndexAccessor = "Parsing index accessor '%{index}'"
+indexNotFound = "Index value not found"
+invalidAccessorKind = "Invalid accessor kind: '%{kind}'"
+functionResult = "Function results: %{results}"
+evalAccessors = "Evaluating accessors"
+memberNameNotFound = "Member '%{member}' not found"
+accessOnNonObject = "Member access on non-object value"
+expressionResult = "Expression result: %{result}"
+indexNotValid = "Index is not a valid number"
+indexOutOfBounds = "Index is out of bounds"
+indexOnNonArray = "Index access on non-array value"
+invalidIndexType = "Invalid index type"
+
+[parser.functions]
+foundErrorNode = "Found error node parsing function"
+nameNodeNotFound = "Function name node not found"
+functionName = "Function name: '%{name}'"
+argIsExpression = "Argument is an expression"
+argIsValue = "Argument is a value: '%{value}'"
+unknownArgType = "Unknown argument type '%{kind}'"
+
+[parser]
+parsingStatement = "Parsing statement: %{statement}"
+failedToParse = "Unable to parse: %{statement}"
+failedToParseRoot = "Unable to parse statement root: %{statement}"
+invalidStatement = "Invalid statement: %{statement}"
+failedToParseStringLiteral = "Unable to parse string literal"
+parsingStringLiteral = "Parsing string literal: %{value}"
+failedToParseEscapedStringLiteral = "Unable to parse escaped string literal"
+parsingEscapedStringLiteral = "Parsing escaped string literal: %{value}"
+parsingExpression = "Parsing expression"
+unknownExpressionType = "Unknown expression type: %{kind}"
+
+[dscerror]
+adapterNotFound = "Adapter not found"
+booleanConversion = "Function boolean argument conversion"
+exitCode = "exit code"
+commandResource = "Command: Resource"
+commandExecutable = "Command: Executable"
+manifestDescription = "manifest description"
+commandOperation = "Command: Operation"
+forExecutable = "for executable"
+function = "Function"
+error = "error"
+integerConversion = "Function integer argument conversion"
+invalidConfiguration = "Invalid configuration"
+unsupportedManifestVersion = "Unsupported manifest version"
+mustBe = "Must be"
+invalidFunctionParameterCount = "Invalid function parameter count for"
+expected = "expected"
+got = "got"
+language = "Language"
+manifest = "Manifest"
+missingManifest = "Missing manifest"
+adapterBasedResource = "Adapter based resource"
+missingRequires = "missing 'requires' property for resource"
+schemaMissing = "Schema missing from manifest"
+notImplemented = "Not implemented"
+notSupported = "Not supported"
+numberConversion = "Number conversion"
+operation = "Operation"
+parser = "Parser"
+progress = "Progress"
+resourceNotFound = "Resource not found"
+resourceManifestNotFound = "Resource manifest not found"
+schema = "Schema"
+schemaNotAvailable = "No Schema found and `validate` is not supported"
+securityContext = "Security context"
+utf8Conversion = "UTF-8 conversion"
+unknown = "Unknown"
+unrecognizedSchemaUri = "Unrecognized $schema URI"
+validation = "Validation"
+validSchemaUrisAre = "Valid schema URIs are"
+extension = "Extension"
+unsupportedCapability = "does not support capability"
+setting = "Setting"
+
+[progress]
+failedToSerialize = "Failed to serialize progress JSON: %{json}"
+
+[util]
+foundSetting = "Found setting '%{name}' in %{path}"
+notFoundSetting = "Setting '%{name}' not found in %{path}"
+failedToGetExePath = "Can't get 'dsc' executable path"
+settingNotFound = "Setting '%{name}' not found"

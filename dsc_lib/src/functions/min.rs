@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -24,13 +25,13 @@ impl Function for Min {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        debug!("min function");
+        debug!("{}", t!("functions.min.invoked"));
         if args.len() == 1 {
             if let Some(array) = args[0].as_array() {
                 find_min(array)
             }
             else {
-                Err(DscError::Parser("Array cannot be empty".to_string()))
+                Err(DscError::Parser(t!("functions.min.emptyArray").to_string()))
             }
         }
         else {
@@ -40,8 +41,8 @@ impl Function for Min {
 }
 
 fn find_min(args: &[Value]) -> Result<Value, DscError> {
-    let array = args.iter().map(|v| v.as_i64().ok_or(DscError::Parser("Input must only contain integers".to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
-    let value = array.iter().min().ok_or(DscError::Parser("Unable to find min value".to_string()))?;
+    let array = args.iter().map(|v| v.as_i64().ok_or(DscError::Parser(t!("functions.min.integersOnly").to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
+    let value = array.iter().min().ok_or(DscError::Parser(t!("functions.min.noMin").to_string()))?;
     Ok(Value::Number((*value).into()))
 }
 

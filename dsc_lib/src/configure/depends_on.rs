@@ -6,9 +6,9 @@ use crate::configure::Configuration;
 use crate::DscError;
 use crate::parser::Statement;
 
+use rust_i18n::t;
 use super::context::Context;
-
-use tracing::{debug, trace};
+use tracing::debug;
 
 /// Gets the invocation order of resources based on their dependencies
 ///
@@ -29,7 +29,7 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
     for resource in &config.resources {
         // validate that the resource isn't specified more than once in the config
         if config.resources.iter().filter(|r| r.name == resource.name && r.resource_type == resource.resource_type).count() > 1 {
-            return Err(DscError::Validation(format!("Resource named '{0}' is specified more than once in the configuration", resource.name)));
+            return Err(DscError::Validation(t!("configure.dependsOn.duplicateResource", name = resource.name).to_string()));
         }
 
         let mut dependency_already_in_order = true;
@@ -37,17 +37,17 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
             for dependency in depends_on {
                 let statement = parser.parse_and_execute(&dependency, context)?;
                 let Some(string_result) = statement.as_str() else {
-                    return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect: {dependency}")));
+                    return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = dependency).to_string()));
                 };
                 let (resource_type, resource_name) = get_type_and_name(string_result)?;
 
                 // find the resource by name
                 let Some(dependency_resource) = config.resources.iter().find(|r| r.name.eq(resource_name)) else {
-                    return Err(DscError::Validation(format!("'dependsOn' resource name '{resource_name}' does not exist for resource named '{0}'", resource.name)));
+                    return Err(DscError::Validation(t!("configure.dependsOn.dependencyNotFound", dependency_name = resource_name, resource_name = resource.name).to_string()));
                 };
                 // validate the type matches
                 if dependency_resource.resource_type != resource_type {
-                    return Err(DscError::Validation(format!("'dependsOn' resource type '{resource_type}' does not match resource type '{0}' for resource named '{1}'", dependency_resource.resource_type, dependency_resource.name)));
+                    return Err(DscError::Validation(t!("configure.dependsOn.dependencyTypeMismatch", resource_type = resource_type, dependency_type = dependency_resource.resource_type, resource_name = resource.name).to_string()));
                 }
                 // see if the dependency is already in the order
                 if order.iter().any(|r| r.name == resource_name && r.resource_type == resource_type) {
@@ -67,16 +67,16 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
                   continue;
                 };
                 // check if the order has resource before its dependencies
-                let resource_index = order.iter().position(|r| r.name == resource.name && r.resource_type == resource.resource_type).ok_or(DscError::Validation("Resource not found in order".to_string()))?;
+                let resource_index = order.iter().position(|r| r.name == resource.name && r.resource_type == resource.resource_type).ok_or(DscError::Validation(t!("configure.dependsOn.resourceNotInOrder").to_string()))?;
                 for dependency in depends_on {
                   let statement = parser.parse_and_execute(dependency, context)?;
                   let Some(string_result) = statement.as_str() else {
-                      return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect: {dependency}")));
+                      return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = dependency).to_string()));
                   };
                   let (resource_type, resource_name) = get_type_and_name(string_result)?;
-                  let dependency_index = order.iter().position(|r| r.name == resource_name && r.resource_type == resource_type).ok_or(DscError::Validation("Dependency not found in order".to_string()))?;
+                  let dependency_index = order.iter().position(|r| r.name == resource_name && r.resource_type == resource_type).ok_or(DscError::Validation(t!("configure.dependsOn.dependencyNotInOrder").to_string()))?;
                   if resource_index < dependency_index {
-                      return Err(DscError::Validation(format!("Circular dependency detected for resource named '{0}'", resource.name)));
+                      return Err(DscError::Validation(t!("configure.dependsOn.circularDependency", resource_name = resource.name).to_string()));
                   }
                 }
             }
@@ -87,14 +87,14 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
         order.push(resource.clone());
     }
 
-    trace!("Resource invocation order: {0:?}", order);
+    debug!("{}: {order:?}", t!("configure.dependsOn.invocationOrder"));
     Ok(order)
 }
 
 fn get_type_and_name(statement: &str) -> Result<(&str, &str), DscError> {
     let parts: Vec<&str> = statement.split(':').collect();
     if parts.len() != 2 {
-        return Err(DscError::Validation(format!("'dependsOn' syntax is incorrect: {statement}")));
+        return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = statement).to_string()));
     }
     Ok((parts[0], parts[1]))
 }
@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn test_simple_order() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn test_duplicate_name() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: First
           type: Test/Null
@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn test_missing_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn test_multiple_same_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn test_circular_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Second
           type: Test/Null
@@ -212,7 +212,7 @@ mod tests {
     #[test]
     fn test_multiple_dependencies() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Third
           type: Test/Null
@@ -236,7 +236,7 @@ mod tests {
     #[test]
     fn test_complex_circular_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Third
           type: Test/Null
@@ -262,7 +262,7 @@ mod tests {
     #[test]
     fn test_complex_dependency() {
         let config_yaml: &str = r#"
-        $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Third
           type: Test/Null

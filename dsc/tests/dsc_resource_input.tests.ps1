@@ -5,7 +5,7 @@ Describe 'tests for resource input' {
     BeforeAll {
         $manifest = @'
     {
-        "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+        "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
         "type": "Test/EnvVarInput",
         "version": "0.1.0",
         "get": {
@@ -85,7 +85,7 @@ Describe 'tests for resource input' {
     }
 '@
         $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = $TestDrive
+        $env:DSC_RESOURCE_PATH = $TestDrive + [System.IO.Path]::PathSeparator + $env:PATH
         Set-Content $TestDrive/EnvVarInput.dsc.resource.json -Value $manifest
     }
 
@@ -110,7 +110,7 @@ Describe 'tests for resource input' {
         }
 "@
 
-        $result = $json | dsc resource $operation -r Test/EnvVarInput | ConvertFrom-Json
+        $result = $json | dsc resource $operation -r Test/EnvVarInput -f - | ConvertFrom-Json
         $result.$member.Hello | Should -BeExactly 'foo'
         $result.$member.World | Should -Be 2
         $result.$member.Boolean | Should -Be 'true'

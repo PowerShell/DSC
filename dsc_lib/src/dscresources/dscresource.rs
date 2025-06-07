@@ -1,13 +1,15 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::config_doc::ExecutionKind, dscresources::resource_manifest::Kind};
+use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator}, dscresources::resource_manifest::Kind};
+use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use dscerror::DscError;
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 use std::collections::HashMap;
-use tracing::debug;
+use tracing::{debug, info};
 
 use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
 
@@ -44,8 +46,9 @@ pub struct DscResource {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum Capability {
-    /// The resource supports retriving configuration.
+    /// The resource supports retrieving configuration.
     Get,
     /// The resource supports applying configuration.
     Set,
@@ -89,6 +92,31 @@ impl DscResource {
             require_adapter: None,
             manifest: None,
         }
+    }
+
+    fn create_config_for_adapter(self, adapter: &str, input: &str) -> Result<Configurator, DscError> {
+        // create new configuration with adapter and use this as the resource
+        let mut configuration = Configuration::new();
+        let mut property_map = Map::new();
+        property_map.insert("name".to_string(), Value::String(self.type_name.clone()));
+        property_map.insert("type".to_string(), Value::String(self.type_name.clone()));
+        if !input.is_empty() {
+            let resource_properties: Value = serde_json::from_str(input)?;
+            property_map.insert("properties".to_string(), resource_properties);
+        }
+        let mut resources_map = Map::new();
+        resources_map.insert("resources".to_string(), Value::Array(vec![Value::Object(property_map)]));
+        let adapter_resource = Resource {
+            name: self.type_name.clone(),
+            resource_type: adapter.to_string(),
+            depends_on: None,
+            metadata: None,
+            properties: Some(resources_map),
+        };
+        configuration.resources.push(adapter_resource);
+        let config_json = serde_json::to_string(&configuration)?;
+        let configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
+        Ok(configurator)
     }
 }
 
@@ -188,10 +216,28 @@ pub trait Invoke {
 
 impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
-        debug!("Invoking get for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+            let result = configurator.invoke_get()?;
+            let GetResult::Resource(ref resource_result) = result.results[0].result else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "get", resource = self.type_name).to_string()));
+            };
+            let properties = resource_result.actual_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", property_type = "object").to_string()))?
+                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let get_result = GetResult::Resource(ResourceGetResponse {
+                actual_state: properties.clone(),
+            });
+            return Ok(get_result);
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("get custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -204,10 +250,37 @@ impl Invoke for DscResource {
     }
 
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
-        debug!("Invoking set for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
+            let result = configurator.invoke_set(false)?;
+            let SetResult::Resource(ref resource_result) = result.results[0].result else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "set", resource = self.type_name).to_string()));
+            };
+            let before_state = resource_result.before_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "beforeState", property_type = "object").to_string()))?
+                .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let after_state = resource_result.after_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "afterState", property_type = "object").to_string()))?
+                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let diff = get_diff(&before_state, &after_state);
+            let set_result = SetResult::Resource(ResourceSetResponse {
+                before_state: before_state.clone(),
+                after_state: after_state.clone(),
+                changed_properties: if diff.is_empty() { None } else { Some(diff) },
+            });
+            return Ok(set_result);
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("set custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -220,10 +293,38 @@ impl Invoke for DscResource {
     }
 
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
-        debug!("Invoking test for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
+            let result = configurator.invoke_test()?;
+            let TestResult::Resource(ref resource_result) = result.results[0].result else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "test", resource = self.type_name).to_string()));
+            };
+            let desired_state = resource_result.desired_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "desiredState", property_type = "object").to_string()))?
+                .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", property_type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", property_type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let actual_state = resource_result.actual_state
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", property_type = "object").to_string()))?
+                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+            let diff_properties = get_diff(&desired_state, &actual_state);
+            let test_result = TestResult::Resource(ResourceTestResponse {
+                desired_state,
+                actual_state,
+                in_desired_state: resource_result.in_desired_state,
+                diff_properties,
+            });
+            return Ok(test_result);
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("test custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -264,10 +365,16 @@ impl Invoke for DscResource {
     }
 
     fn delete(&self, filter: &str) -> Result<(), DscError> {
-        debug!("Invoking delete for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+            configurator.invoke_set(false)?;
+            return Ok(());
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("set custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -280,10 +387,14 @@ impl Invoke for DscResource {
     }
 
     fn validate(&self, config: &str) -> Result<ValidateResult, DscError> {
-        debug!("Invoking validate for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeValidate", resource = self.type_name));
+        if self.require_adapter.is_some() {
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeValidateNotSupported", resource = self.type_name).to_string()));
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("validate custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -296,10 +407,14 @@ impl Invoke for DscResource {
     }
 
     fn schema(&self) -> Result<String, DscError> {
-        debug!("Invoking schema for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeSchema", resource = self.type_name));
+        if self.require_adapter.is_some() {
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeSchemaNotSupported", resource = self.type_name).to_string()));
+        }
+
         match &self.implemented_as {
             ImplementedAs::Custom(_custom) => {
-                Err(DscError::NotImplemented("schema custom resources".to_string()))
+                Err(DscError::NotImplemented(t!("dscresources.dscresource.customResourceNotSupported").to_string()))
             },
             ImplementedAs::Command => {
                 let Some(manifest) = &self.manifest else {
@@ -312,7 +427,31 @@ impl Invoke for DscResource {
     }
 
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
-        debug!("Invoking export for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
+        if let Some(adapter) = &self.require_adapter {
+            let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
+            let result = configurator.invoke_export()?;
+            let Some(configuration) = result.result else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
+            };
+            let mut export_result = ExportResult {
+                actual_state: Vec::new(),
+            };
+            debug!("Export result: {}", serde_json::to_string(&configuration)?);
+            for resource in configuration.resources {
+                let Some(properties) = resource.properties else {
+                    return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
+                };
+                let results = properties
+                    .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                    .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?;
+                for result in results {
+                    export_result.actual_state.push(serde_json::to_value(result.clone())?);
+                }
+            }
+            return Ok(export_result);
+        }
+
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
@@ -321,7 +460,11 @@ impl Invoke for DscResource {
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {
-        debug!("Invoking resolve for resource: {}", self.type_name);
+        debug!("{}", t!("dscresources.dscresource.invokeResolve", resource = self.type_name));
+        if self.require_adapter.is_some() {
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.invokeResolveNotSupported", resource = self.type_name).to_string()));
+        }
+
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
@@ -338,6 +481,16 @@ pub fn get_well_known_properties() -> HashMap<String, Value> {
 }
 
 #[must_use]
+/// Performs a comparison of two JSON Values if the expected is a strict subset of the actual
+///
+/// # Arguments
+///
+/// * `expected` - The expected value
+/// * `actual` - The actual value
+///
+/// # Returns
+///
+/// An array of top level properties that differ, if any
 pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
     let mut diff_properties: Vec<String> = Vec::new();
     if expected.is_null() {
@@ -363,28 +516,176 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
             if value.is_object() {
                 let sub_diff = get_diff(value, &actual[key]);
                 if !sub_diff.is_empty() {
+                    debug!("{}", t!("dscresources.dscresource.subDiff", key = key));
                     diff_properties.push(key.to_string());
                 }
             }
             else {
-                match actual.as_object() {
-                    Some(actual_object) => {
-                        if actual_object.contains_key(key) {
-                            if value != &actual[key] {
+                // skip `$schema` key as that is provided as input, but not output typically
+                if key == "$schema" {
+                    continue;
+                }
+
+                if let Some(actual_object) = actual.as_object() {
+                    if actual_object.contains_key(key) {
+                        if let Some(value_array) = value.as_array() {
+                            if let Some(actual_array) = actual[key].as_array() {
+                                if !is_same_array(value_array, actual_array) {
+                                    info!("{}", t!("dscresources.dscresource.diffArray", key = key));
+                                    diff_properties.push(key.to_string());
+                                }
+                            } else {
+                                info!("{}", t!("dscresources.dscresource.diffNotArray", key = actual[key]));
                                 diff_properties.push(key.to_string());
                             }
-                        }
-                        else {
+                        } else if value != &actual[key] {
                             diff_properties.push(key.to_string());
                         }
-                    },
-                    None => {
+                    } else {
+                        info!("{}", t!("dscresources.dscresource.diffKeyMissing", key = key));
                         diff_properties.push(key.to_string());
-                    },
+                    }
+                } else {
+                    info!("{}", t!("dscresources.dscresource.diffKeyNotObject", key = key));
+                    diff_properties.push(key.to_string());
                 }
             }
         }
     }
 
     diff_properties
+}
+
+/// Compares two arrays independent of order
+fn is_same_array(expected: &Vec<Value>, actual: &Vec<Value>) -> bool {
+    if expected.len() != actual.len() {
+        info!("{}", t!("dscresources.dscresource.diffArraySize"));
+        return false;
+    }
+
+    for item in expected {
+        if !array_contains(actual, item) {
+            info!("{}", t!("dscresources.dscresource.diffMissingItem"));
+            return false;
+        }
+    }
+
+    true
+}
+
+fn array_contains(array: &Vec<Value>, find: &Value) -> bool {
+    for item in array {
+        if find.is_boolean() && item.is_boolean() && find.as_bool().unwrap() == item.as_bool().unwrap() {
+            return true;
+        }
+
+        if find.is_f64() && item.is_f64() && (find.as_f64().unwrap() - item.as_f64().unwrap()).abs() < 0.1 {
+            return true;
+        }
+
+        if find.is_i64() && item.is_i64() && find.as_i64().unwrap() == item.as_i64().unwrap() {
+            return true;
+        }
+
+        if find.is_null() && item.is_null() {
+            return true;
+        }
+
+        if find.is_number() && item.is_number() && find.as_number().unwrap() == item.as_number().unwrap() {
+            return true;
+        }
+
+        if find.is_string() && item.is_string() && find.as_str().unwrap() == item.as_str().unwrap() {
+            return true;
+        }
+
+        if find.is_u64() && item.is_u64() && find.as_u64().unwrap() == item.as_u64().unwrap() {
+            return true;
+        }
+
+        if find.is_object() && item.is_object() {
+            let obj_diff = get_diff(find, item);
+            if obj_diff.is_empty() {
+                return true;
+            }
+        }
+
+        if find.is_array() && item.is_array() && is_same_array(item.as_array().unwrap(), find.as_array().unwrap()) {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[test]
+fn same_array() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!(null)];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!(null)];
+    assert_eq!(is_same_array(&array_one, &array_two), true);
+}
+
+#[test]
+fn same_array_out_of_order() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(true), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a"), json!(true)];
+    assert_eq!(is_same_array(&array_one, &array_two), true);
+}
+
+#[test]
+fn different_array() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a"), json!(2)];
+    assert_eq!(is_same_array(&array_one, &array_two), false);
+}
+
+#[test]
+fn different_array_sizes() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a")];
+    assert_eq!(is_same_array(&array_one, &array_two), false);
+}
+
+#[test]
+fn array_with_multiple_objects_with_actual_superset() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!({"c":"d"})];
+    let array_two = vec![json!("a"), json!(1), json!({"c":"d", "a":"b"}), json!({"c":"d"})];
+    assert_eq!(is_same_array(&array_one, &array_two), true);
+}
+
+#[test]
+fn array_with_multiple_objects_with_expected_superset() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b", "c":"d"}), json!({"c":"d"})];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!({"c":"d"})];
+    assert_eq!(is_same_array(&array_one, &array_two), false);
+}
+
+#[test]
+fn array_with_duplicates_out_of_order() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!({"a":"b"})];
+    let array_two = vec![json!({"a":"b"}), json!("a"), json!(1), json!({"a":"b"})];
+    assert_eq!(is_same_array(&array_one, &array_two), true);
+}
+
+#[test]
+fn same_array_with_nested_array() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(1)])];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(1)])];
+    assert_eq!(is_same_array(&array_one, &array_two), true);
+}
+
+#[test]
+fn different_array_with_nested_array() {
+    use serde_json::json;
+    let array_one = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(1)])];
+    let array_two = vec![json!("a"), json!(1), json!({"a":"b"}), json!(vec![json!("a"), json!(2)])];
+    assert_eq!(is_same_array(&array_one, &array_two), false);
 }

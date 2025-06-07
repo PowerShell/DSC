@@ -9,11 +9,10 @@ Describe 'Tests for listing resources' {
         $resources.Count | Should -BeGreaterThan 0
         $resources.type | Should -Contain 'Microsoft.DSC/Assertion'
         $resources.type | Should -Contain 'Microsoft.DSC/Group'
-        $resources.type | Should -Contain 'Microsoft.DSC/Parallel'
         $resources.type | Should -Contain 'Microsoft/OSInfo'
-        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/Group' }).Kind | Should -BeExactly 'Group'
-        ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'Resource'
-        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/PowerShell' }).Kind | Should -BeExactly 'Adapter'
+        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/Group' }).Kind | Should -BeExactly 'group'
+        ($resources | Where-Object { $_.type -eq 'Microsoft/OSInfo' }).Kind | Should -BeExactly 'resource'
+        ($resources | Where-Object { $_.type -eq 'Microsoft.DSC/PowerShell' }).Kind | Should -BeExactly 'adapter'
     }
 
     It 'dsc resource list --tags "<tags>" and --description "<description> work' -TestCases @(
@@ -48,10 +47,10 @@ Describe 'Tests for listing resources' {
         }
     }
 
-    It 'can accept the use of --format as a subcommand' {
+    It 'can accept the use of --output-format as a subcommand' {
         $expectedCount = 1
         $expectedType = 'Microsoft/OSInfo'
-        $resources = dsc resource list --description "operating system" --format pretty-json | ConvertFrom-Json
+        $resources = dsc resource list --description "operating system" --output-format pretty-json | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $resources.Count | Should -Be $expectedCount
         if ($expectedCount -gt 0) {
@@ -59,17 +58,47 @@ Describe 'Tests for listing resources' {
         }
     }
 
+    It 'json progress for resource subcommand' {
+        dsc -t json -p json resource list -a '*' 2> $TestDrive/ErrorStream.txt
+        $LASTEXITCODE | Should -Be 0
+        $lines = Get-Content $TestDrive/ErrorStream.txt
+        $ProgressMessagesFound = $False
+        foreach ($line in $lines) {
+            $jp = $line | ConvertFrom-Json
+            if ($jp.activity) { # if line is a progress message
+                $jp.id | Should -Not -BeNullOrEmpty
+                $jp.totalItems | Should -Not -BeNullOrEmpty
+                $jp.completedItems | Should -Not -BeNullOrEmpty
+                $ProgressMessagesFound = $True
+            }
+        }
+        $ProgressMessagesFound | Should -BeTrue
+    }
+
     It 'Capabilities are returned' {
         $resource = dsc resource list Microsoft/OSInfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $resource.capabilities.Count | Should -Be 2
-        $resource.capabilities | Should -Contain 'Get'
-        $resource.capabilities | Should -Contain 'Export'
+        $resource.capabilities | Should -Contain 'get'
+        $resource.capabilities | Should -Contain 'export'
     }
 
     It 'Invalid adapter returns an error' {
         $out = dsc resource list --adapter 'foo*' 2>&1 | Out-String
         $LASTEXITCODE | Should -Be 0
-        $out | Should -BeLike "*ERROR*Adapter 'foo`*' not found*"
+        $out | Should -BeLike "*ERROR*Adapter not found: foo`*"
+    }
+
+    It 'Table is not truncated' {
+        $output = dsc resource list --output-format table-no-truncate
+        $LASTEXITCODE | Should -Be 0
+        $foundWideLine = $false
+        foreach ($line in $output) {
+            if ($line.Length -gt [Console]::WindowWidth) {
+                $foundWideLine = $true
+                break
+            }
+        }
+        $foundWideLine | Should -BeTrue
     }
 }

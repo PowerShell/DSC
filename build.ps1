@@ -1,3 +1,5 @@
+#!/usr/bin/env pwsh
+
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
@@ -14,8 +16,17 @@ param(
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
     [switch]$UseCratesIO,
-    [switch]$UpdateLockFile
+    [switch]$UpdateLockFile,
+    [switch]$Audit,
+    [switch]$UseCFSAuth,
+    [switch]$Clean,
+    [switch]$Verbose
 )
+
+$env:RUSTC_LOG=$null
+if ($Verbose) {
+    $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
+}
 
 if ($GetPackageVersion) {
     $match = Select-String -Path $PSScriptRoot/dsc/Cargo.toml -Pattern '^version\s*=\s*"(?<ver>.*?)"$'
@@ -27,11 +38,19 @@ if ($GetPackageVersion) {
 }
 
 $filesForWindowsPackage = @(
+    'appx.dsc.extension.json',
+    'appx-discover.ps1',
     'dsc.exe',
+    'dsc_default.settings.json',
+    'dsc.settings.json',
     'dscecho.exe',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
+    'NOTICE.txt',
+    'osinfo.exe',
+    'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'reboot_pending.dsc.resource.json',
@@ -42,17 +61,25 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.exe',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
-    'wmi.resource.ps1'
+    'wmi.resource.ps1',
+    'windows_baseline.dsc.yaml',
+    'windows_inventory.dsc.yaml'
 )
 
 $filesForLinuxPackage = @(
     'dsc',
+    'dsc_default.settings.json',
+    'dsc.settings.json'
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'apt.dsc.resource.json',
     'apt.dsc.resource.sh',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
+    'NOTICE.txt',
+    'osinfo',
+    'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
@@ -61,12 +88,18 @@ $filesForLinuxPackage = @(
 
 $filesForMacPackage = @(
     'dsc',
+    'dsc_default.settings.json',
+    'dsc.settings.json'
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
     'brew.dsc.resource.json',
     'brew.dsc.resource.sh',
     'group.dsc.resource.json',
+    'include.dsc.resource.json',
+    'NOTICE.txt',
+    'osinfo',
+    'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
@@ -94,8 +127,15 @@ function Find-LinkExe {
     }
 }
 
-if ($null -ne (Get-Command rustup -ErrorAction Ignore)) {
-    $rustup = 'rustup'
+$channel = 'stable'
+if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
+    $rustup = 'msrustup'
+    $channel = 'ms-stable'
+    if ($architecture -eq 'current') {
+        $env:MSRUSTUP_TOOLCHAIN = "$architecture"
+    }
+} elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
+        $rustup = 'rustup'
 } else {
     $rustup = 'echo'
 }
@@ -117,6 +157,10 @@ if ($null -ne $packageType) {
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
+    }
+    else  {
+        Write-Verbose -Verbose "Rust found, updating..."
+        & $rustup update
     }
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
@@ -162,7 +206,6 @@ if ($architecture -eq 'current') {
     $target = Join-Path $PSScriptRoot 'bin' $configuration
 }
 else {
-    & $rustup target add $architecture
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -170,6 +213,10 @@ else {
 }
 
 if (!$SkipBuild) {
+    if ($architecture -ne 'Current') {
+        & $rustup target add --toolchain $channel $architecture
+    }
+
     if (Test-Path $target) {
         Remove-Item $target -Recurse -ErrorAction Ignore
     }
@@ -185,27 +232,31 @@ if (!$SkipBuild) {
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
 
-        if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-            throw "Azure CLI not found"
-        }
+        if ($UseCFSAuth -or $null -ne $env:TF_BUILD) {
+            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+                throw "Azure CLI not found"
+            }
 
-        if ($null -ne $env:CARGO_REGISTRIES_POWERSHELL_TOKEN) {
-            Write-Host "Using existing token"
-        } else {
-            Write-Host "Getting token"
-            $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-            } else {
-                $header = "Bearer $accessToken"
-                $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
+                Write-Host "Getting token"
+                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+                } else {
+                    $header = "Bearer $accessToken"
+                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
+                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                }
+            }
+            else {
+                Write-Warning "Azure CLI not found, proceeding with anonymous access."
             }
         }
     }
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter")
+    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -222,7 +273,8 @@ if (!$SkipBuild) {
         "runcommandonset",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j"
+        "y2j",
+        "."
     )
     $pedantic_unclean_projects = @()
     $clippy_unclean_projects = @("tree-sitter-dscexpression")
@@ -252,6 +304,14 @@ if (!$SkipBuild) {
                     cargo generate-lockfile
                 }
                 else {
+                    if ($Audit) {
+                        if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
+                            cargo install cargo-audit --features=fix
+                        }
+
+                        cargo audit fix
+                    }
+
                     ./build.ps1
                 }
             }
@@ -276,6 +336,18 @@ if (!$SkipBuild) {
                         cargo generate-lockfile
                     }
                     else {
+                        if ($Audit) {
+                            if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
+                                cargo install cargo-audit --features=fix
+                            }
+
+                            cargo audit fix
+                        }
+
+                        if ($Clean) {
+                            cargo clean
+                        }
+
                         cargo build @flags
                     }
                 }
@@ -289,10 +361,11 @@ if (!$SkipBuild) {
             $binary = Split-Path $project -Leaf
 
             if ($IsWindows) {
-                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore
+                Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore -Verbose
+                Copy-Item "$path/$binary.pdb" $target -ErrorAction Ignore -Verbose
             }
             else {
-                Copy-Item "$path/$binary" $target -ErrorAction Ignore
+                Copy-Item "$path/$binary" $target -ErrorAction Ignore -Verbose
             }
 
             if (Test-Path "./copy_files.txt") {
@@ -312,7 +385,12 @@ if (!$SkipBuild) {
                 }
             }
 
-            Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+            if ($IsWindows) {
+                Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
+            }
+            else { # don't copy WindowsPowerShell resource manifest
+                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+            }
 
             # be sure that the files that should be executable are executable
             if ($IsLinux -or $IsMacOS) {
@@ -467,7 +545,7 @@ function Find-MakeAppx() {
     $makeappx
 }
 
-$productVersion = ((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1'
+$productVersion = (((Get-Content $PSScriptRoot/dsc/Cargo.toml) -match '^version\s*=\s*') -replace 'version\s*=\s*"(.*?)"', '$1').Trim()
 
 if ($packageType -eq 'msixbundle') {
     if (!$IsWindows) {
@@ -504,7 +582,12 @@ if ($packageType -eq 'msixbundle') {
             $productName += "-Preview"
         }
         # save preview number
-        $previewNumber = $productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1'
+        $previewNumber = [int]($productVersion -replace '.*?-[a-z]+\.([0-9]+)', '$1' | Out-String)
+        $productLabel = $productVersion.Split('-')[1]
+        if ($productLabel.StartsWith('rc')) {
+            # if RC, we increment by 100 to ensure it's newer than the last preview
+            $previewNumber += 100
+        }
         # remove label from version
         $productVersion = $productVersion.Split('-')[0]
         # replace revision number with preview number
@@ -517,6 +600,11 @@ if ($packageType -eq 'msixbundle') {
             $displayName += "-Preview"
         }
     }
+    else {
+        # appx requires a version in the format of major.minor.build.revision with revision being 0
+        $productVersion += ".0"
+    }
+
     Write-Verbose -Verbose "Product version is $productVersion"
     $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
 
@@ -632,20 +720,30 @@ if ($packageType -eq 'msixbundle') {
         }
     }
 
-    $packageName = "DSC-$productVersion-$architecture.tar"
-    $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
-    tar cvf $tarFile -C $tgzTarget .
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create tar file"
+    # for Linux, we only build musl as its statically linked, so we remove the musl suffix
+    $productArchitecture = if ($architecture -eq 'aarch64-unknown-linux-musl') {
+        'aarch64-linux'
+    } elseif ($architecture -eq 'x86_64-unknown-linux-musl') {
+        'x86_64-linux'
+    } else {
+        $architecture
     }
-    Write-Host -ForegroundColor Green "`nTar file is created at $tarFile"
 
-    $gzFile = "$tarFile.gz"
-    gzip -c $tarFile > $gzFile
+    Write-Verbose -Verbose "Creating tar.gz file"
+    $packageName = "DSC-$productVersion-$productArchitecture.tar.gz"
+    $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
+    tar -czvf $tarFile -C $tgzTarget .
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create gz file"
+        throw "Failed to create tar.gz file"
     }
-    Write-Host -ForegroundColor Green "`nGz file is created at $gzFile"
+
+    # check it's valid
+    $out = file $tarFile
+    if ($out -notmatch 'gzip compressed data') {
+        throw "Invalid tar.gz file"
+    }
+
+    Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
 }
 
 $env:RUST_BACKTRACE=1

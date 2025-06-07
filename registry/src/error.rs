@@ -1,32 +1,33 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 #[allow(clippy::module_name_repetitions)]
 pub enum RegistryError {
-    #[error("Invalid hive: {0}.")]
+    #[error("{t}: {0}", t = t!("error.invalidHive"))]
     InvalidHive(String),
 
-    #[error("JSON: {0}")]
+    #[error("{t}: {0}", t = t!("error.json"))]
     Json(#[from] serde_json::Error),
 
-    #[error("Registry: {0}")]
+    #[error("{t}: {0}", t = t!("error.registry"))]
     Registry(#[from] registry::Error),
 
-    #[error("Registry key: {0}")]
+    #[error("{t}: {0}", t = t!("error.registryKey"))]
     RegistryKey(#[from] registry::key::Error),
 
-    #[error("Registry key not found: {0}")]
+    #[error("{t}: {0}", t = t!("error.registryKeyNotFound"))]
     RegistryKeyNotFound(String),
 
-    #[error("Registry value: {0}")]
+    #[error("{t}: {0}", t = t!("error.registryValue"))]
     RegistryValue(#[from] registry::value::Error),
 
-    #[error("UTF-16 conversion of {0} failed due to interior NULL values")]
+    #[error("{t}: {0}", t = t!("error.utf16Conversion"))]
     Utf16Conversion(String),
 
-    #[error("Unsupported registry value data type")]
+    #[error("{t}", t = t!("error.unsupportedValueDataType"))]
     UnsupportedValueDataType,
 }

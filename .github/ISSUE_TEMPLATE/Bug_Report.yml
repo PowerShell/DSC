@@ -35,10 +35,10 @@ body:
 
          ```yaml
          # repro.dsc.config.yaml
-         $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+         $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
          resources:
          - name: repro
-           type: Test/Echo
+           type: Microsoft.DSC.Debug/Echo
            properties:
              output: expected value
          ```
@@ -59,7 +59,7 @@ body:
       
       results:
       - name: repro
-        type: Test/Echo
+        type: Microsoft.DSC.Debug/Echo
         result:
           actualState:
             output: expected value
@@ -77,7 +77,7 @@ body:
       
       results:
       - name: repro
-        type: Test/Echo
+        type: Microsoft.DSC.Debug/Echo
         result:
           actualState:
             output: other value

@@ -1,5 +1,5 @@
 # Example configuration that uses assertions to validate the environment before running the configuration.
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: current user registry
   type: Microsoft.Windows/Registry
@@ -11,7 +11,7 @@ resources:
 - name: my assertions
   type: Microsoft.DSC/Assertion
   properties:
-    $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
     - name: os
       type: Microsoft/OSInfo
@@ -23,5 +23,5 @@ resources:
         keyPath: HKLM\Software\Microsoft\Windows NT\CurrentVersion
         valueName: SystemRoot
         valueData:
-          # this is deliberately set to z: drive so that the assertion fails
-          String: Z:\Windows
+          # this is deliberately set to L: drive so that the assertion fails
+          String: L:\Windows

@@ -4,6 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function};
+use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
 
@@ -30,7 +31,7 @@ impl Function for Max {
                 find_max(array)
             }
             else {
-                Err(DscError::Parser("Array cannot be empty".to_string()))
+                Err(DscError::Parser(t!("functions.max.emptyArray").to_string()))
             }
         }
         else {
@@ -40,8 +41,8 @@ impl Function for Max {
 }
 
 fn find_max(args: &[Value]) -> Result<Value, DscError> {
-    let array = args.iter().map(|v| v.as_i64().ok_or(DscError::Parser("Input must only contain integers".to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
-    let value = array.iter().max().ok_or(DscError::Parser("Unable to find max value".to_string()))?;
+    let array = args.iter().map(|v| v.as_i64().ok_or(DscError::Parser(t!("functions.max.integersOnly").to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
+    let value = array.iter().max().ok_or(DscError::Parser(t!("functions.max.noMax").to_string()))?;
     Ok(Value::Number((*value).into()))
 }
 

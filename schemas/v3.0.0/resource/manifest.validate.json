@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.validate.json",
+  "title": "Validate Method",
+  "description": "Defines how DSC must call the DSC resource to validate the state of an instance. This method is mandatory for DSC group resources. It's ignored for all other DSC resources.",
+  "type": "object",
+  "required": [
+    "executable"
+  ],
+  "properties": {
+    "executable": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/commandExecutable.json"
+    },
+    "args": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/commandArgs.json"
+    },
+    "input": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.0/definitions/inputKind.json"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "input"
+      ],
+      "not": {
+        "properties": {
+          "args": {
+            "contains": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "required": [
+          "input"
+        ]
+      },
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    },
+    {
+      "required": [
+        "input"
+      ],
+      "properties": {
+        "args": {
+          "contains": {
+            "type": "object"
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      }
+    }
+  ]
+}

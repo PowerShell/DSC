@@ -2,9 +2,9 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id:     <HOST>/<PREFIX>/<VERSION>/outputs/schema.yaml
 
-title: DSC Resource schema result
+title: DSC resource schema result
 description: >-
-  Describes the return data for a DSC Resource from the `dsc schema`
+  Describes the return data for a DSC resource from the `dsc schema`
   command. This command always returns a JSON schema document.
 
 type: object

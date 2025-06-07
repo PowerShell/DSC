@@ -2,7 +2,7 @@
     "rust-analyzer.linkedProjects": [
         "./dsc/Cargo.toml",
         "./dsc_lib/Cargo.toml",
-        "./echo/Cargo.toml",
+        "./dscecho/Cargo.toml",
         "./osinfo/Cargo.toml",
         "./registry/Cargo.toml",
         "./runcommandonset/Cargo.toml",
@@ -16,15 +16,16 @@
     "json.schemas": [
         {
             "fileMatch": ["**/*.dsc.resource.json"],
-            "url": "/schemas/2024/04/bundled/resource/manifest.vscode.json"
+            "url": "/schemas/v3/bundled/resource/manifest.vscode.json"
         }
     ],
     "yaml.schemas": {
-        "schemas/2024/04/bundled/config/document.vscode.json": "**.dsc.{yaml,yml,config.yaml,config.yml}",
-        "schemas/2024/04/bundled/resource/manifest.vscode.json": "**.dsc.resource.{yaml,yml}"
+        "schemas/v3/bundled/config/document.vscode.json": "**.dsc.{yaml,yml,config.yaml,config.yml}",
+        "schemas/v3/bundled/resource/manifest.vscode.json": "**.dsc.resource.{yaml,yml}"
     },
     "sarif-viewer.connectToGithubCodeScanning": "off",
     "vscode-nmake-tools.workspaceBuildDirectories": [
         "."
-    ]
+    ],
+    "azure-pipelines.1ESPipelineTemplatesSchemaFile": true
 }

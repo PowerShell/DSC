@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'concat' DSC configuration document function
-ms.date:     01/17/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       concat
 ---
@@ -35,22 +35,22 @@ The configuration uses the `concat()` function to join the strings `abc` and `de
 
 ```yaml
 # concat.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo 'abcdef'
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[concat('abc', 'def')]"
 ```
 
 ```bash
-dsc --input-file concat.example.1.dsc.config.yaml config get
+dsc config get --file concat.example.1.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Echo 'abcdef'
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: abcdef
@@ -64,10 +64,10 @@ The configuration uses the `concat()` function to return a combined array of str
 
 ```yaml
 # concat.example.2.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo ['a', 'b', 'c', 'd', 'e', 'f']
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: >-
       [concat(
@@ -77,13 +77,13 @@ resources:
 ```
 
 ```bash
-dsc config get --document concat.example.2.dsc.config.yaml
+dsc config get --file concat.example.2.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Echo ['a', 'b', 'c', 'd', 'e', 'f']
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:

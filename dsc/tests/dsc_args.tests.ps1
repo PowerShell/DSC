@@ -5,7 +5,7 @@ Describe 'config argument tests' {
     BeforeAll {
         $manifest = @'
         {
-            "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+            "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "type": "Test/Hello",
             "version": "0.1.0",
             "get": {
@@ -65,12 +65,12 @@ Describe 'config argument tests' {
 '@ }
     ) {
         param($text)
-        $output = $text | dsc resource get -r Microsoft.DSC.Debug/Echo
+        $output = $text | dsc resource get -r Microsoft.DSC.Debug/Echo -f -
         $output = $output | ConvertFrom-Json
         $output.actualState.output | Should -BeExactly 'Hello There'
     }
 
-    It '--format <format> is used even when redirected' -TestCases @(
+    It '--output-format <format> is used even when redirected' -TestCases @(
         @{ format = 'yaml'; expected = @'
 actualState:
   hello: world
@@ -86,9 +86,19 @@ actualState:
     ) {
         param($format, $expected)
 
-        $out = dsc resource get -r Test/Hello --format $format | Out-String
+        $out = dsc resource get -r Test/Hello --output-format $format | Out-String
         $LASTEXITCODE | Should -Be 0
         $out.Trim() | Should -BeExactly $expected
+    }
+
+    It 'YAML output includes object separator' {
+        $out = dsc resource list -o yaml | Out-String
+        foreach ($obj in $out.Split('---')) {
+            $resource = $obj | y2j | ConvertFrom-Json
+            $resource | Should -Not -BeNullOrEmpty
+            $resource.Type | Should -BeLike '*/*'
+            $resource.Kind | Should -BeIn ('resource', 'group', 'exporter', 'importer', 'adapter')
+        }
     }
 
     It 'can generate PowerShell completer' {
@@ -101,13 +111,13 @@ actualState:
     }
 
     It 'input can be passed using <parameter>' -TestCases @(
-        @{ parameter = '-d' }
-        @{ parameter = '--document' }
+        @{ parameter = '-i' }
+        @{ parameter = '--input' }
     ) {
         param($parameter)
 
         $yaml = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: os
   type: Microsoft/OSInfo
@@ -121,13 +131,13 @@ resources:
     }
 
     It 'input can be passed using <parameter>' -TestCases @(
-        @{ parameter = '-p' }
-        @{ parameter = '--path' }
+        @{ parameter = '-f' }
+        @{ parameter = '--file' }
     ) {
         param($parameter)
 
         $yaml = @'
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: os
   type: Microsoft/OSInfo
@@ -141,29 +151,8 @@ resources:
         $out.results[0].type | Should -BeExactly 'Microsoft/OSInfo'
     }
 
-    It '--document and --path cannot be used together' {
-        dsc config get --document 1 --path foo.json 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 2
-    }
-
-    It 'stdin and --document cannot be used together' {
-        '{ "foo": true }' | dsc config get --document 1 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 1
-    }
-
-    It 'stdin and --path cannot be used together' {
-        '{ "foo": true }' | dsc config get --path foo.json 2> $TestDrive/error.txt
-        $err = Get-Content $testdrive/error.txt -Raw
-        $err.Length | Should -Not -Be 0
-        $LASTEXITCODE | Should -Be 1
-    }
-
-    It 'stdin, --document and --path cannot be used together' {
-        '{ "foo": true }' | dsc config get --document 1 --path foo.json 2> $TestDrive/error.txt
+    It '--input and --file cannot be used together' {
+        dsc config get --input 1 --file foo.json 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 2
@@ -183,7 +172,7 @@ resources:
     }
 
     It 'stdin cannot be empty if neither input or path is provided' {
-        '' | dsc resource set -r Microsoft/OSInfo 2> $TestDrive/error.txt
+        '' | dsc resource set -r Microsoft/OSInfo -f - 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
@@ -198,14 +187,14 @@ resources:
 
     It 'path contents cannot be empty if neither stdin or input is provided' {
         Set-Content -Path $TestDrive/empty.yaml -Value " "
-        dsc resource set -r Microsoft/OSInfo --path $TestDrive/empty.yaml 2> $TestDrive/error.txt
+        dsc resource set -r Microsoft/OSInfo --file $TestDrive/empty.yaml 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
     }
 
     It 'document cannot be empty if neither stdin or path is provided' {
-        dsc config set --document " " 2> $TestDrive/error.txt
+        dsc config set --input " " 2> $TestDrive/error.txt
         $err = Get-Content $testdrive/error.txt -Raw
         $err.Length | Should -Not -Be 0
         $LASTEXITCODE | Should -Be 4
@@ -214,8 +203,8 @@ resources:
     It 'verify `dsc resource list` and `dsc resource list *`' {
         # return all native resources, providers, but not adapter-based resources;
         # results for `dsc resource list` and `dsc resource list *` should be the same
-        $a = dsc resource list -f json
-        $b = dsc resource list '*' -f json
+        $a = dsc resource list -o json
+        $b = dsc resource list '*' -o json
         $a.Count | Should -Be $b.Count
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
@@ -229,7 +218,7 @@ resources:
 
     It 'verify `dsc resource list resource_filter`' {
         # same as previous but also apply resource_filter filter
-        $a = dsc resource list 'Test*' -f json
+        $a = dsc resource list 'Test*' -o json
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
             $a_obj.type.StartsWith("Test") | Should -Be $true
@@ -240,7 +229,7 @@ resources:
 
     It 'verify `dsc resource list * -a *`' {
         # return all adapter-based resources
-        $a = dsc resource list '*' -a '*' -f json
+        $a = dsc resource list '*' -a '*' -o json
         0..($a.Count-1) | %{
             $a_obj = $a[$_] | ConvertFrom-Json
             $a_obj.requireAdapter | Should -Not -BeNullOrEmpty
@@ -250,27 +239,27 @@ resources:
 
     It 'verify `dsc resource list * adapter_filter`' {
         # return all resources of adapters that match adapter_filter filter
-        $a = dsc resource list '*' -a Test* -f json | ConvertFrom-Json
+        $a = dsc resource list '*' -a Test* -o json | ConvertFrom-Json
         foreach ($r in $a) {
             $r.requireAdapter.StartsWith("Test") | Should -Be $true
-            $r.kind | Should -Be "Resource"
+            $r.kind | Should -Be "resource"
         }
     }
 
     It 'verify `dsc resource list resource_filter adapter_filter`' {
         # same as previous but also apply resource_filter filter to resource types
-        $a = dsc resource list *TestResource2 -a *TestGroup -f json | ConvertFrom-Json
+        $a = dsc resource list *TestResource2 -a *TestGroup -o json | ConvertFrom-Json
         $a.Count | Should -Be 1
         $r = $a[0]
         $r.requireAdapter | Should -Not -BeNullOrEmpty
         $r.requireAdapter.StartsWith("Test") | Should -Be $true
-        $r.kind | Should -Be "Resource"
+        $r.kind | Should -Be "resource"
     }
 
     It 'passing filepath to document arg should error' {
         $configFile = Resolve-Path $PSScriptRoot/../examples/osinfo.dsc.json
-        $stderr = dsc config get -d $configFile 2>&1
-        $stderr | Should -Match '.*?--path.*?'
+        $stderr = dsc config get -i $configFile 2>&1
+        $stderr | Should -Match '.*?--file.*?'
     }
 
     It 'Get operation on the adapter itself should fail' {
@@ -286,13 +275,13 @@ resources:
     }
 
     It 'Set operation on the adapter itself should fail' {
-        'abc' | dsc resource set -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        'abc' | dsc resource set -r Microsoft.DSC/PowerShell -f - 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
     }
 
     It 'Test operation on the adapter itself should fail' {
-        'abc' | dsc resource test -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        'abc' | dsc resource test -r Microsoft.DSC/PowerShell -f - 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
     }
@@ -307,5 +296,17 @@ resources:
         dsc resource delete -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Can not perform this operation on the adapter'
+    }
+
+    It 'Invalid --system-root' {
+        dsc config --system-root /invalid/path get -f "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $TestDrive/tracing.txt
+        $LASTEXITCODE | Should -Be 1
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Target path does not exist: '/invalid/path'"
+    }
+
+    It '--progress-format can be None' {
+        dsc -p none resource list 2> $TestDrive/tracing.txt
+        $LASTEXITCODE | Should -Be 0
+        (Get-Content $TestDrive/tracing.txt -Raw) | Should -BeNullOrEmpty
     }
 }

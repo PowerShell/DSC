@@ -8,6 +8,11 @@ enum EnumPropEnumeration {
     Expected
 }
 
+enum Ensure {
+    Present
+    Absent
+}
+
 class BaseTestClass
 {
     [DscProperty()]
@@ -24,7 +29,16 @@ class TestClassResource : BaseTestClass
     [string] $Prop1
 
     [DscProperty()]
+    [hashtable] $HashTableProp
+
+    [DscProperty()]
     [string] $EnumProp
+
+    [DscProperty()]
+    [PSCredential] $Credential
+
+    [DscProperty()]
+    [Ensure] $Ensure
 
     [string] $NonDscProperty # This property shouldn't be in results data
 
@@ -77,6 +91,30 @@ class TestClassResource : BaseTestClass
             $obj.Name = "Object$_"
             $obj.Prop1 = "Property of object$_"
             $resultList.Add($obj)
+        }
+
+        return $resultList.ToArray()
+    }
+
+    static [TestClassResource[]] Export([bool]$UseExport)
+    {
+        if ($UseExport) 
+        {
+            return [TestClassResource]::Export()
+        }
+        else 
+        {
+            $resultList = [List[TestClassResource]]::new()
+            $resultCount = 5
+            if ($env:TestClassResourceResultCount) {
+                $resultCount = $env:TestClassResourceResultCount
+            }
+            1..$resultCount | %{
+                $obj = New-Object TestClassResource
+                $obj.Name = "Object$_"
+                $obj.Prop1 = "Property of object$_"
+                $resultList.Add($obj)
+            }
         }
 
         return $resultList.ToArray()

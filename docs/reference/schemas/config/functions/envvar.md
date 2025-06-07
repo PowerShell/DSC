@@ -1,6 +1,6 @@
 ---
 description: Reference for the 'envvar' DSC configuration document function
-ms.date:     03/01/2024
+ms.date:     02/28/2025
 ms.topic:    reference
 title:       envvar
 ---
@@ -31,14 +31,14 @@ commands, DSC automatically creates the `DSC_CONFIG_ROOT` environment variable a
 the parent folder of the specified configuration document. For more information, see
 [dsc config command reference][01].
 
-This configuration echoes that folder with the `Test/Echo` resource.
+This configuration echoes that folder with the `Microsoft.DSC.Debug/Echo` resource.
 
 ```yaml
 # ./examples/envvar.example.1.dsc.config.yaml
-$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
   - name: Echo 'DSC_CONFIG_ROOT' in envvar
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[envvar('DSC_CONFIG_ROOT')]"
 ```
@@ -50,7 +50,7 @@ dsc config get --path ~/dsc/examples/envvar.example.1.dsc.config.yaml
 ```yaml
 results:
 - name: Echo DSC_CONFIG_ROOT
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: ~/dsc/examples
