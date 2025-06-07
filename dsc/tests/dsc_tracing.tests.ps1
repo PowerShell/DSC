@@ -82,7 +82,8 @@ Describe 'tracing tests' {
                 level: trace
 "@
 
-        $out = (dsc -l $level config get -i $configYaml 2> $null) | ConvertFrom-Json
+        $out = (dsc -l $level config get -i $configYaml 2> $TestDrive/error.log) | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log | Out-String)
         $out.results[0].result.actualState.level | Should -BeExactly $level -Because ($out | Out-String)
     }
 
@@ -91,7 +92,6 @@ Describe 'tracing tests' {
         $out = dsc -l info -t pass-through config get -f ../examples/groups.dsc.yaml 2> $logPath
         foreach ($line in (Get-Content $logPath)) {
             $line | Should -Not -BeNullOrEmpty
-            Write-Verbose -Verbose $line
             $json = $line | ConvertFrom-Json
             $json.timestamp | Should -Not -BeNullOrEmpty
             $json.level | Should -BeIn 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'

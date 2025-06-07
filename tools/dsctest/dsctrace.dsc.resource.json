@@ -6,22 +6,19 @@
         "executable": "dsctest",
         "args": [
             "trace"
-        ],
-        "input": "stdin"
+        ]
     },
     "set": {
         "executable": "dsctest",
         "args": [
             "trace"
-        ],
-        "input": "stdin"
+        ]
     },
     "test": {
         "executable": "dsctest",
         "args": [
             "trace"
-        ],
-        "input": "stdin"
+        ]
     },
     "schema": {
         "command": {

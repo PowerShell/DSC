@@ -426,7 +426,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     Ok(())
 }
 
-pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
+pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_stdin: bool) -> String {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("{}", t!("util.readingInput"));
@@ -442,6 +442,10 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
         // check if need to read from STDIN
         if path == "-" {
             info!("{}", t!("util.readingInputFromStdin"));
+            if parameters_from_stdin {
+                error!("{}", t!("util.stdinNotAllowedForBothParametersAndInput"));
+                exit(EXIT_INVALID_INPUT);
+            }
             let mut stdin = Vec::<u8>::new();
             match std::io::stdin().read_to_end(&mut stdin) {
                 Ok(_) => {
@@ -535,13 +539,13 @@ pub fn set_dscconfigroot(config_path: &str) -> String
 
 
 /// Check if the test result is in the desired state.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `test_result` - The test result to check
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `bool` - True if the test result is in the desired state, false otherwise
 #[must_use]
 pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
