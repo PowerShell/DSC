@@ -26,11 +26,14 @@
       ],
       "properties": {
         "rebootPending": {
-            "type": "boolean",
-            "readOnly": true
+          "type": "boolean",
+          "readOnly": true
         },
         "reasons": {
-          "type": ["array", "null"],
+          "type": [
+            "array",
+            "null"
+          ],
           "readOnly": true
         }
       }
