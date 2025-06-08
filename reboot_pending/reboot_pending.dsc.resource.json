@@ -13,10 +13,17 @@
       "reboot_pending.resource.ps1"
     ]
   },
+  "exitCodes": {
+    "0": "Success",
+    "1": "Error"
+  },
   "schema": {
     "embedded": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "null",
+      "type": [
+        "object",
+        "null"
+      ],
       "properties": {
         "rebootPending": {
             "type": "boolean",

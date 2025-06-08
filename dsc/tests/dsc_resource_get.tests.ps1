@@ -54,4 +54,20 @@ Describe 'resource get tests' {
         $LASTEXITCODE | Should -Be 0
         ($out | Measure-Object).Count | Should -Be 1
     }
+
+    It 'pass-through format works' {
+        $out = dsc resource get -r Microsoft/OSInfo --output-format pass-through | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $expectedFamily = if ($IsWindows) {
+            'Windows'
+        } elseif ($IsLinux) {
+            'Linux'
+        } else {
+            'macOS'
+        }
+        $out.family | Should -BeExactly $expectedFamily
+        $out.version | Should -Not -BeNullOrEmpty
+        $out.bitness | Should -BeIn @('32', '64')
+        $out.architecture | Should -BeIn @('x86', 'x86_64', 'arm64')
+    }
 }
