@@ -98,19 +98,48 @@ IsWriteOnly  : false
 A boolean value that indicates whether the system has a pending reboot. This property is `true` if
 a reboot is pending and otherwise `false`.
 
+### Reason
+
+<details><summary>Expand for <code>reason</code> property metadata</summary>
+
+```yaml
+Type         : array, null
+IsRequired   : false
+IsKey        : false
+IsReadOnly   : true
+IsWriteOnly  : false
+```
+
+</details>
+
+An array of strings that provides detailed information about why a reboot is pending, or `null` if no reboot is pending. When a reboot is required, this property contains specific reasons such as:
+
+- Windows Updates requiring restart
+- Component-Based Servicing operations
+- Pending file rename operations
+- Computer rename pending
+- Domain join operations pending
+
 ## Instance validating schema
 
 The following snippet contains the JSON Schema that validates an instance of the resource.
 
 ```json
 {
-"type": "null",
-  "properties": {
-    "rebootPending": {
-      "type": "boolean",
-      "readOnly": true
+    "type": "object",
+    "properties": {
+        "rebootPending": {
+            "type": "boolean",
+            "readOnly": true
+        },
+        "reasons": {
+            "type": [
+                "array",
+                "null"
+            ],
+            "readOnly": true
+        }
     }
-  }
 }
 ```
 
