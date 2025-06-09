@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 use std::{fmt::Display, path::Path};
-use tracing::{info, trace};
+use tracing::{debug, info, trace};
 
 use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}};
 
-use super::{discover::DiscoverResult, extension_manifest::ExtensionManifest};
+use super::{discover::DiscoverResult, extension_manifest::ExtensionManifest, secret::SecretArgKind};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -39,12 +39,15 @@ pub struct DscExtension {
 pub enum Capability {
     /// The extension aids in discovering resources.
     Discover,
+    /// The extension aids in retrieving secrets.
+    Secret,
 }
 
 impl Display for Capability {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Capability::Discover => write!(f, "Discover"),
+            Capability::Secret => write!(f, "Secret"),
         }
     }
 }
@@ -125,10 +128,75 @@ impl DscExtension {
             ))
         }
     }
+
+    pub fn secret(&self, name: &str, vault: Option<&str>) -> Result<Value, DscError> {
+        if self.capabilities.contains(&Capability::Secret) {
+            let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::Manifest(self.type_name.clone(), err));
+                }
+            };
+            let Some(secret) = extension.secret else {
+                return Err(DscError::UnsupportedCapability(self.type_name.clone(), Capability::Secret.to_string()));
+            };
+            let args = process_secret_args(secret.args.as_ref(), name, vault);
+            let (_exit_code, stdout, _stderr) = invoke_command(
+                &secret.executable,
+                args,
+                vault,
+                Some(self.directory.as_str()),
+                None,
+                extension.exit_codes.as_ref(),
+            )?;
+            if stdout.is_empty() {
+                info!("{}", t!("extensions.dscextension.secretNoResults", extension = self.type_name));
+                Ok(Value::Null)
+            } else {
+                match serde_json::from_str(&stdout) {
+                    Ok(value) => Ok(value),
+                    Err(err) => Err(DscError::Json(err)),
+                }
+            }
+        } else {
+            Err(DscError::UnsupportedCapability(
+                self.type_name.clone(),
+                Capability::Secret.to_string()
+            ))
+        }
+    }
 }
 
 impl Default for DscExtension {
     fn default() -> Self {
         DscExtension::new()
     }
+}
+
+fn process_secret_args(args: Option<&Vec<SecretArgKind>>, name: &str, vault: Option<&str>) -> Option<Vec<String>> {
+    let Some(arg_values) = args else {
+        debug!("{}", t!("dscresources.commandResource.noArgs"));
+        return None;
+    };
+
+    let mut processed_args = Vec::<String>::new();
+    for arg in arg_values {
+        match arg {
+            SecretArgKind::String(s) => {
+                processed_args.push(s.clone());
+            },
+            SecretArgKind::Name { name_arg } => {
+                processed_args.push(name_arg.to_string());
+                processed_args.push(name.to_string());
+            },
+            SecretArgKind::Vault { vault_arg } => {
+                if let Some(value) = vault {
+                    processed_args.push(vault_arg.to_string());
+                    processed_args.push(value.to_string());
+                }
+            },
+        }
+    }
+
+    Some(processed_args)
 }
