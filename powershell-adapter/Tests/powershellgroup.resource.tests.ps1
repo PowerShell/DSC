@@ -28,6 +28,7 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
         ($resources | ? { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
+        ($resources | Where-Object -Property type -EQ 'PSClassResource/PSClassResource').capabilities | Should -BeIn @('get', 'set', 'test', 'export')
     }
 
     It 'Get works on class-based resource' {
