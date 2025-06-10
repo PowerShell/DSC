@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 use std::{fmt::Display, path::Path};
 use tracing::{debug, info, trace};
 
-use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}};
+use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}, extensions::secret::SecretResult};
 
 use super::{discover::DiscoverResult, extension_manifest::ExtensionManifest, secret::SecretArgKind};
 
@@ -129,7 +129,21 @@ impl DscExtension {
         }
     }
 
-    pub fn secret(&self, name: &str, vault: Option<&str>) -> Result<Value, DscError> {
+    /// Retrieve a secret using the extension.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the secret to retrieve.
+    /// * `vault` - An optional vault name to use for the secret.
+    ///
+    /// # Returns
+    ///
+    /// A result containing the secret as a string or an error.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the secret retrieval fails or if the extension does not support the secret capability.
+    pub fn secret(&self, name: &str, vault: Option<&str>) -> Result<Option<String>, DscError> {
         if self.capabilities.contains(&Capability::Secret) {
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
                 Ok(manifest) => manifest,
@@ -151,12 +165,15 @@ impl DscExtension {
             )?;
             if stdout.is_empty() {
                 info!("{}", t!("extensions.dscextension.secretNoResults", extension = self.type_name));
-                Ok(Value::Null)
+                Ok(None)
             } else {
-                match serde_json::from_str(&stdout) {
-                    Ok(value) => Ok(value),
-                    Err(err) => Err(DscError::Json(err)),
-                }
+                let result: SecretResult = match serde_json::from_str(&stdout) {
+                    Ok(value) => value,
+                    Err(err) => {
+                        return Err(DscError::Json(err));
+                    }
+                };
+                Ok(Some(result.secret))
             }
         } else {
             Err(DscError::UnsupportedCapability(
