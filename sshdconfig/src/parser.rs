@@ -1,12 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use schemars::JsonSchema;
 use serde_json::{Map, Value};
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
 use crate::metadata::{MULTI_ARG_KEYWORDS, REPEATABLE_KEYWORDS};
 
+#[derive(Debug, JsonSchema)]
 pub struct SshdConfigParser {
     map: Map<String, Value>
 }
@@ -236,11 +238,10 @@ mod tests {
     }
 
     #[test]
-    fn err() {
+    fn empty_string_is_ok() {
         let code = r#"
         "#;
         let result = parse_text_to_map(code);
-        println!("{result:?}");
         assert!(result.is_ok());
     }
 }
