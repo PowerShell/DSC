@@ -1,6 +1,6 @@
 [package]
-name = "registry"
-version = "1.0.0"
+name = "registry_lib"
+version = "0.1.0"
 edition = "2021"
 
 [package.metadata.i18n]
@@ -18,10 +18,8 @@ split-debuginfo = "packed"  # generates a seperate *.dwp/*.dSYM so the binary ca
 strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
 crossterm = "0.29"
 registry = "1.3"
-registry_lib = { path = "../registry_lib" }
 rust-i18n = { version = "3.1" }
 schemars = "0.9"
 serde = "1.0"
@@ -33,3 +31,4 @@ utfx = "0.1"
 
 [build-dependencies]
 static_vcruntime = "2.0"
+cc="1.2"
