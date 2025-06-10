@@ -94,6 +94,9 @@ switch ($Operation) {
                 if ($module.PrivateData.PSData.DscCapabilities) {
                     $capabilities = $module.PrivateData.PSData.DscCapabilities
                 }
+                elseif ($DscResourceInfo.Methods) {
+                    $capabilities = $DscResourceInfo.Methods
+                }
                 else {
                     $capabilities = @('get', 'set', 'test')
                 }
