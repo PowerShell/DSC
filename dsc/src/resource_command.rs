@@ -116,6 +116,7 @@ pub fn get_all(dsc: &DscManager, resource_type: &str, format: Option<&GetOutputF
         let format = match format {
             Some(&GetOutputFormat::PrettyJson) => Some(&OutputFormat::PrettyJson),
             Some(&GetOutputFormat::Yaml) => Some(&OutputFormat::Yaml),
+            None => None,
             _ => Some(&OutputFormat::Json),
         };
         write_object(&json, format, include_separator);
