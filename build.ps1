@@ -86,7 +86,7 @@ $filesForLinuxPackage = @(
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
-    'sshdconfig.exe',
+    'sshdconfig',
     'sshdconfig.dsc.resource.json'
 )
 
@@ -108,7 +108,7 @@ $filesForMacPackage = @(
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
-    'sshdconfig.exe',
+    'sshdconfig',
     'sshdconfig.dsc.resource.json'
 )
 
