@@ -402,6 +402,10 @@ function Invoke-DscOperation {
                     $resource = GetTypeInstanceFromModule -modulename $cachedDscResourceInfo.ModuleName -classname $cachedDscResourceInfo.Name
                     $dscResourceInstance = $resource::New()
 
+                    $ValidProperties = $cachedDscResourceInfo.Properties.Name
+
+                    $ValidProperties | ConvertTo-Json | Write-DscTrace -Operation Trace
+
                     if ($DesiredState.properties) {
                         # set each property of $dscResourceInstance to the value of the property in the $desiredState INPUT object
                         $DesiredState.properties.psobject.properties | ForEach-Object -Process {
@@ -427,7 +431,16 @@ function Invoke-DscOperation {
 
                     switch ($Operation) {
                         'Get' {
-                            $Result = $dscResourceInstance.Get()
+                            $Result = @{}
+                            $raw_obj = $dscResourceInstance.Get()
+                            $ValidProperties | ForEach-Object { 
+                                if ($raw_obj.$_ -is [System.Enum]) {
+                                    $Result[$_] = $raw_obj.$_.ToString()
+                                }
+                                else {
+                                    $Result[$_] = $raw_obj.$_
+                                }
+                            }
                             $addToActualState.properties = $Result
                         }
                         'Set' {

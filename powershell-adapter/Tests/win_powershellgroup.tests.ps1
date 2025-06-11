@@ -6,20 +6,22 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
   BeforeAll {
     if ($isWindows) {
       winrm quickconfig -quiet -force
-    }
-    $OldPSModulePath = $env:PSModulePath
-    $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
+      $OldPSModulePath = $env:PSModulePath
+      $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
-    $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
-    if ($isWindows) {
-      $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
+      $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
+      if ($isWindows) {
+        $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
+      }
     }
   }
   AfterAll {
-    $env:PSModulePath = $OldPSModulePath
+    if ($isWindows) {
+      $env:PSModulePath = $OldPSModulePath
 
-    # Remove after all the tests are done
-    Remove-Module $script:winPSModule -Force -ErrorAction Ignore
+      # Remove after all the tests are done
+      Remove-Module $script:winPSModule -Force -ErrorAction Ignore
+    }
   }
 
   BeforeEach {
@@ -161,7 +163,7 @@ resources:
       - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
   - name: TestPSRepository
     type: PSTestModule/TestPSRepository
-    properties: 
+    properties:
       Name: NuGet
     dependsOn:
       - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
@@ -201,7 +203,7 @@ resources:
         type: PsDesiredStateConfiguration/Service
         properties:
           Name: Spooler
-          State: $SecondState    
+          State: $SecondState
 "@
 
     $inDesiredState = if ($FirstState -eq $SecondState) {
@@ -242,11 +244,11 @@ resources:
     # Instead of calling dsc.exe we call the cmdlet directly to be able to test the output and mocks
     $resourceObject = Get-DscResourceObject -jsonInput $jsonInput
     $cacheEntry = Invoke-DscCacheRefresh -Module PSDesiredStateConfiguration
-  
+
     $out = Invoke-DscOperation -Operation Test -DesiredState $resourceObject -dscResourceCache $cacheEntry
     $LASTEXITCODE | Should -Be 0
     $out.properties.InDesiredState.InDesiredState | Should -Be $false
-    
+
     Should -Invoke -CommandName ConvertTo-SecureString -Exactly -Times 1 -Scope It
   }
 
@@ -261,7 +263,7 @@ resources:
             Credential:
               UserName: 'User'
               OtherProperty: 'Password'
-"@  
+"@
     # Compared to PowerShell we use test here as it filters out the properties
     $out = dsc config test -i $yaml 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
@@ -292,6 +294,12 @@ resources:
             Tags       = @(
                 'PSDscResource_PSClassResource'
             )
+            DscCapabilities = @(
+            'get'
+            'test'
+            'set'
+            'export'
+            )
         }
     }
 }
@@ -303,10 +311,23 @@ resources:
 
 
       $module = @'
+enum Ensure {
+    Present
+    Absent
+}
+
 [DSCResource()]
 class PSClassResource {
     [DscProperty(Key)]
     [string] $Name
+
+    [string] $NonDscProperty
+
+    hidden
+    [string] $HiddenNonDscProperty
+
+    [DscProperty()]
+    [Ensure] $Ensure = [Ensure]::Present
 
     PSClassResource() {
     }
@@ -320,7 +341,7 @@ class PSClassResource {
     }
 
     [void] Set() {
-        
+
     }
 
     static [PSClassResource[]] Export()
@@ -333,6 +354,7 @@ class PSClassResource {
         1..$resultCount | %{
             $obj = New-Object PSClassResource
             $obj.Name = "Object$_"
+            $obj.Ensure = [Ensure]::Present
             $resultList.Add($obj)
         }
 
@@ -354,24 +376,28 @@ class PSClassResource {
   }
 
   It 'Get works with class-based PS DSC resources' -Skip:(!$IsWindows) {
-    
+
     $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.actualState.Name | Should -Be 'TestName'
+    $propCount = $out.actualState | Get-Member -MemberType NoteProperty
+    $propCount.Count | Should -Be 1 # Only the DscProperty should be returned
   }
 
   It 'Set works with class-based PS DSC resources' -Skip:(!$IsWindows) {
-    
+
     $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.afterstate.InDesiredState | Should -Be $true
   }
 
   It 'Export works with class-based PS DSC resources' -Skip:(!$IsWindows) {
-    
+
     $out = dsc resource export -r PSClassResource/PSClassResource | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out | Should -Not -BeNullOrEmpty
     $out.resources.count | Should -Be 5
+    $out.resources[0].properties.Ensure | Should -Be 'Present' # Check for enum property
   }
 }
+
