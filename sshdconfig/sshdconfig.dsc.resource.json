@@ -1,0 +1,20 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.Windows.OpenSSH.SSHD/sshd_config",
+    "description": "Manage SSH Server Configuration",
+    "version": "0.1.0",
+    "export": {
+        "executable": "sshdconfig",
+        "args": [
+            "export"
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "sshdconfig",
+            "args": [
+                "schema"
+            ]
+        }
+    }
+}
