@@ -237,7 +237,6 @@ if (!$SkipBuild) {
         Write-Host "Using CFS for cargo source replacement"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-        $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
 
         if ($UseCFSAuth) {
             if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
@@ -253,6 +252,7 @@ if (!$SkipBuild) {
                     $header = "Bearer $accessToken"
                     $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
                     $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
                 }
             }
             else {
