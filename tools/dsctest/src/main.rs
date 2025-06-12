@@ -100,6 +100,13 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::ExportBubble => {
+            let mut properties = Map::new();
+            properties.insert("_kind".to_string(), serde_json::Value::String("TestKind".to_string()));
+            properties.insert("_name".to_string(), serde_json::Value::String("TestName".to_string()));
+            properties.insert("_securityContext".to_string(), serde_json::Value::String("TestSecurityContext".to_string()));
+            serde_json::to_string(&properties).unwrap()
+        },
         SubCommand::Exporter { input } => {
             let exporter = match serde_json::from_str::<Exporter>(&input) {
                 Ok(exporter) => exporter,
@@ -136,6 +143,9 @@ fn main() {
                 },
                 Schemas::Export => {
                     schema_for!(Export)
+                },
+                Schemas::ExportBubble => {
+                    schema_for!(Resource)
                 },
                 Schemas::Exporter => {
                     schema_for!(Exporter)

@@ -161,4 +161,23 @@ resources:
       $out.resources[1].properties.foo | Should -BeExactly 'bar'
       $out.resources[1].properties.hello | Should -BeExactly 'world'
     }
+
+    It 'Export can surface _kind, _securityContext, and _name from a resource' {
+      $yaml = @'
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+resources:
+  - name: Test Export
+    type: Test/ExportBubble
+    properties:
+'@
+        $out = dsc config export -i $yaml | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.resources.count | Should -Be 1
+        $out.resources[0].name | Should -BeExactly 'TestName'
+        $out.resources[0].kind | Should -BeExactly 'TestKind'
+        $out.resources[0].securityContext | Should -BeExactly 'TestSecurityContext'
+        $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_kind'
+        $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_securityContext'
+        $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_name'
+    }
 }

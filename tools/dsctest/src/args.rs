@@ -10,6 +10,7 @@ pub enum Schemas {
     ExitCode,
     InDesiredState,
     Export,
+    ExportBubble,
     Exporter,
     Sleep,
     Trace,
@@ -54,6 +55,10 @@ pub enum SubCommand {
         #[clap(name = "input", short, long, help = "The input to the export command as JSON")]
         input: String,
     },
+
+    #[clap(name = "export-bubble", about = "Export properties that DSC will bubble up")]
+    ExportBubble,
+
     #[clap(name = "exporter", about = "Exports different types of resources")]
     Exporter {
         #[clap(name = "input", short, long, help = "The input to the exporter command as JSON")]
