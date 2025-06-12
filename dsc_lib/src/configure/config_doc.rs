@@ -134,6 +134,8 @@ pub struct Resource {
     #[schemars(regex(pattern = r"^\[resourceId\(\s*'[a-zA-Z0-9\.]+/[a-zA-Z0-9]+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)]$"))]
     pub depends_on: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Map<String, Value>>,
@@ -191,6 +193,7 @@ impl Resource {
             resource_type: String::new(),
             name: String::new(),
             depends_on: None,
+            kind: None,
             properties: None,
             metadata: None,
         }

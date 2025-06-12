@@ -109,9 +109,8 @@ impl DscResource {
         let adapter_resource = Resource {
             name: self.type_name.clone(),
             resource_type: adapter.to_string(),
-            depends_on: None,
-            metadata: None,
             properties: Some(resources_map),
+            ..Default::default()
         };
         configuration.resources.push(adapter_resource);
         let config_json = serde_json::to_string(&configuration)?;
