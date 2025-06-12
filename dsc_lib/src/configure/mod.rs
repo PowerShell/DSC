@@ -67,9 +67,21 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
     } else {
         for (i, instance) in export_result.actual_state.iter().enumerate() {
             let mut r = config_doc::Resource::new();
+            let mut props: Map<String, Value> = serde_json::from_value(instance.clone())?;
+            if let Some(kind) = props.remove("_kind") {
+                r.kind = kind.as_str().map(|s| s.to_string());
+            }
+            if let Some(security_context) = props.remove("_securityContext") {
+                r.security_context = security_context.as_str().map(|s| s.to_string());
+            }
+            r.name = if let Some(name) = props.remove("_name") {
+                name.as_str()
+                    .map(|s| s.to_string())
+                    .ok_or_else(|| DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = name).to_string()))?
+            } else {
+                format!("{}-{}", r.resource_type, i)
+            };
             r.resource_type.clone_from(&resource.type_name);
-            r.name = format!("{}-{i}", r.resource_type);
-            let props: Map<String, Value> = serde_json::from_value(instance.clone())?;
             r.properties = escape_property_values(&props)?;
 
             conf.resources.push(r);
