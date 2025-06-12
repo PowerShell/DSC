@@ -59,6 +59,8 @@ $filesForWindowsPackage = @(
     'registry.exe',
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
+    'sshdconfig.exe',
+    'sshdconfig.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
@@ -83,7 +85,9 @@ $filesForLinuxPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'sshdconfig',
+    'sshdconfig.dsc.resource.json'
 )
 
 $filesForMacPackage = @(
@@ -103,7 +107,9 @@ $filesForMacPackage = @(
     'powershell.dsc.resource.json',
     'psDscAdapter/',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'sshdconfig',
+    'sshdconfig.dsc.resource.json'
 )
 
 # the list of files other than the binaries which need to be executable
@@ -263,6 +269,7 @@ if (!$SkipBuild) {
     # projects are in dependency order
     $projects = @(
         "tree-sitter-dscexpression",
+        "tree-sitter-ssh-server-config",
         "security_context_lib",
         "dsc_lib",
         "dsc",
@@ -271,14 +278,15 @@ if (!$SkipBuild) {
         "powershell-adapter",
         "process",
         "runcommandonset",
+        "sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
         "y2j",
         "."
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
+    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
+    $skip_test_projects_on_windows = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
         $projects += $windows_projects
@@ -299,7 +307,8 @@ if (!$SkipBuild) {
         try {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
-            if ($project -eq 'tree-sitter-dscexpression') {
+            # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
+            if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
                 }
