@@ -16,19 +16,18 @@ Describe 'reboot_pending resource tests' {
     }
 
     It 'reboot_pending should have a reason' -Skip:(!$IsWindows) {
-        BeforeAll {
-            # Ensure the system is in a state that requires a reboot
-            if (-not (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -ErrorAction SilentlyContinue)) {
-                New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update" -Name "RebootRequired" -Value 1 -PropertyType DWord -Force | Out-Null
+        $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update"
+        $keyName = "RebootRequired"
+        try {
+            if (-not (Get-ItemProperty "$keyPath\$keyName" -ErrorAction SilentlyContinue)) {
+                New-ItemProperty -Path $keyPath -Name $keyName -Value 1 -PropertyType DWord -Force | Out-Null
             }
-        }
-        
-        $out = dsc resource get -r Microsoft.Windows/RebootPending | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $out.actualState.reason | Should -Not -BeNullOrEmpty
 
-        AfterAll {
-            Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update" -Name "RebootRequired" -ErrorAction SilentlyContinue
+            $out | dsc resource get -r Microsoft.Windows/RebootPending | ConvertFrom-Json
+            $LASTEXITCODE | Should -Be 0
+            $out.actualState.reason | Should -Not -BeNullOrEmpty
+        } finally {
+            Remove-ItemProperty -Path $keyPath -Name $keyName -ErrorAction SilentlyContinue
         }
     }
 }
