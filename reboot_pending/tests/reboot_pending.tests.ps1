@@ -27,7 +27,7 @@ Describe 'reboot_pending resource tests' {
             $LASTEXITCODE | Should -Be 0
             $out.actualState.reason | Should -Not -BeNullOrEmpty
         } finally {
-            Remove-ItemProperty -Path $keyPath -Name $keyName -ErrorAction SilentlyContinue
+            Remove-ItemProperty -Path $keyPath -Name $keyName -ErrorAction Ignore
         }
     }
 }
