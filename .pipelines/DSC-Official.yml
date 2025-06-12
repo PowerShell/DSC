@@ -168,6 +168,14 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
+        - task: AzureCLI@2
+          displayName: Azure CLI
+          inputs:
+            azureSubscription: azDO-Cargo-PowerShell-feed-Ingestion
+            scriptType: core
+            scriptLocation: inlineScript
+            inlineScript: |
+              az account show
         - pwsh: |
             apt update
             apt -y install musl-tools
@@ -196,6 +204,14 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
+        - task: AzureCLI@2
+          displayName: Azure CLI
+          inputs:
+            azureSubscription: azDO-Cargo-PowerShell-feed-Ingestion
+            scriptType: core
+            scriptLocation: inlineScript
+            inlineScript: |
+              az account show
         - pwsh: |
             $env:CC_aarch64_unknown_linux_musl='clang'
             $env:AR_aarch64_unknown_linux_musl='llvm-ar'
@@ -243,6 +259,14 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
+        - task: AzureCLI@2
+          displayName: Azure CLI
+          inputs:
+            azureSubscription: azDO-Cargo-PowerShell-feed-Ingestion
+            scriptType: core
+            scriptLocation: inlineScript
+            inlineScript: |
+              az account show
         - pwsh: |
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release

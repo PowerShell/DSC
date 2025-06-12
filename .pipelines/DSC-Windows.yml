@@ -34,6 +34,14 @@ steps:
   displayName: Install Rust
   env:
     ob_restore_phase: true
+- task: AzureCLI@2
+  displayName: Azure CLI
+  inputs:
+    azureSubscription: azDO-Cargo-PowerShell-feed-Ingestion
+    scriptType: core
+    scriptLocation: inlineScript
+    inlineScript: |
+      az account show
 - pwsh: |
     Set-Location "$(Build.SourcesDirectory)/DSC"
     $LLVMBIN = "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin"
