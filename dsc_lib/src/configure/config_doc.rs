@@ -139,8 +139,6 @@ pub struct Resource {
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Map<String, Value>>,
-    #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
-    pub security_context: Option<String>,
 }
 
 impl Default for Configuration {
@@ -196,7 +194,6 @@ impl Resource {
             name: String::new(),
             depends_on: None,
             kind: None,
-            security_context: None,
             properties: None,
             metadata: None,
         }
