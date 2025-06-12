@@ -237,8 +237,9 @@ if (!$SkipBuild) {
         Write-Host "Using CFS for cargo source replacement"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+        $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
 
-        if ($UseCFSAuth -or $null -ne $env:TF_BUILD) {
+        if ($UseCFSAuth) {
             if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
                 throw "Azure CLI not found"
             }
@@ -250,13 +251,12 @@ if (!$SkipBuild) {
                     Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
                 } else {
                     $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
                     $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
                     $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
                 }
             }
             else {
-                Write-Warning "Azure CLI not found, proceeding with anonymous access."
+                Write-Warning "Azure CLI not found or running in ADO, proceeding with anonymous access."
             }
         }
     }

@@ -7,14 +7,6 @@ pr:
     - onebranch
     - release/v*
 
-schedules:
-- cron: '0 3 * * 1'
-  displayName: Weekly Build
-  branches:
-    include:
-    - main
-  always: true
-
 variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
@@ -149,6 +141,14 @@ extends:
             Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
+        - task: onebranch.pipeline.signing@1
+          displayName: Sign MsixBundle
+          condition: succeeded()
+          inputs:
+            command: 'sign'
+            signing_profile: $(MSIXProfile)
+            files_to_sign: '*.msixbundle'
+            search_root: '$(ob_outputDirectory)'
 
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
