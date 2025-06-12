@@ -69,14 +69,14 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             let mut r = config_doc::Resource::new();
             let mut props: Map<String, Value> = serde_json::from_value(instance.clone())?;
             if let Some(kind) = props.remove("_kind") {
-                r.kind = kind.as_str().map(|s| s.to_string());
+                r.kind = kind.as_str().map(std::string::ToString::to_string);
             }
             if let Some(security_context) = props.remove("_securityContext") {
-                r.security_context = security_context.as_str().map(|s| s.to_string());
+                r.security_context = security_context.as_str().map(std::string::ToString::to_string);
             }
             r.name = if let Some(name) = props.remove("_name") {
                 name.as_str()
-                    .map(|s| s.to_string())
+                    .map(std::string::ToString::to_string)
                     .ok_or_else(|| DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = name).to_string()))?
             } else {
                 format!("{}-{}", r.resource_type, i)
