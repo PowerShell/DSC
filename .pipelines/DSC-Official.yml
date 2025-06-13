@@ -171,7 +171,7 @@ extends:
         - task: AzureCLI@2
           displayName: Azure CLI
           inputs:
-            azureSubscription: azDO-Cargo-PowerShell-feed-Ingestion
+            azureSubscription: az-blob-cicd-infra
             scriptType: core
             scriptLocation: inlineScript
             inlineScript: |
@@ -207,7 +207,7 @@ extends:
         - task: AzureCLI@2
           displayName: Azure CLI
           inputs:
-            azureSubscription: azDO-Cargo-PowerShell-feed-Ingestion
+            azureSubscription: az-blob-cicd-infra
             scriptType: core
             scriptLocation: inlineScript
             inlineScript: |
@@ -262,7 +262,7 @@ extends:
         - task: AzureCLI@2
           displayName: Azure CLI
           inputs:
-            azureSubscription: azDO-Cargo-PowerShell-feed-Ingestion
+            azureSubscription: az-blob-cicd-infra
             scriptType: core
             scriptLocation: inlineScript
             inlineScript: |
