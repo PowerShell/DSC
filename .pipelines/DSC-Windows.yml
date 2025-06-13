@@ -38,7 +38,7 @@ steps:
   displayName: Azure CLI
   inputs:
     azureSubscription: az-blob-cicd-infra
-    scriptType: core
+    scriptType: pscore
     scriptLocation: inlineScript
     inlineScript: |
       az account show
