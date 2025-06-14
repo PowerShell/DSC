@@ -238,7 +238,7 @@ if (!$SkipBuild) {
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
 
-        if ($UseCFSAuth) {
+        if ($UseCFSAuth -or $null -ne $env:TF_BUILD) {
             if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
                 throw "Azure CLI not found"
             }
