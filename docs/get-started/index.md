@@ -122,7 +122,7 @@ Run the following command to display only the resources available with the
 
 ```powershell
 $adaptedResources |
-  Where-Object -FilterScript { $_.requireAdapter -eq 'Microsoft.Windows/WindowsPowerShell' } |
+  Where-Object -Property requireAdapter -eq Microsoft.Windows/WindowsPowerShell |
   Format-Table -Property type, kind, version, capabilities, description
 ```
 
