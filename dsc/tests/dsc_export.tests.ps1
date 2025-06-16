@@ -176,7 +176,7 @@ resources:
         $out.resources.count | Should -Be 1
         $out.resources[0].name | Should -BeExactly 'TestName'
         $out.resources[0].kind | Should -BeExactly 'TestKind'
-        $out.resources[0].metadata.securityContext | Should -BeExactly 'Administrator'
+        $out.resources[0].metadata.securityContext | Should -BeExactly 'Elevated'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_kind'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_securityContext'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_name'
