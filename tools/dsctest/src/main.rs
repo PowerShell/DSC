@@ -97,7 +97,7 @@ fn main() {
                     count: i,
                     _kind: Some("TestKind".to_string()),
                     _name: Some("TestName".to_string()),
-                    _security_context: Some("TestSecurityContext".to_string()),
+                    _security_context: Some("elevated".to_string()),
                 };
                 println!("{}", serde_json::to_string(&instance).unwrap());
             }

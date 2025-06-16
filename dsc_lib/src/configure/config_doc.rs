@@ -138,7 +138,7 @@ pub struct Resource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Map<String, Value>>,
+    pub metadata: Option<Metadata>,
 }
 
 impl Default for Configuration {

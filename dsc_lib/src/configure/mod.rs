@@ -76,8 +76,16 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
                 r.kind = kind.as_str().map(std::string::ToString::to_string);
             }
             if let Some(security_context) = props.remove("_securityContext") {
-                let mut metadata = Map::new();
-                metadata.insert("securityContext".to_string(), security_context.clone());
+                let context: SecurityContextKind = serde_json::from_value(security_context)?;
+                let metadata = Metadata {
+                    microsoft: Some(
+                        MicrosoftDscMetadata {
+                            security_context: Some(context),
+                            ..Default::default()
+                        }
+                    ),
+                    other: Map::new(),
+                };
                 r.metadata = Some(metadata);
             }
             r.name = if let Some(name) = props.remove("_name") {
