@@ -7,6 +7,10 @@ use thiserror::Error;
 pub enum SshdConfigError {
     #[error("Command: {0}")]
     CommandError(String),
+    #[error("Invalid Input: {0}")]
+    IoError(String),
+    #[error("IO: {0}")]
+    InvalidInput(String),
     #[error("JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("Language: {0}")]
@@ -15,4 +19,6 @@ pub enum SshdConfigError {
     ParserError(String),
     #[error("Parser Int: {0}")]
     ParseIntError(#[from] std::num::ParseIntError),
+    #[error("Registry: {0}")]
+    RegistryError(#[from] registry_lib::error::RegistryError),
 }
