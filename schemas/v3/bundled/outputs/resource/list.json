@@ -175,6 +175,9 @@
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json",
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.json",
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.vscode.json",
             "https://aka.ms/dsc/schemas/v3/resource/manifest.json",
             "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
             "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
@@ -186,7 +189,10 @@
             "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
             "https://aka.ms/dsc/schemas/v3.0.1/resource/manifest.json",
             "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.json",
-            "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json"
+            "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+            "https://aka.ms/dsc/schemas/v3.0.2/resource/manifest.json",
+            "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.json",
+            "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.vscode.json"
           ]
         },
         "type": {

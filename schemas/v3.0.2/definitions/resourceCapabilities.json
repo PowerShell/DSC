@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/definitions/resourceCapabilities.json",
+  "title": "Resource capabilities",
+  "description": "Define the operations you can invoke for a resource and how the resource behaves when invoked.",
+  "type": "array",
+  "items": {
+    "type": "string",
+    "enum": [
+      "get",
+      "set",
+      "setHandlesExist",
+      "whatIf",
+      "test",
+      "delete",
+      "export",
+      "resolve"
+    ]
+  }
+}
