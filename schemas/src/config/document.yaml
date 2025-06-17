@@ -43,6 +43,9 @@ properties:
       - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json
       - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json
       - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json
+      - https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json
       - https://aka.ms/dsc/schemas/v3/config/document.json
       - https://aka.ms/dsc/schemas/v3/bundled/config/document.json
       - https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
@@ -55,6 +58,9 @@ properties:
       - https://aka.ms/dsc/schemas/v3.0.1/config/document.json
       - https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.json
       - https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.vscode.json
+      - https://aka.ms/dsc/schemas/v3.0.2/config/document.json
+      - https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.json
+      - https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.vscode.json
     # VS Code only:
     markdownDescription: |
       ***
@@ -299,6 +305,54 @@ properties:
           > semantic version folder, like `v3.0.1`, you're pinning to schemas that won't change.
           > However, to take advantage of any improvements or fixes to the schemas, you need to
           > update the URI with each release.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.2` non-bundled, canonical URI
+          >
+          > Indicates that the configuration document adheres to the `v3.0.2` schema. This URL
+          > points to the canonical non-bundled schema. When it's used for validation, the
+          > validating client needs to retrieve this schema and every schema it references.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.2`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.2` bundled, canonical URI
+          >
+          > Indicates that the configuration document adheres to the `v3.0.2` schema. This URL
+          > points to the bundled schema. When it's used for validation, the validating client
+          > only needs to retrieve this schema.
+          >
+          > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
+          > still validate the document when it uses this schema, other tools may error or behave
+          > in unexpected ways.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.2`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.2` enhanced authoring, canonical URI
+          >
+          > Indicates that the configuration document adheres to the `v3.0.2` schema. This URL
+          > points to the enhanced authoring schema. This schema is much larger than the other
+          > schemas, as it includes additional definitions that provide contextual help and
+          > snippets that the others don't include.
+          >
+          > This schema uses keywords that are only recognized by VS Code. While DSC can still
+          > validate the document when it uses this schema, other tools may error or behave in
+          > unexpected ways.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.2`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
       - | # https://aka.ms/dsc/schemas/v3/config/document.yaml
           <!-- force a line break -->
 
@@ -489,6 +543,54 @@ properties:
           >
           > This URI is for the schemas in a full semantic version folder. If you pin to a full
           > semantic version folder, like `v3.0.1`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://aka.ms/dsc/schemas/v3.0.2/config/document.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.2` non-bundled, short URI
+          >
+          > Indicates that the configuration document adheres to the `v3.0.2` schema. This URL
+          > points to the canonical non-bundled schema. When it's used for validation, the
+          > validating client needs to retrieve this schema and every schema it references.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.2`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.2` bundled, short URI
+          >
+          > Indicates that the configuration document adheres to the `v3.0.2` schema. This URL
+          > points to the bundled schema. When it's used for validation, the validating client
+          > only needs to retrieve this schema.
+          >
+          > This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can
+          > still validate the document when it uses this schema, other tools may error or behave
+          > in unexpected ways.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.2`, you're pinning to schemas that won't change.
+          > However, to take advantage of any improvements or fixes to the schemas, you need to
+          > update the URI with each release.
+      - | # https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.vscode.yaml
+          <!-- force a line break -->
+
+          > #### `v3.0.2` enhanced authoring, short URI
+          >
+          > Indicates that the configuration document adheres to the `v3.0.2` schema. This URL
+          > points to the enhanced authoring schema. This schema is much larger than the other
+          > schemas, as it includes additional definitions that provide contextual help and
+          > snippets that the others don't include.
+          >
+          > This schema uses keywords that are only recognized by VS Code. While DSC can still
+          > validate the document when it uses this schema, other tools may error or behave in
+          > unexpected ways.
+          >
+          > This URI is for the schemas in a full semantic version folder. If you pin to a full
+          > semantic version folder, like `v3.0.2`, you're pinning to schemas that won't change.
           > However, to take advantage of any improvements or fixes to the schemas, you need to
           > update the URI with each release.
   parameters:
