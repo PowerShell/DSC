@@ -1,0 +1,413 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json",
+  "title": "DSC configuration document schema",
+  "description": "Describes a valid DSC configuration document.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "resources"
+  ],
+  "properties": {
+    "$schema": {
+      "title": "Schema",
+      "description": "Indicates the URI that resolves to the version of this schema that the document adheres to. DSC uses this property when validating and processing the configuration document.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/config/document.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.vscode.json"
+      ]
+    },
+    "parameters": {
+      "title": "DSC configuration document parameters",
+      "description": "Defines runtime options for the configuration. Users and integrating tools can override use the defined parameters to pass alternate values to the configuration.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/config/document.parameter.json"
+      }
+    },
+    "variables": {
+      "title": "Configuration variables",
+      "description": "Defines a set of reusable values for the configuration document. The names of this value's properties are the strings used to reference a variable's value.",
+      "type": "object"
+    },
+    "resources": {
+      "title": "DSC configuration document resources",
+      "description": "Defines a list of DSC resource instances for the configuration to manage.",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/config/document.resource.json"
+      }
+    },
+    "metadata": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/config/document.metadata.json"
+    }
+  },
+  "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.parameter.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.parameter.json",
+      "title": "Parameter",
+      "description": "Defines a runtime option for a DSC configuration document.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/dataTypes.json"
+        },
+        "defaultValue": {
+          "title": "Default value",
+          "description": "Defines the default value for the parameter.",
+          "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/validValueTypes.json"
+        },
+        "allowedValues": {
+          "title": "Allowed values",
+          "description": "Defines a list of valid values for the parameter. If the parameter is defined with any other values, it's invalid.",
+          "type": "array",
+          "items": {
+            "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/validValueTypes.json"
+          }
+        },
+        "description": {
+          "title": "Parameter description",
+          "description": "Defines a synopsis for the parameter explaining its purpose.",
+          "type": "string"
+        },
+        "metadata": {
+          "title": "Parameter metadata",
+          "description": "Defines a set of key-value pairs for the parameter. This metadata isn't validated.",
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "int"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "minValue": {
+                "title": "Minimum value",
+                "description": "The minimum valid value for an integer type. If defined with the `maxValue` property, this value must be less than the value of `maxValue`.",
+                "type": "integer"
+              },
+              "maxValue": {
+                "title": "Maximum value",
+                "description": "The maximum valid value for an integer type. If defined with the `minValue` property, this value must be greater than the value of `minValue`.",
+                "type": "integer"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "oneOf": [
+              {
+                "properties": {
+                  "type": {
+                    "const": "string"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "type": {
+                    "const": "secureString"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "type": {
+                    "const": "array"
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "minLength": {
+                "title": "Minimum length",
+                "description": "The minimum valid length for a `string`, `secureString`, or `array`. If defined with the `maxLength` property, this value must be less than the value of `maxLength`.",
+                "type": "integer",
+                "minimum": 0
+              },
+              "maxLength": {
+                "title": "Maximum length",
+                "description": "The maximum valid length for a `string`, `secureString`, or `array`. If defined with the `minLength` property, this value must be less than the value of `minLength`.",
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "oneOf": [
+              {
+                "properties": {
+                  "type": {
+                    "const": "string"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "type": {
+                    "const": "secureString"
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "string"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "oneOf": [
+              {
+                "properties": {
+                  "type": {
+                    "const": "object"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "type": {
+                    "const": "secureObject"
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "object"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "int"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "integer"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "array"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "bool"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "defaultValue": {
+                "type": "boolean"
+              },
+              "allowedValues": {
+                "items": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.resource.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.resource.json",
+      "title": "DSC resource instance",
+      "description": "Defines an instance of a DSC resource in a configuration.",
+      "type": "object",
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/resourceType.json"
+        },
+        "name": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/instanceName.json"
+        },
+        "dependsOn": {
+          "title": "Instance depends on",
+          "description": "Defines a list of DSC resource instances that DSC must successfully process before processing this instance. Each value for this property must be the `resourceID()` lookup for another instance in the configuration. Multiple instances can depend on the same instance, but every dependency for an instance must be unique in that instance's `dependsOn` property.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "uniqueItems": true,
+            "pattern": "^\\[resourceId\\(\\s*'\\w+(\\.\\w+){0,2}\\/\\w+'\\s*,\\s*'[a-zA-Z0-9 ]+'\\s*\\)\\]$"
+          }
+        },
+        "properties": {
+          "title": "Managed instance properties",
+          "description": "Defines the properties of the DSC resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC resource's schema.",
+          "type": "object"
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.metadata.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.metadata.json",
+      "title": "Configuration metadata",
+      "description": "Defines a set of key-value pairs for the configuration. Except for the `Microsoft.DSC` property, this metadata isn't validated. You can pass any data into this property of a configuration document.",
+      "type": "object",
+      "properties": {
+        "Microsoft.DSC": {
+          "type": "object",
+          "title": "DSC metadata",
+          "description": "The `Microsoft.DSC` metadata property contains directives and information that DSC itself uses when processing a configuration document. Unlike other metadata key-value pairs, DSC validates these properties.",
+          "unevaluatedProperties": false,
+          "properties": {
+            "securityContext": {
+              "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/metadata/Microsoft.DSC/securityContext.json",
+              "default": "Current",
+              "description": "This property defines the security context a configuration requires. If you invoke a DSC operation against the configuration document in a security context that conflicts with this metadata, DSC raises an error when it validates the configuration document.\nThe default security context is `Current`."
+            }
+          }
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/dataTypes.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/dataTypes.json",
+      "title": "Data Types",
+      "description": "Defines the data type for the parameter value.",
+      "type": "string",
+      "enum": [
+        "string",
+        "secureString",
+        "int",
+        "bool",
+        "object",
+        "secureObject",
+        "array"
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/validValueTypes.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/validValueTypes.json",
+      "$comment": "This schema fragment makes it a little easier to compose the valid properties\nfor DSC configuration document parameters. As-written, values must be one of\nthose on this list - the schema definition for dataType excludes `null` and\nnumbers with fractional parts, like `3.5`.\n",
+      "type": [
+        "string",
+        "integer",
+        "object",
+        "array",
+        "boolean"
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/resourceType.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/resourceType.json",
+      "title": "DSC resource fully qualified type name",
+      "description": "The namespaced name of the DSC resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+      "type": "string",
+      "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/instanceName.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/instanceName.json",
+      "title": "Instance name",
+      "description": "The short, human-readable name for a DSC resource instance. Must be unique within a DSC Configuration document. Must be a non-empty string containing only letters, numbers, and spaces.",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9 ]+$",
+      "minLength": 1
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/metadata/Microsoft.DSC/securityContext.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/metadata/Microsoft.DSC/securityContext.json",
+      "title": "Security context",
+      "description": "Defines the security context that DSC was run under. If the value for this metadata property is `elevated`, DSC was run as root (non-Windows) or an elevated session with Administrator privileges (on Windows). If the value is `restricted`, DSC was run as a normal user or account in a non-elevated session.",
+      "type": "string",
+      "enum": [
+        "current",
+        "elevated",
+        "restricted"
+      ]
+    }
+  }
+}
