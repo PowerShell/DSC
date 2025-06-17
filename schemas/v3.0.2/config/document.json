@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.json",
+  "title": "DSC configuration document schema",
+  "description": "Describes a valid DSC configuration document.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "resources"
+  ],
+  "properties": {
+    "$schema": {
+      "title": "Schema",
+      "description": "Indicates the URI that resolves to the version of this schema that the document adheres to. DSC uses this property when validating and processing the configuration document.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/config/document.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.vscode.json"
+      ]
+    },
+    "parameters": {
+      "title": "DSC configuration document parameters",
+      "description": "Defines runtime options for the configuration. Users and integrating tools can override use the defined parameters to pass alternate values to the configuration.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3.0.2/config/document.parameter.json"
+      }
+    },
+    "variables": {
+      "title": "Configuration variables",
+      "description": "Defines a set of reusable values for the configuration document. The names of this value's properties are the strings used to reference a variable's value.",
+      "type": "object"
+    },
+    "resources": {
+      "title": "DSC configuration document resources",
+      "description": "Defines a list of DSC resource instances for the configuration to manage.",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3.0.2/config/document.resource.json"
+      }
+    },
+    "metadata": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.2/config/document.metadata.json"
+    }
+  }
+}
