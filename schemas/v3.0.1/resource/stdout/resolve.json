@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/stdout/resolve.json",
+  "title": "Resolve resource operation stdout",
+  "description": "Defines the representation of a resolved configuration document. DSC expects the JSON Line emitted to stdout for the **Resolve** operation to adhere to this schema.",
+  "type": "object",
+  "required": [
+    "configuration"
+  ],
+  "properties": {
+    "configuration": {
+      "title": "Resolved configuration document",
+      "description": "Defines the resolved configuration document.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/config/document.json"
+    },
+    "parameters": {
+      "title": "Resolved parameters",
+      "description": "The `parameters` property defines the set of resolved parameter values for the resolved configuration document.",
+      "type": "object"
+    }
+  }
+}

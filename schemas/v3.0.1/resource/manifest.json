@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json",
+  "title": "DSC resource manifest",
+  "description": "Defines the information DSC and integrating require to process and call a DSC command resource.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "type",
+    "version"
+  ],
+  "properties": {
+    "$schema": {
+      "title": "Manifest Schema",
+      "description": "This property must be the canonical URL of the Command-based DSC resource Manifest schema that the manifest is implemented for.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json"
+      ]
+    },
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/resourceType.json"
+    },
+    "version": {
+      "title": "Resource Semantic Version",
+      "description": "The semantic version (semver) of the DSC resource. This version identifies the DSC resource, not the version of the application it manages.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/semver.json"
+    },
+    "description": {
+      "title": "Resource Description",
+      "description": "A short synopsis of the DSC resource's purpose.",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/definitions/resourceKind.json"
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Defines a list of searchable terms for the resource.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$"
+      }
+    },
+    "get": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.get.json"
+    },
+    "set": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.set.json"
+    },
+    "whatIf": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.whatIf.json"
+    },
+    "test": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.test.json"
+    },
+    "delete": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.delete.json"
+    },
+    "export": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.export.json"
+    },
+    "validate": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.validate.json"
+    },
+    "resolve": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.resolve.json"
+    },
+    "adapter": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.adapter.json"
+    },
+    "exitCodes": {
+      "title": "Exit Codes",
+      "description": "This property defines a map of valid exit codes for the DSC resource. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC resource's exit codes.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^-?[0-9]+$"
+      },
+      "patternProperties": {
+        "^-?[0-9]+$": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false,
+      "default": {
+        "0": "Success",
+        "1": "Error"
+      },
+      "examples": [
+        {
+          "0": "Success",
+          "1": "Invalid parameter",
+          "2": "Invalid input",
+          "3": "Registry error",
+          "4": "JSON serialization failed"
+        }
+      ]
+    },
+    "schema": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.schema.json"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "adapter"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "adapter"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "importer"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "resolve"
+        ]
+      },
+      "else": {
+        "required": [
+          "get"
+        ]
+      }
+    }
+  ]
+}
