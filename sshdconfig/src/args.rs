@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use clap::{Parser, Subcommand};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
@@ -12,18 +13,23 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Export sshd_config
+    /// Export `sshd_config`
     Export,
-    /// Get default shell, eventually to be used for sshd_config and repeatable keywords
+    /// Get default shell, eventually to be used for `sshd_config` and repeatable keywords
     Get,
-    /// Set default shell, eventually to be used for sshd_config and repeatable keywords
+    Schema {
+        // Used to inform which schema to generate
+        #[clap(long, hide = true)]
+        as_global: bool,
+    },
+    /// Set default shell, eventually to be used for `sshd_config` and repeatable keywords
     Set {
         #[clap(short = 'i', long, help = "input to set in sshd_config")]
         input: String
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, JsonSchema, PartialEq, Serialize)]
 pub struct DefaultShell {
     pub shell: Option<String>,
     pub cmd_option: Option<String>,

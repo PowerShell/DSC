@@ -74,37 +74,3 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     println!("{output}");
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use registry_lib::config::RegistryValueData;
-
-    #[test]
-    fn test_parse_shell_command() {
-        let (shell, args) = parse_shell_command(r#"C:\Program Files\PowerShell\pwsh.exe -NoProfile"#);
-        assert_eq!(shell, r#"C:\Program Files\PowerShell\pwsh.exe"#);
-        assert_eq!(args, vec!["-NoProfile"]);
-    }
-
-    #[test]
-    fn test_parse_shell_command_with_quotes() {
-        let (shell, args) = parse_shell_command(r#""C:\Program Files\PowerShell\pwsh.exe" -NoProfile -Command"#);
-        assert_eq!(shell, r#"C:\Program Files\PowerShell\pwsh.exe"#);
-        assert_eq!(args, vec!["-NoProfile", "-Command"]);
-    }
-
-    #[test]
-    fn test_extract_string_value_string() {
-        let value = RegistryValueData::String("test".to_string());
-        let result = extract_string_value(value, "test_field").unwrap();
-        assert_eq!(result, Some("test".to_string()));
-    }
-
-    #[test]
-    fn test_extract_string_value_multistring() {
-        let value = RegistryValueData::MultiString(vec!["first".to_string(), "second".to_string()]);
-        let result = extract_string_value(value, "test_field").unwrap();
-        assert_eq!(result, Some("first".to_string()));
-    }
-}

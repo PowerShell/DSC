@@ -23,7 +23,8 @@
         "command": {
             "executable": "sshdconfig",
             "args": [
-                "schema"
+                "schema",
+                "--as-global"
             ]
         }
     }
