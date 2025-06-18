@@ -101,7 +101,7 @@ Describe 'PowerShell adapter resource tests' {
     $out = $yaml | dsc config export -f - 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
-    $out | Should -BeLike "*ERROR*Export method not implemented by resource 'TestClassResource/NoExport'*"
+    $out | Should -BeLike "*ERROR*Method 'Export' not implemented by resource 'NoExport'*"
   }
 
   It 'Custom psmodulepath in config works' {
@@ -308,6 +308,23 @@ Describe 'PowerShell adapter resource tests' {
     $out.resources[0].properties.result.count | Should -Be 5
     $out.resources[0].properties.result[0].Name | Should -Be "Object1"
     $out.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
+  }
+
+  It 'Config whatIf works with class-based resources' {
+
+    $yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: Class-resource Info
+          type: TestClassResource/TestClassResource
+          properties:
+            Name: 'TestClassResource'
+            Ensure: 'Present'
+"@
+    $out = dsc config set -i $yaml -w | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results.result.afterstate.name | Should -Be "TestClassResource"
+    $out.results.result.afterstate._metadata.whatIf | Should -Be "A test message from the WhatIf method of TestClassResource"
   }
 }
 
