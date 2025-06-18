@@ -57,7 +57,7 @@ impl RegistryHelper {
     ///
     /// * `RegistryError` - The error that occurred.
     pub fn new(key_path: &str, value_name: Option<String>, value_data: Option<RegistryValueData>) -> Result<Self, RegistryError> {
-        let (hive, subkey) = get_hive_from_path(&key_path)?;
+        let (hive, subkey) = get_hive_from_path(key_path)?;
         let config = Registry {
             key_path: key_path.to_string(),
             value_name,
