@@ -48,7 +48,7 @@ fn main() {
             match subcommand {
                 args::ConfigSubCommand::Get{input} => {
                     debug!("Get input: {input}");
-                    let reg_helper = match RegistryHelper::new(&input) {
+                    let reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             error!("{err}");
@@ -68,7 +68,7 @@ fn main() {
                 },
                 args::ConfigSubCommand::Set{input, what_if} => {
                     debug!("Set input: {input}, what_if: {what_if}");
-                    let mut reg_helper = match RegistryHelper::new(&input) {
+                    let mut reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             error!("{err}");
@@ -93,7 +93,7 @@ fn main() {
                 },
                 args::ConfigSubCommand::Delete{input} => {
                     debug!("Delete input: {input}");
-                    let reg_helper = match RegistryHelper::new(&input) {
+                    let reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
                         Err(err) => {
                             error!("{err}");

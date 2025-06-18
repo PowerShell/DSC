@@ -9,7 +9,7 @@ use crate::error::RegistryError;
 
 rust_i18n::i18n!("locales", fallback = "en-us");
 
-mod error;
+pub mod error;
 pub mod config;
 
 pub struct RegistryHelper {
@@ -20,7 +20,7 @@ pub struct RegistryHelper {
 }
 
 impl RegistryHelper {
-    /// Create a new `RegistryHelper`.
+    /// Create a new `RegistryHelper` from json.
     ///
     /// # Arguments
     ///
@@ -29,7 +29,7 @@ impl RegistryHelper {
     /// # Errors
     ///
     /// * `RegistryError` - The error that occurred.
-    pub fn new(config: &str) -> Result<Self, RegistryError> {
+    pub fn new_from_json(config: &str) -> Result<Self, RegistryError> {
         let registry: Registry = match serde_json::from_str(config) {
             Ok(config) => config,
             Err(e) => return Err(RegistryError::Json(e)),
@@ -40,6 +40,34 @@ impl RegistryHelper {
         Ok(
             Self {
                 config: registry,
+                hive,
+                subkey: subkey.to_string(),
+                what_if: false
+            }
+        )
+    }
+
+    /// Create a new `RegistryHelper`.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The string with registry configuration information.
+    ///
+    /// # Errors
+    ///
+    /// * `RegistryError` - The error that occurred.
+    pub fn new(key_path: &str, value_name: Option<String>, value_data: Option<RegistryValueData>) -> Result<Self, RegistryError> {
+        let (hive, subkey) = get_hive_from_path(key_path)?;
+        let config = Registry {
+            key_path: key_path.to_string(),
+            value_name,
+            value_data,
+            metadata: None,
+            exist: None,
+        };
+        Ok(
+            Self {
+                config,
                 hive,
                 subkey: subkey.to_string(),
                 what_if: false
@@ -386,7 +414,7 @@ fn convert_reg_value(value: &Data) -> Result<Option<RegistryValueData>, Registry
 
 #[test]
 fn get_hklm_key() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKEY_LOCAL_MACHINE"}"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKEY_LOCAL_MACHINE"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKEY_LOCAL_MACHINE"#);
     assert_eq!(reg_config.value_name, None);
@@ -395,7 +423,7 @@ fn get_hklm_key() {
 
 #[test]
 fn get_product_name() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion","valueName":"ProductName"}"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion","valueName":"ProductName"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion"#);
     assert_eq!(reg_config.value_name, Some("ProductName".to_string()));
@@ -404,7 +432,7 @@ fn get_product_name() {
 
 #[test]
 fn get_nonexisting_key() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DoesNotExist"}"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DoesNotExist"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKCU\DoesNotExist"#);
     assert_eq!(reg_config.value_name, None);
@@ -414,7 +442,7 @@ fn get_nonexisting_key() {
 
 #[test]
 fn get_nonexisting_value() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\Software","valueName":"DoesNotExist"}"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\Software","valueName":"DoesNotExist"}"#).unwrap();
     let reg_config = reg_helper.get().unwrap();
     assert_eq!(reg_config.key_path, r#"HKCU\Software"#);
     assert_eq!(reg_config.value_name, Some("DoesNotExist".to_string()));
@@ -424,7 +452,7 @@ fn get_nonexisting_value() {
 
 #[test]
 fn set_and_remove_test_value() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTest\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
     reg_helper.set().unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest\DSCSubKey"#);
@@ -436,7 +464,7 @@ fn set_and_remove_test_value() {
     assert_eq!(result.value_name, Some("TestValue".to_string()));
     assert_eq!(result.value_data, None);
     assert_eq!(result.exist, Some(false));
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest"}"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTest"}"#).unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest"#);
     assert_eq!(result.value_name, None);
@@ -451,13 +479,13 @@ fn set_and_remove_test_value() {
 
 #[test]
 fn delete_tree() {
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest2\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTest2\\DSCSubKey","valueName":"TestValue","valueData": { "String": "Hello"} }"#).unwrap();
     reg_helper.set().unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest2\DSCSubKey"#);
     assert_eq!(result.value_name, Some("TestValue".to_string()));
     assert_eq!(result.value_data, Some(RegistryValueData::String("Hello".to_string())));
-    let reg_helper = RegistryHelper::new(r#"{"keyPath":"HKCU\\DSCTest2"}"#).unwrap();
+    let reg_helper = RegistryHelper::new_from_json(r#"{"keyPath":"HKCU\\DSCTest2"}"#).unwrap();
     reg_helper.remove().unwrap();
     let result = reg_helper.get().unwrap();
     assert_eq!(result.key_path, r#"HKCU\DSCTest2"#);
