@@ -12,7 +12,11 @@
     "set": {
         "executable": "sshdconfig",
         "args": [
-            "set"
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
         ]
     },
     "schema": {

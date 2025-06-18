@@ -7,8 +7,6 @@ use thiserror::Error;
 pub enum SshdConfigError {
     #[error("Command: {0}")]
     CommandError(String),
-    #[error("Invalid Input: {0}")]
-    IoError(String),
     #[error("IO: {0}")]
     InvalidInput(String),
     #[error("JSON: {0}")]
