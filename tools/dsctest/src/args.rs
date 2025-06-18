@@ -54,6 +54,7 @@ pub enum SubCommand {
         #[clap(name = "input", short, long, help = "The input to the export command as JSON")]
         input: String,
     },
+
     #[clap(name = "exporter", about = "Exports different types of resources")]
     Exporter {
         #[clap(name = "input", short, long, help = "The input to the exporter command as JSON")]
