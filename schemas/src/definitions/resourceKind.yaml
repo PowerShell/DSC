@@ -13,6 +13,7 @@ enum:
   - adapter
   - group
   - importer
+  - exporter
 
 # VS Code only
 
@@ -56,3 +57,12 @@ markdownEnumDescriptions:
       Indicates that the manifest is for a resource that resolves an external source to DSC
       resource instances. DSC processes the resolved instances as nested instances for the importer
       resource.
+  - | # exporter
+      <!-- force a line break -->
+
+      Indicates that the manifest is for a resource that only implements the **Export** operation
+      to use for inventory and fact-gathering scenarios. For exporter resources, DSC expects the
+      resource to return one or more resource definitions to recursively export, rather than the
+      actual state of instances.
+
+      For more information about the expected output, see [Export resource operation stdout][02].

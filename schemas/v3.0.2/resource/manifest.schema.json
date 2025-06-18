@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/manifest.schema.json",
+  "title": "Instance Schema",
+  "description": "Defines how DSC must validate a JSON blob representing an instance of the DSC resource.",
+  "type": "object",
+  "oneOf": [
+    {
+      "required": [
+        "command"
+      ]
+    },
+    {
+      "required": [
+        "embedded"
+      ]
+    }
+  ],
+  "properties": {
+    "command": {
+      "title": "Instance Schema Command",
+      "description": "Defines how DSC must call the DSC resource to get the JSON Schema for validating a JSON blob representing an instance of the DSC resource.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.0.2/definitions/commandExecutable.json"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Command arguments",
+          "description": "Defines the list of arguments to pass to the command to return the JSON Schema for the resource."
+        }
+      }
+    },
+    "embedded": {
+      "title": "Embedded Instance Schema",
+      "description": "Defines the JSON Schema DSC must use to validate a JSON blob representing an instance of the DSC resource.",
+      "type": "object",
+      "required": [
+        "$schema",
+        "type",
+        "properties"
+      ],
+      "properties": {
+        "type": {
+          "title": "Instance Type",
+          "description": "Defines the JSON type for an instance of the DSC resource. DSC resource instances always have the `object` type.",
+          "const": "object"
+        },
+        "$schema": {
+          "title": "DSC resource instance schema dialect",
+          "description": "Defines which dialect of JSON Schema the DSC resource is using to validate instances.",
+          "type": "string",
+          "format": "uri-reference",
+          "enum": [
+            "https://json-schema.org/draft/2020-12/schema",
+            "https://json-schema.org/draft/2019-09/schema",
+            "http://json-schema.org/draft-07/schema#"
+          ]
+        },
+        "$id": {
+          "title": "DSC resource instance schema ID",
+          "description": "Defines the unique ID for the DSC resource's instance schema. If the instance schema is published to its own public URI, set this keyword to that URI.",
+          "type": "string",
+          "format": "uri-reference"
+        },
+        "properties": {
+          "title": "Instance Properties",
+          "description": "Defines the properties that DSC can retrieve and manage for the resource's instances. This keyword must define at least one property as a key-value pair. The key is the property's name. The value is a subschema that validates the property.",
+          "type": "object",
+          "minProperties": 1,
+          "unevaluatedProperties": {
+            "anyOf": [
+              {
+                "$ref": "https://json-schema.org/draft/2020-12/schema"
+              },
+              {
+                "$ref": "https://json-schema.org/draft/2019-09/schema"
+              },
+              {
+                "$ref": "http://json-schema.org/draft-07/schema#"
+              }
+            ]
+          },
+          "additionalProperties": {},
+          "properties": {
+            "_exist": {
+              "title": "Standard Property: _exist",
+              "description": "Indicates that the DSC resource uses the standard `_exist` property to specify whether an instance should exist as a boolean value that defaults to `true`.",
+              "const": {
+                "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/exist.json"
+              }
+            },
+            "_inDesiredState": {
+              "title": "Standard Property: _inDesiredState",
+              "description": "Indicates that the DSC resource returns this value for it's own `test` method. This read-only property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC resource relies on DSC's synthetic testing.",
+              "const": {
+                "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/inDesiredState.json"
+              }
+            },
+            "_purge": {
+              "title": "Standard Property: _purge",
+              "description": "Indicates that the DSC resource uses the standard `_purge` property to specify whether the DSC resource should remove all non-specified members when it manages an array of members or values.",
+              "const": {
+                "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/purge.json"
+              }
+            },
+            "_rebootRequested": {
+              "title": "Standard property: _rebootRequested",
+              "description": "Indicates whether a resource instance requires a reboot after a set operation. To use DSC's built-in reboot notification processing, resources must define this property in their manifest.",
+              "const": {
+                "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/rebootRequested.json"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "command": {
+        "executable": "registry",
+        "args": [
+          "schema"
+        ]
+      }
+    },
+    {
+      "embedded": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "OSInfo",
+        "type": "object",
+        "required": [],
+        "properties": {
+          "$id": {
+            "type": "string"
+          },
+          "architecture": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bitness": {
+            "$ref": "#/definitions/Bitness"
+          },
+          "codename": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "edition": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "family": {
+            "$ref": "#/definitions/Family"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "definitions": {
+          "Bitness": {
+            "type": "string",
+            "enum": [
+              "32",
+              "64",
+              "unknown"
+            ]
+          },
+          "Family": {
+            "type": "string",
+            "enum": [
+              "Linux",
+              "macOS",
+              "Windows"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
