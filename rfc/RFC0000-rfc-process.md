@@ -81,6 +81,17 @@ When a Sponsor commits to the RFC, a WG member will:
 
 The WG will only accept RFCs with a Sponsor.
 
+## Commenting on an RFC
+
+When providing feedback or otherwise commenting on an RFC proposal, focus your feedback and
+discussion on the proposed experience and functionality. The WG may close conversations that are
+distracting from the core purpose of the RFC, such as bikeshedding around names for proposed APIs.
+
+As always, you must adhere to the [Code of Conduct][coc] when participating in discussions in the
+DSC repository.
+
+[coc]: ../CODE_OF_CONDUCT.md
+
 ## RFC Status
 
 An RFC may be in any of the following states:
@@ -108,6 +119,12 @@ WG member will then apply the `RFC - Reviewing` label to the PR.
 ### Reviewing
 
 After the author marks their PR as ready for review, the RFC moves into the formal review state.
+
+While the RFC is in review, the WG members are responsible for providing comments and feedback on
+the PR. The WG meets at least once a month, during which they will review open RFCs. The WG will
+always indicate to the Author a date by which the Author can expect feedback. The WG is responsible
+for communicating with the Author during the review process to negotiate timelines for addressing
+feedback and for updating the Author on the review status of their proposal.
 
 The RFC remains in this state until one of the following conditions is met:
 
