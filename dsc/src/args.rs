@@ -270,4 +270,6 @@ pub enum DscType {
     ConfigurationGetResult,
     ConfigurationSetResult,
     ConfigurationTestResult,
+    ExtensionManifest,
+    ExtensionDiscoverResult
 }
