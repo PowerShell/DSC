@@ -87,7 +87,8 @@ To install DSC on any platform:
 1. Add the folder containing the expanded archive contents to the `PATH`.
 
 > [!NOTE]
-> When downloading the latest release on Windows platform, make sure after extraction, the files are unblocked. You can do this using the PowerShell commands:
+> When downloading the latest release on Windows platform, make sure after extraction,
+> the files are unblocked. You can do this using the following PowerShell command:
 >
 > ```powershell
 > Get-ChildItem -Path <path-to-expanded-folder> -Recurse | Unblock-File
