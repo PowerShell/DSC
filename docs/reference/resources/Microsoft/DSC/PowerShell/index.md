@@ -2,7 +2,7 @@
 description: Microsoft.DSC/PowerShell resource reference documentation
 ms.date:     03/18/2025
 ms.topic:    reference
-title:       Microsoft/OSInfo
+title:       Microsoft.DSC/PowerShell
 ---
 
 # Microsoft.DSC/PowerShell
