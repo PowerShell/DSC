@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: List logical disk information
+    type: root.cimv2/Win32_LogicalDisk
+    properties:
+      Name: 
+      Description: 
+      Status:
