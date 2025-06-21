@@ -86,6 +86,14 @@ To install DSC on any platform:
 1. Expand the release archive.
 1. Add the folder containing the expanded archive contents to the `PATH`.
 
+> [!NOTE]
+> When downloading the latest release on Windows platform, make sure after extraction,
+> the files are unblocked. You can do this using the following PowerShell command:
+>
+> ```powershell
+> Get-ChildItem -Path <path-to-expanded-folder> -Recurse | Unblock-File
+> ```
+
 ### Install DSC on Windows with WinGet
 
 The following commands can be used to install DSC using the published `winget` packages:
