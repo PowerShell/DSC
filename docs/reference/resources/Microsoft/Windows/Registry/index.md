@@ -343,7 +343,7 @@ operation without the `--what-if` flag.
 
 The following snippet contains the JSON Schema that validates an instance of the resource. The
 validating schema only includes schema keywords that affect how the instance is validated. All
-nonvalidating keywords are omitted.
+non validating keywords are omitted.
 
 ```json
 {
