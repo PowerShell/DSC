@@ -92,3 +92,6 @@ changedProperties: []
 ## See also
 
 - [Microsoft.DSC.Debug/Echo resource](../index.md)
+
+<!-- Link reference definitions -->
+[01]: ../../../../../cli/resource/test.md
