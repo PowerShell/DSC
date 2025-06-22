@@ -9,7 +9,7 @@ title:       Microsoft.DSC.Debug/Echo
 
 ## Synopsis
 
-A debug resource for testing and troubleshooting DSC (Desired State Configuration) behavior.
+A debug resource for testing and troubleshooting Microsoft DSC (Desired State Configuration) behavior.
 
 ## Metadata
 
