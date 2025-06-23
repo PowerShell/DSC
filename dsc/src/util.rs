@@ -4,6 +4,8 @@
 use crate::args::{DscType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
 use dsc_lib::configure::config_result::ResourceTestResult;
+use dsc_lib::extensions::discover::DiscoverResult;
+use dsc_lib::extensions::extension_manifest::ExtensionManifest;
 use dsc_lib::{
     configure::{
         config_doc::Configuration,
@@ -175,6 +177,12 @@ pub fn get_schema(dsc_type: DscType) -> RootSchema {
         },
         DscType::ConfigurationTestResult => {
             schema_for!(ConfigurationTestResult)
+        },
+        DscType::ExtensionManifest => {
+            schema_for!(ExtensionManifest)
+        },
+        DscType::ExtensionDiscoverResult => {
+            schema_for!(DiscoverResult)
         },
     }
 }

@@ -99,18 +99,16 @@ pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
 #[cfg(test)]
 mod test {
     use crate::{
-        dscerror::DscError,
-        dscresources::resource_manifest::ResourceManifest,
-        schemas::DscRepoSchema
+        dscerror::DscError, extensions::extension_manifest::ExtensionManifest, schemas::DscRepoSchema
     };
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
         let invalid_uri = "https://invalid.schema.uri".to_string();
 
-        let manifest = ResourceManifest{
+        let manifest = ExtensionManifest{
             schema_version: invalid_uri.clone(),
-            resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".to_string(),
+            r#type: "Microsoft.Dsc.Test/InvalidSchemaUri".to_string(),
             version: "0.1.0".to_string(),
             ..Default::default()
         };
@@ -122,7 +120,7 @@ mod test {
         match result.as_ref().unwrap_err() {
             DscError::UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
-                assert_eq!(recognized, &ResourceManifest::recognized_schema_uris())
+                assert_eq!(recognized, &ExtensionManifest::recognized_schema_uris())
             },
             _ => {
                 panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
@@ -132,9 +130,9 @@ mod test {
 
     #[test]
     fn test_validate_schema_uri_with_valid_uri() {
-        let manifest = ResourceManifest{
-            schema_version: ResourceManifest::default_schema_id_uri(),
-            resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".to_string(),
+        let manifest = ExtensionManifest{
+            schema_version: ExtensionManifest::default_schema_id_uri(),
+            r#type: "Microsoft.Dsc.Test/ValidSchemaUri".to_string(),
             version: "0.1.0".to_string(),
             ..Default::default()
         };

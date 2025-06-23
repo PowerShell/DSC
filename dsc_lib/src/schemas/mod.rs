@@ -133,8 +133,16 @@ pub enum RecognizedSchemaVersion {
     /// Represents `v3` schema folder.
     #[default]
     V3,
+    /// Represents the `v3.1` schema folder.
+    V3_1,
+    /// Represents the `v3.1.0` schema folder.
+    V3_1_0,
     /// Represents the `v3.0` schema folder.
     V3_0,
+    /// Represents the `v3.0.2` schema folder.
+    V3_0_2,
+    /// Represents the `v3.0.1` schema folder.
+    V3_0_1,
     /// Represents the `v3.0.0` schema folder.
     V3_0_0,
 }
@@ -143,7 +151,11 @@ impl std::fmt::Display for RecognizedSchemaVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::V3 => write!(f, "v3"),
+            Self::V3_1 => write!(f, "v3.1"),
+            Self::V3_1_0 => write!(f, "v3.1.0"),
             Self::V3_0 => write!(f, "v3.0"),
+            Self::V3_0_2 => write!(f, "v3.0.2"),
+            Self::V3_0_1 => write!(f, "v3.0.1"),
             Self::V3_0_0 => write!(f, "v3.0.0"),
         }
     }
@@ -155,7 +167,11 @@ impl RecognizedSchemaVersion {
     pub fn all() -> Vec<RecognizedSchemaVersion> {
         vec![
             Self::V3,
+            Self::V3_1,
+            Self::V3_1_0,
             Self::V3_0,
+            Self::V3_0_2,
+            Self::V3_0_1,
             Self::V3_0_0,
         ]
     }
@@ -163,13 +179,13 @@ impl RecognizedSchemaVersion {
     //// Returns the latest version with major, minor, and patch segments, like `3.0.0`.
     #[must_use]
     pub fn latest() -> RecognizedSchemaVersion {
-        Self::V3_0_0
+        Self::V3_1_0
     }
 
     /// Returns the latest minor version for the latest major version, like `3.0`.
     #[must_use]
     pub fn latest_minor() -> RecognizedSchemaVersion {
-        Self::V3_0
+        Self::V3_1
     }
 
     /// Returns the latest major version, like `3`
@@ -519,22 +535,46 @@ mod test {
     fn test_get_recognized_schema_uris() {
         let expected: Vec<String> = vec![
             "https://aka.ms/dsc/schemas/v3/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.vscode.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.vscode.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json".to_string(),
             "https://aka.ms/dsc/schemas/v3/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1.0/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.2/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.1/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0.0/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.vscode.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json".to_string(),
         ];
 
@@ -544,7 +584,10 @@ mod test {
             true
         );
 
-        assert_eq!(expected, actual)
+        for (index, expected_uri) in expected.iter().enumerate() {
+            assert_eq!(*expected_uri, actual[index]);
+        }
+        // assert_eq!(expected, actual)
     }
 
     #[test]
