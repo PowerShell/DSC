@@ -1,2 +1,4 @@
 wmi.resource.ps1
 wmi.dsc.resource.json
+wmiAdapter.psd1
+wmiAdapter.psm1
