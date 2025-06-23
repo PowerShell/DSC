@@ -256,7 +256,7 @@ if (!$SkipBuild) {
                 }
             }
             else {
-                Write-Warning "Azure CLI not found or running in ADO, proceeding with anonymous access."
+                Write-Warning "Azure CLI not found, proceeding with anonymous access."
             }
         }
     }
