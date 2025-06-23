@@ -8,6 +8,8 @@ parameters:
   - name: BuildConfiguration
     type: string
     default: Release
+  - name: token
+    type: string
 
 steps:
 - checkout: self
@@ -34,15 +36,10 @@ steps:
   displayName: Install Rust
   env:
     ob_restore_phase: true
-- task: AzureCLI@2
-  displayName: Azure CLI
-  inputs:
-    azureSubscription: az-blob-cicd-infra
-    scriptType: pscore
-    scriptLocation: inlineScript
-    inlineScript: |
-      az account show
 - pwsh: |
+    $header = "Bearer ${ parameters.token }"
+    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
     Set-Location "$(Build.SourcesDirectory)/DSC"
     $LLVMBIN = "$($env:PROGRAMFILES)\Microsoft Visual Studio\2022\Enterprise\VC\Tools\Llvm\bin"
     if (!(Test-Path $LLVMBIN)) {
