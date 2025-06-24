@@ -3,11 +3,11 @@
 
 #[cfg(windows)]
 use {
-    registry_lib::{config::RegistryValueData, RegistryHelper},
-    crate::args::DefaultShell
+    std::path::Path,
+    registry_lib::{config::RegistryValueData, RegistryHelper}
 };
 
-use std::path::Path;
+use crate::args::DefaultShell;
 use crate::error::SshdConfigError;
 
 /// Invoke the set command.
