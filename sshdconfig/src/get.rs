@@ -2,9 +2,11 @@
 // Licensed under the MIT License.
 
 #[cfg(windows)]
-use registry_lib::{config::{Registry, RegistryValueData}, RegistryHelper};
+use {
+    registry_lib::{config::{Registry, RegistryValueData}, RegistryHelper},
+    crate::args::DefaultShell
+};
 
-use crate::args::DefaultShell;
 use crate::error::SshdConfigError;
 
 /// Invoke the get command.

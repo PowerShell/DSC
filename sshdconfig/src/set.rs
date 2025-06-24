@@ -2,11 +2,12 @@
 // Licensed under the MIT License.
 
 #[cfg(windows)]
-use registry_lib::{config::RegistryValueData, RegistryHelper};
+use {
+    registry_lib::{config::RegistryValueData, RegistryHelper},
+    crate::args::DefaultShell
+};
 
 use std::path::Path;
-
-use crate::args::DefaultShell;
 use crate::error::SshdConfigError;
 
 /// Invoke the set command.
@@ -69,16 +70,18 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
 }
 
 #[cfg(not(windows))]
-pub fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_arguments: Option<bool>, shell_arguments: Option<Vec<String>>) -> Result<(), SshdConfigError> {
+pub fn set_default_shell(_shell: Option<String>, _cmd_option: Option<String>, _escape_arguments: Option<bool>, _shell_arguments: Option<Vec<String>>) -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput("Windows registry operations not applicable to this platform".to_string()))
 }
 
+#[cfg(windows)]
 fn set_registry(name: &str, data: RegistryValueData) -> Result<(), SshdConfigError> {
     let registry_helper = RegistryHelper::new("HKLM\\SOFTWARE\\OpenSSH", Some(name.to_string()), Some(data))?;
     registry_helper.set()?;
     Ok(())
 }
 
+#[cfg(windows)]
 fn remove_registry(name: &str) -> Result<(), SshdConfigError> {
     let registry_helper = RegistryHelper::new("HKLM\\SOFTWARE\\OpenSSH", Some(name.to_string()), None)?;
     registry_helper.remove()?;
