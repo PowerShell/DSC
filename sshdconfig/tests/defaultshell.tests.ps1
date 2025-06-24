@@ -182,4 +182,19 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
             $retrievedConfig.shell_arguments | Should -Be $originalConfig.shell_arguments
         }
     }
+
+    Context 'Set default shell with null value' {
+        It 'Should clear existing default shell when set to null' {
+            $testShell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+            New-ItemProperty -Path $RegistryPath -Name "DefaultShell" -Value $testShell
+
+            $inputConfig = @{ shell = $null } | ConvertTo-Json
+
+            sshdconfig set --input $inputConfig
+            $LASTEXITCODE | Should -Be 0
+
+            $result = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
+            $result | Should -BeNullOrEmpty
+        }
+    }
 }
