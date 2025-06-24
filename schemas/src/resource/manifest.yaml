@@ -1120,17 +1120,47 @@ properties:
     $ref: /<PREFIX>/<VERSION>/resource/manifest.schema.yaml
 
 allOf:
-  # Adapter resources must define the adapter command
+  # Adapter resources must define the adapter command, get, test, and set
   - if:
       properties: { kind: { const: adapter } }
       required: [kind]
     then:
-      required: [adapter]
-  # Importer resources must define resolve, all others must define get
+      required: [adapter, get, test, set]
+  # Importer resources must define resolve and no other operations
   - if:
       properties: { kind: { const: importer } }
       required: [kind]
     then:
       required: [resolve]
-    else:
+      not:
+        anyOf:
+          - required: [adapter]
+          - required: [delete]
+          - required: [get]
+          - required: [export]
+          - required: [set]
+          - required: [test]
+          - required: [validate]
+          - required: [whatIf]
+  # Exporter resources must define export and no other operations
+  - if:
+      properties: { kind: { const: exporter } }
+      required: [kind]
+    then:
+      required: [export]
+      not:
+        anyOf:
+          - required: [adapter]
+          - required: [delete]
+          - required: [get]
+          - required: [resolve]
+          - required: [set]
+          - required: [test]
+          - required: [validate]
+          - required: [whatIf]
+  # Except for importer and exporter resources, all resources must implement get
+  - if:
+      properties: { kind: { enum: [resource, adapter, group] } }
+      required: [kind]
+    then:
       required: [get]
