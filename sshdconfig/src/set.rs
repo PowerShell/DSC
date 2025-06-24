@@ -69,7 +69,7 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
 }
 
 #[cfg(not(windows))]
-pub fn set_default_shell() -> Result<(), SshdConfigError> {
+pub fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_arguments: Option<bool>, shell_arguments: Option<Vec<String>>) -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput("Windows registry operations not applicable to this platform".to_string()))
 }
 
