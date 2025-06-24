@@ -83,7 +83,7 @@ extends:
             scriptLocation: inlineScript
             inlineScript: |
               $token = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-              $vstsCommandString = "vso[task.setvariable variable=AzToken;]$token"
+              $vstsCommandString = "vso[task.setvariable variable=AzToken;isoutput=true]$token"
               Write-Host "Setting token"
               Write-Host "##$vstsCommandString"
 
