@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#[cfg(windows)]
 use registry_lib::{config::{Registry, RegistryValueData}, RegistryHelper};
 
 use crate::args::DefaultShell;
@@ -17,6 +18,7 @@ pub fn invoke_get() -> Result<(), SshdConfigError> {
     Ok(())
 }
 
+#[cfg(windows)]
 fn get_default_shell() -> Result<(), SshdConfigError> {
     let registry_helper = RegistryHelper::new("HKLM\\SOFTWARE\\OpenSSH", Some("DefaultShell".to_string()), None)?;
     let default_shell: Registry = registry_helper.get()?;
@@ -73,4 +75,9 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     let output = serde_json::to_string_pretty(&result)?;
     println!("{output}");
     Ok(())
+}
+
+#[cfg(not(windows))]
+pub fn get_default_shell() -> Result<(), SshdConfigError> {
+    Err(SshdConfigError::InvalidInput("Windows registry operations not applicable to this platform".to_string()))
 }

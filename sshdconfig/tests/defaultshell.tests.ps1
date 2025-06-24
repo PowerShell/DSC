@@ -198,3 +198,19 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
         }
     }
 }
+
+Describe 'Default Shell Configuration Error Handling on Non-Windows Platforms' -Skip:($IsWindows) {
+    It 'Should return error for set command' {
+        $inputConfig = @{ shell = $null } | ConvertTo-Json
+
+        $out = sshdconfig set --input $inputConfig 2>&1
+        $LASTEXITCODE | Should -Not -Be 0
+        $out | Should -BeLike '*not applicable to this platform*'
+    }
+
+    It 'Should return error for get command' {
+        $out = sshdconfig get 2>&1
+        $LASTEXITCODE | Should -Not -Be 0
+        $out | Should -BeLike '*not applicable to this platform*'
+    }
+}

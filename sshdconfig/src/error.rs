@@ -17,6 +17,7 @@ pub enum SshdConfigError {
     ParserError(String),
     #[error("Parser Int: {0}")]
     ParseIntError(#[from] std::num::ParseIntError),
+    #[cfg(windows)]
     #[error("Registry: {0}")]
     RegistryError(#[from] registry_lib::error::RegistryError),
 }

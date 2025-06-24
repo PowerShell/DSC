@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+#[cfg(windows)]
 use registry_lib::{config::RegistryValueData, RegistryHelper};
+
 use std::path::Path;
 
 use crate::args::DefaultShell;
@@ -24,6 +26,7 @@ pub fn invoke_set(input: &str) -> Result<(), SshdConfigError> {
     }
 }
 
+#[cfg(windows)]
 fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_arguments: Option<bool>, shell_arguments: Option<Vec<String>>) -> Result<(), SshdConfigError> {
     if let Some(shell) = shell {
         let shell_path = Path::new(&shell);
@@ -63,6 +66,11 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
     }
 
     Ok(())
+}
+
+#[cfg(not(windows))]
+pub fn set_default_shell() -> Result<(), SshdConfigError> {
+    Err(SshdConfigError::InvalidInput("Windows registry operations not applicable to this platform".to_string()))
 }
 
 fn set_registry(name: &str, data: RegistryValueData) -> Result<(), SshdConfigError> {
