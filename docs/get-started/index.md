@@ -122,36 +122,36 @@ Run the following command to display only the resources available with the
 
 ```powershell
 $adaptedResources |
-  Where-Object -requireAdapter -EQ Microsoft.Windows/WindowsPowerShell |
+  Where-Object -Property requireAdapter -eq Microsoft.Windows/WindowsPowerShell |
   Format-Table -Property type, kind, version, capabilities, description
 ```
 
 ```Output
 type                                                  kind     version capabilities     description
 ----                                                  ----     ------- ------------     -----------
-PSDesiredStateConfiguration/Archive                   resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/Environment               resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/File                      resource 1.0.0   {get, set, test} 
-PSDesiredStateConfiguration/Group                     resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/GroupSet                  resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/Log                       resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/Package                   resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/ProcessSet                resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/Registry                  resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/Script                    resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/Service                   resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/ServiceSet                resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/SignatureValidation       resource 1.0.0   {get, set, test} 
-PSDesiredStateConfiguration/User                      resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WaitForAll                resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WaitForAny                resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WaitForSome               resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WindowsFeature            resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WindowsFeatureSet         resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WindowsOptionalFeature    resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WindowsOptionalFeatureSet resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WindowsPackageCab         resource 1.1     {get, set, test} 
-PSDesiredStateConfiguration/WindowsProcess            resource 1.1     {get, set, test} 
+PSDesiredStateConfiguration/Archive                   resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/Environment               resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/File                      resource 1.0.0   {get, set, test}
+PSDesiredStateConfiguration/Group                     resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/GroupSet                  resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/Log                       resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/Package                   resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/ProcessSet                resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/Registry                  resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/Script                    resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/Service                   resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/ServiceSet                resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/SignatureValidation       resource 1.0.0   {get, set, test}
+PSDesiredStateConfiguration/User                      resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WaitForAll                resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WaitForAny                resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WaitForSome               resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WindowsFeature            resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WindowsFeatureSet         resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WindowsOptionalFeature    resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WindowsOptionalFeatureSet resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WindowsPackageCab         resource 1.1     {get, set, test}
+PSDesiredStateConfiguration/WindowsProcess            resource 1.1     {get, set, test}
 PackageManagement/PackageManagement                   resource 1.4.8.1 {get, set, test} PackageManagement (a.k.a. OneGet) is a new way to discover and install software packa…
 PackageManagement/PackageManagementSource             resource 1.4.8.1 {get, set, test} PackageManagement (a.k.a. OneGet) is a new way to discover and install software packa…
 PowerShellGet/PSModule                                resource 2.2.5   {get, set, test} PowerShell module with commands for discovering, installing, updating and publishing …
@@ -303,7 +303,7 @@ Copy the following code block and save it in a file named `example.dsc.config.ya
 ```yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
-- name: Example registry key 
+- name: Example registry key
   type: Microsoft.Windows/Registry
   properties:
     keyPath: HKCU\dsc\example\key

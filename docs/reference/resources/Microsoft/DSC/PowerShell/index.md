@@ -2,7 +2,7 @@
 description: Microsoft.DSC/PowerShell resource reference documentation
 ms.date:     03/18/2025
 ms.topic:    reference
-title:       Microsoft/OSInfo
+title:       Microsoft.DSC/PowerShell
 ---
 
 # Microsoft.DSC/PowerShell
@@ -32,6 +32,12 @@ resources:
       - name: <nested instance name>
         type: <module name>/<class name>
         properties: # adapted resource properties
+
+# Or from v3.1.0-preview.2 onwards
+resources:
+- name: <instanceName>
+  type: <moduleName>/<class name>
+  properties: # adapted resource properties
 ```
 
 ## Description
@@ -42,7 +48,7 @@ implemented as PowerShell classes.
 
 The adapter manages the PSDSC resources in PowerShell, not Windows PowerShell. To use MOF-based
 PSDSC resources or PSDSC resources that require Windows PowerShell, use the
-[Microsoft.Windows/WindowsPowerShell](../../windows/windowspowershell/resource.md) adapter.
+[Microsoft.Windows/WindowsPowerShell](../../windows/windowspowershell/index.md) adapter.
 
 This adapter doesn't use the **PSDesiredStateConfiguration** module. You don't need to install the
 **PSDesiredStateConfiguration** module to use PSDSC resources in DSC through this adapter.
@@ -62,7 +68,7 @@ for each platform.
 |  macOS   | `$HOME/.dsc/PSAdapterCache.json`         |
 | Windows  | `%LOCALAPPDATA%\dsc\PSAdapterCache.json` |
 
-The adapter versions the cache. The current version is `1`. If the version of the cache on a
+The adapter versions the cache. The current version is `2`. If the version of the cache on a
 machine differs from the current version, the adapter refreshes the cache.
 
 The adapter checks whether the cache is stale on each run and refreshes it if:
@@ -82,7 +88,7 @@ $adapterScript = dsc resource list Microsoft.DSC/PowerShell |
     Select-Object -ExpandProperty directory |
     Join-Path
 
-& $adapterScript -Operation CLearCache
+& $adapterScript -Operation ClearCache
 ```
 
 ## Requirements

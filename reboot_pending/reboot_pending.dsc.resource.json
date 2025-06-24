@@ -28,6 +28,13 @@
         "rebootPending": {
           "type": "boolean",
           "readOnly": true
+        },
+        "reasons": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "readOnly": true
         }
       }
     }

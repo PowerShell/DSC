@@ -141,8 +141,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                             name: test_result.name,
                             resource_type: test_result.resource_type,
                             properties,
-                            depends_on: None,
-                            metadata: None,
+                            ..Default::default()
                         };
                         result_configuration.resources.push(resource);
                     }
