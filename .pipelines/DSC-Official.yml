@@ -7,14 +7,6 @@ pr:
     - onebranch
     - release/v*
 
-schedules:
-- cron: '0 3 * * 1'
-  displayName: Weekly Build
-  branches:
-    include:
-    - main
-  always: true
-
 variables:
   BuildConfiguration: 'release'
   PackageRoot: '$(System.ArtifactsDirectory)/Packages'
@@ -83,6 +75,17 @@ extends:
             Write-Host ("sending " + $vstsCommandString)
             Write-Host "##$vstsCommandString"
           name: Package
+        - task: AzureCLI@2
+          displayName: Get Az Token
+          inputs:
+            azureSubscription: az-blob-cicd-infra
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              $token = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+              $vstsCommandString = "vso[task.setvariable variable=AzToken;isoutput=true]$token"
+              Write-Host "Setting token"
+              Write-Host "##$vstsCommandString"
 
       - job: BuildWin_x64
         dependsOn: SetPackageVersion
@@ -90,6 +93,7 @@ extends:
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
@@ -101,6 +105,7 @@ extends:
             buildName: x86_64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
+            token: '$(AzToken)'
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -119,6 +124,7 @@ extends:
             buildName: aarch64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
+            token: '$(AzToken)'
 
       - job: CreateMsixBundle
         dependsOn:
@@ -149,12 +155,21 @@ extends:
             Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
+        - task: onebranch.pipeline.signing@1
+          displayName: Sign MsixBundle
+          condition: succeeded()
+          inputs:
+            command: 'sign'
+            signing_profile: $(MSIXProfile)
+            files_to_sign: '*.msixbundle'
+            search_root: '$(ob_outputDirectory)'
 
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
         variables:
           LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-x64-musl
         pool:
@@ -171,6 +186,9 @@ extends:
         - pwsh: |
             apt update
             apt -y install musl-tools
+            $header = "Bearer $accessToken"
+            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture x86_64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -182,6 +200,7 @@ extends:
         variables:
           LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: Linux-ARM64-musl
         pool:
@@ -196,6 +215,14 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
+        - task: AzureCLI@2
+          displayName: Azure CLI
+          inputs:
+            azureSubscription: az-blob-cicd-infra
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              az account show
         - pwsh: |
             $env:CC_aarch64_unknown_linux_musl='clang'
             $env:AR_aarch64_unknown_linux_musl='llvm-ar'
@@ -211,6 +238,9 @@ extends:
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
+            $header = "Bearer $accessToken"
+            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
             ./build.ps1 -PackageType tgz -Architecture aarch64-unknown-linux-musl -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
@@ -221,6 +251,7 @@ extends:
         dependsOn: SetPackageVersion
         variables:
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         displayName: BuildMac
         pool:
@@ -243,7 +274,18 @@ extends:
           displayName: Install Rust
           env:
             ob_restore_phase: true
+        - task: AzureCLI@2
+          displayName: Azure CLI
+          inputs:
+            azureSubscription: az-blob-cicd-infra
+            scriptType: pscore
+            scriptLocation: inlineScript
+            inlineScript: |
+              az account show
         - pwsh: |
+            $header = "Bearer $accessToken"
+            $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+            $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
