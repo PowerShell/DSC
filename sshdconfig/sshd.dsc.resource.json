@@ -2,6 +2,9 @@
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.Windows.OpenSSH/SSHD",
     "description": "Manage SSH Server Configuration Global Settings",
+    "tags": [
+        "Windows"
+    ],
     "version": "0.1.0",
     "get": {
         "executable": "sshdconfig",
