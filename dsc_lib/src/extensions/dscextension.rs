@@ -145,6 +145,7 @@ impl DscExtension {
     /// This function will return an error if the secret retrieval fails or if the extension does not support the secret capability.
     pub fn secret(&self, name: &str, vault: Option<&str>) -> Result<Option<String>, DscError> {
         if self.capabilities.contains(&Capability::Secret) {
+            debug!("{}", t!("extensions.dscextension.retrievingSecretFromExtension", name = name, extension = self.type_name));
             let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
                 Ok(manifest) => manifest,
                 Err(err) => {
@@ -170,10 +171,15 @@ impl DscExtension {
                 let result: SecretResult = match serde_json::from_str(&stdout) {
                     Ok(value) => value,
                     Err(err) => {
-                        return Err(DscError::Json(err));
+                        return Err(DscError::Extension(t!("extensions.dscextension.secretExtensionReturnedInvalidJson", extension = self.type_name, error = err).to_string()));
                     }
                 };
-                Ok(Some(result.secret))
+                if result.secret.is_some() {
+                    debug!("{}", t!("extensions.dscextension.extensionReturnedSecret", extension = self.type_name));
+                } else {
+                    debug!("{}", t!("extensions.dscextension.extensionReturnedNoSecret", extension = self.type_name));
+                }
+                Ok(result.secret)
             }
         } else {
             Err(DscError::UnsupportedCapability(

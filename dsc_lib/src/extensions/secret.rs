@@ -33,5 +33,5 @@ pub struct SecretMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct SecretResult {
-    pub secret: String,
+    pub secret: Option<String>,
 }
