@@ -32,10 +32,10 @@ pub enum DscError {
     #[error("{0}")]
     Extension(String),
 
-    #[error("{t} '{0}' {t2}: {1}", t = t!("dscerror.function"), t2 = t!("dscerror.error"))]
+    #[error("{t} '{0}': {1}", t = t!("dscerror.function"))]
     Function(String, String),
 
-    #[error("{t} '{0}' {t2}: {1}", t = t!("dscerror.function"), t2 = t!("dscerror.error"))]
+    #[error("{t} '{0}': {1}", t = t!("dscerror.function"))]
     FunctionArg(String, String),
 
     #[error("{t}: {0}", t = t!("dscerror.integerConversion"))]

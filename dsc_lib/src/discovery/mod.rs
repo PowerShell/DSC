@@ -8,7 +8,7 @@ use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery};
 use crate::extensions::dscextension::DscExtension;
 use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress::ProgressFormat};
 use std::collections::BTreeMap;
-use command_discovery::ImportedManifest;
+use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
 #[derive(Clone)]
@@ -80,8 +80,9 @@ impl Discovery {
     ///
     /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) {
+        let command_discovery = CommandDiscovery::new(progress_format);
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
-            Box::new(command_discovery::CommandDiscovery::new(progress_format)),
+            Box::new(command_discovery),
         ];
         let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
@@ -98,6 +99,9 @@ impl Discovery {
                 self.resources.insert(resource.0.clone(), resource.1);
                 remaining_required_resource_types.retain(|x| *x != resource.0);
             };
+            if let Ok(extensions) = discovery_type.get_extensions() {
+                self.extensions.extend(extensions);
+            }
         }
     }
 }
