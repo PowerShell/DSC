@@ -180,6 +180,7 @@ retrievingSecretFromExtension = "Retrieving secret '%{name}' from extension '%{e
 secretExtensionReturnedInvalidJson = "Extension '%{extension}' returned invalid JSON: %{error}"
 extensionReturnedSecret = "Extension '%{extension}' returned secret"
 extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
+secretNoResults = "Extension '%{extension}' returned no output"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
