@@ -50,7 +50,7 @@ impl Function for Secret {
             match extension.secret(&secret_name, vault_name.as_deref()) {
                 Ok(secret_result) => {
                     if let Some(secret_value) = secret_result {
-                        if secret_returned {
+                        if secret_returned && result != secret_value {
                             return Err(DscError::Function("secret".to_string(), t!("functions.secret.multipleSecrets", name = secret_name.clone()).to_string()));
                         }
 

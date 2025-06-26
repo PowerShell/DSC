@@ -300,7 +300,7 @@ invalidSecondArgType = "Invalid argument type for second parameter"
 
 [functions.secret]
 notString = "Parameter secret name is not a string"
-multipleSecrets = "Multiple secrets with the same name '%{name}' was returned, try specifying a vault"
+multipleSecrets = "Multiple secrets with the same name '%{name}' and different values was returned, try specifying a vault"
 extensionReturnedError = "Extension '%{extension}': %{error}"
 noExtensions = "No extensions supporting secrets was found"
 secretNotFound = "Secret '%{name}' not found"
