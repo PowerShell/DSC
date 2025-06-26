@@ -49,4 +49,4 @@ $secret = if ($Second) {
     get-secret -hashtable $secretsOne -name $Name -vault $Vault
 }
 
-@{ secret = $secret } | ConvertTo-Json -Compress | Write-Output
+@{ secureString = $secret } | ConvertTo-Json -Compress | Write-Output
