@@ -60,7 +60,8 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
     'sshdconfig.exe',
-    'sshdconfig.dsc.resource.json',
+    'sshd.dsc.resource.json',
+    'sshd_config.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
@@ -87,7 +88,8 @@ $filesForLinuxPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshdconfig.dsc.resource.json'
+    'sshd.dsc.resource.json',
+    'sshd_config.dsc.resource.json'
 )
 
 $filesForMacPackage = @(
@@ -109,7 +111,8 @@ $filesForMacPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshdconfig.dsc.resource.json'
+    'sshd.dsc.resource.json',
+    'sshd_config.dsc.resource.json'
 )
 
 # the list of files other than the binaries which need to be executable
