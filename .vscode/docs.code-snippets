@@ -1,9 +1,9 @@
 {
-	// Place your DSCv3 workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
-	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
-	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
-	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
-	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Place your DSCv3 workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
 	// Placeholders with the same ids are connected.
 	"Configuration function template": {
 		"scope": "markdown",
@@ -140,7 +140,7 @@
 			"  </details>",
 			""
 		]
-	}
+	},
 	"Changelog Entry Multi Item": {
 		"scope": "markdown",
 		"prefix": "docs-changelog-entry-multi-issue-pr",
@@ -158,7 +158,7 @@
 			"  </details>",
 			""
 		]
-	}
+	},
 	"Changelog release heading": {
 		"scope": "markdown",
 		"prefix": "docs-changelog-release-heading",
@@ -173,8 +173,7 @@
 			"[release-${1:v3.0.0-${2:alpha.5}}]: https://github.com/PowerShell/DSC/releases/tag/${1:v3.0.0-${2:alpha.5}} \"Link to the DSC ${1:v3.0.0-${2:alpha.5}} release on GitHub\"",
 			"[compare-${1:v3.0.0-${2:alpha.5}}]: https://github.com/PowerShell/DSC/compare/v3.0.0-alpha.4...${1:v3.0.0-${2:alpha.5}}"
 		]
-	
-	}
+	},
 	"Github Work Item Link": {
 		"scope": "markdown",
 		"prefix": "docs-gh-link",
@@ -182,5 +181,14 @@
 		"body": [
 			"[#${1:work item id}]: https://github.com/PowerShell/DSC/issues/${1:work item id}"
 		]
-	}
+	},
+	"RFC table entry": {
+		"scope": "markdown",
+		"prefix": "rfc-table-entry",
+		"description": "Template for an entry in the RFC History table",
+		"body": [
+			"| RFC${1:NNNN} | ${2:Title} | ${3|Accepted,Rejected,Final|} | ${4:#123} |"
+		]
+	},
+	
 }
