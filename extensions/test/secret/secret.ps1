@@ -15,6 +15,7 @@ $secretsOne = @{
     Vault1 = @{
         MySecret = 'Hello'
         DuplicateSecret = 'World'
+        DuplicateSame = 'SameSecret'
     }
     Vault2 = @{
         AnotherSecret = 'Foo'
@@ -25,6 +26,7 @@ $secretTwo = @{
     VaultA = @{
         DifferentSecret = 'Hello2'
         DuplicateSecret = 'World2'
+        DuplicateSame = 'SameSecret'
     }
 }
 
