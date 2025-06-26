@@ -1,0 +1,56 @@
+{
+    "$schema": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC/FileContent",
+    "description": "Manage file content configuration settings.",
+    "version": "0.1.0",
+    "get": {
+        "executable": "filesys",
+        "args": [
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            "--schema-type",
+            "file-content"
+        ],
+        "input": "stdin",
+        "implementsPretest": false
+    },
+    "set": {
+        "executable": "filesys",
+        "args": [
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            "--schema-type",
+            "file-content"
+        ],
+        "input": "stdin"
+    },
+    "delete": {
+        "executable": "filesys",
+        "args": [
+            "delete",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            "--schema-type",
+            "file-content"
+        ],
+        "input": "stdin"
+    },
+    "schema": {
+        "command": {
+            "executable": "filesys",
+            "args": [
+                "schema",
+                "--schema-type",
+                "file-content"
+            ]
+        }
+    }
+}
