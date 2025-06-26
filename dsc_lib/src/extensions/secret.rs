@@ -33,5 +33,6 @@ pub struct SecretMethod {
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct SecretResult {
-    pub secret: Option<String>,
+    #[serde(rename = "secureString")]
+    pub secure_string: Option<String>,
 }

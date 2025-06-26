@@ -174,12 +174,12 @@ impl DscExtension {
                         return Err(DscError::Extension(t!("extensions.dscextension.secretExtensionReturnedInvalidJson", extension = self.type_name, error = err).to_string()));
                     }
                 };
-                if result.secret.is_some() {
+                if result.secure_string.is_some() {
                     debug!("{}", t!("extensions.dscextension.extensionReturnedSecret", extension = self.type_name));
                 } else {
                     debug!("{}", t!("extensions.dscextension.extensionReturnedNoSecret", extension = self.type_name));
                 }
-                Ok(result.secret)
+                Ok(result.secure_string)
             }
         } else {
             Err(DscError::UnsupportedCapability(
