@@ -28,7 +28,7 @@ resources:
     type: Microsoft.DSC.Debug/Echo
     properties:
       # Required properties
-      output: anyOf # array, boolean, integer, string
+      output: anyOf # array, boolean, integer, object, string
 ```
 
 ## Description
@@ -36,10 +36,10 @@ resources:
 The `Microsoft.DSC.Debug/Echo` resource is a debugging utility that echoes back the configuration
 data passed to it. This resource is particularly useful for:
 
-- Testing DSC configuration syntax and structure
-- Debugging parameter passing between resources
-- Verifying that DSC is processing configurations as expected
-- Understanding how DSC transforms and handles configuration data
+- Testing DSC configuration syntax and structure.
+- Debugging parameter passing between resources.
+- Verifying that DSC is processing configurations as expected.
+- Understanding how DSC transforms and handles configuration data.
 
 > [!NOTE]
 > This resource is installed with DSC itself on any systems.
@@ -60,8 +60,8 @@ For more information about resource capabilities, see
 [DSC resource capabilities][01].
 
 > [!NOTE]
-> Calling any capability on this resource does not affect the system;
-> it only echoes the value in the output.
+> Invoking any operation on this resource doesn't affect the system.
+> This resource only echoes the value in the output.
 
 ## Examples
 
@@ -90,7 +90,7 @@ The following list describes the properties for the resource.
 <details><summary>Expand for <code>output</code> property metadata</summary>
 
 ```yaml
-Type             : anyOf (string, array, boolean, integer)
+Type             : anyOf (array, boolean, integer, object, string)
 IsRequired       : true
 IsKey            : true
 IsReadOnly       : false
@@ -101,12 +101,13 @@ IsWriteOnly      : false
 
 Defines the value to be echoed back by the resource. The `output` property can be any of the following types:
 
-| Type    | Description                                 |
-|---------|---------------------------------------------|
-| string  | A string value                              |
-| array   | An array of values                          |
-| boolean | A boolean value (`true` or `false`)         |
-| integer | An integer value                            |
+| Type    | Description                                  |
+|:-------:|:---------------------------------------------|
+| array   | An array of values.                          |
+| boolean | A boolean value (`true` or `false`).         |
+| integer | An integer value.                            |
+| object  | A JSON object of key-value pairs.            |
+| string  | A string value.                              |
 
 ## Instance validating schema
 
@@ -143,7 +144,7 @@ non validating keywords are omitted.
         true,
         true,
         {
-          "type": "string"
+          "type": "object"
         },
         {
           "type": "string"
