@@ -16,7 +16,6 @@ variables:
     value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
   - name: Codeql.TSAEnabled
     value: true
-  - group: MSIXSigningProfile
 
 resources:
   repositories:
@@ -165,7 +164,7 @@ extends:
           condition: succeeded()
           inputs:
             command: 'sign'
-            signing_profile: $(MSIXProfile)
+            cp_code: 'Dynamic'
             files_to_sign: '*.msixbundle'
             search_root: '$(ob_outputDirectory)'
 
