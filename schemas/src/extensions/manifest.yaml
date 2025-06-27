@@ -2,7 +2,7 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id:     <HOST>/<PREFIX>/<VERSION>/extension/manifest.yaml
 
-title: DSC resource manifest
+title: DSC extension manifest
 description: >-
   Defines the information DSC requires to process and surface a DSC extension.
 markdownDescription: | # VS Code only
