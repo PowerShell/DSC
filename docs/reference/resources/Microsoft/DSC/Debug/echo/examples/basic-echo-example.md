@@ -49,8 +49,9 @@ dsc resource get --resource Microsoft.DSC.Debug/Echo --input $instance
 
 The resource will return the same output value:
 
-```json
-{"actualState":{"output":"Hello World!"}}
+```yaml
+actualState:
+  output: Hello World!
 ```
 
 ## Using the set capability
