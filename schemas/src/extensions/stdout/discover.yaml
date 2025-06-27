@@ -10,11 +10,16 @@ markdownDescription: | # VS Code only
   [_Online Documentation_][00]
   ***
 
-  Represents the full path a DSC resource manifest. DSC expects every JSON Line
-  emitted to stdout for the **Discover** operation to adhere to this schema. An extension indicates
-  that it supports the **Discover** operation by defining the [discover][01] field in its manifest.
+  Represents the full path a DSC resource manifest. DSC expects every JSON Line emitted to stdout
+  for the **Discover** operation to adhere to this schema. An extension indicates that it supports
+  the **Discover** operation by defining the [discover][01] field in its manifest.
 
-  The output must be a JSON object.
+  The output must be a JSON object that defines the `manifestPath` property.
+
+  If the extension doesn't discover any resources, it shouldn't emit any data to stdout.
+
+  Unless the extension raises an error, it should exit with code `0`, even when no resources are
+  discovered.
 
   [00]: <DOCS_BASE_URL>/reference/schemas/extension/stdout/discover?<DOCS_VERSION_PIN>
   [01]: <DOCS_BASE_URL>/reference/schemas/extension/manifest/discover?<DOCS_VERSION_PIN>
