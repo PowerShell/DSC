@@ -8,10 +8,15 @@ pr:
     - release/v*
 
 variables:
-  BuildConfiguration: 'release'
-  PackageRoot: '$(System.ArtifactsDirectory)/Packages'
-  WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
-  Codeql.TSAEnabled: true
+  - name: BuildConfiguration
+    value: 'release'
+  - name: PackageRoot
+    value: '$(System.ArtifactsDirectory)/Packages'
+  - name: WindowsContainerImage
+    value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
+  - name: Codeql.TSAEnabled
+    value: true
+  - group: MSIXSigningProfile
 
 resources:
   repositories:
