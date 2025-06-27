@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/context.json",
+  "title": "Operation context",
+  "description": "Defines whether the operation was for a configuration or a resource. If the value for this metadata property is `configuration`, DSC was run through the `dsc config` command. If the value is `resource`, DSC was run with the `dsc resource` command.",
+  "type": "string",
+  "enum": [
+    "resource",
+    "configuration"
+  ]
+}
