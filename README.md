@@ -1,8 +1,9 @@
 # DSCv3
 
 > [!NOTE]
-> This repo isn't accepting code contributions. It's public and open source to show progress and
-> enable feedback. Once we're at a feature complete state, we can start taking code contributions.
+> We welcome code contributions to this repository. For guidelines on how to contribute,
+> see our [CONTRIBUTING.md](CONTRIBUTING.md).
+> Your feedback and participation help us improve DSCv3 for everyone.
 
 ## What's DSCv3?
 
@@ -22,7 +23,7 @@ DSCv3 differs from PowerShell DSC in a few important ways:
 
 - DSCv3 doesn't depend on PowerShell. You can use DSCv3 without PowerShell installed and manage
   resources written in bash, python, C#, Go, or any other language.
-- DSCv3 use of PowerShell based resources does not depend on PSDesiredStateConfiguration module
+- DSCv3 use of PowerShell based resources does not depend on [PSDesiredStateConfiguration][00] module
 - DSCv3 doesn't include a local configuration manager. DSCv3 is invoked as a command. It doesn't
   run as a service.
 - Non-PowerShell resources define their schemas with JSON files, not MOF files.
