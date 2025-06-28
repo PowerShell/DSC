@@ -136,6 +136,7 @@ extends:
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
+          ob_restore_phase: true
         pool:
           type: windows
         steps:
@@ -152,7 +153,6 @@ extends:
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
             ./build.ps1 -PackageType msixbundle
-            Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
         - task: onebranch.pipeline.signing@1
@@ -162,7 +162,10 @@ extends:
             command: 'sign'
             signing_profile: 'Dynamic-WINMSAPP1ST'
             files_to_sign: '*.msixbundle'
-            search_root: '$(ob_outputDirectory)'
+            search_root: '$(Build.SourcesDirectory)\bin'
+        - pwsh: |
+            Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
+          displayName: 'Copy MsixBundle to output directory'
 
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion
