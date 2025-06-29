@@ -32,11 +32,11 @@ When authoring a resource manifest in Visual Studio Code (VSCode), you may encou
 
 This issue applies for Microsoft DSC v3.0 and above.
 
-**Resolution:** This issue can be resolved by using the `manifest.vscode.json` in the schema URI. For more information, check out the [enhanced authoring][01] page.
+**Resolution:** This issue can be resolved by using the `manifest.vscode.json` in the schema URI. For more information, check out the [enhanced authoring][00] page.
 
 ## See Also
 
 - [Microsoft Desired State Configuration overview](../overview.md)
 
 <!-- link references -->
-[01]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/enhanced-authoring?view=dsc-3.0
+[00]: https://learn.microsoft.com/en-us/powershell/dsc/concepts/enhanced-authoring?view=dsc-3.0
