@@ -230,6 +230,10 @@ function Invoke-DscCacheRefresh {
             if ($classBased -and ($classBased.CustomAttributes.AttributeType.Name -eq 'DscResourceAttribute')) {
                 "Detected class-based resource: $($dscResource.Name) => Type: $($classBased.BaseType.FullName)" | Write-DscTrace
                 $dscResourceInfo.ImplementationDetail = 'ClassBased'
+                $properties = GetClassBasedProperties -filePath $dscResource.Path -className $dscResource.Name
+                if ($null -ne $properties) {
+                    $DscResourceInfo.Properties = $properties
+                }
             }
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
@@ -239,10 +243,10 @@ function Invoke-DscCacheRefresh {
             }
 
             $dscResourceCacheEntries.Add([dscResourceCacheEntry]@{
-                Type            = "$moduleName/$($dscResource.Name)"
-                DscResourceInfo = $DscResourceInfo
-                LastWriteTimes  = $lastWriteTimes
-            })
+                    Type            = "$moduleName/$($dscResource.Name)"
+                    DscResourceInfo = $DscResourceInfo
+                    LastWriteTimes  = $lastWriteTimes
+                })
         }
 
         if ($namedModules.Count -gt 0) {
@@ -584,6 +588,72 @@ function ValidateMethod {
     return $method
 }
 
+function GetClassBasedProperties {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $filePath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $className
+    )
+
+    if (".psd1" -notcontains ([System.IO.Path]::GetExtension($filePath))) {
+        return @('get', 'set', 'test')
+    }
+
+    $module = $filePath.Replace('.psd1', '.psm1')
+
+    $properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
+
+    if (Test-Path $module -ErrorAction Ignore) {
+        [System.Management.Automation.Language.Token[]] $tokens = $null
+        [System.Management.Automation.Language.ParseError[]] $errors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($module, [ref]$tokens, [ref]$errors)
+        foreach ($e in $errors) {
+            $e | Out-String | Write-DscTrace -Operation Error
+        }
+
+        $typeDefinitions = $ast.FindAll(
+            {
+                $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
+                return $null -ne $typeAst;
+            },
+            $false);
+
+        $typeDefinition = $typeDefinitions | Where-Object -Property Name -EQ $className
+
+        foreach ($member in $typeDefinition.Members) {
+            $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
+            if (($null -eq $property) -or ($property.IsStatic)) {
+                continue;
+            }
+            $skipProperty = $true
+            $isKeyProperty = $false
+            foreach ($attr in $property.Attributes) {
+                if ($attr.TypeName.Name -eq 'DscProperty') {
+                    $skipProperty = $false
+                    foreach ($attrArg in $attr.NamedArguments) {
+                        if ($attrArg.ArgumentName -eq 'Key') {
+                            $isKeyProperty = $true
+                            break
+                        }
+                    }
+                }
+            }
+            if ($skipProperty) {
+                continue;
+            }
+
+            [DscResourcePropertyInfo]$prop = [DscResourcePropertyInfo]::new()
+            $prop.Name = $property.Name
+            $prop.PropertyType = $property.PropertyType.TypeName.Name
+            $prop.IsMandatory = $isKeyProperty
+            $properties.Add($prop)
+        }
+        return $properties
+    }
+}
+
 # cached resource
 class dscResourceCacheEntry {
     [string] $Type
@@ -610,6 +680,13 @@ enum dscResourceType {
     ClassBased
     Binary
     Composite
+}
+
+class DscResourcePropertyInfo {
+    [string] $Name
+    [string] $PropertyType
+    [bool] $IsMandatory
+    [System.Collections.Generic.List[string]] $Values
 }
 
 # dsc resource type (settable clone)
