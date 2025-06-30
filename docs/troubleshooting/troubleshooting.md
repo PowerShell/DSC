@@ -14,8 +14,8 @@ This article provides troubleshooting instructions for common errors and list ou
 
 The following table lists known issues with Microsoft DSC v3:
 
-| Issue                                                                          | Description                                                                     | Status    | Reported on                                          |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- | --------- | ---------------------------------------------------- |
+|                                     Issue                                      | Description                                                                     | Status    | Reported on                                          |
+| :----------------------------------------------------------------------------: | :------------------------------------------------------------------------------ | :-------- | :--------------------------------------------------- |
 | [Unable to parse content from '<manifestUrl>'](#unable-to-parse-content-from-) | When authoring a resource manifest in VSCode, you may encounter parsing errors. | Confirmed | [#917](https://github.com/PowerShell/DSC/issues/917) |
 
 For the most up-to-date information on known issues, visit the [DSC GitHub repository issues page](https://github.com/PowerShell/DSC/issues).
