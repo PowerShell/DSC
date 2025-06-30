@@ -9,14 +9,19 @@ title:       Microsoft.DSC.Transitional/RunCommandOnSet
 
 ## Synopsis
 
-Execute a command during DSC set operations.
+Execute a command during DSC **Set** operation.
+
+> [!IMPORTANT]
+> The `runcommandonset` command and `Microsoft.DSC.Transitional/RunCommandOnSet` resource
+> is intended as a temporary transitional resource while migrating DSCv3 resources for
+> your needs.
 
 ## Metadata
 
 ```yaml
 Version    : 0.1.0
 Kind       : resource
-Tags       : [transitional, windows, linux, macos]
+Tags       : [Transitional, Windows, Linux, MacOS]
 Author     : Microsoft
 ```
 
@@ -36,9 +41,9 @@ resources:
 
 ## Description
 
-The `Microsoft.DSC.Transitional/RunCommandOnSet` resource enables you to run a specified executable command during the DSC
-set operation. This is useful for commands that need to run as part of your configuration, but haven't fully transitioned to
-a DSC resource.
+The `Microsoft.DSC.Transitional/RunCommandOnSet` resource enables you to run a specified executable command
+during the DSC **Set** operation. This is useful for commands that need to run as part of your configuration,
+but haven't fully transitioned to a DSC resource.
 
 The resource allows you to:
 
@@ -94,7 +99,7 @@ IsWriteOnly      : false
 
 </details>
 
-Defines the executable program or command to run during the DSC Set operation.
+Defines the executable program or command to run during the DSC **Set** operation.
 This can be any valid executable file or command accessible from the system PATH.
 
 ### arguments

@@ -10,7 +10,7 @@ title: Run a simple command
 # Run a simple command
 
 This example shows how you can use the `Microsoft.DSC.Transitional/RunCommandOnSet` resource to
-execute a simple command during the set operation.
+execute a simple command during the **Set** operation.
 
 ## Test whether the command would run
 
@@ -44,7 +44,7 @@ inDesiredState: true
 differingProperties: []
 ```
 
-The `inDesiredState` field of the result object is set to `true`, indicating that the command would be executed during a set operation.
+The `inDesiredState` field of the result object is set to `true`, indicating that the command would be executed during a **Set** operation.
 
 ## Run the command
 
