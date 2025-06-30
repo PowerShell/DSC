@@ -133,10 +133,9 @@ extends:
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
-          ob_sdl_sbom_enabled: true
+          ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: true
-          ob_sdl_codeql_compiled_enabled: true
-          ob_restore_phase: true
+          ob_sdl_codeql_compiled_enabled: false
         pool:
           type: windows
         steps:
