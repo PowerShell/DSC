@@ -141,7 +141,7 @@ You can also retrieve more information by directly reading it from the cache fil
 $cache = Get-Content -Path "$env:LOCALAPPDATA\dsc\WindowsPSAdapterCache.json" |
     ConvertFrom-Json
 
-($cache.ResourceCache | Where-Object { $_.type -eq '<moduleName>/<resourceName>' }).DscResourceInfo.Properties
+($cache.ResourceCache | Where-Object -FilterScript { $_.type -eq '<moduleName>/<resourceName>' }).DscResourceInfo.Properties
 ```
 
 When defining a configuration document, the following properties are required.
