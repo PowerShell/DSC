@@ -9,11 +9,12 @@ title: Run a PowerShell command
 
 # Run a PowerShell command
 
-This example shows how you can use the `Microsoft.DSC.Transitional/RunCommandOnSet` resource to execute a PowerShell command during the set operation.
+This example shows how you can use the `Microsoft.DSC.Transitional/RunCommandOnSet` resource to execute a PowerShell command
+during the **Set** operation.
 
 ## Define the PowerShell command to run
 
-The following snippet shows how you can define a PowerShell command to run during the DSC set operation:
+The following snippet shows how you can define a PowerShell command to run during the DSC **Set** operation:
 
 ```powershell
 $command = "Write-Output Hello | Out-File $env:TEMP\hello.txt"
