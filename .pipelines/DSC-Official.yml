@@ -162,9 +162,9 @@ extends:
             command: 'sign'
             signing_profile: 'Dynamic-WINMSAPP1ST'
             files_to_sign: '*.msixbundle'
-            search_root: '$(Build.SourcesDirectory)\bin'
+            search_root: '$(Build.SourcesDirectory)\DSC\bin'
         - pwsh: |
-            Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
+            Copy-Item "$(Build.SourcesDirectory)/DSC/bin/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Copy MsixBundle to output directory'
 
       - job: BuildLinuxMusl
