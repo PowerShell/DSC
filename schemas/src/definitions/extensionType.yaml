@@ -6,15 +6,16 @@ title: DSC extension fully qualified type name
 description: |
   The namespaced name of the DSC extension, using the syntax:
 
-  owner[.group][.area]/name
+  <owner>[.<group>][.<area>][.<subarea>]/<name>
 
   For example:
 
+    - Microsoft/Example
     - Microsoft.DSC/Docs
     - Microsoft.Windows.Appx/Discover
 
 type: string
-pattern: ^\w+(\.\w+){0,2}\/\w+$
+pattern: ^\w+(\.\w+){0,3}\/\w+$
 
 # VS Code only
 markdownDescription: |
@@ -25,16 +26,17 @@ markdownDescription: |
   The namespaced name of the DSC extension, using the syntax:
 
   ```yaml
-  owner[.group][.area]/name
+  owner[{.namespace}]/name
   ```
 
   For example:
 
+  - `Microsoft/Example`
   - `Microsoft.DSC/Docs`
   - `Microsoft.Windows.Appx/Discover`
 
   [01]: <DOCS_BASE_URL>/reference/schemas/definitions/extensiontype?<DOCS_VERSION_PIN>
 patternErrorMessage: |
   Invalid type name. Valid extension type names always define an owner and a name separated by a
-  slash, like `Microsoft/Example`. Type names may optionally include a group and area to namespace
-  the extension under the owner, like `Microsoft.Windows.Appx/Discover`.
+  slash, like `Microsoft/Example`. Type names may optionally include the group, area, and subarea
+  segments to namespace the resource under the owner, like `Microsoft.Windows.Appx/Discover`.
