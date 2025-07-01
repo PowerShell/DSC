@@ -1,0 +1,27 @@
+name: Publish to Winget
+
+on:
+  release:
+    types: [published]
+
+
+env:
+  REGEX: 'DSC-(\d+\.\d+\.\d+(?:-preview\.\d+)?)-(?:x86_64|aarch64)-pc-windows-msvc\.zip'
+
+jobs:
+  publish:
+    runs-on: windows-latest # Action can only run on Windows
+    steps:
+      - name: Publish Microsoft.DSC ${{ github.event.release.prerelease && 'Preview' || 'Stable' }}
+        run: |
+          $assets = '${{ toJSON(github.event.release.assets) }}' | ConvertFrom-Json
+          $wingetRelevantAsset = $assets | Where-Object { $_.name -like '*.zip' -and $_.name -like '*.msixbundle' } | Select-Object -First 1
+          $regex = [Regex]::New($env:REGEX)
+          $version = $regex.Match($wingetRelevantAsset.name).Groups[1].Value
+
+          $wingetPackage = "Microsoft.DSC${{ github.event.release.prerelease && '.Preview' || '' }}"
+
+          & curl.exe -JLO https://aka.ms/wingetcreate/latest
+          & .\wingetcreate.exe update $wingetPackage -s -v $version -u $wingetRelevantAsset.browser_download_url -t "${{ secrets.WINGET_TOKEN }}"
+
+
