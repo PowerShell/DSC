@@ -61,7 +61,7 @@ The resource has the following capabilities:
 - `export` - You can use the resource to export the current state of the system.
 
 For more information about resource capabilities, see
-[DSC resource capabilities][01].
+[DSC resource capabilities][00].
 
 ## Examples
 
@@ -75,17 +75,16 @@ The following list describes the properties for the resource.
 - **Required properties:** <a id="required-properties"></a> The following properties are always
   required when defining an instance of the resource. An instance that doesn't define each of these
   properties is invalid. For more information, see the "Required resource properties" section in
-  [DSC resource properties][02]
+  [DSC resource properties][01]
 
   - [packageName](#packagename) - The name of the package to query or install.
 
 - **Key properties:** <a id="key-properties"></a> The following properties uniquely identify an
   instance. If two instances of a resource have the same values for their key properties, the
   instances are conflicting. For more information about key properties, see the "Key resource
-  properties" section in [DSC resource properties][03].
+  properties" section in [DSC resource properties][02].
 
   - [packageName](#packagename) (required) - The name of the package to query or install.
-  - [version](#version) (optional) - The version of the package to install.
 
 - **Instance properties:** <a id="instance-properties"></a> The following properties are optional.
   They define the desired state for an instance of the resource.
@@ -95,7 +94,7 @@ The following list describes the properties for the resource.
 
 - **Read-only properties:** <a id="read-only-properties"></a> The resource returns the following
   properties, but they aren't configurable. For more information about read-only properties, see
-  the "Read-only resource properties" section in [DSC resource properties][04].
+  the "Read-only resource properties" section in [DSC resource properties][03].
 
   - [source](#source) - Indicates the source of the package.
 
@@ -189,7 +188,7 @@ exit code, it also emits an error message with details about the invalid paramet
 - [For more information about APT](https://wiki.debian.org/Apt)
 
 <!-- Link definitions -->
-[01]: ../../../../../concepts/resources/capabilities.md
-[02]: ../../../../../concepts/resources/properties.md#required-resource-properties
-[03]: ../../../../../concepts/resources/properties.md#key-resource-properties
-[04]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
+[00]: ../../../../../concepts/resources/capabilities.md
+[01]: ../../../../../concepts/resources/properties.md#required-resource-properties
+[02]: ../../../../../concepts/resources/properties.md#key-resource-properties
+[03]: ../../../../../concepts/resources/properties.md#read-only-resource-properties
