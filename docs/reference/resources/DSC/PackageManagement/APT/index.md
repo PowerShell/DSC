@@ -60,7 +60,8 @@ The resource has the following capabilities:
 - `set` - You can use the resource to enforce the desired state for an instance.
 - `export` - You can use the resource to export the current state of the system.
 
-For more information about resource capabilities, see
+This resource uses the synthetic test functionality of DSC to determine whether an instance is in
+the desired state. For more information about resource capabilities, see
 [DSC resource capabilities][00].
 
 ## Examples
