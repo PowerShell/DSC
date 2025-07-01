@@ -168,10 +168,14 @@ extends:
         pool:
           type: windows
         steps:
-        - download: current
-          artifact: drop_BuildAndSign_CreateMsixBundle
-          patterns: '*.msixbundle'
-          targetPath: '$(Build.ArtifactStagingDirectory)/downloads'
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            buildType: 'current'
+            artifact: drop_BuildAndSign_CreateMsixBundle
+            itemPattern: |
+              **/*.msixbundle
+            targetPath: '$(Build.ArtifactStagingDirectory)/downloads'
+          displayName: Download MsixBundle
         - task: onebranch.pipeline.signing@1
           displayName: Sign MsixBundle
           condition: succeeded()
