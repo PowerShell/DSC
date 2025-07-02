@@ -31,6 +31,18 @@ dsc config test [Options] --input <INPUT>
 cat <FILE> | dsc config test [Options] --file -
 ```
 
+### Configuration document from file with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - test [Options] --file <FILE>
+```
+
+### Configuration document from option string with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - test [Options] --input <INPUT>
+```
+
 ## Description
 
 The `test` subcommand verifies whether the resource instances in a configuration document are in
