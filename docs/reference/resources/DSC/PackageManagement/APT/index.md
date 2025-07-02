@@ -11,6 +11,10 @@ title:       DSC.PackageManagement/Apt
 
 Manage packages with the advanced package tool (APT) on Linux systems.
 
+> [!IMPORTANT]
+> The `DSC.PackageManagement/Apt` resource is a proof-of-concept example
+> for use with DSC. Don't use it in production.
+
 ## Metadata
 
 ```yaml
