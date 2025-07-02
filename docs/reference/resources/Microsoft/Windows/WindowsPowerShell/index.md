@@ -83,7 +83,7 @@ set to `ClearCache`:
 $adapterScript = dsc resource list Microsoft.Windows/WindowsPowerShell |
     ConvertFrom-Json |
     Select-Object -ExpandProperty directory |
-    Join-Path
+    Join-Path -ChildPath 'psDscAdapter\powershell.resource.ps1' 
 
 & $adapterScript -Operation ClearCache
 ```
@@ -131,7 +131,7 @@ To list the schema properties for a PowerShell DSC resource, you can run the fol
 
 ```powershell
 dsc resource list --adapter Microsoft.Windows/WindowsPowerShell <moduleName>/<resourceName> |
-    ConvertFrom-Json | 
+    ConvertFrom-Json |
     Select-Object properties
 ```
 
@@ -141,7 +141,7 @@ You can also retrieve more information by directly reading it from the cache fil
 $cache = Get-Content -Path "$env:LOCALAPPDATA\dsc\WindowsPSAdapterCache.json" |
     ConvertFrom-Json
 
-($cache.ResourceCache | Where-Object -Property type -EQ '<moduleName>/<resourceName>').DscResourceInfo.Properties
+($cache.ResourceCache | Where-Object -FilterScript { $_.type -eq '<moduleName>/<resourceName>' }).DscResourceInfo.Properties
 ```
 
 When defining a configuration document, the following properties are required.
