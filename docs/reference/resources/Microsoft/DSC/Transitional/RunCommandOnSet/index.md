@@ -51,6 +51,11 @@ The resource allows you to:
 - Pass arguments to the executable
 - Define a custom exit code to indicate success
 
+> [!IMPORTANT]
+> The **Get** operation for this resource does not return any output from the executed command.
+> Additionally, when using the **Test** operation, the resource always reports as being
+> in the desired state.
+
 ## Capabilities
 
 The resource has the following capabilities:
@@ -64,10 +69,8 @@ the desired state. For more information about resource capabilities, see
 
 ## Examples
 
-1. [Run a simple command][01] - Shows how to create and delete registry keys with the
-   `dsc resource` commands.
-1. [Run a PowerShell command][02] - Shows how to create, modify, and delete registry values with the
-   `dsc resource` commands.
+1. [Run a simple command][01] - Shows how to run a simple command.
+1. [Run a PowerShell command][02] - Shows how you can run a PowerShell command.
 
 ## Properties
 
