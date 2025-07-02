@@ -26,7 +26,11 @@ Please read the rest of this document to ensure a smooth contribution process.
 
 ### Contributing to documentation related to DSC
 
-Please see the [PowerShell-Docs-DSC](https://github.com/MicrosoftDocs/PowerShell-Docs-DSC/) repository for details.
+You can contribute to documentation either in the `docs` folder of this repository
+or in the [PowerShell-Docs-DSC](https://github.com/MicrosoftDocs/PowerShell-Docs-DSC/) repository.
+
+> [!NOTE]
+> Documentation contributed to the `docs` folder in this repository is periodically synced to the [PowerShell-Docs-DSC](https://github.com/MicrosoftDocs/PowerShell-Docs-DSC/) repository.
 
 ### Contributing to documentation related to maintaining or contributing to the DSC project
 
