@@ -1,0 +1,82 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.Transitional/PowerShell7Script",
+    "description": "Enable running PS7 scripts inline",
+    "version": "0.1.0",
+    "get": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            "-Command",
+            "$Input | ./psscript.ps1 get"
+        ]
+    },
+    "set": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            "-Command",
+            "$Input | ./psscript.ps1 set"
+        ]
+    },
+    "test": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            "$Input | ./psscript.ps1 test"
+        ]
+    },
+    "export": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            "$Input | ./psscript.ps1 export"
+        ]
+    },
+    "exitCodes": {
+        "0": "Success",
+        "1": "PowerShell script execution failed"
+    },
+    "schema": {
+        "embedded": {
+            "type": "object",
+            "properties": {
+                "getScript": {
+                    "type": ["string", null]
+                },
+                "setScript": {
+                    "type": ["string", null]
+                },
+                "testScript": {
+                    "type": ["string", null]
+                },
+                "exportScript": {
+                    "type": ["string", null]
+                },
+                "output": {
+                    "type": ["object", null]
+                }
+            }
+        }
+    }
+}
