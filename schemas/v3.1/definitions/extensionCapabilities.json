@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/extensionCapabilities.json",
+  "title": "Resource capabilities",
+  "description": "Define the operations DSC can invoke for an extension and how the extension behaves when invoked.",
+  "type": "array",
+  "items": {
+    "type": "string",
+    "enum": [
+      "discover"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/stdout/discover.json",
+  "title": "Discover extension operation stdout",
+  "description": "Represents the full path a DSC resource manifest.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nRepresents the full path a DSC resource manifest. DSC expects every JSON Line emitted to stdout\nfor the **Discover** operation to adhere to this schema. An extension indicates that it supports\nthe **Discover** operation by defining the [discover][01] field in its manifest.\n\nThe output must be a JSON object that defines the `manifestPath` property.\n\nIf the extension doesn't discover any resources, it shouldn't emit any data to stdout.\n\nUnless the extension raises an error, it should exit with code `0`, even when no resources are\ndiscovered.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/stdout/discover?view=dsc-3.0&preserve-view=true\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true\n",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifestPath"
+  ],
+  "properties": {
+    "manifestPath": {
+      "title": "DSC manifest path",
+      "description": "Defines the absolute path to a DSC resource manifest on the system.",
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines the absolute path to a DSC resource manifest on the system. DSC expects this value to\nbe the absolute path to a manifest file that exists. If this value is a relative path, or if\nthe manifest doesn't exist, DSC raises an error.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/stdout/discover?view=dsc-3.0&preserve-view=true#manifestPath",
+      "type": "string"
+    }
+  },
+  "$defs": {}
+}

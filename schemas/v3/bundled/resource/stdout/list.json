@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/stdout/list.json",
+  "title": "List resource operation stdout",
+  "description": "Defines the representation of an adapted resource in DSC. DSC expects every JSON Line emitted to stdout for the **List** operation to adhere to this schema.",
+  "type": "object",
+  "required": [
+    "type",
+    "kind",
+    "version",
+    "capabilities",
+    "path",
+    "directory",
+    "implementedAs",
+    "properties",
+    "requireAdapter"
+  ],
+  "properties": {
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json"
+    },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json"
+    },
+    "version": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/semver.json"
+    },
+    "capabilities": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/resourceCapabilities.json"
+    },
+    "path": {
+      "title": "Path",
+      "description": "Indicates the path to the adapted resource on the file system.",
+      "type": "string"
+    },
+    "directory": {
+      "title": "Directory",
+      "description": "Indicates the path to the folder containing the adapted resource on the file system."
+    },
+    "implementedAs": {
+      "title": "Custom implementation name",
+      "description": "Indicates that the adapted resource uses a custom implementation. The name can be used to distinguish between different implementations for the adapted resources.",
+      "type": "string"
+    },
+    "author": {
+      "title": "Author",
+      "description": "Indicates the name of the person or organization that developed and maintains the adapted Resource.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\w+( \\w+)*"
+    },
+    "properties": {
+      "title": "Properties",
+      "description": "Defines the adapted resource's property names.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$"
+      }
+    },
+    "requireAdapter": {
+      "title": "Required adapter",
+      "description": "Defines the fully qualified type name of the adapter that the adapted resource depends on. An adapter should always set this value to its own fully qualified resource type name.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json"
+    }
+  },
+  "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json",
+      "title": "DSC resource fully qualified type name",
+      "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
+      "type": "string",
+      "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceKind.json",
+      "title": "Resource kind",
+      "description": "Defines whether the resource is a normal DSC resource, a group resource, or an adapter resource. This property is only required for group resources.",
+      "type": "string",
+      "enum": [
+        "resource",
+        "adapter",
+        "group",
+        "importer",
+        "exporter"
+      ]
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json",
+      "type": "string",
+      "title": "Semantic Version",
+      "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceCapabilities.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceCapabilities.json",
+      "title": "Resource capabilities",
+      "description": "Define the operations you can invoke for a resource and how the resource behaves when invoked.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "get",
+          "set",
+          "setHandlesExist",
+          "whatIf",
+          "test",
+          "delete",
+          "export",
+          "resolve"
+        ]
+      }
+    }
+  }
+}

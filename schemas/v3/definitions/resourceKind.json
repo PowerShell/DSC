@@ -8,6 +8,7 @@
     "resource",
     "adapter",
     "group",
-    "importer"
+    "importer",
+    "exporter"
   ]
 }

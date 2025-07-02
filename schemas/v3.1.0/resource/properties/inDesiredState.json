@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/inDesiredState.json",
+  "title": "Instance is in the Desired State",
+  "description": "Indicates whether the instance is in the desired state. This property is only returned by the `test` method.",
+  "type": [
+    "boolean",
+    "null"
+  ],
+  "readOnly": true
+}

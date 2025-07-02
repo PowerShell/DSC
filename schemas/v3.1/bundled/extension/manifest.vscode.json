@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.json",
+  "title": "DSC extension manifest",
+  "description": "Defines the information DSC requires to process and surface a DSC extension.",
+  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the information DSC requires to process and surface a DSC extension. For DSC to use a\nmanifest on a system, the manifest file must:\n\n1. Be discoverable in the `PATH` environment variable.\n1. Follow the naming convention `<name>.dsc.extension.json`.\n1. Be valid for this schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true\n",
+  "type": "object",
+  "required": [
+    "$schema",
+    "type",
+    "version"
+  ],
+  "properties": {
+    "$schema": {
+      "title": "Manifest Schema",
+      "description": "This property must be the canonical URL of the Command-based DSC resource Manifest schema that the manifest is implemented for.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/extension/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/extension/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/extension/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/extension/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/extension/manifest.vscode.json"
+      ],
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nThe `$schema` property indicates the canonical URI of this schema that the manifest validates\nagainst. This property is mandatory. DSC uses this value to validate the manifest against the\ncorrect JSON schema.\n\nThe JSON schemas for DSC are published in multiple versions and forms. This documentation is\nfor the latest version of the schema. As a convenience, you can specify either the full URI\nfor the schema hosted in GitHub or use the shorter `aka.ms` URI. You can specify the schema\nfor a specific semantic version, the latest schema for a minor version, or the latest schema\nfor a major version of DSC. For more information about schema URIs and versioning, see\n[DSC JSON Schema URIs][01].\n\nFor every version of the schema, there are three valid urls:\n\n```yaml\n.../extension/manifest.json\n```\n\n> The URL to the canonical non-bundled schema. When it's used for validation, the validating\n> client needs to retrieve this schema and every schema it references.\n\n```yaml\n.../bundled/extension/manifest.json\n```\n\n> The URL to the bundled schema. When it's used for validation, the validating client only\n> needs to retrieve this schema.\n> \n> This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can\n> still validate the document when it uses this schema, other tools may error or behave\n> in unexpected ways.\n\n```yaml\n.../bundled/extension/manifest.vscode.json\n```\n\n> The URL to the enhanced authoring schema. This schema is much larger than the other\n> schemas, as it includes additional definitions that provide contextual help and snippets\n> that the others don't include.\n> \n> This schema uses keywords that are only recognized by VS Code. While DSC can still\n> validate the document when it uses this schema, other tools may error or behave in\n> unexpected ways.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true#schema\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/schema-uris?view=dsc-3.0&preserve-view=true\n",
+      "markdownEnumDescriptions": [
+        "<!-- force a line break -->\n\n> #### `v3` non-bundled, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3` schema. This URL\n> points to the canonical non-bundled schema. When it's used for validation, the\n> validating client needs to retrieve this schema and every schema it references.\n>\n> This URI is for the schemas in a major version folder. If you pin to a major version\n> folder, like `v3`, the schemas you use will update with every nonbreaking release. You\n> can use those schemas until you want or need to migrate to a new major version of DSC.\n",
+        "<!-- force a line break -->\n\n> #### `v3` bundled, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3` schema. This URL\n> points to the bundled schema. When it's used for validation, the validating client\n> only needs to retrieve this schema.\n>\n> This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can\n> still validate the document when it uses this schema, other tools may error or behave\n> in unexpected ways.\n>\n> This URI is for the schemas in a major version folder. If you pin to a major version\n> folder, like `v3`, the schemas you use will update with every nonbreaking release. You\n> can use those schemas until you want or need to migrate to a new major version of DSC.\n",
+        "<!-- force a line break -->\n\n> #### `v3` enhanced authoring, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3` schema. This URL points to the\n> enhanced authoring schema. This schema is much larger than the other schemas, as it\n> includes additional definitions that provide contextual help and snippets that the\n> others don't include.\n>\n> This schema uses keywords that are only recognized by VS Code. While DSC can still\n> validate the document when it uses this schema, other tools may error or behave in\n> unexpected ways.\n>\n> This URI is for the schemas in a major version folder. If you pin to a major version\n> folder, like `v3`, the schemas you use will update with every nonbreaking release. You\n> can use those schemas until you want or need to migrate to a new major version of DSC.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1` non-bundled, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3.1` schema. This URL\n> points to the canonical non-bundled schema. When it's used for validation, the\n> validating client needs to retrieve this schema and every schema it references.\n>\n> This URI is for the schemas in a minor version folder. If you pin to a minor version\n> folder, like `v3.1`, the schemas you use will update with every patch release. Pinning\n> to a minor version folder enables you to take advantage of fixes to the schemas without\n> continually updating your schema URIs. However, to take advantage of any improvements\n> or new features, you need to update the URI whenever a new minor version is released.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1` bundled, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3.1` schema. This URL\n> points to the bundled schema. When it's used for validation, the validating client\n> only needs to retrieve this schema.\n>\n> This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can\n> still validate the document when it uses this schema, other tools may error or behave\n> in unexpected ways.\n>\n> This URI is for the schemas in a minor version folder. If you pin to a minor version\n> folder, like `v3.1`, the schemas you use will update with every patch release. Pinning\n> to a minor version folder enables you to take advantage of fixes to the schemas without\n> continually updating your schema URIs. However, to take advantage of any improvements\n> or new features, you need to update the URI whenever a new minor version is released.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1` enhanced authoring, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3.1` schema. This URL points to\n> the enhanced authoring schema. This schema is much larger than the other schemas, as it\n> includes additional definitions that provide contextual help and snippets that the\n> others don't include.\n>\n> This schema uses keywords that are only recognized by VS Code. While DSC can still\n> validate the document when it uses this schema, other tools may error or behave in\n> unexpected ways.\n>\n> This URI is for the schemas in a minor version folder. If you pin to a minor version\n> folder, like `v3.1`, the schemas you use will update with every patch release. Pinning\n> to a minor version folder enables you to take advantage of fixes to the schemas without\n> continually updating your schema URIs. However, to take advantage of any improvements\n> or new features, you need to update the URI whenever a new minor version is released.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1.0` non-bundled, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3.1.0` schema. This URL\n> points to the canonical non-bundled schema. When it's used for validation, the\n> validating client needs to retrieve this schema and every schema it references.\n>\n> This URI is for the schemas in a full semantic version folder. If you pin to a full\n> semantic version folder, like `v3.1.0`, you're pinning to schemas that won't change.\n> However, to take advantage of any improvements or fixes to the schemas, you need to\n> update the URI with each release.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1.0` bundled, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3.1.0` schema. This URL\n> points to the bundled schema. When it's used for validation, the validating client\n> only needs to retrieve this schema.\n>\n> This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can\n> still validate the document when it uses this schema, other tools may error or behave\n> in unexpected ways.\n>\n> This URI is for the schemas in a full semantic version folder. If you pin to a full\n> semantic version folder, like `v3.1.0`, you're pinning to schemas that won't change.\n> However, to take advantage of any improvements or fixes to the schemas, you need to\n> update the URI with each release.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1.0` enhanced authoring, canonical URI\n>\n> Indicates that the extension manifest adheres to the `v3.1.0` schema. This URL points to\n> the enhanced authoring schema. This schema is much larger than the other schemas, as it\n> includes additional definitions that provide contextual help and snippets that the\n> others don't include.\n>\n> This schema uses keywords that are only recognized by VS Code. While DSC can still\n> validate the document when it uses this schema, other tools may error or behave in\n> unexpected ways.\n>\n> This URI is for the schemas in a full semantic version folder. If you pin to a full\n> semantic version folder, like `v3.1.0`, you're pinning to schemas that won't change.\n> However, to take advantage of any improvements or fixes to the schemas, you need to\n> update the URI with each release.\n",
+        "<!-- force a line break -->\n\n> #### `v3` non-bundled, short URI\n>\n> Indicates that the extension manifest adheres to the `v3` schema. This URL\n> points to the canonical non-bundled schema. When it's used for validation, the\n> validating client needs to retrieve this schema and every schema it references.\n>\n> This URI is for the schemas in a major version folder. If you pin to a major version\n> folder, like `v3`, the schemas you use will update with every nonbreaking release. You\n> can use those schemas until you want or need to migrate to a new major version of DSC.\n",
+        "<!-- force a line break -->\n\n> #### `v3` bundled, short URI\n>\n> Indicates that the extension manifest adheres to the `v3` schema. This URL\n> points to the bundled schema. When it's used for validation, the validating client\n> only needs to retrieve this schema.\n>\n> This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can\n> still validate the document when it uses this schema, other tools may error or behave\n> in unexpected ways.\n>\n> This URI is for the schemas in a major version folder. If you pin to a major version\n> folder, like `v3`, the schemas you use will update with every nonbreaking release. You\n> can use those schemas until you want or need to migrate to a new major version of DSC.\n",
+        "<!-- force a line break -->\n\n> #### `v3` enhanced authoring, short URI\n>\n> Indicates that the extension manifest adheres to the `v3` schema. This URL points to the\n> enhanced authoring schema. This schema is much larger than the other schemas, as it\n> includes additional definitions that provide contextual help and snippets that the\n> others don't include.\n>\n> This schema uses keywords that are only recognized by VS Code. While DSC can still\n> validate the document when it uses this schema, other tools may error or behave in\n> unexpected ways.\n>\n> This URI is for the schemas in a major version folder. If you pin to a major version\n> folder, like `v3`, the schemas you use will update with every nonbreaking release. You\n> can use those schemas until you want or need to migrate to a new major version of DSC.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1` non-bundled, short URI\n>\n> Indicates that the extension manifest adheres to the `v3.1` schema. This URL\n> points to the canonical non-bundled schema. When it's used for validation, the\n> validating client needs to retrieve this schema and every schema it references.\n>\n> This URI is for the schemas in a minor version folder. If you pin to a minor version\n> folder, like `v3.1`, the schemas you use will update with every patch release. Pinning\n> to a minor version folder enables you to take advantage of fixes to the schemas without\n> continually updating your schema URIs. However, to take advantage of any improvements\n> or new features, you need to update the URI whenever a new minor version is released.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1` bundled, short URI\n>\n> Indicates that the extension manifest adheres to the `v3.1` schema. This URL\n> points to the bundled schema. When it's used for validation, the validating client\n> only needs to retrieve this schema.\n>\n> This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can\n> still validate the document when it uses this schema, other tools may error or behave\n> in unexpected ways.\n>\n> This URI is for the schemas in a minor version folder. If you pin to a minor version\n> folder, like `v3.1`, the schemas you use will update with every patch release. Pinning\n> to a minor version folder enables you to take advantage of fixes to the schemas without\n> continually updating your schema URIs. However, to take advantage of any improvements\n> or new features, you need to update the URI whenever a new minor version is released.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1` enhanced authoring, short URI\n>\n> Indicates that the extension manifest adheres to the `v3.1` schema. This URL points to\n> the enhanced authoring schema. This schema is much larger than the other schemas, as it\n> includes additional definitions that provide contextual help and snippets that the\n> others don't include.\n>\n> This schema uses keywords that are only recognized by VS Code. While DSC can still\n> validate the document when it uses this schema, other tools may error or behave in\n> unexpected ways.\n>\n> This URI is for the schemas in a minor version folder. If you pin to a minor version\n> folder, like `v3.1`, the schemas you use will update with every patch release. Pinning\n> to a minor version folder enables you to take advantage of fixes to the schemas without\n> continually updating your schema URIs. However, to take advantage of any improvements\n> or new features, you need to update the URI whenever a new minor version is released.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1.0` non-bundled, short URI\n>\n> Indicates that the extension manifest adheres to the `v3.1.0` schema. This URL\n> points to the canonical non-bundled schema. When it's used for validation, the\n> validating client needs to retrieve this schema and every schema it references.\n>\n> This URI is for the schemas in a full semantic version folder. If you pin to a full\n> semantic version folder, like `v3.1.0`, you're pinning to schemas that won't change.\n> However, to take advantage of any improvements or fixes to the schemas, you need to\n> update the URI with each release.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1.0` bundled, short URI\n>\n> Indicates that the extension manifest adheres to the `v3.1.0` schema. This URL\n> points to the bundled schema. When it's used for validation, the validating client\n> only needs to retrieve this schema.\n>\n> This schema uses the bundling model introduced for JSON Schema 2020-12. While DSC can\n> still validate the document when it uses this schema, other tools may error or behave\n> in unexpected ways.\n>\n> This URI is for the schemas in a full semantic version folder. If you pin to a full\n> semantic version folder, like `v3.1.0`, you're pinning to schemas that won't change.\n> However, to take advantage of any improvements or fixes to the schemas, you need to\n> update the URI with each release.\n",
+        "<!-- force a line break -->\n\n> #### `v3.1.0` enhanced authoring, short URI\n>\n> Indicates that the extension manifest adheres to the `v3.1.0` schema. This URL points to\n> the enhanced authoring schema. This schema is much larger than the other schemas, as it\n> includes additional definitions that provide contextual help and snippets that the\n> others don't include.\n>\n> This schema uses keywords that are only recognized by VS Code. While DSC can still\n> validate the document when it uses this schema, other tools may error or behave in\n> unexpected ways.\n>\n> This URI is for the schemas in a full semantic version folder. If you pin to a full\n> semantic version folder, like `v3.1.0`, you're pinning to schemas that won't change.\n> However, to take advantage of any improvements or fixes to the schemas, you need to\n> update the URI with each release.\n"
+      ]
+    },
+    "type": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1/definitions/extensionType.json"
+    },
+    "version": {
+      "title": "Extension Semantic Version",
+      "description": "The semantic version (semver) of the DSC extension.",
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1/definitions/semver.json",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe semantic version ([semver][02]) of the DSC extension.\n\nThis value uses the [suggested regular expression][03] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true#version\n[02]: https://semver.org/\n[03]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
+    },
+    "description": {
+      "title": "Extension description",
+      "description": "A short synopsis of the DSC extension's purpose.",
+      "type": "string",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a short synopsis of the DSC extension's purpose.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true#description-1\n"
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Defines a list of searchable terms for the extension.",
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a list of searchable terms for the extension.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true#tags\n",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$",
+        "patternErrorMessage": "Invalid tag. Tags must be a string of alphanumeric characters and underscores. No other\ncharacters are permitted.\n"
+      }
+    },
+    "discover": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1/extension/manifest.discover.json"
+    },
+    "exitCodes": {
+      "title": "Exit codes",
+      "description": "This property defines a map of valid exit codes for the DSC extension. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC extension's exit codes.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^-?[0-9]+$",
+        "patternErrorMessage": "Invalid exit code. Must be a string representing a 32-bit signed integer.\n"
+      },
+      "patternProperties": {
+        "^-?[0-9]+$": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false,
+      "default": {
+        "0": "Success",
+        "1": "Error"
+      },
+      "examples": [
+        {
+          "0": "Success",
+          "1": "Invalid parameter",
+          "2": "Invalid input",
+          "3": "JSON serialization failed"
+        }
+      ],
+      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThis property defines a map of valid exit codes for the DSC extension. DSC always interprets\nexit code `0` as a successful operation and any other exit code as an error. Use this\nproperty to indicate human-readable semantic meanings for the DSC extension's exit codes.\n\nDefine the keys in this property as strings representing a valid 32-bit signed integer. You\ncan't use alternate formats for the exit code. For example, instead of the hexadecimal value\n`0x80070005` for \"Access denied\", specify the exit code as `-2147024891`. If you're authoring\nyour extension manifest in YAML, be sure to wrap the exit code in single quotes, like\n`'0': Success` instead of `0: Success` to ensure the YAML file can be parsed correctly.\n\nDefine the value for each key as a string explaining what the exit code indicates.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/root?view=dsc-3.0&preserve-view=true#exitcodes\n",
+      "defaultSnippets": [
+        {
+          "label": " Defined exit codes",
+          "description": "Defines exit codes with semantic meaning for the extension.",
+          "body": {
+            "0": "Success",
+            "${1:first exit code number}": "${2:first exit code meaning}",
+            "${3:second exit code number}": "${4:second exit code meaning}"
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "PowerShell": {
+      "DSC": {
+        "main": {
+          "schemas": {
+            "v3.1": {
+              "definitions": {
+                "extensionType.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/extensionType.json",
+                  "title": "DSC extension fully qualified type name",
+                  "description": "The namespaced name of the DSC extension, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n  - Microsoft/Example\n  - Microsoft.DSC/Docs\n  - Microsoft.Windows.Appx/Discover\n",
+                  "type": "string",
+                  "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$",
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe namespaced name of the DSC extension, using the syntax:\n\n```yaml\nowner[{.namespace}]/name\n```\n\nFor example:\n\n- `Microsoft/Example`\n- `Microsoft.DSC/Docs`\n- `Microsoft.Windows.Appx/Discover`\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/extensiontype?view=dsc-3.0&preserve-view=true\n",
+                  "patternErrorMessage": "Invalid type name. Valid extension type names always define an owner and a name separated by a\nslash, like `Microsoft/Example`. Type names may optionally include the group, area, and subarea\nsegments to namespace the resource under the owner, like `Microsoft.Windows.Appx/Discover`.\n"
+                },
+                "semver.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/semver.json",
+                  "type": "string",
+                  "title": "Semantic Version",
+                  "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
+                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                  "patternErrorMessage": "Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.\n\nThe value may also include pre-release version information and build metadata.\n",
+                  "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
+                },
+                "commandExecutable.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/commandExecutable.json",
+                  "title": "Executable Command Name",
+                  "description": "The name of the command to run.",
+                  "type": "string"
+                },
+                "commandArgs.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/commandArgs.json",
+                  "title": "Executable Command Arguments",
+                  "description": "The list of arguments to pass to the command. The arguments can be any number of strings. If you want to pass the JSON object representing the property bag for the resource to an argument, you can define a single item in the array as a JSON object, indicating the name of the argument with the `jsonInputArg` string property and whether the argument is mandatory for the command with the `mandatory` boolean property.",
+                  "type": "array",
+                  "items": {
+                    "defaultSnippets": [
+                      {
+                        "label": "String argument",
+                        "markdownDescription": "Add a string argument to the command, like `config` or `--config`.",
+                        "body": "${1:argument_name}"
+                      },
+                      {
+                        "label": "JSON input argument",
+                        "markdownDescription": "Add a JSON input argument to the command. A command can only define one JSON input argument\nin the `args` list. When you define a JSON input argument, DSC passes the input data for\nthe command to the specified argument as a string representing the data as a compressed\nJSON object. The compressed JSON object doesn't have any spaces or newlines between the\nobject properties and values.\n\nIf the command doesn't define the `input` property, it must define a JSON input argument.\n\nIf the command defines both the `input` property and a JSON input argument, DSC sends the\ninput data to the command in both ways. For example, if the command defines `input` as\n`stdin` and has a JSON input argument in `args`, DSC sends the input data as a compressed\nJSON object over stdin and to the the specified argument.",
+                        "body": {
+                          "jsonInputArg": "${1:argument_name}",
+                          "mandatory": "^$2"
+                        }
+                      }
+                    ],
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "title": "String argument",
+                        "description": "Any item in the argument array can be a string representing a static argument to pass to the command.",
+                        "markdownDescription": "Any item in the argument array can be a string representing a static argument to pass to\nthe command.\n"
+                      },
+                      {
+                        "type": "object",
+                        "title": "JSON input argument",
+                        "description": "Defines an argument for the command that accepts the JSON input object as a string. DSC passes the JSON input to the named argument when available. You can define the `mandatory` property to indicate whether DSC should always pass the argument to the command, even when there's no JSON input for the command. In that case, DSC passes an empty string to the JSON input argument. You can only define one JSON input argument per arguments array.",
+                        "markdownDescription": "Defines an argument for the command that accepts the JSON input object as a string. DSC\npasses the JSON input to the named argument when available. You can define the `mandatory`\nproperty to indicate whether DSC should always pass the argument to the command, even when\nthere's no JSON input for the command. In that case, DSC passes an empty string to the\nJSON input argument. You can only define one JSON input argument per arguments array.\n\nIf you define a JSON input argument and an `input` kind for a command, DSC sends the JSON\ndata both ways:\n\n- If you define `input` as `env` and a JSON input argument, DSC sets an environment variable\n  for each property in the JSON input and passes the JSON input object as a string to the\n  defined argument.\n- If you define `input` as `stdin` and a JSON input argument, DSC passes the JSON input over\n  stdin and as a string to the defined argument.\n- If you define a JSON input argument without defining the `input` property, DSC only passes\n  the JSON input as a string to the defined argument.\n\nIf you don't define the `input` property and don't define a JSON input argument, DSC can't\npass the input JSON to the resource. This makes the manifest invalid. You must define the\n`input` property, a JSON input argument in the `args` property array, or both.\n",
+                        "required": [
+                          "jsonInputArg"
+                        ],
+                        "unevaluatedProperties": false,
+                        "properties": {
+                          "jsonInputArg": {
+                            "title": "JSON input argument name",
+                            "description": "Defines the argument that accepts the JSON property bag for the resource as input.",
+                            "markdownDescription": "Defines the argument that accepts the JSON property bag for the resource as input.\n",
+                            "type": "string"
+                          },
+                          "mandatory": {
+                            "title": "Mandatory argument",
+                            "description": "Defines whether the argument is mandatory. If this property is set to `true`, DSC passes an empty string when no JSON input is provided. The default value is `false`.",
+                            "markdownDescription": "Defines whether the argument is mandatory. If this property is set to `true`, DSC\npasses an empty string when no JSON input is provided. The default value is `false`.\n",
+                            "type": "boolean",
+                            "default": false
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "extension": {
+                "manifest.discover.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.discover.json",
+                  "title": "Discover operation command",
+                  "description": "Defines how DSC must call the DSC extension to discover the paths to resource manifests.",
+                  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines how DSC must call the DSC extension to discover the paths to resource manifests. An\nextension that defines this field in its manifest has the `discover` capability.\n\nBy default, DSC only discovers resource manifests in the `PATH` environment variable. If the\n`DSC_RESOURCE_PATH` environment variable is defined, DSC searches those paths for resource\nmanifests instead.\n\nIf initial discovery finds any extension manifests that have the `discover` capability, DSC uses\nthose extensions to discover resources that aren't available in `PATH` or `DSC_RESOURCE_PATH`.\n\nFor more information about the output DSC expects the extension to emit for this command, see\n[Discover extension operation stdout][01].\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/stdout/discover?view=dsc-3.0&preserve-view=true\n",
+                  "type": "object",
+                  "required": [
+                    "executable"
+                  ],
+                  "properties": {
+                    "executable": {
+                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1/definitions/commandExecutable.json",
+                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the name of the command to run. The value must be the name of a command discoverable\nin the system's `PATH` environment variable or the full path to the command. A file extension\nis only required when the command isn't recognizable by the operating system as an\nexecutable.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true#executable\n"
+                    },
+                    "args": {
+                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1/definitions/commandArgs.json",
+                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an array of strings to pass as arguments to the command. DSC passes the arguments to\nthe command in the order they're specified.\n\nFor example, the given the following definition:\n\n```json\n{\n  \"executable\": \"myextension\",\n  \"args\":       [\"discover\", \"--all\"],\n}\n```\n\nDSC invokes the command for the resource as:\n\n```bash\nmyextension discover --all\n```\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/extension/manifest/discover?view=dsc-3.0&preserve-view=true#args\n"
+                    }
+                  },
+                  "defaultSnippets": [
+                    {
+                      "label": " Define without arguments",
+                      "markdownDescription": "Define the `discover` command for the extension when no arguments are required.\n",
+                      "body": {
+                        "executable": "${2:executable_name}"
+                      }
+                    },
+                    {
+                      "label": " Define with arguments",
+                      "markdownDescription": "Define the `discover` command for the extension when at least one argument is required.",
+                      "body": {
+                        "executable": "${2:executable_name}",
+                        "args": [
+                          "${3:--first-argument}"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
