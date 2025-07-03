@@ -131,6 +131,36 @@ function GetCimSpace {
     return $result
 }
 
+function ValidateCimMethodAndArguments {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [dscResourceObject]$DesiredState
+    )
+
+    $methodName = $DesiredState.properties.psobject.properties | Where-Object -Property Name -EQ 'methodName' | Select-Object -ExpandProperty Value
+    if (-not $methodName) {
+        "'methodName' property is required for invoking a WMI method." | Write-DscTrace -Operation Error
+        exit 1
+    }
+
+    $className = $DesiredState.type.Split("/")[-1]
+    $namespace = $DesiredState.type.Split("/")[0].Replace(".", "/")
+
+    $cimClass = Get-CimClass -Namespace $namespace -ClassName $className -MethodName $methodName
+
+    if ($cimClass) {
+        $properties = $DesiredState.properties.psobject.properties | Where-Object -Property Name -NE 'methodName'
+        $parameters = $cimClass.CimClassMethods | Where-Object -Property Name -EQ $methodName | Select-Object -ExpandProperty CimMethodParameters
+
+        foreach ($prop in $properties) {
+            
+        }
+    }
+
+    return $cimClass
+}
+
 
 function Invoke-DscWmi {
     [CmdletBinding()]
@@ -165,4 +195,12 @@ class dscResourceObject {
     [string] $name
     [string] $type
     [PSCustomObject] $properties
+}
+
+$inputObject = [DscResourceObject]@{
+    name       = 'root.cimv2/Win32_Process'
+    type       = 'root.cimv2/Win32_Process'
+    properties = [PSCustomObject]@{
+        methodName = 'Create'
+    }
 }
