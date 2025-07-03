@@ -260,9 +260,9 @@ Describe 'Tests for PSScript resource' {
         $configPath = Join-Path $PSScriptRoot '../../dsc/examples/psscript.dsc.yaml'
         $result = dsc config get -f $configPath 2> $TestDrive/error.txt | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
-        $result.results[0].result.actualState.output.Count | Should -Be 1 -Because ($result | ConvertTo-Json -Depth 10 | Out-String)
-        $result.results[0].result.actualState.output[0].PSEdition | Should -BeExactly 'Core'
-        $result.results[0].result.actualState.output[0].PSVersion.Major | Should -Be 7
+        $result.results[0].result.actualState.output.Count | Should -Be 2 -Because ($result | ConvertTo-Json -Depth 10 | Out-String)
+        $result.results[0].result.actualState.output[0] | Should -BeExactly 'My name is Steve'
+        $result.results[0].result.actualState.output[1] | Should -BeExactly 'My color is green'
     }
 
     It 'Input can be a string for <resourceType>' -TestCases $testCases {
