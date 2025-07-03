@@ -270,7 +270,8 @@ Describe 'Tests for PSScript resource' {
 
         $yaml = @'
         getScript: |
-          "Input: $input"
+          param($inputObj)
+          "Input: $inputObj"
         input: "This is a string"
 '@
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
@@ -279,4 +280,29 @@ Describe 'Tests for PSScript resource' {
         $result.actualState.output[0] | Should -BeExactly "Input: This is a string"
     }
 
+    It 'Input without param block is an error for <resourecType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        getScript: |
+          "This should fail"
+        input: "This is a string"
+'@
+        dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*ERROR*:*Input was provided but script does not have a parameter to accept input.*'
+    }
+
+    It 'Param without input is an error for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        getScript: |
+          param($inputObj)
+          "This should fail"
+'@
+        dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike "*ERROR*:*Script has a parameter 'inputObj' but no input was provided.*"
+    }
 }

@@ -9,7 +9,7 @@ param(
     [string]$jsonInput
 )
 
-$traceQueue = [System.Collections.Queue]::new()
+$traceQueue = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
 
 function Write-DscTrace {
     param(
@@ -57,57 +57,90 @@ if ($null -eq $script) {
     exit 0
 }
 
+# use AST to see if script has param block, if any errors exit with error message
+$errors = $null
+$tokens = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseInput($script, [ref]$tokens, [ref]$errors)
+if ($errors.Count -gt 0) {
+    $errorMessage = $errors | ForEach-Object { $_.ToString() }
+    Write-DscTrace -Now -Level Error -Message "Script has syntax errors: $errorMessage"
+    exit 3
+}
+
+$paramName = if ($ast.ParamBlock -ne $null) {
+    # make sure it only specifies one parameter and get the name of that parameter
+    if ($ast.ParamBlock.Parameters.Count -ne 1) {
+        Write-DscTrace -Now -Level Error -Message 'Script must have exactly one parameter.'
+        exit 3
+    }
+    $ast.ParamBlock.Parameters[0].Name.VariablePath.UserPath
+} else {
+    $null
+}
+
 $ps = [PowerShell]::Create().AddScript({
     $DebugPreference = 'Continue'
     $VerbosePreference = 'Continue'
     $ErrorActionPreference = 'Stop'
-})
+}).AddScript($script)
 
 if ($null -ne $scriptObject.input) {
-    $null = $ps.AddScript({
-        $global:inputArg = $scriptObject.input
-    })
+    if ($null -eq $paramName) {
+        Write-DscTrace -Now -Level Error -Message 'Input was provided but script does not have a parameter to accept input.'
+        exit 3
+    }
+    $null = $ps.AddParameter($paramName, $scriptObject.input)
+} elseif ($null -ne $paramName) {
+    Write-DscTrace -Now -Level Error -Message "Script has a parameter '$paramName' but no input was provided."
+    exit 3
 }
-
-$null = $ps.AddScript($script)
 
 $ps.Streams.Error.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Error -Message $sender.Message
+    Write-DscTrace -Level Error -Message ($sender.Message | Out-String)
 })
 $ps.Streams.Warning.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Warn -Message $sender.Message
+    Write-DscTrace -Level Warn -Message ($sender.Message | Out-String)
 })
 $ps.Streams.Information.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Trace -Message $sender.MessageData.ToString()
+    Write-DscTrace -Level Trace -Message ($sender.MessageData | Out-String)
 })
 $ps.Streams.Verbose.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Info -Message $sender.Message
+    Write-DscTrace -Level Info -Message ($sender.Message | Out-String)
 })
 $ps.Streams.Debug.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Debug -Message $sender.Message
+    Write-DscTrace -Level Debug -Message ($sender.Message | Out-String)
 })
 $outputObjects = [System.Collections.Generic.List[Object]]::new()
+
+function write-traces() {
+    $trace = $null
+    while (!$traceQueue.IsEmpty) {
+        if ($traceQueue.TryDequeue([ref] $trace)) {
+            $host.ui.WriteErrorLine($trace)
+        }
+    }
+}
 
 try {
     $asyncResult = $ps.BeginInvoke()
     while (-not $asyncResult.IsCompleted) {
-        While ($traceQueue.Count -gt 0) {
-            $trace = $traceQueue.Dequeue()
-            $host.ui.WriteErrorLine($trace)
-        }
+        write-traces
+        Start-Sleep -Milliseconds 100
     }
     $outputCollection = $ps.EndInvoke($asyncResult)
+    write-traces
+
     foreach ($output in $outputCollection) {
         $outputObjects.Add($output)
     }
 }
 catch {
-    Write-DscTrace -Now -Level Error -Message $_.Exception.Message
+    Write-DscTrace -Now -Level Error -Message ($_.Exception | Out-String)
     exit 1
 }
 finally {
@@ -118,11 +151,6 @@ if ($ps.HadErrors) {
     # If there are any errors, we will exit with an error code
     Write-DscTrace -Now -Level Error -Message 'Errors occurred during script execution.'
     exit 1
-}
-
-While ($traceQueue.Count -gt 0) {
-    $trace = $traceQueue.Dequeue()
-    $host.ui.WriteErrorLine($trace)
 }
 
 # Test should return a single boolean value indicating if in the desired state
