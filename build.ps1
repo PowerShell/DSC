@@ -283,7 +283,7 @@ if (!$SkipBuild) {
         "dscecho",
         "osinfo",
         "powershell-adapter",
-        'resources/psscript',
+        'resources/PSScript',
         "process",
         "runcommandonset",
         "sshdconfig",
