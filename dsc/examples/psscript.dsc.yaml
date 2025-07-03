@@ -1,0 +1,10 @@
+# Example configuration mixing native app resources with classic PS resources
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Use PS script
+  type: Microsoft.DSC.Transitional/PowerShellScript
+  properties:
+    getScript: |
+      Write-Warning "This is a warning message"
+      # any output will be collected and returned
+      $PSVersionTable
