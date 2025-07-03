@@ -195,14 +195,13 @@ exit code, it also emits an error message with details about the invalid paramet
 ## See also
 
 - [DSC.PackageManagement/Apt resource][03]
-- [For more information about Homebrew][07]
+- [For more information about Homebrew][06]
 
 <!-- Link definitions -->
 [00]: ../../../../../concepts/resources/capabilities.md
 [01]: ../../../../../concepts/resources/properties.md#required-resource-properties
 [02]: ../../../../../concepts/resources/properties.md#key-resource-properties
 [03]: ../APT/index.md
-[04]: ./examples/install-package-with-brew.md
-[05]: ./examples/install-specific-version.md
-[06]: ./examples/remove-package.md
-[07]: https://brew.sh/
+[04]: ./examples/install-a-package-with-brew.md
+[05]: ./examples/remove-a-package.md
+[06]: https://brew.sh/
