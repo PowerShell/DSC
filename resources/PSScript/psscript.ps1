@@ -61,7 +61,16 @@ $ps = [PowerShell]::Create().AddScript({
     $DebugPreference = 'Continue'
     $VerbosePreference = 'Continue'
     $ErrorActionPreference = 'Stop'
-}).AddScript($script)
+})
+
+if ($null -ne $scriptObject.input) {
+    $null = $ps.AddScript({
+        $global:inputArg = $scriptObject.input
+    })
+}
+
+$null = $ps.AddScript($script)
+
 $ps.Streams.Error.add_DataAdded({
     param($sender, $args)
     Write-DscTrace -Level Error -Message $sender.Message

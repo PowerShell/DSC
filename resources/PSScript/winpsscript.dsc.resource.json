@@ -4,7 +4,7 @@
     "description": "Enable running Windows PowerShell 5.1 scripts inline",
     "version": "0.1.0",
     "get": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -18,7 +18,7 @@
         "input": "stdin"
     },
     "set": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -34,7 +34,7 @@
         "return": "state"
     },
     "test": {
-        "executable": "pwsh",
+        "executable": "powershell",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -65,6 +65,9 @@
                 },
                 "testScript": {
                     "type": ["string", "null"]
+                },
+                "input": {
+                    "type": ["string", "boolean", "integer", "object", "array", "null"]
                 },
                 "output": {
                     "type": ["object", "null"]

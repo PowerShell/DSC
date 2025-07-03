@@ -264,4 +264,19 @@ Describe 'Tests for PSScript resource' {
         $result.results[0].result.actualState.output[0].PSEdition | Should -BeExactly 'Core'
         $result.results[0].result.actualState.output[0].PSVersion.Major | Should -Be 7
     }
+
+    It 'Input can be a string for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        getScript: |
+          "Input: $input"
+        input: "This is a string"
+'@
+        $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 1 -Because ($result | ConvertTo-Json -Depth 10 | Out-String)
+        $result.actualState.output[0] | Should -BeExactly "Input: This is a string"
+    }
+
 }
