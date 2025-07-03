@@ -66,6 +66,9 @@
                 "testScript": {
                     "type": ["string", "null"]
                 },
+                "input": {
+                    "type": ["string", "boolean", "integer", "object", "array", "null"]
+                },
                 "output": {
                     "type": ["object", "null"]
                 },
