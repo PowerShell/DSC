@@ -172,6 +172,26 @@ if ($null -ne $packageType) {
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
     & $rustup default stable
+
+    ## Test if Node is installed 
+    if (!(Get-Command 'node' -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "Node.js not found, installing..."
+        if (!$IsWindows) {
+            if (Get-Command 'brew' -ErrorAction Ignore) {
+                brew install node@24
+            } else {
+                Write-Warning "Homebrew not found, please install Node.js manually"
+            }
+        }
+        else {
+            if (Get-Command 'winget' -ErrorAction Ignore) {
+                Write-Verbose -Verbose "Using winget to install Node.js"
+                & winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget
+            } else {
+                Write-Warning "winget not found, please install Node.js manually"
+            }
+        }
+    }
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
