@@ -71,7 +71,7 @@
                     "type": ["string", "boolean", "integer", "object", "array", "null"]
                 },
                 "output": {
-                    "type": ["object", "null"]
+                    "type": ["array", "null"]
                 },
                 "_inDesiredState": {
                     "type": ["boolean", "null"],
