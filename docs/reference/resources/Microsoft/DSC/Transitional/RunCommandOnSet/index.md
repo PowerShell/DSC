@@ -54,7 +54,7 @@ The resource allows you to:
 > [!IMPORTANT]
 > The **Get** operation for this resource does not return any output from the executed command.
 > Additionally, when using the **Test** operation, the resource always reports as being
-> in the desired state.
+> in the desired state. DSC _always_ invokes the command during **Set**.
 
 ## Capabilities
 
@@ -121,7 +121,8 @@ IsWriteOnly       : false
 </details>
 
 Defines the arguments to pass to the executable. Each element in the array represents a
-separate argument that will be passed to the executable.
+separate argument that will be passed to the executable. The arguments are passed
+in the same order that you specify them.
 
 ### exitCode
 
@@ -138,7 +139,7 @@ DefaultValue          : 0
 
 </details>
 
-Defines the expected exit code to indicate success if not zero. By default, an exit code of 0 indicates
+Defines the expected exit code to indicate success if not zero. By default, an exit code of `0` indicates
 successful execution. If your executable returns a different exit code to indicate success, specify that value here.
 
 ## Instance validating schema
