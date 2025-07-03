@@ -1,7 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "Microsoft.DSC.Transitional/PowerShell7Script",
-    "description": "Enable running PS7 scripts inline",
+    "type": "Microsoft.DSC.Transitional/PowerShellScript",
+    "description": "Enable running PowerShell 7 scripts inline",
     "version": "0.1.0",
     "get": {
         "executable": "pwsh",
@@ -12,9 +12,10 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "-Command",
-            "$Input | ./psscript.ps1 get"
-        ]
+            "$input | ./psscript.ps1",
+            "get"
+        ],
+        "input": "stdin"
     },
     "set": {
         "executable": "pwsh",
@@ -25,9 +26,12 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "-Command",
-            "$Input | ./psscript.ps1 set"
-        ]
+            "$input | ./psscript.ps1",
+            "set"
+        ],
+        "implementsPretest": true,
+        "input": "stdin",
+        "return": "state"
     },
     "test": {
         "executable": "pwsh",
@@ -38,43 +42,36 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "$Input | ./psscript.ps1 test"
-        ]
-    },
-    "export": {
-        "executable": "pwsh",
-        "args": [
-            "-NoLogo",
-            "-NonInteractive",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            "$Input | ./psscript.ps1 export"
-        ]
+            "$input | ./psscript.ps1",
+            "test"
+        ],
+        "input": "stdin",
+        "return": "state"
     },
     "exitCodes": {
         "0": "Success",
-        "1": "PowerShell script execution failed"
+        "1": "PowerShell script execution failed",
+        "2": "PowerShell exception occurred"
     },
     "schema": {
         "embedded": {
             "type": "object",
             "properties": {
                 "getScript": {
-                    "type": ["string", null]
+                    "type": ["string", "null"]
                 },
                 "setScript": {
-                    "type": ["string", null]
+                    "type": ["string", "null"]
                 },
                 "testScript": {
-                    "type": ["string", null]
-                },
-                "exportScript": {
-                    "type": ["string", null]
+                    "type": ["string", "null"]
                 },
                 "output": {
-                    "type": ["object", null]
+                    "type": ["object", "null"]
+                },
+                "_inDesiredState": {
+                    "type": ["boolean", "null"],
+                    "default": null
                 }
             }
         }

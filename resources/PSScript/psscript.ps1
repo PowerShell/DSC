@@ -3,10 +3,10 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet('Get', 'Set', 'Test', 'Export')]
+    [ValidateSet('Get', 'Set', 'Test')]
     [string]$Operation,
-    [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true)]
-    [string]$jsonInput = '@{}'
+    [Parameter(Mandatory = $true, Position = 1, ValueFromPipeline = $true)]
+    [string]$jsonInput
 )
 
 $traceQueue = [System.Collections.Queue]::new()
@@ -17,11 +17,17 @@ function Write-DscTrace {
         [ValidateSet('Error', 'Warn', 'Info', 'Debug', 'Trace')]
         [string]$Level,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$Message
+        [string]$Message,
+        [switch]$Now
     )
 
     $trace = @{$Level.ToLower() = $Message } | ConvertTo-Json -Compress
-    $traceQueue.Enqueue($trace)
+
+    if ($Now) {
+        $host.ui.WriteErrorLine($trace)
+    } else {
+        $traceQueue.Enqueue($trace)
+    }
 }
 
 $scriptObject = $jsonInput | ConvertFrom-Json
@@ -36,13 +42,18 @@ $script = switch ($Operation) {
     'Test' {
         $scriptObject.TestScript
     }
-    'Export' {
-        $scriptObject.ExportScript
-    }
 }
 
 if ($null -eq $script) {
-    Write-DscTrace -Level Info -Message "No script found for operation '$Operation'."
+    Write-DscTrace -Now -Level Info -Message "No script found for operation '$Operation'."
+    if ($Operation -eq 'Test') {
+        # if not implemented, we return it's in desired state
+        @{ _inDesiredState = $true } | ConvertTo-Json -Compress
+        exit 0
+    }
+
+    # write an empty json object to stdout
+    '{}'
     exit 0
 }
 
@@ -105,6 +116,14 @@ While ($traceQueue.Count -gt 0) {
     $host.ui.WriteErrorLine($trace)
 }
 
-@{
-    output = $outputObjects
-} | ConvertTo-Json -Compress -Depth 10
+# Test should return a single boolean value indicating if in the desired state
+if ($Operation -eq 'Test') {
+    if ($outputObjects.Count -eq 1 -and $outputObjects[0] -is [bool]) {
+        @{ _inDesiredState = $outputObjects[0] } | ConvertTo-Json -Compress
+    } else {
+        Write-DscTrace -Now -Level Error -Message 'Test operation did not return a single boolean value.'
+        exit 1
+    }
+} else {
+    @{ output = $outputObjects } | ConvertTo-Json -Compress -Depth 10
+}
