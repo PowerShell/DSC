@@ -51,7 +51,8 @@
     "exitCodes": {
         "0": "Success",
         "1": "PowerShell script execution failed",
-        "2": "PowerShell exception occurred"
+        "2": "PowerShell exception occurred",
+        "3": "Script had errors"
     },
     "schema": {
         "embedded": {
