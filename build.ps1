@@ -174,6 +174,7 @@ if ($null -ne $packageType) {
     & $rustup default stable
 
     ## Test if Node is installed 
+    ## Skipping upgrade as users may have a specific version they want to use
     if (!(Get-Command 'node' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Node.js not found, installing..."
         if (!$IsWindows) {
