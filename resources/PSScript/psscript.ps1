@@ -72,7 +72,7 @@ $ps.Streams.Warning.add_DataAdded({
 })
 $ps.Streams.Information.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Trace -Message $sender.Message
+    Write-DscTrace -Level Trace -Message $sender.MessageData.ToString()
 })
 $ps.Streams.Verbose.add_DataAdded({
     param($sender, $args)
@@ -98,7 +98,7 @@ try {
     }
 }
 catch {
-    Write-DscTrace -Level Error -Message $_.Exception.Message
+    Write-DscTrace -Now -Level Error -Message $_.Exception.Message
     exit 1
 }
 finally {
@@ -107,7 +107,7 @@ finally {
 
 if ($ps.HadErrors) {
     # If there are any errors, we will exit with an error code
-    Write-DscTrace -Level Error -Message 'Errors occurred during script execution.'
+    Write-DscTrace -Now -Level Error -Message 'Errors occurred during script execution.'
     exit 1
 }
 
