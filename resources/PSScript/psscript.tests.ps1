@@ -174,4 +174,85 @@ Describe 'Tests for PSScript resource' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result.InDesiredState | Should -BeTrue
     }
+
+    It 'Write-Warning shows up as warn traces for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        GetScript: |
+          Write-Warning "This is a warning"
+'@
+
+        $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*'
+    }
+
+    It 'Write-Error shows up as error traces for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        GetScript: |
+          Write-Error "This is an error"
+'@
+
+        $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*ERROR*:*This is an error*'
+    }
+
+    It 'Write-Verbose shows up as info traces for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        GetScript: |
+          Write-Verbose "This is a verbose message"
+'@
+        $result = dsc -l info resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*INFO*:*This is a verbose message*'
+    }
+
+    It 'Write-Debug shows up as debug traces for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        GetScript: |
+          Write-Debug "This is a debug message"
+'@
+        $result = dsc -l debug resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*DEBUG*:*This is a debug message*'
+    }
+
+    It 'Write-Information shows up as trace traces for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        GetScript: |
+          $InformationPreference = 'Continue'
+          Write-Information "This is an information message"
+'@
+        $result = dsc -l trace resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*TRACE*:*This is an information message*'
+    }
+
+    It 'A thrown exception results in an error for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        GetScript: |
+          throw "This is an exception"
+'@
+        $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*ERROR*:*This is an exception*'
+    }
 }
