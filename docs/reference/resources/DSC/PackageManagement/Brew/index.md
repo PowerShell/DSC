@@ -48,9 +48,6 @@ macOS systems. The resource can:
 - Check if a package is installed
 - Verify the version of an installed package
 
-> [!NOTE]
-> This resource only works on macOS systems with Homebrew installed.
-
 ## Requirements
 
 - A macOS system with Homebrew installed
