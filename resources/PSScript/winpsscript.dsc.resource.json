@@ -4,7 +4,7 @@
     "description": "Enable running Windows PowerShell 5.1 scripts inline",
     "version": "0.1.0",
     "get": {
-        "executable": "powershell",
+        "executable": "pwsh",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -12,12 +12,13 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "-Command",
-            "$Input | ./psscript.ps1 get"
-        ]
+            "$input | ./psscript.ps1",
+            "get"
+        ],
+        "input": "stdin"
     },
     "set": {
-        "executable": "powershell",
+        "executable": "pwsh",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -25,12 +26,15 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "-Command",
-            "$Input | ./psscript.ps1 set"
-        ]
+            "$input | ./psscript.ps1",
+            "set"
+        ],
+        "implementsPretest": true,
+        "input": "stdin",
+        "return": "state"
     },
     "test": {
-        "executable": "powershell",
+        "executable": "pwsh",
         "args": [
             "-NoLogo",
             "-NonInteractive",
@@ -38,44 +42,38 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
-            "$Input | ./psscript.ps1 test"
-        ]
-    },
-    "export": {
-        "executable": "powershell",
-        "args": [
-            "-NoLogo",
-            "-NonInteractive",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            "$Input | ./psscript.ps1 export"
-        ]
+            "$input | ./psscript.ps1",
+            "test"
+        ],
+        "input": "stdin",
+        "return": "state"
     },
     "exitCodes": {
         "0": "Success",
-        "1": "PowerShell script execution failed"
+        "1": "PowerShell script execution failed",
+        "2": "PowerShell exception occurred"
     },
     "schema": {
         "embedded": {
             "type": "object",
             "properties": {
                 "getScript": {
-                    "type": ["string", null]
+                    "type": ["string", "null"]
                 },
                 "setScript": {
-                    "type": ["string", null]
+                    "type": ["string", "null"]
                 },
                 "testScript": {
-                    "type": ["string", null]
-                },
-                "exportScript": {
-                    "type": ["string", null]
+                    "type": ["string", "null"]
                 },
                 "output": {
-                    "type": ["object", null]
+                    "type": ["object", "null"]
+                },
+                "_inDesiredState": {
+                    "type": ["boolean", "null"],
+                    "default": null
                 }
             }
         }
-    }}
+    }
+}
