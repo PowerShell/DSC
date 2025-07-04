@@ -1,4 +1,4 @@
-# Example configuration mixing native app resources with classic PS resources
+# Example configuration using PowerShell script resource and using parameters and input
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
   myName:
