@@ -187,7 +187,7 @@ if ($null -ne $packageType) {
         else {
             if (Get-Command 'winget' -ErrorAction Ignore) {
                 Write-Verbose -Verbose "Using winget to install Node.js"
-                & winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget
+                winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
             } else {
                 Write-Warning "winget not found, please install Node.js manually"
             }
