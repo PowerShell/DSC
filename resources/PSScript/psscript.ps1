@@ -135,6 +135,12 @@ try {
     $outputCollection = $ps.EndInvoke($asyncResult)
     write-traces
 
+    if ($ps.HadErrors) {
+        # If there are any errors, we will exit with an error code
+        Write-DscTrace -Now -Level Error -Message 'Errors occurred during script execution.'
+        exit 1
+    }
+
     foreach ($output in $outputCollection) {
         $outputObjects.Add($output)
     }
@@ -145,12 +151,6 @@ catch {
 }
 finally {
     $ps.Dispose()
-}
-
-if ($ps.HadErrors) {
-    # If there are any errors, we will exit with an error code
-    Write-DscTrace -Now -Level Error -Message 'Errors occurred during script execution.'
-    exit 1
 }
 
 # Test should return a single boolean value indicating if in the desired state
