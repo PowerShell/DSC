@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/stdout/validate.json",
+  "title": "Validate resource operation stdout",
+  "description": "Defines the JSON DSC expects a resource to emit to stdout for the **Validate** operation.",
+  "type": "object",
+  "required": [
+    "valid"
+  ],
+  "properties": {
+    "valid": {
+      "title": "Instance validity",
+      "description": "Indicates whether the instance is valid for the resource."
+    },
+    "reason": {
+      "title": "Reason instance is invalid",
+      "description": "Describes how and why the instance is invalid for the resource."
+    }
+  },
+  "$defs": {}
+}

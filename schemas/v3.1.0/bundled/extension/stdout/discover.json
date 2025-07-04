@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/extension/stdout/discover.json",
+  "title": "Discover extension operation stdout",
+  "description": "Represents the full path a DSC resource manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifestPath"
+  ],
+  "properties": {
+    "manifestPath": {
+      "title": "DSC manifest path",
+      "description": "Defines the absolute path to a DSC resource manifest on the system.",
+      "type": "string"
+    }
+  },
+  "$defs": {}
+}

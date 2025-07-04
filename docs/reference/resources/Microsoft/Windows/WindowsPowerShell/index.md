@@ -83,7 +83,7 @@ set to `ClearCache`:
 $adapterScript = dsc resource list Microsoft.Windows/WindowsPowerShell |
     ConvertFrom-Json |
     Select-Object -ExpandProperty directory |
-    Join-Path
+    Join-Path -ChildPath 'psDscAdapter\powershell.resource.ps1' 
 
 & $adapterScript -Operation ClearCache
 ```

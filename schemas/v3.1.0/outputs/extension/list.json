@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/outputs/extension/list.json",
+  "title": "dsc extension list result",
+  "description": "Describes the return data for a DSC extension instance from the `dsc extension list` command.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/extensionType.json"
+    },
+    "version": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/semver.json"
+    },
+    "capabilities": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/extensionCapabilities.json"
+    },
+    "description": {
+      "title": "Extension description",
+      "description": "A short synopsis of the DSC extension's purpose.",
+      "type": "string"
+    },
+    "path": {
+      "title": "Path",
+      "description": "Indicates the path to the DSC extension on the file system.",
+      "type": "string"
+    },
+    "directory": {
+      "title": "Directory",
+      "description": "Indicates the path to the folder containing the DSC extension on the file system.",
+      "type": "string"
+    },
+    "author": {
+      "title": "Author",
+      "description": "Indicates the name of the person or organization that developed and maintains the DSC extension.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "manifest": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/extension/manifest.json"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/inputKind.json",
+  "title": "Executable Command Input Type",
+  "description": "Defines how DSC should pass input to the command, either as environment variables or JSON over stdin. When this value isn't defined, DSC doesn't send the resource any input.",
+  "type": "string",
+  "enum": [
+    "env",
+    "stdin"
+  ]
+}

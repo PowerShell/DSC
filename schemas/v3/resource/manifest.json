@@ -19,21 +19,45 @@
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.vscode.json",
         "https://aka.ms/dsc/schemas/v3/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
         "https://aka.ms/dsc/schemas/v3.0/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json",
         "https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json"
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.vscode.json"
       ]
     },
     "type": {
@@ -134,7 +158,10 @@
       },
       "then": {
         "required": [
-          "adapter"
+          "adapter",
+          "get",
+          "test",
+          "set"
         ]
       }
     },
@@ -152,9 +179,130 @@
       "then": {
         "required": [
           "resolve"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "adapter"
+              ]
+            },
+            {
+              "required": [
+                "delete"
+              ]
+            },
+            {
+              "required": [
+                "get"
+              ]
+            },
+            {
+              "required": [
+                "export"
+              ]
+            },
+            {
+              "required": [
+                "set"
+              ]
+            },
+            {
+              "required": [
+                "test"
+              ]
+            },
+            {
+              "required": [
+                "validate"
+              ]
+            },
+            {
+              "required": [
+                "whatIf"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "exporter"
+          }
+        },
+        "required": [
+          "kind"
         ]
       },
-      "else": {
+      "then": {
+        "required": [
+          "export"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "adapter"
+              ]
+            },
+            {
+              "required": [
+                "delete"
+              ]
+            },
+            {
+              "required": [
+                "get"
+              ]
+            },
+            {
+              "required": [
+                "resolve"
+              ]
+            },
+            {
+              "required": [
+                "set"
+              ]
+            },
+            {
+              "required": [
+                "test"
+              ]
+            },
+            {
+              "required": [
+                "validate"
+              ]
+            },
+            {
+              "required": [
+                "whatIf"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "resource",
+              "adapter",
+              "group"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
         "required": [
           "get"
         ]
