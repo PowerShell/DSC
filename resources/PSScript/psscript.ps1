@@ -97,23 +97,23 @@ if ($null -ne $scriptObject.input) {
 
 $ps.Streams.Error.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Error -Message ($sender.Message | Out-String)
+    Write-DscTrace -Level Error -Message $sender.Message
 })
 $ps.Streams.Warning.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Warn -Message ($sender.Message | Out-String)
+    Write-DscTrace -Level Warn -Message $sender.Message
 })
 $ps.Streams.Information.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Trace -Message ($sender.MessageData | Out-String)
+    Write-DscTrace -Level Trace -Message $sender.MessageData.ToString()
 })
 $ps.Streams.Verbose.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Info -Message ($sender.Message | Out-String)
+    Write-DscTrace -Level Info -Message $sender.Message
 })
 $ps.Streams.Debug.add_DataAdded({
     param($sender, $args)
-    Write-DscTrace -Level Debug -Message ($sender.Message | Out-String)
+    Write-DscTrace -Level Debug -Message $sender.Message
 })
 $outputObjects = [System.Collections.Generic.List[Object]]::new()
 
@@ -140,7 +140,7 @@ try {
     }
 }
 catch {
-    Write-DscTrace -Now -Level Error -Message ($_.Exception | Out-String)
+    Write-DscTrace -Now -Level Error -Message $_.Exception.Message
     exit 1
 }
 finally {
