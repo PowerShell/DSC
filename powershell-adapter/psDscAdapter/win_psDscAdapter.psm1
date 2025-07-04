@@ -578,7 +578,7 @@ function GetClassBasedProperties {
         return @('get', 'set', 'test')
     }
 
-    $module = Get-ChildItem (Split-Path $filePath -Parent) -Filter *.psm1 -File | Select-Object -First 1 -ExpandProperty FullName
+    $module = Get-ChildItem -Path (Split-Path $filePath -Parent) -Filter *.psm1 -File | Select-Object -First 1 -ExpandProperty FullName
 
     $properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
 
