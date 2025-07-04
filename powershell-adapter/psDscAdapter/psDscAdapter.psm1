@@ -377,7 +377,7 @@ function Get-DscResourceObject {
 function Invoke-DscOperation {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Get', 'Set', 'Test', 'Export')]
+        [ValidateSet('Get', 'Set', 'Test', 'Export', 'WhatIf')]
         [string]$Operation,
         [Parameter(Mandatory, ValueFromPipeline = $true)]
         [dscResourceObject]$DesiredState,
@@ -464,19 +464,7 @@ function Invoke-DscOperation {
                             $addToActualState.properties = [psobject]@{'InDesiredState' = $Result }
                         }
                         'Export' {
-                            $t = $dscResourceInstance.GetType()
-                            $methods = $t.GetMethods() | Where-Object { $_.Name -eq 'Export' }
-                            $method = foreach ($mt in $methods) {
-                                if ($mt.GetParameters().Count -eq 0) {
-                                    $mt
-                                    break
-                                }
-                            }
-
-                            if ($null -eq $method) {
-                                "Export method not implemented by resource '$($DesiredState.Type)'" | Write-DscTrace -Operation Error
-                                exit 1
-                            }
+                            $method = ValidateMethod -operation $Operation -class $dscResourceInstance
                             $resultArray = @()
                             $raw_obj_array = $method.Invoke($null, $null)
                             foreach ($raw_obj in $raw_obj_array) {
@@ -493,10 +481,14 @@ function Invoke-DscOperation {
                             }
                             $addToActualState = $resultArray
                         }
+                        'WhatIf' {
+                            $method = ValidateMethod -operation $Operation -class $dscResourceInstance
+                            $raw_obj = $dscResourceInstance.WhatIf()
+                            $addToActualState.properties = $raw_obj
+                        }
                     }
                 }
                 catch {
-
                     'Exception: ' + $_.Exception.Message | Write-DscTrace -Operation Error
                     exit 1
                 }
@@ -527,6 +519,33 @@ function GetTypeInstanceFromModule {
     )
     $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
+}
+
+# ValidateMethod checks if the specified method exists in the class
+function ValidateMethod {
+    param (
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('Export', 'WhatIf')]
+        [string] $operation,
+        [Parameter(Mandatory = $true)]
+        [object] $class
+    )
+
+    $t = $class.GetType()
+    $methods = $t.GetMethods() | Where-Object -Property Name -EQ $operation
+    $method = foreach ($mt in $methods) {
+        if ($mt.GetParameters().Count -eq 0) {
+            $mt
+            break
+        }
+    }
+
+    if ($null -eq $method) {
+        "Method '$operation' not implemented by resource '$($t.Name)'" | Write-DscTrace -Operation Error
+        exit 1
+    }
+
+    return $method
 }
 
 # cached resource
