@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/stdout/export.json",
+  "title": "Export resource operation stdout",
+  "description": "Represents the actual state of a resource instance in DSC. DSC expects every JSON Line emitted to stdout for the **Export** operation to adhere to this schema.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDSC expects a resource implementing the **Export** operation to return a series of JSON Lines.\n\nThe data that DSC expects depends on whether the resource kind is defined as `exporter`:\n\n- When the resource kind is `exporter`, DSC expects the resource to return JSON Lines\n  representing DSC resource instance definitions to recursively export.\n- When the resource kind isn't `exporter`, DSC expects the resource to return JSON Lines\n  representing the actual state of every instance of the resource on the system.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/export?view=dsc-3.0&preserve-view=true\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/command?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserve-view=true\n",
+  "anyOf": [
+    {
+      "title": "Typical resource expected output",
+      "description": "Defines the expected output for a resource whose `kind` isn't `exporter` as the actual state of every existing instance of that resource on the system.",
+      "type": "object",
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDSC expects a typical resource implementing the **Export** operation to return a series of\nJSON Lines.\n\nEach JSON Line represents the actual state of a resource instance in DSC. DSC expects every\nJSON Line emitted to stdout for the **Export** operation to adhere to this schema.\n\nThe output must be a JSON object. The object must be a valid representation of an instance of\nthe resource.\n\nCommand resources define their instance schema with the [schema.command][01] or\n[schema.embedded][02] fields in their resource manifest. If a command resource returns JSON that\nis invalid against the resource instance schema, DSC raises an error.\n\nAdapted resource instances are validated by their adapter when the adapter invokes them.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/export?view=dsc-3.0&preserve-view=true#typical-resource-expected-output\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/command?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserve-view=true\n"
+    },
+    {
+      "title": "Exporter resource expected output",
+      "description": "Defines the expected output for an `exporter` resource as a resource instance definition to recursively invoke the **Export** operation for.",
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/config/document.resource.json",
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDSC expects an exporter resource (one with the `kind` field in its manifest set to\n`exporter`) to return a series of JSON Lines.\n\nEach JSON Line represents a DSC resource instance definition to recursively invoke the\n**Export** operation for. DSC expects every JSON Line emitted to stdout for the **Export**\noperation to adhere to this schema.\n\nThe output must be a JSON object adhering to [DSC resource instance][01] schema, rather than\nthe instance schema for a specific resource. DSC expects the object to define at least the\n[name][02] and [type][03] fields. If the object defines the [properties][04] field, DSC\npasses those properties to the resource when recursively exporting it so that the resource\nmay filter the exported instance results.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/export?view=dsc-3.0&preserve-view=true#typical-resource-expected-output\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#name\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#type\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#properties-1\n"
+    }
+  ],
+  "$defs": {
+    "PowerShell": {
+      "DSC": {
+        "main": {
+          "schemas": {
+            "v3": {
+              "config": {
+                "document.resource.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.resource.json",
+                  "title": "DSC resource instance",
+                  "description": "Defines an instance of a DSC resource in a configuration.",
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "name"
+                  ],
+                  "properties": {
+                    "type": {
+                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3/definitions/instanceName.json"
+                    },
+                    "dependsOn": {
+                      "title": "Instance depends on",
+                      "description": "Defines a list of DSC resource instances that DSC must successfully process before processing this instance. Each value for this property must be the `resourceID()` lookup for another instance in the configuration. Multiple instances can depend on the same instance, but every dependency for an instance must be unique in that instance's `dependsOn` property.",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "uniqueItems": true,
+                        "pattern": "^\\[resourceId\\(\\s*'\\w+(\\.\\w+){0,2}\\/\\w+'\\s*,\\s*'[a-zA-Z0-9 ]+'\\s*\\)\\]$",
+                        "patternErrorMessage": "Invalid value, must be a value like `[resourceId('<type>', '<name>`)], such as\n`[resourceId('Microsoft/OSInfo', 'Foo')]`.\n\nThe `<type>` and `<name>` should be the fully qualified type of the resource and its\nfriendly name in the configuration.\n",
+                        "defaultSnippets": [
+                          {
+                            "label": " New dependency",
+                            "markdownDescription": "Defines a new dependency for the resource instance.\n\n```yaml\n\"[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]\"\n```",
+                            "bodyText": "\"[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]\""
+                          }
+                        ]
+                      },
+                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines a list of DSC resource instances that DSC must successfully process before processing\nthis instance. Each value for this property must be the `resourceID()` lookup for another\ninstance in the configuration. Multiple instances can depend on the same instance, but every\ndependency for an instance must be unique in that instance's `dependsOn` property.\n\nThe `resourceID()` function uses this syntax:\n\n```yaml\n\"[resourceId('<resource-type-name>', '']<instance-name>\"\n```\n\nThe `<resource-type-name>` value is the `type` property of the dependent resource and\n`<instance-name>` is the dependency's `name` property. When adding a dependency in a\nYAML-format configuration document, always wrap the `resourceID()` lookup in double quotes\n(`\"`).\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#properties-1\n"
+                    },
+                    "properties": {
+                      "title": "Managed instance properties",
+                      "description": "Defines the properties of the DSC resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC resource's schema.",
+                      "type": "object",
+                      "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the properties of the DSC resource this instance manages. This property's value must\nbe an object. DSC validates the property's value against the DSC resource's schema.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#properties-1\n"
+                    }
+                  },
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines an instance of a DSC resource in a configuration.\n\nThe `resources` property of a DSC configuration document always includes at least one DSC resource\ninstance. Together, the instances in a configuration define the desired state that DSC can get,\ntest, and set on a machine.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true\n",
+                  "defaultSnippets": [
+                    {
+                      "label": " New resource instance",
+                      "markdownDescription": "Defines a new instance of a DSC resource for the configuration.\n\n```yaml\ntype: owner[.group][.area]/name\nname: instance_name\nproperties:\n  propertyName: propertyValue\n```",
+                      "body": {
+                        "type": "${1:owner[.group][.area]/name}",
+                        "name": "${2:instance_name}",
+                        "properties": {
+                          "${3:propertyName}": "${4:propertyValue}"
+                        }
+                      }
+                    },
+                    {
+                      "label": " New dependent resource instance",
+                      "markdownDescription": "Defines a new instance of a DSC resource for the configuration that depends on another\ninstance.\n\n```yaml\ntype:      owner[.group][.area]/name\nname:      instance_name\ndependsOn:\n  - \"[resourceId('dependencyInstance/Type', 'dependencyInstanceName')]\"\nproperties:\n  propertyName: propertyValue\n```",
+                      "body": {
+                        "type": "${1:owner[.group][.area]/name}",
+                        "name": "${2:instance_name}",
+                        "dependsOn": [
+                          "\"[resourceId('${3:dependencyInstance/Type}', '${4:dependencyInstanceName}')]\""
+                        ],
+                        "properties": {
+                          "${5:propertyName}": "${6:propertyValue}"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "definitions": {
+                "resourceType.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json",
+                  "title": "DSC resource fully qualified type name",
+                  "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
+                  "type": "string",
+                  "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$",
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe namespaced name of the DSC resource, using the syntax:\n\n```yaml\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n```\n\nFor example:\n\n- `Microsoft/OSInfo`\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserve-view=true\n",
+                  "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and subarea\nsegments to namespace the resource under the owner, like `Microsoft.Windows/Registry`.\n"
+                },
+                "instanceName.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/instanceName.json",
+                  "title": "Instance name",
+                  "description": "The short, human-readable name for a DSC resource instance. Must be unique within a DSC Configuration document. Must be a non-empty string containing only letters, numbers, and spaces.",
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9 ]+$",
+                  "minLength": 1,
+                  "patternErrorMessage": "Invalid value for instance name. An instance name must be a non-empty string containing only\nletters, numbers, and spaces.\n",
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the short, human-readable name for a DSC resource instance. This property must be unique\nwithin a DSC configuration document. If any resource instances share the same name, DSC raises an\nerror.\n\nThe instance name must be a non-empty string containing only letters, numbers, and spaces.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#name\n"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

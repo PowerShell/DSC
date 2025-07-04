@@ -6,15 +6,16 @@ title: DSC resource fully qualified type name
 description: |
   The namespaced name of the DSC resource, using the syntax:
 
-  owner[.group][.area]/name
+  <owner>[.<group>][.<area>][.<subarea>]/<name>
 
   For example:
 
-    - Microsoft.SqlServer/Database
-    - Microsoft.SqlServer.Database/User
+  - Microsoft/OSInfo
+  - Microsoft.SqlServer/Database
+  - Microsoft.SqlServer.Database/User
 
 type: string
-pattern: ^\w+(\.\w+){0,2}\/\w+$
+pattern: ^\w+(\.\w+){0,3}\/\w+$
 
 # VS Code only
 markdownDescription: |
@@ -25,16 +26,17 @@ markdownDescription: |
   The namespaced name of the DSC resource, using the syntax:
 
   ```yaml
-  owner[.group][.area]/name
+  <owner>[.<group>][.<area>][.<subarea>]/<name>
   ```
 
   For example:
 
+  - `Microsoft/OSInfo`
   - `Microsoft.SqlServer/Database`
   - `Microsoft.SqlServer.Database/User`
 
   [01]: <DOCS_BASE_URL>/reference/schemas/definitions/resourcetype?<DOCS_VERSION_PIN>
 patternErrorMessage: |
   Invalid type name. Valid resource type names always define an owner and a name separated by a
-  slash, like `Microsoft/OSInfo`. Type names may optionally include a group and area to namespace
-  the resource under the owner, like `Microsoft.Windows/Registry`.
+  slash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and subarea
+  segments to namespace the resource under the owner, like `Microsoft.Windows/Registry`.

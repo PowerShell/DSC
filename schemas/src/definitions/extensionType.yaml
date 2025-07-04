@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: <HOST>/<PREFIX>/<VERSION>/definitions/extensionType.yaml
+
+title: DSC extension fully qualified type name
+description: |
+  The namespaced name of the DSC extension, using the syntax:
+
+  <owner>[.<group>][.<area>][.<subarea>]/<name>
+
+  For example:
+
+    - Microsoft/Example
+    - Microsoft.DSC/Docs
+    - Microsoft.Windows.Appx/Discover
+
+type: string
+pattern: ^\w+(\.\w+){0,3}\/\w+$
+
+# VS Code only
+markdownDescription: |
+  ***
+  [_Online Documentation_][01]
+  ***
+
+  The namespaced name of the DSC extension, using the syntax:
+
+  ```yaml
+  owner[{.namespace}]/name
+  ```
+
+  For example:
+
+  - `Microsoft/Example`
+  - `Microsoft.DSC/Docs`
+  - `Microsoft.Windows.Appx/Discover`
+
+  [01]: <DOCS_BASE_URL>/reference/schemas/definitions/extensiontype?<DOCS_VERSION_PIN>
+patternErrorMessage: |
+  Invalid type name. Valid extension type names always define an owner and a name separated by a
+  slash, like `Microsoft/Example`. Type names may optionally include the group, area, and subarea
+  segments to namespace the resource under the owner, like `Microsoft.Windows.Appx/Discover`.
