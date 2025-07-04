@@ -245,6 +245,8 @@ available formats are:
 - `json` to emit the data as a [JSON Line][02].
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML.
+- `table-no-truncate` to emit the data as a summary table without truncating each line to the
+  current console width.
 
 The default output format depends on whether DSC detects that the output is being redirected or
 captured as a variable:
@@ -264,7 +266,7 @@ for formatting.
 ```yaml
 Type        : string
 Mandatory   : false
-ValidValues : [json, pretty-json, yaml]
+ValidValues : [json, pretty-json, yaml, table-no-truncate]
 LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```

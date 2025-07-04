@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the embedded instance schema in a DSC Resource manifest
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Resource manifest embedded schema reference
 ---
@@ -15,7 +15,7 @@ Defines a JSON Schema that validates a DSC Resource instance.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.schema.json#/properties/embedded
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.schema.json#/properties/embedded
 Type:          object
 ```
 
@@ -107,7 +107,7 @@ If defined, this property must be a reference to the schema for the canonical pr
 
 ```json
 "_exist": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/exist.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/exist.json"
 }
 ```
 
@@ -123,7 +123,7 @@ If defined, this property must be a reference to the schema for the canonical pr
 
 ```json
 "_inDesiredState": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/inDesiredState.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/inDesiredState.json"
 }
 ```
 
@@ -139,7 +139,7 @@ If defined, this property must be a reference to the schema for the canonical pr
 
 ```json
 "_purge": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/purge.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/purge.json"
 }
 ```
 
@@ -155,7 +155,7 @@ If defined, this property must be a reference to the schema for the canonical pr
 
 ```json
 "_rebootRequested": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/rebootRequested.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/rebootRequested.json"
 }
 ```
 
