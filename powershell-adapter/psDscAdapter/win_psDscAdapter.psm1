@@ -229,15 +229,15 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | ForEach-Object {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime.ToFileTime())
             }
 
             $dscResourceCacheEntries.Add([dscResourceCacheEntry]@{
-                    Type            = "$moduleName/$($dscResource.Name)"
-                    DscResourceInfo = $DscResourceInfo
-                    LastWriteTimes  = $lastWriteTimes
-                })
+                Type            = "$moduleName/$($dscResource.Name)"
+                DscResourceInfo = $DscResourceInfo
+                LastWriteTimes  = $lastWriteTimes
+            })
         }
 
         if ($namedModules.Count -gt 0) {
