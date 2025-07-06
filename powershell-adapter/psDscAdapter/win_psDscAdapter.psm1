@@ -234,10 +234,10 @@ function Invoke-DscCacheRefresh {
             }
 
             $dscResourceCacheEntries.Add([dscResourceCacheEntry]@{
-                    Type            = "$moduleName/$($dscResource.Name)"
-                    DscResourceInfo = $DscResourceInfo
-                    LastWriteTimes  = $lastWriteTimes
-                })
+                Type            = "$moduleName/$($dscResource.Name)"
+                DscResourceInfo = $DscResourceInfo
+                LastWriteTimes  = $lastWriteTimes
+            })
         }
 
         if ($namedModules.Count -gt 0) {
