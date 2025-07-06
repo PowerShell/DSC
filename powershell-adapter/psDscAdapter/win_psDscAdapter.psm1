@@ -234,10 +234,10 @@ function Invoke-DscCacheRefresh {
             }
 
             $dscResourceCacheEntries.Add([dscResourceCacheEntry]@{
-                Type            = "$moduleName/$($dscResource.Name)"
-                DscResourceInfo = $DscResourceInfo
-                LastWriteTimes  = $lastWriteTimes
-            })
+                    Type            = "$moduleName/$($dscResource.Name)"
+                    DscResourceInfo = $DscResourceInfo
+                    LastWriteTimes  = $lastWriteTimes
+                })
         }
 
         if ($namedModules.Count -gt 0) {
@@ -578,14 +578,14 @@ function GetClassBasedProperties {
         return @('get', 'set', 'test')
     }
 
-    $module = Get-ChildItem -Path (Split-Path $filePath -Parent) -Filter *.psm1 -File | Select-Object -First 1 -ExpandProperty FullName
+    $module = Import-Module $filePath -PassThru -Force -ErrorAction Ignore
 
     $properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
 
-    if (Test-Path $module -ErrorAction Ignore) {
+    if (Test-Path $module.Path -ErrorAction Ignore) {
         [System.Management.Automation.Language.Token[]] $tokens = $null
         [System.Management.Automation.Language.ParseError[]] $errors = $null
-        $ast = [System.Management.Automation.Language.Parser]::ParseFile($module, [ref]$tokens, [ref]$errors)
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($module.Path, [ref]$tokens, [ref]$errors)
         foreach ($e in $errors) {
             $e | Out-String | Write-DscTrace -Operation Error
         }
