@@ -587,7 +587,7 @@ function GetClassBasedProperties {
         [System.Management.Automation.Language.ParseError[]] $errors = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile($module.Path, [ref]$tokens, [ref]$errors)
         foreach ($e in $errors) {
-            $e | Out-String | Write-DscTrace -Operation Error
+            $e | Out-String | Write-DscTrace -Operation Warn
         }
 
         $typeDefinitions = $ast.FindAll(
