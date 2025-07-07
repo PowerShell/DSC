@@ -35,6 +35,53 @@ function Get-DscResourceObject {
     return $desiredState
 }
 
+function GetWmiInstance {
+    [CmdletBinding()]
+    param 
+    (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [psobject]$DesiredState
+    )
+
+    $type_fields = $DesiredState.type -split "/"
+    $wmi_namespace = $type_fields[0].Replace('.', '\')
+    $wmi_classname = $type_fields[1]
+
+    if ($DesiredState.properties) {
+        $props = $DesiredState.properties.psobject.Properties | Where-Object { $_.Name -notin @('methodName', 'parameters') }
+        $query = "SELECT $($props.Name -join ',') FROM $wmi_classname"
+        $where = " WHERE "
+        $useWhere = $false
+        $first = $true
+        foreach ($property in $props) {
+            # TODO: validate property against the CIM class to give better error message
+            if ($null -ne $property.value) {
+                $useWhere = $true
+                if ($first) {
+                    $first = $false
+                } else {
+                    $where += " AND "
+                }
+
+                if ($property.TypeNameOfValue -eq "System.String") {
+                    $where += "$($property.Name) = '$($property.Value)'"
+                } else {
+                    $where += "$($property.Name) = $($property.Value)"
+                }
+            }
+        }
+        if ($useWhere) {
+            $query += $where
+        }
+        "Query: $query" | Write-DscTrace -Operation Debug
+        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Stop
+    } else {
+        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
+    }
+
+    return $wmi_instances
+}
+
 function GetCimSpace {
     [CmdletBinding()]
     param 
@@ -58,43 +105,10 @@ function GetCimSpace {
 
     foreach ($r in $DesiredState) {
 
-        $type_fields = $r.type -split "/"
-        $wmi_namespace = $type_fields[0].Replace('.', '\')
-        $wmi_classname = $type_fields[1]
-
         switch ($Operation) {
             'Get' {
                 # TODO: identify key properties and add WHERE clause to the query
-                if ($r.properties) {
-                    $query = "SELECT $($r.properties.psobject.properties.name -join ',') FROM $wmi_classname"
-                    $where = " WHERE "
-                    $useWhere = $false
-                    $first = $true
-                    foreach ($property in $r.properties.psobject.properties) {
-                        # TODO: validate property against the CIM class to give better error message
-                        if ($null -ne $property.value) {
-                            $useWhere = $true
-                            if ($first) {
-                                $first = $false
-                            } else {
-                                $where += " AND "
-                            }
-
-                            if ($property.TypeNameOfValue -eq "System.String") {
-                                $where += "$($property.Name) = '$($property.Value)'"
-                            } else {
-                                $where += "$($property.Name) = $($property.Value)"
-                            }
-                        }
-                    }
-                    if ($useWhere) {
-                        $query += $where
-                    }
-                    "Query: $query" | Write-DscTrace -Operation Debug
-                    $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Stop
-                } else {
-                    $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
-                }
+                $wmi_instances = GetWmiInstance -DesiredState $DesiredState
 
                 if ($wmi_instances) {
                     $instance_result = [ordered]@{}
@@ -119,8 +133,14 @@ function GetCimSpace {
 
             }
             'Set' {
-                # TODO: implement set
+                $wmi_instance = ValidateCimMethodAndArguments -DesiredState $r
+                InvokeCimMethod -CimInstance $wmi_instance.CimInstance -MethodName $wmi_instance.MethodName -Arguments $wmi_instance.Parameters
 
+                $result += [PSCustomObject]@{
+                    name       = $r.name
+                    type       = $r.type
+                    properties = $null # Set operation does not return properties
+                }
             }
             'Test' {
                 # TODO: implement test
@@ -140,7 +160,7 @@ function ValidateCimMethodAndArguments {
 
     $methodName = $DesiredState.properties.psobject.properties | Where-Object -Property Name -EQ 'methodName' | Select-Object -ExpandProperty Value
     if (-not $methodName) {
-        "'methodName' property is required for invoking a WMI method." | Write-DscTrace -Operation Error
+        "'methodName' property is required for invoking a WMI/CIM method." | Write-DscTrace -Operation Error
         exit 1
     }
 
@@ -149,16 +169,125 @@ function ValidateCimMethodAndArguments {
 
     $cimClass = Get-CimClass -Namespace $namespace -ClassName $className -MethodName $methodName
 
+    $arguments = @{}
     if ($cimClass) {
-        $properties = $DesiredState.properties.psobject.properties | Where-Object -Property Name -NE 'methodName'
-        $parameters = $cimClass.CimClassMethods | Where-Object -Property Name -EQ $methodName | Select-Object -ExpandProperty CimMethodParameters
+        $parameters = ($DesiredState.properties.psobject.properties | Where-Object -Property Name -EQ 'parameters').Value
+        $cimClassParameters = $cimClass.CimClassMethods | Where-Object -Property Name -EQ $methodName | Select-Object -ExpandProperty Parameters
 
-        foreach ($prop in $properties) {
-            
+        foreach ($param in $parameters.psobject.Properties.name) {
+            if ($cimClassParameters.Name -notcontains $param) {
+                "'$param' is not a valid parameter for method '$methodName' in class '$className'." | Write-DscTrace -Operation Warn
+            } else {
+                $arguments += @{
+                    $param = $parameters.$param
+                }
+            }
+        }
+
+        $cimInstance = GetWmiInstance -DesiredState $DesiredState
+
+        $i = [PSCustomObject]@{
+            CimInstance = $cimInstance
+            Parameters  = $arguments
+            MethodName  = $methodName
         }
     }
 
-    return $cimClass
+    return $i
+}
+
+function InvokeCimMethod
+{
+    [CmdletBinding()]
+    [OutputType([Microsoft.Management.Infrastructure.CimMethodResult])]
+    param
+    (
+
+        [Parameter(Mandatory = $true)]
+        [Microsoft.Management.Infrastructure.CimInstance]
+        $CimInstance,
+
+        [Parameter(Mandatory = $true)]
+        [System.String]
+        $MethodName,
+
+        [Parameter()]
+        [System.Collections.Hashtable]
+        $Arguments
+    )
+
+    $invokeCimMethodParameters = @{
+        MethodName  = $MethodName
+        ErrorAction = 'Stop'
+    }
+
+    if ($PSBoundParameters.ContainsKey('Arguments') -and $null -ne [string]::IsNullOrEmpty($Arguments))
+    {
+        $invokeCimMethodParameters['Arguments'] = $Arguments
+    }
+
+    try
+    {
+        $invokeCimMethodResult = $CimInstance | Invoke-CimMethod @invokeCimMethodParameters
+    }
+    catch [Microsoft.Management.Infrastructure.CimException]
+    {
+        $errMsg = $_.Exception.Message.Trim("")
+        if ($errMsg -eq 'Invalid method')
+        {
+            "Retrying without instance" | Write-DscTrace -Operation Trace
+            $invokeCimMethodResult = Invoke-CimMethod @invokeCimMethodParameters -ClassName $CimInstance[0].CimClass.CimClassName
+        }
+    }
+    catch 
+    {
+        "Could not execute 'Invoke-CimMethod' with error message: " + $_.Exception.Message | Write-DscTrace -Operation Error
+        exit 1
+    }
+
+    <#
+        Successfully calling the method returns $invokeCimMethodResult.HRESULT -eq 0.
+        If an general error occur in the Invoke-CimMethod, like calling a method
+        that does not exist, returns $null in $invokeCimMethodResult.
+    #>
+    if ($invokeCimMethodResult.HRESULT)
+    {
+        $res = $invokeCimMethodResult.HRESULT
+    }
+    else 
+    {
+        $res = $invokeCimMethodResult.ReturnValue
+    }
+    if ($invokeCimMethodResult -and $res -ne 0)
+    {
+        if ($invokeCimMethodResult | Get-Member -Name 'ExtendedErrors')
+        {
+            <#
+                The returned object property ExtendedErrors is an array
+                so that needs to be concatenated.
+            #>
+            $errorMessage = $invokeCimMethodResult.ExtendedErrors -join ';'
+        }
+        else
+        {
+            $errorMessage = $invokeCimMethodResult.Error
+        }
+
+        $hResult = $invokeCimMethodResult.ReturnValue
+
+        if ($invokeCimMethodResult.HRESULT)
+        {
+            $hResult = $invokeCimMethodResult.HRESULT
+        }
+
+        $errmsg = 'Method {0}() failed with an error. Error: {1} (HRESULT:{2})' -f @(
+            $MethodName
+            $errorMessage
+            $hResult
+        )
+        $errMsg | Write-DscTrace -Operation Error
+        exit 1
+    }
 }
 
 
@@ -176,17 +305,7 @@ function Invoke-DscWmi {
         $DesiredState
     )
 
-    switch ($Operation) {
-        'Get' {
-            $addToActualState = GetCimSpace -Operation $Operation -DesiredState $DesiredState
-        }
-        'Set' {
-            # TODO: Implement Set operation
-        }
-        'Test' {
-            # TODO: Implement Test operation
-        }
-    }
+    $addToActualState = GetCimSpace -Operation $Operation -DesiredState $DesiredState
 
     return $addToActualState
 }
@@ -195,12 +314,4 @@ class dscResourceObject {
     [string] $name
     [string] $type
     [PSCustomObject] $properties
-}
-
-$inputObject = [DscResourceObject]@{
-    name       = 'root.cimv2/Win32_Process'
-    type       = 'root.cimv2/Win32_Process'
-    properties = [PSCustomObject]@{
-        methodName = 'Create'
-    }
 }
