@@ -248,12 +248,13 @@ exit code, it also emits an error message with details about the execution failu
 ### Exit code 2
 
 Indicates a PowerShell exception occurred during script execution. When the resource returns this
-exit code, it also emits the exception details.
+exit code, it writes the error to the console.
 
 ### Exit code 3
 
-Indicates the script had errors during execution. When the resource returns this
-exit code, it also emits error details about what went wrong in the script.
+Indicates the script had errors, typically due to missing or invalid input data.
+This exit code is commonly returned when required input parameters are not provided
+to the PowerShell scripts or when the input data is in an unexpected format.
 
 ## See also
 
