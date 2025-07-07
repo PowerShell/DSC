@@ -280,7 +280,7 @@ Describe 'Tests for PSScript resource' {
         $result.actualState.output[0] | Should -BeExactly "Input: This is a string"
     }
 
-    It 'Input without param block is an error for <resourecType>' -TestCases $testCases {
+    It 'Input without param block is an error for <resourceType>' -TestCases $testCases {
         param($resourceType)
 
         $yaml = @'
