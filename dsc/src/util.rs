@@ -475,7 +475,13 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
         } else {
             match std::fs::read_to_string(path) {
                 Ok(input) => {
-                    input
+                    // check if it contains UTF-8 BOM and remove it
+                    if input.as_bytes().starts_with(&[0xEF, 0xBB, 0xBF]) {
+                        info!("{}", t!("util.removingUtf8Bom"));
+                        input[3..].to_string()
+                    } else {
+                        input
+                    }
                 },
                 Err(err) => {
                     error!("{}: {err}", t!("util.failedToReadFile"));
