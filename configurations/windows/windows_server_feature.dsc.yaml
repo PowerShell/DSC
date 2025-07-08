@@ -1,0 +1,13 @@
+# Windows_Server_Feature: Calls classic PSDSC resource `WindowsFeature` to install a Server Role. 
+# Replace `web-server` with any feature from the `Name` property of `Get-WindowsFeature`
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: Use Windows PowerShell resources
+    type: Microsoft.Windows/WindowsPowerShell
+    properties:
+      resources:
+        - name: Web server install
+          type: PSDesiredStateConfiguration/WindowsFeature
+          properties:
+            Name: Web-Server
+            Ensure: Present
