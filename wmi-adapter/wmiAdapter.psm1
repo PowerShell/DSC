@@ -134,16 +134,20 @@ function GetCimSpace {
             }
             'Set' {
                 $wmi_instance = ValidateCimMethodAndArguments -DesiredState $r
-                InvokeCimMethod -CimInstance $wmi_instance.CimInstance -MethodName $wmi_instance.MethodName -Arguments $wmi_instance.Parameters
+                InvokeCimMethod @wmi_instance
 
-                $result += [PSCustomObject]@{
+                $addToActualState = [dscResourceObject]@{
                     name       = $r.name
                     type       = $r.type
-                    properties = $null # Set operation does not return properties
+                    properties = $null
                 }
+
+                $result += $addToActualState
             }
             'Test' {
                 # TODO: implement test
+                "Test operation is not implemented for WMI/CIM methods." | Write-DscTrace -Operation Error 
+                exit 1
             }
         }
     }
@@ -164,6 +168,12 @@ function ValidateCimMethodAndArguments {
         exit 1
     }
 
+    # This is required for invoking a WMI/CIM method with parameters even if it is empty
+    if (-not ($DesiredState.properties.psobject.properties | Where-Object -Property Name -EQ 'parameters')) {
+        "'parameters' property is required for invoking a WMI/CIM method." | Write-DscTrace -Operation Error
+        exit 1
+    }
+
     $className = $DesiredState.type.Split("/")[-1]
     $namespace = $DesiredState.type.Split("/")[0].Replace(".", "/")
 
@@ -176,6 +186,7 @@ function ValidateCimMethodAndArguments {
 
         foreach ($param in $parameters.psobject.Properties.name) {
             if ($cimClassParameters.Name -notcontains $param) {
+                # Only warn about invalid parameters, do not exit as this allows to action to continue when calling InvokeCimMethod
                 "'$param' is not a valid parameter for method '$methodName' in class '$className'." | Write-DscTrace -Operation Warn
             } else {
                 $arguments += @{
@@ -186,14 +197,15 @@ function ValidateCimMethodAndArguments {
 
         $cimInstance = GetWmiInstance -DesiredState $DesiredState
 
-        $i = [PSCustomObject]@{
+        return @{
             CimInstance = $cimInstance
-            Parameters  = $arguments
+            Arguments   = $arguments
             MethodName  = $methodName
         }
+    } else {
+        "'$className' class not found in namespace '$namespace'." | Write-DscTrace -Operation Error
+        exit 1
     }
-
-    return $i
 }
 
 function InvokeCimMethod
