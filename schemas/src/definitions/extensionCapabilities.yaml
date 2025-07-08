@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/definitions/extensionCapabilities.yaml
+
+title: Resource capabilities
+description: >-
+  Define the operations DSC can invoke for an extension and how the extension behaves when invoked.
+  
+markdownDescription: |-
+  ***
+  [_Online Documentation_][00]
+  ***
+
+  DSC extensions always have at least one capability. Extension capabilities define the operations
+  DSC can invoke for an extension and how the extension behaves when invoked.
+
+  <!-- Link reference definitions -->
+  [00]: <DOCS_BASE_URL>/reference/schemas/definitions/extensionCapabilities?<DOCS_VERSION_PIN>
+
+type: array
+items:
+  type: string
+  enum:
+    - discover
+  markdownEnumDescriptions:
+    - |- # discover
+      ***
+      [_Online Documentation_][00]
+      ***
+
+      An extension with the `discover` capability supports retrieving the path to DSC resource
+      manifests that aren't included in the `PATH` or `DSC_RESOURCE_PATH`, like manifests for
+      software installed as AppX packages.
+
+      An extension has this capability when its manifest defines the [discover][02]
+      property.
+
+      <!-- Link reference definitions -->
+      [00]: <DOCS_BASE_URL>/reference/schemas/definitions/extensionCapabilities?<DOCS_VERSION_PIN>#discover
+      [02]: <DOCS_BASE_URL>/reference/schemas/extension/manifest/discover?<DOCS_VERSION_PIN>
