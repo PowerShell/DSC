@@ -1,0 +1,12 @@
+# Assertion for macOS
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Validate the OS is macOS
+  type: Microsoft.DSC/Assertion
+  properties:
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+    - name: os
+      type: Microsoft/OSInfo
+      properties:
+        family: macOS
