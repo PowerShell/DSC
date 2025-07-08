@@ -4,7 +4,8 @@
 #[cfg(windows)]
 use {
     std::path::Path,
-    registry_lib::{config::RegistryValueData, RegistryHelper}
+    registry_lib::{config::RegistryValueData, RegistryHelper},
+    crate::metadata::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
 };
 
 use crate::args::DefaultShell;
@@ -44,16 +45,16 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
             shell_data = format!("{shell} {args_str}");
         }
 
-        set_registry("DefaultShell", RegistryValueData::String(shell_data))?;
+        set_registry(DEFAULT_SHELL, RegistryValueData::String(shell_data))?;
     } else {
-        remove_registry("DefaultShell")?;
+        remove_registry(DEFAULT_SHELL)?;
     }
 
 
     if let Some(cmd_option) = cmd_option {
-        set_registry("DefaultShellCommandOption", RegistryValueData::String(cmd_option.clone()))?;
+        set_registry(DEFAULT_SHELL_CMD_OPTION, RegistryValueData::String(cmd_option.clone()))?;
     } else {
-        remove_registry("DefaultShellCommandOption")?;
+        remove_registry(DEFAULT_SHELL_CMD_OPTION)?;
     }
 
     if let Some(escape_args) = escape_arguments {
@@ -61,9 +62,9 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
         if escape_args {
             escape_data = 1;
         }
-        set_registry("DefaultShellEscapeArguments", RegistryValueData::DWord(escape_data))?;
+        set_registry(DEFAULT_SHELL_ESCAPE_ARGS, RegistryValueData::DWord(escape_data))?;
     } else {
-        remove_registry("DefaultShellEscapeArguments")?;
+        remove_registry(DEFAULT_SHELL_ESCAPE_ARGS)?;
     }
 
     Ok(())
@@ -71,19 +72,19 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
 
 #[cfg(not(windows))]
 pub fn set_default_shell(_shell: Option<String>, _cmd_option: Option<String>, _escape_arguments: Option<bool>, _shell_arguments: Option<Vec<String>>) -> Result<(), SshdConfigError> {
-    Err(SshdConfigError::InvalidInput("Windows registry operations not applicable to this platform".to_string()))
+    Err(SshdConfigError::InvalidInput("Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows".to_string()))
 }
 
 #[cfg(windows)]
 fn set_registry(name: &str, data: RegistryValueData) -> Result<(), SshdConfigError> {
-    let registry_helper = RegistryHelper::new("HKLM\\SOFTWARE\\OpenSSH", Some(name.to_string()), Some(data))?;
+    let registry_helper = RegistryHelper::new(REGISTRY_PATH, Some(name.to_string()), Some(data))?;
     registry_helper.set()?;
     Ok(())
 }
 
 #[cfg(windows)]
 fn remove_registry(name: &str) -> Result<(), SshdConfigError> {
-    let registry_helper = RegistryHelper::new("HKLM\\SOFTWARE\\OpenSSH", Some(name.to_string()), None)?;
+    let registry_helper = RegistryHelper::new(REGISTRY_PATH, Some(name.to_string()), None)?;
     registry_helper.remove()?;
     Ok(())
 }

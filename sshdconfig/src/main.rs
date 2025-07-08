@@ -4,7 +4,7 @@
 use clap::{Parser};
 use schemars::schema_for;
 
-use args::{Args, Command, DefaultShell};
+use args::{Args, Command, DefaultShell, Resource};
 use export::invoke_export;
 use get::invoke_get;
 use parser::SshdConfigParser;
@@ -24,15 +24,18 @@ fn main() {
 
     let result = match &args.command {
         Command::Export => invoke_export(),
-        Command::Get => invoke_get(),
+        Command::Get { resource } => invoke_get(resource),
         Command::Set { input } => invoke_set(input),
-        Command::Schema { as_global } => {
-            let schema = if *as_global {
-                schema_for!(DefaultShell)
-            } else {
-                schema_for!(SshdConfigParser)
+        Command::Schema { resource } => {
+            let schema = match resource {
+                Resource::DefaultShell => {
+                    schema_for!(DefaultShell)
+                }
+                Resource::SshdConfig => {
+                    schema_for!(SshdConfigParser)
+                }
             };
-            println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+            println!("{}", serde_json::to_string(&schema).unwrap());
             Ok(())
         }
     };

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,10 @@ pub struct Args {
 #[derive(Subcommand)]
 pub enum Command {
     /// Get default shell, eventually to be used for `sshd_config` and repeatable keywords
-    Get,
+    Get {
+        #[clap(short = 'r', long, hide = true)]
+        resource: Resource,
+    },
     /// Set default shell, eventually to be used for `sshd_config` and repeatable keywords
     Set {
         #[clap(short = 'i', long, help = "input to set in sshd_config")]
@@ -24,8 +27,8 @@ pub enum Command {
     Export,
     Schema {
         // Used to inform which schema to generate
-        #[clap(long, hide = true)]
-        as_global: bool,
+        #[clap(short = 'r', long, hide = true)]
+        resource: Resource,
     },
 }
 
@@ -35,4 +38,10 @@ pub struct DefaultShell {
     pub cmd_option: Option<String>,
     pub escape_arguments: Option<bool>,
     pub shell_arguments: Option<Vec<String>>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, ValueEnum)]
+pub enum Resource {
+    DefaultShell,
+    SshdConfig,
 }

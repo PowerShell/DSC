@@ -13,7 +13,9 @@
         "command": {
             "executable": "sshdconfig",
             "args": [
-                "schema"
+                "schema",
+                "-r",
+                "sshd-config"
             ]
         }
     }

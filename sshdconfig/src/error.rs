@@ -13,6 +13,8 @@ pub enum SshdConfigError {
     Json(#[from] serde_json::Error),
     #[error("Language: {0}")]
     LanguageError(#[from] tree_sitter::LanguageError),
+    #[error("Not Implemented: {0}")]
+    NotImplemented(String),
     #[error("Parser: {0}")]
     ParserError(String),
     #[error("Parser Int: {0}")]

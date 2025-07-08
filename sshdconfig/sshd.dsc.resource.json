@@ -1,6 +1,6 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "Microsoft.Windows.OpenSSH/SSHD",
+    "type": "Microsoft.OpenSSH.SSHD/Windows",
     "description": "Manage SSH Server Configuration Global Settings",
     "tags": [
         "Windows"
@@ -9,7 +9,9 @@
     "get": {
         "executable": "sshdconfig",
         "args": [
-            "get"
+            "get",
+            "-r",
+            "default-shell"
         ]
     },
     "set": {
@@ -27,7 +29,8 @@
             "executable": "sshdconfig",
             "args": [
                 "schema",
-                "--as-global"
+                "-r",
+                "default-shell"
             ]
         }
     }

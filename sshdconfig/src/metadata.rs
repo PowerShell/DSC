@@ -36,3 +36,8 @@ pub const MULTI_ARG_KEYWORDS: [&str; 7] = [
     "macs",
     "pubkeyacceptedalgorithms"
 ];
+
+pub const REGISTRY_PATH: &str = "HKLM\\SOFTWARE\\OpenSSH";
+pub const DEFAULT_SHELL: &str = "DefaultShell";
+pub const DEFAULT_SHELL_CMD_OPTION: &str = "DefaultShellCommandOption";
+pub const DEFAULT_SHELL_ESCAPE_ARGS: &str = "DefaultShellEscapeArguments";
