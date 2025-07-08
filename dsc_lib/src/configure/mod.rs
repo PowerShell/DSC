@@ -24,7 +24,7 @@ use security_context_lib::{SecurityContext, get_security_context};
 use serde_json::{Map, Value};
 use std::path::PathBuf;
 use std::collections::HashMap;
-use tracing::{debug, info, trace};
+use tracing::{debug, info, trace, warn};
 pub mod context;
 pub mod config_doc;
 pub mod config_result;
@@ -75,19 +75,6 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
                 }
                 r.kind = kind.as_str().map(std::string::ToString::to_string);
             }
-            if let Some(security_context) = props.remove("_securityContext") {
-                let context: SecurityContextKind = serde_json::from_value(security_context)?;
-                let metadata = Metadata {
-                    microsoft: Some(
-                        MicrosoftDscMetadata {
-                            security_context: Some(context),
-                            ..Default::default()
-                        }
-                    ),
-                    other: Map::new(),
-                };
-                r.metadata = Some(metadata);
-            }
             r.name = if let Some(name) = props.remove("_name") {
                 name.as_str()
                     .map(std::string::ToString::to_string)
@@ -96,6 +83,27 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
                 format!("{}-{i}", r.resource_type)
             };
             r.properties = escape_property_values(&props)?;
+            let mut properties = serde_json::to_value(&r.properties)?;
+            let mut metadata = Metadata {
+                microsoft: None,
+                other: Map::new(),
+            };
+            get_metadata_from_result(&mut properties, &mut metadata)?;
+            if let Some(security_context) = props.remove("_securityContext") {
+                let context: SecurityContextKind = serde_json::from_value(security_context)?;
+                metadata.microsoft = Some(
+                        MicrosoftDscMetadata {
+                            security_context: Some(context),
+                            ..Default::default()
+                        }
+                );
+            }
+            r.properties = Some(properties.as_object().cloned().unwrap_or_default());
+            r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
+                Some(metadata)
+            } else {
+                None
+            };
 
             conf.resources.push(r);
         }
@@ -217,6 +225,26 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
     Ok(())
 }
 
+fn get_metadata_from_result(result: &mut Value, metadata: &mut Metadata) -> Result<(), DscError> {
+    if let Some(metadata_value) = result.get("_metadata") {
+        if let Some(metadata_map) = metadata_value.as_object() {
+            for (key, value) in metadata_map {
+                if key.starts_with("Microsoft.DSC") {
+                    warn!("{}", t!("configure.mod.metadataMicrosoftDscIgnored", key = key));
+                    continue;
+                }
+                metadata.other.insert(key.clone(), value.clone());
+            }
+        } else {
+            return Err(DscError::Parser(t!("configure.mod.metadataNotObject", value = metadata_value).to_string()));
+        }
+        if let Some(value_map) = result.as_object_mut() {
+            value_map.remove("_metadata");
+        }
+    }
+    Ok(())
+}
+
 impl Configurator {
     /// Create a new `Configurator` instance.
     ///
@@ -288,7 +316,7 @@ impl Configurator {
             let filter = add_metadata(&dsc_resource.kind, properties)?;
             trace!("filter: {filter}");
             let start_datetime = chrono::Local::now();
-            let get_result = match dsc_resource.get(&filter) {
+            let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -297,9 +325,20 @@ impl Configurator {
                 },
             };
             let end_datetime = chrono::Local::now();
-            match &get_result {
-                GetResult::Resource(resource_result) => {
+            let mut metadata = Metadata {
+                microsoft: Some(
+                    MicrosoftDscMetadata {
+                        duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                        ..Default::default()
+                    }
+                ),
+                other: Map::new(),
+            };
+
+            match &mut get_result {
+                GetResult::Resource(ref mut resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.actual_state)?);
+                    get_metadata_from_result(&mut resource_result.actual_state, &mut metadata)?;
                 },
                 GetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -310,17 +349,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceGetResult {
-                metadata: Some(
-                    Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata {
-                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                                ..Default::default()
-                            }
-                        ),
-                        other: Map::new(),
-                    }
-                ),
+                metadata: Some(metadata),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: get_result.clone(),
@@ -383,7 +412,7 @@ impl Configurator {
 
             let start_datetime;
             let end_datetime;
-            let set_result;
+            let mut set_result;
             if exist || dsc_resource.capabilities.contains(&Capability::SetHandlesExist) {
                 debug!("{}", t!("configure.mod.handlesExist"));
                 start_datetime = chrono::Local::now();
@@ -453,9 +482,19 @@ impl Configurator {
                 return Err(DscError::NotImplemented(t!("configure.mod.deleteNotSupported", resource = resource.resource_type).to_string()));
             }
 
-            match &set_result {
+            let mut metadata = Metadata {
+                microsoft: Some(
+                    MicrosoftDscMetadata {
+                        duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                        ..Default::default()
+                    }
+                ),
+                other: Map::new(),
+            };
+            match &mut set_result {
                 SetResult::Resource(resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.after_state)?);
+                    get_metadata_from_result(&mut resource_result.after_state, &mut metadata)?;
                 },
                 SetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -466,17 +505,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceSetResult {
-                metadata: Some(
-                    Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata {
-                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                                ..Default::default()
-                            }
-                        ),
-                        other: Map::new(),
-                    }
-                ),
+                metadata: Some(metadata),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: set_result.clone(),
@@ -517,7 +546,7 @@ impl Configurator {
             let expected = add_metadata(&dsc_resource.kind, properties)?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
-            let test_result = match dsc_resource.test(&expected) {
+            let mut test_result = match dsc_resource.test(&expected) {
                 Ok(result) => result,
                 Err(e) => {
                     progress.set_failure(get_failure_from_error(&e));
@@ -526,9 +555,19 @@ impl Configurator {
                 },
             };
             let end_datetime = chrono::Local::now();
-            match &test_result {
+            let mut metadata = Metadata {
+                microsoft: Some(
+                    MicrosoftDscMetadata {
+                        duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
+                        ..Default::default()
+                    }
+                ),
+                other: Map::new(),
+            };
+            match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_test_result.actual_state)?);
+                    get_metadata_from_result(&mut resource_test_result.actual_state, &mut metadata)?;
                 },
                 TestResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -539,17 +578,7 @@ impl Configurator {
                 },
             }
             let resource_result = config_result::ResourceTestResult {
-                metadata: Some(
-                    Metadata {
-                        microsoft: Some(
-                            MicrosoftDscMetadata {
-                                duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                                ..Default::default()
-                            }
-                        ),
-                        other: Map::new(),
-                    }
-                ),
+                metadata: Some(metadata),
                 name: resource.name.clone(),
                 resource_type: resource.resource_type.clone(),
                 result: test_result.clone(),

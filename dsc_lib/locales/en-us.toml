@@ -67,6 +67,8 @@ parameterNotObject = "Parameter '%{name}' is not an object"
 invokePropertyExpressions = "Invoke property expressions"
 invokeExpression = "Invoke property expression for %{name}: %{value}"
 propertyNotString = "Property '%{name}' with value '%{value}' is not a string"
+metadataMicrosoftDscIgnored = "Resource returned metadata property 'Microsoft.DSC' which is ignored"
+metadataNotObject = "Resource returned 'metadata' property which is not an object"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
