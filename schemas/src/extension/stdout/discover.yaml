@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/extension/stdout/discover.yaml
+
+title: Discover extension operation stdout
+description: >-
+  Represents the full path a DSC resource manifest.
+markdownDescription: | # VS Code only
+  ***
+  [_Online Documentation_][00]
+  ***
+
+  Represents the full path a DSC resource manifest. DSC expects every JSON Line emitted to stdout
+  for the **Discover** operation to adhere to this schema. An extension indicates that it supports
+  the **Discover** operation by defining the [discover][01] field in its manifest.
+
+  The output must be a JSON object that defines the `manifestPath` property.
+
+  If the extension doesn't discover any resources, it shouldn't emit any data to stdout.
+
+  Unless the extension raises an error, it should exit with code `0`, even when no resources are
+  discovered.
+
+  [00]: <DOCS_BASE_URL>/reference/schemas/extension/stdout/discover?<DOCS_VERSION_PIN>
+  [01]: <DOCS_BASE_URL>/reference/schemas/extension/manifest/discover?<DOCS_VERSION_PIN>
+
+
+type: object
+additionalProperties: false
+required:
+  - manifestPath
+properties:
+  manifestPath:
+    title: DSC manifest path
+    description: >-
+      Defines the absolute path to a DSC resource manifest on the system.
+    markdownDescription: |-
+      ***
+      [_Online Documentation_][00]
+      ***
+
+      Defines the absolute path to a DSC resource manifest on the system. DSC expects this value to
+      be the absolute path to a manifest file that exists. If this value is a relative path, or if
+      the manifest doesn't exist, DSC raises an error.
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/extension/stdout/discover?<DOCS_VERSION_PIN>#manifestPath
+    type: string

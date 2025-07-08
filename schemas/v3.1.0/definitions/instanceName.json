@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/instanceName.json",
+  "title": "Instance name",
+  "description": "The short, human-readable name for a DSC resource instance. Must be unique within a DSC Configuration document. Must be a non-empty string containing only letters, numbers, and spaces.",
+  "type": "string",
+  "pattern": "^[a-zA-Z0-9 ]+$",
+  "minLength": 1
+}

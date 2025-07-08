@@ -31,12 +31,17 @@ configuration documents.
 The article [DSC Configuration document functions reference][04] describes DSC configuration
 functions generally and links to the reference documentation for the available functions.
 
+## Extension schemas
+
+The article [DSC command extension manifest schema reference][05] describes the root JSON schema for
+extension manifests.
+
 ## Resource schemas
 
-The article [DSC command resource manifest schema reference][05] describes the root JSON schema for
+The article [DSC command resource manifest schema reference][06] describes the root JSON schema for
 resource manifests.
 
-The article [# DSC canonical properties reference][06] describes DSC canonical resource properties
+The article [# DSC canonical properties reference][07] describes DSC canonical resource properties
 generally and links to the reference documentation for the available canonical properties.
 
 ## Output schemas
@@ -44,15 +49,16 @@ generally and links to the reference documentation for the available canonical p
 The following table links to the reference documentation for the JSON schemas describing the output
 DSC returns for its commands:
 
-| Command             | Article link                                                            |
-|:--------------------|:------------------------------------------------------------------------|
-| `dsc config get`    | [dsc config get result schema reference][07]       |
-| `dsc config set`    | [dsc config set result schema reference][08]       |
-| `dsc config test`   | [dsc config test result schema reference][09]  |
-| `dsc resource get`  | [dsc resource get result schema reference][10]   |
-| `dsc resource list` | [dsc resource list result schema reference][11] |
-| `dsc resource set`  | [dsc resource set result schema reference][12]   |
-| `dsc resource test` | [dsc resource test result schema reference][13] |
+| Command              | Article link                                     |
+|:---------------------|:-------------------------------------------------|
+| `dsc config get`     | [dsc config get result schema reference][08]     |
+| `dsc config set`     | [dsc config set result schema reference][09]     |
+| `dsc config test`    | [dsc config test result schema reference][10]    |
+| `dsc extension list` | [dsc extension list result schema reference][11] |
+| `dsc resource get`   | [dsc resource get result schema reference][12]   |
+| `dsc resource list`  | [dsc resource list result schema reference][13]  |
+| `dsc resource set`   | [dsc resource set result schema reference][14]   |
+| `dsc resource test`  | [dsc resource test result schema reference][15]  |
 
 ## Definition schemas
 
@@ -60,28 +66,30 @@ The following list defines the reference documentation for JSON schemas included
 throughout DSC.
 
 - For more information about the `Microsoft.DSC` metadata property, see
-  [Microsoft.DSC metadata property schema reference][14]
-- For more information about the messages DSC emits, see [Structured message schema reference][15]
+  [Microsoft.DSC metadata property schema reference][16]
+- For more information about the messages DSC emits, see [Structured message schema reference][17]
 - For more information about the kinds of DSC resources and how they affect schema validation, see
-  [DSC Resource kind schema reference][16].
+  [DSC Resource kind schema reference][18].
 - For more information about the naming of DSC resources and how they're validated, see
-  [DSC Resource fully qualified type name schema reference][17]
+  [DSC Resource fully qualified type name schema reference][19]
 
 <!-- Reference linki definitions -->
 [01]: https://json-schema.org/overview/what-is-jsonschema
 [02]: ./schema-uris.md
 [03]: ./config/document.md
 [04]: ./config/functions/overview.md
-[05]: ./resource/manifest/root.md
-[06]: ./resource/properties/overview.md
-[07]: ./outputs/config/get.md
-[08]: ./outputs/config/set.md
-[09]: ./outputs/config/test.md
-[10]: ./outputs/resource/get.md
-[11]: ./outputs/resource/list.md
-[12]: ./outputs/resource/set.md
-[13]: ./outputs/resource/test.md
-[14]: ./metadata/Microsoft.DSC/properties.md
-[15]: ./definitions/message.md
-[16]: ./definitions/resourceKind.md
-[17]: ./definitions/resourceType.md
+[05]: ./extension/manifest/root.md
+[06]: ./resource/manifest/root.md
+[07]: ./resource/properties/overview.md
+[08]: ./outputs/config/get.md
+[09]: ./outputs/config/set.md
+[10]: ./outputs/config/test.md
+[11]: ./outputs/extension/list.md
+[12]: ./outputs/resource/get.md
+[13]: ./outputs/resource/list.md
+[14]: ./outputs/resource/set.md
+[15]: ./outputs/resource/test.md
+[16]: ./metadata/Microsoft.DSC/properties.md
+[17]: ./definitions/message.md
+[18]: ./definitions/resourceKind.md
+[19]: ./definitions/resourceType.md

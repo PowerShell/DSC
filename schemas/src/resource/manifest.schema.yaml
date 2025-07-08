@@ -345,8 +345,21 @@ properties:
             description: >-
               Indicates that the DSC resource uses the standard `_exist` property to specify
               whether an instance should exist as a boolean value that defaults to `true`.
-            const:
-              $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/exist.yaml
+            enum:
+              - $ref: https://aka.ms/dsc/schemas/v3/resource/properties/exist.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1/resource/properties/exist.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1.0/resource/properties/exist.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0/resource/properties/exist.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.0/resource/properties/exist.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.1/resource/properties/exist.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.2/resource/properties/exist.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/exist.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/exist.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/exist.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/exist.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/exist.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/exist.json
             # VS Code only
             markdownDescription: |
               ***
@@ -374,8 +387,21 @@ properties:
               Indicates that the DSC resource returns this value for it's own `test` method. This
               read-only property is mandatory when the manifest defines the `test` property. It
               shouldn't be included if the DSC resource relies on DSC's synthetic testing.
-            const:
-              $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/inDesiredState.yaml
+            enum:
+              - $ref: https://aka.ms/dsc/schemas/v3/resource/properties/inDesiredState.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1/resource/properties/inDesiredState.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1.0/resource/properties/inDesiredState.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0/resource/properties/inDesiredState.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.0/resource/properties/inDesiredState.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.1/resource/properties/inDesiredState.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.2/resource/properties/inDesiredState.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/inDesiredState.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/inDesiredState.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/inDesiredState.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/inDesiredState.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/inDesiredState.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/inDesiredState.json
             # VS Code only
             markdownDescription: |
               ***
@@ -393,8 +419,21 @@ properties:
               Indicates that the DSC resource uses the standard `_purge` property to specify
               whether the DSC resource should remove all non-specified members when it manages
               an array of members or values.
-            const:
-              $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/purge.yaml
+            enum:
+              - $ref: https://aka.ms/dsc/schemas/v3/resource/properties/purge.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1/resource/properties/purge.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1.0/resource/properties/purge.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0/resource/properties/purge.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.0/resource/properties/purge.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.1/resource/properties/purge.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.2/resource/properties/purge.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/purge.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/purge.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/purge.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/purge.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/purge.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/purge.json
             # VS Code only
             markdownDescription: |
               ***
@@ -412,8 +451,21 @@ properties:
               Indicates whether a resource instance requires a reboot after a set operation. To use
               DSC's built-in reboot notification processing, resources must define this property in
               their manifest.
-            const:
-              $ref: <HOST>/<PREFIX>/<VERSION>/resource/properties/rebootRequested.yaml
+            enum:
+              - $ref: https://aka.ms/dsc/schemas/v3/resource/properties/rebootRequested.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1/resource/properties/rebootRequested.json
+              - $ref: https://aka.ms/dsc/schemas/v3.1.0/resource/properties/rebootRequested.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0/resource/properties/rebootRequested.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.0/resource/properties/rebootRequested.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.1/resource/properties/rebootRequested.json
+              - $ref: https://aka.ms/dsc/schemas/v3.0.2/resource/properties/rebootRequested.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/rebootRequested.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/rebootRequested.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/rebootRequested.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/rebootRequested.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/rebootRequested.json
+              - $ref: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/rebootRequested.json
             # VS Code only
             markdownDescription: |
               ***

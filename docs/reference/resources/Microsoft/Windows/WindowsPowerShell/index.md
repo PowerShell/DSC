@@ -48,7 +48,7 @@ The `Microsoft.Windows/WindowsPowerShell` resource adapter enables you to invoke
 - Run class-based DSC resource methods
 - Execute binary DSC resources
 
-The adapter manages the PDSC resources in Windows PowerShell, not PowerShell. To use PowerShell classes in PowerShell, use the [Microsoft.DSC/PowerShell](../../dsc/powershell/index.md) adapter.
+The adapter manages the PSDSC resources in Windows PowerShell, not PowerShell. To use PowerShell classes in PowerShell, use the [Microsoft.DSC/PowerShell](../../dsc/powershell/index.md) adapter.
 
 This adapter uses the **PSDesiredStateConfiguration** module v1.1. This module is built-in when you install Windows and is located in `%SystemRoot%\System32\WindowsPowerShell\v1.0\Modules`
 
@@ -83,7 +83,7 @@ set to `ClearCache`:
 $adapterScript = dsc resource list Microsoft.Windows/WindowsPowerShell |
     ConvertFrom-Json |
     Select-Object -ExpandProperty directory |
-    Join-Path
+    Join-Path -ChildPath 'psDscAdapter\powershell.resource.ps1' 
 
 & $adapterScript -Operation ClearCache
 ```
@@ -131,7 +131,7 @@ To list the schema properties for a PowerShell DSC resource, you can run the fol
 
 ```powershell
 dsc resource list --adapter Microsoft.Windows/WindowsPowerShell <moduleName>/<resourceName> |
-    ConvertFrom-Json | 
+    ConvertFrom-Json |
     Select-Object properties
 ```
 
@@ -141,7 +141,7 @@ You can also retrieve more information by directly reading it from the cache fil
 $cache = Get-Content -Path "$env:LOCALAPPDATA\dsc\WindowsPSAdapterCache.json" |
     ConvertFrom-Json
 
-($cache.ResourceCache | Where-Object -Property type -EQ '<moduleName>/<resourceName>').DscResourceInfo.Properties
+($cache.ResourceCache | Where-Object -FilterScript { $_.type -eq '<moduleName>/<resourceName>' }).DscResourceInfo.Properties
 ```
 
 When defining a configuration document, the following properties are required.

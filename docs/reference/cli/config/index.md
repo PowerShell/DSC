@@ -78,6 +78,11 @@ for that parameter.
 
 This option is mutually exclusive with the `--parameters` option.
 
+Starting with DSC version 3.1.0, you can pass the parameters data to a subcommand over stdin. When
+you do, you must pass the configuration document as an input string or the path to a file on the
+system. You can't pass both the parameters file and the configuration document to a command from
+stdin.
+
 For more information about defining parameters in a configuration document, see
 [DSC Configuration document parameter schema][06]. For more information about using parameters in
 configuration document, see the [parameters function reference][07].
