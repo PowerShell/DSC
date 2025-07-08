@@ -13,19 +13,19 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Export `sshd_config`
-    Export,
     /// Get default shell, eventually to be used for `sshd_config` and repeatable keywords
     Get,
-    Schema {
-        // Used to inform which schema to generate
-        #[clap(long, hide = true)]
-        as_global: bool,
-    },
     /// Set default shell, eventually to be used for `sshd_config` and repeatable keywords
     Set {
         #[clap(short = 'i', long, help = "input to set in sshd_config")]
         input: String
+    },
+    /// Export `sshd_config`
+    Export,
+    Schema {
+        // Used to inform which schema to generate
+        #[clap(long, hide = true)]
+        as_global: bool,
     },
 }
 
