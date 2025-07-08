@@ -82,13 +82,10 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
             } else {
                 format!("{}-{i}", r.resource_type)
             };
-            r.properties = escape_property_values(&props)?;
-            let mut properties = serde_json::to_value(&r.properties)?;
             let mut metadata = Metadata {
                 microsoft: None,
                 other: Map::new(),
             };
-            get_metadata_from_result(&mut properties, &mut metadata)?;
             if let Some(security_context) = props.remove("_securityContext") {
                 let context: SecurityContextKind = serde_json::from_value(security_context)?;
                 metadata.microsoft = Some(
@@ -98,6 +95,9 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
                         }
                 );
             }
+            r.properties = escape_property_values(&props)?;
+            let mut properties = serde_json::to_value(&r.properties)?;
+            get_metadata_from_result(&mut properties, &mut metadata)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
                 Some(metadata)
