@@ -9,6 +9,7 @@ use {
 };
 
 use crate::error::SshdConfigError;
+use rust_i18n::t;
 
 /// Invoke the get command.
 ///
@@ -18,7 +19,7 @@ use crate::error::SshdConfigError;
 pub fn invoke_get(resource: &Resource) -> Result<(), SshdConfigError> {
     match resource {
         &Resource::DefaultShell => get_default_shell(),
-        &Resource::SshdConfig => Err(SshdConfigError::NotImplemented("get not yet implemented for Microsoft.OpenSSH.SSHD/sshd_config".to_string())),
+        &Resource::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
     }
 }
 
@@ -34,14 +35,14 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
             RegistryValueData::String(s) => {
                 let parts: Vec<&str> = s.split_whitespace().collect();
                 if parts.is_empty() {
-                    return Err(SshdConfigError::InvalidInput(format!("{} cannot be empty", DEFAULT_SHELL)));
+                    return Err(SshdConfigError::InvalidInput(t!("get.defaultShellEmpty").to_string()));
                 }
                 shell = Some(parts[0].to_string());
                 if parts.len() > 1 {
                     shell_arguments = Some(parts[1..].iter().map(|&s| s.to_string()).collect());
                 }
             }
-            _ => return Err(SshdConfigError::InvalidInput(format!("{} must be a string", DEFAULT_SHELL))),
+            _ => return Err(SshdConfigError::InvalidInput(t!("get.defaultShellMustBeString").to_string())),
         }
     }
 
@@ -51,7 +52,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     if let Some(value) = option.value_data {
         match value {
             RegistryValueData::String(s) => cmd_option = Some(s),
-            _ => return Err(SshdConfigError::InvalidInput(format!("{} must be a string", DEFAULT_SHELL_CMD_OPTION))),
+            _ => return Err(SshdConfigError::InvalidInput(t!("get.defaultShellCmdOptionMustBeString").to_string())),
         }
     }
 
@@ -63,10 +64,10 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
             if b == 0 || b == 1 {
                 escape_arguments = if b == 1 { Some(true) } else { Some(false) };
             } else {
-                return Err(SshdConfigError::InvalidInput(format!("{} must be a 0 or 1", DEFAULT_SHELL_ESCAPE_ARGS)));
+                return Err(SshdConfigError::InvalidInput(t!("get.defaultShellEscapeArgsMustBe0Or1", input = b).to_string()));
             }
         } else {
-            return Err(SshdConfigError::InvalidInput(format!("{} must be a DWord", DEFAULT_SHELL_ESCAPE_ARGS)));
+            return Err(SshdConfigError::InvalidInput(t!("get.defaultShellEscapeArgsMustBeDWord").to_string()));
         }
     }
 
@@ -83,6 +84,6 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 }
 
 #[cfg(not(windows))]
-pub fn get_default_shell() -> Result<(), SshdConfigError> {
-    Err(SshdConfigError::InvalidInput("Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows".to_string()))
+fn get_default_shell() -> Result<(), SshdConfigError> {
+    Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
 }

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use clap::{Parser, Subcommand, ValueEnum};
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +21,7 @@ pub enum Command {
     },
     /// Set default shell, eventually to be used for `sshd_config` and repeatable keywords
     Set {
-        #[clap(short = 'i', long, help = "input to set in sshd_config")]
+        #[clap(short = 'i', long, help = t!("args.setInput").to_string())]
         input: String
     },
     /// Export `sshd_config`

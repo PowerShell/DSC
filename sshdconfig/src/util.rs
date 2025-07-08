@@ -4,6 +4,7 @@
 use std::process::Command;
 
 use crate::error::SshdConfigError;
+use rust_i18n::t;
 
 /// Invoke sshd -T.
 ///
@@ -29,9 +30,9 @@ pub fn invoke_sshd_config_validation() -> Result<String, SshdConfigError> {
     } else {
         let stderr = String::from_utf8(output.stderr)
             .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
-        if stderr.contains("sshd: no hostkeys available") {
+        if stderr.contains("sshd: no hostkeys available") || stderr.contains("Permission denied") {
             return Err(SshdConfigError::CommandError(
-                "sshd: no hostkeys available, please run as admin".to_string(),
+                t!("util.sshdNoHostkeys").to_string()
             ));
         }
         Err(SshdConfigError::CommandError(stderr))

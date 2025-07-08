@@ -10,6 +10,7 @@ use {
 
 use crate::args::DefaultShell;
 use crate::error::SshdConfigError;
+use rust_i18n::t;
 
 /// Invoke the set command.
 ///
@@ -23,7 +24,7 @@ pub fn invoke_set(input: &str) -> Result<(), SshdConfigError> {
         },
         Err(e) => {
             // TODO: handle other commands like repeatable keywords or sshd_config modifications
-            Err(SshdConfigError::InvalidInput(format!("Failed to parse input as DefaultShell: {e}")))
+            Err(SshdConfigError::InvalidInput(t!("set.failedToParseInput", error = e).to_string()))
         }
     }
 }
@@ -33,10 +34,10 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
     if let Some(shell) = shell {
         let shell_path = Path::new(&shell);
         if shell_path.is_relative() && shell_path.components().any(|c| c == std::path::Component::ParentDir) {
-            return Err(SshdConfigError::InvalidInput("shell path must not be relative".to_string()));
+            return Err(SshdConfigError::InvalidInput(t!("set.shellPathMustNotBeRelative").to_string()));
         }
         if !shell_path.exists() {
-            return Err(SshdConfigError::InvalidInput(format!("shell path does not exist: {shell}")));
+            return Err(SshdConfigError::InvalidInput(t!("set.shellPathDoesNotExist", shell = shell).to_string()));
         }
 
         let mut shell_data = shell.clone();
@@ -71,8 +72,8 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
 }
 
 #[cfg(not(windows))]
-pub fn set_default_shell(_shell: Option<String>, _cmd_option: Option<String>, _escape_arguments: Option<bool>, _shell_arguments: Option<Vec<String>>) -> Result<(), SshdConfigError> {
-    Err(SshdConfigError::InvalidInput("Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows".to_string()))
+fn set_default_shell(_shell: Option<String>, _cmd_option: Option<String>, _escape_arguments: Option<bool>, _shell_arguments: Option<Vec<String>>) -> Result<(), SshdConfigError> {
+    Err(SshdConfigError::InvalidInput(t!("get.windowsOnly")))
 }
 
 #[cfg(windows)]

@@ -964,6 +964,7 @@ dependencies = [
  "chrono",
  "clap",
  "registry_lib",
+ "rust-i18n",
  "schemars",
  "serde",
  "serde_json",

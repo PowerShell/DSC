@@ -1,25 +1,26 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum SshdConfigError {
-    #[error("Command: {0}")]
+    #[error("{t}: {0}", t = t!("error.command"))]
     CommandError(String),
-    #[error("IO: {0}")]
+    #[error("{t}: {0}", t = t!("error.invalidInput"))]
     InvalidInput(String),
-    #[error("JSON: {0}")]
+    #[error("{t}: {0}", t = t!("error.json"))]
     Json(#[from] serde_json::Error),
-    #[error("Language: {0}")]
+    #[error("{t}: {0}", t = t!("error.language"))]
     LanguageError(#[from] tree_sitter::LanguageError),
-    #[error("Not Implemented: {0}")]
+    #[error("{t}: {0}", t = t!("error.notImplemented"))]
     NotImplemented(String),
-    #[error("Parser: {0}")]
+    #[error("{t}: {0}", t = t!("error.parser"))]
     ParserError(String),
-    #[error("Parser Int: {0}")]
+    #[error("{t}: {0}", t = t!("error.parseInt"))]
     ParseIntError(#[from] std::num::ParseIntError),
     #[cfg(windows)]
-    #[error("Registry: {0}")]
+    #[error("{t}: {0}", t = t!("error.registry"))]
     RegistryError(#[from] registry_lib::error::RegistryError),
 }

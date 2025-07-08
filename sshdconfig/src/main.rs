@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use clap::{Parser};
+use rust_i18n::i18n;
 use schemars::schema_for;
 
 use args::{Args, Command, DefaultShell, Resource};
@@ -18,6 +19,8 @@ mod metadata;
 mod parser;
 mod set;
 mod util;
+
+i18n!("locales", fallback = "en-us");
 
 fn main() {
     let args = Args::parse();

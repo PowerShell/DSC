@@ -1,0 +1,47 @@
+_version = 1
+
+[args]
+setInput = "input to set in sshd_config"
+
+[error]
+command = "Command"
+invalidInput = "Invalid Input"
+json = "JSON"
+language = "Language"
+notImplemented = "Not Implemented"
+parser = "Parser"
+parseInt = "Parse Integer"
+registry = "Registry"
+
+[get]
+notImplemented = "get not yet implemented for Microsoft.OpenSSH.SSHD/sshd_config"
+defaultShellEmpty = "default_shell cannot be empty"
+defaultShellMustBeString = "default_shell must be a string"
+defaultShellCmdOptionMustBeString = "value must be a string"
+defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
+defaultShellEscapeArgsMustBeDWord = "value must be a DWord"
+windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
+
+[set]
+failedToParseInput = "failed to parse input as DefaultShell with error: '%{error}'"
+shellPathMustNotBeRelative = "shell path must not be relative"
+shellPathDoesNotExist = "shell path does not exist: '%{shell}'"
+
+[parser]
+failedToParse = "failed to parse: '%{input}'"
+failedToParseRoot = "failed to parse root: '%{input}'"
+invalidConfig = "invalid config: '%{input}'"
+unknownNodeType = "unknown node type: '%{node}'"
+unexpectedFalse = "unexpected 'false' for '%{input}'; expected 'yes' or 'no'"
+failedToParseChildNode = "failed to parse child node: '%{input}'"
+missingValueInChildNode = "missing value in child node: '%{input}'"
+missingKeyInChildNode = "missing key in child node: '%{input}'"
+failedToParseAsArray = "value is not an array"
+failedToParseNode = "failed to parse '%{input}'"
+keyNotFound = "key '%{key}' not found"
+keyNotRepeatable = "key '%{key}' is not repeatable"
+invalidValue = "operator is an invalid value for node"
+unknownNode = "unknown node: '%{kind}'"
+
+[util]
+sshdNoHostkeys = "elevated security context required"
