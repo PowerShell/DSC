@@ -15,11 +15,11 @@ registry = "Registry"
 
 [get]
 notImplemented = "get not yet implemented for Microsoft.OpenSSH.SSHD/sshd_config"
-defaultShellEmpty = "default_shell cannot be empty"
-defaultShellMustBeString = "default_shell must be a string"
-defaultShellCmdOptionMustBeString = "value must be a string"
+defaultShellEmpty = "shell cannot be empty"
+defaultShellMustBeString = "shell must be a string"
+defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
-defaultShellEscapeArgsMustBeDWord = "value must be a DWord"
+defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
 [set]

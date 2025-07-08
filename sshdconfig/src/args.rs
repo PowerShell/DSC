@@ -38,11 +38,10 @@ pub struct DefaultShell {
     pub shell: Option<String>,
     pub cmd_option: Option<String>,
     pub escape_arguments: Option<bool>,
-    pub shell_arguments: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ValueEnum)]
 pub enum Resource {
-    DefaultShell,
     SshdConfig,
+    WindowsGlobal
 }

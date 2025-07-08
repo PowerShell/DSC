@@ -31,11 +31,11 @@ fn main() {
         Command::Set { input } => invoke_set(input),
         Command::Schema { resource } => {
             let schema = match resource {
-                Resource::DefaultShell => {
-                    schema_for!(DefaultShell)
-                }
                 Resource::SshdConfig => {
                     schema_for!(SshdConfigParser)
+                },
+                Resource::WindowsGlobal => {
+                    schema_for!(DefaultShell)
                 }
             };
             println!("{}", serde_json::to_string(&schema).unwrap());

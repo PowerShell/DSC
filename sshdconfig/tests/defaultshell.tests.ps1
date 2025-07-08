@@ -62,62 +62,57 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
             $testShell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
             New-ItemProperty -Path $RegistryPath -Name "DefaultShell" -Value $testShell
 
-            $output = sshdconfig get
+            $output = sshdconfig get -r windows-global
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
             $result.shell | Should -Be $testShell
             $result.cmd_option | Should -BeNullOrEmpty
             $result.escape_arguments | Should -BeNullOrEmpty
-            $result.shell_arguments | Should -BeNullOrEmpty
         }
 
         It 'Should get default shell with args when registry value exists' {
             $testShell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-            $testShellWithArgs = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive"
+            $testShellWithArgs = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
             New-ItemProperty -Path $RegistryPath -Name "DefaultShell" -Value $testShellWithArgs
             New-ItemProperty -Path $RegistryPath -Name "DefaultShellCommandOption" -Value "/c"
             New-ItemProperty -Path $RegistryPath -Name "DefaultShellEscapeArguments" -Value 0 -Type DWord
 
-            $output = sshdconfig get
+            $output = sshdconfig get -r windows-global
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
             $result.shell | Should -Be $testShell
             $result.cmd_option | Should -Be "/c"
             $result.escape_arguments | Should -Be $false
-            $result.shell_arguments | Should -Be @("-NoProfile", "-NonInteractive")
         }
 
         It 'Should handle empty default shell registry values' -Skip:(!$IsWindows) {
-            $output = sshdconfig get
+            $output = sshdconfig get -r windows-global
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
             $result.shell | Should -BeNullOrEmpty
             $result.cmd_option | Should -BeNullOrEmpty
             $result.escape_arguments | Should -BeNullOrEmpty
-            $result.shell_arguments | Should -BeNullOrEmpty
         }
     }
 
     Context 'Set Default Shell' {
         It 'Should set default shell with valid configuration' {
             $testShell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-            $testShellWithArgs = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -NonInteractive"
 
             $inputConfig = @{
                 shell = $testShell
                 cmd_option = "/c"
                 escape_arguments = $false
-                shell_arguments = @("-NoProfile", "-NonInteractive")
             } | ConvertTo-Json
 
             sshdconfig set --input $inputConfig
             $LASTEXITCODE | Should -Be 0
 
             $defaultShell = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
-            $defaultShell.DefaultShell | Should -Be $testShellWithArgs
+            $defaultShell.DefaultShell | Should -Be $testShell
 
             $cmdOption = Get-ItemProperty -Path $RegistryPath -Name "DefaultShellCommandOption" -ErrorAction SilentlyContinue
             $cmdOption.DefaultShellCommandOption | Should -Be "/c"
@@ -164,14 +159,13 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
                 shell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
                 cmd_option = "/c"
                 escape_arguments = $true
-                shell_arguments = @("-NoProfile", "-NonInteractive")
             }
             $inputJson = $originalConfig | ConvertTo-Json
 
             sshdconfig set --input $inputJson
             $LASTEXITCODE | Should -Be 0
 
-            $getOutput = sshdconfig get
+            $getOutput = sshdconfig get -r windows-global
             $LASTEXITCODE | Should -Be 0
 
             $retrievedConfig = $getOutput | ConvertFrom-Json
@@ -179,7 +173,6 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
             $retrievedConfig.shell | Should -Be $originalConfig.shell
             $retrievedConfig.cmd_option | Should -Be $originalConfig.cmd_option
             $retrievedConfig.escape_arguments | Should -Be $originalConfig.escape_arguments
-            $retrievedConfig.shell_arguments | Should -Be $originalConfig.shell_arguments
         }
     }
 
@@ -209,7 +202,7 @@ Describe 'Default Shell Configuration Error Handling on Non-Windows Platforms' -
     }
 
     It 'Should return error for get command' {
-        $out = sshdconfig get 2>&1
+        $out = sshdconfig get -r windows-global 2>&1
         $LASTEXITCODE | Should -Not -Be 0
         $out | Should -BeLike '*not applicable to this platform*'
     }

@@ -17,9 +17,9 @@ use rust_i18n::t;
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
 pub fn invoke_get(resource: &Resource) -> Result<(), SshdConfigError> {
-    match resource {
-        &Resource::DefaultShell => get_default_shell(),
-        &Resource::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
+    match *resource {
+        Resource::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
+        Resource::WindowsGlobal => get_default_shell()
     }
 }
 
@@ -28,19 +28,11 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     let registry_helper = RegistryHelper::new(REGISTRY_PATH, Some(DEFAULT_SHELL.to_string()), None)?;
     let default_shell: Registry = registry_helper.get()?;
     let mut shell = None;
-    let mut shell_arguments = None;
-    // default_shell is a single string consisting of the shell exe path and, optionally, any arguments
+    // default_shell is a single string consisting of the shell exe path
     if let Some(value) = default_shell.value_data {
         match value {
             RegistryValueData::String(s) => {
-                let parts: Vec<&str> = s.split_whitespace().collect();
-                if parts.is_empty() {
-                    return Err(SshdConfigError::InvalidInput(t!("get.defaultShellEmpty").to_string()));
-                }
-                shell = Some(parts[0].to_string());
-                if parts.len() > 1 {
-                    shell_arguments = Some(parts[1..].iter().map(|&s| s.to_string()).collect());
-                }
+                shell = Some(s);
             }
             _ => return Err(SshdConfigError::InvalidInput(t!("get.defaultShellMustBeString").to_string())),
         }
@@ -74,8 +66,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     let result = DefaultShell {
         shell,
         cmd_option,
-        escape_arguments,
-        shell_arguments
+        escape_arguments
     };
 
     let output = serde_json::to_string(&result)?;

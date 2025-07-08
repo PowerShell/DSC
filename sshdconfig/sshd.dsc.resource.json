@@ -11,7 +11,7 @@
         "args": [
             "get",
             "-r",
-            "default-shell"
+            "windows-global"
         ]
     },
     "set": {
@@ -30,7 +30,7 @@
             "args": [
                 "schema",
                 "-r",
-                "default-shell"
+                "windows-global"
             ]
         }
     }
