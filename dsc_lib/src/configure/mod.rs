@@ -327,10 +327,7 @@ impl Configurator {
             let end_datetime = chrono::Local::now();
             let mut metadata = Metadata {
                 microsoft: Some(
-                    MicrosoftDscMetadata {
-                        duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                        ..Default::default()
-                    }
+                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
                 ),
                 other: Map::new(),
             };
@@ -484,10 +481,7 @@ impl Configurator {
 
             let mut metadata = Metadata {
                 microsoft: Some(
-                    MicrosoftDscMetadata {
-                        duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                        ..Default::default()
-                    }
+                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
                 ),
                 other: Map::new(),
             };
@@ -557,10 +551,7 @@ impl Configurator {
             let end_datetime = chrono::Local::now();
             let mut metadata = Metadata {
                 microsoft: Some(
-                    MicrosoftDscMetadata {
-                        duration: Some(end_datetime.signed_duration_since(start_datetime).to_string()),
-                        ..Default::default()
-                    }
+                    MicrosoftDscMetadata::new_with_duration(&start_datetime, &end_datetime)
                 ),
                 other: Map::new(),
             };
