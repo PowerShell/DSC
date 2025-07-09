@@ -69,6 +69,6 @@ Describe 'metadata tests' {
         $out.results.count | Should -Be 1
         $out.results[0].metadata.validOne | Should -BeTrue
         $out.results[0].metadata.Microsoft.DSC | Should -BeNullOrEmpty
-        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned metadata property 'Microsoft.DSC' which is ignored*"
+        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned '_metadata' property 'Microsoft.DSC' which is ignored*"
     }
 }
