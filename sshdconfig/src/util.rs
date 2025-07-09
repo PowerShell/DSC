@@ -32,7 +32,7 @@ pub fn invoke_sshd_config_validation() -> Result<String, SshdConfigError> {
             .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
         if stderr.contains("sshd: no hostkeys available") || stderr.contains("Permission denied") {
             return Err(SshdConfigError::CommandError(
-                t!("util.sshdNoHostkeys").to_string()
+                t!("util.sshdElevation").to_string()
             ));
         }
         Err(SshdConfigError::CommandError(stderr))

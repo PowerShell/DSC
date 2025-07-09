@@ -31,7 +31,6 @@ failedToParse = "failed to parse: '%{input}'"
 failedToParseRoot = "failed to parse root: '%{input}'"
 invalidConfig = "invalid config: '%{input}'"
 unknownNodeType = "unknown node type: '%{node}'"
-unexpectedFalse = "unexpected 'false' for '%{input}'; expected 'yes' or 'no'"
 failedToParseChildNode = "failed to parse child node: '%{input}'"
 missingValueInChildNode = "missing value in child node: '%{input}'"
 missingKeyInChildNode = "missing key in child node: '%{input}'"
@@ -43,4 +42,4 @@ invalidValue = "operator is an invalid value for node"
 unknownNode = "unknown node: '%{kind}'"
 
 [util]
-sshdNoHostkeys = "elevated security context required"
+sshdElevation = "elevated security context required"
