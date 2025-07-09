@@ -16,8 +16,8 @@ pub struct Args {
 pub enum Command {
     /// Get default shell, eventually to be used for `sshd_config` and repeatable keywords
     Get {
-        #[clap(short = 'r', long, hide = true)]
-        resource: Resource,
+        #[clap(short = 's', long, hide = true)]
+        setting: Setting,
     },
     /// Set default shell, eventually to be used for `sshd_config` and repeatable keywords
     Set {
@@ -28,8 +28,8 @@ pub enum Command {
     Export,
     Schema {
         // Used to inform which schema to generate
-        #[clap(short = 'r', long, hide = true)]
-        resource: Resource,
+        #[clap(short = 's', long, hide = true)]
+        setting: Setting,
     },
 }
 
@@ -41,7 +41,7 @@ pub struct DefaultShell {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ValueEnum)]
-pub enum Resource {
+pub enum Setting {
     SshdConfig,
     WindowsGlobal
 }

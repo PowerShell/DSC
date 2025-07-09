@@ -67,7 +67,7 @@ fn set_default_shell(shell: Option<String>, cmd_option: Option<String>, escape_a
 
 #[cfg(not(windows))]
 fn set_default_shell(_shell: Option<String>, _cmd_option: Option<String>, _escape_arguments: Option<bool>) -> Result<(), SshdConfigError> {
-    Err(SshdConfigError::InvalidInput(t!("get.windowsOnly")))
+    Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
 }
 
 #[cfg(windows)]

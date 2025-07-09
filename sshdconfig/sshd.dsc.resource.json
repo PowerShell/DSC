@@ -10,7 +10,7 @@
         "executable": "sshdconfig",
         "args": [
             "get",
-            "-r",
+            "-s",
             "windows-global"
         ]
     },
@@ -29,7 +29,7 @@
             "executable": "sshdconfig",
             "args": [
                 "schema",
-                "-r",
+                "-s",
                 "windows-global"
             ]
         }

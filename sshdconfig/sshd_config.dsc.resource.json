@@ -14,7 +14,7 @@
             "executable": "sshdconfig",
             "args": [
                 "schema",
-                "-r",
+                "-s",
                 "sshd-config"
             ]
         }

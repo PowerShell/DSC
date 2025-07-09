@@ -5,7 +5,7 @@ use clap::{Parser};
 use rust_i18n::i18n;
 use schemars::schema_for;
 
-use args::{Args, Command, DefaultShell, Resource};
+use args::{Args, Command, DefaultShell, Setting};
 use export::invoke_export;
 use get::invoke_get;
 use parser::SshdConfigParser;
@@ -27,14 +27,14 @@ fn main() {
 
     let result = match &args.command {
         Command::Export => invoke_export(),
-        Command::Get { resource } => invoke_get(resource),
+        Command::Get { setting } => invoke_get(setting),
         Command::Set { input } => invoke_set(input),
-        Command::Schema { resource } => {
-            let schema = match resource {
-                Resource::SshdConfig => {
+        Command::Schema { setting } => {
+            let schema = match setting {
+                Setting::SshdConfig => {
                     schema_for!(SshdConfigParser)
                 },
-                Resource::WindowsGlobal => {
+                Setting::WindowsGlobal => {
                     schema_for!(DefaultShell)
                 }
             };

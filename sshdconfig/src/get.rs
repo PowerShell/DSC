@@ -4,10 +4,11 @@
 #[cfg(windows)]
 use {
     registry_lib::{config::{Registry, RegistryValueData}, RegistryHelper},
-    crate::args::{DefaultShell, Resource},
+    crate::args::DefaultShell,
     crate::metadata::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
 };
 
+use crate::args::Setting;
 use crate::error::SshdConfigError;
 use rust_i18n::t;
 
@@ -16,10 +17,10 @@ use rust_i18n::t;
 /// # Errors
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
-pub fn invoke_get(resource: &Resource) -> Result<(), SshdConfigError> {
-    match *resource {
-        Resource::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
-        Resource::WindowsGlobal => get_default_shell()
+pub fn invoke_get(setting: &Setting) -> Result<(), SshdConfigError> {
+    match *setting {
+        Setting::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
+        Setting::WindowsGlobal => get_default_shell()
     }
 }
 

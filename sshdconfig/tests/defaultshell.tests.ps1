@@ -62,7 +62,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
             $testShell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
             New-ItemProperty -Path $RegistryPath -Name "DefaultShell" -Value $testShell
 
-            $output = sshdconfig get -r windows-global
+            $output = sshdconfig get -s windows-global
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
@@ -78,7 +78,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
             New-ItemProperty -Path $RegistryPath -Name "DefaultShellCommandOption" -Value "/c"
             New-ItemProperty -Path $RegistryPath -Name "DefaultShellEscapeArguments" -Value 0 -Type DWord
 
-            $output = sshdconfig get -r windows-global
+            $output = sshdconfig get -s windows-global
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
@@ -88,7 +88,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
         }
 
         It 'Should handle empty default shell registry values' -Skip:(!$IsWindows) {
-            $output = sshdconfig get -r windows-global
+            $output = sshdconfig get -s windows-global
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
@@ -165,7 +165,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
             sshdconfig set --input $inputJson
             $LASTEXITCODE | Should -Be 0
 
-            $getOutput = sshdconfig get -r windows-global
+            $getOutput = sshdconfig get -s windows-global
             $LASTEXITCODE | Should -Be 0
 
             $retrievedConfig = $getOutput | ConvertFrom-Json
@@ -202,7 +202,7 @@ Describe 'Default Shell Configuration Error Handling on Non-Windows Platforms' -
     }
 
     It 'Should return error for get command' {
-        $out = sshdconfig get -r windows-global 2>&1
+        $out = sshdconfig get -s windows-global 2>&1
         $LASTEXITCODE | Should -Not -Be 0
         $out | Should -BeLike '*not applicable to this platform*'
     }
