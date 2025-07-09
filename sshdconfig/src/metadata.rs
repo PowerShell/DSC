@@ -37,7 +37,10 @@ pub const MULTI_ARG_KEYWORDS: [&str; 7] = [
     "pubkeyacceptedalgorithms"
 ];
 
-pub const REGISTRY_PATH: &str = "HKLM\\SOFTWARE\\OpenSSH";
-pub const DEFAULT_SHELL: &str = "DefaultShell";
-pub const DEFAULT_SHELL_CMD_OPTION: &str = "DefaultShellCommandOption";
-pub const DEFAULT_SHELL_ESCAPE_ARGS: &str = "DefaultShellEscapeArguments";
+#[cfg(windows)]
+pub mod windows {
+    pub const REGISTRY_PATH: &str = "HKLM\\SOFTWARE\\OpenSSH";
+    pub const DEFAULT_SHELL: &str = "DefaultShell";
+    pub const DEFAULT_SHELL_CMD_OPTION: &str = "DefaultShellCommandOption";
+    pub const DEFAULT_SHELL_ESCAPE_ARGS: &str = "DefaultShellEscapeArguments";
+}

@@ -5,7 +5,7 @@
 use {
     registry_lib::{config::{Registry, RegistryValueData}, RegistryHelper},
     crate::args::DefaultShell,
-    crate::metadata::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
+    crate::metadata::windows::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
 };
 
 use crate::args::Setting;
