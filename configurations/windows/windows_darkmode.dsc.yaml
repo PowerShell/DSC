@@ -1,0 +1,38 @@
+# Changes Windows 11 into `DarkMode`
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: System Uses Light Theme
+    type: Microsoft.Windows/Registry
+    properties:
+      keyPath: 'HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+      valueName: SystemUsesLightTheme
+      valueData:
+        DWord: 0
+  - name: Apps Use Light Theme
+    type: Microsoft.Windows/Registry
+    properties:
+      keyPath: 'HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+      valueName: AppsUseLightTheme
+      valueData: 
+        DWord: 0
+  - name: AccentColorMenu
+    type: Microsoft.Windows/Registry
+    properties: 
+      keyPath: 'HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Accent'
+      valueName: AccentColorMenu
+      valueData: 
+        DWord: 0
+  - name: StartColorMenu
+    type: Microsoft.Windows/Registry
+    properties: 
+      keyPath: 'HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Accent'
+      valueName: StartColorMenu
+      valueData: 
+        DWord: 0
+  - name: Auto Colorization
+    type: Microsoft.Windows/Registry
+    properties: 
+      keyPath: 'HKCU\Control Panel\Desktop'
+      valueName: AutoColorization
+      valueData: 
+        DWord: 0
