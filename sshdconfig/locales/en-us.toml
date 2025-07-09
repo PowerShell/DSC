@@ -15,7 +15,6 @@ registry = "Registry"
 
 [get]
 notImplemented = "get not yet implemented for Microsoft.OpenSSH.SSHD/sshd_config"
-defaultShellEmpty = "shell cannot be empty"
 defaultShellMustBeString = "shell must be a string"
 defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"

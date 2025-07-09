@@ -198,12 +198,12 @@ Describe 'Default Shell Configuration Error Handling on Non-Windows Platforms' -
 
         $out = sshdconfig set --input $inputConfig 2>&1
         $LASTEXITCODE | Should -Not -Be 0
-        $out | Should -BeLike '*not applicable to this platform*'
+        $out | Should -BeLike '*is only applicable to Windows*'
     }
 
     It 'Should return error for get command' {
         $out = sshdconfig get -s windows-global 2>&1
         $LASTEXITCODE | Should -Not -Be 0
-        $out | Should -BeLike '*not applicable to this platform*'
+        $out | Should -BeLike '*is only applicable to Windows*'
     }
 }
