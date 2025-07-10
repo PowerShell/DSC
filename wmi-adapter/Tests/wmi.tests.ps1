@@ -58,4 +58,40 @@ Describe 'WMI adapter resource tests' {
         $res.results[1].result.actualState.result[1].properties.BuildNumber | Should -BeNullOrEmpty
         $res.results[1].result.actualState.result[4].properties.AdapterType | Should -BeLike "Ethernet*"
     }
+
+    It 'Throws error when methodName is missing on set' -Skip:(!$IsWindows) {
+        '{"Name":"wuauserv"}' | dsc -l trace resource set -r 'root.cimv2/Win32_Service' -f - 2> $TestDrive\tracing.txt
+        $LASTEXITCODE | Should -Be 2
+        "$TestDrive/tracing.txt" | Should -FileContentMatch "'methodName' property is required for invoking a WMI/CIM method."
+    }
+
+    It 'Throws error when methodName is set but parameters are missing on set' -Skip:(!$IsWindows) {
+        '{"Name":"wuauserv", "methodName":"StartService"}' | dsc -l trace resource set -r 'root.cimv2/Win32_Service' -f - 2> $TestDrive\tracing.txt
+        $LASTEXITCODE | Should -Be 2
+        "$TestDrive/tracing.txt" | Should -FileContentMatch "'parameters' property is required for invoking a WMI/CIM method."
+    }
+
+    It 'Set works on a WMI resource with methodName and parameters' -Skip:(!$IsWindows) {
+        BeforeAll {
+            $script:service = Get-Service -Name wuauserv -ErrorAction Ignore 
+
+            if ($service -and $service.Status -eq 'Running') {
+                $service.Stop()
+            }
+        }
+        
+
+        $r = '{"Name":"wuauserv", "methodName":"StartService", "parameters":{}}' | dsc resource set -r 'root.cimv2/Win32_Service' -f -
+        $LASTEXITCODE | Should -Be 0
+        
+        $res = '{"Name":"wuauserv", "State": null}' | dsc resource get -r 'root.cimv2/Win32_Service' -f - | ConvertFrom-Json
+        $res.actualState.Name | Should -Be 'wuauserv'
+        $res.actualState.State | Should -Be 'Running'
+
+        AfterAll {
+            if ($service -and $service.Status -eq 'Running') {
+                $service.Stop()
+            }
+        }
+    }
 }
