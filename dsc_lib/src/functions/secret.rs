@@ -36,8 +36,8 @@ impl Function for Secret {
             None
         };
 
-        // if no vault name is provided, we query all extensions supporting the secret method
-        // to see if any of them can provide the secret.  If none can or if multiple can, we return an error.
+        // we query all extensions supporting the secret method to see if any of them can provide the secret.
+        // if none can or if multiple can, we return an error.
         let extensions = context.extensions.iter()
             .filter(|ext| ext.capabilities.contains(&Capability::Secret))
             .collect::<Vec<_>>();
