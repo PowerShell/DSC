@@ -67,8 +67,8 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
 
             $result = $output | ConvertFrom-Json
             $result.shell | Should -Be $testShell
-            $result.cmd_option | Should -BeNullOrEmpty
-            $result.escape_arguments | Should -BeNullOrEmpty
+            $result.cmdOption | Should -BeNullOrEmpty
+            $result.escapeArguments | Should -BeNullOrEmpty
         }
 
         It 'Should get default shell with args when registry value exists' {
@@ -83,8 +83,8 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
 
             $result = $output | ConvertFrom-Json
             $result.shell | Should -Be $testShell
-            $result.cmd_option | Should -Be "/c"
-            $result.escape_arguments | Should -Be $false
+            $result.cmdOption | Should -Be "/c"
+            $result.escapeArguments | Should -Be $false
         }
 
         It 'Should handle empty default shell registry values' -Skip:(!$IsWindows) {
@@ -93,8 +93,8 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
 
             $result = $output | ConvertFrom-Json
             $result.shell | Should -BeNullOrEmpty
-            $result.cmd_option | Should -BeNullOrEmpty
-            $result.escape_arguments | Should -BeNullOrEmpty
+            $result.cmdOption | Should -BeNullOrEmpty
+            $result.escapeArguments | Should -BeNullOrEmpty
         }
     }
 
@@ -104,8 +104,8 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
 
             $inputConfig = @{
                 shell = $testShell
-                cmd_option = "/c"
-                escape_arguments = $false
+                cmdOption = "/c"
+                escapeArguments = $false
             } | ConvertTo-Json
 
             sshdconfig set --input $inputConfig
@@ -157,8 +157,8 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
         It 'Should maintain configuration consistency between set and get' {
             $originalConfig = @{
                 shell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-                cmd_option = "/c"
-                escape_arguments = $true
+                cmdOption = "/c"
+                escapeArguments = $true
             }
             $inputJson = $originalConfig | ConvertTo-Json
 
@@ -171,8 +171,8 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
             $retrievedConfig = $getOutput | ConvertFrom-Json
 
             $retrievedConfig.shell | Should -Be $originalConfig.shell
-            $retrievedConfig.cmd_option | Should -Be $originalConfig.cmd_option
-            $retrievedConfig.escape_arguments | Should -Be $originalConfig.escape_arguments
+            $retrievedConfig.cmdOption | Should -Be $originalConfig.cmdOption
+            $retrievedConfig.escapeArguments | Should -Be $originalConfig.escapeArguments
         }
     }
 

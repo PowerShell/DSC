@@ -60,7 +60,7 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
     'sshdconfig.exe',
-    'sshd.dsc.resource.json',
+    'sshd-windows.dsc.resource.json',
     'sshd_config.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
@@ -88,7 +88,6 @@ $filesForLinuxPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshd.dsc.resource.json',
     'sshd_config.dsc.resource.json'
 )
 
@@ -111,7 +110,6 @@ $filesForMacPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshd.dsc.resource.json',
     'sshd_config.dsc.resource.json'
 )
 
@@ -176,7 +174,7 @@ if ($null -ne $packageType) {
 
     & $rustup default stable
 
-    ## Test if Node is installed 
+    ## Test if Node is installed
     ## Skipping upgrade as users may have a specific version they want to use
     if (!(Get-Command 'node' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Node.js not found, installing..."
