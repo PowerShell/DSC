@@ -121,7 +121,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
 - Added support for extensions to DSC. You can now use the `dsc extension list` command to
   enumerate available extensions. DSC now supports a single extension capability, `discover`, which
   returns JSON objects indicating where to find DSC resource manifests that aren't in the `PATH` or
-  `DSC_PATH`, as with resources installed as Appx packages.
+  `DSC_RESOURCE_PATH`, as with resources installed as Appx packages.
 
   Now when DSC performs discovery, it recursively discovers extensions and resources on the system.
 
@@ -135,7 +135,7 @@ changes since the last release, see the [diff on GitHub][unreleased].
     - [#760][#760]
     - [#762][#762]
 
-- Addes support for passing parameters to the `dsc config` commands from stdin. You can pass
+- Adds support for passing parameters to the `dsc config` commands from stdin. You can pass
   _either_ the configuration document or parameters file contents to the command from stdin, but
   not both. This enables securely passing sensitive parameters to DSC without writing them to a
   file or defining them as an environment variable.

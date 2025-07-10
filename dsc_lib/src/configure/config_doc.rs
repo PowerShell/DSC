@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use chrono::{DateTime, Local};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -56,6 +57,26 @@ pub struct MicrosoftDscMetadata {
     /// The security context of the configuration operation, can be specified to be required
     #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
     pub security_context: Option<SecurityContextKind>,
+}
+
+impl MicrosoftDscMetadata {
+    /// Creates a new instance of `MicrosoftDscMetadata` with the duration
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start time of the configuration operation
+    /// * `end` - The end time of the configuration operation
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `MicrosoftDscMetadata` with the duration calculated from the start and end times.
+    #[must_use]
+    pub fn new_with_duration(start: &DateTime<Local>, end: &DateTime<Local>) -> Self {
+        Self {
+            duration: Some(end.signed_duration_since(*start).to_string()),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

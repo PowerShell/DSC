@@ -237,6 +237,11 @@ available formats are:
 - `pretty-json` to emit the data as JSON with newlines, indentation, and spaces for readability.
 - `yaml` to emit the data as YAML. When you use the `--all` option, each instance is returned as a
   YAML document with the `---` document separator between each returned instance.
+- `json-array` to emit the data as a single milti-line JSON array containing each object. This
+  option is only valid with the [--all option](#--all).
+- `pass-through` to return the data from the resource directly without wrapping it in a DSC result.
+  When you use this output option, the emitted JSON Line adheres to the resource's instance schema,
+  not the DSC get result schema.
 
 The default output format depends on whether DSC detects that the output is being redirected or
 captured as a variable:
@@ -256,7 +261,7 @@ for formatting.
 ```yaml
 Type        : string
 Mandatory   : false
-ValidValues : [json, pretty-json, yaml]
+ValidValues : [json, pretty-json, yaml, json-array, pass-through]
 LongSyntax  : --output-format <OUTPUT_FORMAT>
 ShortSyntax : -o <OUTPUT_FORMAT>
 ```
@@ -280,7 +285,8 @@ ShortSyntax : -h
 
 By default, this command returns a formatted data object that includes the actual state of the
 instance. When the `--all` option is specified, the command returns the formatted data for each
-instance.
+instance. When you specify the `pass-through` output format option, the emitted data is the
+unmodified output from the resource, not a DSC resource get result.
 
 For more information about the structure of the output JSON, see
 [dsc resource get result schema][04].

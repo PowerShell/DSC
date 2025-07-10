@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/executionType.json",
+  "title": "Execution type",
+  "description": "Defines whether DSC actually applied an operation to the configuration or was run in `WhatIf` mode. This property is always `Actual` for `Get`, `Test`, and `Export` operations. For `Set` operations, this value is `WhatIf` when DSC is invoked with the `--whatIf` argument.",
+  "type": "string",
+  "enum": [
+    "actual",
+    "whatIf"
+  ]
+}

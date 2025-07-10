@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/stdout/set.json",
+  "title": "Set resource operation stdout",
+  "description": "Defines the JSON DSC expects a resource to emit to stdout for the **Set** operation.",
+  "oneOf": [
+    {
+      "title": "Null output",
+      "description": "When a command resource doesn't define `set.return` in its resource manifest, DSC doesn't expect the resource to emit any JSON to stdout for the **Set** operation.",
+      "type": "null"
+    },
+    {
+      "title": "state output",
+      "description": "When a resource defines `set.return` in its manifest as `state` or `stateAndDiff`, DSC expects the resource to emit a JSON Line to stdout representing the actual state of the resource instance after the **Set** operation changes the system.",
+      "type": "object"
+    },
+    {
+      "title": "diff output",
+      "description": "When a command resource defines `set.return` in its manifest as `stateAndDiff`, DSC expects the resource to emit a second JSON Line to stdout representing the names of the resource properties that the operation changed on the system.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    }
+  ]
+}

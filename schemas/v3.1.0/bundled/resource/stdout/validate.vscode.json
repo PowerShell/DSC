@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/stdout/validate.json",
+  "title": "Validate resource operation stdout",
+  "description": "Defines the JSON DSC expects a resource to emit to stdout for the **Validate** operation.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines the JSON DSC expects a resource to emit to stdout for the **Validate** operation.\n\nDSC expects the resource to return a JSON object that indicates whether the instance is valid and\noptionally a string indicating how the resource is invalid.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/validate?view=dsc-3.0&preserve-view=true\n",
+  "type": "object",
+  "required": [
+    "valid"
+  ],
+  "properties": {
+    "valid": {
+      "title": "Instance validity",
+      "description": "Indicates whether the instance is valid for the resource.",
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nIndicates whether the instance is valid for the resource. When the value is `true`, the\ninstance is valid for the resource.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/validate?view=dsc-3.0&preserve-view=true#valid"
+    },
+    "reason": {
+      "title": "Reason instance is invalid",
+      "description": "Describes how and why the instance is invalid for the resource.",
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDescribes how and why the instance is invalid for the resource. Always define this property\nin the output object when `valid` is `false`. Don't define this property in the output object\nwhen `valid` is `true`.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/validate?view=dsc-3.0&preserve-view=true#reason"
+    }
+  },
+  "$defs": {}
+}

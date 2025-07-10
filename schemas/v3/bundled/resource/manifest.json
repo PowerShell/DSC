@@ -19,21 +19,45 @@
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.vscode.json",
         "https://aka.ms/dsc/schemas/v3/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.vscode.json",
         "https://aka.ms/dsc/schemas/v3.0/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json",
         "https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json",
         "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json",
-        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json"
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.vscode.json"
       ]
     },
     "type": {
@@ -134,7 +158,10 @@
       },
       "then": {
         "required": [
-          "adapter"
+          "adapter",
+          "get",
+          "test",
+          "set"
         ]
       }
     },
@@ -152,9 +179,130 @@
       "then": {
         "required": [
           "resolve"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "adapter"
+              ]
+            },
+            {
+              "required": [
+                "delete"
+              ]
+            },
+            {
+              "required": [
+                "get"
+              ]
+            },
+            {
+              "required": [
+                "export"
+              ]
+            },
+            {
+              "required": [
+                "set"
+              ]
+            },
+            {
+              "required": [
+                "test"
+              ]
+            },
+            {
+              "required": [
+                "validate"
+              ]
+            },
+            {
+              "required": [
+                "whatIf"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "exporter"
+          }
+        },
+        "required": [
+          "kind"
         ]
       },
-      "else": {
+      "then": {
+        "required": [
+          "export"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "adapter"
+              ]
+            },
+            {
+              "required": [
+                "delete"
+              ]
+            },
+            {
+              "required": [
+                "get"
+              ]
+            },
+            {
+              "required": [
+                "resolve"
+              ]
+            },
+            {
+              "required": [
+                "set"
+              ]
+            },
+            {
+              "required": [
+                "test"
+              ]
+            },
+            {
+              "required": [
+                "validate"
+              ]
+            },
+            {
+              "required": [
+                "whatIf"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "resource",
+              "adapter",
+              "group"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
         "required": [
           "get"
         ]
@@ -166,9 +314,9 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json",
       "title": "DSC resource fully qualified type name",
-      "description": "The namespaced name of the DSC resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+      "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
       "type": "string",
-      "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+      "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/semver.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -189,7 +337,8 @@
         "resource",
         "adapter",
         "group",
-        "importer"
+        "importer",
+        "exporter"
       ]
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.get.json": {
@@ -920,30 +1069,194 @@
                 "_exist": {
                   "title": "Standard Property: _exist",
                   "description": "Indicates that the DSC resource uses the standard `_exist` property to specify whether an instance should exist as a boolean value that defaults to `true`.",
-                  "const": {
-                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json"
-                  }
+                  "enum": [
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/exist.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/exist.json"
+                    }
+                  ]
                 },
                 "_inDesiredState": {
                   "title": "Standard Property: _inDesiredState",
                   "description": "Indicates that the DSC resource returns this value for it's own `test` method. This read-only property is mandatory when the manifest defines the `test` property. It shouldn't be included if the DSC resource relies on DSC's synthetic testing.",
-                  "const": {
-                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
-                  }
+                  "enum": [
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/inDesiredState.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/inDesiredState.json"
+                    }
+                  ]
                 },
                 "_purge": {
                   "title": "Standard Property: _purge",
                   "description": "Indicates that the DSC resource uses the standard `_purge` property to specify whether the DSC resource should remove all non-specified members when it manages an array of members or values.",
-                  "const": {
-                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json"
-                  }
+                  "enum": [
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/purge.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/purge.json"
+                    }
+                  ]
                 },
                 "_rebootRequested": {
                   "title": "Standard property: _rebootRequested",
                   "description": "Indicates whether a resource instance requires a reboot after a set operation. To use DSC's built-in reboot notification processing, resources must define this property in their manifest.",
-                  "const": {
-                    "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json"
-                  }
+                  "enum": [
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.1.0/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.0/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.1/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://aka.ms/dsc/schemas/v3.0.2/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/properties/rebootRequested.json"
+                    },
+                    {
+                      "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/properties/rebootRequested.json"
+                    }
+                  ]
                 }
               }
             }

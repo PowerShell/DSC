@@ -675,6 +675,7 @@ process {
             "$OutputDirectory/config"
             "$OutputDirectory/metadata"
             "$OutputDirectory/definitions"
+            "$OutputDirectory/extension"
             "$OutputDirectory/outputs"
             "$OutputDirectory/resource"
         )

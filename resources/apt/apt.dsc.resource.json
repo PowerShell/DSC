@@ -1,74 +1,62 @@
 {
-    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "DSC.PackageManagement/Apt",
-    "description": "Manage packages with the advanced package tool (APT)",
-    "tags": [
-        "Linux",
-        "apt",
-        "PackageManagement"
-    ],
-    "version": "0.1.0",
-    "get": {
-        "executable": "apt.dsc.resource.sh",
-        "args": [
-            "get"
-        ],
-        "input": "env"
-    },
-    "set": {
-        "executable": "apt.dsc.resource.sh",
-        "args": [
-            "set"
-        ],
-        "input": "env",
-        "implementsPretest": true,
-	"handlesExist": true
-    },
-    "export": {
-        "executable": "apt.dsc.resource.sh",
-        "args": [
-            "export"
-        ],
-        "input": "env"
-    },
-    "exitCodes": {
-        "0": "Success",
-        "1": "Invalid parameter"
-    },
-    "schema": {
-        "embedded": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/DSC/PackageManagement/apt/v0.1.0/schema.json",
-            "title": "Apt",
-            "description": "Managed packages using apt",
-            "type": "object",
-            "required": [
-                "packageName"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "packageName": {
-                    "type": "string",
-                    "title": "Package Name",
-                    "description": "Defines the name of the package to query or install"
-                },
-                "version": {
-                    "type": "string",
-                    "title": "Version",
-                    "description": "Defines the version of the package to install"
-                },
-                "source": {
-                    "type": "string",
-                    "title": "Source",
-                    "description": "Indicates the source of the package",
-                    "readOnly": true
-                },
-                "_exist": {
-                    "type": "boolean",
-                    "title": "Exist",
-                    "description": "Defines if the package should exist or not"
-                }
-            }
+  "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+  "type": "DSC.PackageManagement/Apt",
+  "description": "Manage packages with the advanced package tool (APT)",
+  "tags": ["Linux", "apt", "PackageManagement"],
+  "version": "0.1.0",
+  "get": {
+    "executable": "apt.dsc.resource.sh",
+    "args": ["get"],
+    "input": "env"
+  },
+  "set": {
+    "executable": "apt.dsc.resource.sh",
+    "args": ["set"],
+    "input": "env",
+    "implementsPretest": true,
+    "handlesExist": true
+  },
+  "export": {
+    "executable": "apt.dsc.resource.sh",
+    "args": ["export"],
+    "input": "env"
+  },
+  "exitCodes": {
+    "0": "Success",
+    "1": "Invalid parameter"
+  },
+  "schema": {
+    "embedded": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/resources/DSC/PackageManagement/apt/v0.1.0/schema.json",
+      "title": "Apt",
+      "description": "Managed packages using apt",
+      "type": "object",
+      "required": ["packageName"],
+      "additionalProperties": false,
+      "properties": {
+        "packageName": {
+          "type": "string",
+          "title": "Package Name",
+          "description": "Defines the name of the package to query or install"
+        },
+        "version": {
+          "type": "string",
+          "title": "Version",
+          "description": "Defines the version of the package to install"
+        },
+        "source": {
+          "type": "string",
+          "title": "Source",
+          "description": "Indicates the source of the package",
+          "readOnly": true
+        },
+        "_exist": {
+          "type": "boolean",
+          "title": "Exist",
+          "description": "Defines if the package should exist or not"
         }
+      }
     }
+  }
 }

@@ -1,9 +1,15 @@
 host:             https://raw.githubusercontent.com
 prefix:           PowerShell/DSC/main/schemas
-version:          v3.0
+version:          v3.1.0
 docs_base_url:    https://learn.microsoft.com/powershell/dsc
 docs_version_pin: view=dsc-3.0&preserve-view=true
 bundle_schemas:
+  # Resource manifest bundle
+  - ConfigFilePath:  extension/manifest.json
+    Name:            manifest
+    OutputDirectory: bundled/extension
+    OutputFormat:    ['Json', 'JsonVSCode']
+
   # Resource manifest bundle
   - ConfigFilePath:  resource/manifest.json
     Name:            manifest
@@ -37,6 +43,11 @@ bundle_schemas:
     OutputDirectory: bundled/outputs/config
     OutputFormat:    ['Json', 'JsonVSCode']
 
+  - ConfigFilePath:  outputs/extension/list.json
+    Name:            list
+    OutputDirectory: bundled/outputs/extension
+    OutputFormat:    ['Json', 'JsonVSCode']
+
   - ConfigFilePath:  outputs/resource/get.json
     Name:            get
     OutputDirectory: bundled/outputs/resource
@@ -60,4 +71,60 @@ bundle_schemas:
   - ConfigFilePath:  outputs/resource/test.json
     Name:            test
     OutputDirectory: bundled/outputs/resource
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  # stdout schema bundles
+  - ConfigFilePath:  extension/stdout/discover.json
+    Name:            discover
+    OutputDirectory: bundled/extension/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/delete.json
+    Name:            delete
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/export.json
+    Name:            export
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/get.json
+    Name:            get
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/list.json
+    Name:            list
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/resolve.json
+    Name:            resolve
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/schema.json
+    Name:            schema
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/set.json
+    Name:            set
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/test.json
+    Name:            test
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/validate.json
+    Name:            validate
+    OutputDirectory: bundled/resource/stdout
+    OutputFormat:    ['Json', 'JsonVSCode']
+
+  - ConfigFilePath:  resource/stdout/whatIf.json
+    Name:            whatIf
+    OutputDirectory: bundled/resource/stdout
     OutputFormat:    ['Json', 'JsonVSCode']

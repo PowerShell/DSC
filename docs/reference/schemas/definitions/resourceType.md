@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a resource instance type name
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Resource fully qualified type name schema reference
 ---
@@ -15,7 +15,7 @@ Identifies a DSC Resource.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceType.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json
 Type:          string
 Pattern:       ^\w+(\.\w+){0,2}\/\w+$
 ```

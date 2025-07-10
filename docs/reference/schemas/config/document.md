@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a Desired State Configuration document.
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Configuration document schema reference
 ---
@@ -15,7 +15,7 @@ The YAML or JSON file that defines a DSC Configuration.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.json
 Type:          object
 ```
 
@@ -104,18 +104,42 @@ ValidValues: [
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json
                https://aka.ms/dsc/schemas/v3/config/document.json
                https://aka.ms/dsc/schemas/v3/bundled/config/document.json
                https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.1/config/document.json
+               https://aka.ms/dsc/schemas/v3.1/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.1/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.1.0/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.vscode.json
                https://aka.ms/dsc/schemas/v3.0/config/document.json
                https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json
                https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.0.2/config/document.json
+               https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.vscode.json
+               https://aka.ms/dsc/schemas/v3.0.1/config/document.json
+               https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.json
+               https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.vscode.json
                https://aka.ms/dsc/schemas/v3.0.0/config/document.json
                https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json
                https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json

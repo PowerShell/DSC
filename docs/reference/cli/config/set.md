@@ -31,6 +31,19 @@ dsc config set [Options] --input <INPUT>
 cat <FILE> | dsc config set [Options] --file -
 ```
 
+### Configuration document from file with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - set [Options] --file <FILE>
+```
+
+### Configuration document from option string with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - set [Options] --input <INPUT>
+```
+
+
 ## Description
 
 The `set` subcommand enforces the desired state of the resource instances in a configuration

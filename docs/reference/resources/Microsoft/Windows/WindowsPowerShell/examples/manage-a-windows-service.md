@@ -1,6 +1,6 @@
 ---
 description: >
-    Examples showing how you can invoke the Microsoft.Windows/WindowsPowerShell with DSC to manage 
+    Examples showing how you can invoke the Microsoft.Windows/WindowsPowerShell with DSC to manage
     a Windows service using the PSDesiredStateConfiguration module.
 
 ms.date: 03/25/2025
@@ -54,7 +54,7 @@ When the resource configures the service, DSC returns the following result:
 
 ```yaml
 beforeState:
-  Status: null                                                                                                              /
+  Status: null
   Description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
   DisplayName: Print Spooler
   ResourceId: null
@@ -109,7 +109,7 @@ dsc resource test --resource PSDesiredStateConfiguration/Service --input $instan
 
 ```yaml
 desiredState:
-  Name: Spooler                                                                                                             
+  Name: Spooler
   StartupType: Manual
 actualState:
   InDesiredState: true
@@ -135,7 +135,7 @@ When the resource stops the service, DSC returns the following result:
 
 ```yaml
 beforeState:
-  Status: null                                                                                                              
+  Status: null
   Description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
   DisplayName: Print Spooler
   ResourceId: null
@@ -192,7 +192,7 @@ dsc resource get --resource PSDesiredStateConfiguration/Service --input $instanc
 
 ```yaml
 actualState:
-  Status: null                                                                                                              
+  Status: null
   Description: This service spools print jobs and handles interaction with the printer.  If you turn off this service, you won't be able to print or see your printers.
   DisplayName: Print Spooler
   ResourceId: null

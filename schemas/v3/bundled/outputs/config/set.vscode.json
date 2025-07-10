@@ -313,11 +313,11 @@
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json",
                   "title": "DSC resource fully qualified type name",
-                  "description": "The namespaced name of the DSC resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+                  "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
                   "type": "string",
-                  "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$",
-                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe namespaced name of the DSC resource, using the syntax:\n\n```yaml\nowner[.group][.area]/name\n```\n\nFor example:\n\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserve-view=true\n",
-                  "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include a group and area to namespace\nthe resource under the owner, like `Microsoft.Windows/Registry`.\n"
+                  "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$",
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe namespaced name of the DSC resource, using the syntax:\n\n```yaml\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n```\n\nFor example:\n\n- `Microsoft/OSInfo`\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserve-view=true\n",
+                  "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and subarea\nsegments to namespace the resource under the owner, like `Microsoft.Windows/Registry`.\n"
                 },
                 "message.json": {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",

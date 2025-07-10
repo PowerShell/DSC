@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/stdout/whatIf.json",
+  "title": "Set (what-if mode) resource operation stdout",
+  "description": "Defines the JSON DSC expects a resource to emit to stdout for the **Set** operation in what-if mode.",
+  "oneOf": [
+    {
+      "title": "state output",
+      "description": "When a resource defines `whatIf.return` in its manifest as `state` or `stateAndDiff`, DSC expects the resource to emit a JSON Line to stdout representing the predicted actual state of the resource instance after the **Set** operation changes the system.",
+      "type": "object"
+    },
+    {
+      "title": "diff output",
+      "description": "When a command resource defines `whatIf.return` in its manifest as `stateAndDiff`, DSC expects the resource to emit a second JSON Line to stdout representing the names of the resource properties that the operation changed on the system.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    }
+  ]
+}

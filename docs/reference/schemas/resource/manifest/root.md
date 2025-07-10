@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for a DSC Resource manifest
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       Command-based DSC Resource manifest schema reference
 ---
@@ -15,7 +15,7 @@ The data file that defines a command-based DSC Resource.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.json
 Type:          object
 ```
 
@@ -53,7 +53,7 @@ the latest version of the schema. As a convenience, you can specify either the f
 schema hosted in GitHub or use the shorter `aka.ms` URI. You can specify the schema for a specific
 semantic version, the latest schema for a minor version, or the latest schema for a major version
 of DSC. For more information about schema URIs and versioning, see
-[DSC JSON Schema URIs](../schema-uris.md).
+[DSC JSON Schema URIs](../../schema-uris.md).
 
 For every version of the schema, there are three valid urls:
 
@@ -88,18 +88,42 @@ ValidValues: [
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/resource/manifest.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/resource/manifest.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/resource/manifest.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/resource/manifest.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/resource/manifest.vscode.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.json
+               https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/resource/manifest.vscode.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.json
                https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/resource/manifest.vscode.json
                https://aka.ms/dsc/schemas/v3/resource/manifest.json
                https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json
                https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json
+               https://aka.ms/dsc/schemas/v3.1/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.1/bundled/resource/manifest.vscode.json
+               https://aka.ms/dsc/schemas/v3.1.0/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.1.0/bundled/resource/manifest.vscode.json
                https://aka.ms/dsc/schemas/v3.0/resource/manifest.json
                https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.json
                https://aka.ms/dsc/schemas/v3.0/bundled/resource/manifest.vscode.json
+               https://aka.ms/dsc/schemas/v3.0.2/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0.2/bundled/resource/manifest.vscode.json
+               https://aka.ms/dsc/schemas/v3.0.1/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.json
+               https://aka.ms/dsc/schemas/v3.0.1/bundled/resource/manifest.vscode.json
                https://aka.ms/dsc/schemas/v3.0.0/resource/manifest.json
                https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.json
                https://aka.ms/dsc/schemas/v3.0.0/bundled/resource/manifest.vscode.json
