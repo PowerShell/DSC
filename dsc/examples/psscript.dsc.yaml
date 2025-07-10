@@ -1,0 +1,25 @@
+# Example configuration using PowerShell script resource and using parameters and input
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  myName:
+    type: string
+    defaultValue: Steve
+  myObject:
+    type: object
+    defaultValue:
+      color: green
+      number: 10
+resources:
+- name: Use PS script
+  type: Microsoft.DSC.Transitional/PowerShellScript
+  properties:
+    input:
+      - name: "[parameters('myName')]"
+      - object: "[parameters('myObject')]"
+    getScript: |
+      param($inputArray)
+
+      Write-Warning "This is a warning message"
+      # any output will be collected and returned
+      "My name is " + $inputArray[0].name
+      "My color is " + $inputArray[1].object.color
