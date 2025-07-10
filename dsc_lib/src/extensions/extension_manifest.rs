@@ -9,26 +9,28 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
-use crate::extensions::discover::DiscoverMethod;
+use crate::extensions::{discover::DiscoverMethod, secret::SecretMethod};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ExtensionManifest {
-    /// The version of the resource manifest schema.
+    /// The version of the extension manifest schema.
     #[serde(rename = "$schema")]
     #[schemars(schema_with = "ExtensionManifest::recognized_schema_uris_subschema")]
     pub schema_version: String,
     /// The namespaced name of the extension.
     #[serde(rename = "type")]
     pub r#type: String,
-    /// The version of the resource using semantic versioning.
+    /// The version of the extension using semantic versioning.
     pub version: String,
-    /// The description of the resource.
+    /// The description of the extension.
     pub description: Option<String>,
-    /// Tags for the resource.
+    /// Tags for the extension.
     pub tags: Option<Vec<String>>,
-    /// Details how to call the Discover method of the resource.
+    /// Details how to call the Discover method of the extension.
     pub discover: Option<DiscoverMethod>,
+    /// Details how to call the Secret method of the extension.
+    pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
     #[serde(rename = "exitCodes", skip_serializing_if = "Option::is_none")]
     pub exit_codes: Option<HashMap<i32, String>>,
