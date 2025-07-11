@@ -102,33 +102,6 @@ impl Discovery {
     }
 }
 
-fn convert_wildcard_to_regex(wildcard: &str) -> String {
-    let mut regex = wildcard.to_string().replace('.', "\\.").replace('?', ".").replace('*', ".*?");
-    regex.insert(0, '^');
-    regex.push('$');
-    regex
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_convert_wildcard_to_regex() {
-        let wildcard = "*";
-        let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^.*?$");
-
-        let wildcard = "File";
-        let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^File$");
-
-        let wildcard = "r*";
-        let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^r.*?$");
-    }
-}
-
 impl Default for Discovery {
     fn default() -> Self {
         Self::new().unwrap()

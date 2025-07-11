@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function};
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rust_i18n::t;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -16,6 +16,14 @@ pub struct Path {}
 /// Accepts a variable number of arguments, each of which is a string.
 /// Returns a string that is the concatenation of the arguments, separated by the platform's path separator.
 impl Function for Path {
+    fn description(&self) -> String {
+        t!("functions.path.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::System
+    }
+
     fn min_args(&self) -> usize {
         2
     }

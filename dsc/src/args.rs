@@ -86,6 +86,11 @@ pub enum SubCommand {
         #[clap(subcommand)]
         subcommand: ExtensionSubCommand,
     },
+    #[clap(name = "function", about = t!("args.functionAbout").to_string())]
+    Function {
+        #[clap(subcommand)]
+        subcommand: FunctionSubCommand,
+    },
     #[clap(name = "resource", about = t!("args.resourceAbout").to_string())]
     Resource {
         #[clap(subcommand)]
@@ -94,7 +99,7 @@ pub enum SubCommand {
     #[clap(name = "schema", about = t!("args.schemaAbout").to_string())]
     Schema {
         #[clap(name = "type", short, long, help = t!("args.schemaType").to_string(), value_enum)]
-        dsc_type: DscType,
+        dsc_type: SchemaType,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string(), value_enum)]
         output_format: Option<OutputFormat>,
     },
@@ -170,8 +175,19 @@ pub enum ConfigSubCommand {
 pub enum ExtensionSubCommand {
     #[clap(name = "list", about = t!("args.listExtensionAbout").to_string())]
     List {
-        /// Optional filter to apply to the list of extensions
+        /// Optional extension name to filter the list
         extension_name: Option<String>,
+        #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
+        output_format: Option<ListOutputFormat>,
+    },
+}
+
+#[derive(Debug, PartialEq, Eq, Subcommand)]
+pub enum FunctionSubCommand {
+    #[clap(name = "list", about = t!("args.listFunctionAbout").to_string())]
+    List {
+        /// Optional function name to filter the list
+        function_name: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
     },
@@ -181,7 +197,7 @@ pub enum ExtensionSubCommand {
 pub enum ResourceSubCommand {
     #[clap(name = "list", about = t!("args.listAbout").to_string())]
     List {
-        /// Optional filter to apply to the list of resources
+        /// Optional resource name to filter the list
         resource_name: Option<String>,
         /// Optional adapter filter to apply to the list of resources
         #[clap(short = 'a', long = "adapter", help = t!("args.adapter").to_string())]
@@ -258,7 +274,7 @@ pub enum ResourceSubCommand {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-pub enum DscType {
+pub enum SchemaType {
     GetResult,
     SetResult,
     TestResult,
@@ -271,5 +287,6 @@ pub enum DscType {
     ConfigurationSetResult,
     ConfigurationTestResult,
     ExtensionManifest,
-    ExtensionDiscoverResult
+    ExtensionDiscoverResult,
+    FunctionDefinition,
 }

@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 use crate::discovery::discovery_trait::{ResourceDiscovery, DiscoveryKind};
-use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -10,6 +9,7 @@ use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
+use crate::util::convert_wildcard_to_regex;
 use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use rust_i18n::t;
