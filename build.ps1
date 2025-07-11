@@ -299,6 +299,7 @@ if (!$SkipBuild) {
         "osinfo",
         "powershell-adapter",
         "process",
+        "resources/filesys",
         "runcommandonset",
         "sshdconfig",
         "tools/dsctest",
