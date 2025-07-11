@@ -555,6 +555,7 @@ dependencies = [
  "indicatif",
  "jsonschema",
  "path-absolutize",
+ "regex",
  "rust-i18n",
  "schemars",
  "serde",

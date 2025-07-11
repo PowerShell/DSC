@@ -5,7 +5,7 @@ use crate::configure::config_doc::DataType;
 use crate::configure::parameters::SecureKind;
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function};
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::{debug, trace};
@@ -14,6 +14,14 @@ use tracing::{debug, trace};
 pub struct Parameters {}
 
 impl Function for Parameters {
+    fn description(&self) -> String {
+        t!("functions.parameters.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::Deployment
+    }
+
     fn min_args(&self) -> usize {
         1
     }

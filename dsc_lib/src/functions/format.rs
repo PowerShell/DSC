@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function};
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rt_format::{Format as RtFormat, FormatArgument, ParsedFormat, argument::NoNamedArguments};
 use rust_i18n::t;
 use serde_json::Value;
@@ -83,6 +83,14 @@ impl FormatArgument for Variant {
 pub struct Format {}
 
 impl Function for Format {
+    fn description(&self) -> String {
+        t!("functions.format.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::String
+    }
+
     fn min_args(&self) -> usize {
         2
     }
