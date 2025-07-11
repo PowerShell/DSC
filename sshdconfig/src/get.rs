@@ -15,16 +15,17 @@ use tracing::debug;
 use crate::args::Setting;
 use crate::error::SshdConfigError;
 use crate::export::invoke_export;
+use crate::util::extract_sshd_defaults;
 
 /// Invoke the get command.
 ///
 /// # Errors
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
-pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<(), SshdConfigError> {
+pub fn invoke_get(exclude_defaults: bool, input: Option<&String>, setting: &Setting) -> Result<(), SshdConfigError> {
     debug!("Get setting: {:?}", setting);
     match *setting {
-        Setting::SshdConfig => get_sshd_settings(input),
+        Setting::SshdConfig => get_sshd_settings(exclude_defaults, input),
         Setting::WindowsGlobal => get_default_shell()
     }
 }
@@ -85,8 +86,20 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
 }
 
-fn get_sshd_settings(input: Option<&String>) -> Result<(), SshdConfigError> {
-    let result = invoke_export()?;
+fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(), SshdConfigError> {
+    let mut result = invoke_export()?;
+    if exclude_defaults {
+        let defaults = extract_sshd_defaults()?;
+        result = result.into_iter()
+            .filter(|(key, value)| {
+                if let Some(default) = defaults.get(key) {
+                    default != value
+                } else {
+                    true
+                }
+            })
+            .collect();
+    }
     match input {
         Some(config) => {
             // Filter result based on the keys provided in the input JSON.

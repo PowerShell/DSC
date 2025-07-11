@@ -12,7 +12,7 @@ use export::invoke_export;
 use get::invoke_get;
 use parser::SshdConfigParser;
 use set::invoke_set;
-use util::{enable_tracing, extract_sshd_defaults};
+use util::enable_tracing;
 
 mod args;
 mod error;
@@ -33,9 +33,6 @@ fn main() {
 
     let args = Args::parse();
 
-    let test = extract_sshd_defaults();
-    println!("Extracted defaults: {:?}", test);
-
     let result = match &args.command {
         Command::Export => {
             debug!("Export command");
@@ -47,9 +44,9 @@ fn main() {
                 Err(e) => Err(e),
             }
         },
-        Command::Get { input, setting } => {
+        Command::Get { exclude_defaults, input, setting } => {
             debug!("Get command: setting={:?}", setting);
-            invoke_get(input.as_ref(), setting)
+            invoke_get(*exclude_defaults, input.as_ref(), setting)
         },
         Command::Schema { setting } => {
             debug!("Schema command: setting={:?}", setting);

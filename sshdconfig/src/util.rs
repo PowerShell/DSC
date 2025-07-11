@@ -17,7 +17,7 @@ pub struct SshdCmdArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
     filepath: Option<String>,
     #[serde(rename = "additionalArgs", skip_serializing_if = "Option::is_none")]
-    additionalArgs: Option<Vec<String>>,
+    additional_args: Option<Vec<String>>,
 }
 
 /// Enable tracing.
@@ -62,7 +62,7 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCmdArgs>) -> Result<String
         if let Some(filepath) = args.filepath {
             command.arg("-f").arg(filepath);
         }
-        if let Some(additional_args) = args.additionalArgs {
+        if let Some(additional_args) = args.additional_args {
             command.args(additional_args);
         }
     }
@@ -92,17 +92,32 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCmdArgs>) -> Result<String
 ///
 /// This function will return an error if it fails to extract the defaults from sshd.
 pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
-    // note temp_file is automatically deleted when it goes out of scope
-    let temp_file = tempfile::NamedTempFile::new()?;
+    let temp_file = tempfile::Builder::new()
+        .prefix("sshd_config_empty_")
+        .suffix(".tmp")
+        .tempfile()?;
+
     let temp_path = temp_file.path().to_string_lossy().into_owned();
+    let (file, path) = temp_file.keep()?;
+
+    // close file so another process (sshd) can read it
+    drop(file);
+
     debug!("temporary file created at: {}", temp_path);
     let args = Some(
         SshdCmdArgs {
             filepath: Some(temp_path.clone()),
-            additionalArgs: None,
+            additional_args: None,
         }
     );
-    let output = invoke_sshd_config_validation(args)?;
+
+    let output = invoke_sshd_config_validation(args);
+
+    if let Err(e) = std::fs::remove_file(&path) {
+        debug!("Failed to clean up temporary file {}: {}", path.display(), e);
+    }
+
+    let output = output?;
     let sshd_config: Map<String, Value> = parse_text_to_map(&output)?;
     Ok(sshd_config)
 }

@@ -1,6 +1,7 @@
 _version = 1
 
 [args]
+getDefaults = "exclude defaults from sshd_config"
 getInput = "input to get from sshd_config"
 setInput = "input to set in sshd_config"
 
@@ -13,6 +14,7 @@ language = "Language"
 notImplemented = "Not Implemented"
 parser = "Parser"
 parseInt = "Parse Integer"
+persist = "Persist"
 registry = "Registry"
 
 [get]

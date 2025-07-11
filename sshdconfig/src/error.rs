@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use tempfile::PersistError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -16,12 +17,12 @@ pub enum SshdConfigError {
     Json(#[from] serde_json::Error),
     #[error("{t}: {0}", t = t!("error.language"))]
     LanguageError(#[from] tree_sitter::LanguageError),
-    #[error("{t}: {0}", t = t!("error.notImplemented"))]
-    NotImplemented(String),
     #[error("{t}: {0}", t = t!("error.parser"))]
     ParserError(String),
     #[error("{t}: {0}", t = t!("error.parseInt"))]
     ParseIntError(#[from] std::num::ParseIntError),
+    #[error("{t}: {0}", t = t!("error.persist"))]
+    PersistError(#[from] PersistError),
     #[cfg(windows)]
     #[error("{t}: {0}", t = t!("error.registry"))]
     RegistryError(#[from] registry_lib::error::RegistryError),
