@@ -10,6 +10,8 @@ pub enum SshdConfigError {
     CommandError(String),
     #[error("{t}: {0}", t = t!("error.invalidInput"))]
     InvalidInput(String),
+    #[error("{t}: {0}", t = t!("error.io"))]
+    IOError(#[from] std::io::Error),
     #[error("{t}: {0}", t = t!("error.json"))]
     Json(#[from] serde_json::Error),
     #[error("{t}: {0}", t = t!("error.language"))]

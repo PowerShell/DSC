@@ -22,6 +22,7 @@ rust-i18n = { version = "3.1" }
 schemars = "0.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
+tempfile = "3.8"
 thiserror = { version = "2.0" }
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"

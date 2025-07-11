@@ -1,11 +1,13 @@
 _version = 1
 
 [args]
+getInput = "input to get from sshd_config"
 setInput = "input to set in sshd_config"
 
 [error]
 command = "Command"
 invalidInput = "Invalid Input"
+io = "IO"
 json = "JSON"
 language = "Language"
 notImplemented = "Not Implemented"

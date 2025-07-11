@@ -2,11 +2,23 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::process::Command;
+use tracing::debug;
 use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::error::SshdConfigError;
+use crate::parser::parse_text_to_map;
 
+// create a struct for sshdconfig arguments
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct SshdCmdArgs {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    filepath: Option<String>,
+    #[serde(rename = "additionalArgs", skip_serializing_if = "Option::is_none")]
+    additionalArgs: Option<Vec<String>>,
+}
 
 /// Enable tracing.
 ///
@@ -36,16 +48,26 @@ pub fn enable_tracing() {
 /// # Errors
 ///
 /// This function will return an error if sshd -T fails to validate `sshd_config`.
-pub fn invoke_sshd_config_validation() -> Result<String, SshdConfigError> {
+pub fn invoke_sshd_config_validation(args: Option<SshdCmdArgs>) -> Result<String, SshdConfigError> {
     let sshd_command = if cfg!(target_os = "windows") {
         "sshd.exe"
     } else {
         "sshd"
     };
 
-    let output = Command::new(sshd_command)
-        .arg("-T")
-        .output()
+    let mut command = Command::new(sshd_command);
+    command.arg("-T");
+
+    if let Some(args) = args {
+        if let Some(filepath) = args.filepath {
+            command.arg("-f").arg(filepath);
+        }
+        if let Some(additional_args) = args.additionalArgs {
+            command.args(additional_args);
+        }
+    }
+
+    let output = command.output()
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
     if output.status.success() {
@@ -62,4 +84,25 @@ pub fn invoke_sshd_config_validation() -> Result<String, SshdConfigError> {
         }
         Err(SshdConfigError::CommandError(stderr))
     }
+}
+
+/// Extract SSH server defaults by running sshd -T with an empty configuration file.
+///
+/// # Errors
+///
+/// This function will return an error if it fails to extract the defaults from sshd.
+pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
+    // note temp_file is automatically deleted when it goes out of scope
+    let temp_file = tempfile::NamedTempFile::new()?;
+    let temp_path = temp_file.path().to_string_lossy().into_owned();
+    debug!("temporary file created at: {}", temp_path);
+    let args = Some(
+        SshdCmdArgs {
+            filepath: Some(temp_path.clone()),
+            additionalArgs: None,
+        }
+    );
+    let output = invoke_sshd_config_validation(args)?;
+    let sshd_config: Map<String, Value> = parse_text_to_map(&output)?;
+    Ok(sshd_config)
 }

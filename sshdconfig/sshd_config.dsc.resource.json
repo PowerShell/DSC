@@ -3,6 +3,30 @@
     "type": "Microsoft.OpenSSH.SSHD/sshd_config",
     "description": "Manage SSH Server Configuration",
     "version": "0.1.0",
+        "get": {
+        "executable": "sshdconfig",
+        "args": [
+            "get",
+            "-s",
+            "sshd-config",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
+        ]
+    },
+    "set": {
+        "executable": "sshdconfig",
+        "args": [
+            "set",
+            "-s",
+            "sshd-config",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
     "export": {
         "executable": "sshdconfig",
         "args": [

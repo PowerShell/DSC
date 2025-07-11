@@ -9,20 +9,22 @@ use {
 };
 
 use rust_i18n::t;
+use serde_json::{Map, Value};
 use tracing::debug;
 
 use crate::args::Setting;
 use crate::error::SshdConfigError;
+use crate::export::invoke_export;
 
 /// Invoke the get command.
 ///
 /// # Errors
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
-pub fn invoke_get(setting: &Setting) -> Result<(), SshdConfigError> {
+pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<(), SshdConfigError> {
     debug!("Get setting: {:?}", setting);
     match *setting {
-        Setting::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
+        Setting::SshdConfig => get_sshd_settings(input),
         Setting::WindowsGlobal => get_default_shell()
     }
 }
@@ -81,4 +83,29 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 #[cfg(not(windows))]
 fn get_default_shell() -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
+}
+
+fn get_sshd_settings(input: Option<&String>) -> Result<(), SshdConfigError> {
+    let result = invoke_export()?;
+    match input {
+        Some(config) => {
+            // Filter result based on the keys provided in the input JSON.
+            // If a provided key is not found in the result, its value is null.
+            let input_config: Map<String, Value> = serde_json::from_str(config)?;
+            let filtered_config: Map<String, Value> = input_config
+                .keys()
+                .map(|key| {
+                    let value = result.get(key)
+                        .cloned()
+                        .unwrap_or(Value::Null);
+                    (key.clone(), value)
+                })
+                .collect();
+            println!("{}", serde_json::to_string(&filtered_config)?);
+        },
+        None => {
+            println!("{}", serde_json::to_string(&result)?);
+        }
+    }
+    Ok(())
 }
