@@ -32,11 +32,8 @@ tags = "Tag to search for in the resource tags"
 resourceGet = "Invoke the get operation to a resource"
 getAll = "Get all instances of the resource"
 resource = "The name of the resource to invoke"
-resourceName = "The name or wildcard of the resource to list"
-extensionName = "The name or wildcard of the extension to list"
 functionAbout = "Operations on DSC functions"
 listFunctionAbout = "List or find functions"
-functionName = "The name or wildcard of the function to list"
 
 [main]
 ctrlCReceived = "Ctrl-C received"
