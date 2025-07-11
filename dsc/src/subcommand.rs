@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, DscType, ExtensionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
+use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, validate_json, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use dsc_lib::functions::AcceptedArgKind;
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -28,8 +29,11 @@ use dsc_lib::{
     dscresources::dscresource::{Capability, ImplementedAs, Invoke},
     dscresources::resource_manifest::{import_manifest, ResourceManifest},
     extensions::dscextension::Capability as ExtensionCapability,
+    functions::FunctionDispatcher,
     progress::ProgressFormat,
+    util::convert_wildcard_to_regex,
 };
+use regex::RegexBuilder;
 use rust_i18n::t;
 use std::{
     collections::HashMap,
@@ -473,7 +477,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
 pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) -> Result<(), DscError> {
     // first validate against the config schema
     debug!("{}", t!("subcommand.validatingConfiguration"));
-    let schema = serde_json::to_value(get_schema(DscType::Configuration))?;
+    let schema = serde_json::to_value(get_schema(SchemaType::Configuration))?;
     let config_value = serde_json::to_value(config)?;
     validate_json("Configuration", &schema, &config_value)?;
     let mut dsc = DscManager::new()?;
@@ -562,6 +566,15 @@ pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressForm
     }
 }
 
+pub fn function(subcommand: &FunctionSubCommand) {
+    let functions = FunctionDispatcher::new();
+    match subcommand {
+        FunctionSubCommand::List { function_name, output_format } => {
+            list_functions(&functions, function_name.as_ref(), output_format.as_ref());
+        },
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) {
     let mut dsc = match DscManager::new() {
@@ -632,10 +645,10 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     let mut include_separator = false;
     for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
         if let ImportedManifest::Extension(extension) = manifest_resource {
-            let mut capabilities = "-".to_string();
             let capability_types = [
                 (ExtensionCapability::Discover, "d"),
             ];
+            let mut capabilities = "-".repeat(capability_types.len());
 
             for (i, (capability, letter)) in capability_types.iter().enumerate() {
                 if extension.capabilities.contains(capability) {
@@ -680,6 +693,97 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     }
 }
 
+fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, output_format: Option<&ListOutputFormat>) {
+    let mut write_table = false;
+    let mut table = Table::new(&[
+        t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
+        t!("subcommand.tableHeader_functionName").to_string().as_ref(),
+        t!("subcommand.tableHeader_minArgs").to_string().as_ref(),
+        t!("subcommand.tableHeader_maxArgs").to_string().as_ref(),
+        t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
+        t!("subcommand.tableHeader_description").to_string().as_ref(),
+    ]);
+    if output_format.is_none() && io::stdout().is_terminal() {
+        // write as table if format is not specified and interactive
+        write_table = true;
+    }
+    let mut include_separator = false;
+    let accepted_arg_types= [
+        (AcceptedArgKind::Array, "a"),
+        (AcceptedArgKind::Boolean, "b"),
+        (AcceptedArgKind::Number, "n"),
+        (AcceptedArgKind::String, "s"),
+        (AcceptedArgKind::Object, "o"),
+    ];
+
+    let asterisks = String::from("*");
+    let name = function_name.unwrap_or(&asterisks);
+    let regex_str = convert_wildcard_to_regex(name);
+    let mut regex_builder = RegexBuilder::new(&regex_str);
+    regex_builder.case_insensitive(true);
+    let Ok(regex) = regex_builder.build() else {
+        error!("{}: {}", t!("subcommand.invalidFunctionFilter"), regex_str);
+        exit(EXIT_INVALID_ARGS);
+    };
+
+    let mut functions_list = functions.list();
+    functions_list.sort();
+    for function in functions_list.into_iter() {
+        if !regex.is_match(&function.name) {
+            continue;
+        }
+
+        if write_table {
+            // construct arg_types from '-' times number of accepted_arg_types
+            let mut arg_types = "-".repeat(accepted_arg_types.len());
+            for (i, (arg_type, letter)) in accepted_arg_types.iter().enumerate() {
+                if function.accepted_arg_types.contains(arg_type) {
+                    arg_types.replace_range(i..=i, letter);
+                }
+            }
+
+            let max_args = if function.max_args == usize::MAX {
+                t!("subcommand.maxInt").to_string()
+            } else {
+                function.max_args.to_string()
+            };
+
+            table.add_row(vec![
+                function.category.to_string(),
+                function.name,
+                function.min_args.to_string(),
+                max_args,
+                arg_types,
+                function.description
+            ]);
+        }
+        else {
+            let json = match serde_json::to_string(&function) {
+                Ok(json) => json,
+                Err(err) => {
+                    error!("JSON: {err}");
+                    exit(EXIT_JSON_ERROR);
+                }
+            };
+            let format = match output_format {
+                Some(ListOutputFormat::Json) => Some(OutputFormat::Json),
+                Some(ListOutputFormat::PrettyJson) => Some(OutputFormat::PrettyJson),
+                Some(ListOutputFormat::Yaml) => Some(OutputFormat::Yaml),
+                _ => None,
+            };
+            write_object(&json, format.as_ref(), include_separator);
+            include_separator = true;
+            // insert newline separating instances if writing to console
+            if io::stdout().is_terminal() { println!(); }
+        }
+    }
+
+    if write_table {
+        let truncate = output_format != Some(&ListOutputFormat::TableNoTruncate);
+        table.print(truncate);
+    }
+}
+
 fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
@@ -697,7 +801,6 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
     let mut include_separator = false;
     for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
         if let ImportedManifest::Resource(resource) = manifest_resource {
-            let mut capabilities = "--------".to_string();
             let capability_types = [
                 (Capability::Get, "g"),
                 (Capability::Set, "s"),
@@ -708,6 +811,7 @@ fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_
                 (Capability::Export, "e"),
                 (Capability::Resolve, "r"),
             ];
+            let mut capabilities = "-".repeat(capability_types.len());
 
             for (i, (capability, letter)) in capability_types.iter().enumerate() {
                 if resource.capabilities.contains(capability) {
