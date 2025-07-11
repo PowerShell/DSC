@@ -15,7 +15,7 @@ use crate::error::SshdConfigError;
 /// This function will return an error if it fails to initialize tracing.
 pub fn enable_tracing() {
     // default filter to trace level
-    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap_or_default();
+    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).from_env();
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
     let fmt = layer
                 .with_ansi(false)
