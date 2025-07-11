@@ -356,3 +356,15 @@ parse empty line
 ---
 (server_config
   (empty_line))
+====
+parse repeatable keyword
+====
+allowgroups administrators "openssh users"
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)
+      (string))))

@@ -1,40 +1,42 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use clap::ValueEnum;
-
-// TODO: ensure lists are complete
-
-// keywords that can be repeated over multiple lines and should be represented as arrays
-pub const REPEATABLE_KEYWORDS: [&str; 6] = [
-    "hostkey",
-    "include",
-    "listenaddress",
-    "port",
-    "setenv",
-    "subsystem"
-];
-
-#[derive(Clone, Debug, Eq, PartialEq, ValueEnum)]
-pub enum RepeatableKeyword {
-    HostKey,
-    Include,
-    ListenAddress,
-    Port,
-    SetEnv,
-    Subsystem,
-}
-
-// keywords that can have multiple argments per line and should be represented as arrays
-// but cannot be repeated over multiple lines, as subsequent entries are ignored
-pub const MULTI_ARG_KEYWORDS: [&str; 7] = [
+// keywords that can have multiple argments per line but cannot be repeated over multiple lines,
+// as subsequent entries are ignored, should be represented as arrays
+pub const MULTI_ARG_KEYWORDS: [&str; 16] = [
+    "authenticationmethods",
+    "authorizedkeysfile",
     "casignaturealgorithms",
+    "channeltimeout",
     "ciphers",
     "hostbasedacceptedalgorithms",
     "hostkeyalgorithms",
+    "ipqos",
     "kexalgorithms",
     "macs",
+    "permitlisten",
+    "permitopen",
+    "permituserenvironment",
+    "persourcepenalties",
+    "persourcepenaltyexemptlist",
     "pubkeyacceptedalgorithms"
+];
+
+// keywords that can be repeated over multiple lines and should be represented as arrays.
+// note that some keywords can be both multi-arg and repeatable, in which case they only need to be listed here
+pub const REPEATABLE_KEYWORDS: [&str; 12] = [
+    "acceptenv",
+    "allowgroups",
+    "allowusers",
+    "denygroups",
+    "denyusers",
+    "hostkey",
+    "include",
+    "listenaddress",
+    "match",
+    "port",
+    "setenv",
+    "subsystem"
 ];
 
 #[cfg(windows)]

@@ -1,10 +1,35 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use std::process::Command;
+use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::error::SshdConfigError;
-use rust_i18n::t;
+
+
+/// Enable tracing.
+///
+/// # Errors
+///
+/// This function will return an error if it fails to initialize tracing.
+pub fn enable_tracing() {
+    // default filter to trace level
+    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap_or_default();
+    let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
+    let fmt = layer
+                .with_ansi(false)
+                .with_level(true)
+                .with_line_number(true)
+                .json()
+                .boxed();
+
+    let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
+
+    if tracing::subscriber::set_global_default(subscriber).is_err() {
+        eprintln!("{}", t!("util.tracingInitError"));
+    }
+}
 
 /// Invoke sshd -T.
 ///
