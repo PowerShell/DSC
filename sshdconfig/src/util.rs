@@ -15,9 +15,9 @@ use crate::parser::parse_text_to_map;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SshdCmdArgs {
     #[serde(skip_serializing_if = "Option::is_none")]
-    filepath: Option<String>,
+    pub filepath: Option<String>,
     #[serde(rename = "additionalArgs", skip_serializing_if = "Option::is_none")]
-    additional_args: Option<Vec<String>>,
+    pub additional_args: Option<Vec<String>>,
 }
 
 /// Enable tracing.

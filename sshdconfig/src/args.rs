@@ -39,7 +39,7 @@ pub enum Command {
 
 #[derive(Clone, Debug, Deserialize, Eq, JsonSchema, PartialEq, Serialize)]
 pub struct DefaultShell {
-    pub shell: Option<String>,
+    pub shell: String,
     pub cmd_option: Option<String>,
     pub escape_arguments: Option<bool>,
 }

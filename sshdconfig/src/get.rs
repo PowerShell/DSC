@@ -34,12 +34,12 @@ pub fn invoke_get(exclude_defaults: bool, input: Option<&String>, setting: &Sett
 fn get_default_shell() -> Result<(), SshdConfigError> {
     let registry_helper = RegistryHelper::new(REGISTRY_PATH, Some(DEFAULT_SHELL.to_string()), None)?;
     let default_shell: Registry = registry_helper.get()?;
-    let mut shell = None;
+    let mut shell = String::new();
     // default_shell is a single string consisting of the shell exe path
     if let Some(value) = default_shell.value_data {
         match value {
             RegistryValueData::String(s) => {
-                shell = Some(s);
+                shell = s;
             }
             _ => return Err(SshdConfigError::InvalidInput(t!("get.defaultShellMustBeString").to_string())),
         }
