@@ -13,7 +13,7 @@ Describe 'Tests for function list subcommand' {
     }
 
     It 'Should filter with wildcard' {
-        $out = dsc function list -n 'resource*' | ConvertFrom-Json
+        $out = dsc function list 'resource*' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.category | Should -BeExactly 'Deployment'
         $out.name | Should -BeExactly 'resourceId'
