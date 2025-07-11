@@ -728,7 +728,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
 
     let mut functions_list = functions.list();
     functions_list.sort();
-    for function in functions_list.into_iter() {
+    for function in functions_list {
         if !regex.is_match(&function.name) {
             continue;
         }
