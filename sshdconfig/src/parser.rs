@@ -145,11 +145,12 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
     let mut value = Value::Null;
 
     // if there is more than one argument, but a vector is not expected for the keyword, throw an error
-    if arg_node.named_children(&mut cursor).count() > 1 && !is_vec {
+    let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
+    if children.len() > 1 && !is_vec {
         return Err(SshdConfigError::ParserError(t!("parser.invalidMultiArgNode", input = input).to_string()));
     }
 
-    for node in arg_node.named_children(&mut cursor) {
+    for node in children {
         if node.is_error() {
             return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
         }
