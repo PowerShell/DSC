@@ -88,6 +88,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 
 fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(), SshdConfigError> {
     let mut result = invoke_export()?;
+
     if exclude_defaults {
         let defaults = extract_sshd_defaults()?;
         result = result.into_iter()
@@ -100,25 +101,22 @@ fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(
             })
             .collect();
     }
-    match input {
-        Some(config) => {
-            // Filter result based on the keys provided in the input JSON.
-            // If a provided key is not found in the result, its value is null.
-            let input_config: Map<String, Value> = serde_json::from_str(config)?;
-            let filtered_config: Map<String, Value> = input_config
-                .keys()
-                .map(|key| {
-                    let value = result.get(key)
-                        .cloned()
-                        .unwrap_or(Value::Null);
-                    (key.clone(), value)
-                })
-                .collect();
-            println!("{}", serde_json::to_string(&filtered_config)?);
-        },
-        None => {
-            println!("{}", serde_json::to_string(&result)?);
-        }
+
+    if let Some(config) = input {
+        // Filter result based on the keys provided in the input JSON.
+        // If a provided key is not found in the result, its value is null.
+        let input_config: Map<String, Value> = serde_json::from_str(config)?;
+        result = input_config
+            .keys()
+            .map(|key| {
+                let value = result.get(key)
+                    .cloned()
+                    .unwrap_or(Value::Null);
+                (key.clone(), value)
+            })
+            .collect();
     }
+
+    println!("{}", serde_json::to_string(&result)?);
     Ok(())
 }
