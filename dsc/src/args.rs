@@ -175,7 +175,7 @@ pub enum ConfigSubCommand {
 pub enum ExtensionSubCommand {
     #[clap(name = "list", about = t!("args.listExtensionAbout").to_string())]
     List {
-        #[clap(short = 'n', long, help = t!("args.extensionName").to_string())]
+        /// Optional extension name to filter the list
         extension_name: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
@@ -186,7 +186,7 @@ pub enum ExtensionSubCommand {
 pub enum FunctionSubCommand {
     #[clap(name = "list", about = t!("args.listFunctionAbout").to_string())]
     List {
-        #[clap(short = 'n', long, help = t!("args.functionName").to_string())]
+        /// Optional function name to filter the list
         function_name: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<ListOutputFormat>,
@@ -197,7 +197,7 @@ pub enum FunctionSubCommand {
 pub enum ResourceSubCommand {
     #[clap(name = "list", about = t!("args.listAbout").to_string())]
     List {
-        #[clap(short = 'n', long, help = t!("args.resourceName").to_string())]
+        /// Optional resource name to filter the list
         resource_name: Option<String>,
         /// Optional adapter filter to apply to the list of resources
         #[clap(short = 'a', long = "adapter", help = t!("args.adapter").to_string())]
