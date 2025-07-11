@@ -16,6 +16,8 @@ lto = true
 [dependencies]
 atty = { version = "0.2" }
 chrono = { version = "0.4" }
+clap = { version = "4.5", features = ["derive"] }
+rust-i18n = { version = "3.1" }
 schemars = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
@@ -25,6 +27,9 @@ tracing-subscriber = "0.3.17"
 tree-sitter = "0.25"
 tree-sitter-rust = "0.24"
 tree-sitter-ssh-server-config = { path = "../tree-sitter-ssh-server-config" }
+
+[target.'cfg(windows)'.dependencies]
+registry_lib = { path = "../registry_lib" }
 
 [build-dependencies]
 cc="*"

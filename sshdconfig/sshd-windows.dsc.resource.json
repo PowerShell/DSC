@@ -1,0 +1,37 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.OpenSSH.SSHD/Windows",
+    "description": "Manage SSH Server Configuration Global Settings",
+    "tags": [
+        "Windows"
+    ],
+    "version": "0.1.0",
+    "get": {
+        "executable": "sshdconfig",
+        "args": [
+            "get",
+            "-s",
+            "windows-global"
+        ]
+    },
+    "set": {
+        "executable": "sshdconfig",
+        "args": [
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "sshdconfig",
+            "args": [
+                "schema",
+                "-s",
+                "windows-global"
+            ]
+        }
+    }
+}
