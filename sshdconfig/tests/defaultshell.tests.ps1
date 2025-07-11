@@ -198,12 +198,26 @@ Describe 'Default Shell Configuration Error Handling on Non-Windows Platforms' -
 
         $out = sshdconfig set --input $inputConfig 2>&1
         $LASTEXITCODE | Should -Not -Be 0
-        $out | Should -BeLike '*is only applicable to Windows*'
+        $result = $out | ConvertFrom-Json
+        $found = $false
+        foreach ($item in $result) {
+            if (($item.level -eq 'ERROR') -and ($item.fields.message -like '*is only applicable to Windows*')) {
+                $found = $true
+            }
+        }
+        $found | Should -Be $true
     }
 
     It 'Should return error for get command' {
         $out = sshdconfig get -s windows-global 2>&1
         $LASTEXITCODE | Should -Not -Be 0
-        $out | Should -BeLike '*is only applicable to Windows*'
+        $result = $out | ConvertFrom-Json
+        $found = $false
+        foreach ($item in $result) {
+            if (($item.level -eq 'ERROR') -and ($item.fields.message -like '*is only applicable to Windows*')) {
+                $found = $true
+            }
+        }
+        $found | Should -Be $true
     }
 }
