@@ -10,3 +10,9 @@ resources:
       type: Microsoft/OSInfo
       properties:
         family: macOS
+- name: Echo
+  type: Microsoft.DSC.Debug/Echo
+  dependsOn:
+    - "[resourceId('Microsoft.DSC/Assertion','Validate the OS is macOS')]"
+  properties:
+    output: The assertion executed and passed
