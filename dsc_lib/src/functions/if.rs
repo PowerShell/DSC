@@ -17,7 +17,7 @@ impl Function for If {
     }
 
     fn category(&self) -> FunctionCategory {
-        FunctionCategory::Comparison
+        FunctionCategory::Logical
     }
 
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {

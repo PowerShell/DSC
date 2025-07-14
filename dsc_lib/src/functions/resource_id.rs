@@ -16,7 +16,7 @@ impl Function for ResourceId {
     }
 
     fn category(&self) -> FunctionCategory {
-        FunctionCategory::Deployment
+        FunctionCategory::Resource
     }
 
     fn min_args(&self) -> usize {
