@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use clap::{Parser};
-use rust_i18n::i18n;
+use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use std::process::exit;
 use tracing::{debug, error};
@@ -35,15 +35,14 @@ fn main() {
 
     let result = match &args.command {
         Command::Export => {
-            debug!("Export command");
+            debug!("{}", t!("main.export").to_string());
             invoke_export()
         },
         Command::Get { setting } => {
-            debug!("Get command: setting={:?}", setting);
             invoke_get(setting)
         },
         Command::Schema { setting } => {
-            debug!("Schema command: setting={:?}", setting);
+            debug!("{}; {:?}", t!("main.schema").to_string(), setting);
             let schema = match setting {
                 Setting::SshdConfig => {
                     schema_for!(SshdConfigParser)
@@ -56,7 +55,7 @@ fn main() {
             Ok(())
         },
         Command::Set { input } => {
-            debug!("Set command: input={}", input);
+            debug!("{}", t!("main.set", input = input).to_string());
             invoke_set(input)
         },
     };

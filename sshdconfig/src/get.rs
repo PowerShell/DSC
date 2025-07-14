@@ -20,7 +20,7 @@ use crate::error::SshdConfigError;
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
 pub fn invoke_get(setting: &Setting) -> Result<(), SshdConfigError> {
-    debug!("Get setting: {:?}", setting);
+    debug!("{}: {:?}", t!("get.debugSetting").to_string(), setting);
     match *setting {
         Setting::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
         Setting::WindowsGlobal => get_default_shell()

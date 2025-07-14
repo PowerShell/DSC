@@ -78,7 +78,7 @@ impl SshdConfigParser {
                     t!("parser.failedToParseChildNode", input = input).to_string()
                 ));
             };
-            debug!("Parsing keyword: {text}");
+            debug!("{}", t!("parser.keywordDebug", text = text).to_string());
             if REPEATABLE_KEYWORDS.contains(&text) {
                 is_repeatable = true;
                 is_vec = true;
@@ -94,7 +94,7 @@ impl SshdConfigParser {
             }
             if node.kind() == "arguments" {
                 value = parse_arguments_node(node, input, input_bytes, is_vec)?;
-                debug!("Parsed argument value: {:?}", value);
+                debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
             }
         }
         if let Some(key) = key {
