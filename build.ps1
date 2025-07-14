@@ -65,6 +65,8 @@ $filesForWindowsPackage = @(
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
+    'wmiAdapter.psd1',
+    'wmiAdapter.psm1',
     'windows_baseline.dsc.yaml',
     'windows_inventory.dsc.yaml'
 )
