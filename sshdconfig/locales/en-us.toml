@@ -14,6 +14,7 @@ parseInt = "Parse Integer"
 registry = "Registry"
 
 [get]
+debugSetting = "Get setting:"
 defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
 defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
@@ -21,10 +22,10 @@ defaultShellMustBeString = "shell must be a string"
 notImplemented = "get not yet implemented for Microsoft.OpenSSH.SSHD/sshd_config"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
-[set]
-failedToParseInput = "failed to parse input as DefaultShell with error: '%{error}'"
-shellPathDoesNotExist = "shell path does not exist: '%{shell}'"
-shellPathMustNotBeRelative = "shell path must not be relative"
+[main]
+export = "Export"
+schema = "Schema command:"
+set = "Set command: '%{input}'"
 
 [parser]
 failedToParse = "failed to parse: '%{input}'"
@@ -33,13 +34,22 @@ failedToParseChildNode = "failed to parse child node: '%{input}'"
 failedToParseNode = "failed to parse '%{input}'"
 failedToParseRoot = "failed to parse root: '%{input}'"
 invalidConfig = "invalid config: '%{input}'"
+invalidMultiArgNode = "multi-arg node '%{input}' is not valid"
 invalidValue = "operator is an invalid value for node"
 keyNotFound = "key '%{key}' not found"
 keyNotRepeatable = "key '%{key}' is not repeatable"
-missingKeyInChildNode = "missing key in child node: '%{input}'"
+keywordDebug = "Parsing keyword: '%{text}'"
 missingValueInChildNode = "missing value in child node: '%{input}'"
+missingKeyInChildNode = "missing key in child node: '%{input}'"
+valueDebug = "Parsed argument value:"
 unknownNode = "unknown node: '%{kind}'"
 unknownNodeType = "unknown node type: '%{node}'"
 
+[set]
+failedToParseInput = "failed to parse input as DefaultShell with error: '%{error}'"
+shellPathDoesNotExist = "shell path does not exist: '%{shell}'"
+shellPathMustNotBeRelative = "shell path must not be relative"
+
 [util]
 sshdElevation = "elevated security context required"
+tracingInitError = "Failed to initialize tracing"

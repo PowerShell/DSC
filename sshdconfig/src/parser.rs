@@ -1,13 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde_json::{Map, Value};
+use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
 use crate::metadata::{MULTI_ARG_KEYWORDS, REPEATABLE_KEYWORDS};
-use rust_i18n::t;
 
 #[derive(Debug, JsonSchema)]
 pub struct SshdConfigParser {
@@ -77,6 +78,7 @@ impl SshdConfigParser {
                     t!("parser.failedToParseChildNode", input = input).to_string()
                 ));
             };
+            debug!("{}", t!("parser.keywordDebug", text = text).to_string());
             if REPEATABLE_KEYWORDS.contains(&text) {
                 is_repeatable = true;
                 is_vec = true;
@@ -92,6 +94,7 @@ impl SshdConfigParser {
             }
             if node.kind() == "arguments" {
                 value = parse_arguments_node(node, input, input_bytes, is_vec)?;
+                debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
             }
         }
         if let Some(key) = key {
@@ -140,8 +143,14 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
     let mut cursor = arg_node.walk();
     let mut vec: Vec<Value> = Vec::new();
     let mut value = Value::Null;
-    for node in arg_node.named_children(&mut cursor) {
 
+    // if there is more than one argument, but a vector is not expected for the keyword, throw an error
+    let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
+    if children.len() > 1 && !is_vec {
+        return Err(SshdConfigError::ParserError(t!("parser.invalidMultiArgNode", input = input).to_string()));
+    }
+
+    for node in children {
         if node.is_error() {
             return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
         }
@@ -152,7 +161,7 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
                         t!("parser.failedToParseNode", input = input).to_string()
                     ));
                 };
-                Value::String(arg.to_string())
+                Value::String(arg.trim().to_string())
             }
             "number" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
@@ -222,6 +231,17 @@ mod tests {
             Value::String("ecdsa-sha2-nistp256-cert-v01@openssh.com".to_string()),
         ];
         assert_eq!(result.get("hostkeyalgorithms").unwrap(), &Value::Array(expected));
+    }
+
+    #[test]
+    fn multiarg_string_with_spaces_keyword() {
+        let input = "allowgroups administrators \"openssh users\"\r\n";
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let expected = vec![
+            Value::String("administrators".to_string()),
+            Value::String("openssh users".to_string()),
+        ];
+        assert_eq!(result.get("allowgroups").unwrap(), &Value::Array(expected));
     }
 
     #[test]
