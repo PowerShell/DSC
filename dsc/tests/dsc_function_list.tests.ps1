@@ -15,7 +15,7 @@ Describe 'Tests for function list subcommand' {
     It 'Should filter with wildcard' {
         $out = dsc function list 'resource*' | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.category | Should -BeExactly 'Deployment'
+        $out.category | Should -BeExactly 'Resource'
         $out.name | Should -BeExactly 'resourceId'
         $out.minArgs | Should -Be 2
         $out.maxArgs | Should -Be 2
