@@ -88,6 +88,7 @@ impl Function {
     }
 
     /// Get the name of the function.
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
