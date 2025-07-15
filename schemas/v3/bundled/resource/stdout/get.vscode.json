@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/stdout/get.json",
+  "title": "Get resource operation stdout",
+  "description": "Represents the actual state of a resource instance in DSC. DSC expects the JSON Line emitted to stdout for the **Get** operation to adhere to this schema.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nRepresents the actual state of a resource instance in DSC. DSC expects the JSON Line emitted to\nstdout for the **Get** operation to adhere to this schema.\n\nThe output must be a JSON object. The object must be a valid representation of an instance of the\nresource.\n\nCommand resources define their instance schema with the [schema.command][01] or\n[schema.embedded][02] fields in their resource manifest. If a command resource returns JSON that\nis invalid against the resource instance schema, DSC raises an error.\n\nAdapted resource instances are validated by their adapter when the adapter invokes them.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/get?view=dsc-3.0&preserve-view=true\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/command?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserve-view=true\n",
+  "type": "object",
+  "$defs": {}
+}

@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function};
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,6 +12,14 @@ use tracing::debug;
 pub struct Reference {}
 
 impl Function for Reference {
+    fn description(&self) -> String {
+        t!("functions.reference.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::Resource
+    }
+
     fn min_args(&self) -> usize {
         1
     }

@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ "main", "release/v3.0.0", "release/v3.1" ]
+    branches: [ "main", "release/*" ]
   pull_request:
-    branches: [ "main", "release/v3.0.0", "release/v3.1" ]
+    branches: [ "main", "release/*" ]
     paths-ignore:
       - "docs/**"
       - "*.md"

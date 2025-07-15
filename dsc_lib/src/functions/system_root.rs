@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function};
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -14,6 +14,14 @@ pub struct SystemRoot {}
 /// Implements the `systemRoot` function.
 /// This function returns the value of the specified system root path.
 impl Function for SystemRoot {
+    fn description(&self) -> String {
+        t!("functions.systemRoot.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::System
+    }
+
     fn min_args(&self) -> usize {
         0
     }

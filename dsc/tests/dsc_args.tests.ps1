@@ -262,6 +262,22 @@ resources:
         $stderr | Should -Match '.*?--file.*?'
     }
 
+    It 'file containing UTF-8 BOM should be read correctly' {
+        $yaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: hello
+'@
+        Set-Content -Path "$TestDrive/utf8bom.yaml" -Value $yaml -Encoding utf8BOM
+        $out = dsc config get --file "$TestDrive/utf8bom.yaml" | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].type | Should -BeExactly 'Microsoft.DSC.Debug/Echo'
+        $out.results[0].result.actualState.output | Should -BeExactly 'hello'
+    }
+
     It 'Get operation on the adapter itself should fail' {
         dsc resource get -r Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         $LASTEXITCODE | Should -Be 2

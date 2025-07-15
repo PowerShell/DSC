@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for valid parameter data types in a configuration document.
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC configuration parameter data type schema reference
 ---
@@ -15,7 +15,7 @@ Defines valid data types for a DSC configuration parameter
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/definitions/parameters/dataTypes.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/parameters/dataTypes.json
 Type:          string
 ValidValues:   [array, bool, int, object, string, secureobject, securestring]
 ```

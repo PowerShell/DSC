@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/stdout/test.json",
+  "title": "Test resource operation stdout",
+  "description": "Defines the JSON DSC expects a resource to emit to stdout for the **Test** operation.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines the JSON DSC expects a resource to emit to stdout for the **Test** operation.\n\nDSC expects different output from the command resource depending on the definition of\n[test.return][01] in the resource manifest:\n\n- If the field is omitted or defined as `state` (the default value), DSC expects the resource to\n  emit a JSON Line to stdout representing the actual state of the resource instance with the\n  [_inDesiredState][02] canonical resource property included in the returned object.\n- If the field is defined as `stateAndDiff`, DSC expects the resource to emit two JSON Lines. The\n  first JSON Line should be an object representing the actual state of the resource instance with\n  the `_inDesiredState` included in the returned object. The second JSON Line should be an array\n  representing the names of the resource properties that aren't in the desired state.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/test?view=dsc-3.0&preserve-view=true\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true#return\n",
+  "oneOf": [
+    {
+      "title": "state output",
+      "description": "For the **Test** operation, DSC always expects the resource to emit a JSON Line to stdout representing the actual state of the resource instance with the `_inDesiredState` canonical resource property included in the returned object.",
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nFor the **Test** operation, DSC always expects the resource to emit a JSON Line to stdout\nrepresenting the actual state of the resource instance with the [_inDesiredState][01]\ncanonical resource property included in the returned object.\n\nThe output must be a JSON object. The object must be a valid representation of an instance of\nthe resource.\n\nCommand resources define their instance schema with the [schema.command][02] or\n[schema.embedded][03] fields in their resource manifest. If a command resource returns JSON\nthat is invalid against the resource instance schema, DSC raises an error.\n\nAdapted resource instances are validated by their adapter when the adapter invokes them.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/test?view=dsc-3.0&preserve-view=true#state-output\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/inDesiredState?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/command?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserve-view=true",
+      "type": "object"
+    },
+    {
+      "title": "diff output",
+      "description": "When a command resource defines `test.return` in its manifest as `stateAndDiff`, DSC expects the resource to emit a second JSON Line to stdout representing the names of the resource properties that the operation changed on the system.",
+      "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nWhen a command resource defines [test.return][01] in its manifest as `stateAndDiff`, DSC\nexpects the resource to emit a second JSON Line to stdout representing the names of the\nresource properties that aren't in the desired state.\n\nThis output must be emitted after the JSON Line representing the actual state of the resource\ninstance with the [_inDesiredState][02] canonical resource property included in the returned\nobject.\n\nThe output must be a JSON array. The array may be empty, or it may contain one or more\nstrings. Each string in the array must be the name of one of the resource's properties. Each\nstring in the array must be unique. The array should never include the `_inDesiredState`\nproperty.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/test?view=dsc-3.0&preserve-view=true#diff-output\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true#return\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/inDesiredState?view=dsc-3.0&preserve-view=true",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    }
+  ],
+  "$defs": {}
+}

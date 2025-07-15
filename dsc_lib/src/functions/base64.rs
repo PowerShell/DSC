@@ -5,7 +5,8 @@ use base64::{Engine as _, engine::general_purpose};
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::AcceptedArgKind;
+use crate::functions::{AcceptedArgKind, FunctionCategory};
+use rust_i18n::t;
 use serde_json::Value;
 use super::Function;
 
@@ -13,6 +14,14 @@ use super::Function;
 pub struct Base64 {}
 
 impl Function for Base64 {
+    fn description(&self) -> String {
+        t!("functions.base64.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::String
+    }
+
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
         vec![AcceptedArgKind::String]
     }

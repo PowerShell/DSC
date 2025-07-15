@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the 'delete' property in a DSC Resource manifest
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Resource manifest delete property schema reference
 ---
@@ -15,7 +15,7 @@ Indicates how to call the resource to delete a specific instance.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/resource/manifest.delete.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.delete.json
 Type:          object
 ```
 

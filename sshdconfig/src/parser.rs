@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use rust_i18n::t;
 use schemars::JsonSchema;
 use serde_json::{Map, Value};
+use tracing::debug;
 use tree_sitter::Parser;
 
 use crate::error::SshdConfigError;
@@ -35,14 +37,14 @@ impl SshdConfigParser {
         parser.set_language(&tree_sitter_ssh_server_config::LANGUAGE.into())?;
 
         let Some(tree) = &mut parser.parse(input, None) else {
-            return Err(SshdConfigError::ParserError(format!("failed to parse: {input}")));
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParse", input = input).to_string()));
         };
         let root_node = tree.root_node();
         if root_node.is_error() {
-            return Err(SshdConfigError::ParserError(format!("failed to parse root: {input}")));
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParseRoot", input = input).to_string()));
         }
         if root_node.kind() != "server_config" {
-            return Err(SshdConfigError::ParserError(format!("invalid config: {input}")));
+            return Err(SshdConfigError::ParserError(t!("parser.invalidConfig", input = input).to_string()));
         }
         let input_bytes = input.as_bytes();
         let mut cursor = root_node.walk();
@@ -54,12 +56,12 @@ impl SshdConfigParser {
 
     fn parse_child_node(&mut self, node: tree_sitter::Node, input: &str, input_bytes: &[u8]) -> Result<(), SshdConfigError> {
         if node.is_error() {
-            return Err(SshdConfigError::ParserError(format!("failed to parse: {input}")));
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParse", input = input).to_string()));
         }
         match node.kind() {
             "keyword" => self.parse_keyword_node(node, input, input_bytes),
             "comment" | "empty_line" => Ok(()),
-            _ => Err(SshdConfigError::ParserError(format!("unknown node type: {}", node.kind()))),
+            _ => Err(SshdConfigError::ParserError(t!("parser.unknownNodeType", node = node.kind()).to_string())),
         }
     }
 
@@ -72,10 +74,11 @@ impl SshdConfigParser {
 
         if let Some(keyword) = keyword_node.child_by_field_name("keyword") {
             let Ok(text) = keyword.utf8_text(input_bytes) else {
-                return Err(SshdConfigError::ParserError(format!(
-                    "failed to parse keyword node: {input}"
-                )));
+                return Err(SshdConfigError::ParserError(
+                    t!("parser.failedToParseChildNode", input = input).to_string()
+                ));
             };
+            debug!("{}", t!("parser.keywordDebug", text = text).to_string());
             if REPEATABLE_KEYWORDS.contains(&text) {
                 is_repeatable = true;
                 is_vec = true;
@@ -87,19 +90,20 @@ impl SshdConfigParser {
 
         for node in keyword_node.named_children(&mut cursor) {
             if node.is_error() {
-                return Err(SshdConfigError::ParserError(format!("failed to parse child node: {input}")));
+                return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
             }
             if node.kind() == "arguments" {
                 value = parse_arguments_node(node, input, input_bytes, is_vec)?;
+                debug!("{}: {:?}", t!("parser.valueDebug").to_string(), value);
             }
         }
         if let Some(key) = key {
             if value.is_null() {
-                return Err(SshdConfigError::ParserError(format!("missing value in child node: {input}")));
+                return Err(SshdConfigError::ParserError(t!("parser.missingValueInChildNode", input = input).to_string()));
             }
             return self.update_map(&key, value, is_repeatable);
         }
-        Err(SshdConfigError::ParserError(format!("missing key in child node: {input}")))
+        Err(SshdConfigError::ParserError(t!("parser.missingKeyInChildNode", input = input).to_string()))
     }
 
     fn update_map(&mut self, key: &str, value: Value, is_repeatable: bool) -> Result<(), SshdConfigError> {
@@ -114,19 +118,19 @@ impl SshdConfigParser {
                             }
                         } else {
                             return Err(SshdConfigError::ParserError(
-                                "value is not an array".to_string(),
+                                t!("parser.failedToParseAsArray").to_string()
                             ));
                         }
                     } else {
                         return Err(SshdConfigError::ParserError(
-                            "value is not an array".to_string(),
+                            t!("parser.failedToParseAsArray").to_string()
                         ));
                     }
                 } else {
-                    return Err(SshdConfigError::ParserError(format!("key {key} not found")));
+                    return Err(SshdConfigError::ParserError(t!("parser.keyNotFound", key = key).to_string()));
                 }
             } else {
-                return Err(SshdConfigError::ParserError(format!("key {key} is not repeatable")));
+                return Err(SshdConfigError::ParserError(t!("parser.keyNotRepeatable", key = key).to_string()));
             }
         } else {
             self.map.insert(key.to_string(), value);
@@ -139,35 +143,41 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
     let mut cursor = arg_node.walk();
     let mut vec: Vec<Value> = Vec::new();
     let mut value = Value::Null;
-    for node in arg_node.named_children(&mut cursor) {
 
+    // if there is more than one argument, but a vector is not expected for the keyword, throw an error
+    let children: Vec<_> = arg_node.named_children(&mut cursor).collect();
+    if children.len() > 1 && !is_vec {
+        return Err(SshdConfigError::ParserError(t!("parser.invalidMultiArgNode", input = input).to_string()));
+    }
+
+    for node in children {
         if node.is_error() {
-            return Err(SshdConfigError::ParserError(format!("failed to parse child node: {input}")));
+            return Err(SshdConfigError::ParserError(t!("parser.failedToParseChildNode", input = input).to_string()));
         }
         let argument: Value = match node.kind() {
             "boolean" | "string" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(format!(
-                        "failed to parse string node: {input}"
-                    )));
+                    return Err(SshdConfigError::ParserError(
+                        t!("parser.failedToParseNode", input = input).to_string()
+                    ));
                 };
-                Value::String(arg.to_string())
+                Value::String(arg.trim().to_string())
             }
             "number" => {
                 let Ok(arg) = node.utf8_text(input_bytes) else {
-                    return Err(SshdConfigError::ParserError(format!(
-                        "failed to parse string node: {input}"
-                    )));
+                    return Err(SshdConfigError::ParserError(
+                        t!("parser.failedToParseNode", input = input).to_string()
+                    ));
                 };
                 Value::Number(arg.parse::<u64>()?.into())
             }
             "operator" => {
                 // TODO: handle operator if not parsing from SSHD -T
-                return Err(SshdConfigError::ParserError(format!(
-                    "todo - unsuported node: {}", node.kind()
-                )));
+                return Err(SshdConfigError::ParserError(
+                    t!("parser.invalidValue").to_string()
+                ));
             }
-            _ => return Err(SshdConfigError::ParserError(format!("unknown node: {}", node.kind())))
+            _ => return Err(SshdConfigError::ParserError(t!("parser.unknownNode", kind = node.kind()).to_string()))
         };
         if is_vec {
             vec.push(argument);
@@ -221,6 +231,17 @@ mod tests {
             Value::String("ecdsa-sha2-nistp256-cert-v01@openssh.com".to_string()),
         ];
         assert_eq!(result.get("hostkeyalgorithms").unwrap(), &Value::Array(expected));
+    }
+
+    #[test]
+    fn multiarg_string_with_spaces_keyword() {
+        let input = "allowgroups administrators \"openssh users\"\r\n";
+        let result: Map<String, Value> = parse_text_to_map(input).unwrap();
+        let expected = vec![
+            Value::String("administrators".to_string()),
+            Value::String("openssh users".to_string()),
+        ];
+        assert_eq!(result.get("allowgroups").unwrap(), &Value::Array(expected));
     }
 
     #[test]

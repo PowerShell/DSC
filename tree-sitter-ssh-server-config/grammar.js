@@ -17,7 +17,7 @@ module.exports = grammar({
     server_config: $ => seq(repeat(choice($.empty_line, $.comment, $.keyword)), repeat($.match)),
 
     // check for an empty line that is just a /n character
-    empty_line: $ => seq('\n'),
+    empty_line: $ => '\n',
     comment: $ => /#.*\n/,
 
     keyword: $ => seq(

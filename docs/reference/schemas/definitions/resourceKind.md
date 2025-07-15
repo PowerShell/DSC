@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for resource kind
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Resource kind schema reference
 ---
@@ -15,7 +15,7 @@ Identifies whether a resource is an adapter resource, a group resource, or a nor
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceKind.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceKind.json
 Type:          string
 ValidValues:  [resource, adapter, group, importer]
 ```
@@ -28,6 +28,7 @@ DSC supports three kinds of command-based DSC Resources:
 - `group` - Indicates that the manifest is for a [group resource](#group-resources).
 - `adapter` - Indicates that the manifest is for an [adapter resource](#adapter-resources).
 - `importer` - Indicates that the manifest is for an [importer resource](#importer-resources).
+- `exporter` - Indicates that the manifest is for an [exporter resource](#exporter-resources).
 
 When `kind` isn't defined in the resource manifest, DSC infers the value for the property. If the
 `adapter` property is defined in the resource manifest, DSC infers the value of `kind` as
@@ -72,6 +73,18 @@ manifest.
 
 For example, the `Microsoft.DSC/Import` importer resource resolves instances from an external
 configuration document, enabling you to compose configurations from multiple files.
+
+### Exporter resources
+
+Exporter resources implement the **Export** operation to return full resource instances for DSC to
+recursively export. This allows an exporter resource to help users quickly export the current
+configuration of a system without having to know every available resource.
+
+For example, an exporter resource might discover whether Apache is installed and then return an
+instance for every supported resource to fully export the configuration for Apache.
+
+An exporter resource must always define the [kind][03] and [export][06] properties in the resource
+manifest.
 
 ### Nested resource instances
 
@@ -144,7 +157,7 @@ The following matrix defines the relations of each instance in the configuration
 ### Referencing nested instances
 
 Nested resource instances have limitations for the [dependsOn][04] property and the
-[reference()][06] configuration function.
+[reference()][07] configuration function.
 
 1. You can only reference adjacent instances. You can't reference a nested instance from outside of
    the instance that declares or resolves it. You can't use a reference to a resource outside of the
@@ -386,4 +399,5 @@ resources:
 [03]: ../resource/manifest/root.md#kind
 [04]: ../config/resource.md#dependson
 [05]: ../resource/manifest/resolve.md
-[06]: ../config/functions/reference.md
+[06]: ../resource/manifest/export.md
+[07]: ../config/functions/reference.md

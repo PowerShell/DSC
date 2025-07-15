@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/stdout/delete.json",
+  "title": "Delete resource operation stdout",
+  "description": "DSC does not expect the **Delete** operation for a resource to return any JSON to stdout.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDSC does not expect the **Delete** operation for a resource to return any JSON to stdout.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/delete?view=dsc-3.0&preserve-view=true\n",
+  "type": "null",
+  "$defs": {}
+}

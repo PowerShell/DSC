@@ -119,9 +119,9 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/definitions/resourceType.json",
       "title": "DSC resource fully qualified type name",
-      "description": "The namespaced name of the DSC resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+      "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
       "type": "string",
-      "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$"
+      "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
     },
     "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/metadata/Microsoft.DSC/duration.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

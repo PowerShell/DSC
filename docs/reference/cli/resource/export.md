@@ -13,14 +13,39 @@ Generates a configuration document that defines the existing instances of a spec
 
 ## Syntax
 
+### Without instance properties
+
 ```sh
 dsc resource export [Options] --resource <RESOURCE>
+```
+
+### Instance properties from input option
+
+```sh
+dsc resource export --input <INPUT> --resource <RESOURCE>
+```
+
+### Instance properties from file
+
+```sh
+dsc resource export --file <FILE> --resource <RESOURCE>
+```
+
+### Instance properties from stdin
+
+```sh
+cat <FILE> | dsc resource get [Options] --resource <RESOURCE> --file -
 ```
 
 ## Description
 
 The `export` subcommand generates a configuration document that includes every instance of a
 specific resource. The resource must be specified with the `--resource` option.
+
+Starting with DSC 3.1.0, You can use the `--input` or `--file` option to specify a resource
+instance to use as a filter for the exported resources. When you do, the specified instance is
+passed to the resource for use in filtering. The implementation for filtering depends on each
+resource, not DSC itself.
 
 Only specify exportable resources with a resource manifest that defines the [export][01] section in
 the input configuration. If the specified resource type isn't exportable, DSC raises an error.
@@ -46,6 +71,48 @@ Type        : string
 Mandatory   : true
 LongSyntax  : --resource <RESOURCE>
 ShortSyntax : -r <RESOURCE>
+```
+
+### -i, --input
+
+<a id="-i"></a>
+<a id="--input"></a>
+
+Specifies the resource instance to use as a filter for exported resource instances.
+
+The instance must be a string containing a JSON or YAML object. DSC validates the object against
+the resource's instance schema. If the validation fails, DSC raises an error.
+
+This option is mutually exclusive with the `--file` option.
+
+```yaml
+Type        : string
+Mandatory   : false
+LongSyntax  : --input <INPUT>
+ShortSyntax : -i <INPUT>
+```
+
+### -f, --file
+
+<a id="-f"></a>
+<a id="--file"></a>
+
+Defines the path to a file defining the resource instance to use as a filter for exported resource
+instances.
+
+The specified file must contain a JSON or YAML object that represents valid properties for the
+resource. DSC validates the object against the resource's instance schema. If the validation fails,
+or if the specified file doesn't exist, DSC raises an error.
+
+You can also use this option to pass an instance from stdin, as shown in [Example 3](#example-3).
+
+This option is mutually exclusive with the `--input` option.
+
+```yaml
+Type        : string
+Mandatory   : false
+LongSyntax  : --file <FILE>
+ShortSyntax : -f <FILE>
 ```
 
 ### -o, --output-format

@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for metadata in a Desired State Configuration document.
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Configuration document metadata schema
 ---
@@ -15,7 +15,7 @@ Defines a set of informational key-value pairs for the configuration.
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.metadata.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.metadata.json
 Type:          object
 ```
 

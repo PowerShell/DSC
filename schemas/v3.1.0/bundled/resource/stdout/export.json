@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/stdout/export.json",
+  "title": "Export resource operation stdout",
+  "description": "Represents the actual state of a resource instance in DSC. DSC expects every JSON Line emitted to stdout for the **Export** operation to adhere to this schema.",
+  "anyOf": [
+    {
+      "title": "Typical resource expected output",
+      "description": "Defines the expected output for a resource whose `kind` isn't `exporter` as the actual state of every existing instance of that resource on the system.",
+      "type": "object"
+    },
+    {
+      "title": "Exporter resource expected output",
+      "description": "Defines the expected output for an `exporter` resource as a resource instance definition to recursively invoke the **Export** operation for.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/config/document.resource.json"
+    }
+  ],
+  "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.resource.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.resource.json",
+      "title": "DSC resource instance",
+      "description": "Defines an instance of a DSC resource in a configuration.",
+      "type": "object",
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json"
+        },
+        "name": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/instanceName.json"
+        },
+        "dependsOn": {
+          "title": "Instance depends on",
+          "description": "Defines a list of DSC resource instances that DSC must successfully process before processing this instance. Each value for this property must be the `resourceID()` lookup for another instance in the configuration. Multiple instances can depend on the same instance, but every dependency for an instance must be unique in that instance's `dependsOn` property.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "uniqueItems": true,
+            "pattern": "^\\[resourceId\\(\\s*'\\w+(\\.\\w+){0,2}\\/\\w+'\\s*,\\s*'[a-zA-Z0-9 ]+'\\s*\\)\\]$"
+          }
+        },
+        "properties": {
+          "title": "Managed instance properties",
+          "description": "Defines the properties of the DSC resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC resource's schema.",
+          "type": "object"
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json",
+      "title": "DSC resource fully qualified type name",
+      "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
+      "type": "string",
+      "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/instanceName.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/instanceName.json",
+      "title": "Instance name",
+      "description": "The short, human-readable name for a DSC resource instance. Must be unique within a DSC Configuration document. Must be a non-empty string containing only letters, numbers, and spaces.",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9 ]+$",
+      "minLength": 1
+    }
+  }
+}

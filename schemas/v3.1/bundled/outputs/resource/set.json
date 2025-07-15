@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.json",
+  "title": "dsc resource set result",
+  "description": "Describes the return data for a DSC resource instance from the `dsc resource set` command. The return data is either a single object that describes the enforced state of a non-nested instance or an array of objects that describe the enforced state of the nested instances for a group or adapter resource.",
+  "anyOf": [
+    {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.simple.json"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.full.json"
+      }
+    }
+  ],
+  "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.simple.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.simple.json",
+      "title": "dsc resource set result (simple)",
+      "description": "Describes the return data for a DSC resource instance from the `dsc resource set` command. This data is returned for instances that aren't group resources, adapter resources, or nested inside a group or adapter resource.\nWhen you use `dsc resource set` for a group or adapter resource, the command returns an array of full test result objects that include the name and type for the nested instances.",
+      "type": "object",
+      "required": [
+        "beforeState",
+        "afterState",
+        "changedProperties"
+      ],
+      "properties": {
+        "beforeState": {
+          "title": "State before enforcing",
+          "description": "This property always represents the desired state of the DSC resource instance before the `set` method runs. DSC validates this return value against the DSC resource's schema.",
+          "type": "object"
+        },
+        "afterState": {
+          "title": "State after enforcing",
+          "description": "This property always represents the current state of the DSC resource instance as returned by its `set` method after enforcing the desired state. DSC validates this return value against the DSC resource's schema.",
+          "type": "object"
+        },
+        "changedProperties": {
+          "title": "Changed properties",
+          "description": "This property always represents the list of property names for the DSC resource instance that the `set` method modified. When this value is an empty array, the `set` method didn't enforce any properties for the instance.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.full.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.full.json",
+      "title": "dsc resource set result (full)",
+      "description": "Describes the return data for the full result of the `set` operation for a\nresource instance. This data is returned:\n\n- For every instance in a configuration document when you use the\n  `dsc config set` command.\n\n- For nested instances of a group or adapter resource when you use the\n  `dsc resource set` command.",
+      "type": "object",
+      "required": [
+        "metadata",
+        "name",
+        "result",
+        "type"
+      ],
+      "properties": {
+        "metadata": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/resourceInstanceResult.json"
+        },
+        "name": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/instanceName.json"
+        },
+        "type": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/resourceType.json"
+        },
+        "result": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/outputs/resource/set.json"
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/metadata/resourceInstanceResult.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/metadata/resourceInstanceResult.json",
+      "title": "Resource instance result metadata",
+      "description": "Defines metadata DSC returns for a DSC configuration operation against a resource instance in a configuration document, as from the `dsc config get` or `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe the context of the operation.",
+      "type": "object",
+      "required": [
+        "Microsoft.DSC"
+      ],
+      "properties": {
+        "Microsoft.DSC": {
+          "title": "DSC context metadata",
+          "description": "The child properties for this metadata describe the context of the DSC operation against a resource instance, including the duration of the operation.",
+          "type": "object",
+          "required": [
+            "duration"
+          ],
+          "properties": {
+            "duration": {
+              "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/duration.json"
+            }
+          }
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/instanceName.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/instanceName.json",
+      "title": "Instance name",
+      "description": "The short, human-readable name for a DSC resource instance. Must be unique within a DSC Configuration document. Must be a non-empty string containing only letters, numbers, and spaces.",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9 ]+$",
+      "minLength": 1
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/resourceType.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/resourceType.json",
+      "title": "DSC resource fully qualified type name",
+      "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
+      "type": "string",
+      "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/duration.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/duration.json",
+      "title": "Duration",
+      "description": "Defines the duration of a DSC operation against a configuration document or resource instance as a string following the format defined in ISO8601 ABNF for `duration`. For example, `PT0.611216S` represents a duration of about `0.61` seconds. For more information, see: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A",
+      "type": "string",
+      "format": "duration"
+    }
+  }
+}

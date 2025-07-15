@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/extensionType.json",
+  "title": "DSC extension fully qualified type name",
+  "description": "The namespaced name of the DSC extension, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n  - Microsoft/Example\n  - Microsoft.DSC/Docs\n  - Microsoft.Windows.Appx/Discover\n",
+  "type": "string",
+  "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
+}

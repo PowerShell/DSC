@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for the '_rebootRequested' canonical DSC Resource property.
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Resource _rebootRequested property schema
 ---
@@ -43,7 +43,7 @@ snippet:
 
 ```json
 "_rebootRequested": {
-  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/resource/properties/rebootRequested.json"
+  "$ref": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/properties/rebootRequested.json"
 }
 ```
 

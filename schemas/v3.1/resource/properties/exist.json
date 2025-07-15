@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/resource/properties/exist.json",
+  "title": "Instance should exist",
+  "description": "Indicates whether the DSC resource instance should exist.",
+  "type": "boolean",
+  "default": true,
+  "enum": [
+    false,
+    true
+  ]
+}

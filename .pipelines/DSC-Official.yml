@@ -133,9 +133,10 @@ extends:
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
-          ob_sdl_sbom_enabled: true
-          ob_signing_setup_enabled: true
-          ob_sdl_codeql_compiled_enabled: true
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: false
+          ob_sdl_codeql_compiled_enabled: false
+          ob_restore_phase: true
         pool:
           type: windows
         steps:
@@ -152,17 +153,39 @@ extends:
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_x64/*.msix" ./bin/msix -Verbose
             Copy-Item "$(Pipeline.Workspace)/drop_BuildAndSign_BuildWin_arm64/*.msix" ./bin/msix -Verbose
             ./build.ps1 -PackageType msixbundle
-            Copy-Item ./bin/*.msixbundle "$(ob_outputDirectory)"
+            Copy-Item "$(Build.SourcesDirectory)/DSC/bin/*.msixbundle" "$(ob_outputDirectory)"
           displayName: 'Create msixbundle'
           condition: succeeded()
+
+      - job: SignMsixBundle
+        dependsOn: CreateMsixBundle
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
+          ob_sdl_sbom_enabled: false
+          ob_signing_setup_enabled: true
+          ob_sdl_codeql_compiled_enabled: false
+        pool:
+          type: windows
+        steps:
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            buildType: 'current'
+            artifact: drop_BuildAndSign_CreateMsixBundle
+            itemPattern: |
+              **/*.msixbundle
+            targetPath: '$(Build.ArtifactStagingDirectory)/downloads'
+          displayName: Download MsixBundle
         - task: onebranch.pipeline.signing@1
           displayName: Sign MsixBundle
           condition: succeeded()
           inputs:
             command: 'sign'
-            signing_profile: $(MSIXProfile)
+            signing_profile: 'Dynamic-WINMSAPP1ST'
             files_to_sign: '*.msixbundle'
-            search_root: '$(ob_outputDirectory)'
+            search_root: '$(Build.ArtifactStagingDirectory)/downloads'
+        - pwsh: |
+            Copy-Item "$(Build.ArtifactStagingDirectory)/downloads/*.msixbundle" "$(ob_outputDirectory)"
+          displayName: 'Copy MsixBundle to output directory'
 
       - job: BuildLinuxMusl
         dependsOn: SetPackageVersion

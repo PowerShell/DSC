@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/extension/manifest.json",
+  "title": "DSC extension manifest",
+  "description": "Defines the information DSC requires to process and surface a DSC extension.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "type",
+    "version"
+  ],
+  "properties": {
+    "$schema": {
+      "title": "Manifest Schema",
+      "description": "This property must be the canonical URL of the Command-based DSC resource Manifest schema that the manifest is implemented for.",
+      "type": "string",
+      "format": "uri",
+      "enum": [
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/extension/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/extension/manifest.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/extension/manifest.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/extension/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/extension/manifest.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/extension/manifest.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/extension/manifest.vscode.json"
+      ]
+    },
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/extensionType.json"
+    },
+    "version": {
+      "title": "Extension Semantic Version",
+      "description": "The semantic version (semver) of the DSC extension.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/semver.json"
+    },
+    "description": {
+      "title": "Extension description",
+      "description": "A short synopsis of the DSC extension's purpose.",
+      "type": "string"
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "Defines a list of searchable terms for the extension.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$"
+      }
+    },
+    "discover": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/extension/manifest.discover.json"
+    },
+    "exitCodes": {
+      "title": "Exit codes",
+      "description": "This property defines a map of valid exit codes for the DSC extension. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC extension's exit codes.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^-?[0-9]+$"
+      },
+      "patternProperties": {
+        "^-?[0-9]+$": {
+          "type": "string"
+        }
+      },
+      "unevaluatedProperties": false,
+      "default": {
+        "0": "Success",
+        "1": "Error"
+      },
+      "examples": [
+        {
+          "0": "Success",
+          "1": "Invalid parameter",
+          "2": "Invalid input",
+          "3": "JSON serialization failed"
+        }
+      ]
+    }
+  }
+}

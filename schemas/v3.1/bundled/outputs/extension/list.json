@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/outputs/extension/list.json",
+  "title": "dsc extension list result",
+  "description": "Describes the return data for a DSC extension instance from the `dsc extension list` command.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/extensionType.json"
+    },
+    "version": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/semver.json"
+    },
+    "capabilities": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/extensionCapabilities.json"
+    },
+    "description": {
+      "title": "Extension description",
+      "description": "A short synopsis of the DSC extension's purpose.",
+      "type": "string"
+    },
+    "path": {
+      "title": "Path",
+      "description": "Indicates the path to the DSC extension on the file system.",
+      "type": "string"
+    },
+    "directory": {
+      "title": "Directory",
+      "description": "Indicates the path to the folder containing the DSC extension on the file system.",
+      "type": "string"
+    },
+    "author": {
+      "title": "Author",
+      "description": "Indicates the name of the person or organization that developed and maintains the DSC extension.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "manifest": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1/extension/manifest.json"
+    }
+  },
+  "$defs": {
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/extensionType.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/extensionType.json",
+      "title": "DSC extension fully qualified type name",
+      "description": "The namespaced name of the DSC extension, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n  - Microsoft/Example\n  - Microsoft.DSC/Docs\n  - Microsoft.Windows.Appx/Discover\n",
+      "type": "string",
+      "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/semver.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/semver.json",
+      "type": "string",
+      "title": "Semantic Version",
+      "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/extensionCapabilities.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/extensionCapabilities.json",
+      "title": "Resource capabilities",
+      "description": "Define the operations DSC can invoke for an extension and how the extension behaves when invoked.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "discover"
+        ]
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.json",
+      "title": "DSC extension manifest",
+      "description": "Defines the information DSC requires to process and surface a DSC extension.",
+      "type": "object",
+      "required": [
+        "$schema",
+        "type",
+        "version"
+      ],
+      "properties": {
+        "$schema": {
+          "title": "Manifest Schema",
+          "description": "This property must be the canonical URL of the Command-based DSC resource Manifest schema that the manifest is implemented for.",
+          "type": "string",
+          "format": "uri",
+          "enum": [
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/extension/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/extension/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/extension/manifest.vscode.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/extension/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/extension/manifest.vscode.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/extension/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/extension/manifest.json",
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/extension/manifest.vscode.json",
+            "https://aka.ms/dsc/schemas/v3/extension/manifest.json",
+            "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
+            "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.vscode.json",
+            "https://aka.ms/dsc/schemas/v3.1/extension/manifest.json",
+            "https://aka.ms/dsc/schemas/v3.1/bundled/extension/manifest.json",
+            "https://aka.ms/dsc/schemas/v3.1/bundled/extension/manifest.vscode.json",
+            "https://aka.ms/dsc/schemas/v3.1.0/extension/manifest.json",
+            "https://aka.ms/dsc/schemas/v3.1.0/bundled/extension/manifest.json",
+            "https://aka.ms/dsc/schemas/v3.1.0/bundled/extension/manifest.vscode.json"
+          ]
+        },
+        "type": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/extensionType.json"
+        },
+        "version": {
+          "title": "Extension Semantic Version",
+          "description": "The semantic version (semver) of the DSC extension.",
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/semver.json"
+        },
+        "description": {
+          "title": "Extension description",
+          "description": "A short synopsis of the DSC extension's purpose.",
+          "type": "string"
+        },
+        "tags": {
+          "title": "Tags",
+          "description": "Defines a list of searchable terms for the extension.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^\\w+$"
+          }
+        },
+        "discover": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/extension/manifest.discover.json"
+        },
+        "exitCodes": {
+          "title": "Exit codes",
+          "description": "This property defines a map of valid exit codes for the DSC extension. DSC always interprets exit code `0` as a successful operation and any other exit code as an error. Use this property to indicate human-readable semantic meanings for the DSC extension's exit codes.",
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^-?[0-9]+$"
+          },
+          "patternProperties": {
+            "^-?[0-9]+$": {
+              "type": "string"
+            }
+          },
+          "unevaluatedProperties": false,
+          "default": {
+            "0": "Success",
+            "1": "Error"
+          },
+          "examples": [
+            {
+              "0": "Success",
+              "1": "Invalid parameter",
+              "2": "Invalid input",
+              "3": "JSON serialization failed"
+            }
+          ]
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.discover.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.discover.json",
+      "title": "Discover operation command",
+      "description": "Defines how DSC must call the DSC extension to discover the paths to resource manifests.",
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/commandExecutable.json"
+        },
+        "args": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/commandArgs.json"
+        }
+      }
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/commandExecutable.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/commandExecutable.json",
+      "title": "Executable Command Name",
+      "description": "The name of the command to run.",
+      "type": "string"
+    },
+    "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/commandArgs.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/definitions/commandArgs.json",
+      "title": "Executable Command Arguments",
+      "description": "The list of arguments to pass to the command. The arguments can be any number of strings. If you want to pass the JSON object representing the property bag for the resource to an argument, you can define a single item in the array as a JSON object, indicating the name of the argument with the `jsonInputArg` string property and whether the argument is mandatory for the command with the `mandatory` boolean property.",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "title": "String argument",
+            "description": "Any item in the argument array can be a string representing a static argument to pass to the command."
+          },
+          {
+            "type": "object",
+            "title": "JSON input argument",
+            "description": "Defines an argument for the command that accepts the JSON input object as a string. DSC passes the JSON input to the named argument when available. You can define the `mandatory` property to indicate whether DSC should always pass the argument to the command, even when there's no JSON input for the command. In that case, DSC passes an empty string to the JSON input argument. You can only define one JSON input argument per arguments array.",
+            "required": [
+              "jsonInputArg"
+            ],
+            "unevaluatedProperties": false,
+            "properties": {
+              "jsonInputArg": {
+                "title": "JSON input argument name",
+                "description": "Defines the argument that accepts the JSON property bag for the resource as input.",
+                "type": "string"
+              },
+              "mandatory": {
+                "title": "Mandatory argument",
+                "description": "Defines whether the argument is mandatory. If this property is set to `true`, DSC passes an empty string when no JSON input is provided. The default value is `false`.",
+                "type": "boolean",
+                "default": false
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
