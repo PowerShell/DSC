@@ -27,10 +27,10 @@ resources:
   - name: <instance name>
     type: Microsoft.OpenSSH.SSHD/Windows
     properties:
-      # Required properties
       # Instance properties
-      _exist:
-      # Add other properties as needed
+      shell: 
+      escapeArguments:
+      cmdOption:
 ```
 
 ## Description
@@ -60,7 +60,6 @@ The resource has the following capabilities:
 
 - `get` - You can use the resource to retrieve the actual state of an instance.
 - `set` - You can use the resource to enforce the desired state for an instance.
-- `export` - You can use the resource to export the SSHD configuration of existing instances.
 
 This resource uses the synthetic test functionality of DSC to determine whether an instance is in
 the desired state. For more information about resource capabilities, see
@@ -70,41 +69,27 @@ the desired state. For more information about resource capabilities, see
 
 <!-- Example definitions would need to be created as separate files -->
 
-1. [Configure default shell PowerShell][03] - Shows how to set the default shell to PowerShell.exe
+1. [Configure default shell PowerShell][01] - Shows how to set the default shell to PowerShell.exe
 
 ## Properties
 
 The following list describes the properties for the resource.
 
-- **Required properties:** <a id="required-properties"></a> The following properties are always
-  required when defining an instance of the resource. An instance that doesn't define each of these
-  properties is invalid. For more information, see the "Required resource properties" section in
-  [DSC resource properties][01]
-
-  - [shell](#shell) - The path to the default shell for SSH.
-
-- **Key properties:** <a id="key-properties"> The following properties uniquely identify an
-  instance. If two instances of a resource have the same values for their key properties, the
-  instances are conflicting. For more information about key properties, see the "Key resource
-  properties" section in [DSC resource properties][02].
-
-  - [shell](#shell) (required) - The path to the default shell for SSH.
-
 - **Instance properties:** <a id="instance-properties"></a> The following properties are optional.
   They define the desired state for an instance of the resource.
 
-  - [cmd_option](#cmd_option) - Specifies command-line options for the shell.
-  - [escape_arguments](#escape_arguments) - Specifies whether shell arguments should be escaped.
-  - [shell_arguments](#shell_arguments) - Specifies the arguments to pass to the shell.
+  - [shell](#shell) - The path to the default shell for SSH.
+  - [cmdOption](#cmdOption) - Specifies command-line options for the shell.
+  - [escapeArguments](#escapeArguments) - Specifies whether shell arguments should be escaped.
 
 ### shell
 
 <details><summary>Expand for <code>shell</code> property metadata</summary>
 
 ```yaml
-Type             : string
-IsRequired       : true
-IsKey            : true
+Type             : string, null
+IsRequired       : false
+IsKey            : false
 IsReadOnly       : false
 IsWriteOnly      : false
 ```
@@ -114,12 +99,12 @@ IsWriteOnly      : false
 Defines the path to the default shell executable to use for SSH sessions.
 This property is required and must specify a valid path to an executable on the system.
 
-### cmd_option
+### cmdOption
 
-<details><summary>Expand for <code>cmd_option</code> property metadata</summary>
+<details><summary>Expand for <code>cmdOption</code> property metadata</summary>
 
 ```yaml
-Type             : string
+Type             : string, null
 IsRequired       : false
 IsKey            : false
 IsReadOnly       : false
@@ -130,12 +115,12 @@ IsWriteOnly      : false
 
 Specifies optional command-line options to pass to the shell when it's launched.
 
-### escape_arguments
+### escapeArguments
 
-<details><summary>Expand for <code>escape_arguments</code> property metadata</summary>
+<details><summary>Expand for <code>escapeArguments</code> property metadata</summary>
 
 ```yaml
-Type             : boolean
+Type             : boolean, null
 IsRequired       : false
 IsKey            : false
 IsReadOnly       : false
@@ -147,26 +132,6 @@ IsWriteOnly      : false
 Determines whether shell arguments should be escaped. When set to `true`, the arguments provided
 in `shell_arguments` will be properly escaped before being passed to the shell.
 
-### shell_arguments
-
-<details><summary>Expand for <code>shell_arguments</code> property metadata</summary>
-
-```yaml
-Type              : array
-ItemsType         : string
-ItemsMustBeUnique : false
-ItemsMinimumCount : 0
-IsRequired        : false
-IsKey             : false
-IsReadOnly        : false
-IsWriteOnly       : false
-```
-
-</details>
-
-Specifies an array of arguments to pass to the shell when it's launched.
-Each element in the array represents a separate argument.
-
 ## Instance validating schema
 
 The following snippet contains the JSON Schema that validates an instance of the resource. The
@@ -176,23 +141,24 @@ non validating keywords are omitted.
 ```json
 {
   "type": "object",
-  "required": ["shell"],
-  "additionalProperties": false,
   "properties": {
     "shell": {
-      "type": "string"
+      "type": [
+        "string",
+        "null"
+      ]
     },
-    "cmd_option": {
-      "type": "string"
+    "cmdOption": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
-    "escape_arguments": {
-      "type": "boolean"
-    },
-    "shell_arguments": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "escapeArguments": {
+      "type": [
+        "boolean",
+        "null"
+      ]
     }
   }
 }
@@ -204,9 +170,6 @@ The resource returns the following exit codes from operations:
 
 - [0](#exit-code-0) - Success
 - [1](#exit-code-1) - Invalid parameter
-- [2](#exit-code-2) - Invalid input
-- [3](#exit-code-3) - SSH configuration error
-- [4](#exit-code-4) - Json serialization failed
 
 ### Exit code 0
 
@@ -217,31 +180,13 @@ Indicates the resource operation completed without errors.
 Indicates the resource operation failed due to an invalid parameter. When the resource returns this
 exit code, it also emits an error message with details about the invalid parameter.
 
-### Exit code 2
-
-Indicates the resource operation failed because the input instance was invalid. When the resource
-returns this exit code, it also emits one or more error messages with details describing how the
-input instance was invalid.
-
-### Exit code 3
-
-Indicates the resource operation failed due to an error in the SSH server configuration. When the
-resource returns this exit code, it also emits the error message related to the SSH configuration issue.
-
-### Exit code 4
-
-Indicates the resource operation failed because the result couldn't be serialized to JSON.
-
 ## See also
 
-- [Microsoft.DSC/PowerShell resource][03]
-- For more information about OpenSSH, see [OpenSSH Documentation][04]
+- [Microsoft.DSC/PowerShell resource][02]
+- For more information about OpenSSH, see [OpenSSH Documentation][03]
 
 <!-- Link definitions -->
 [00]: ../../../../../concepts/resources/capabilities.md
-[01]: ../../../../../concepts/resources/properties.md#required-resource-properties
-[02]: ../../../../../concepts/resources/properties.md#key-resource-properties
-[03]: ../../../DSC/PowerShell/index.md
-[04]: /windowsserverdocs/WindowsServerDocs/administration/OpenSSH/openssh-overview
-[05]: ./examples/configure-default-shell-powershell.md
-
+[01]: ./examples/configure-default-shell-powershell.md
+[02]: ../../../DSC/PowerShell/index.md
+[03]: /windowsserverdocs/WindowsServerDocs/administration/OpenSSH/openssh-overview
