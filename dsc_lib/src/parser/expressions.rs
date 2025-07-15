@@ -113,9 +113,11 @@ impl Expression {
     /// This function will return an error if the expression fails to execute.
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
         let result = self.function.invoke(function_dispatcher, context)?;
-        // TODO: check if `secret()` function and don't emit result
-        let result_json = serde_json::to_string(&result)?;
-        trace!("{}", t!("parser.expression.functionResult", results = result_json));
+        // skip trace if function is 'secret()'
+        if self.function.name() != "secret" {
+            let result_json = serde_json::to_string(&result)?;
+            trace!("{}", t!("parser.expression.functionResult", results = result_json));
+        }
         if self.accessors.is_empty() {
             Ok(result)
         }
