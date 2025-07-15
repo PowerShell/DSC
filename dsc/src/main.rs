@@ -92,6 +92,9 @@ fn main() {
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format);
         },
+        SubCommand::Function { subcommand } => {
+            subcommand::function(&subcommand);
+        },
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, progress_format);
         },
