@@ -2,22 +2,22 @@
 # Licensed under the MIT License.
 
 BeforeDiscovery {
-        $testCases = if ($IsWindows) {
-            @(
-                @{
-                    resourceType = 'Microsoft.DSC.Transitional/PowerShellScript'
-                }
-                @{
-                    resourceType = 'Microsoft.DSC.Transitional/WindowsPowerShellScript'
-                }
-            )
-        } else {
-            @(
-                @{
-                    resourceType = 'Microsoft.DSC.Transitional/PowerShellScript'
-                }
-            )
-        }
+    $testCases = if ($IsWindows) {
+        @(
+            @{
+                resourceType = 'Microsoft.DSC.Transitional/PowerShellScript'
+            }
+            @{
+                resourceType = 'Microsoft.DSC.Transitional/WindowsPowerShellScript'
+            }
+        )
+    } else {
+        @(
+            @{
+                resourceType = 'Microsoft.DSC.Transitional/PowerShellScript'
+            }
+        )
+    }
 }
 
 Describe 'Tests for PSScript resource' {
