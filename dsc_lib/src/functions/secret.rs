@@ -18,6 +18,14 @@ impl Function for Secret {
         vec![AcceptedArgKind::String]
     }
 
+    fn description(&self) -> String {
+        t!("functions.secret.description").to_string()
+    }
+
+    fn category(&self) -> super::FunctionCategory {
+        super::FunctionCategory::System
+    }
+
     fn min_args(&self) -> usize {
         1
     }

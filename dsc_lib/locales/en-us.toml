@@ -299,6 +299,7 @@ incorrectNameFormat = "Name argument cannot contain a slash"
 invalidSecondArgType = "Invalid argument type for second parameter"
 
 [functions.secret]
+description = "Retrieves a secret from a vault"
 notString = "Parameter secret name is not a string"
 multipleSecrets = "Multiple secrets with the same name '%{name}' and different values was returned, try specifying a vault"
 extensionReturnedError = "Extension '%{extension}': %{error}"
