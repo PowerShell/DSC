@@ -645,7 +645,6 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     let mut include_separator = false;
     for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
         if let ImportedManifest::Extension(extension) = manifest_resource {
-            let mut capabilities = "--".to_string();
             let capability_types = [
                 (ExtensionCapability::Discover, "d"),
                 (ExtensionCapability::Secret, "s"),
