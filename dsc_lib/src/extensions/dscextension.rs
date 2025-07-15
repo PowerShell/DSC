@@ -41,6 +41,8 @@ pub enum Capability {
     Discover,
     /// The extension aids in retrieving secrets.
     Secret,
+    /// The extension imports configuration from a different format.
+    Import,
 }
 
 impl Display for Capability {
@@ -48,6 +50,7 @@ impl Display for Capability {
         match self {
             Capability::Discover => write!(f, "Discover"),
             Capability::Secret => write!(f, "Secret"),
+            Capability::Import => write!(f, "Import"),
         }
     }
 }
