@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
-use crate::configure::parameters::Input;
+use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
@@ -87,17 +87,17 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
                 other: Map::new(),
             };
             if let Some(security_context) = props.remove("_securityContext") {
-                let context: SecurityContextKind = serde_json::from_value(security_context)?;
+                let security_context: SecurityContextKind = serde_json::from_value(security_context)?;
                 metadata.microsoft = Some(
                         MicrosoftDscMetadata {
-                            security_context: Some(context),
+                            security_context: Some(security_context),
                             ..Default::default()
                         }
                 );
             }
             r.properties = escape_property_values(&props)?;
             let mut properties = serde_json::to_value(&r.properties)?;
-            get_metadata_from_result(&mut properties, &mut metadata)?;
+            get_metadata_from_result(None, &mut properties, &mut metadata)?;
             r.properties = Some(properties.as_object().cloned().unwrap_or_default());
             r.metadata = if metadata.microsoft.is_some() || !metadata.other.is_empty() {
                 Some(metadata)
@@ -225,13 +225,23 @@ fn check_security_context(metadata: Option<&Metadata>) -> Result<(), DscError> {
     Ok(())
 }
 
-fn get_metadata_from_result(result: &mut Value, metadata: &mut Metadata) -> Result<(), DscError> {
+fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Value, metadata: &mut Metadata) -> Result<(), DscError> {
     if let Some(metadata_value) = result.get("_metadata") {
         if let Some(metadata_map) = metadata_value.as_object() {
             for (key, value) in metadata_map {
                 if key.starts_with("Microsoft.DSC") {
                     warn!("{}", t!("configure.mod.metadataMicrosoftDscIgnored", key = key));
                     continue;
+                }
+                if let Some(ref mut context) = context {
+                    if key == "_restartRequired" {
+                        if let Some(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()).ok() {
+                            context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
+                        } else {
+                            warn!("{}", t!("configure.mod.metadataRestartRequiredInvalid", value = value));
+                            continue;
+                        }
+                    }
                 }
                 metadata.other.insert(key.clone(), value.clone());
             }
@@ -335,7 +345,7 @@ impl Configurator {
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.actual_state)?);
-                    get_metadata_from_result(&mut resource_result.actual_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata)?;
                 },
                 GetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -488,7 +498,7 @@ impl Configurator {
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.after_state)?);
-                    get_metadata_from_result(&mut resource_result.after_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata)?;
                 },
                 SetResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -558,7 +568,7 @@ impl Configurator {
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
                     self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_test_result.actual_state)?);
-                    get_metadata_from_result(&mut resource_test_result.actual_state, &mut metadata)?;
+                    get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata)?;
                 },
                 TestResult::Group(group) => {
                     let mut results = Vec::<Value>::new();
@@ -765,6 +775,11 @@ impl Configurator {
                     end_datetime: Some(end_datetime.to_rfc3339()),
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
+                    restart_required: if let Some(restart_required) = self.context.restart_required.clone() {
+                        Some(restart_required)
+                    } else {
+                        None
+                    },
                 }
             ),
             other: Map::new(),

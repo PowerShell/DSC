@@ -7,7 +7,7 @@ use security_context_lib::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, path::PathBuf};
 
-use super::config_doc::{DataType, SecurityContextKind};
+use super::config_doc::{DataType, RestartRequired, SecurityContextKind};
 
 pub struct Context {
     pub execution_type: ExecutionKind,
@@ -17,6 +17,7 @@ pub struct Context {
     pub security_context: SecurityContextKind,
     pub variables: Map<String, Value>,
     pub start_datetime: DateTime<Local>,
+    pub restart_required: Option<Vec<RestartRequired>>,
 }
 
 impl Context {
@@ -33,6 +34,7 @@ impl Context {
             },
             variables: Map::new(),
             start_datetime: chrono::Local::now(),
+            restart_required: None,
         }
     }
 }
