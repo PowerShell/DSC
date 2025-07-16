@@ -235,7 +235,7 @@ fn get_metadata_from_result(mut context: Option<&mut Context>, result: &mut Valu
                 }
                 if let Some(ref mut context) = context {
                     if key == "_restartRequired" {
-                        if let Some(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()).ok() {
+                        if let Ok(restart_required) = serde_json::from_value::<Vec<RestartRequired>>(value.clone()) {
                             context.restart_required.get_or_insert_with(Vec::new).extend(restart_required);
                         } else {
                             warn!("{}", t!("configure.mod.metadataRestartRequiredInvalid", value = value));
@@ -775,11 +775,7 @@ impl Configurator {
                     end_datetime: Some(end_datetime.to_rfc3339()),
                     duration: Some(end_datetime.signed_duration_since(self.context.start_datetime).to_string()),
                     security_context: Some(self.context.security_context.clone()),
-                    restart_required: if let Some(restart_required) = self.context.restart_required.clone() {
-                        Some(restart_required)
-                    } else {
-                        None
-                    },
+                    restart_required: self.context.restart_required.clone(),
                 }
             ),
             other: Map::new(),
