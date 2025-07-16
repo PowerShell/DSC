@@ -123,4 +123,21 @@ Describe 'metadata tests' {
         $out.metadata.'Microsoft.DSC'.restartRequired[4].process.name | Should -BeExactly 'anotherProcess'
         $out.metadata.'Microsoft.DSC'.restartRequired[4].process.id | Should -Be 5678
     }
+
+    It 'invalid item in _restartRequired metadata is a warning' {
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/Metadata
+            properties:
+              _metadata:
+                _restartRequired:
+                  - invalid: item
+'@
+        $out = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned '_metadata' property '_restartRequired' which contains invalid value: ``[{`"invalid`":`"item`"}]*"
+        $out.results[0].metadata._restartRequired | Should -BeNullOrEmpty
+    }
 }
