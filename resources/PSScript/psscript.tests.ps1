@@ -181,12 +181,13 @@ Describe 'Tests for PSScript resource' {
         $yaml = @'
         GetScript: |
           Write-Warning "This is a warning"
+          Write-Warning "This is second warning"
 '@
 
         $result = dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
-        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*'
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*WARN*:*This is second warning*'
     }
 
     It 'Write-Error shows up as error traces for <resourceType>' -TestCases $testCases {
@@ -304,5 +305,20 @@ Describe 'Tests for PSScript resource' {
         dsc resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
         (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike "*ERROR*:*Script has a parameter 'inputObj' but no input was provided.*"
+    }
+
+    It 'Write-Host results in an info message for <resourceType>' -TestCases $testCases {
+        param($resourceType)
+
+        $yaml = @'
+        getScript: |
+          Write-Warning "This is a warning"
+          Write-Host "This is a host message"
+          Write-Verbose "This is a verbose message"
+'@
+        $result = dsc -l trace resource get -r $resourceType -i $yaml 2> $TestDrive/error.txt | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.txt -Raw | Out-String)
+        $result.actualState.output.Count | Should -Be 0 -Because ($result | ConvertTo-Json | Out-String)
+        (Get-Content $TestDrive/error.txt -Raw) | Should -BeLike '*WARN*:*This is a warning*INFO*:*This is a host message*INFO*:*This is a verbose message*'
     }
 }

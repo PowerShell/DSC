@@ -9,8 +9,6 @@ param(
     [string]$jsonInput
 )
 
-$traceQueue = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
-
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $true)]
@@ -67,7 +65,7 @@ if ($errors.Count -gt 0) {
     exit 3
 }
 
-$paramName = if ($ast.ParamBlock -ne $null) {
+$paramName = if ($null -ne $ast.ParamBlock) {
     # make sure it only specifies one parameter and get the name of that parameter
     if ($ast.ParamBlock.Parameters.Count -ne 1) {
         Write-DscTrace -Now -Level Error -Message 'Script must have exactly one parameter.'
@@ -82,7 +80,7 @@ $ps = [PowerShell]::Create().AddScript({
     $DebugPreference = 'Continue'
     $VerbosePreference = 'Continue'
     $ErrorActionPreference = 'Stop'
-}).AddScript($script)
+}).AddStatement().AddScript($script)
 
 if ($null -ne $scriptObject.input) {
     if ($null -eq $paramName) {
@@ -95,29 +93,38 @@ if ($null -ne $scriptObject.input) {
     exit 3
 }
 
-$ps.Streams.Error.add_DataAdded({
-    param($sender, $args)
-    Write-DscTrace -Level Error -Message $sender.Message
-})
-$ps.Streams.Warning.add_DataAdded({
-    param($sender, $args)
-    Write-DscTrace -Level Warn -Message $sender.Message
-})
-$ps.Streams.Information.add_DataAdded({
-    param($sender, $args)
-    Write-DscTrace -Level Trace -Message $sender.MessageData.ToString()
-})
-$ps.Streams.Verbose.add_DataAdded({
-    param($sender, $args)
-    Write-DscTrace -Level Info -Message $sender.Message
-})
-$ps.Streams.Debug.add_DataAdded({
-    param($sender, $args)
-    Write-DscTrace -Level Debug -Message $sender.Message
-})
+$traceQueue = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
+
+$null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData $traceQueue -Action {
+    $traceQueue = $Event.MessageData
+    $traceQueue.Enqueue((@{ error = $EventArgs.ItemAdded.Message } | ConvertTo-Json -Compress))
+}
+$null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData $traceQueue -Action {
+    $traceQueue = $Event.MessageData
+    $traceQueue.Enqueue((@{ warn = $EventArgs.ItemAdded.Message } | ConvertTo-Json -Compress))
+}
+$null = Register-ObjectEvent -InputObject $ps.Streams.Information -EventName DataAdding -MessageData $traceQueue -Action {
+    $traceQueue = $Event.MessageData
+    if ($null -ne $EventArgs.ItemAdded.MessageData) {
+        if ($EventArgs.ItemAdded.Tags -contains 'PSHOST') {
+            $traceQueue.Enqueue((@{ info = $EventArgs.ItemAdded.MessageData.ToString() } | ConvertTo-Json -Compress))
+        } else {
+            $traceQueue.Enqueue((@{ trace = $EventArgs.ItemAdded.MessageData.ToString() } | ConvertTo-Json -Compress))
+        }
+        return
+    }
+}
+$null = Register-ObjectEvent -InputObject $ps.Streams.Verbose -EventName DataAdding -MessageData $traceQueue -Action {
+    $traceQueue = $Event.MessageData
+    $traceQueue.Enqueue((@{ info = $EventArgs.ItemAdded.Message } | ConvertTo-Json -Compress))
+}
+$null = Register-ObjectEvent -InputObject $ps.Streams.Debug -EventName DataAdding -MessageData $traceQueue -Action {
+    $traceQueue = $Event.MessageData
+    $traceQueue.Enqueue((@{ debug = $EventArgs.ItemAdded.Message } | ConvertTo-Json -Compress))
+}
 $outputObjects = [System.Collections.Generic.List[Object]]::new()
 
-function write-traces() {
+function Write-TraceQueue() {
     $trace = $null
     while (!$traceQueue.IsEmpty) {
         if ($traceQueue.TryDequeue([ref] $trace)) {
@@ -129,11 +136,13 @@ function write-traces() {
 try {
     $asyncResult = $ps.BeginInvoke()
     while (-not $asyncResult.IsCompleted) {
-        write-traces
+        Write-TraceQueue
+    
         Start-Sleep -Milliseconds 100
     }
     $outputCollection = $ps.EndInvoke($asyncResult)
-    write-traces
+    Write-TraceQueue
+
 
     if ($ps.HadErrors) {
         # If there are any errors, we will exit with an error code
@@ -151,6 +160,7 @@ catch {
 }
 finally {
     $ps.Dispose()
+    Get-EventSubscriber | Unregister-Event
 }
 
 # Test should return a single boolean value indicating if in the desired state
