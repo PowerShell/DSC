@@ -59,39 +59,27 @@ Describe 'WMI adapter resource tests' {
         $res.results[1].result.actualState.result[4].properties.AdapterType | Should -BeLike "Ethernet*"
     }
 
-    It 'Throws error when methodName is missing on set' -Skip:(!$IsWindows) {
-        '{"Name":"wuauserv"}' | dsc -l trace resource set -r 'root.cimv2/Win32_Service' -f - 2> $TestDrive\tracing.txt
-        $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatch "'methodName' property is required for invoking a WMI/CIM method."
+    It 'Set does not work with missing key property' -Skip:(!$IsWindows) {
+        $s = dsc resource set --resource root.cimv2/Win32_Environment --input '{}' 2>&1
+        $LASTEXITCODE | Should -Be 1
+        $s | Should -BeLike "*Key property 'Name' is required*"
     }
 
-    It 'Throws error when methodName is set but parameters are missing on set' -Skip:(!$IsWindows) {
-        '{"Name":"wuauserv", "methodName":"StartService"}' | dsc -l trace resource set -r 'root.cimv2/Win32_Service' -f - 2> $TestDrive\tracing.txt
-        $LASTEXITCODE | Should -Be 2
-        "$TestDrive/tracing.txt" | Should -FileContentMatch "'parameters' property is required for invoking a WMI/CIM method."
-    }
-
-    It 'Set works on a WMI resource with methodName and parameters' -Skip:(!$IsWindows) {
-        BeforeAll {
-            $script:service = Get-Service -Name wuauserv -ErrorAction Ignore 
-
-            if ($service -and $service.Status -eq 'Running') {
-                $service.Stop()
-            }
-        }
+    It 'Set works on a WMI resource' -Skip:(!$IsWindows) {
+        $i = @{
+            UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only property required 
+            Name = "TestVariable"
+            VariableValue = "TestValue"
+        } | ConvertTo-Json
         
+        $r = dsc -l trace resource set -r root.cimv2/Win32_Environment -i $i
 
-        $r = '{"Name":"wuauserv", "methodName":"StartService", "parameters":{}}' | dsc resource set -r 'root.cimv2/Win32_Service' -f -
+        $s = dsc resource set --resource root.cimv2/Win32_Environment --input '{"Name":"TestVariable","Value":"TestValue"}'
         $LASTEXITCODE | Should -Be 0
-        
-        $res = '{"Name":"wuauserv", "State": null}' | dsc resource get -r 'root.cimv2/Win32_Service' -f - | ConvertFrom-Json
-        $res.actualState.Name | Should -Be 'wuauserv'
-        $res.actualState.State | Should -Be 'Running'
+        $s | Should -BeLike "*Set operation completed successfully*"
 
-        AfterAll {
-            if ($service -and $service.Status -eq 'Running') {
-                $service.Stop()
-            }
-        }
+        # Verify the variable was set
+        $get = dsc resource get -r root.cimv2/Win32_Environment -i '{"Name":"TestVariable"}'
+        $get | Should -BeLike "*TestValue*"
     }
 }
