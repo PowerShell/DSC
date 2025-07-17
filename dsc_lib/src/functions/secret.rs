@@ -45,7 +45,7 @@ impl Function for Secret {
         };
 
         // we query all extensions supporting the secret method to see if any of them can provide the secret.
-        // if none can or if multiple can, we return an error.
+        // if none can or if multiple provide different values, we return an error.
         let extensions = context.extensions.iter()
             .filter(|ext| ext.capabilities.contains(&Capability::Secret))
             .collect::<Vec<_>>();
