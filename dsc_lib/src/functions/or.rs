@@ -34,15 +34,16 @@ impl Function for Or {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.or.invoked"));
-        let mut result = false;
         for arg in args {
             if let Some(value) = arg.as_bool() {
-                result |= value;
+                if value {
+                    return Ok(Value::Bool(true));
+                }
             } else {
                 return Err(DscError::Parser(t!("functions.invalidArguments").to_string()));
             }
         }
-        Ok(Value::Bool(result))
+        Ok(Value::Bool(false))
     }
 }
 
