@@ -176,6 +176,11 @@ resourceManifestSchemaDescription = "Defines the JSON Schema the resource manife
 discoverNoResults = "No results returned for discovery extension '%{extension}'"
 discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
 extensionReturned = "Extension '%{extension}' returned line: %{line}"
+retrievingSecretFromExtension = "Retrieving secret '%{name}' from extension '%{extension}'"
+secretExtensionReturnedInvalidJson = "Extension '%{extension}' returned invalid JSON: %{error}"
+extensionReturnedSecret = "Extension '%{extension}' returned secret"
+extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
+secretNoResults = "Extension '%{extension}' returned no output"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -293,6 +298,14 @@ invalidFirstArgType = "Invalid argument type for first parameter"
 incorrectNameFormat = "Name argument cannot contain a slash"
 invalidSecondArgType = "Invalid argument type for second parameter"
 
+[functions.secret]
+description = "Retrieves a secret from a vault"
+notString = "Parameter secret name is not a string"
+multipleSecrets = "Multiple secrets with the same name '%{name}' and different values was returned, try specifying a vault"
+extensionReturnedError = "Extension '%{extension}': %{error}"
+noExtensions = "No extensions supporting secrets was found"
+secretNotFound = "Secret '%{name}' not found"
+
 [functions.sub]
 description = "Subtracts the second number from the first"
 invoked = "sub function"
@@ -356,7 +369,6 @@ manifestDescription = "manifest description"
 commandOperation = "Command: Operation"
 forExecutable = "for executable"
 function = "Function"
-error = "error"
 integerConversion = "Function integer argument conversion"
 invalidConfiguration = "Invalid configuration"
 unsupportedManifestVersion = "Unsupported manifest version"

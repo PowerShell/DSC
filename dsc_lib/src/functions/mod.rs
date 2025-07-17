@@ -29,6 +29,7 @@ pub mod parameters;
 pub mod path;
 pub mod reference;
 pub mod resource_id;
+pub mod secret;
 pub mod sub;
 pub mod system_root;
 pub mod variables;
@@ -93,6 +94,7 @@ impl FunctionDispatcher {
         functions.insert("path".to_string(), Box::new(path::Path{}));
         functions.insert("reference".to_string(), Box::new(reference::Reference{}));
         functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
+        functions.insert("secret".to_string(), Box::new(secret::Secret{}));
         functions.insert("sub".to_string(), Box::new(sub::Sub{}));
         functions.insert("systemRoot".to_string(), Box::new(system_root::SystemRoot{}));
         functions.insert("variables".to_string(), Box::new(variables::Variables{}));

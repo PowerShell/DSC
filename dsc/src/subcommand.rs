@@ -647,6 +647,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
         if let ImportedManifest::Extension(extension) = manifest_resource {
             let capability_types = [
                 (ExtensionCapability::Discover, "d"),
+                (ExtensionCapability::Secret, "s"),
             ];
             let mut capabilities = "-".repeat(capability_types.len());
 
