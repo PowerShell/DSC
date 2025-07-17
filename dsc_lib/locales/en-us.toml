@@ -204,8 +204,16 @@ noStringArgs = "Function '%{name}' does not accept string arguments, accepted ty
 description = "Adds two or more numbers together"
 invoked = "add function"
 
+[functions.and]
+description = "Evaluates if all arguments are true"
+invoked = "and function"
+
 [functions.base64]
 description = "Encodes a string to Base64 format"
+
+[functions.bool]
+description = "Converts a string or number to a boolean"
+invoked = "bool function"
 
 [functions.concat]
 description = "Concatenates two or more strings or arrays"
@@ -233,6 +241,10 @@ notFound = "Environment variable not found"
 
 [functions.equals]
 description = "Evaluates if the two values are the same"
+
+[functions.false]
+description = "Returns the boolean value false"
+invoked = "false function"
 
 [functions.format]
 description = "Formats a string using the given arguments"
@@ -274,6 +286,14 @@ divideByZero = "Cannot divide by zero"
 description = "Multiplies two or more numbers together"
 invoked = "mul function"
 
+[functions.not]
+description = "Negates a boolean value"
+invoked = "not function"
+
+[functions.or]
+description = "Evaluates if any arguments are true"
+invoked = "or function"
+
 [functions.parameters]
 description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
@@ -313,6 +333,10 @@ invoked = "sub function"
 [functions.systemRoot]
 description = "Returns the system root path"
 invoked = "systemRoot function"
+
+[functions.true]
+description = "Returns the boolean value true"
+invoked = "true function"
 
 [functions.variables]
 description = "Retrieves the value of a variable"
