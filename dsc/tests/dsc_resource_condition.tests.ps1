@@ -1,25 +1,24 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-BeforeDiscovery {
-    $configYaml = @'
-    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-    resources:
-        - name: test
-        type: Microsoft.DSC.Debug/Echo
-        condition: "[equals('skip', 'yes')]"
-        properties:
-            output: "This should not be executed"
-        - name: test2
-        type: Microsoft.DSC.Debug/Echo
-        condition: "[equals('no', 'no')]"
-        properties:
-            output: "This should be executed"
-'@
-
-}
-
 Describe 'Resource condition tests' {
+    BeforeAll {
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Microsoft.DSC.Debug/Echo
+            condition: "[equals('skip', 'yes')]"
+            properties:
+              output: "This should not be executed"
+          - name: test2
+            type: Microsoft.DSC.Debug/Echo
+            condition: "[equals('no', 'no')]"
+            properties:
+              output: "This should be executed"
+'@
+    }
+
     It 'resource should be skipped for <operation>' -TestCases @(
         @{ operation = 'get'; property = 'actualState' },
         @{ operation = 'set'; property = 'afterState' },
