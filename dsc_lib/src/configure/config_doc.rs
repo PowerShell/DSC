@@ -160,6 +160,8 @@ pub struct Resource {
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
 }
 
 impl Default for Configuration {
@@ -217,6 +219,7 @@ impl Resource {
             kind: None,
             properties: None,
             metadata: None,
+            condition: None,
         }
     }
 }

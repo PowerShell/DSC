@@ -30,6 +30,15 @@
             }
         ]
     },
+    "export": {
+        "executable": "dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
     "schema": {
         "command": {
             "executable": "dscecho"

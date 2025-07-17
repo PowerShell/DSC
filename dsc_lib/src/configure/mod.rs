@@ -311,6 +311,14 @@ impl Configurator {
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Get '{}'", resource.name).as_str());
+            if let Some(condition) = &resource.condition {
+                let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
+                if condition_result != Value::Bool(true) {
+                    info!("{}", t!("configure.config_doc.skippingResource", name = resource.name, condition = condition, result = condition_result));
+                    progress.write_increment(1);
+                    continue;
+                }
+            }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -387,6 +395,14 @@ impl Configurator {
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Set '{}'", resource.name).as_str());
+            if let Some(condition) = &resource.condition {
+                let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
+                if condition_result != Value::Bool(true) {
+                    info!("{}", t!("configure.config_doc.skippingResource", name = resource.name, condition = condition, result = condition_result));
+                    progress.write_increment(1);
+                    continue;
+                }
+            }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -535,6 +551,14 @@ impl Configurator {
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Test '{}'", resource.name).as_str());
+            if let Some(condition) = &resource.condition {
+                let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
+                if condition_result != Value::Bool(true) {
+                    info!("{}", t!("configure.config_doc.skippingResource", name = resource.name, condition = condition, result = condition_result));
+                    progress.write_increment(1);
+                    continue;
+                }
+            }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type));
             };
@@ -608,6 +632,14 @@ impl Configurator {
         for resource in &resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Export '{}'", resource.name).as_str());
+            if let Some(condition) = &resource.condition {
+                let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
+                if condition_result != Value::Bool(true) {
+                    info!("{}", t!("configure.config_doc.skippingResource", name = resource.name, condition = condition, result = condition_result));
+                    progress.write_increment(1);
+                    continue;
+                }
+            }
             let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
