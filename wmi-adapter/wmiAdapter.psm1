@@ -117,6 +117,61 @@ function GetValidCimProperties {
     return $validatedProperties
 }
 
+function BuildWmiQuery {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ClassName,
+        
+        [Parameter(Mandatory = $true)]
+        [array]$Properties,
+        
+        [Parameter(Mandatory = $true)]
+        [psobject]$DesiredStateProperties,
+        
+        [Parameter()]
+        [switch]$KeyPropertiesOnly
+    )
+    
+    $targetProperties = if ($KeyPropertiesOnly.IsPresent) {
+        $Properties | Where-Object { $_.Flags.ToString() -like "*Key*" }
+    } else {
+        $Properties
+    }
+    
+    if ($targetProperties.Count -eq 0) {
+        return $null
+    }
+    
+    $query = "SELECT $($targetProperties.Name -join ',') FROM $ClassName"
+    $whereClause = " WHERE "
+    $useWhere = $false
+    $isFirst = $true
+    
+    foreach ($property in $targetProperties) {
+        if ($null -ne $DesiredStateProperties.$($property.Name)) {
+            $useWhere = $true
+            if ($isFirst) {
+                $isFirst = $false
+            } else {
+                $whereClause += " AND "
+            }
+            
+            if ($property.CimType -eq "String") {
+                $whereClause += "$($property.Name) = '$($DesiredStateProperties.$($property.Name))'"
+            } else {
+                $whereClause += "$($property.Name) = $($DesiredStateProperties.$($property.Name))"
+            }
+        }
+    }
+    
+    if ($useWhere) {
+        $query += $whereClause
+    }
+    
+    return $query
+}
+
 function GetWmiInstance {
     [CmdletBinding()]
     param 
@@ -134,32 +189,22 @@ function GetWmiInstance {
     if ($DesiredState.properties) {
         $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties -SkipReadOnly
 
-        $query = "SELECT $($properties.Name -join ',') FROM $wmi_classname"
-        $where = " WHERE "
-        $useWhere = $false
-        $first = $true
-        foreach ($property in $properties) {
-            # TODO: validate property against the CIM class to give better error message
-            if ($null -ne $DesiredState.properties.$($property.Name)) {
-                $useWhere = $true
-                if ($first) {
-                    $first = $false
-                } else {
-                    $where += " AND "
-                }
+        $query = BuildWmiQuery -ClassName $wmi_classname -Properties $properties -DesiredStateProperties $DesiredState.properties
 
-                if ($property.CimType -eq "String") {
-                    $where += "$($property.Name) = '$($DesiredState.properties.$($property.Name))'"
-                } else {
-                    $where += "$($property.Name) = $($DesiredState.properties.$($property.Name))"
+        if ($query) {
+            "Query: $query" | Write-DscTrace -Operation Debug
+            $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Ignore -ErrorVariable err
+
+            if ($null -eq $wmi_instances) {
+                "No WMI instances found using query '$query'. Retrying with key properties only." | Write-DscTrace -Operation Debug
+                $keyQuery = BuildWmiQuery -ClassName $wmi_classname -Properties $properties -DesiredStateProperties $DesiredState.properties -KeyPropertiesOnly
+
+                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $keyQuery -ErrorAction Ignore -ErrorVariable err
+                if ($null -eq $wmi_instances) {
+                    "No WMI instances found using key properties query '$keyQuery'." | Write-DscTrace -Operation Debug
                 }
             }
         }
-        if ($useWhere) {
-            $query += $where
-        }
-        "Query: $query" | Write-DscTrace -Operation Debug
-        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Ignore -ErrorVariable err
     } else {
         $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Ignore -ErrorVariable Err
     }
@@ -217,7 +262,7 @@ function GetCimSpace {
                     $addToActualState.properties = $instance_result
                     $result += $addToActualState
                 } else {
-                    "No WMI instances found for type '$($r.type)'." | Write-DscTrace -Operation Warn
+                    "No WMI instances found for type '$($r.type)'." | Write-DscTrace -Operation Debug
                     $addToActualState.properties = $null
                     $result += $addToActualState
                 }

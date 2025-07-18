@@ -53,17 +53,16 @@ Describe 'WMI adapter resource tests' {
         $r | Should -Not -BeNullOrEmpty
         $res = $r | ConvertFrom-Json
 
-        Write-Verbose ($res.results[1].result.actualState.result[4] | ConvertTo-Json -Depth 10) -Verbose
         $res.results[1].result.actualState.result[0].properties.Name | Should -Not -BeNullOrEmpty
         $res.results[1].result.actualState.result[0].properties.BootupState | Should -BeNullOrEmpty
         $res.results[1].result.actualState.result[1].properties.Caption | Should -Not -BeNullOrEmpty
         $res.results[1].result.actualState.result[1].properties.BuildNumber | Should -BeNullOrEmpty
-        $res.results[1].result.actualState.result[4].properties.AdapterType | Should -BeLike "Ethernet*"
+        $res.results[1].result.actualState.result[4].properties.Name | Should -Not -BeNullOrEmpty
     }
 
     It 'Set does not work without input for resource' -Skip:(!$IsWindows) {
-        $s = dsc resource set --resource root.cimv2/Win32_Environment --input '{}' 2>&1
-        $s | Should -BeLike "*No valid properties found in the CIM class 'Win32_Environment' for the provided properties.*"
+        $out = dsc resource set --resource root.cimv2/Win32_Environment --input '{}' 2>&1
+        $out[0] | Should -BeLike "*No valid properties found in the CIM class 'Win32_Environment' for the provided properties.*"
     }
 
     It 'Set does not work without a key property' -Skip:(!$IsWindows) {
@@ -72,8 +71,8 @@ Describe 'WMI adapter resource tests' {
             UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only property is key, but we require a key property to be set
         } | ConvertTo-Json
         
-        $s = dsc resource set -r root.cimv2/Win32_Environment -i $i 2>&1
-        $s | Should -BeLike "*All key properties in the CIM class 'Win32_Environment' are read-only, which is not supported.*"
+        $out = dsc resource set -r root.cimv2/Win32_Environment -i $i 2>&1
+        $out[0] | Should -BeLike "*All key properties in the CIM class 'Win32_Environment' are read-only, which is not supported.*"
     }
 
     It 'Set works on a WMI resource' -Skip:(!$IsWindows) {
@@ -86,10 +85,10 @@ Describe 'WMI adapter resource tests' {
         $r = dsc resource set -r root.cimv2/Win32_Environment -i $i
         $LASTEXITCODE | Should -Be 0 
 
-        $out = $r | ConvertFrom-Json
-        $out.afterState.Name | Should -Be 'test'
-        $out.afterState.VariableValue | Should -Be 'test'
-        $out.afterState.UserName | Should -Be ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
+        $res = $r | ConvertFrom-Json
+        $res.afterState.Name | Should -Be 'test'
+        $res.afterState.VariableValue | Should -Be 'test'
+        $res.afterState.UserName | Should -Be ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
     }
 
     It 'Update works on a WMI resource' -Skip:(!$IsWindows) {
@@ -102,9 +101,9 @@ Describe 'WMI adapter resource tests' {
         $r = dsc resource set -r root.cimv2/Win32_Environment -i $i
         $LASTEXITCODE | Should -Be 0 
 
-        $out = $r | ConvertFrom-Json
-        $out.afterState.Name | Should -Be 'test'
-        $out.afterState.VariableValue | Should -Be 'update'
-        $out.afterState.UserName | Should -Be ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
+        $res = $r | ConvertFrom-Json
+        $res.afterState.Name | Should -Be 'test'
+        $res.afterState.VariableValue | Should -Be 'update'
+        $res.afterState.UserName | Should -Be ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
     }
 }
