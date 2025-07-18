@@ -43,74 +43,108 @@ function GetValidCimProperties {
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Microsoft.Management.Infrastructure.CimClass]$CimClass,
 
+        [Parameter(Mandatory = $true)]
+        $ClassName,
+
         [Parameter()]
         [object]$Properties,
 
         [Parameter()]
-        [ValidateSet('Get', 'Set', 'Test')]
-        [string]$Operation
+        [switch] $SkipReadOnly,
+
+        [Parameter()]
+        [switch] $ValidateKeyProperty
     )
 
-    $validatedProperties = [System.Collections.Generic.List[Object]]::new()
+    $availableProperties = $CimClass.CimClassProperties | Where-Object -Property Name -in $Properties.psobject.Properties.name
+    $validatedProperties = [System.Collections.Generic.List[Array]]::new()
 
-    switch ($Operation) {
-        'Get' {
-            # For 'Get', we don't need to validate properties, just return all properties
-            $cimClass.CimClassProperties | ForEach-Object {
-                $validatedProperties.Add([PSCustomObject]@{
-                    Name       = $_.Name
-                    Type       = $_.CimType.ToString()
-                    IsKey      = $_.Flags -contains 'Key'
-                    IsReadOnly = $_.Flags -contains 'ReadOnly'
-                })
-            }
+    $keyProperty = ($availableProperties.flags -like "Property, Key*")
+
+    if ($null -eq $availableProperties) {
+        "No valid properties found in the CIM class '$ClassName' for the provided properties." | Write-DscTrace -Operation Error
+        exit 1
+    }
+
+    if ($null -eq $keyProperty) {
+        "Key property not provided for CIM class '$ClassName'." | Write-DscTrace -Operation Error
+        exit 1
+    }
+
+    if ($ValidateKeyProperty.IsPresent) {
+        # Check if any key property is also read-only
+        $keyProps = $availableProperties | Where-Object { $_.Flags.ToString() -like "*Key*" }
+        $readOnlyKeyProps = $keyProps | Where-Object { $_.Flags.ToString() -like "*ReadOnly*" }
+
+        if ($readOnlyKeyProps.Count -eq $keyProps.Count) {
+            "All key properties in the CIM class '$ClassName' are read-only, which is not supported." | Write-DscTrace -Operation Error
+            exit 1
         }
-        'Set' {
-            # For 'Set', we need to validate that the provided properties match the CIM class
-            $availableProperties = $cimClass.CimClassProperties | ForEach-Object {
-                [string[]]$flags = $_.Flags.ToString().Split(",").Trim()
-                if ($flags -notcontains 'ReadOnly' -or $flags -contains 'Key') {
-                    @{
-                        Name       = $_.Name
-                        Type       = $_.CimType
-                        Flags      = $flags
-                        IsKey      = $flags -contains 'Key'
-                        IsReadOnly = $flags -contains 'ReadOnly' # This is to ensure we identify key read-only properties
-                    }
-                }
-            }
+    }
 
-            $validatedProperties = [System.Collections.Generic.List[Object]]::new()
-            foreach ($property in $availableProperties) {
-                $propName = $property.Name
-                $isKey = $property.IsKey
-                $isReadOnly = $property.IsReadOnly
+    # Check if the provided properties match the available properties in the CIM class
+    # If the count of provided properties does not match the available properties, we log a warning but continue
+    if ($properties.psobject.Properties.name.count -ne $availableProperties.Count) {
+        $inputPropertyNames = $properties.psobject.Properties.Name
+        $availablePropertyNames = $availableProperties.Name
 
-                if ($isKey) {
-                    if ($Properties.psobject.properties.name -notcontains $propName -or $null -eq $properties.$propName -or $Properties.$propName -eq '') {
-                        "Key property '$propName' is required but not provided or is empty." | Write-DscTrace -Operation Error
-                        exit 1
-                    } else {
-                        $validatedProperties.Add([PSCustomObject]@{
-                                Name       = $propName
-                                Value      = $Properties.$propName
-                                Type       = $property.Type
-                                IsReadOnly = $isReadOnly
-                            })
-                    }
-                } elseif ($Properties.psobject.Properties.name -contains $propName) {
-                    $validatedProperties.Add([PSCustomObject]@{
-                            Name       = $propName
-                            Value      = $Properties.$propName
-                            Type       = $property.Type
-                            IsReadOnly = $isReadOnly
-                        })
-                } else {
-                    "Property '$propName' is not provided in the resource object." | Write-DscTrace -Operation Trace
-                }
+        $missingProperties = $inputPropertyNames | Where-Object { $_ -notin $availablePropertyNames }
+        if ($missingProperties) {
+            foreach ($missing in $missingProperties) {
+                "Property '$missing' was provided but not found in the CIM class '$($CimClass.ClassName)'." | Write-DscTrace -Operation Warn
             }
         }
     }
+
+    $validatedProperties.Add($availableProperties)
+
+    if ($SkipReadOnly.IsPresent) {   
+        $availableProperties = foreach ($prop in $availableProperties) {
+            [string[]]$flags = $prop.Flags.ToString().Split(",").Trim()
+            if ($null -ne $properties.$($prop.Name)) {
+                # Filter out read-only properties if SkipReadOnly is specified
+                if ($flags -notcontains 'ReadOnly') {
+                    $prop
+                }
+            } else {
+                # Return $prop as if there is an empty value provided as property, we are not going to a WHERE clause
+                $prop
+            }
+        }
+
+        return $availableProperties
+    } 
+
+    # if ($SkipReadOnly.IsPresent) {
+    #     # For 'Set', we need to validate that the provided properties match the CIM class
+    #     $availableProperties = $cimClass.CimClassProperties | ForEach-Object {
+    #         [string[]]$flags = $_.Flags.ToString().Split(",").Trim()
+    #         if ($flags -notcontains 'ReadOnly' -or $flags -contains 'Key') {
+    #             $_
+    #         }
+    #     }
+
+    #     # Reset the validated properties list as we only want to capture non-readonly properties for 'Set'
+    #     $validatedProperties = [System.Collections.Generic.List[Array]]::new()
+    #     foreach ($property in $availableProperties) {
+    #         $propName = $property.Name
+    #         $isKey = $property.IsKey
+
+    #         if ($isKey) {
+    #             # Still check here if the key property is passed as we continue 
+    #             if ($Properties.psobject.properties.name -notcontains $propName -or $null -eq $properties.$propName -or $Properties.$propName -eq '') {
+    #                 "Key property '$propName' is required but not provided or is empty." | Write-DscTrace -Operation Error
+    #                 exit 1
+    #             } else {
+    #                 $validatedProperties.Add($property)
+    #             }
+    #         } elseif ($Properties.psobject.Properties.name -contains $propName) {
+    #             $validatedProperties.Add($property)
+    #         } else {
+    #             "Property '$propName' is not provided in the resource object." | Write-DscTrace -Operation Trace
+    #         }
+    #     }
+    # }
 
     return $validatedProperties
 }
@@ -120,11 +154,7 @@ function GetWmiInstance {
     param 
     (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [psobject]$DesiredState,
-
-        [Parameter()]
-        [ValidateSet('Get', 'Set', 'Test')]
-        [string]$Operation = 'Get'
+        [psobject]$DesiredState
     )
 
     $type_fields = $DesiredState.type -split "/"
@@ -134,7 +164,7 @@ function GetWmiInstance {
     $class = Get-CimClass -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
 
     if ($DesiredState.properties) {
-        $properties = GetValidCimProperties -CimClass $class -Properties $DesiredState.properties -Operation $Operation
+        $properties = GetValidCimProperties -CimClass $class -ClassName $wmi_classname -Properties $DesiredState.properties -SkipReadOnly
 
         $query = "SELECT $($properties.Name -join ',') FROM $wmi_classname"
         $where = " WHERE "
@@ -142,7 +172,7 @@ function GetWmiInstance {
         $first = $true
         foreach ($property in $properties) {
             # TODO: validate property against the CIM class to give better error message
-            if ($null -ne $property.value) {
+            if ($null -ne $DesiredState.properties.$($property.Name)) {
                 $useWhere = $true
                 if ($first) {
                     $first = $false
@@ -150,10 +180,10 @@ function GetWmiInstance {
                     $where += " AND "
                 }
 
-                if ($property.Type -eq "String") {
-                    $where += "$($property.Name) = '$($property.Value)'"
+                if ($property.CimType -eq "String") {
+                    $where += "$($property.Name) = '$($DesiredState.properties.$($property.Name))'"
                 } else {
-                    $where += "$($property.Name) = $($property.Value)"
+                    $where += "$($property.Name) = $($DesiredState.properties.$($property.Name))"
                 }
             }
         }
@@ -161,9 +191,14 @@ function GetWmiInstance {
             $query += $where
         }
         "Query: $query" | Write-DscTrace -Operation Debug
-        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Stop
+        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $query -ErrorAction Ignore -ErrorVariable err
     } else {
-        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Stop
+        $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -ClassName $wmi_classname -ErrorAction Ignore -ErrorVariable Err
+    }
+
+    if ($err) {
+        "Error retrieving WMI instances: $($err.Exception.Message)" | Write-DscTrace -Operation Error
+        exit 1
     }
 
     return $wmi_instances
@@ -194,12 +229,10 @@ function GetCimSpace {
 
         switch ($Operation) {
             'Get' {
-                # TODO: identify key properties and add WHERE clause to the query
                 $wmi_instances = GetWmiInstance -DesiredState $DesiredState
 
                 if ($wmi_instances) {
                     $instance_result = [ordered]@{}
-                    # TODO: for a `Get`, they key property must be provided so a specific instance is returned rather than just the first
                     $wmi_instance = $wmi_instances[0] # for 'Get' we return just first matching instance; for 'export' we return all instances
                     $wmi_instance.psobject.properties | ForEach-Object {
                         if (($_.Name -ne "type") -and (-not $_.Name.StartsWith("Cim"))) {
@@ -225,14 +258,14 @@ function GetCimSpace {
 
                 $wmi_instance.Properties | ForEach-Object {
                     if ($r.properties.psobject.properties.name -contains $_.Name) {
-                        $properties[$_.Name] = $_.Value
+                        $properties[$_.Name] = $r.properties.$($_.Name)
                     }
                 }
 
-                $readOnlyProperties = $wmi_instance.Properties | Where-Object -Property IsReadOnly -eq $true
+                $readOnlyProperties = $wmi_instance.Properties | Where-Object -Property Flags -like "*ReadOnly*"
 
                 if ($null -eq $wmi_instance.CimInstance) {
-                    New-CimInstance -Namespace $wmi_instance.Namespace -ClassName $wmi_instance.ClassName -Property $properties -ErrorAction Stop
+                    $instance = New-CimInstance -Namespace $wmi_instance.Namespace -ClassName $wmi_instance.ClassName -Property $properties -ErrorAction Ignore -ErrorVariable err
                 } else {
                     # When calling Set-CimInstance, the read-only properties needs to be filtered out
                     if ($readOnlyProperties) {
@@ -242,7 +275,7 @@ function GetCimSpace {
                             }
                         }
                     }
-                    $wmi_instance.CimInstance | Set-CimInstance -Property $properties -ErrorAction Stop
+                    $wmi_instance.CimInstance | Set-CimInstance -Property $properties -ErrorAction Ignore -ErrorVariable err | Out-Null
                 }
 
                 $addToActualState = [dscResourceObject]@{
@@ -281,9 +314,9 @@ function ValidateCimMethodAndArguments {
         exit 1
     }
 
-    $validatedProperties = GetValidCimProperties -CimClass $cimClass -Properties $DesiredState.properties -Operation Set
+    $validatedProperties = GetValidCimProperties -CimClass $cimClass -ClassName $className -Properties $DesiredState.properties -ValidateKeyProperty
 
-    $cimInstance = GetWmiInstance -DesiredState $DesiredState -Operation Set
+    $cimInstance = GetWmiInstance -DesiredState $DesiredState
 
     return @{
         CimInstance = $cimInstance
@@ -318,24 +351,12 @@ class dscResourceObject {
     [PSCustomObject] $properties
 }
 
-
-
-# $out = [dscResourceObject]@{
-#     name       = "root.cimv2/Win32_Environment"
-#     type       = "root.cimv2/Win32_Environment"
-#     properties = [PSCustomObject]@{
-#         Name = "test"
-#         VariableValue = "TestValue"
-#         UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only property required
-#     }
-# }
-
 $out = [dscResourceObject]@{
-    name       = "root.cimv2/Win32_Environment"
-    type       = "root.cimv2/Win32_Environment"
+    name       = 'root.cimv2/Win32_Environment'
+    type       = 'root.cimv2/Win32_Environment'
     properties = [PSCustomObject]@{
+        UserName = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
+        VariableValue = 'update'
         Name = 'test'
-        VariableValue = 'TestValue'
-        UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only property required
     }
 }
