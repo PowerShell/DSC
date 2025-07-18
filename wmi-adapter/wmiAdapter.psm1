@@ -320,13 +320,3 @@ class dscResourceObject {
     [string] $type
     [PSCustomObject] $properties
 }
-
-$out = [dscResourceObject]@{
-    name       = "root.cimv2/Win32_Environment"
-    type       = "root.cimv2/Win32_Environment"
-    properties = [PSCustomObject]@{
-        Name = "test"
-        Value = "test"
-        UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only key property required
-    }
-}
