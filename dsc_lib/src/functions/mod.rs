@@ -12,19 +12,24 @@ use serde_json::Value;
 use std::fmt::Display;
 
 pub mod add;
+pub mod and;
 pub mod base64;
+pub mod bool;
 pub mod concat;
 pub mod create_array;
 pub mod div;
 pub mod envvar;
 pub mod equals;
 pub mod r#if;
+pub mod r#false;
 pub mod format;
 pub mod int;
 pub mod max;
 pub mod min;
 pub mod mod_function;
 pub mod mul;
+pub mod not;
+pub mod or;
 pub mod parameters;
 pub mod path;
 pub mod reference;
@@ -32,6 +37,7 @@ pub mod resource_id;
 pub mod secret;
 pub mod sub;
 pub mod system_root;
+pub mod r#true;
 pub mod variables;
 
 /// The kind of argument that a function accepts.
@@ -77,12 +83,15 @@ impl FunctionDispatcher {
     pub fn new() -> Self {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
         functions.insert("add".to_string(), Box::new(add::Add{}));
+        functions.insert("and".to_string(), Box::new(and::And{}));
         functions.insert("base64".to_string(), Box::new(base64::Base64{}));
+        functions.insert("bool".to_string(), Box::new(bool::Bool{}));
         functions.insert("concat".to_string(), Box::new(concat::Concat{}));
         functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
         functions.insert("div".to_string(), Box::new(div::Div{}));
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
         functions.insert("equals".to_string(), Box::new(equals::Equals{}));
+        functions.insert("false".to_string(), Box::new(r#false::False{}));
         functions.insert("if".to_string(), Box::new(r#if::If{}));
         functions.insert("format".to_string(), Box::new(format::Format{}));
         functions.insert("int".to_string(), Box::new(int::Int{}));
@@ -90,6 +99,8 @@ impl FunctionDispatcher {
         functions.insert("min".to_string(), Box::new(min::Min{}));
         functions.insert("mod".to_string(), Box::new(mod_function::Mod{}));
         functions.insert("mul".to_string(), Box::new(mul::Mul{}));
+        functions.insert("not".to_string(), Box::new(not::Not{}));
+        functions.insert("or".to_string(), Box::new(or::Or{}));
         functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
         functions.insert("path".to_string(), Box::new(path::Path{}));
         functions.insert("reference".to_string(), Box::new(reference::Reference{}));
@@ -97,6 +108,7 @@ impl FunctionDispatcher {
         functions.insert("secret".to_string(), Box::new(secret::Secret{}));
         functions.insert("sub".to_string(), Box::new(sub::Sub{}));
         functions.insert("systemRoot".to_string(), Box::new(system_root::SystemRoot{}));
+        functions.insert("true".to_string(), Box::new(r#true::True{}));
         functions.insert("variables".to_string(), Box::new(variables::Variables{}));
         Self {
             functions,
