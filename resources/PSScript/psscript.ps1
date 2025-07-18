@@ -97,7 +97,8 @@ $traceQueue = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
 
 $null = Register-ObjectEvent -InputObject $ps.Streams.Error -EventName DataAdding -MessageData $traceQueue -Action {
     $traceQueue = $Event.MessageData
-    $traceQueue.Enqueue((@{ error = $EventArgs.ItemAdded.Message } | ConvertTo-Json -Compress))
+    # convert error to string since it's an ErrorRecord
+    $traceQueue.Enqueue((@{ error = [string]$EventArgs.ItemAdded } | ConvertTo-Json -Compress))
 }
 $null = Register-ObjectEvent -InputObject $ps.Streams.Warning -EventName DataAdding -MessageData $traceQueue -Action {
     $traceQueue = $Event.MessageData
@@ -155,7 +156,7 @@ try {
     }
 }
 catch {
-    Write-DscTrace -Now -Level Error -Message $_.Exception.Message
+    Write-DscTrace -Now -Level Error -Message $_
     exit 1
 }
 finally {
