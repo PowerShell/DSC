@@ -91,6 +91,9 @@ fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(
 
     if exclude_defaults {
         let defaults = extract_sshd_defaults()?;
+        // Filter result based on default settings.
+        // If a value in result is equal to the default, it will be excluded.
+        // Note that this excludes all defaults, even if they are explicitly set in sshd_config.
         result = result.into_iter()
             .filter(|(key, value)| {
                 if let Some(default) = defaults.get(key) {
@@ -117,6 +120,7 @@ fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(
             .collect();
     }
 
-    println!("{}", serde_json::to_string(&result)?);
+    let json = serde_json::to_string(&result)?;
+    println!("{json}");
     Ok(())
 }

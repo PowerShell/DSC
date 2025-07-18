@@ -14,6 +14,8 @@ use parser::SshdConfigParser;
 use set::invoke_set;
 use util::enable_tracing;
 
+use crate::error::SshdConfigError;
+
 mod args;
 mod error;
 mod export;
@@ -38,8 +40,13 @@ fn main() {
             debug!("{}", t!("main.export").to_string());
             match invoke_export() {
                 Ok(output) => {
-                    println!("{:?}", serde_json::to_string(&output));
-                    Ok(())
+                    match serde_json::to_string(&output) {
+                        Ok(json) => {
+                            println!("{json}");
+                            Ok(())
+                        },
+                        Err(e) => Err(SshdConfigError::Json(e)),
+                    }
                 },
                 Err(e) => Err(e),
             }
