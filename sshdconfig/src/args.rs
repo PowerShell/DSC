@@ -39,8 +39,11 @@ pub enum Command {
 
 #[derive(Clone, Debug, Deserialize, Eq, JsonSchema, PartialEq, Serialize)]
 pub struct DefaultShell {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shell: Option<String>,
+    #[serde(rename = "cmdOption", skip_serializing_if = "Option::is_none")]
     pub cmd_option: Option<String>,
+    #[serde(rename = "escapeArguments", skip_serializing_if = "Option::is_none")]
     pub escape_arguments: Option<bool>,
 }
 

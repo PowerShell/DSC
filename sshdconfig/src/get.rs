@@ -23,7 +23,7 @@ use crate::util::extract_sshd_defaults;
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
 pub fn invoke_get(exclude_defaults: bool, input: Option<&String>, setting: &Setting) -> Result<(), SshdConfigError> {
-    debug!("Get setting: {:?}", setting);
+    debug!("{}: {:?}", t!("get.debugSetting").to_string(), setting);
     match *setting {
         Setting::SshdConfig => get_sshd_settings(exclude_defaults, input),
         Setting::WindowsGlobal => get_default_shell()

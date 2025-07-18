@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+$global:ProgressPreference = 'SilentlyContinue'
 $script:CurrentCacheSchemaVersion = 1
 
 function Write-DscTrace {

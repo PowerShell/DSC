@@ -1,14 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{DscType, OutputFormat, TraceFormat};
+use crate::args::{SchemaType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
 use dsc_lib::configure::config_result::ResourceTestResult;
 use dsc_lib::extensions::discover::DiscoverResult;
 use dsc_lib::extensions::extension_manifest::ExtensionManifest;
 use dsc_lib::{
     configure::{
-        config_doc::Configuration,
+        config_doc::{
+            Configuration,
+            RestartRequired,
+        },
         config_result::{
             ConfigurationGetResult,
             ConfigurationSetResult,
@@ -25,6 +28,7 @@ use dsc_lib::{
             ResolveResult,
         }, resource_manifest::ResourceManifest
     },
+    functions::FunctionDefinition,
     util::parse_input_to_json,
     util::get_setting,
 };
@@ -143,47 +147,53 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 ///
 /// * `RootSchema` - The schema
 #[must_use]
-pub fn get_schema(dsc_type: DscType) -> RootSchema {
-    match dsc_type {
-        DscType::GetResult => {
+pub fn get_schema(schema: SchemaType) -> RootSchema {
+    match schema {
+        SchemaType::GetResult => {
             schema_for!(GetResult)
         },
-        DscType::SetResult => {
+        SchemaType::SetResult => {
             schema_for!(SetResult)
         },
-        DscType::TestResult => {
+        SchemaType::TestResult => {
             schema_for!(TestResult)
         },
-        DscType::ResolveResult => {
+        SchemaType::ResolveResult => {
             schema_for!(ResolveResult)
         }
-        DscType::DscResource => {
+        SchemaType::DscResource => {
             schema_for!(DscResource)
         },
-        DscType::ResourceManifest => {
+        SchemaType::ResourceManifest => {
             schema_for!(ResourceManifest)
         },
-        DscType::Include => {
+        SchemaType::Include => {
             schema_for!(Include)
         },
-        DscType::Configuration => {
+        SchemaType::Configuration => {
             schema_for!(Configuration)
         },
-        DscType::ConfigurationGetResult => {
+        SchemaType::ConfigurationGetResult => {
             schema_for!(ConfigurationGetResult)
         },
-        DscType::ConfigurationSetResult => {
+        SchemaType::ConfigurationSetResult => {
             schema_for!(ConfigurationSetResult)
         },
-        DscType::ConfigurationTestResult => {
+        SchemaType::ConfigurationTestResult => {
             schema_for!(ConfigurationTestResult)
         },
-        DscType::ExtensionManifest => {
+        SchemaType::ExtensionManifest => {
             schema_for!(ExtensionManifest)
         },
-        DscType::ExtensionDiscoverResult => {
+        SchemaType::ExtensionDiscoverResult => {
             schema_for!(DiscoverResult)
         },
+        SchemaType::FunctionDefinition => {
+            schema_for!(FunctionDefinition)
+        },
+        SchemaType::RestartRequired => {
+            schema_for!(RestartRequired)
+        }
     }
 }
 
