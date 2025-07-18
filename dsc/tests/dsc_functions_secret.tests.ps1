@@ -1,0 +1,119 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+Describe 'Tests for the secret() function and extensions' {
+    BeforeAll {
+        $oldPath = $env:PATH
+        $toolPath = Resolve-Path -Path "$PSScriptRoot/../../extensions/test/secret"
+        $env:PATH = "$toolPath" + [System.IO.Path]::PathSeparator + $oldPath
+    }
+
+    AfterAll {
+        $env:PATH = $oldPath
+    }
+
+    It 'Just a secret name' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('MySecret')]"
+'@
+        $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/error.log)
+        $out.results.Count | Should -Be 1
+        $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
+    }
+
+    It 'Name and vault' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('DifferentSecret', 'VaultA')]"
+'@
+        $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/error.log)
+        $out.results.Count | Should -Be 1
+        $out.results[0].result.actualState.Output | Should -BeExactly 'Hello2'
+    }
+
+    It 'Name that does not exist' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('NonExistentSecret')]"
+'@
+        dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2
+        $errorMessage = Get-Content -Raw -Path $TestDrive/error.log
+        $errorMessage | Should -Match "Secret 'NonExistentSecret' not found"
+    }
+
+    It 'Vault that does not exist' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('MySecret', 'NonExistentVault')]"
+'@
+        dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2
+        $errorMessage = Get-Content -Raw -Path $TestDrive/error.log
+        $errorMessage | Should -Match "Secret 'MySecret' not found"
+    }
+
+    It 'Duplicate secret' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('DuplicateSecret')]"
+'@
+        dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2
+        $errorMessage = Get-Content -Raw -Path $TestDrive/error.log
+        $errorMessage | Should -Match "Multiple secrets with the same name 'DuplicateSecret' and different values was returned, try specifying a vault"
+    }
+
+    It 'Secret and vault to disambiguate' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('DuplicateSecret', 'Vault1')]"
+'@
+        $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Raw -Path $TestDrive/error.log)
+        $out.results.Count | Should -Be 1
+        $out.results[0].result.actualState.Output | Should -BeExactly 'World'
+    }
+
+    It 'Same secret name and value in different extensions' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('DuplicateSame')]"
+'@
+        $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results.Count | Should -Be 1
+        $out.results[0].result.actualState.Output | Should -BeExactly 'SameSecret'
+    }
+}

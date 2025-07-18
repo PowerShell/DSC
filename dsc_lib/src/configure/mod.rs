@@ -261,11 +261,14 @@ impl Configurator {
             json: json.to_owned(),
             config: Configuration::new(),
             context: Context::new(),
-            discovery,
+            discovery: discovery.clone(),
             statement_parser: Statement::new()?,
             progress_format,
         };
         config.validate_config()?;
+        for extension in discovery.extensions.values() {
+            config.context.extensions.push(extension.clone());
+        }
         Ok(config)
     }
 
@@ -661,6 +664,7 @@ impl Configurator {
         let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
+        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         Ok(())
     }
 

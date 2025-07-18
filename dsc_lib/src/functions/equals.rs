@@ -3,7 +3,8 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::AcceptedArgKind;
+use crate::functions::{AcceptedArgKind, FunctionCategory};
+use rust_i18n::t;
 use super::Function;
 use serde_json::Value;
 
@@ -11,6 +12,14 @@ use serde_json::Value;
 pub struct Equals {}
 
 impl Function for Equals {
+    fn description(&self) -> String {
+        t!("functions.equals.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::Comparison
+    }
+
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
         vec![AcceptedArgKind::Number, AcceptedArgKind::String, AcceptedArgKind::Array, AcceptedArgKind::Object]
     }

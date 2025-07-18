@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::AcceptedArgKind;
+use crate::functions::{AcceptedArgKind, FunctionCategory};
 use num_traits::cast::NumCast;
 use rust_i18n::t;
 use serde_json::Value;
@@ -13,6 +13,14 @@ use super::Function;
 pub struct Int {}
 
 impl Function for Int {
+    fn description(&self) -> String {
+        t!("functions.int.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::Numeric
+    }
+
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
         vec![AcceptedArgKind::String, AcceptedArgKind::Number]
     }
