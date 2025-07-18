@@ -3,6 +3,7 @@ _version = 1
 [configure.config_doc]
 configurationDocumentSchemaTitle = "Configuration document schema URI"
 configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
+skippingResource = "Skipping resource '%{name}' due to condition '%{condition}' with result '%{result}'"
 
 [configure.constraints]
 minLengthIsNull = "Parameter '%{name}' has minimum length constraint but is null"
