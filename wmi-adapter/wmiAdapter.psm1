@@ -36,7 +36,6 @@ function Get-DscResourceObject {
 }
 
 function GetValidCimProperties {
-    [OutputType()]
     [CmdletBinding()]
     param 
     (
@@ -113,38 +112,7 @@ function GetValidCimProperties {
         }
 
         return $availableProperties
-    } 
-
-    # if ($SkipReadOnly.IsPresent) {
-    #     # For 'Set', we need to validate that the provided properties match the CIM class
-    #     $availableProperties = $cimClass.CimClassProperties | ForEach-Object {
-    #         [string[]]$flags = $_.Flags.ToString().Split(",").Trim()
-    #         if ($flags -notcontains 'ReadOnly' -or $flags -contains 'Key') {
-    #             $_
-    #         }
-    #     }
-
-    #     # Reset the validated properties list as we only want to capture non-readonly properties for 'Set'
-    #     $validatedProperties = [System.Collections.Generic.List[Array]]::new()
-    #     foreach ($property in $availableProperties) {
-    #         $propName = $property.Name
-    #         $isKey = $property.IsKey
-
-    #         if ($isKey) {
-    #             # Still check here if the key property is passed as we continue 
-    #             if ($Properties.psobject.properties.name -notcontains $propName -or $null -eq $properties.$propName -or $Properties.$propName -eq '') {
-    #                 "Key property '$propName' is required but not provided or is empty." | Write-DscTrace -Operation Error
-    #                 exit 1
-    #             } else {
-    #                 $validatedProperties.Add($property)
-    #             }
-    #         } elseif ($Properties.psobject.Properties.name -contains $propName) {
-    #             $validatedProperties.Add($property)
-    #         } else {
-    #             "Property '$propName' is not provided in the resource object." | Write-DscTrace -Operation Trace
-    #         }
-    #     }
-    # }
+    }
 
     return $validatedProperties
 }
@@ -247,10 +215,12 @@ function GetCimSpace {
                     }
 
                     $addToActualState.properties = $instance_result
-
+                    $result += $addToActualState
+                } else {
+                    "No WMI instances found for type '$($r.type)'." | Write-DscTrace -Operation Warn
+                    $addToActualState.properties = $null
                     $result += $addToActualState
                 }
-
             }
             'Set' {
                 $wmi_instance = ValidateCimMethodAndArguments -DesiredState $r
@@ -352,11 +322,11 @@ class dscResourceObject {
 }
 
 $out = [dscResourceObject]@{
-    name       = 'root.cimv2/Win32_Environment'
-    type       = 'root.cimv2/Win32_Environment'
+    name       = "root.cimv2/Win32_Environment"
+    type       = "root.cimv2/Win32_Environment"
     properties = [PSCustomObject]@{
-        UserName = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
-        VariableValue = 'update'
-        Name = 'test'
+        Name = "test"
+        Value = "test"
+        UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only key property required
     }
 }

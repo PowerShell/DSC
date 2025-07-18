@@ -68,7 +68,7 @@ Describe 'WMI adapter resource tests' {
     It 'Set does not work without a key property' -Skip:(!$IsWindows) {
         $i = @{
             VariableValue = "TestValue"
-            UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only property is key, but we need a real one
+            UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only property is key, but we require a key property to be set
         } | ConvertTo-Json
         
         $s = dsc resource set -r root.cimv2/Win32_Environment -i $i 2>&1
@@ -76,21 +76,35 @@ Describe 'WMI adapter resource tests' {
         $s | Should -BeLike "*All key properties in the CIM class 'Win32_Environment' are read-only, which is not supported.*"
     }
 
-    # It 'Set works on a WMI resource' -Skip:(!$IsWindows) {
-    #     $i = @{
-    #         UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only property required
-    #         Name = 'test'
-    #         VariableValue = 'test'
-    #     } | ConvertTo-Json
+    It 'Set works on a WMI resource' -Skip:(!$IsWindows) {
+        $i = @{
+            UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only key property required
+            Name = 'test'
+            VariableValue = 'test'
+        } | ConvertTo-Json
         
-    #     $r = dsc -l trace resource set -r root.cimv2/Win32_Environment -i $i
+        $r = dsc resource set -r root.cimv2/Win32_Environment -i $i
+        $LASTEXITCODE | Should -Be 0 
 
-    #     $s = dsc resource set --resource root.cimv2/Win32_Environment --input '{"Name":"TestVariable","Value":"TestValue"}'
-    #     $LASTEXITCODE | Should -Be 0
-    #     $s | Should -BeLike "*Set operation completed successfully*"
+        $out = $r | ConvertFrom-Json
+        $out.afterState.Name | Should -Be 'test'
+        $out.afterState.VariableValue | Should -Be 'test'
+        $out.afterState.UserName | Should -Be ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
+    }
 
-    #     # Verify the variable was set
-    #     $get = dsc resource get -r root.cimv2/Win32_Environment -i '{"Name":"TestVariable"}'
-    #     $get | Should -BeLike "*TestValue*"
-    # }
+    It 'Update works on a WMI resource' -Skip:(!$IsWindows) {
+        $i = @{
+            UserName = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME) # Read-only key property required
+            Name = 'test'
+            VariableValue = 'update'
+        } | ConvertTo-Json
+        
+        $r = dsc resource set -r root.cimv2/Win32_Environment -i $i
+        $LASTEXITCODE | Should -Be 0 
+
+        $out = $r | ConvertFrom-Json
+        $out.afterState.Name | Should -Be 'test'
+        $out.afterState.VariableValue | Should -Be 'update'
+        $out.afterState.UserName | Should -Be ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME)
+    }
 }
