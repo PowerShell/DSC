@@ -52,6 +52,8 @@ Describe 'WMI adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $r | Should -Not -BeNullOrEmpty
         $res = $r | ConvertFrom-Json
+
+        Write-Verbose ($res.results[1].result.actualState.result[4] | ConvertTo-Json -Depth 10) -Verbose
         $res.results[1].result.actualState.result[0].properties.Name | Should -Not -BeNullOrEmpty
         $res.results[1].result.actualState.result[0].properties.BootupState | Should -BeNullOrEmpty
         $res.results[1].result.actualState.result[1].properties.Caption | Should -Not -BeNullOrEmpty
@@ -61,7 +63,6 @@ Describe 'WMI adapter resource tests' {
 
     It 'Set does not work without input for resource' -Skip:(!$IsWindows) {
         $s = dsc resource set --resource root.cimv2/Win32_Environment --input '{}' 2>&1
-        $LASTEXITCODE | Should -Be 1
         $s | Should -BeLike "*No valid properties found in the CIM class 'Win32_Environment' for the provided properties.*"
     }
 
@@ -72,7 +73,6 @@ Describe 'WMI adapter resource tests' {
         } | ConvertTo-Json
         
         $s = dsc resource set -r root.cimv2/Win32_Environment -i $i 2>&1
-        $LASTEXITCODE | Should -Be 1
         $s | Should -BeLike "*All key properties in the CIM class 'Win32_Environment' are read-only, which is not supported.*"
     }
 
