@@ -91,13 +91,12 @@ switch ($Operation) {
             # TODO: for perf, it is better to take capabilities from psd1 in Invoke-DscCacheRefresh, not by extra call to Get-Module
             if ($DscResourceInfo.ModuleName) {
                 $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-                if ($module.PrivateData.PSData.DscCapabilities) {
+                if ($DscResourceInfo.Capabilities) {
+                    $capabilities = $DscResourceInfo.Capabilities
+                } elseif ($module.PrivateData.PSData.DscCapabilities) {
+                    
                     $capabilities = $module.PrivateData.PSData.DscCapabilities
-                }
-                elseif ($DscResourceInfo.Methods) {
-                    $capabilities = $DscResourceInfo.Methods
-                }
-                else {
+                } else {
                     $capabilities = @('get', 'set', 'test')
                 }
             }

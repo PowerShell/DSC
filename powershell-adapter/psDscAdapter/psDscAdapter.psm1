@@ -60,7 +60,7 @@ function Add-AstMembers {
 
     foreach ($member in $TypeAst.Members) {
         $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
-        if (($property -eq $null) -or ($property.IsStatic)) {
+        if (($null -eq $property) -or ($property.IsStatic)) {
             continue;
         }
         $skipProperty = $true
@@ -139,7 +139,7 @@ function FindAndParseResourceDefinitions {
                 $DscResourceInfo.Version = $moduleVersion
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
-                $DscResourceInfo.Methods = GetClassBasedCapabilities $typeDefinitionAst.Members
+                $DscResourceInfo.Capabilities = GetClassBasedCapabilities $typeDefinitionAst.Members
                 Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
 
                 $resourceList.Add($DscResourceInfo)
@@ -531,7 +531,7 @@ function GetTypeInstanceFromModule {
 }
 
 function GetClassBasedCapabilities ($functionMemberAst) {
-    $capabilities = @()
+    $capabilities = [System.Collections.Generic.List[string[]]]::new()
     # These are the methods that we can potentially expect in a class-based DSC resource.
     $availableMethods = @('get', 'set', 'setHandlesExist', 'whatIf', 'test', 'delete', 'export')
     $methods = $functionMemberAst | Where-Object { $_ -is [System.Management.Automation.Language.FunctionMemberAst] -and $_.Name -in $availableMethods }
@@ -539,13 +539,13 @@ function GetClassBasedCapabilities ($functionMemberAst) {
     foreach ($method in $methods.Name) {
         # We go through each method to properly case handle the method names.
         switch ($method) {
-            'Get' { $capabilities += 'get' }
-            'Set' { $capabilities += 'set' }
-            'Test' { $capabilities += 'test' }
-            'WhatIf' { $capabilities += 'whatIf' }
-            'SetHandlesExist' { $capabilities += 'setHandlesExist' }
-            'Delete' { $capabilities += 'delete' }
-            'Export' { $capabilities += 'export' }
+            'Get' { $capabilities.Add('get') }
+            'Set' { $capabilities.Add('set') }
+            'Test' { $capabilities.Add('test') }
+            'WhatIf' { $capabilities.Add('whatIf') }
+            'SetHandlesExist' { $capabilities.Add('setHandlesExist') }
+            'Delete' { $capabilities.Add('delete') }
+            'Export' { $capabilities.Add('export') }
         }
     }
 
@@ -601,5 +601,5 @@ class DscResourceInfo {
     [string] $ImplementedAs
     [string] $CompanyName
     [System.Collections.Generic.List[DscResourcePropertyInfo]] $Properties
-    [string[]] $Methods
+    [string[]] $Capabilities
 }
