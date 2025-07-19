@@ -47,7 +47,7 @@
         "$Input | ./wmi.resource.ps1 Set"
       ],
       "input": "stdin",
-      "implementsPretest": true
+      "implementsPretest": false
     },
     "validate": {
         "executable": "powershell",

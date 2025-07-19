@@ -58,24 +58,23 @@ function GetValidCimProperties {
     $availableProperties = $CimClass.CimClassProperties | Where-Object -Property Name -in $Properties.psobject.Properties.name
     $validatedProperties = [System.Collections.Generic.List[Array]]::new()
 
-    $keyProperty = ($availableProperties.flags -like "Property, Key*")
+    $keyProperties = $availableProperties | Where-Object {$_.Flags.Hasflag([Microsoft.Management.Infrastructure.CimFlags]::Key)}
+    
 
     if ($null -eq $availableProperties) {
         "No valid properties found in the CIM class '$ClassName' for the provided properties." | Write-DscTrace -Operation Error
         exit 1
     }
 
-    if ($null -eq $keyProperty) {
-        "Key property not provided for CIM class '$ClassName'." | Write-DscTrace -Operation Error
-        exit 1
-    }
-
     if ($ValidateKeyProperty.IsPresent) {
         # Check if any key property is also read-only
-        $keyProps = $availableProperties | Where-Object { $_.Flags.ToString() -like "*Key*" }
-        $readOnlyKeyProps = $keyProps | Where-Object { $_.Flags.ToString() -like "*ReadOnly*" }
+        if ($keyProperties.Count -eq 0) {
+            "No key properties found in the CIM class '$ClassName'." | Write-DscTrace -Operation Error
+            exit 1
+        }
+        $readOnlyKeyProps = $keyProperties | Where-Object { $_.Flags.HasFlag([Microsoft.Management.Infrastructure.CimFlags]::ReadOnly) }
 
-        if ($readOnlyKeyProps.Count -eq $keyProps.Count) {
+        if ($readOnlyKeyProps.Count -eq $keyProperties.Count) {
             "All key properties in the CIM class '$ClassName' are read-only, which is not supported." | Write-DscTrace -Operation Error
             exit 1
         }
@@ -134,7 +133,7 @@ function BuildWmiQuery {
     )
     
     $targetProperties = if ($KeyPropertiesOnly.IsPresent) {
-        $Properties | Where-Object { $_.Flags.ToString() -like "*Key*" }
+        $Properties | Where-Object {$_.Flags.HasFlag([Microsoft.Management.Infrastructure.CimFlags]::Key)}
     } else {
         $Properties
     }
@@ -199,9 +198,11 @@ function GetWmiInstance {
                 "No WMI instances found using query '$query'. Retrying with key properties only." | Write-DscTrace -Operation Debug
                 $keyQuery = BuildWmiQuery -ClassName $wmi_classname -Properties $properties -DesiredStateProperties $DesiredState.properties -KeyPropertiesOnly
 
-                $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $keyQuery -ErrorAction Ignore -ErrorVariable err
-                if ($null -eq $wmi_instances) {
-                    "No WMI instances found using key properties query '$keyQuery'." | Write-DscTrace -Operation Debug
+                if ($keyQuery) {
+                    $wmi_instances = Get-CimInstance -Namespace $wmi_namespace -Query $keyQuery -ErrorAction Ignore -ErrorVariable err
+                    if ($null -eq $wmi_instances) {
+                        "No WMI instances found using key properties query '$keyQuery'." | Write-DscTrace -Operation Debug
+                    }
                 }
             }
         }
@@ -268,7 +269,7 @@ function GetCimSpace {
                 }
             }
             'Set' {
-                $wmi_instance = ValidateCimMethodAndArguments -DesiredState $r
+                $wmi_instance = GetCimInstanceProperties -DesiredState $r
                 $properties = @{}
 
                 $wmi_instance.Properties | ForEach-Object {
@@ -277,7 +278,7 @@ function GetCimSpace {
                     }
                 }
 
-                $readOnlyProperties = $wmi_instance.Properties | Where-Object -Property Flags -like "*ReadOnly*"
+                $readOnlyProperties = $wmi_instance.Properties | Where-Object {$_.Flags.HasFlag([Microsoft.Management.Infrastructure.CimFlags]::ReadOnly)}
 
                 if ($null -eq $wmi_instance.CimInstance) {
                     $instance = New-CimInstance -Namespace $wmi_instance.Namespace -ClassName $wmi_instance.ClassName -Property $properties -ErrorAction Ignore -ErrorVariable err
@@ -312,7 +313,7 @@ function GetCimSpace {
     return $result
 }
 
-function ValidateCimMethodAndArguments {
+function GetCimInstanceProperties {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
