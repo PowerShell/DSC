@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 2
+$script:CurrentCacheSchemaVersion = 3
 
 function Write-DscTrace {
     param(
@@ -60,7 +60,7 @@ function Add-AstMembers {
 
     foreach ($member in $TypeAst.Members) {
         $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
-        if (($property -eq $null) -or ($property.IsStatic)) {
+        if (($null -eq $property) -or ($property.IsStatic)) {
             continue;
         }
         $skipProperty = $true
@@ -117,7 +117,7 @@ function FindAndParseResourceDefinitions {
     $typeDefinitions = $ast.FindAll(
         {
             $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
-            return $typeAst -ne $null;
+            return $null -ne $typeAst;
         },
         $false);
 
@@ -139,6 +139,7 @@ function FindAndParseResourceDefinitions {
                 $DscResourceInfo.Version = $moduleVersion
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
+                $DscResourceInfo.Capabilities = GetClassBasedCapabilities $typeDefinitionAst.Members
                 Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
 
                 $resourceList.Add($DscResourceInfo)
@@ -529,6 +530,28 @@ function GetTypeInstanceFromModule {
     return $instance
 }
 
+function GetClassBasedCapabilities ($functionMemberAst) {
+    $capabilities = [System.Collections.Generic.List[string[]]]::new()
+    # These are the methods that we can potentially expect in a class-based DSC resource.
+    $availableMethods = @('get', 'set', 'setHandlesExist', 'whatIf', 'test', 'delete', 'export')
+    $methods = $functionMemberAst | Where-Object { $_ -is [System.Management.Automation.Language.FunctionMemberAst] -and $_.Name -in $availableMethods }
+
+    foreach ($method in $methods.Name) {
+        # We go through each method to properly case handle the method names.
+        switch ($method) {
+            'Get' { $capabilities.Add('get') }
+            'Set' { $capabilities.Add('set') }
+            'Test' { $capabilities.Add('test') }
+            'WhatIf' { $capabilities.Add('whatIf') }
+            'SetHandlesExist' { $capabilities.Add('setHandlesExist') }
+            'Delete' { $capabilities.Add('delete') }
+            'Export' { $capabilities.Add('export') }
+        }
+    }
+
+    return ($capabilities | Select-Object -Unique)
+}
+
 # cached resource
 class dscResourceCacheEntry {
     [string] $Type
@@ -578,4 +601,5 @@ class DscResourceInfo {
     [string] $ImplementedAs
     [string] $CompanyName
     [System.Collections.Generic.List[DscResourcePropertyInfo]] $Properties
+    [string[]] $Capabilities
 }
