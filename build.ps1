@@ -53,6 +53,9 @@ $filesForWindowsPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
+    'winpsscript.dsc.resource.json',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
     'registry.dsc.resource.json',
@@ -60,10 +63,13 @@ $filesForWindowsPackage = @(
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
     'sshdconfig.exe',
-    'sshdconfig.dsc.resource.json',
+    'sshd-windows.dsc.resource.json',
+    'sshd_config.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
+    'wmiAdapter.psd1',
+    'wmiAdapter.psm1',
     'windows_baseline.dsc.yaml',
     'windows_inventory.dsc.yaml'
 )
@@ -84,10 +90,12 @@ $filesForLinuxPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshdconfig.dsc.resource.json'
+    'sshd_config.dsc.resource.json'
 )
 
 $filesForMacPackage = @(
@@ -106,10 +114,12 @@ $filesForMacPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
-    'sshdconfig.dsc.resource.json'
+    'sshd_config.dsc.resource.json'
 )
 
 # the list of files other than the binaries which need to be executable
@@ -172,6 +182,27 @@ if ($null -ne $packageType) {
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
     & $rustup default stable
+
+    ## Test if Node is installed
+    ## Skipping upgrade as users may have a specific version they want to use
+    if (!(Get-Command 'node' -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "Node.js not found, installing..."
+        if (!$IsWindows) {
+            if (Get-Command 'brew' -ErrorAction Ignore) {
+                brew install node@24
+            } else {
+                Write-Warning "Homebrew not found, please install Node.js manually"
+            }
+        }
+        else {
+            if (Get-Command 'winget' -ErrorAction Ignore) {
+                Write-Verbose -Verbose "Using winget to install Node.js"
+                winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
+            } else {
+                Write-Warning "winget not found, please install Node.js manually"
+            }
+        }
+    }
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -276,6 +307,7 @@ if (!$SkipBuild) {
         "dscecho",
         "osinfo",
         "powershell-adapter",
+        'resources/PSScript',
         "process",
         "runcommandonset",
         "sshdconfig",
@@ -398,7 +430,8 @@ if (!$SkipBuild) {
                 Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
-                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+                $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
+                Copy-Item "*.dsc.resource.json" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable

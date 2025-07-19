@@ -167,7 +167,7 @@ The default value for this property when not specified for an instance is `true`
 <details><summary>Expand for <code>valueData</code> property metadata</summary>
 
 ```yaml
-Type                 :  object
+Type                 :  [object, 'null']
 IsRequired           : false
 IsKey                : false
 IsReadOnly           : false
@@ -179,10 +179,14 @@ MaximumPropertyCount : 1
 
 </details>
 
-Defines the data for the registry value. If specified, this property must be an object with a
-single property. The property name defines the data type. The property value defines the data
-value. When the instance defines this property, the `valueName` property must also be defined. An
-instance that defines `valueData` without `valueName` is invalid.
+Defines the data for the registry value. If you specify the `valueName`property without
+`valueData`, the resource sets the value to `RZ_NONE`.
+
+When the instance defines this property, the `valueName` property must also be defined. An instance
+that defines `valueData` without `valueName` is invalid.
+
+If specified, this property must be an object with a single property. The property name defines the
+data type. The property value defines the data value.
 
 `valueData` has the following properties:
 
@@ -195,8 +199,7 @@ instance that defines `valueData` without `valueName` is invalid.
 - [DWord](#dword-valuedata) - Defines the value as a 32-bit unsigned integer (`REG_DWORD`).
 - [QWord](#qword-valuedata) - Defines the value as a 64-bit unsigned integer (`REG_QWORD`).
 
-For more information on registry value data types, see
-[Registry value types][09].
+For more information on registry value data types, see [Registry value types][09].
 
 #### String valueData
 
@@ -343,7 +346,7 @@ operation without the `--what-if` flag.
 
 The following snippet contains the JSON Schema that validates an instance of the resource. The
 validating schema only includes schema keywords that affect how the instance is validated. All
-nonvalidating keywords are omitted.
+non validating keywords are omitted.
 
 ```json
 {

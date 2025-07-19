@@ -3,5 +3,16 @@
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/resource/stdout/export.json",
   "title": "Export resource operation stdout",
   "description": "Represents the actual state of a resource instance in DSC. DSC expects every JSON Line emitted to stdout for the **Export** operation to adhere to this schema.",
-  "type": "object"
+  "anyOf": [
+    {
+      "title": "Typical resource expected output",
+      "description": "Defines the expected output for a resource whose `kind` isn't `exporter` as the actual state of every existing instance of that resource on the system.",
+      "type": "object"
+    },
+    {
+      "title": "Exporter resource expected output",
+      "description": "Defines the expected output for an `exporter` resource as a resource instance definition to recursively invoke the **Export** operation for.",
+      "$ref": "/PowerShell/DSC/main/schemas/v3/config/document.resource.json"
+    }
+  ]
 }

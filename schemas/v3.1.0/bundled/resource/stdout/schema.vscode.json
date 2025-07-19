@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/stdout/schema.json",
+  "title": "Schema resource command stdout",
+  "description": "Represents the JSON Schema that validates instances of the resource. DSC expects a resource that defines the `schema.command` field in its resource manifest to return this value for that command.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nRepresents the JSON Schema that validates instances of the resource. DSC expects a resource that\ndefines the [`schema.command`][01] field in its resource manifest to return this value for that\ncommand.\n\nThe output must be a JSON object. The object must be a valid JSON Schema. For more information\nabout what DSC expects for resource instance JSON Schemas, see\n[DSC Resource manifest embedded schema reference][02], which describes the expectations in full.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/export?view=dsc-3.0&preserve-view=true\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/command?view=dsc-3.0&preserve-view=true\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/schema/embedded?view=dsc-3.0&preserve-view=true\n",
+  "type": "object",
+  "required": [
+    "$schema",
+    "type",
+    "properties"
+  ],
+  "$defs": {}
+}

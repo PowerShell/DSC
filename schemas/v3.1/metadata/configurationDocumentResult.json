@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/metadata/configurationDocumentResult.json",
+  "title": "Configuration result metadata",
+  "description": "Defines metadata DSC returns for a configuration operation, as from the `dsc config get` or `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe the context of the operation.",
+  "type": "object",
+  "required": [
+    "Microsoft.DSC"
+  ],
+  "properties": {
+    "Microsoft.DSC": {
+      "title": "DSC context metadata",
+      "description": "The child properties for this metadata describe the context of a DSC operation, including the version of DSC used, when the operation started and ended, and the security context the operation was invoked under.",
+      "type": "object",
+      "required": [
+        "version",
+        "operation",
+        "executionType",
+        "startDatetime",
+        "endDatetime",
+        "duration",
+        "securityContext"
+      ],
+      "properties": {
+        "version": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/version.json"
+        },
+        "operation": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/operation.json"
+        },
+        "executionType": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/executionType.json"
+        },
+        "startDatetime": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/startDatetime.json"
+        },
+        "endDatetime": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/endDatetime.json"
+        },
+        "duration": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/duration.json"
+        },
+        "securityContext": {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1/metadata/Microsoft.DSC/securityContext.json"
+        }
+      }
+    }
+  }
+}
