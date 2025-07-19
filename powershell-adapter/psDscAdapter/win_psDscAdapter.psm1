@@ -669,7 +669,7 @@ function GetClassBasedCapabilities {
         $availableMethods = @('get', 'set', 'setHandlesExist', 'whatIf', 'test', 'delete', 'export')
         foreach ($typeDefinitionAst in $typeDefinitions) {
             foreach ($a in $typeDefinitionAst.Attributes) {
-                if ($a.TypeName.Name -eq 'DscResource') {
+                if ($a.TypeName.Name -eq 'DscResource' -and $a.Parent.Name -eq $className) {
                     $methods = $typeDefinitionAst.Members | Where-Object { $_ -is [System.Management.Automation.Language.FunctionMemberAst] -and $_.Name -in $availableMethods }
 
                     foreach ($method in $methods.Name) {
