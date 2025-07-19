@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/operation.json",
+  "title": "Operation",
+  "description": "Defines the operation that DSC applied to the configuration document: `Get`, `Set`, `Test`, or `Export`.",
+  "type": "string",
+  "enum": [
+    "get",
+    "set",
+    "test",
+    "export"
+  ]
+}

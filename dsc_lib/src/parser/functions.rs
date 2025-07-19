@@ -86,6 +86,12 @@ impl Function {
 
         function_dispatcher.invoke(&self.name, &resolved_args, context)
     }
+
+    /// Get the name of the function.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 fn convert_args_node(statement_bytes: &[u8], args: Option<&Node>) -> Result<Option<Vec<FunctionArg>>, DscError> {

@@ -1,7 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.Windows/WMI",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "kind": "adapter",
     "description": "Resource adapter to WMI resources.",
     "tags": [

@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function};
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,6 +12,14 @@ use tracing::debug;
 pub struct Max {}
 
 impl Function for Max {
+    fn description(&self) -> String {
+        t!("functions.max.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::Numeric
+    }
+
     fn min_args(&self) -> usize {
         1
     }

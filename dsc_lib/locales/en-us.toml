@@ -3,6 +3,7 @@ _version = 1
 [configure.config_doc]
 configurationDocumentSchemaTitle = "Configuration document schema URI"
 configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
+skippingResource = "Skipping resource '%{name}' due to condition '%{condition}' with result '%{result}'"
 
 [configure.constraints]
 minLengthIsNull = "Parameter '%{name}' has minimum length constraint but is null"
@@ -66,6 +67,10 @@ parameterNotArray = "Parameter '%{name}' is not an array"
 parameterNotObject = "Parameter '%{name}' is not an object"
 invokePropertyExpressions = "Invoke property expressions"
 invokeExpression = "Invoke property expression for %{name}: %{value}"
+propertyNotString = "Property '%{name}' with value '%{value}' is not a string"
+metadataMicrosoftDscIgnored = "Resource returned '_metadata' property 'Microsoft.DSC' which is ignored"
+metadataNotObject = "Resource returned '_metadata' property which is not an object"
+metadataRestartRequiredInvalid = "Resource returned '_metadata' property '_restartRequired' which contains invalid value: %{value}"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
@@ -173,6 +178,11 @@ resourceManifestSchemaDescription = "Defines the JSON Schema the resource manife
 discoverNoResults = "No results returned for discovery extension '%{extension}'"
 discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
 extensionReturned = "Extension '%{extension}' returned line: %{line}"
+retrievingSecretFromExtension = "Retrieving secret '%{name}' from extension '%{extension}'"
+secretExtensionReturnedInvalidJson = "Extension '%{extension}' returned invalid JSON: %{error}"
+extensionReturnedSecret = "Extension '%{extension}' returned secret"
+extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
+secretNoResults = "Extension '%{extension}' returned no output"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -193,15 +203,29 @@ noObjectArgs = "Function '%{name}' does not accept object arguments, accepted ty
 noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
 
 [functions.add]
+description = "Adds two or more numbers together"
 invoked = "add function"
 
+[functions.and]
+description = "Evaluates if all arguments are true"
+invoked = "and function"
+
+[functions.base64]
+description = "Encodes a string to Base64 format"
+
+[functions.bool]
+description = "Converts a string or number to a boolean"
+invoked = "bool function"
+
 [functions.concat]
+description = "Concatenates two or more strings or arrays"
 invoked = "concat function"
 argsMustBeStrings = "Arguments must all be strings"
 argsMustBeArrays = "Arguments must all be arrays"
 onlyArraysOfStrings = "Arguments must all be arrays of strings"
 
 [functions.createArray]
+description = "Creates an array from the given elements"
 invoked = "createArray function"
 argsMustAllBeArrays = "Arguments must all be arrays"
 argsMustAllBeIntegers = "Arguments must all be integers"
@@ -209,72 +233,115 @@ argsMustAllBeObjects = "Arguments must all be objects"
 argsMustAllBeStrings = "Arguments must all be strings"
 
 [functions.div]
+description = "Divides the first number by the second"
 invoked = "div function"
 divideByZero = "Cannot divide by zero"
 
 [functions.envvar]
+description = "Retrieves the value of an environment variable"
 notFound = "Environment variable not found"
 
-[functions.if]
-conditionNotBoolean = "Condition is not a boolean"
+[functions.equals]
+description = "Evaluates if the two values are the same"
+
+[functions.false]
+description = "Returns the boolean value false"
+invoked = "false function"
 
 [functions.format]
+description = "Formats a string using the given arguments"
 experimental = "`format()` function is experimental"
 formatInvalid = "First `format()` argument must be a string"
 numberTooLarge = "Number is too large"
 invalidArgType = "Unsupported argument type"
 invalidFormatString = "Invalid format string"
 
+[functions.if]
+description = "Evaluates a condition and returns second value if true, otherwise returns third value"
+conditionNotBoolean = "Condition is not a boolean"
+
 [functions.int]
+description = "Converts a string or number to an integer"
 invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
 
 [functions.max]
+description = "Returns the largest number from a list of numbers"
 emptyArray = "Array cannot be empty"
 integersOnly = "Array must contain only integers"
 noMax = "Unable to find max value"
 
 [functions.min]
+description = "Returns the smallest number from a list of numbers"
 invoked = "min function"
 emptyArray = "Array cannot be empty"
 integersOnly = "Input must only contain integers"
 noMin = "Unable to find min value"
 
 [functions.mod]
+description = "Divides the first number by the second and returns the remainder"
 divideByZero = "Cannot divide by zero"
 
 [functions.mul]
+description = "Multiplies two or more numbers together"
 invoked = "mul function"
 
+[functions.not]
+description = "Negates a boolean value"
+invoked = "not function"
+
+[functions.or]
+description = "Evaluates if any arguments are true"
+invoked = "or function"
+
 [functions.parameters]
+description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
 traceKey = "parameters key: %{key}"
 keyNotString = "Parameter '%{key}' is not a string"
 keyNotFound = "Parameter '%{key}' not found in context"
 
 [functions.path]
+description = "Concatenates multiple strings into a file path"
 traceArgs = "Executing path function with args: %{args}"
 argsMustBeStrings = "Arguments must all be strings"
 
 [functions.reference]
+description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
 keyNotFound = "Invalid resourceId or resource has not executed yet: %{key}"
 
 [functions.resourceId]
+description = "Constructs a resource ID from the given type and name"
 incorrectTypeFormat = "Type argument must contain exactly one slash"
 invalidFirstArgType = "Invalid argument type for first parameter"
 incorrectNameFormat = "Name argument cannot contain a slash"
 invalidSecondArgType = "Invalid argument type for second parameter"
 
+[functions.secret]
+description = "Retrieves a secret from a vault"
+notString = "Parameter secret name is not a string"
+multipleSecrets = "Multiple secrets with the same name '%{name}' and different values was returned, try specifying a vault"
+extensionReturnedError = "Extension '%{extension}': %{error}"
+noExtensions = "No extensions supporting secrets was found"
+secretNotFound = "Secret '%{name}' not found"
+
 [functions.sub]
+description = "Subtracts the second number from the first"
 invoked = "sub function"
 
 [functions.systemRoot]
+description = "Returns the system root path"
 invoked = "systemRoot function"
 
+[functions.true]
+description = "Returns the boolean value true"
+invoked = "true function"
+
 [functions.variables]
+description = "Retrieves the value of a variable"
 invoked = "variables function"
 keyNotFound = "Variable '%{key}' does not exist or has not been initialized yet"
 
@@ -328,7 +395,6 @@ manifestDescription = "manifest description"
 commandOperation = "Command: Operation"
 forExecutable = "for executable"
 function = "Function"
-error = "error"
 integerConversion = "Function integer argument conversion"
 invalidConfiguration = "Invalid configuration"
 unsupportedManifestVersion = "Unsupported manifest version"
