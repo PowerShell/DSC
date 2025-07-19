@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/definitions/parameters/validValueTypes.json",
+  "$comment": "This schema fragment makes it a little easier to compose the valid properties\nfor DSC configuration document parameters. As-written, values must be one of\nthose on this list - the schema definition for dataType excludes `null` and\nnumbers with fractional parts, like `3.5`.\n",
+  "type": [
+    "string",
+    "integer",
+    "object",
+    "array",
+    "boolean"
+  ]
+}

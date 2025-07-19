@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.resource.json",
+  "title": "DSC resource instance",
+  "description": "Defines an instance of a DSC resource in a configuration.",
+  "type": "object",
+  "required": [
+    "type",
+    "name"
+  ],
+  "properties": {
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.2/definitions/resourceType.json"
+    },
+    "name": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.0.2/definitions/instanceName.json"
+    },
+    "dependsOn": {
+      "title": "Instance depends on",
+      "description": "Defines a list of DSC resource instances that DSC must successfully process before processing this instance. Each value for this property must be the `resourceID()` lookup for another instance in the configuration. Multiple instances can depend on the same instance, but every dependency for an instance must be unique in that instance's `dependsOn` property.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true,
+        "pattern": "^\\[resourceId\\(\\s*'\\w+(\\.\\w+){0,2}\\/\\w+'\\s*,\\s*'[a-zA-Z0-9 ]+'\\s*\\)\\]$"
+      }
+    },
+    "properties": {
+      "title": "Managed instance properties",
+      "description": "Defines the properties of the DSC resource this instance manages. This property's value must be an object. DSC validates the property's value against the DSC resource's schema.",
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/metadata/Microsoft.DSC/securityContext.json",
+  "title": "Security context",
+  "description": "Defines the security context that DSC was run under. If the value for this metadata property is `elevated`, DSC was run as root (non-Windows) or an elevated session with Administrator privileges (on Windows). If the value is `restricted`, DSC was run as a normal user or account in a non-elevated session.",
+  "type": "string",
+  "enum": [
+    "current",
+    "elevated",
+    "restricted"
+  ]
+}

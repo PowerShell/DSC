@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use chrono::{DateTime, Local};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,21 @@ pub enum ExecutionKind {
     WhatIf,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Process {
+    pub name: String,
+    pub id: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum RestartRequired {
+    System(String),
+    Service(String),
+    Process(Process),
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct MicrosoftDscMetadata {
     /// Version of DSC
@@ -56,6 +72,29 @@ pub struct MicrosoftDscMetadata {
     /// The security context of the configuration operation, can be specified to be required
     #[serde(rename = "securityContext", skip_serializing_if = "Option::is_none")]
     pub security_context: Option<SecurityContextKind>,
+    /// Indicates what needs to be restarted after the configuration operation
+    #[serde(rename = "restartRequired", skip_serializing_if = "Option::is_none")]
+    pub restart_required: Option<Vec<RestartRequired>>,
+}
+
+impl MicrosoftDscMetadata {
+    /// Creates a new instance of `MicrosoftDscMetadata` with the duration
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The start time of the configuration operation
+    /// * `end` - The end time of the configuration operation
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `MicrosoftDscMetadata` with the duration calculated from the start and end times.
+    #[must_use]
+    pub fn new_with_duration(start: &DateTime<Local>, end: &DateTime<Local>) -> Self {
+        Self {
+            duration: Some(end.signed_duration_since(*start).to_string()),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -139,6 +178,8 @@ pub struct Resource {
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
 }
 
 impl Default for Configuration {
@@ -196,6 +237,7 @@ impl Resource {
             kind: None,
             properties: None,
             metadata: None,
+            condition: None,
         }
     }
 }

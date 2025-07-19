@@ -11,20 +11,73 @@ markdownDescription: | # VS Code only
   [_Online Documentation_][00]
   ***
 
-  Represents the actual state of a resource instance in DSC. DSC expects every JSON Line emitted to
-  stdout for the **Export** operation to adhere to this schema.
+  DSC expects a resource implementing the **Export** operation to return a series of JSON Lines.
 
-  The output must be a JSON object. The object must be a valid representation of an instance of the
-  resource.
+  The data that DSC expects depends on whether the resource kind is defined as `exporter`:
 
-  Command resources define their instance schema with the [schema.command][01] or
-  [schema.embedded][02] fields in their resource manifest. If a command resource returns JSON that
-  is invalid against the resource instance schema, DSC raises an error.
-
-  Adapted resource instances are validated by their adapter when the adapter invokes them.
+  - When the resource kind is `exporter`, DSC expects the resource to return JSON Lines
+    representing DSC resource instance definitions to recursively export.
+  - When the resource kind isn't `exporter`, DSC expects the resource to return JSON Lines
+    representing the actual state of every instance of the resource on the system.
 
   [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/export?<DOCS_VERSION_PIN>
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/command?<DOCS_VERSION_PIN>
   [02]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>
 
-type: object
+anyOf:
+  - title: Typical resource expected output
+    description: >-
+      Defines the expected output for a resource whose `kind` isn't `exporter` as the actual state
+      of every existing instance of that resource on the system.
+    type: object
+    markdownDescription: | # VS Code only
+      ***
+      [_Online Documentation_][00]
+      ***
+
+      DSC expects a typical resource implementing the **Export** operation to return a series of
+      JSON Lines.
+
+      Each JSON Line represents the actual state of a resource instance in DSC. DSC expects every
+      JSON Line emitted to stdout for the **Export** operation to adhere to this schema.
+
+      The output must be a JSON object. The object must be a valid representation of an instance of
+      the resource.
+
+      Command resources define their instance schema with the [schema.command][01] or
+      [schema.embedded][02] fields in their resource manifest. If a command resource returns JSON that
+      is invalid against the resource instance schema, DSC raises an error.
+
+      Adapted resource instances are validated by their adapter when the adapter invokes them.
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/export?<DOCS_VERSION_PIN>#typical-resource-expected-output
+      [01]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/command?<DOCS_VERSION_PIN>
+      [02]: <DOCS_BASE_URL>/reference/schemas/resource/manifest/schema/embedded?<DOCS_VERSION_PIN>
+  - title: Exporter resource expected output
+    description: >-
+      Defines the expected output for an `exporter` resource as a resource instance definition to
+      recursively invoke the **Export** operation for.
+    $ref: /<PREFIX>/<VERSION>/config/document.resource.yaml
+    markdownDescription: | # VS Code only
+      ***
+      [_Online Documentation_][00]
+      ***
+
+      DSC expects an exporter resource (one with the `kind` field in its manifest set to
+      `exporter`) to return a series of JSON Lines.
+
+      Each JSON Line represents a DSC resource instance definition to recursively invoke the
+      **Export** operation for. DSC expects every JSON Line emitted to stdout for the **Export**
+      operation to adhere to this schema.
+
+      The output must be a JSON object adhering to [DSC resource instance][01] schema, rather than
+      the instance schema for a specific resource. DSC expects the object to define at least the
+      [name][02] and [type][03] fields. If the object defines the [properties][04] field, DSC
+      passes those properties to the resource when recursively exporting it so that the resource
+      may filter the exported instance results.
+
+      [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/export?<DOCS_VERSION_PIN>#typical-resource-expected-output
+      [01]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>
+      [02]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#name
+      [02]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#type
+      [02]: <DOCS_BASE_URL>/reference/schemas/config/resource?<DOCS_VERSION_PIN>#properties-1

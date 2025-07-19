@@ -31,6 +31,18 @@ dsc config get [Options] --input <INPUT>
 cat <FILE> | dsc config get [Options] --file -
 ```
 
+### Configuration document from file with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - get [Options] --file <FILE>
+```
+
+### Configuration document from option string with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - get [Options] --input <INPUT>
+```
+
 ## Description
 
 The `get` subcommand returns the actual state of the resource instances in a configuration

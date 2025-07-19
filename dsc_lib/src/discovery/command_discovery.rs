@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 use crate::discovery::discovery_trait::{ResourceDiscovery, DiscoveryKind};
-use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -10,6 +9,7 @@ use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
+use crate::util::convert_wildcard_to_regex;
 use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use rust_i18n::t;
@@ -36,6 +36,7 @@ pub enum ImportedManifest {
     Extension(DscExtension),
 }
 
+#[derive(Clone)]
 pub struct CommandDiscovery {
     // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
     adapters: BTreeMap<String, Vec<DscResource>>,
@@ -77,6 +78,11 @@ impl CommandDiscovery {
             adapted_resources: BTreeMap::new(),
             progress_format,
         }
+    }
+
+    #[must_use]
+    pub fn get_extensions(&self) -> &BTreeMap<String, DscExtension> {
+        &self.extensions
     }
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
@@ -546,6 +552,13 @@ impl ResourceDiscovery for CommandDiscovery {
         }
         Ok(found_resources)
     }
+
+    fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError> {
+        if self.extensions.is_empty() {
+            self.discover(&DiscoveryKind::Extension, "*")?;
+        }
+        Ok(self.extensions.clone())
+    }
 }
 
 // TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
@@ -708,6 +721,10 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
     if let Some(discover) = &manifest.discover {
         verify_executable(&manifest.r#type, "discover", &discover.executable);
         capabilities.push(dscextension::Capability::Discover);
+    }
+    if let Some(secret) = &manifest.secret {
+        verify_executable(&manifest.r#type, "secret", &secret.executable);
+        capabilities.push(dscextension::Capability::Secret);
     }
 
     let extension = DscExtension {

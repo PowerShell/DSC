@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/stdout/list.json",
+  "title": "List resource operation stdout",
+  "description": "Defines the representation of an adapted resource in DSC. DSC expects every JSON Line emitted to stdout for the **List** operation to adhere to this schema.",
+  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDefines the representation of an adapted resource in DSC. DSC expects every JSON Line emitted to\nstdout for the **List** operation to adhere to this schema.\n\nDSC includes the following adapter resources:\n\n- `Microsoft.DSC/PowerShell` run PowerShell and enables you to use PowerShell DSC (PSDSC)\n  resources implemented as PowerShell classes in DSC.\n- `Microsoft.Windows/WindowsPowerShell` runs Windows PowerShell and enables you to use any\n  available PSDSC resources in DSC. This adapter is only available when you install DSC on\n  Windows.\n- `Microsoft.Windows/WMI` enables you to use WMI classes as resources in DSC. This adapter is\n  only available when you install DSC on Windows.\n\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/stdout/list?view=dsc-3.0&preserve-view=true\n",
+  "type": "object",
+  "required": [
+    "type",
+    "kind",
+    "version",
+    "capabilities",
+    "path",
+    "directory",
+    "implementedAs",
+    "properties",
+    "requireAdapter"
+  ],
+  "properties": {
+    "type": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json"
+    },
+    "kind": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceKind.json"
+    },
+    "version": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1.0/definitions/semver.json"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceCapabilities.json"
+    },
+    "path": {
+      "title": "Path",
+      "description": "Indicates the path to the adapted resource on the file system.",
+      "type": "string"
+    },
+    "directory": {
+      "title": "Directory",
+      "description": "Indicates the path to the folder containing the adapted resource on the file system."
+    },
+    "implementedAs": {
+      "title": "Custom implementation name",
+      "description": "Indicates that the adapted resource uses a custom implementation. The name can be used to distinguish between different implementations for the adapted resources.",
+      "type": "string"
+    },
+    "author": {
+      "title": "Author",
+      "description": "Indicates the name of the person or organization that developed and maintains the adapted Resource.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\w+( \\w+)*"
+    },
+    "properties": {
+      "title": "Properties",
+      "description": "Defines the adapted resource's property names.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$"
+      }
+    },
+    "requireAdapter": {
+      "title": "Required adapter",
+      "description": "Defines the fully qualified type name of the adapter that the adapted resource depends on. An adapter should always set this value to its own fully qualified resource type name.",
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json"
+    }
+  },
+  "$defs": {
+    "PowerShell": {
+      "DSC": {
+        "main": {
+          "schemas": {
+            "v3.1.0": {
+              "definitions": {
+                "resourceType.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json",
+                  "title": "DSC resource fully qualified type name",
+                  "description": "The namespaced name of the DSC resource, using the syntax:\n\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n\nFor example:\n\n- Microsoft/OSInfo\n- Microsoft.SqlServer/Database\n- Microsoft.SqlServer.Database/User\n",
+                  "type": "string",
+                  "pattern": "^\\w+(\\.\\w+){0,3}\\/\\w+$",
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe namespaced name of the DSC resource, using the syntax:\n\n```yaml\n<owner>[.<group>][.<area>][.<subarea>]/<name>\n```\n\nFor example:\n\n- `Microsoft/OSInfo`\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserve-view=true\n",
+                  "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include the group, area, and subarea\nsegments to namespace the resource under the owner, like `Microsoft.Windows/Registry`.\n"
+                },
+                "resourceKind.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceKind.json",
+                  "title": "Resource kind",
+                  "description": "Defines whether the resource is a normal DSC resource, a group resource, or an adapter resource. This property is only required for group resources.",
+                  "type": "string",
+                  "enum": [
+                    "resource",
+                    "adapter",
+                    "group",
+                    "importer",
+                    "exporter"
+                  ],
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines how DSC should interpret the resource - as a typical resource, an adapter, a group, or an\nimporter. This property is required for group, exporter, and importer resources.\n\nDSC infers the default value for this property based on whether the [adapter][02] property is\ndefined in the manifest:\n\n- If the `adapter` property is defined in the manifest, the default `kind` is `adapter`.\n- If the `adapter` property is not defined in the manifest, the default `kind` is `resource`.\n\nFor more information about the different kinds of DSC resources, see [DSC resource kinds][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/root?view=dsc-3.0&preserve-view=true#kind\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/kinds?view=dsc-3.0&preserve-view=true\n",
+                  "markdownEnumDescriptions": [
+                    "<!-- force a line break -->\n\nIndicates that the manifest is for a typical DSC command resource.\n",
+                    "<!-- force a line break -->\n\nIndicates that the manifest is for a resource that enables the use of non-command resources\nwith DSC.\n",
+                    "<!-- force a line break -->\n\nIndicates that the manifest is for a resource that processes an array of nested resource\ninstances.\n",
+                    "<!-- force a line break -->\n\nIndicates that the manifest is for a resource that resolves an external source to DSC\nresource instances. DSC processes the resolved instances as nested instances for the importer\nresource.\n",
+                    "<!-- force a line break -->\n\nIndicates that the manifest is for a resource that only implements the **Export** operation\nto use for inventory and fact-gathering scenarios. For exporter resources, DSC expects the\nresource to return one or more resource definitions to recursively export, rather than the\nactual state of instances.\n\nFor more information about the expected output, see [Export resource operation stdout][02].\n"
+                  ]
+                },
+                "semver.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/semver.json",
+                  "type": "string",
+                  "title": "Semantic Version",
+                  "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
+                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                  "patternErrorMessage": "Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.\n\nThe value may also include pre-release version information and build metadata.\n",
+                  "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
+                },
+                "resourceCapabilities.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceCapabilities.json",
+                  "title": "Resource capabilities",
+                  "description": "Define the operations you can invoke for a resource and how the resource behaves when invoked.",
+                  "markdownDescription": "***\n[_Online Documentation_][00]\n***\n\nDSC resources always have at least one capability. Resource capabilities define the operations\nyou can invoke for a resource and how the resource behaves when invoked.\n\nFor more information about the operations you can invoke for a resource, see\n[DSC resource operations][01].\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true\n[00]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operations?view=dsc-3.0&preserve-view=true",
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "get",
+                      "set",
+                      "setHandlesExist",
+                      "whatIf",
+                      "test",
+                      "delete",
+                      "export",
+                      "resolve"
+                    ],
+                    "markdownEnumDescriptions": [
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `get` capability supports retrieving the current state of an instance\nwith the [Get][01] operation.\n\nA command resource has this capability when its resource manifest defines the [get][02]\nproperty.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#get\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operations?view=dsc-3.0&preserve-view=true#get-operation\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/get?view=dsc-3.0&preserve-view=true",
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `set` capability supports enforcing the desired state of an instance with\nthe [Set][01] operation. Resources without this capability can't be used with the\n[dsc resource set][02] or [dsc config set][03] commands unless they're defined in a\n`Microsoft.DSC/Assertion` group as a nested instance.\n\nA command resource has this capability when its resource manifest defines the [set][04]\nproperty.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#set\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operations?view=dsc-3.0&preserve-view=true#set-operation\n[02]: https://learn.microsoft.com/powershell/dsc/reference/cli/resource/set?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/cli/config/set?view=dsc-3.0&preserve-view=true\n[04]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/set?view=dsc-3.0&preserve-view=true",
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `setHandlesExist` capability indicates that you can use the [Set][01]\noperation to delete an instance. Resources with this capability must have the [_exist][02]\ncanonical resource property. Resources that don't have the `_exist` property never have this\ncapability.\n\nWhen a resource has the `_exist` property but not the `setHandlesExist` capability:\n\n- If the resource has the `delete` capability, DSC invokes the [Delete][03] operation instead\n  of **Set** when the desired state for an instance defines `_exist` as false.\n- If the resource doesn't have the `delete` capability, DSC raises an error during a **Set**\n  operation when the desired state for an instance defines `_exist` as false.\n\nA command resource has this capability when its resource manifest defines the\n[set.handlesExist][04] subproperty as `true`.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#sethandlesexist\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operationsview=dsc-3.0&preserve-view=true#set-operation\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/existview=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operationsview=dsc-3.0&preserve-view=true#delete-operation\n[04]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/setview=dsc-3.0&preserve-view=true#handlesexist",
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `whatIf` capability indicates that you can use the [Set][01] operation in\nwhat-if mode to have the resource return explicit information about how it would modify state\nin an actual **Set** operation.\n\nWhen a resource doesn't have this capability, DSC synthesizes how the resource would change\nan instance by converting the **Test** result for the instance into a **Set** result. The\nsynthetic operation can't indicate potential issues or changes that can't be determined by\ncomparing the result of the **Test** operation against the resource's desired state. For\nexample, the credentials used to test a resource might be valid for that operation, but not\nhave permissions to actually modify the system state. Only a resource with this capability\ncan fully report whether and how the resource would change system state.\n\nA resource has this capability when it defines the [whatIf][02] property.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#whatif\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operations?view=dsc-3.0&preserve-view=true#set-operation\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/whatif?view=dsc-3.0&preserve-view=true",
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `test` capability indicates that it implements the [Test][01] operation\ndirectly. Resources with this capability must have the [_inDesiredState][02] canonical\nresource property. Resources that don't have the `_inDesiredState` property never have this\ncapability.\n\nWhen a resource doesn't have this capability, DSC uses a synthetic test for instances of the\nresource. DSC performs the synthetic test by:\n\n1. Invoking the **Get** operation on the resource to retrieve the actual state of the\n   instance.\n1. Synthetically testing each property for the desired state of an instance against the\n   actual state returned. The synthetic test uses strict, case-sensitive equivalence.\n1. If the desired state for a property and the actual state aren't the same, DSC marks the\n   property as out of the desired state.\n1. If any properties are out of the desired state, DSC reports the entire instance as not\n   being in the desired state.\n\nSynthetic testing can't account for all resource behaviors. For example, if a package\nresource allows users to define a version range for the package, the **Get** operation\nreturns the actual version of the package, like `1.2.3`. If the user specified the version\nrange `~1` (NPM syntax indicating the package should be latest released semantic version with\nmajor version `1`), DSC would compare the desired state `~1` against the actual state `1.2.3`\nand consider the package to be in the incorrect state, even if `1.2.3` is actually the latest\nrelease matching the version pin.\n\nAny resource that has properties which can't use a strict case-sensitive comparison check\nshould have this capability.\n\nA command resource has this capability when its resource manifest defines the [test][03]\nproperty.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#test\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operations?view=dsc-3.0&preserve-view=true#test-operation\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/inDesiredState?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/test?view=dsc-3.0&preserve-view=true",
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `delete` capability supports removing an instance with the [Delete][01]\noperation and the [dsc resource delete][02] command.\n\nThis capability isn't mutually exclusive with the `setHandlesExist` property. A resource can handle\nthe `_exist` property in **Set** operations and be called directly with `dsc resource delete` to\nremove an instance.\n\nFor resources with the `delete` capability and the [_exist][03] canonical resource property:\n\n- If the resource doesn't have the `setHandlesExist` capability, DSC invokes the **Delete**\n  operation for the resource instead of **Set** when the desired state defines `_exist` as\n  `false`.\n- If the resource does have the `setHandlesExist` capability, DSC invokes the **Set** operation for\n  the resource when the desired state defines `_exist` as `false`.\n\nResources with the `delete` capability that don't have the `_exist` canonical resource property\nmust implement their **Set** operation to handle removing instances. DSC can't infer existence\nsemantics without the `_exist` property.\n\nA command resource has this capability when its resource manifest defines the [delete][04]\nproperty.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#delete\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operations?view=dsc-3.0&preserve-view=true#delete-operation\n[02]: https://learn.microsoft.com/powershell/dsc/reference/cli/resource/delete?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/properties/exist?view=dsc-3.0&preserve-view=true\n[04]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/delete?view=dsc-3.0&preserve-view=true",
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `export` capability supports enumerating every instance of the resource\nwith the [Export][01] operation.\n\nYou can use resources with this capability with the following commands:\n\n- [dsc config export][02] to return a configuration document representing the actual state\n  for every instance of each resource defined in the input document.\n- [dsc resource export][03] to return a configuration document representing the actual state\n  for every instance of the input resource.\n- `dsc resource get` with the [--all][04] option to return the actual state of every instance\n  of the input resource.\n\nA command resource has this capability when its resource manifest defines the [export][05]\nproperty.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#export\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/operationsview=dsc-3.0&preserve-view=true#export-operation\n[02]: https://learn.microsoft.com/powershell/dsc/reference/cli/config/export?view=dsc-3.0&preserve-view=true\n[03]: https://learn.microsoft.com/powershell/dsc/reference/cli/resource/export?view=dsc-3.0&preserve-view=true\n[04]: https://learn.microsoft.com/powershell/dsc/reference/cli/resource/get?view=dsc-3.0&preserve-view=true#--all\n[05]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/export?view=dsc-3.0&preserve-view=true",
+                      "***\n[_Online Documentation_][00]\n***\n\nA resource with the `resolve` capability supports resolving nested resource instances from an\nexternal source. This capability is primarily used by [importer resources][01] to enable users to\ncompose configuration documents.\n\nA command resource has this capability when its resource manifest defines the [resolve][0220]\nproperty.\n\n<!-- Link reference definitions -->\n[00]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourceCapabilities?view=dsc-3.0&preserve-view=true#resolve\n[01]: https://learn.microsoft.com/powershell/dsc/concepts/resources/kinds?view=dsc-3.0&preserve-view=true#importer-resources\n[02]: https://learn.microsoft.com/powershell/dsc/reference/schemas/resource/manifest/resolve?view=dsc-3.0&preserve-view=true"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

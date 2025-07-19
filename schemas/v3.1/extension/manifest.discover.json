@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/extension/manifest.discover.json",
+  "title": "Discover operation command",
+  "description": "Defines how DSC must call the DSC extension to discover the paths to resource manifests.",
+  "type": "object",
+  "required": [
+    "executable"
+  ],
+  "properties": {
+    "executable": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/commandExecutable.json"
+    },
+    "args": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1/definitions/commandArgs.json"
+    }
+  }
+}

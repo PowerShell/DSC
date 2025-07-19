@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/outputs/resource/list.json",
+  "title": "dsc resource list result",
+  "description": "Describes the return data for a DSC resource instance from the `dsc resource list` command.",
+  "type": "object",
+  "properties": {
+    "type": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json"
+    },
+    "kind": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceKind.json"
+    },
+    "version": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/semver.json"
+    },
+    "capabilities": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceCapabilities.json"
+    },
+    "description": {
+      "title": "Resource description",
+      "description": "A short synopsis of the DSC resource's purpose.",
+      "type": "string"
+    },
+    "path": {
+      "title": "Path",
+      "description": "Indicates the path to the DSC resource on the file system.",
+      "type": "string"
+    },
+    "directory": {
+      "title": "Directory",
+      "description": "Indicates the path to the folder containing the DSC resource on the file system.",
+      "type": "string"
+    },
+    "implementedAs": {
+      "title": "Implemented as",
+      "description": "Indicates how the DSC resource was implemented.",
+      "oneOf": [
+        {
+          "title": "Standard implementation",
+          "description": "Indicates that the DSC resource is implemented as one of the standard implementations built into DSC.",
+          "type": "string",
+          "enum": [
+            "command"
+          ]
+        },
+        {
+          "title": "Custom implementation",
+          "description": "Indicates that the DSC resource uses a custom implementation. Only adapted resources define this value.",
+          "type": "object",
+          "required": [
+            "custom"
+          ],
+          "properties": {
+            "custom": {
+              "title": "Custom implementation name",
+              "description": "The name of the custom implementation. This name is determined by the resource adapter.",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "author": {
+      "title": "Author",
+      "description": "Indicates the name of the person or organization that developed and maintains the DSC resource.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "properties": {
+      "title": "Properties",
+      "description": "Defines the DSC resource's property names.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\w+$"
+      }
+    },
+    "requireAdapter": {
+      "title": "Required DSC resource adapter",
+      "description": "Defines the fully qualified type name of the DSC resource adapter the DSC resource depends on.",
+      "oneOf": [
+        {
+          "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceType.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "manifest": {
+      "$ref": "/PowerShell/DSC/main/schemas/v3.1.0/resource/manifest.json"
+    }
+  }
+}
