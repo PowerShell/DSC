@@ -289,4 +289,5 @@ pub enum SchemaType {
     ExtensionManifest,
     ExtensionDiscoverResult,
     FunctionDefinition,
+    RestartRequired
 }

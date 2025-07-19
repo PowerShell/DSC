@@ -107,4 +107,35 @@ resources:
       $LASTEXITCODE | Should -Be 0
       $out.results[0].result[1].result.actualState.output.family | Should -BeExactly $out.results[0].result[0].result.actualState.family
     }
+
+    It 'Logical functions work: <expression>' -TestCases @(
+        @{ expression = "[equals('a', 'a')]"; expected = $true }
+        @{ expression = "[equals('a', 'b')]"; expected = $false }
+        @{ expression = "[not(equals('a', 'b'))]"; expected = $true }
+        @{ expression = "[and(true, true)]"; expected = $true }
+        @{ expression = "[and(true, false)]"; expected = $false }
+        @{ expression = "[or(false, true)]"; expected = $true }
+        @{ expression = "[or(false, false)]"; expected = $false }
+        @{ expression = "[not(true)]"; expected = $false }
+        @{ expression = "[not(or(true, false))]"; expected = $false }
+        @{ expression = "[bool('TRUE')]" ; expected = $true }
+        @{ expression = "[bool('False')]" ; expected = $false }
+        @{ expression = "[bool(1)]" ; expected = $true }
+        @{ expression = "[not(bool(0))]" ; expected = $true }
+        @{ expression = "[true()]" ; expected = $true }
+        @{ expression = "[false()]" ; expected = $false }
+    ) {
+        param($expression, $expected)
+        $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: echo
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "$expression"
+"@
+        $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
+        $out.results[0].result.actualState.output | Should -Be $expected -Because ($out | ConvertTo-Json -Depth 10| Out-String)
+    }
 }

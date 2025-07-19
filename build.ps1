@@ -53,6 +53,9 @@ $filesForWindowsPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
+    'winpsscript.dsc.resource.json',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
     'registry.dsc.resource.json',
@@ -87,6 +90,8 @@ $filesForLinuxPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
@@ -109,6 +114,8 @@ $filesForMacPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
     'runcommandonset',
     'sshdconfig',
@@ -300,6 +307,7 @@ if (!$SkipBuild) {
         "dscecho",
         "osinfo",
         "powershell-adapter",
+        'resources/PSScript',
         "process",
         "runcommandonset",
         "sshdconfig",
@@ -422,7 +430,8 @@ if (!$SkipBuild) {
                 Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
-                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+                $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
+                Copy-Item "*.dsc.resource.json" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable

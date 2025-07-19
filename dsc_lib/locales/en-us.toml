@@ -3,6 +3,7 @@ _version = 1
 [configure.config_doc]
 configurationDocumentSchemaTitle = "Configuration document schema URI"
 configurationDocumentSchemaDescription = "Defines the JSON Schema the configuration document adheres to."
+skippingResource = "Skipping resource '%{name}' due to condition '%{condition}' with result '%{result}'"
 
 [configure.constraints]
 minLengthIsNull = "Parameter '%{name}' has minimum length constraint but is null"
@@ -69,6 +70,7 @@ invokeExpression = "Invoke property expression for %{name}: %{value}"
 propertyNotString = "Property '%{name}' with value '%{value}' is not a string"
 metadataMicrosoftDscIgnored = "Resource returned '_metadata' property 'Microsoft.DSC' which is ignored"
 metadataNotObject = "Resource returned '_metadata' property which is not an object"
+metadataRestartRequiredInvalid = "Resource returned '_metadata' property '_restartRequired' which contains invalid value: %{value}"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
@@ -204,8 +206,16 @@ noStringArgs = "Function '%{name}' does not accept string arguments, accepted ty
 description = "Adds two or more numbers together"
 invoked = "add function"
 
+[functions.and]
+description = "Evaluates if all arguments are true"
+invoked = "and function"
+
 [functions.base64]
 description = "Encodes a string to Base64 format"
+
+[functions.bool]
+description = "Converts a string or number to a boolean"
+invoked = "bool function"
 
 [functions.concat]
 description = "Concatenates two or more strings or arrays"
@@ -233,6 +243,10 @@ notFound = "Environment variable not found"
 
 [functions.equals]
 description = "Evaluates if the two values are the same"
+
+[functions.false]
+description = "Returns the boolean value false"
+invoked = "false function"
 
 [functions.format]
 description = "Formats a string using the given arguments"
@@ -274,6 +288,14 @@ divideByZero = "Cannot divide by zero"
 description = "Multiplies two or more numbers together"
 invoked = "mul function"
 
+[functions.not]
+description = "Negates a boolean value"
+invoked = "not function"
+
+[functions.or]
+description = "Evaluates if any arguments are true"
+invoked = "or function"
+
 [functions.parameters]
 description = "Retrieves parameters from the configuration"
 invoked = "parameters function"
@@ -313,6 +335,10 @@ invoked = "sub function"
 [functions.systemRoot]
 description = "Returns the system root path"
 invoked = "systemRoot function"
+
+[functions.true]
+description = "Returns the boolean value true"
+invoked = "true function"
 
 [functions.variables]
 description = "Retrieves the value of a variable"

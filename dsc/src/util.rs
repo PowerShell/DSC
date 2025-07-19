@@ -8,7 +8,10 @@ use dsc_lib::extensions::discover::DiscoverResult;
 use dsc_lib::extensions::extension_manifest::ExtensionManifest;
 use dsc_lib::{
     configure::{
-        config_doc::Configuration,
+        config_doc::{
+            Configuration,
+            RestartRequired,
+        },
         config_result::{
             ConfigurationGetResult,
             ConfigurationSetResult,
@@ -187,6 +190,9 @@ pub fn get_schema(schema: SchemaType) -> RootSchema {
         },
         SchemaType::FunctionDefinition => {
             schema_for!(FunctionDefinition)
+        },
+        SchemaType::RestartRequired => {
+            schema_for!(RestartRequired)
         }
     }
 }
