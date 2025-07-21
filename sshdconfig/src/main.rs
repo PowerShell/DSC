@@ -14,8 +14,6 @@ use parser::SshdConfigParser;
 use set::invoke_set;
 use util::enable_tracing;
 
-use crate::error::SshdConfigError;
-
 mod args;
 mod error;
 mod export;
@@ -38,18 +36,7 @@ fn main() {
     let result = match &args.command {
         Command::Export => {
             debug!("{}", t!("main.export").to_string());
-            match invoke_export() {
-                Ok(output) => {
-                    match serde_json::to_string(&output) {
-                        Ok(json) => {
-                            println!("{json}");
-                            Ok(())
-                        },
-                        Err(e) => Err(SshdConfigError::Json(e)),
-                    }
-                },
-                Err(e) => Err(e),
-            }
+            invoke_export()
         },
         Command::Get { exclude_defaults, input, setting } => {
             invoke_get(*exclude_defaults, input.as_ref(), setting)

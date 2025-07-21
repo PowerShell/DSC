@@ -14,7 +14,7 @@ use tracing::debug;
 
 use crate::args::Setting;
 use crate::error::SshdConfigError;
-use crate::export::invoke_export;
+use crate::export::invoke_export_to_map;
 use crate::util::extract_sshd_defaults;
 
 /// Invoke the get command.
@@ -87,7 +87,7 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 }
 
 fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(), SshdConfigError> {
-    let mut result = invoke_export()?;
+    let mut result = invoke_export_to_map()?;
 
     if exclude_defaults {
         let defaults = extract_sshd_defaults()?;
