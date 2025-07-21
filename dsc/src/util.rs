@@ -35,7 +35,7 @@ use dsc_lib::{
 use jsonschema::Validator;
 use path_absolutize::Absolutize;
 use rust_i18n::t;
-use schemars::{schema_for, schema::RootSchema};
+use schemars::{Schema, schema_for};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -145,9 +145,9 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 ///
 /// # Returns
 ///
-/// * `RootSchema` - The schema
+/// * `Schema` - The schema
 #[must_use]
-pub fn get_schema(schema: SchemaType) -> RootSchema {
+pub fn get_schema(schema: SchemaType) -> Schema {
     match schema {
         SchemaType::GetResult => {
             schema_for!(GetResult)

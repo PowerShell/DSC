@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, Local};
 use rust_i18n::t;
-use schemars::JsonSchema;
+use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
@@ -193,12 +193,11 @@ impl DscRepoSchema for Configuration {
     const SCHEMA_FOLDER_PATH: &'static str = "config";
     const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-    fn schema_metadata() -> schemars::schema::Metadata {
-        schemars::schema::Metadata {
-            title: Some(t!("configure.config_doc.configurationDocumentSchemaTitle").into()),
-            description: Some(t!("configure.config_doc.configurationDocumentSchemaDescription").into()),
-            ..Default::default()
-        }
+    fn schema_metadata() -> schemars::Schema {
+        json_schema!({
+            "title": t!("configure.config_doc.configurationDocumentSchemaTitle").to_string(),
+            "description": t!("configure.config_doc.configurationDocumentSchemaDescription").to_string(),
+        })
     }
 
     fn validate_schema_uri(&self) -> Result<(), DscError> {
