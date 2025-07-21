@@ -226,6 +226,8 @@ function Invoke-DscCacheRefresh {
                 if ($null -ne $properties) {
                     $DscResourceInfo.Properties = $properties
                 }
+
+                $dscResourceInfo.Capabilities = GetClassBasedCapabilities -filePath $dscResource.Path -className $dscResource.Name
             }
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
@@ -632,6 +634,64 @@ function GetClassBasedProperties {
     }
 }
 
+function GetClassBasedCapabilities {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $filePath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $className
+    )
+
+    if (".psd1" -notcontains ([System.IO.Path]::GetExtension($filePath))) {
+        return @('get', 'set', 'test')
+    }
+
+    $module = $filePath.Replace('.psd1', '.psm1')
+
+    if (Test-Path $module -ErrorAction Ignore) {
+        [System.Management.Automation.Language.Token[]] $tokens = $null
+        [System.Management.Automation.Language.ParseError[]] $errors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($module, [ref]$tokens, [ref]$errors)
+        foreach ($e in $errors) {
+            $e | Out-String | Write-DscTrace -Operation Error
+        }
+
+        $typeDefinitions = $ast.FindAll(
+            {
+                $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
+                return $null -ne $typeAst;
+            },
+            $false);
+
+
+        $capabilities = [System.Collections.Generic.List[string[]]]::new()
+        $availableMethods = @('get', 'set', 'setHandlesExist', 'whatIf', 'test', 'delete', 'export')
+        foreach ($typeDefinitionAst in $typeDefinitions) {
+            foreach ($a in $typeDefinitionAst.Attributes) {
+                if ($a.TypeName.Name -eq 'DscResource' -and $a.Parent.Name -eq $className) {
+                    $methods = $typeDefinitionAst.Members | Where-Object { $_ -is [System.Management.Automation.Language.FunctionMemberAst] -and $_.Name -in $availableMethods }
+
+                    foreach ($method in $methods.Name) {
+                        # We go through each method to properly case handle the method names.
+                        switch ($method) {
+                            'Get' { $capabilities.Add('get') }
+                            'Set' { $capabilities.Add('set') }
+                            'Test' { $capabilities.Add('test') }
+                            'WhatIf' { $capabilities.Add('whatIf') }
+                            'SetHandlesExist' { $capabilities.Add('setHandlesExist') }
+                            'Delete' { $capabilities.Add('delete') }
+                            'Export' { $capabilities.Add('export') }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $capabilities
+    }
+}
+
 # cached resource
 class dscResourceCacheEntry {
     [string] $Type
@@ -681,4 +741,5 @@ class DscResourceInfo {
     [string] $ImplementedAs
     [string] $CompanyName
     [psobject[]] $Properties
+    [string[]] $Capabilities
 }
