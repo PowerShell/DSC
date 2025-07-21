@@ -75,7 +75,7 @@ function GetValidCimProperties {
         $readOnlyKeyProps = $keyProperties | Where-Object { $_.Flags.HasFlag([Microsoft.Management.Infrastructure.CimFlags]::ReadOnly) }
 
         if ($readOnlyKeyProps.Count -eq $keyProperties.Count) {
-            "All key properties in the CIM class '$ClassName' are read-only, which is not supported." | Write-DscTrace -Operation Error
+            "All properties specified in the CIM class '$ClassName' are read-only, which is not supported." | Write-DscTrace -Operation Error
             exit 1
         }
     }

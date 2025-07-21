@@ -74,7 +74,7 @@ Describe 'WMI adapter resource tests' {
         
         $out = dsc resource set -r root.cimv2/Win32_Environment -i $i 2>$TestDrive/error2.log
         $out | Should -BeNullOrEmpty
-        (Get-Content $TestDrive/error2.log -Raw) | Should -BeLike "*All key properties in the CIM class 'Win32_Environment' are read-only, which is not supported.*"
+        (Get-Content $TestDrive/error2.log -Raw) | Should -BeLike "*All properties specified in the CIM class 'Win32_Environment' are read-only, which is not supported.*"
     }
 
     It 'Set works on a WMI resource' -Skip:(!$IsWindows) {
