@@ -94,6 +94,7 @@ impl FunctionDispatcher {
         functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
         functions.insert("div".to_string(), Box::new(div::Div{}));
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
+        functions.insert("equals".to_string(), Box::new(equals::Equals{}));
         functions.insert("false".to_string(), Box::new(r#false::False{}));
         functions.insert("greater".to_string(), Box::new(greater::Greater{}));
         functions.insert("greaterOrEquals".to_string(), Box::new(greater_or_equals::GreaterOrEquals{}));
