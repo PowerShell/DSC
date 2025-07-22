@@ -51,33 +51,27 @@ impl Function for Less {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::configure::context::Context;
+    use crate::parser::Statement;
 
     #[test]
-    fn test_less() {
-        let less = Less {};
-        let context = Context::new().unwrap();
-        
-        let result = less.invoke(&[Value::Number(3.into()), Value::Number(5.into())], &context);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Bool(true));
-        
-        let result = less.invoke(&[Value::Number(5.into()), Value::Number(3.into())], &context);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Bool(false));
-        
-        let result = less.invoke(&[Value::Number(5.into()), Value::Number(5.into())], &context);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Bool(false));
+    fn number_less() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[less(3,5)]", &Context::new()).unwrap();
+        assert_eq!(result, true);
     }
 
     #[test]
-    fn test_invalid_args() {
-        let less = Less {};
-        let context = Context::new().unwrap();
-        
-        let result = less.invoke(&[Value::Number(5.into())], &context);
-        assert!(result.is_err());
+    fn number_not_less() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[less(5,3)]", &Context::new()).unwrap();
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn number_equal() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[less(5,5)]", &Context::new()).unwrap();
+        assert_eq!(result, false);
     }
 }

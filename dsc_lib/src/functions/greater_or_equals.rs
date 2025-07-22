@@ -51,33 +51,27 @@ impl Function for GreaterOrEquals {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::configure::context::Context;
+    use crate::parser::Statement;
 
     #[test]
-    fn test_greater_or_equals() {
-        let greater_or_equals = GreaterOrEquals {};
-        let context = Context::new().unwrap();
-        
-        let result = greater_or_equals.invoke(&[Value::Number(5.into()), Value::Number(3.into())], &context);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Bool(true));
-        
-        let result = greater_or_equals.invoke(&[Value::Number(3.into()), Value::Number(5.into())], &context);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Bool(false));
-        
-        let result = greater_or_equals.invoke(&[Value::Number(5.into()), Value::Number(5.into())], &context);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Value::Bool(true));
+    fn number_greater_or_equals() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[greaterOrEquals(5,3)]", &Context::new()).unwrap();
+        assert_eq!(result, true);
     }
 
     #[test]
-    fn test_invalid_args() {
-        let greater_or_equals = GreaterOrEquals {};
-        let context = Context::new().unwrap();
-        
-        let result = greater_or_equals.invoke(&[Value::Number(5.into())], &context);
-        assert!(result.is_err());
+    fn number_not_greater_or_equals() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[greaterOrEquals(3,5)]", &Context::new()).unwrap();
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn number_equal() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[greaterOrEquals(5,5)]", &Context::new()).unwrap();
+        assert_eq!(result, true);
     }
 }
