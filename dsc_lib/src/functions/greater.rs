@@ -52,26 +52,25 @@ impl Function for Greater {
 mod tests {
     use crate::configure::context::Context;
     use crate::parser::Statement;
-    use serde_json::Value;
 
     #[test]
     fn number_greater() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[greater(2,1)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Bool(true));
+        assert_eq!(result, true);
     }
 
     #[test]
     fn number_not_greater() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[greater(1,2)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Bool(false));
+        assert_eq!(result, false);
     }
 
     #[test]
     fn number_equal() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[greater(1,1)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Bool(false));
+        assert_eq!(result, false);
     }
 }
