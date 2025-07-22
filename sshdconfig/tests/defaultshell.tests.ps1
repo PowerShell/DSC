@@ -1,7 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows) {
+BeforeDiscovery {
+    if ($IsWindows) {
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
+        $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+}
+
+Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated) {
     BeforeAll {
         # Store original registry values to restore later
         $OriginalValues = @{}
