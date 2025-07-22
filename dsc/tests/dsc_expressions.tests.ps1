@@ -112,6 +112,18 @@ resources:
         @{ expression = "[equals('a', 'a')]"; expected = $true }
         @{ expression = "[equals('a', 'b')]"; expected = $false }
         @{ expression = "[not(equals('a', 'b'))]"; expected = $true }
+        @{ expression = "[greater(5, 3)]"; expected = $true }
+        @{ expression = "[greater(3, 5)]"; expected = $false }
+        @{ expression = "[greater(5, 5)]"; expected = $false }
+        @{ expression = "[greaterOrEquals(5, 3)]"; expected = $true }
+        @{ expression = "[greaterOrEquals(3, 5)]"; expected = $false }
+        @{ expression = "[greaterOrEquals(5, 5)]"; expected = $true }
+        @{ expression = "[less(3, 5)]"; expected = $true }
+        @{ expression = "[less(5, 3)]"; expected = $false }
+        @{ expression = "[less(5, 5)]"; expected = $false }
+        @{ expression = "[lessOrEquals(3, 5)]"; expected = $true }
+        @{ expression = "[lessOrEquals(5, 3)]"; expected = $false }
+        @{ expression = "[lessOrEquals(5, 5)]"; expected = $true }
         @{ expression = "[and(true, true)]"; expected = $true }
         @{ expression = "[and(true, false)]"; expected = $false }
         @{ expression = "[or(false, true)]"; expected = $true }
