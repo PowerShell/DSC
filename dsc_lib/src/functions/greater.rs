@@ -33,6 +33,8 @@ impl Function for Greater {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
+        debug!("{}", t!("functions.greater.invoked"));
+        
         let first = &args[0];
         let second = &args[1];
 
