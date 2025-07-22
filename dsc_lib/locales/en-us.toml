@@ -248,6 +248,14 @@ description = "Evaluates if the two values are the same"
 description = "Returns the boolean value false"
 invoked = "false function"
 
+[functions.greater]
+description = "Evaluates if the first value is greater than the second value"
+invoked = "greater function"
+
+[functions.greaterOrEquals]
+description = "Evaluates if the first value is greater than or equal to the second value"
+invoked = "greaterOrEquals function"
+
 [functions.format]
 description = "Formats a string using the given arguments"
 experimental = "`format()` function is experimental"
@@ -266,6 +274,14 @@ invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
+
+[functions.less]
+description = "Evaluates if the first value is less than the second value"
+invoked = "less function"
+
+[functions.lessOrEquals]
+description = "Evaluates if the first value is less than or equal to the second value"
+invoked = "lessOrEquals function"
 
 [functions.max]
 description = "Returns the largest number from a list of numbers"
