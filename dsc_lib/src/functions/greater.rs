@@ -3,10 +3,17 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
+<<<<<<< HEAD
 use crate::functions::{AcceptedArgKind, FunctionCategory};
 use rust_i18n::t;
 use super::Function;
 use serde_json::Value;
+=======
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use rust_i18n::t;
+use serde_json::Value;
+use tracing::debug;
+>>>>>>> a8d3c74f5a4d72e21ff7cd9d0cf618a3608ce111
 
 #[derive(Debug, Default)]
 pub struct Greater {}
@@ -33,6 +40,11 @@ impl Function for Greater {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
+<<<<<<< HEAD
+=======
+        debug!("{}", t!("functions.greater.invoked"));
+
+>>>>>>> a8d3c74f5a4d72e21ff7cd9d0cf618a3608ce111
         let first = &args[0];
         let second = &args[1];
 
