@@ -82,4 +82,11 @@ mod tests {
         let result = parser.parse_and_execute("[lessOrEquals('a','b')]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
+
+    fn type_mismatch_string_number() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[lessOrEquals('5', 3)]", &Context::new());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Arguments must be of the same type"));
+    }
 }
