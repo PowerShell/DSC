@@ -124,6 +124,16 @@ resources:
         @{ expression = "[lessOrEquals(3, 5)]"; expected = $true }
         @{ expression = "[lessOrEquals(5, 3)]"; expected = $false }
         @{ expression = "[lessOrEquals(5, 5)]"; expected = $true }
+        @{ expression = "[greater('b', 'a')]"; expected = $true }
+        @{ expression = "[greater('a', 'b')]"; expected = $false }
+        @{ expression = "[greaterOrEquals('b', 'a')]"; expected = $true }
+        @{ expression = "[greaterOrEquals('a', 'b')]"; expected = $false }
+        @{ expression = "[greaterOrEquals('a', 'a')]"; expected = $true }
+        @{ expression = "[less('a', 'b')]"; expected = $true }
+        @{ expression = "[less('b', 'a')]"; expected = $false }
+        @{ expression = "[lessOrEquals('a', 'b')]"; expected = $true }
+        @{ expression = "[lessOrEquals('b', 'a')]"; expected = $false }
+        @{ expression = "[lessOrEquals('a', 'a')]"; expected = $true }
         @{ expression = "[and(true, true)]"; expected = $true }
         @{ expression = "[and(true, false)]"; expected = $false }
         @{ expression = "[or(false, true)]"; expected = $true }

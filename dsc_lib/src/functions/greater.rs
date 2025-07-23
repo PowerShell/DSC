@@ -3,17 +3,10 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-<<<<<<< HEAD
-use crate::functions::{AcceptedArgKind, FunctionCategory};
-use rust_i18n::t;
-use super::Function;
-use serde_json::Value;
-=======
 use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
->>>>>>> a8d3c74f5a4d72e21ff7cd9d0cf618a3608ce111
 
 #[derive(Debug, Default)]
 pub struct Greater {}
@@ -40,15 +33,12 @@ impl Function for Greater {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-<<<<<<< HEAD
-=======
         debug!("{}", t!("functions.greater.invoked"));
 
->>>>>>> a8d3c74f5a4d72e21ff7cd9d0cf618a3608ce111
         let first = &args[0];
         let second = &args[1];
 
-        if let (Some(num1), Some(num2)) = (first.as_f64(), second.as_f64()) {
+        if let (Some(num1), Some(num2)) = (first.as_i64(), second.as_i64()) {
             return Ok(Value::Bool(num1 > num2));
         }
 
@@ -56,7 +46,7 @@ impl Function for Greater {
             return Ok(Value::Bool(str1 > str2));
         }
 
-        Ok(Value::Bool(false))
+        Err(DscError::Parser(t!("functions.typeMismatch").to_string()))
     }
 }
 
@@ -84,5 +74,12 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[greater(1,1)]", &Context::new()).unwrap();
         assert_eq!(result, false);
+    }
+
+    #[test]
+    fn string_greater() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[greater('b','a')]", &Context::new()).unwrap();
+        assert_eq!(result, true);
     }
 }

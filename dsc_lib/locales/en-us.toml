@@ -191,6 +191,7 @@ extensionManifestSchemaDescription = "Defines the JSON Schema the extension mani
 [functions]
 invalidArgType = "Invalid argument type"
 invalidArguments = "Invalid argument(s)"
+typeMismatch = "Arguments must be of the same type (both numbers or both strings)"
 unknownFunction = "Unknown function '%{name}'"
 noArgsAccepted = "Function '%{name}' does not accept arguments"
 invalidArgCount = "Function '%{name}' requires exactly %{count} arguments"

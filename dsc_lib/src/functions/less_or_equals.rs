@@ -29,23 +29,24 @@ impl Function for LessOrEquals {
     }
 
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Number, AcceptedArgKind::Number]
+        vec![AcceptedArgKind::Number, AcceptedArgKind::String]
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.lessOrEquals.invoked"));
         
-        let num1 = match &args[0] {
-            Value::Number(n) => n.as_f64().ok_or_else(|| DscError::Parser(t!("functions.invalidArguments").to_string()))?,
-            _ => return Err(DscError::Parser(t!("functions.invalidArguments").to_string())),
-        };
+        let first = &args[0];
+        let second = &args[1];
 
-        let num2 = match &args[1] {
-            Value::Number(n) => n.as_f64().ok_or_else(|| DscError::Parser(t!("functions.invalidArguments").to_string()))?,
-            _ => return Err(DscError::Parser(t!("functions.invalidArguments").to_string())),
-        };
+        if let (Some(num1), Some(num2)) = (first.as_i64(), second.as_i64()) {
+            return Ok(Value::Bool(num1 <= num2));
+        }
 
-        Ok(Value::Bool(num1 <= num2))
+        if let (Some(str1), Some(str2)) = (first.as_str(), second.as_str()) {
+            return Ok(Value::Bool(str1 <= str2));
+        }
+
+        Err(DscError::Parser(t!("functions.typeMismatch").to_string()))
     }
 }
 
@@ -72,6 +73,13 @@ mod tests {
     fn number_equal() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[lessOrEquals(5,5)]", &Context::new()).unwrap();
+        assert_eq!(result, true);
+    }
+
+    #[test]
+    fn string_less_or_equals() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[lessOrEquals('a','b')]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 }
