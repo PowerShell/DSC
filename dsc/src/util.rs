@@ -10,6 +10,7 @@ use dsc_lib::{
     configure::{
         config_doc::{
             Configuration,
+            Resource,
             RestartRequired,
         },
         config_result::{
@@ -163,6 +164,9 @@ pub fn get_schema(schema: SchemaType) -> Schema {
         }
         SchemaType::DscResource => {
             schema_for!(DscResource)
+        },
+        SchemaType::Resource => {
+            schema_for!(Resource)
         },
         SchemaType::ResourceManifest => {
             schema_for!(ResourceManifest)

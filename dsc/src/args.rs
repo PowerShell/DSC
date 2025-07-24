@@ -280,6 +280,7 @@ pub enum SchemaType {
     TestResult,
     ResolveResult,
     DscResource,
+    Resource,
     ResourceManifest,
     Include,
     Configuration,
