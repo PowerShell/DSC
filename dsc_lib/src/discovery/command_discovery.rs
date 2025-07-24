@@ -729,11 +729,11 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
     let import_extensions = if let Some(import) = &manifest.import {
         verify_executable(&manifest.r#type, "import", &import.executable);
         capabilities.push(dscextension::Capability::Import);
-        if import.extensions.is_empty() {
+        if import.file_extensions.is_empty() {
             warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
             None
         } else {
-            Some(import.extensions.clone())
+            Some(import.file_extensions.clone())
         }
     } else {
         None
