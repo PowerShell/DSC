@@ -34,6 +34,7 @@ impl DscManager {
     ///
     /// This function will return an error if the underlying discovery fails.
     ///
+    #[must_use]
     pub fn new() -> Self {
         Self {
             discovery: discovery::Discovery::new(),

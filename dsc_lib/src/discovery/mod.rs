@@ -25,6 +25,7 @@ impl Discovery {
     ///
     /// This function will return an error if the underlying instance creation fails.
     ///
+    #[must_use]
     pub fn new() -> Self {
         Self {
             resources: BTreeMap::new(),

@@ -145,10 +145,14 @@ impl DscExtension {
     /// # Returns
     ///
     /// A result containing the imported file content or an error.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the import fails or if the extension does not support the import capability.
     pub fn import(&self, file: &str) -> Result<String, DscError> {
         if self.capabilities.contains(&Capability::Import) {
             let file_path = Path::new(file);
-            if self.import_extensions.as_ref().map_or(false, |exts| exts.contains(&file_path.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string())) {
+            if self.import_extensions.as_ref().is_some_and(|exts| exts.contains(&file_path.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string())) {
                 debug!("{}", t!("extensions.dscextension.importingFile", file = file, extension = self.type_name));
             } else {
                 debug!("{}", t!("extensions.dscextension.importNotSupported", file = file, extension = self.type_name));
