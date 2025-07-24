@@ -97,7 +97,6 @@ callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
 invalidManifestVersion = "Manifest '%{path}' has invalid version: %{err}"
 importExtensionsEmpty = "Import extension '%{extension}' has no import extensions defined"
-importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
