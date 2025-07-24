@@ -2,8 +2,7 @@
 # Licensed under the MIT License.
 
 BeforeDiscovery {
-    $foundBicep = if ($null -ne (Get-Command bicep -ErrorAction Ignore)) {
-
+    $foundBicep = if (Get-Command bicep -ErrorAction Ignore) {
         $true
     } else {
         $false
