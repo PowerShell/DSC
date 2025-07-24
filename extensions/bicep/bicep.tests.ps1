@@ -12,6 +12,7 @@ BeforeDiscovery {
 Describe 'Bicep extension tests' -Skip:(!$foundBicep) {
     It 'Example bicep file should work' {
         $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\hello_world.dsc.bicep"
+        Write-Verbose -Verbose (bicep -v)
         $out = dsc -l trace config get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $out.results[0].result.actualState.output | Should -BeExactly 'Hello, world!'
