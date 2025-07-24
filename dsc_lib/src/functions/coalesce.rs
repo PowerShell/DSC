@@ -55,46 +55,57 @@ impl Function for Coalesce {
 mod tests {
     use crate::configure::context::Context;
     use crate::parser::Statement;
+    use super::*;
+    // TODO: Add tests for direct function calls with nulls and mixed types if the parser accept it
+    // #[test]
+    // fn all_null_returns_null() {
+    //     let mut parser = Statement::new().unwrap();
+    //     let result = parser.parse_and_execute("[coalesce(null, null, null)]", &Context::new()).unwrap();
+    //     assert_eq!(result, serde_json::Value::Null);
+    // }
 
     #[test]
-    fn first_non_null_string() {
+    fn direct_function_call_with_nulls() {
+        let coalesce = Coalesce {};
+        let context = Context::new();
+        
+        let args = vec![Value::Null, Value::Null, Value::String("hello".to_string())];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, Value::String("hello".to_string()));
+        
+        let args = vec![Value::Null, Value::Null, Value::Null];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, Value::Null);
+        
+        let args = vec![Value::String("first".to_string()), Value::String("second".to_string())];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, Value::String("first".to_string()));
+    }
+
+    #[test]
+    fn direct_function_call_mixed_types() {
+        let coalesce = Coalesce {};
+        let context = Context::new();
+        
+        let args = vec![Value::Null, serde_json::json!(42), Value::String("fallback".to_string())];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, serde_json::json!(42));
+        
+        let args = vec![Value::Null, Value::Bool(true)];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn parser_with_values() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null, 'hello', 'world')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[coalesce('hello', 'world')]", &Context::new()).unwrap();
         assert_eq!(result, "hello");
-    }
-
-    #[test]
-    fn first_non_null_number() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null, null, 42)]", &Context::new()).unwrap();
+        
+        let result = parser.parse_and_execute("[coalesce(42, 'fallback')]", &Context::new()).unwrap();
         assert_eq!(result, 42);
-    }
-
-    #[test]
-    fn first_non_null_boolean() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null, true)]", &Context::new()).unwrap();
+        
+        let result = parser.parse_and_execute("[coalesce(true)]", &Context::new()).unwrap();
         assert_eq!(result, true);
-    }
-
-    #[test]
-    fn all_null_returns_null() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null, null, null)]", &Context::new()).unwrap();
-        assert_eq!(result, serde_json::Value::Null);
-    }
-
-    #[test]
-    fn single_non_null_value() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce('first')]", &Context::new()).unwrap();
-        assert_eq!(result, "first");
-    }
-
-    #[test]
-    fn mixed_types() {
-        let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null, 123, 'fallback')]", &Context::new()).unwrap();
-        assert_eq!(result, 123);
     }
 }

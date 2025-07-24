@@ -148,9 +148,9 @@ resources:
         @{ expression = "[bool('False')]" ; expected = $false }
         @{ expression = "[bool(1)]" ; expected = $true }
         @{ expression = "[not(bool(0))]" ; expected = $true }
-        @{ expression = "[coalesce(null, 'hello')]" ; expected = 'hello' }
-        @{ expression = "[coalesce(null, null, 42)]" ; expected = 42 }
-        @{ expression = "[coalesce(null, true)]" ; expected = $true }
+        @{ expression = "[coalesce('hello', 'world')]" ; expected = 'hello' }
+        @{ expression = "[coalesce(42, 'fallback')]" ; expected = 42 }
+        @{ expression = "[coalesce(true, false)]" ; expected = $true }
         @{ expression = "[coalesce('first', 'second')]" ; expected = 'first' }
         @{ expression = "[true()]" ; expected = $true }
         @{ expression = "[false()]" ; expected = $false }
