@@ -24,6 +24,8 @@ param(
 )
 
 $env:RUSTC_LOG=$null
+$env:RUSTFLAGS='-Dwarnings'
+
 if ($Verbose) {
     $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
 }
@@ -567,7 +569,11 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -ErrorAction Stop
+    try {
+        Invoke-Pester -ErrorAction Stop
+    } catch {
+        throw "Pester had unexpected error: $($_.Exception.Message)"
+    }
 }
 
 function Find-MakeAppx() {
