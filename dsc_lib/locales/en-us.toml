@@ -238,6 +238,7 @@ onlyArraysOfStrings = "Arguments must all be arrays of strings"
 description = "Checks if an array contains a specific item"
 invoked = "contains function"
 invalidItemToFind = "Invalid item to find, must be a string or number"
+invalidArgType = "Invalid argument type, first argument must be an array, object, or string"
 
 [functions.createArray]
 description = "Creates an array from the given elements"
