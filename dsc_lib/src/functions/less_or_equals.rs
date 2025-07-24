@@ -34,7 +34,7 @@ impl Function for LessOrEquals {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.lessOrEquals.invoked"));
-        
+
         let first = &args[0];
         let second = &args[1];
 
@@ -83,6 +83,7 @@ mod tests {
         assert_eq!(result, true);
     }
 
+    #[test]
     fn type_mismatch_string_number() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[lessOrEquals('5', 3)]", &Context::new());
