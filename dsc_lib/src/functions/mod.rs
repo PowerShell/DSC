@@ -16,6 +16,7 @@ pub mod and;
 pub mod base64;
 pub mod bool;
 pub mod concat;
+pub mod contains;
 pub mod create_array;
 pub mod div;
 pub mod envvar;
@@ -42,6 +43,7 @@ pub mod secret;
 pub mod sub;
 pub mod system_root;
 pub mod r#true;
+pub mod union;
 pub mod variables;
 
 /// The kind of argument that a function accepts.
@@ -91,6 +93,7 @@ impl FunctionDispatcher {
         functions.insert("base64".to_string(), Box::new(base64::Base64{}));
         functions.insert("bool".to_string(), Box::new(bool::Bool{}));
         functions.insert("concat".to_string(), Box::new(concat::Concat{}));
+        functions.insert("contains".to_string(), Box::new(contains::Contains{}));
         functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
         functions.insert("div".to_string(), Box::new(div::Div{}));
         functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
@@ -117,6 +120,7 @@ impl FunctionDispatcher {
         functions.insert("sub".to_string(), Box::new(sub::Sub{}));
         functions.insert("systemRoot".to_string(), Box::new(system_root::SystemRoot{}));
         functions.insert("true".to_string(), Box::new(r#true::True{}));
+        functions.insert("union".to_string(), Box::new(union::Union{}));
         functions.insert("variables".to_string(), Box::new(variables::Variables{}));
         Self {
             functions,
