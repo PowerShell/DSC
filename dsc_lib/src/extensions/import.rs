@@ -10,7 +10,7 @@ pub struct ImportMethod {
     pub extensions: Vec<String>,
     /// The command to run to get the state of the resource.
     pub executable: String,
-    /// The arguments to pass to the command to perform a Get.
+    /// The arguments to pass to the command to perform an Import.
     pub args: Option<Vec<ImportArgKind>>,
 }
 
