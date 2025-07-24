@@ -152,7 +152,8 @@ impl DscExtension {
     pub fn import(&self, file: &str) -> Result<String, DscError> {
         if self.capabilities.contains(&Capability::Import) {
             let file_path = Path::new(file);
-            if self.import_extensions.as_ref().is_some_and(|exts| exts.contains(&file_path.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string())) {
+            let file_extension = file_path.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string();
+            if self.import_extensions.as_ref().is_some_and(|exts| exts.contains(&file_extension)) {
                 debug!("{}", t!("extensions.dscextension.importingFile", file = file, extension = self.type_name));
             } else {
                 debug!("{}", t!("extensions.dscextension.importNotSupported", file = file, extension = self.type_name));
@@ -267,7 +268,7 @@ fn process_import_args(args: Option<&Vec<ImportArgKind>>, file: &str) -> Result<
     // make path absolute
     let path = Path::new(file);
     let Ok(full_path) = path.absolutize() else {
-        return Err(DscError::Extension(t!("util.failedToAbsolutizePath").to_string()));
+        return Err(DscError::Extension(t!("util.failedToAbsolutizePath", path = path : {:?}).to_string()));
     };
 
     let mut processed_args = Vec::<String>::new();

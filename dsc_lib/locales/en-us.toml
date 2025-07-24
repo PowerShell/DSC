@@ -186,6 +186,8 @@ extensionReturnedSecret = "Extension '%{extension}' returned secret"
 extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
 secretNoResults = "Extension '%{extension}' returned no output"
 importingFile = "Importing file '%{file}' with extension '%{extension}'"
+importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
+importNoResults = "Extension '%{extension}' returned no results for import"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -456,3 +458,4 @@ foundSetting = "Found setting '%{name}' in %{path}"
 notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
+failedToAbsolutizePath = "Failed to absolutize path '%{path}'"

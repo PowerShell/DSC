@@ -498,10 +498,9 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
             // see if an extension should handle this file
             let mut discovery = Discovery::new();
             for extension in discovery.get_extensions(&Capability::Import) {
-                let Ok(content) = extension.import(path) else {
-                    continue;
-                };
-                return content;
+                if let Ok(content) = extension.import(path) {
+                    return content;
+                }
             }
             match std::fs::read_to_string(path) {
                 Ok(input) => {
