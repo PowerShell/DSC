@@ -41,6 +41,11 @@ impl Function for Parameters {
             if context.parameters.contains_key(key) {
                 let (value, data_type) = &context.parameters[key];
 
+                // Handle null values explicitly
+                if value.is_null() {
+                    return Ok(Value::Null);
+                }
+
                 // if secureString or secureObject types, we keep it as JSON object
                 match data_type {
                     DataType::SecureString => {

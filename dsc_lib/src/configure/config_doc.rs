@@ -126,7 +126,7 @@ pub struct Configuration {
 pub struct Parameter {
     #[serde(rename = "type")]
     pub parameter_type: DataType,
-    #[serde(rename = "defaultValue", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "defaultValue", default, deserialize_with = "null_handler::deserialize")]
     pub default_value: Option<Value>,
     #[serde(rename = "allowedValues", skip_serializing_if = "Option::is_none")]
     pub allowed_values: Option<Vec<Value>>,
@@ -332,6 +332,19 @@ impl Resource {
 impl Default for Resource {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Custom deserializer to handle null values
+mod null_handler {
+    use serde::{Deserialize, Deserializer};
+    use serde_json::Value;
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Value>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(Some(Value::deserialize(deserializer)?))
     }
 }
 

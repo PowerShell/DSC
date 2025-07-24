@@ -814,6 +814,11 @@ impl Configurator {
     }
 
     fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
+        // Null values are valid for any parameter type
+        if value.is_null() {
+            return Ok(());
+        }
+
         match parameter_type {
             DataType::String | DataType::SecureString => {
                 if !value.is_string() {

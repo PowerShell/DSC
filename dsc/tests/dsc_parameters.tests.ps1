@@ -236,6 +236,25 @@ Describe 'Parameters tests' {
         $out.results[3].result.actualState.output | Should -BeExactly @('hello', 'world')
     }
 
+    It 'Null default value is handled correctly' {
+        $config_yaml = @"
+          `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          parameters:
+            customValue:
+              type: string
+              defaultValue: null
+          resources:
+          - name: Configuration with fallbacks
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output:
+                configValue: "[parameters('customValue')]"
+"@
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results.result.actualState.output.configValue | Should -BeNullOrEmpty
+    }
+
     It 'property value uses parameter value' {
       $os = 'Windows'
       if ($IsLinux) {
