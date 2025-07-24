@@ -234,6 +234,11 @@ argsMustBeStrings = "Arguments must all be strings"
 argsMustBeArrays = "Arguments must all be arrays"
 onlyArraysOfStrings = "Arguments must all be arrays of strings"
 
+[functions.contains]
+description = "Checks if an array contains a specific item"
+invoked = "contains function"
+invalidItemToFind = "Invalid item to find, must be a string or number"
+
 [functions.createArray]
 description = "Creates an array from the given elements"
 invoked = "createArray function"
@@ -375,6 +380,11 @@ invoked = "systemRoot function"
 [functions.true]
 description = "Returns the boolean value true"
 invoked = "true function"
+
+[functions.union]
+description = "Returns a single array or object with all elements from the parameters"
+invoked = "union function"
+invalidArgType = "All arguments must either be arrays or objects"
 
 [functions.variables]
 description = "Retrieves the value of a variable"
