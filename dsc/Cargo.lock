@@ -582,6 +582,7 @@ dependencies = [
  "jsonschema",
  "linked-hash-map",
  "num-traits",
+ "path-absolutize",
  "regex",
  "rt-format",
  "rust-i18n",

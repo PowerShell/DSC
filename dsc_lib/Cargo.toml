@@ -21,6 +21,7 @@ indicatif = "0.18"
 jsonschema = { version = "0.30", default-features = false }
 linked-hash-map = "0.5"
 num-traits = "0.2"
+path-absolutize = { version = "3.1" }
 regex = "1.11"
 rt-format = "0.3"
 rust-i18n = { version = "3.1" }

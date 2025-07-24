@@ -96,6 +96,7 @@ extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
 invalidManifestVersion = "Manifest '%{path}' has invalid version: %{err}"
+importExtensionsEmpty = "Import extension '%{extension}' has no import extensions defined"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -183,6 +184,9 @@ secretExtensionReturnedInvalidJson = "Extension '%{extension}' returned invalid 
 extensionReturnedSecret = "Extension '%{extension}' returned secret"
 extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
 secretNoResults = "Extension '%{extension}' returned no output"
+importingFile = "Importing file '%{file}' with extension '%{extension}'"
+importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
+importNoResults = "Extension '%{extension}' returned no results for import"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -453,3 +457,4 @@ foundSetting = "Found setting '%{name}' in %{path}"
 notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
+failedToAbsolutizePath = "Failed to absolutize path '%{path}'"
