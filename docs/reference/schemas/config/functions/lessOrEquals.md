@@ -150,7 +150,7 @@ String comparisons are case-sensitive and use lexicographic ordering.
 
 ## Output
 
-The `lessOrEquals()` function returns `true` if the first value is less than or 
+The `lessOrEquals()` function returns `true` if the first value is less than or
 equal to the second value and otherwise `false`.
 
 ```yaml
