@@ -744,7 +744,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
-        import_extensions,
+        import_file_extensions: import_extensions,
         path: path.to_str().unwrap().to_string(),
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: serde_json::to_value(manifest)?,

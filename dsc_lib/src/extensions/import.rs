@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct ImportMethod {
     /// The extensions to import.
-    pub extensions: Vec<String>,
+    #[serde(rename = "fileExtensions")]
+    pub file_extensions: Vec<String>,
     /// The command to run to get the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform an Import.

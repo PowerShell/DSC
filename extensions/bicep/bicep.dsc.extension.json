@@ -4,7 +4,7 @@
     "version": "0.1.0",
     "description": "Enable passing Bicep file directly to DSC, but requires bicep executable to be available.",
     "import": {
-        "extensions": ["bicep"],
+        "fileExtensions": ["bicep"],
         "executable": "bicep",
         "args": [
             "build",

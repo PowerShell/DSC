@@ -24,7 +24,8 @@ pub struct DscExtension {
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
     /// The extensions supported for importing.
-    pub import_extensions: Option<Vec<String>>,
+    #[serde(rename = "importFileExtensions")]
+    pub import_file_extensions: Option<Vec<String>>,
     /// The file path to the resource.
     pub path: String,
     /// The description of the resource.
@@ -65,7 +66,7 @@ impl DscExtension {
             type_name: String::new(),
             version: String::new(),
             capabilities: Vec::new(),
-            import_extensions: None,
+            import_file_extensions: None,
             description: None,
             path: String::new(),
             directory: String::new(),
@@ -153,7 +154,7 @@ impl DscExtension {
         if self.capabilities.contains(&Capability::Import) {
             let file_path = Path::new(file);
             let file_extension = file_path.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string();
-            if self.import_extensions.as_ref().is_some_and(|exts| exts.contains(&file_extension)) {
+            if self.import_file_extensions.as_ref().is_some_and(|exts| exts.contains(&file_extension)) {
                 debug!("{}", t!("extensions.dscextension.importingFile", file = file, extension = self.type_name));
             } else {
                 debug!("{}", t!("extensions.dscextension.importNotSupported", file = file, extension = self.type_name));
