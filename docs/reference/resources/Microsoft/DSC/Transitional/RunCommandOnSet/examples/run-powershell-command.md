@@ -70,7 +70,7 @@ dsc config set --input $document
 To verify the result, you can run the `winget.exe` command:
 
 ```powershell
-winget list --id Microsoft.PowerShell
+winget list --id Microsoft.PowerShell.Preview
 ```
 
 <!-- Link reference definitions -->
