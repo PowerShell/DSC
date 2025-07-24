@@ -9,7 +9,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
-use crate::extensions::{discover::DiscoverMethod, secret::SecretMethod};
+use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -29,6 +29,8 @@ pub struct ExtensionManifest {
     pub tags: Option<Vec<String>>,
     /// Details how to call the Discover method of the extension.
     pub discover: Option<DiscoverMethod>,
+    /// Details how to call the Import method of the extension.
+    pub import: Option<ImportMethod>,
     /// Details how to call the Secret method of the extension.
     pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.

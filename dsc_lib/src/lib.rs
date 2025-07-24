@@ -34,10 +34,10 @@ impl DscManager {
     ///
     /// This function will return an error if the underlying discovery fails.
     ///
-    pub fn new() -> Result<Self, DscError> {
-        Ok(Self {
-            discovery: discovery::Discovery::new()?,
-        })
+    pub fn new() -> Self {
+        Self {
+            discovery: discovery::Discovery::new(),
+        }
     }
 
     /// Find a resource by name.
@@ -107,6 +107,6 @@ impl DscManager {
 
 impl Default for DscManager {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new()
     }
 }

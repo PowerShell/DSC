@@ -2,13 +2,14 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use path_absolutize::Absolutize;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use schemars::JsonSchema;
 use std::{fmt::Display, path::Path};
 use tracing::{debug, info, trace};
 
-use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}, extensions::secret::SecretResult};
+use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}, extensions::{import::ImportArgKind, secret::SecretResult}};
 
 use super::{discover::DiscoverResult, extension_manifest::ExtensionManifest, secret::SecretArgKind};
 
@@ -22,6 +23,8 @@ pub struct DscExtension {
     pub version: String,
     /// The capabilities of the resource.
     pub capabilities: Vec<Capability>,
+    /// The extensions supported for importing.
+    pub import_extensions: Option<Vec<String>>,
     /// The file path to the resource.
     pub path: String,
     /// The description of the resource.
@@ -62,6 +65,7 @@ impl DscExtension {
             type_name: String::new(),
             version: String::new(),
             capabilities: Vec::new(),
+            import_extensions: None,
             description: None,
             path: String::new(),
             directory: String::new(),
@@ -132,6 +136,57 @@ impl DscExtension {
         }
     }
 
+    /// Import a file based on the extension.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - The file to import.
+    ///
+    /// # Returns
+    ///
+    /// A result containing the imported file content or an error.
+    pub fn import(&self, file: &str) -> Result<String, DscError> {
+        if self.capabilities.contains(&Capability::Import) {
+            let file_path = Path::new(file);
+            if self.import_extensions.as_ref().map_or(false, |exts| exts.contains(&file_path.extension().and_then(|s| s.to_str()).unwrap_or_default().to_string())) {
+                debug!("{}", t!("extensions.dscextension.importingFile", file = file, extension = self.type_name));
+            } else {
+                debug!("{}", t!("extensions.dscextension.importNotSupported", file = file, extension = self.type_name));
+                return Err(DscError::NotSupported(
+                    t!("extensions.dscextension.importNotSupported", file = file, extension = self.type_name).to_string(),
+                ));
+            }
+
+            let extension = match serde_json::from_value::<ExtensionManifest>(self.manifest.clone()) {
+                Ok(manifest) => manifest,
+                Err(err) => {
+                    return Err(DscError::Manifest(self.type_name.clone(), err));
+                }
+            };
+            let Some(import) = extension.import else {
+                return Err(DscError::UnsupportedCapability(self.type_name.clone(), Capability::Import.to_string()));
+            };
+            let args = process_import_args(import.args.as_ref(), file)?;
+            let (_exit_code, stdout, _stderr) = invoke_command(
+                &import.executable,
+                args,
+                None,
+                Some(self.directory.as_str()),
+                None,
+                extension.exit_codes.as_ref(),
+            )?;
+            if stdout.is_empty() {
+                info!("{}", t!("extensions.dscextension.importNoResults", extension = self.type_name));
+            } else {
+                return Ok(stdout);
+            }
+        }
+        Err(DscError::UnsupportedCapability(
+            self.type_name.clone(),
+            Capability::Import.to_string()
+        ))
+    }
+
     /// Retrieve a secret using the extension.
     ///
     /// # Arguments
@@ -197,6 +252,36 @@ impl Default for DscExtension {
     fn default() -> Self {
         DscExtension::new()
     }
+}
+
+fn process_import_args(args: Option<&Vec<ImportArgKind>>, file: &str) -> Result<Option<Vec<String>>, DscError> {
+    let Some(arg_values) = args else {
+        debug!("{}", t!("dscresources.commandResource.noArgs"));
+        return Ok(None);
+    };
+
+    // make path absolute
+    let path = Path::new(file);
+    let Ok(full_path) = path.absolutize() else {
+        return Err(DscError::Extension(t!("util.failedToAbsolutizePath").to_string()));
+    };
+
+    let mut processed_args = Vec::<String>::new();
+    for arg in arg_values {
+        match arg {
+            ImportArgKind::String(s) => {
+                processed_args.push(s.clone());
+            },
+            ImportArgKind::File { file_arg } => {
+                if !file_arg.is_empty() {
+                    processed_args.push(file_arg.to_string());
+                }
+                processed_args.push(full_path.to_string_lossy().to_string());
+            },
+        }
+    }
+
+    Ok(Some(processed_args))
 }
 
 fn process_secret_args(args: Option<&Vec<SecretArgKind>>, name: &str, vault: Option<&str>) -> Option<Vec<String>> {

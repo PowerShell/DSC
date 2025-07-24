@@ -726,12 +726,25 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         verify_executable(&manifest.r#type, "secret", &secret.executable);
         capabilities.push(dscextension::Capability::Secret);
     }
+    let import_extensions = if let Some(import) = &manifest.import {
+        verify_executable(&manifest.r#type, "import", &import.executable);
+        capabilities.push(dscextension::Capability::Import);
+        if import.extensions.is_empty() {
+            warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
+            None
+        } else {
+            Some(import.extensions.clone())
+        }
+    } else {
+        None
+    };
 
     let extension = DscExtension {
         type_name: manifest.r#type.clone(),
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
+        import_extensions,
         path: path.to_str().unwrap().to_string(),
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: serde_json::to_value(manifest)?,
