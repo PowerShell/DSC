@@ -35,10 +35,11 @@ resources:
     It 'Get works' -Skip:$skipTest {
         $out = dsc config get -i "$yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
-        $out.resources.count | Should -Be 1
-        $out.resources[0].properties | Should -Not -BeNullOrEmpty
-        $out.resources[0].properties.port[0] | Should -Be 22
-        $out.resources[0].properties.passwordAuthentication[0] | Should -Be 'yes'
+        $out.results.count | Should -Be 1
+        $out.results.metadata.defaults | Should -Be $true
+        $out.results.result.actualState | Should -Not -BeNullOrEmpty
+        $out.results.result.actualState.port | Should -Be 22
+        $out.results.result.actualState.passwordAuthentication | Should -Be 'yes'
     }
 
     It 'Get with a specific setting works' -Skip:$skipTest {
@@ -58,27 +59,28 @@ resources:
         $out.results.count | Should -Be 1
         $out.results.result.actualState.count | Should -Be 1
         $out.results.result.actualState.passwordauthentication | Should -Be 'yes'
+        $out.results.result.actualState.port | Should -BeNullOrEmpty
     }
 
-# TODO: dsc needs to pass metadata to the resource
-#     It 'Get with exclude defaults works' -Skip:$skipTest {
-#         $get_yaml = @'
-# $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-# metadata:
-#   Microsoft.DSC:
-#     securityContext: elevated
-# resources:
-# - name: sshdconfig
-#   type: Microsoft.OpenSSH.SSHD/sshd_config
-#   metadata:
-#     excludeDefaults: true
-#   properties:
-# '@
-#         $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10
-#         $LASTEXITCODE | Should -Be 0
-#         $out.results.count | Should -Be 1
-#         $out.results.result.actualState.count | Should -Be 1
-#         $out.results.result.actualState.port | Should -Not -Be 22
-#         $out.results.result.actualState.authorizedkeys | Should -Not -BeNullOrEmpty
-#     }
+    It 'Get with defaults excluded works' -Skip:$skipTest {
+        $get_yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+metadata:
+  Microsoft.DSC:
+    securityContext: elevated
+resources:
+- name: sshdconfig
+  type: Microsoft.OpenSSH.SSHD/sshd_config
+  properties:
+    _metadata:
+        defaults: false
+'@
+        $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10
+        $LASTEXITCODE | Should -Be 0
+        $out.results.count | Should -Be 1
+        $out.results.metadata.defaults | Should -Be $false
+        $out.results.result.actualState.count | Should -Be 1
+        $out.results.result.actualState.port | Should -Not -Be 22
+        $out.results.result.actualState.authorizedkeys | Should -Not -BeNullOrEmpty
+    }
 }

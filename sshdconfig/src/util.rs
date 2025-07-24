@@ -11,11 +11,27 @@ use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__traci
 use crate::error::SshdConfigError;
 use crate::parser::parse_text_to_map;
 
-// create a struct for sshdconfig arguments
+pub struct CommandInfo {
+    pub metadata: Map<String, Value>,
+    pub input: Map<String, Value>,
+}
+
+impl CommandInfo {
+    /// Create a new `CommandInfo` instance.
+    pub fn new() -> Self {
+        Self {
+            metadata: Map::new(),
+            input: Map::new()
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SshdCmdArgs {
+pub struct SshdCommandArgs {
+    /// the path to the sshd_config file to be processed
     #[serde(skip_serializing_if = "Option::is_none")]
     filepath: Option<String>,
+    /// additional arguments to pass to the sshd -T command
     #[serde(rename = "additionalArgs", skip_serializing_if = "Option::is_none")]
     additional_args: Option<Vec<String>>,
 }
@@ -48,7 +64,7 @@ pub fn enable_tracing() {
 /// # Errors
 ///
 /// This function will return an error if sshd -T fails to validate `sshd_config`.
-pub fn invoke_sshd_config_validation(args: Option<SshdCmdArgs>) -> Result<String, SshdConfigError> {
+pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<String, SshdConfigError> {
     let sshd_command = if cfg!(target_os = "windows") {
         "sshd.exe"
     } else {
@@ -105,7 +121,7 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
 
     debug!("temporary file created at: {}", temp_path);
     let args = Some(
-        SshdCmdArgs {
+        SshdCommandArgs {
             filepath: Some(temp_path.clone()),
             additional_args: None,
         }
@@ -120,4 +136,30 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
     let output = output?;
     let sshd_config: Map<String, Value> = parse_text_to_map(&output)?;
     Ok(sshd_config)
+}
+
+/// Extract _metadata field from the input string, if it can be parsed as JSON.
+///
+/// # Errors
+///
+/// This function will return an error if it fails to parse the input string and if the _metadata field exists, extract it.
+pub fn extract_metadata_from_input(input: Option<&String>) -> Result<CommandInfo, SshdConfigError> {
+    if let Some(inputs) = input {
+        let mut sshd_config: Map<String, Value> = serde_json::from_str(inputs.as_str())?;
+        let metadata;
+        if let Some(value) = sshd_config.remove("_metadata") {
+            if let Some(obj) = value.as_object().cloned() {
+                metadata = obj;
+            } else {
+                return Err(SshdConfigError::InvalidInput(t!("util.metadataMustBeObject").to_string()));
+            }
+        } else {
+            metadata = Map::new()
+        };
+        return Ok(CommandInfo {
+            metadata,
+            input: sshd_config,
+        })
+    }
+    Ok(CommandInfo::new())
 }

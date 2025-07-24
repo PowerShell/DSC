@@ -16,8 +16,6 @@ pub struct Args {
 pub enum Command {
     /// Get default shell, eventually to be used for `sshd_config` and repeatable keywords
     Get {
-        #[clap(short = 'e', long, help = t!("args.getDefaults").to_string())]
-        exclude_defaults: bool,
         #[clap(short = 'i', long, help = t!("args.getInput").to_string())]
         input: Option<String>,
         #[clap(short = 's', long, hide = true)]

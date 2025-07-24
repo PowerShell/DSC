@@ -38,8 +38,8 @@ fn main() {
             debug!("{}", t!("main.export").to_string());
             invoke_export()
         },
-        Command::Get { exclude_defaults, input, setting } => {
-            invoke_get(*exclude_defaults, input.as_ref(), setting)
+        Command::Get { input, setting } => {
+            invoke_get(input.as_ref(), setting)
         },
         Command::Schema { setting } => {
             debug!("{}; {:?}", t!("main.schema").to_string(), setting);

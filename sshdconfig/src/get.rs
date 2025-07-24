@@ -15,17 +15,17 @@ use tracing::debug;
 use crate::args::Setting;
 use crate::error::SshdConfigError;
 use crate::export::invoke_export_to_map;
-use crate::util::extract_sshd_defaults;
+use crate::util::{extract_metadata_from_input, extract_sshd_defaults};
 
 /// Invoke the get command.
 ///
 /// # Errors
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
-pub fn invoke_get(exclude_defaults: bool, input: Option<&String>, setting: &Setting) -> Result<(), SshdConfigError> {
+pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<(), SshdConfigError> {
     debug!("{}: {:?}", t!("get.debugSetting").to_string(), setting);
     match *setting {
-        Setting::SshdConfig => get_sshd_settings(exclude_defaults, input),
+        Setting::SshdConfig => get_sshd_settings(input),
         Setting::WindowsGlobal => get_default_shell()
     }
 }
@@ -86,8 +86,20 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
 }
 
-fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(), SshdConfigError> {
+fn get_sshd_settings(input: Option<&String>) -> Result<(), SshdConfigError> {
     let mut result = invoke_export_to_map()?;
+
+    let config = extract_metadata_from_input(input)?;
+    let mut exclude_defaults = false;
+    if !config.metadata.is_empty() {
+        if let Some(value) = config.metadata.get("defaults") {
+            if let Value::Bool(b) = value {
+                exclude_defaults = !b;
+            } else {
+                return Err(SshdConfigError::InvalidInput(t!("get.defaultsMustBeBoolean").to_string()));
+            }
+        }
+    }
 
     if exclude_defaults {
         let defaults = extract_sshd_defaults()?;
@@ -105,11 +117,10 @@ fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(
             .collect();
     }
 
-    if let Some(config) = input {
+    if !config.input.is_empty() {
         // Filter result based on the keys provided in the input JSON.
         // If a provided key is not found in the result, its value is null.
-        let input_config: Map<String, Value> = serde_json::from_str(config)?;
-        result = input_config
+        result = config.input
             .keys()
             .map(|key| {
                 let value = result.get(key)
@@ -119,6 +130,15 @@ fn get_sshd_settings(exclude_defaults: bool, input: Option<&String>) -> Result<(
             })
             .collect();
     }
+
+    let map = if config.metadata.is_empty() {
+        let mut map = Map::new();
+        map.insert("defaults".to_string(), Value::Bool(!exclude_defaults));
+        map
+    } else {
+        config.metadata
+    };
+    result.insert("_metadata".to_string(), Value::Object(map));
 
     let json = serde_json::to_string(&result)?;
     println!("{json}");
