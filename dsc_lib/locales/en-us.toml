@@ -217,6 +217,10 @@ description = "Encodes a string to Base64 format"
 description = "Converts a string or number to a boolean"
 invoked = "bool function"
 
+[functions.coalesce]
+description = "Returns the first non-null value from a list of arguments"
+invoked = "coalesce function"
+
 [functions.concat]
 description = "Concatenates two or more strings or arrays"
 invoked = "concat function"
