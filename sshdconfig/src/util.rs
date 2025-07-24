@@ -30,7 +30,7 @@ impl CommandInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SshdCommandArgs {
-    /// the path to the sshd_config file to be processed
+    /// the path to the `sshd_config` file to be processed
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filepath: Option<String>,
     /// additional arguments to pass to the sshd -T command
@@ -156,8 +156,8 @@ pub fn extract_metadata_from_input(input: Option<&String>) -> Result<CommandInfo
                 return Err(SshdConfigError::InvalidInput(t!("util.metadataMustBeObject").to_string()));
             }
         } else {
-            metadata = Map::new()
-        };
+            metadata = Map::new();
+        }
         return Ok(CommandInfo {
             metadata,
             input: sshd_config,
