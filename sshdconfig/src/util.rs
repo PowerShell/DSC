@@ -12,7 +12,9 @@ use crate::error::SshdConfigError;
 use crate::parser::parse_text_to_map;
 
 pub struct CommandInfo {
+    /// metadata provided with the command
     pub metadata: Map<String, Value>,
+    /// input provided with the command
     pub input: Map<String, Value>,
 }
 
