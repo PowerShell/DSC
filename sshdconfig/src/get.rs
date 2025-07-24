@@ -15,7 +15,7 @@ use tracing::debug;
 use crate::args::Setting;
 use crate::error::SshdConfigError;
 use crate::export::invoke_export_to_map;
-use crate::util::{extract_metadata_from_input, extract_sshd_defaults};
+use crate::util::{extract_metadata_from_input, extract_sshd_defaults, SshdCommandArgs};
 
 /// Invoke the get command.
 ///
@@ -87,10 +87,9 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 }
 
 fn get_sshd_settings(input: Option<&String>) -> Result<(), SshdConfigError> {
-    let mut result = invoke_export_to_map()?;
-
     let config = extract_metadata_from_input(input)?;
     let mut exclude_defaults = false;
+    let mut args = None;
     if !config.metadata.is_empty() {
         if let Some(value) = config.metadata.get("defaults") {
             if let Value::Bool(b) = value {
@@ -99,7 +98,21 @@ fn get_sshd_settings(input: Option<&String>) -> Result<(), SshdConfigError> {
                 return Err(SshdConfigError::InvalidInput(t!("get.defaultsMustBeBoolean").to_string()));
             }
         }
+        if let Some(filepath) = config.metadata.get("filepath") {
+            if let Value::String(path) = filepath {
+                args = Some(
+                    SshdCommandArgs {
+                        filepath: Some(path.clone()),
+                        additional_args: None,
+                    }
+                );
+            } else {
+                return Err(SshdConfigError::InvalidInput(t!("get.filepathMustBeString").to_string()));
+            }
+        }
     }
+
+    let mut result = invoke_export_to_map(args)?;
 
     if exclude_defaults {
         let defaults = extract_sshd_defaults()?;

@@ -22,6 +22,14 @@ resources:
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
 '@
+        # set a non-default value in a temporary sshd_config file
+        "LogLevel Debug3" | Set-Content -Path $TestDrive/test_sshd_config
+    }
+
+    AfterAll {
+        if (Test-Path $TestDrive/test_sshd_config) {
+            Remove-Item -Path $TestDrive/test_sshd_config -Force
+        }
     }
 
     It 'Export works' -Skip:$skipTest {
@@ -63,8 +71,9 @@ resources:
     }
 
     It 'Get with defaults excluded works' -Skip:$skipTest {
-        $get_yaml = @'
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        $filepath = Join-Path $TestDrive 'test_sshd_config'
+        $get_yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
   Microsoft.DSC:
     securityContext: elevated
@@ -74,13 +83,14 @@ resources:
   properties:
     _metadata:
         defaults: false
-'@
+        filepath: $filepath
+"@
         $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         $out.results.count | Should -Be 1
         $out.results.metadata.defaults | Should -Be $false
         $out.results.result.actualState.count | Should -Be 1
         $out.results.result.actualState.port | Should -Not -Be 22
-        $out.results.result.actualState.authorizedkeys | Should -Not -BeNullOrEmpty
+        $out.results.result.actualState.loglevel | Should -Be 'debug3'
     }
 }

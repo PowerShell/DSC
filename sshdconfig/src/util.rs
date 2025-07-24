@@ -30,10 +30,10 @@ impl CommandInfo {
 pub struct SshdCommandArgs {
     /// the path to the sshd_config file to be processed
     #[serde(skip_serializing_if = "Option::is_none")]
-    filepath: Option<String>,
+    pub filepath: Option<String>,
     /// additional arguments to pass to the sshd -T command
     #[serde(rename = "additionalArgs", skip_serializing_if = "Option::is_none")]
-    additional_args: Option<Vec<String>>,
+    pub additional_args: Option<Vec<String>>,
 }
 
 /// Enable tracing.

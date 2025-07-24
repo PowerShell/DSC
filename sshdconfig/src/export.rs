@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 
 use crate::error::SshdConfigError;
 use crate::parser::parse_text_to_map;
-use crate::util::invoke_sshd_config_validation;
+use crate::util::{invoke_sshd_config_validation, SshdCommandArgs};
 
 /// Invoke the export command and return a map.
 ///
@@ -16,8 +16,8 @@ use crate::util::invoke_sshd_config_validation;
 /// # Returns
 ///
 /// This function will return `Ok(Map<String, Value>)` if the export is successful.
-pub fn invoke_export_to_map() -> Result<Map<String, Value>, SshdConfigError> {
-    let sshd_config_text = invoke_sshd_config_validation(None)?;
+pub fn invoke_export_to_map(sshd_args: Option<SshdCommandArgs>) -> Result<Map<String, Value>, SshdConfigError> {
+    let sshd_config_text = invoke_sshd_config_validation(sshd_args)?;
     let sshd_config: Map<String, Value> = parse_text_to_map(&sshd_config_text)?;
     Ok(sshd_config)
 }
@@ -30,8 +30,8 @@ pub fn invoke_export_to_map() -> Result<Map<String, Value>, SshdConfigError> {
 /// # Returns
 ///
 /// This function will return `Ok(())` if the export is successful.
-pub fn invoke_export() -> Result<(), SshdConfigError> {
-    let result = invoke_export_to_map()?;
+pub fn invoke_export(sshd_args: Option<SshdCommandArgs>) -> Result<(), SshdConfigError> {
+    let result = invoke_export_to_map(sshd_args)?;
     let json = serde_json::to_string(&result)?;
     println!("{json}");
     Ok(())

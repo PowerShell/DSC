@@ -36,7 +36,7 @@ fn main() {
     let result = match &args.command {
         Command::Export => {
             debug!("{}", t!("main.export").to_string());
-            invoke_export()
+            invoke_export(None)
         },
         Command::Get { input, setting } => {
             invoke_get(input.as_ref(), setting)

@@ -24,6 +24,7 @@ defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
 defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
 defaultShellMustBeString = "shell must be a string"
+filepathMustBeString = "filePath must be a string"
 notImplemented = "get not yet implemented for Microsoft.OpenSSH.SSHD/sshd_config"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
