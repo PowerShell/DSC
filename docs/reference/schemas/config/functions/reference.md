@@ -51,13 +51,13 @@ resources:
 - name: Echo bitness
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[reference(resourceId('Microsoft/OSInfo', 'System')).actualState.bitness]"
+    output: "[reference(resourceId('Microsoft/OSInfo', 'System')).bitness]"
   dependsOn:
   - "[resourceId('Microsoft/OSInfo', 'System')]"
 ```
 
 ```bash
-dsc config get --file reference.example.1.dsc.config.yaml config get
+dsc config get --file reference.example.1.dsc.config.yaml
 ```
 
 ```yaml
