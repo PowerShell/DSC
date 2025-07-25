@@ -8,7 +8,7 @@ use std::env;
 
 use args::Arguments;
 use clap::Parser;
-use crossterm::event::{is_tty, Stream};
+use crossterm::tty::{is_tty, Stream};
 use schemars::schema_for;
 use std::{io::{self, Read}, process::exit};
 
