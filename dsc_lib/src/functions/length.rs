@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use core::option::Option::Some;
-
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
