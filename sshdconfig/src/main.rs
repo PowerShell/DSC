@@ -36,10 +36,10 @@ fn main() {
     let result = match &args.command {
         Command::Export => {
             debug!("{}", t!("main.export").to_string());
-            invoke_export()
+            invoke_export(None)
         },
-        Command::Get { setting } => {
-            invoke_get(setting)
+        Command::Get { input, setting } => {
+            invoke_get(input.as_ref(), setting)
         },
         Command::Schema { setting } => {
             debug!("{}; {:?}", t!("main.schema").to_string(), setting);
