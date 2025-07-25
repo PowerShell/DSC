@@ -60,12 +60,12 @@ resources:
             $get_yaml = @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
-Microsoft.DSC:
-    securityContext: elevated
+    Microsoft.DSC:
+        securityContext: elevated
 resources:
 - name: sshdconfig
-type: Microsoft.OpenSSH.SSHD/sshd_config
-properties:
+  type: Microsoft.OpenSSH.SSHD/sshd_config
+  properties:
     passwordauthentication: 'no'
 '@
             $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10

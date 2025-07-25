@@ -119,29 +119,22 @@ fn get_sshd_settings(input: Option<&String>) -> Result<(), SshdConfigError> {
         // Filter result based on default settings.
         // If a value in result is equal to the default, it will be excluded.
         // Note that this excludes all defaults, even if they are explicitly set in sshd_config.
-        result = result.into_iter()
-            .filter(|(key, value)| {
-                if let Some(default) = defaults.get(key) {
-                    default != value
-                } else {
-                    true
-                }
-            })
-            .collect();
+        result.retain(|key, value| {
+            if let Some(default) = defaults.get(key) {
+                default != value
+            } else {
+                true
+            }
+        });
     }
 
     if !config.input.is_empty() {
         // Filter result based on the keys provided in the input JSON.
         // If a provided key is not found in the result, its value is null.
-        result = config.input
-            .keys()
-            .map(|key| {
-                let value = result.get(key)
-                    .cloned()
-                    .unwrap_or(Value::Null);
-                (key.clone(), value)
-            })
-            .collect();
+        result.retain(|key, _| config.input.contains_key(key));
+        for key in config.input.keys() {
+            result.entry(key.clone()).or_insert(Value::Null);
+        }
     }
 
     let map = if config.metadata.is_empty() {

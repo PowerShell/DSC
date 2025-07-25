@@ -115,10 +115,11 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
         .suffix(".tmp")
         .tempfile()?;
 
+    // on Windows, sshd cannot read from the file if it is still open
     let temp_path = temp_file.path().to_string_lossy().into_owned();
+    // do not automatically delete the file when it goes out of scope
     let (file, path) = temp_file.keep()?;
-
-    // close file so another process (sshd) can read it
+    // close the file handle to allow sshd to read it
     drop(file);
 
     debug!("temporary file created at: {}", temp_path);
@@ -129,14 +130,13 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
         }
     );
 
+    // Clean up the temporary file regardless of success or failure
     let output = invoke_sshd_config_validation(args);
-
     if let Err(e) = std::fs::remove_file(&path) {
         debug!("Failed to clean up temporary file {}: {}", path.display(), e);
     }
-
-    let output = output?;
-    let sshd_config: Map<String, Value> = parse_text_to_map(&output)?;
+    let result = output?;
+    let sshd_config: Map<String, Value> = parse_text_to_map(&result)?;
     Ok(sshd_config)
 }
 
