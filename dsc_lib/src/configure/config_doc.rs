@@ -106,6 +106,21 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ValueOrCopy {
+    Value(String),
+    Copy(Copy),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Output {
+    pub condition: Option<String>,
+    pub r#type: DataType,
+    pub value_or_copy: ValueOrCopy,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -120,9 +135,12 @@ pub struct Configuration {
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<HashMap<String, Output>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Parameter {
     #[serde(rename = "type")]
     pub parameter_type: DataType,
@@ -300,6 +318,7 @@ impl Configuration {
             variables: None,
             resources: Vec::new(),
             metadata: None,
+            outputs: None,
         }
     }
 }
