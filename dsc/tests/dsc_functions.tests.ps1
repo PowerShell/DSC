@@ -159,4 +159,87 @@ Describe 'tests for function expressions' {
             ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
         }
     }
+
+    It 'length function works for: <expression>' -TestCases @(
+        @{ expression = "[length(parameters('array'))]" ; expected = 3 }
+        @{ expression = "[length(parameters('object'))]" ; expected = 4 }
+        @{ expression = "[length(parameters('string'))]" ; expected = 12 }
+        @{ expression = "[length('')]"; expected = 0 }
+    ) {
+        param($expression, $expected, $isError)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              array:
+                type: array
+                defaultValue:
+                - a
+                - b
+                - c
+              object:
+                type: object
+                defaultValue:
+                  one: a
+                  two: b
+                  three: c
+                  four: d
+              string:
+                type: string
+                defaultValue: 'hello world!'
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    }
+
+    It 'empty function works for: <expression>' -TestCases @(
+        @{ expression = "[empty(parameters('array'))]" ; expected = $false }
+        @{ expression = "[empty(parameters('object'))]" ; expected = $false }
+        @{ expression = "[empty(parameters('string'))]" ; expected = $false }
+        @{ expression = "[empty(parameters('emptyArray'))]" ; expected = $true }
+        @{ expression = "[empty(parameters('emptyObject'))]" ; expected = $true }
+        @{ expression = "[empty('')]" ; expected = $true }
+    ) {
+        param($expression, $expected)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              array:
+                type: array
+                defaultValue:
+                - a
+                - b
+                - c
+              emptyArray:
+                type: array
+                defaultValue: []
+              object:
+                type: object
+                defaultValue:
+                  one: a
+                  two: b
+                  three: c
+              emptyObject:
+                type: object
+                defaultValue: {}
+              string:
+                type: string
+                defaultValue: 'hello world!'
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    }
 }

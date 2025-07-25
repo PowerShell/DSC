@@ -259,6 +259,11 @@ description = "Divides the first number by the second"
 invoked = "div function"
 divideByZero = "Cannot divide by zero"
 
+[functions.empty]
+description = "Checks if an array, object, or string is empty"
+invoked = "empty function"
+invalidArgType = "Invalid argument type, argument must be an array, object, or string"
+
 [functions.envvar]
 description = "Retrieves the value of an environment variable"
 notFound = "Environment variable not found"
@@ -296,6 +301,11 @@ invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
+
+[functions.length]
+description = "Returns the length of a string, array, or object"
+invoked = "length function"
+invalidArgType = "Invalid argument type, argument must be a string, array, or object"
 
 [functions.less]
 description = "Evaluates if the first value is less than the second value"
