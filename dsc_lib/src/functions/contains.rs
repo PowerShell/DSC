@@ -25,7 +25,7 @@ impl Function for Contains {
     }
 
     fn max_args(&self) -> usize {
-        usize::MAX
+        2
     }
 
     fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
