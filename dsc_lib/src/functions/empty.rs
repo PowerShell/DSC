@@ -41,7 +41,7 @@ impl Function for Empty {
         }
 
         if let Some(object) = args[0].as_object() {
-            return Ok(Value::Bool(object.keys().len() == 0));
+            return Ok(Value::Bool(object.is_empty()));
         }
 
         if let Some(string) = args[0].as_str() {
