@@ -241,6 +241,12 @@ argsMustAllBeIntegers = "Arguments must all be integers"
 argsMustAllBeObjects = "Arguments must all be objects"
 argsMustAllBeStrings = "Arguments must all be strings"
 
+[functions.createObject]
+description = "Creates an object from the given key-value pairs"
+invoked = "createObject function"
+argsMustBePairs = "Arguments must be provided in key-value pairs"
+keyMustBeString = "Object keys must be strings"
+
 [functions.div]
 description = "Divides the first number by the second"
 invoked = "div function"
@@ -316,6 +322,10 @@ invoked = "mul function"
 [functions.not]
 description = "Negates a boolean value"
 invoked = "not function"
+
+[functions.null]
+description = "Returns a null value"
+invoked = "null function"
 
 [functions.or]
 description = "Evaluates if any arguments are true"

@@ -17,7 +17,7 @@ impl Function for Coalesce {
     }
 
     fn category(&self) -> FunctionCategory {
-        FunctionCategory::Logical
+        FunctionCategory::Comparison
     }
 
     fn min_args(&self) -> usize {
@@ -56,13 +56,6 @@ mod tests {
     use crate::configure::context::Context;
     use crate::parser::Statement;
     use super::*;
-    // TODO: Add tests for direct function calls with nulls and mixed types if the parser accept it
-    // #[test]
-    // fn all_null_returns_null() {
-    //     let mut parser = Statement::new().unwrap();
-    //     let result = parser.parse_and_execute("[coalesce(null, null, null)]", &Context::new()).unwrap();
-    //     assert_eq!(result, serde_json::Value::Null);
-    // }
 
     #[test]
     fn direct_function_call_with_nulls() {
@@ -94,6 +87,56 @@ mod tests {
         let args = vec![Value::Null, Value::Bool(true)];
         let result = coalesce.invoke(&args, &context).unwrap();
         assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn direct_function_call_with_arrays() {
+        let coalesce = Coalesce {};
+        let context = Context::new();
+        
+        let first_array = serde_json::json!(["a", "b", "c"]);
+        let second_array = serde_json::json!(["x", "y", "z"]);
+        
+        let args = vec![Value::Null, first_array.clone(), second_array];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, first_array);
+        
+        let args = vec![Value::Null, Value::Null, serde_json::json!([1, 2, 3])];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, serde_json::json!([1, 2, 3]));
+    }
+
+    #[test]
+    fn direct_function_call_with_objects() {
+        let coalesce = Coalesce {};
+        let context = Context::new();
+        
+        let first_obj = serde_json::json!({"name": "test", "value": 42});
+        let second_obj = serde_json::json!({"name": "fallback", "value": 0});
+        
+        let args = vec![Value::Null, first_obj.clone(), second_obj];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, first_obj);
+        
+        let args = vec![Value::Null, Value::Null, serde_json::json!({"key": "value"})];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, serde_json::json!({"key": "value"}));
+    }
+
+    #[test]
+    fn direct_function_call_with_empty_collections() {
+        let coalesce = Coalesce {};
+        let context = Context::new();
+        
+        let empty_array = serde_json::json!([]);
+        let args = vec![Value::Null, empty_array.clone(), Value::String("fallback".to_string())];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, empty_array);
+        
+        let empty_obj = serde_json::json!({});
+        let args = vec![Value::Null, empty_obj.clone(), Value::String("fallback".to_string())];
+        let result = coalesce.invoke(&args, &context).unwrap();
+        assert_eq!(result, empty_obj);
     }
 
     #[test]

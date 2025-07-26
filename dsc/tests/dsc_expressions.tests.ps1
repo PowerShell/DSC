@@ -108,10 +108,7 @@ resources:
       $out.results[0].result[1].result.actualState.output.family | Should -BeExactly $out.results[0].result[0].result.actualState.family
     }
 
-    It 'Logical functions work: <expression>' -TestCases @(
-        @{ expression = "[equals('a', 'a')]"; expected = $true }
-        @{ expression = "[equals('a', 'b')]"; expected = $false }
-        @{ expression = "[not(equals('a', 'b'))]"; expected = $true }
+    It 'Comparison functions work: <expression>' -TestCases @(
         @{ expression = "[greater(5, 3)]"; expected = $true }
         @{ expression = "[greater(3, 5)]"; expected = $false }
         @{ expression = "[greater(5, 5)]"; expected = $false }
@@ -138,6 +135,53 @@ resources:
         @{ expression = "[lessOrEquals('b', 'a')]"; expected = $false }
         @{ expression = "[lessOrEquals('a', 'a')]"; expected = $true }
         @{ expression = "[lessOrEquals('aa', 'Aa')]"; expected = $false }
+        @{ expression = "[coalesce('hello', 'world')]" ; expected = 'hello' }
+        @{ expression = "[coalesce(42, 'fallback')]" ; expected = 42 }
+        @{ expression = "[coalesce(true, false)]" ; expected = $true }
+        @{ expression = "[coalesce('first', 'second')]" ; expected = 'first' }
+        @{ expression = "[coalesce(createArray('a', 'b'), createArray('c', 'd'))]" ; expected = @('a', 'b') }
+    ) {
+        param($expression, $expected)
+        $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: echo
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "$expression"
+"@
+        $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
+        $out.results[0].result.actualState.output | Should -Be $expected -Because ($out | ConvertTo-Json -Depth 10| Out-String)
+    }
+
+    It 'Object functions work: <expression>' -TestCases @(
+        @{ expression = "[createObject('name', 'test')]" ; expected = @{name='test'} }
+        @{ expression = "[createObject('key1', 'value1', 'key2', 42)]" ; expected = @{key1='value1'; key2=42} }
+        @{ expression = "[createObject()]" ; expected = @{} }
+        @{ expression = "[null()]" ; expected = $null }
+        @{ expression = "[createObject('key', null())]" ; expected = @{key=$null} }
+    ) {
+        param($expression, $expected)
+        $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: echo
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "$expression"
+"@
+        $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
+        foreach ($key in $out.results[0].result.actualState.output.psobject.properties.Name) {
+            $out.results[0].result.actualState.output.$key | Should -Be $expected.$key -Because ($out | ConvertTo-Json -Depth 10| Out-String)
+        }
+    }
+
+    It 'Logical functions work: <expression>' -TestCases @(
+        @{ expression = "[equals('a', 'a')]"; expected = $true }
+        @{ expression = "[equals('a', 'b')]"; expected = $false }
+        @{ expression = "[not(equals('a', 'b'))]"; expected = $true }
         @{ expression = "[and(true, true)]"; expected = $true }
         @{ expression = "[and(true, false)]"; expected = $false }
         @{ expression = "[or(false, true)]"; expected = $true }
@@ -148,10 +192,6 @@ resources:
         @{ expression = "[bool('False')]" ; expected = $false }
         @{ expression = "[bool(1)]" ; expected = $true }
         @{ expression = "[not(bool(0))]" ; expected = $true }
-        @{ expression = "[coalesce('hello', 'world')]" ; expected = 'hello' }
-        @{ expression = "[coalesce(42, 'fallback')]" ; expected = 42 }
-        @{ expression = "[coalesce(true, false)]" ; expected = $true }
-        @{ expression = "[coalesce('first', 'second')]" ; expected = 'first' }
         @{ expression = "[true()]" ; expected = $true }
         @{ expression = "[false()]" ; expected = $false }
     ) {
