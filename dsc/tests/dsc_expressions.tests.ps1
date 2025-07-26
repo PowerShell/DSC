@@ -112,6 +112,32 @@ resources:
         @{ expression = "[equals('a', 'a')]"; expected = $true }
         @{ expression = "[equals('a', 'b')]"; expected = $false }
         @{ expression = "[not(equals('a', 'b'))]"; expected = $true }
+        @{ expression = "[greater(5, 3)]"; expected = $true }
+        @{ expression = "[greater(3, 5)]"; expected = $false }
+        @{ expression = "[greater(5, 5)]"; expected = $false }
+        @{ expression = "[greaterOrEquals(5, 3)]"; expected = $true }
+        @{ expression = "[greaterOrEquals(3, 5)]"; expected = $false }
+        @{ expression = "[greaterOrEquals(5, 5)]"; expected = $true }
+        @{ expression = "[less(3, 5)]"; expected = $true }
+        @{ expression = "[less(5, 3)]"; expected = $false }
+        @{ expression = "[less(5, 5)]"; expected = $false }
+        @{ expression = "[lessOrEquals(3, 5)]"; expected = $true }
+        @{ expression = "[lessOrEquals(5, 3)]"; expected = $false }
+        @{ expression = "[lessOrEquals(5, 5)]"; expected = $true }
+        @{ expression = "[greater('b', 'a')]"; expected = $true }
+        @{ expression = "[greater('a', 'b')]"; expected = $false }
+        @{ expression = "[greater('A', 'a')]"; expected = $false }
+        @{ expression = "[greaterOrEquals('b', 'a')]"; expected = $true }
+        @{ expression = "[greaterOrEquals('a', 'b')]"; expected = $false }
+        @{ expression = "[greaterOrEquals('a', 'a')]"; expected = $true }
+        @{ expression = "[greaterOrEquals('Aa', 'aa')]"; expected = $false }
+        @{ expression = "[less('a', 'b')]"; expected = $true }
+        @{ expression = "[less('b', 'a')]"; expected = $false }
+        @{ expression = "[less('A', 'a')]"; expected = $true }
+        @{ expression = "[lessOrEquals('a', 'b')]"; expected = $true }
+        @{ expression = "[lessOrEquals('b', 'a')]"; expected = $false }
+        @{ expression = "[lessOrEquals('a', 'a')]"; expected = $true }
+        @{ expression = "[lessOrEquals('aa', 'Aa')]"; expected = $false }
         @{ expression = "[and(true, true)]"; expected = $true }
         @{ expression = "[and(true, false)]"; expected = $false }
         @{ expression = "[or(false, true)]"; expected = $true }
@@ -141,5 +167,27 @@ resources:
         $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
         $out.results[0].result.actualState.output | Should -Be $expected -Because ($out | ConvertTo-Json -Depth 10| Out-String)
+    }
+
+    It 'Comparison functions handle type mismatches: <expression>' -TestCases @(
+        @{ expression = "[greater('a', 1)]" }
+        @{ expression = "[greaterOrEquals('5', 3)]" }
+        @{ expression = "[less(1, 'b')]" }
+        @{ expression = "[lessOrEquals(5, 'a')]" }
+    ) {
+        param($expression)
+        $yaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: echo
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "$expression"
+"@
+        $out = dsc config get -i $yaml 2>$TestDrive/error.log
+        $LASTEXITCODE | Should -Be 2
+        $log = Get-Content -Path $TestDrive/error.log -Raw
+        $log | Should -BeLike "*ERROR* Arguments must be of the same type*"
+        
     }
 }
