@@ -2,19 +2,19 @@
 # Licensed under the MIT License.
 
 Describe 'Expressions tests' {
-      It 'Accessors work: <text>' -TestCases @(
-          @{ text = "[parameters('test').hello]"; expected = '@{world=there}' }
-          @{ text = "[parameters('test').hello.world]"; expected = 'there' }
-          @{ text = "[parameters('test').array[0]]"; expected = 'one' }
-          @{ text = "[parameters('test').array[1][1]]"; expected = 'three' }
-          @{ text = "[parameters('test').objectArray[0].name]"; expected = 'one' }
-          @{ text = "[parameters('test').objectArray[1].value[0]]"; expected = '2' }
-          @{ text = "[parameters('test').objectArray[1].value[1].name]"; expected = 'three' }
-          @{ text = "[parameters('test').index]"; expected = '1' }
-          @{ text = "[parameters('test').objectArray[parameters('test').index].name]"; expected = 'two' }
-      ) {
-          param($text, $expected)
-          $yaml = @"
+  It 'Accessors work: <text>' -TestCases @(
+    @{ text = "[parameters('test').hello]"; expected = '@{world=there}' }
+    @{ text = "[parameters('test').hello.world]"; expected = 'there' }
+    @{ text = "[parameters('test').array[0]]"; expected = 'one' }
+    @{ text = "[parameters('test').array[1][1]]"; expected = 'three' }
+    @{ text = "[parameters('test').objectArray[0].name]"; expected = 'one' }
+    @{ text = "[parameters('test').objectArray[1].value[0]]"; expected = '2' }
+    @{ text = "[parameters('test').objectArray[1].value[1].name]"; expected = 'three' }
+    @{ text = "[parameters('test').index]"; expected = '1' }
+    @{ text = "[parameters('test').objectArray[parameters('test').index].name]"; expected = 'two' }
+  ) {
+    param($text, $expected)
+    $yaml = @"
   `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
   parameters:
     test:
@@ -40,48 +40,48 @@ Describe 'Expressions tests' {
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "$text"
-  "@
-          $debug = $yaml | dsc -l trace config get -o yaml -f - 2>&1 | Out-String
-          $out = $yaml | dsc config get -f - | ConvertFrom-Json
-          $LASTEXITCODE | Should -Be 0 -Because $debug
-          $out.results[0].result.actualState.output | Should -Be $expected -Because $debug
-      }
+"@
+    $debug = $yaml | dsc -l trace config get -o yaml -f - 2>&1 | Out-String
+    $out = $yaml | dsc config get -f - | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because $debug
+    $out.results[0].result.actualState.output | Should -Be $expected -Because $debug
+  }
 
-      It 'Invalid expressions: <expression>' -TestCases @(
-          @{ expression = "[concat('A','B')].hello" }
-          @{ expression = "[concat('A','B')](0)" }
-          @{ expression = "[concat('a','b').hello]" }
-          @{ expression = "[concat('a','b')[0]]" }
-      ) {
-          param($expression)
-          $yaml = @"
+  It 'Invalid expressions: <expression>' -TestCases @(
+    @{ expression = "[concat('A','B')].hello" }
+    @{ expression = "[concat('A','B')](0)" }
+    @{ expression = "[concat('a','b').hello]" }
+    @{ expression = "[concat('a','b')[0]]" }
+  ) {
+    param($expression)
+    $yaml = @"
   `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
   resources:
   - name: echo
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "$expression"
-  "@
-          $out = dsc config get -i $yaml 2>&1
-          $LASTEXITCODE | Should -Be 2
-          $out | Should -BeLike "*ERROR*"
-      }
+"@
+    $out = dsc config get -i $yaml 2>&1
+    $LASTEXITCODE | Should -Be 2
+    $out | Should -BeLike "*ERROR*"
+  }
 
-      It 'Multi-line string literals work' {
-        $yamlPath = "$PSScriptRoot/../examples/multiline.dsc.yaml"
-        $out = dsc config get -f $yamlPath | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $out.results[0].result.actualState.output | Should -BeExactly @"
+  It 'Multi-line string literals work' {
+    $yamlPath = "$PSScriptRoot/../examples/multiline.dsc.yaml"
+    $out = dsc config get -f $yamlPath | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result.actualState.output | Should -BeExactly @"
   This is a
   'multi-line'
   string.
 
-  "@.Replace("`r", "")
-        $out.results[1].result.actualState.output | Should -BeExactly "This is a single-quote: '"
-      }
+"@.Replace("`r", "")
+    $out.results[1].result.actualState.output | Should -BeExactly "This is a single-quote: '"
+  }
 
-      It 'Nested Group resource does not invoke expressions' {
-        $yaml = @'
+  It 'Nested Group resource does not invoke expressions' {
+    $yaml = @'
   $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
   resources:
   - name: Nested Group
@@ -101,60 +101,61 @@ Describe 'Expressions tests' {
             )]
         dependsOn:
           - "[resourceId('Microsoft/OSInfo', 'Deeply nested OSInfo')]"
-  '@
+'@
 
-        $out = dsc config get -i $yaml | ConvertFrom-Json
-        $LASTEXITCODE | Should -Be 0
-        $out.results[0].result[1].result.actualState.output.family | Should -BeExactly $out.results[0].result[0].result.actualState.family
-      }
+    $out = dsc config get -i $yaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results[0].result[1].result.actualState.output.family | Should -BeExactly $out.results[0].result[0].result.actualState.family
+  }
 
-      It 'Comparison functions work: <expression>' -TestCases @(
-          @{ expression = "[greater(5, 3)]"; expected = $true }
-          @{ expression = "[greater(3, 5)]"; expected = $false }
-          @{ expression = "[greater(5, 5)]"; expected = $false }
-          @{ expression = "[greaterOrEquals(5, 3)]"; expected = $true }
-          @{ expression = "[greaterOrEquals(3, 5)]"; expected = $false }
-          @{ expression = "[greaterOrEquals(5, 5)]"; expected = $true }
-          @{ expression = "[less(3, 5)]"; expected = $true }
-          @{ expression = "[less(5, 3)]"; expected = $false }
-          @{ expression = "[less(5, 5)]"; expected = $false }
-          @{ expression = "[lessOrEquals(3, 5)]"; expected = $true }
-          @{ expression = "[lessOrEquals(5, 3)]"; expected = $false }
-          @{ expression = "[lessOrEquals(5, 5)]"; expected = $true }
-          @{ expression = "[greater('b', 'a')]"; expected = $true }
-          @{ expression = "[greater('a', 'b')]"; expected = $false }
-          @{ expression = "[greater('A', 'a')]"; expected = $false }
-          @{ expression = "[greaterOrEquals('b', 'a')]"; expected = $true }
-          @{ expression = "[greaterOrEquals('a', 'b')]"; expected = $false }
-          @{ expression = "[greaterOrEquals('a', 'a')]"; expected = $true }
-          @{ expression = "[greaterOrEquals('Aa', 'aa')]"; expected = $false }
-          @{ expression = "[less('a', 'b')]"; expected = $true }
-          @{ expression = "[less('b', 'a')]"; expected = $false }
-          @{ expression = "[less('A', 'a')]"; expected = $true }
-          @{ expression = "[lessOrEquals('a', 'b')]"; expected = $true }
-          @{ expression = "[lessOrEquals('b', 'a')]"; expected = $false }
-          @{ expression = "[lessOrEquals('a', 'a')]"; expected = $true }
-          @{ expression = "[lessOrEquals('aa', 'Aa')]"; expected = $false }
-          @{ expression = "[coalesce('DSC', 'World')]" ; expected = 'DSC' }
-          @{ expression = "[coalesce(42, 'fallback')]" ; expected = 42 }
-          @{ expression = "[coalesce(true, false)]" ; expected = $true }
-          @{ expression = "[coalesce('first', 'second')]" ; expected = 'first' }
-          @{ expression = "[coalesce(createArray('a', 'b'), createArray('c', 'd'))]" ; expected = @('a', 'b') }
-          @{ expression = "[coalesce(null(), 'fallback')]" ; expected = 'fallback' }
-          @{ expression = "[coalesce(null(), createArray(1, 2, 3))]" ; expected = @(1, 2, 3) }
-          @{ expression = "[coalesce(null(), null(), null(), 'finalValue')]" ; expected = 'finalValue' }
-          @{ expression = "[coalesce(null(), 42, 'not-reached')]" ; expected = 42 }
-          @{ expression = "[coalesce(null(), true, false)]" ; expected = $true }
-      ) {
-          param($expression, $expected)
-          $yaml = @"
+  It 'Comparison functions work: <expression>' -TestCases @(
+    @{ expression = "[greater(5, 3)]"; expected = $true }
+    @{ expression = "[greater(3, 5)]"; expected = $false }
+    @{ expression = "[greater(5, 5)]"; expected = $false }
+    @{ expression = "[greaterOrEquals(5, 3)]"; expected = $true }
+    @{ expression = "[greaterOrEquals(3, 5)]"; expected = $false }
+    @{ expression = "[greaterOrEquals(5, 5)]"; expected = $true }
+    @{ expression = "[less(3, 5)]"; expected = $true }
+    @{ expression = "[less(5, 3)]"; expected = $false }
+    @{ expression = "[less(5, 5)]"; expected = $false }
+    @{ expression = "[lessOrEquals(3, 5)]"; expected = $true }
+    @{ expression = "[lessOrEquals(5, 3)]"; expected = $false }
+    @{ expression = "[lessOrEquals(5, 5)]"; expected = $true }
+    @{ expression = "[greater('b', 'a')]"; expected = $true }
+    @{ expression = "[greater('a', 'b')]"; expected = $false }
+    @{ expression = "[greater('A', 'a')]"; expected = $false }
+    @{ expression = "[greaterOrEquals('b', 'a')]"; expected = $true }
+    @{ expression = "[greaterOrEquals('a', 'b')]"; expected = $false }
+    @{ expression = "[greaterOrEquals('a', 'a')]"; expected = $true }
+    @{ expression = "[greaterOrEquals('Aa', 'aa')]"; expected = $false }
+    @{ expression = "[less('a', 'b')]"; expected = $true }
+    @{ expression = "[less('b', 'a')]"; expected = $false }
+    @{ expression = "[less('A', 'a')]"; expected = $true }
+    @{ expression = "[lessOrEquals('a', 'b')]"; expected = $true }
+    @{ expression = "[lessOrEquals('b', 'a')]"; expected = $false }
+    @{ expression = "[lessOrEquals('a', 'a')]"; expected = $true }
+    @{ expression = "[lessOrEquals('aa', 'Aa')]"; expected = $false }
+    @{ expression = "[coalesce('DSC', 'World')]" ; expected = 'DSC' }
+    @{ expression = "[coalesce(42, 'fallback')]" ; expected = 42 }
+    @{ expression = "[coalesce(true, false)]" ; expected = $true }
+    @{ expression = "[coalesce('first', 'second')]" ; expected = 'first' }
+    @{ expression = "[coalesce(createArray('a', 'b'), createArray('c', 'd'))]" ; expected = @('a', 'b') }
+    @{ expression = "[coalesce(null(), 'fallback')]" ; expected = 'fallback' }
+
+    @{ expression = "[coalesce(null(), createArray(1, 2, 3))]" ; expected = @(1, 2, 3) }
+    @{ expression = "[coalesce(null(), null(), null(), 'finalValue')]" ; expected = 'finalValue' }
+    @{ expression = "[coalesce(null(), 42, 'not-reached')]" ; expected = 42 }
+    @{ expression = "[coalesce(null(), true, false)]" ; expected = $true }
+  ) {
+    param($expression, $expected)
+    $yaml = @"
   `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
   resources:
   - name: echo
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "$expression"
-  "@
+"@
           $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
           $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
           $out.results[0].result.actualState.output | Should -Be $expected -Because ($out | ConvertTo-Json -Depth 10| Out-String)
