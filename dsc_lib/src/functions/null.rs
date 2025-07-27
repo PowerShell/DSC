@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn null_in_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null(), 'fallback')]", &Context::new()).unwrap();
-        assert_eq!(result, "fallback");
+        let result = parser.parse_and_execute("[createArray('value', null(), 'another')]", &Context::new()).unwrap();
+        assert_eq!(result.to_string(), r#"["value",null,"another"]"#);
     }
 }

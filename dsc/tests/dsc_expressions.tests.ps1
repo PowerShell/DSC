@@ -135,11 +135,18 @@ resources:
         @{ expression = "[lessOrEquals('b', 'a')]"; expected = $false }
         @{ expression = "[lessOrEquals('a', 'a')]"; expected = $true }
         @{ expression = "[lessOrEquals('aa', 'Aa')]"; expected = $false }
-        @{ expression = "[coalesce('hello', 'world')]" ; expected = 'hello' }
+        @{ expression = "[coalesce('DSC', 'World')]" ; expected = 'DSC' }
         @{ expression = "[coalesce(42, 'fallback')]" ; expected = 42 }
         @{ expression = "[coalesce(true, false)]" ; expected = $true }
         @{ expression = "[coalesce('first', 'second')]" ; expected = 'first' }
         @{ expression = "[coalesce(createArray('a', 'b'), createArray('c', 'd'))]" ; expected = @('a', 'b') }
+        @{ expression = "[coalesce(null(), 'fallback')]" ; expected = 'fallback' }
+        @{ expression = "[coalesce(null(), createObject('name', 'test'))]" ; expected = @{name='test'} }
+        @{ expression = "[coalesce(createObject('prop', null()), createObject('prop', 'fallback'))]" ; expected = @{prop=$null} }
+        @{ expression = "[coalesce(null(), createArray(1, 2, 3))]" ; expected = @(1, 2, 3) }
+        @{ expression = "[coalesce(null(), null(), null(), 'finalValue')]" ; expected = 'finalValue' }
+        @{ expression = "[coalesce(null(), 42, 'not-reached')]" ; expected = 42 }
+        @{ expression = "[coalesce(null(), true, false)]" ; expected = $true }
     ) {
         param($expression, $expected)
         $yaml = @"
