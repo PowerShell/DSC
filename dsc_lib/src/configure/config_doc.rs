@@ -7,6 +7,7 @@ use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use std::fmt::Display;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
@@ -178,6 +179,20 @@ pub enum DataType {
     SecureObject,
     #[serde(rename = "array")]
     Array,
+}
+
+impl Display for DataType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DataType::String => write!(f, "string"),
+            DataType::SecureString => write!(f, "secureString"),
+            DataType::Int => write!(f, "int"),
+            DataType::Bool => write!(f, "bool"),
+            DataType::Object => write!(f, "object"),
+            DataType::SecureObject => write!(f, "secureObject"),
+            DataType::Array => write!(f, "array"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
