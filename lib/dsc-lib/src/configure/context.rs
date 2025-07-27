@@ -36,6 +36,7 @@ pub struct Context {
     pub system_root: PathBuf,
     pub user_functions: HashMap<String, UserFunctionDefinition>,
     pub variables: Map<String, Value>,
+    pub outputs: Map<String, Value>,
 }
 
 impl Context {
@@ -61,6 +62,8 @@ impl Context {
             system_root: get_default_os_system_root(),
             user_functions: HashMap::new(),
             variables: Map::new(),
+            restart_required: None,
+            outputs: Map::new(),
         }
     }
 }
