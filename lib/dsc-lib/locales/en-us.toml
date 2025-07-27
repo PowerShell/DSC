@@ -80,6 +80,11 @@ circularDependency = "Circular dependency or unresolvable parameter references d
 userFunctionAlreadyDefined = "User function '%{name}' in namespace '%{namespace}' is already defined"
 addingUserFunction = "Adding user function '%{name}'"
 copyCountResultNotInteger = "Copy count result is not an integer: %{expression}"
+skippingOutput = "Skipping output for '%{name}' due to condition evaluating to false"
+outputValueNotDefined = "Output value '%{name}' is not defined"
+secureOutputSkipped = "Secure output '%{name}' is skipped"
+outputTypeNotMatched = "Output '%{name}' type does not match expected type '%{expected_type}'"
+copyNotSupported = "Copy for output '%{name}' is currently not supported"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
