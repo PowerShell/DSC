@@ -73,12 +73,4 @@ mod tests {
         let result = parser.parse_and_execute("[createObject('key', null())]", &Context::new()).unwrap();
         assert_eq!(result.to_string(), r#"{"key":null}"#);
     }
-
-    // TODO: Fix this test when createArray supports null
-    // #[test]
-    // fn null_in_array() {
-    //     let mut parser = Statement::new().unwrap();
-    //     let result = parser.parse_and_execute("[createArray('value', null(), 'another')]", &Context::new()).unwrap();
-    //     assert_eq!(result.to_string(), r#"["value",null,"another"]"#);
-    // }
 }
