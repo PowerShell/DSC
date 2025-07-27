@@ -222,6 +222,10 @@ description = "Encodes a string to Base64 format"
 description = "Converts a string or number to a boolean"
 invoked = "bool function"
 
+[functions.coalesce]
+description = "Returns the first non-null value from a list of arguments"
+invoked = "coalesce function"
+
 [functions.concat]
 description = "Concatenates two or more strings or arrays"
 invoked = "concat function"
@@ -236,6 +240,12 @@ argsMustAllBeArrays = "Arguments must all be arrays"
 argsMustAllBeIntegers = "Arguments must all be integers"
 argsMustAllBeObjects = "Arguments must all be objects"
 argsMustAllBeStrings = "Arguments must all be strings"
+
+[functions.createObject]
+description = "Creates an object from the given key-value pairs"
+invoked = "createObject function"
+argsMustBePairs = "Arguments must be provided in key-value pairs"
+keyMustBeString = "Object keys must be strings"
 
 [functions.div]
 description = "Divides the first number by the second"
@@ -312,6 +322,10 @@ invoked = "mul function"
 [functions.not]
 description = "Negates a boolean value"
 invoked = "not function"
+
+[functions.null]
+description = "Returns a null value"
+invoked = "null function"
 
 [functions.or]
 description = "Evaluates if any arguments are true"
