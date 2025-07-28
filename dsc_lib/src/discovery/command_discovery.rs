@@ -756,7 +756,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 
 fn verify_executable(resource: &str, operation: &str, executable: &str) {
     if which(executable).is_err() {
-        warn!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
+        info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
 }
 
