@@ -4,6 +4,7 @@
 use clap::{Parser};
 use rust_i18n::{i18n, t};
 use schemars::schema_for;
+use serde_json::Map;
 use std::process::exit;
 use tracing::{debug, error};
 
@@ -18,6 +19,7 @@ mod args;
 mod error;
 mod export;
 mod get;
+mod inputs;
 mod metadata;
 mod parser;
 mod set;
@@ -52,7 +54,7 @@ fn main() {
                 }
             };
             println!("{}", serde_json::to_string(&schema).unwrap());
-            Ok(())
+            Ok(Map::new())
         },
         Command::Set { input } => {
             debug!("{}", t!("main.set", input = input).to_string());
@@ -60,10 +62,22 @@ fn main() {
         },
     };
 
-    if let Err(e) = result {
-        error!("{e}");
-        exit(EXIT_FAILURE);
+    match result {
+        Ok(output) => {
+            if !output.is_empty() {
+                match serde_json::to_string(&output) {
+                    Ok(json) => println!("{json}"),
+                    Err(e) => {
+                        error!("{}", e);
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+            exit(EXIT_SUCCESS);
+        },
+        Err(e) => {
+            error!("{}", e);
+            exit(EXIT_FAILURE);
+        }
     }
-
-    exit(EXIT_SUCCESS);
 }

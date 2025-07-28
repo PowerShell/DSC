@@ -1,18 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+BeforeDiscovery {
+    if ($IsWindows) {
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
+        $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+}
 
-Describe 'SSHDConfig resource tests' {
+Describe 'SSHDConfig resource tests' -Skip:(!$IsWindows -or !$isElevated) {
     BeforeAll {
-        $brewExists = ($null -ne (Get-Command brew -CommandType Application -ErrorAction Ignore))
-        $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
-        $isAdmin = if ($IsWindows) {
-            $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-            [System.Security.Principal.WindowsPrincipal]::new($identity).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
-        }
-        else {
-            [System.Environment]::UserName -eq 'root'
-        }
-        $runTest = $sshdExists -and $isAdmin
         $yaml = @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
@@ -27,37 +24,26 @@ resources:
         "LogLevel Debug3" | Set-Content -Path $TestDrive/test_sshd_config
     }
 
-    AfterAll {
-        if (Test-Path $TestDrive/test_sshd_config) {
-            Remove-Item -Path $TestDrive/test_sshd_config -Force
-        }
-    }
-
     It 'Export works' {
-        if ($runTest) {
-            $out = dsc config export -i "$yaml" | ConvertFrom-Json -Depth 10
-            $LASTEXITCODE | Should -Be 0
-            $out.resources.count | Should -Be 1
-            $out.resources[0].properties | Should -Not -BeNullOrEmpty
-            $out.resources[0].properties.port[0] | Should -Be 22
-        }
+        $out = dsc config export -i "$yaml" | ConvertFrom-Json -Depth 10
+        $LASTEXITCODE | Should -Be 0
+        $out.resources.count | Should -Be 1
+        $out.resources[0].properties | Should -Not -BeNullOrEmpty
+        $out.resources[0].properties.port[0] | Should -Be 22
     }
 
     It 'Get works'{
-        if ($runTest) {
-            $out = dsc config get -i "$yaml" | ConvertFrom-Json -Depth 10
-            $LASTEXITCODE | Should -Be 0
-            $out.results.count | Should -Be 1
-            $out.results.metadata.defaults | Should -Be $true
-            $out.results.result.actualState | Should -Not -BeNullOrEmpty
-            $out.results.result.actualState.port | Should -Be 22
-            $out.results.result.actualState.passwordAuthentication | Should -Be 'yes'
-        }
+        $out = dsc config get -i "$yaml" | ConvertFrom-Json -Depth 10
+        $LASTEXITCODE | Should -Be 0
+        $out.results.count | Should -Be 1
+        $out.results.metadata.includeDefaults | Should -Be $true
+        $out.results.result.actualState | Should -Not -BeNullOrEmpty
+        $out.results.result.actualState.port | Should -Be 22
+        $out.results.result.actualState.passwordAuthentication | Should -Be 'yes'
     }
 
     It 'Get with a specific setting works' {
-        if ($runTest) {
-            $get_yaml = @'
+        $get_yaml = @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
     Microsoft.DSC:
@@ -68,19 +54,16 @@ resources:
   properties:
     passwordauthentication: 'no'
 '@
-            $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10
-            $LASTEXITCODE | Should -Be 0
-            $out.results.count | Should -Be 1
-            $out.results.result.actualState.count | Should -Be 1
-            $out.results.result.actualState.passwordauthentication | Should -Be 'yes'
-            $out.results.result.actualState.port | Should -BeNullOrEmpty
-        }
+        $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10
+        $LASTEXITCODE | Should -Be 0
+        $out.results.count | Should -Be 1
+        ($out.results.result.actualState.psobject.properties | measure-object).count | Should -Be 1
+        $out.results.result.actualState.passwordauthentication | Should -Be 'yes'
     }
 
     It 'Get with defaults excluded works' {
-        if ($runTest) {
-            $filepath = Join-Path $TestDrive 'test_sshd_config'
-            $get_yaml = @"
+        $filepath = Join-Path $TestDrive 'test_sshd_config'
+        $get_yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
   Microsoft.DSC:
@@ -90,16 +73,15 @@ resources:
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
     _metadata:
-        defaults: false
+        includeDefaults: false
         filepath: $filepath
 "@
-            $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10
-            $LASTEXITCODE | Should -Be 0
-            $out.results.count | Should -Be 1
-            $out.results.metadata.defaults | Should -Be $false
-            $out.results.result.actualState.count | Should -Be 1
-            $out.results.result.actualState.port | Should -Not -Be 22
-            $out.results.result.actualState.loglevel | Should -Be 'debug3'
-        }
+        $out = dsc config get -i "$get_yaml" | ConvertFrom-Json -Depth 10
+        $LASTEXITCODE | Should -Be 0
+        $out.results.count | Should -Be 1
+        $out.results.metadata.includeDefaults | Should -Be $false
+        $out.results.result.actualState.count | Should -Be 1
+        $out.results.result.actualState.port | Should -Not -Be 22
+        $out.results.result.actualState.loglevel | Should -Be 'debug3'
     }
 }

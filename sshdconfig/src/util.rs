@@ -2,41 +2,14 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::process::Command;
 use tracing::debug;
 use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::error::SshdConfigError;
+use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
 use crate::parser::parse_text_to_map;
-
-pub struct CommandInfo {
-    /// metadata provided with the command
-    pub metadata: Map<String, Value>,
-    /// input provided with the command
-    pub input: Map<String, Value>,
-}
-
-impl CommandInfo {
-    /// Create a new `CommandInfo` instance.
-    pub fn new() -> Self {
-        Self {
-            metadata: Map::new(),
-            input: Map::new()
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SshdCommandArgs {
-    /// the path to the `sshd_config` file to be processed
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub filepath: Option<String>,
-    /// additional arguments to pass to the sshd -T command
-    #[serde(rename = "additionalArgs", skip_serializing_if = "Option::is_none")]
-    pub additional_args: Option<Vec<String>>,
-}
 
 /// Enable tracing.
 ///
@@ -67,13 +40,7 @@ pub fn enable_tracing() {
 ///
 /// This function will return an error if sshd -T fails to validate `sshd_config`.
 pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<String, SshdConfigError> {
-    let sshd_command = if cfg!(target_os = "windows") {
-        "sshd.exe"
-    } else {
-        "sshd"
-    };
-
-    let mut command = Command::new(sshd_command);
+    let mut command = Command::new("sshd");
     command.arg("-T");
 
     if let Some(args) = args {
@@ -148,19 +115,21 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
 pub fn extract_metadata_from_input(input: Option<&String>) -> Result<CommandInfo, SshdConfigError> {
     if let Some(inputs) = input {
         let mut sshd_config: Map<String, Value> = serde_json::from_str(inputs.as_str())?;
-        let metadata;
-        if let Some(value) = sshd_config.remove("_metadata") {
-            if let Some(obj) = value.as_object().cloned() {
-                metadata = obj;
-            } else {
-                return Err(SshdConfigError::InvalidInput(t!("util.metadataMustBeObject").to_string()));
-            }
+        let metadata: Metadata = if let Some(value) = sshd_config.remove("_metadata") {
+            serde_json::from_value(value)?
         } else {
-            metadata = Map::new();
-        }
+            Metadata::new()
+        };
+        let sshd_args = metadata.filepath.as_ref().map(|filepath| {
+            SshdCommandArgs {
+                filepath: Some(filepath.clone()),
+                additional_args: None,
+            }
+        });
         return Ok(CommandInfo {
-            metadata,
             input: sshd_config,
+            metadata,
+            sshd_args
         })
     }
     Ok(CommandInfo::new())
