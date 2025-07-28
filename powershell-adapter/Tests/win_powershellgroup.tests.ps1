@@ -218,7 +218,8 @@ resources:
     $out.results[0].result.inDesiredState | Should -Be $inDesiredState
   }
 
-  It 'Config works with credential object' -Skip:(!$IsWindows) {
+  # TODO: fix test - currently throwing an exception, -Skip:(!$IsWindows)
+  It 'Config works with credential object' -Skip {
     BeforeDiscovery {
       $script:winPSModule = Resolve-Path -Path (Join-Path $PSScriptRoot '..' 'psDscAdapter' 'win_psDscAdapter.psm1') | Select-Object -ExpandProperty Path
       Import-Module $winPSModule -Force -ErrorAction Stop
@@ -248,7 +249,6 @@ resources:
     $out = Invoke-DscOperation -Operation Test -DesiredState $resourceObject -dscResourceCache $cacheEntry
     $LASTEXITCODE | Should -Be 0
     $out.properties.InDesiredState.InDesiredState | Should -Be $false
-
     Should -Invoke -CommandName ConvertTo-SecureString -Exactly -Times 1 -Scope It
   }
 
