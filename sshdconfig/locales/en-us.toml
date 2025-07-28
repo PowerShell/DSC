@@ -17,12 +17,10 @@ registry = "Registry"
 
 [get]
 debugSetting = "Get setting:"
-defaultsMustBeBoolean = "defaults value must be true or false"
 defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
 defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
 defaultShellMustBeString = "shell must be a string"
-filepathMustBeString = "filePath must be a string"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
 [main]
@@ -54,6 +52,5 @@ shellPathDoesNotExist = "shell path does not exist: '%{shell}'"
 shellPathMustNotBeRelative = "shell path must not be relative"
 
 [util]
-metadataMustBeObject = "_metadata must be an object"
 sshdElevation = "elevated security context required"
 tracingInitError = "Failed to initialize tracing"
