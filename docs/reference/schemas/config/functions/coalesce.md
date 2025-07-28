@@ -19,7 +19,9 @@ coalesce(<value1>, <value2>, ...)
 
 ## Description
 
-The `coalesce()` function evaluates arguments from left to right and returns the first argument that is not null. This function is useful for providing fallback values when dealing with potentially null data.
+The `coalesce()` function evaluates arguments from left to right and returns the first argument that
+is not null. This function is useful for providing fallback values when dealing with potentially
+null data.
 
 If all arguments are null, the function returns null.
 
@@ -37,8 +39,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output: 
-      firstNonNull:     "[coalesce(null, 'hello', 'world')]"
-      allNull:          "[coalesce(null, null, null)]"
+      firstNonNull:     "[coalesce(null(), 'DSC', 'landscape')]"
+      allNull:          "[coalesce(null(), null(), null())]"
       firstNotNull:     "[coalesce('first', 'second', 'third')]"
 ```
 
@@ -53,7 +55,7 @@ results:
   result:
     actualState:
       output:
-        firstNonNull: hello
+        firstNonNull: DSC
         allNull: null
         firstNotNull: first
 messages: []
@@ -72,9 +74,9 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      numberFallback:   "[coalesce(null, 42)]"
-      booleanFallback:  "[coalesce(null, null, true)]"
-      stringToNumber:   "[coalesce(null, 123, 'fallback')]"
+      numberFallback:   "[coalesce(null(), 42)]"
+      booleanFallback:  "[coalesce(null(), null(), true)]"
+      stringToNumber:   "[coalesce(null(), 123, 'fallback')]"
 ```
 
 ```bash
@@ -105,7 +107,7 @@ $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 parameters:
   customValue:
     type: string
-    defaultValue: null
+    defaultValue: 'customValue'
   timeout:
     type: int
     defaultValue: 0
@@ -129,7 +131,7 @@ results:
   result:
     actualState:
       output:
-        configValue: default-config
+        configValue: customValue
         timeout: 0
 messages: []
 hadErrors: false
@@ -137,7 +139,7 @@ hadErrors: false
 
 ## Parameters
 
-### value1, value2, ...
+### value1, value2
 
 The `coalesce()` function accepts one or more arguments of any type.
 Arguments are evaluated from left to right, and the function returns the first non-null
@@ -159,4 +161,9 @@ The return type matches the type of the first non-null argument.
 Type: [any]
 ```
 
+## Related functions
+
+- [`null()`][00] - Returns a simple JSON null value.
+
 <!-- Link reference definitions -->
+[00]: ./null.md
