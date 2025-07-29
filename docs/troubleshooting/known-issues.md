@@ -86,7 +86,7 @@ the `Microsoft.DSC/PowerShell` adapter, which doesn't rely on PSDSC 1.1.
 
 ### Recommendation
 
-Install all PSDSC resource modules in the **AllUsers** scope to ensure they;re available for the  
+Install all PSDSC resource modules in the **AllUsers** scope to ensure they're available for the  
 `Microsoft.Windows/WindowsPowerShell` adapter.
 
 ## Validation errors when executing dsc.exe in Windows PowerShell sessions
