@@ -209,12 +209,12 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $out = dsc resource list 'Test/ExecutableNotFound' 2> "$testdrive/error.txt" | ConvertFrom-Json
+            $out = dsc -l info resource list 'Test/ExecutableNotFound' 2> "$testdrive/error.txt" | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $out.Count | Should -Be 1
             $out.Type | Should -BeExactly 'Test/ExecutableNotFound'
             $out.Kind | Should -BeExactly 'resource'
-            Get-Content -Path "$testdrive/error.txt" | Should -Match "WARN.*?Executable 'doesNotExist' not found"
+            (Get-Content -Path "$testdrive/error.txt" -Raw) | Should -Match "INFO.*?Executable 'doesNotExist' not found"
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
