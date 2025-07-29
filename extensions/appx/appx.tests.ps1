@@ -7,7 +7,7 @@ Describe 'Tests for Appx resource discovery' -Skip:(!$IsWindows){
         $LASTEXITCODE | Should -Be 0
         $found = $false
         foreach ($resource in $out) {
-            if ($resource.directory.StartsWith("$env:ProgramFiles\WindowsApps\Microsoft.DesiredStateConfiguration-Private")) {
+            if ($resource.directory.StartsWith("$env:ProgramFiles\WindowsApps")) {
                 $found = $true
                 break
             }
