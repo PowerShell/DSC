@@ -20,7 +20,7 @@ coalesce(<value1>, <value2>, ...)
 ## Description
 
 The `coalesce()` function evaluates arguments from left to right and returns the first argument that
-is not null. This function is useful for providing fallback values when dealing with potentially
+isn't null. This function is useful for providing fallback values when dealing with potentially
 null data.
 
 If all arguments are null, the function returns null.
@@ -41,7 +41,7 @@ resources:
     output: 
       firstNonNull:     "[coalesce(null(), 'DSC', 'landscape')]"
       allNull:          "[coalesce(null(), null(), null())]"
-      firstNotNull:     "[coalesce('first', 'second', 'third')]"
+      noneNull:     "[coalesce('first', 'second', 'third')]"
 ```
 
 ```bash
@@ -57,7 +57,7 @@ results:
       output:
         firstNonNull: DSC
         allNull: null
-        firstNotNull: first
+        noneNull: first
 messages: []
 hadErrors: false
 ```
