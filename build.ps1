@@ -5,11 +5,11 @@
 
 param(
     [switch]$Release,
-    [ValidateSet('current', 'aarch64-pc-windows-msvc', 'x86_64-pc-windows-msvc', 'aarch64-apple-darwin', 'x86_64-apple-darwin', 'aarch64-unknown-linux-gnu', 'aarch64-unknown-linux-musl', 'x86_64-unknown-linux-gnu', 'x86_64-unknown-linux-musl')]
+    [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
     $architecture = 'current',
     [switch]$Clippy,
     [switch]$SkipBuild,
-    [ValidateSet('msix', 'msix-private', 'msixbundle', 'tgz', 'zip')]
+    [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
     $packageType,
     [switch]$Test,
     [switch]$GetPackageVersion,
@@ -142,7 +142,8 @@ function Find-LinkExe {
         $linkexe = (Get-Location).Path
         Write-Verbose -Verbose "Using $linkexe"
         $linkexe
-    } finally {
+    }
+    finally {
         Pop-Location
     }
 }
@@ -169,7 +170,8 @@ if ($null -ne $packageType) {
         if (!$IsWindows) {
             curl https://sh.rustup.rs -sSf | sh -s -- -y
             $env:PATH += ":$env:HOME/.cargo/bin"
-        } else {
+        }
+        else {
             Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
             Write-Verbose -Verbose "Use the default settings to ensure build works"
             & 'temp:/rustup-init.exe' -y
@@ -212,9 +214,9 @@ if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.ex
     if (!(Test-Path $BuildToolsPath)) {
         Write-Verbose -Verbose "link.exe not found, installing C++ build tools"
         Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
-        $arg = @('--passive', '--add', 'Microsoft.VisualStudio.Workload.VCTools', '--includerecommended')
+        $arg = @('--passive','--add','Microsoft.VisualStudio.Workload.VCTools','--includerecommended')
         if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
-            $arg += '--add', 'Microsoft.VisualStudio.Component.VC.Tools.ARM64'
+            $arg += '--add','Microsoft.VisualStudio.Component.VC.Tools.ARM64'
         }
         Start-Process -FilePath 'temp:/vs_buildtools.exe' -ArgumentList $arg -Wait
         Remove-Item temp:/vs_installer.exe -ErrorAction Ignore
@@ -244,7 +246,8 @@ $flags = @($Release ? '-r' : $null)
 if ($architecture -eq 'current') {
     $path = ".\target\$configuration"
     $target = Join-Path $PSScriptRoot 'bin' $configuration
-} else {
+}
+else {
     $flags += '--target'
     $flags += $architecture
     $path = ".\target\$architecture\$configuration"
@@ -287,7 +290,8 @@ if (!$SkipBuild) {
                     $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
                     $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
                 }
-            } else {
+            }
+            else {
                 Write-Warning "Azure CLI not found, proceeding with anonymous access."
             }
         }
@@ -344,7 +348,8 @@ if (!$SkipBuild) {
             if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
-                } else {
+                }
+                else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
                             cargo install cargo-audit --features=fix
@@ -357,21 +362,26 @@ if (!$SkipBuild) {
                 }
             }
 
-            if (Test-Path "./Cargo.toml") {
+            if (Test-Path "./Cargo.toml")
+            {
                 if ($Clippy) {
                     if ($clippy_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Skipping clippy for $project"
-                    } elseif ($pedantic_unclean_projects -contains $project) {
+                    }
+                    elseif ($pedantic_unclean_projects -contains $project) {
                         Write-Verbose -Verbose "Running clippy for $project"
                         cargo clippy @flags -- -Dwarnings
-                    } else {
+                    }
+                    else {
                         Write-Verbose -Verbose "Running clippy with pedantic for $project"
                         cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
                     }
-                } else {
+                }
+                else {
                     if ($UpdateLockFile) {
                         cargo generate-lockfile
-                    } else {
+                    }
+                    else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
                                 cargo install cargo-audit --features=fix
@@ -399,7 +409,8 @@ if (!$SkipBuild) {
             if ($IsWindows) {
                 Copy-Item "$path/$binary.exe" $target -ErrorAction Ignore -Verbose
                 Copy-Item "$path/$binary.pdb" $target -ErrorAction Ignore -Verbose
-            } else {
+            }
+            else {
                 Copy-Item "$path/$binary" $target -ErrorAction Ignore -Verbose
             }
 
@@ -457,7 +468,8 @@ if (!$Clippy -and !$SkipBuild) {
     $dirSeparator = [System.IO.Path]::DirectorySeparatorChar
     if ($Release) {
         $oldTarget = $target.Replace($dirSeparator + 'release', $dirSeparator + 'debug')
-    } else {
+    }
+    else {
         $oldTarget = $target.Replace($dirSeparator + 'debug', $dirSeparator + 'release')
     }
     $env:PATH = $env:PATH.Replace($oldTarget, '')
@@ -496,14 +508,15 @@ if ($Test) {
 
     if ($IsWindows) {
         # PSDesiredStateConfiguration module is needed for Microsoft.Windows/WindowsPowerShell adapter
-        $FullyQualifiedName = @{ModuleName = "PSDesiredStateConfiguration"; ModuleVersion = "2.0.7" }
-        if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName)) {
+        $FullyQualifiedName = @{ModuleName="PSDesiredStateConfiguration";ModuleVersion="2.0.7"}
+        if (-not(Get-Module -ListAvailable -FullyQualifiedName $FullyQualifiedName))
+        {
             Install-PSResource -Name PSDesiredStateConfiguration -Version 2.0.7 -Repository $repository -TrustRepository
         }
     }
 
-    if (-not(Get-Module -ListAvailable -Name Pester)) {
-        "Installing module Pester"
+    if (-not(Get-Module -ListAvailable -Name Pester))
+    {   "Installing module Pester"
         Install-PSResource Pester -WarningAction Ignore -Repository $repository -TrustRepository
     }
 
@@ -516,7 +529,8 @@ if ($Test) {
         Write-Host -ForegroundColor Cyan "Testing $project ..."
         try {
             Push-Location "$PSScriptRoot/$project"
-            if (Test-Path "./Cargo.toml") {
+            if (Test-Path "./Cargo.toml")
+            {
                 cargo test
 
                 if ($LASTEXITCODE -ne 0) {
@@ -545,8 +559,8 @@ if ($Test) {
         "Updated PSModulePath is:"
         $env:PSModulePath
 
-        if (-not(Get-Module -ListAvailable -Name Pester)) {
-            "Installing module Pester"
+        if (-not(Get-Module -ListAvailable -Name Pester))
+        {   "Installing module Pester"
             $InstallTargetDir = ($env:PSModulePath -split ";")[0]
             Find-PSResource -Name 'Pester' -Repository $repository | Save-PSResource -Path $InstallTargetDir -TrustRepository
         }
@@ -568,7 +582,8 @@ function Find-MakeAppx() {
         # try to find
         if (!$UseX64MakeAppx -and $architecture -eq 'aarch64-pc-windows-msvc') {
             $arch = 'arm64'
-        } else {
+        }
+        else {
             $arch = 'x64'
         }
 
@@ -613,7 +628,8 @@ if ($packageType -eq 'msixbundle') {
         Write-Verbose -Verbose "Preview version detected"
         if ($isPrivate) {
             $productName += "-Private"
-        } else {
+        }
+        else {
             $productName += "-Preview"
         }
         # save preview number
@@ -630,7 +646,8 @@ if ($packageType -eq 'msixbundle') {
 
         if ($isPrivate) {
             $displayName += "-Private"
-        } else {
+        }
+        else {
             $displayName += "-Preview"
         }
     }
@@ -780,4 +797,4 @@ if ($packageType -eq 'msixbundle') {
     Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
 }
 
-$env:RUST_BACKTRACE = 1
+$env:RUST_BACKTRACE=1
