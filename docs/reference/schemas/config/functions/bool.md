@@ -24,6 +24,9 @@ it accepts "true" (case-insensitive) which converts to `true`, and "false" (case
 which converts to `false`. For numeric arguments, zero converts to `false` and any non-zero
 value converts to `true`.
 
+> [!NOTE]
+> Any string argument other than `true` or `false` (case-insensitive) will raise a DSC error.
+
 ## Examples
 
 ### Example 1 - Convert string to boolean
