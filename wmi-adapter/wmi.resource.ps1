@@ -10,7 +10,7 @@ param(
 )
 
 # Import private functions
-$wmiAdapter = Import-Module "$PSScriptRoot/wmiAdapter.psm1" -Force -PassThru
+$wmiAdapter = Import-Module "$PSScriptRoot\wmiAdapter.psm1" -Force -PassThru
 
 if ('Validate' -ne $Operation) {
     # initialize OUTPUT as array

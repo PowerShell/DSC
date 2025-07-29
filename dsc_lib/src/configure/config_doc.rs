@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, Local};
 use rust_i18n::t;
-use schemars::JsonSchema;
+use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
@@ -163,23 +163,101 @@ pub enum DataType {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub enum CopyMode {
+    #[serde(rename = "serial")]
+    Serial,
+    #[serde(rename = "parallel")]
+    Parallel,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Copy {
+    pub name: String,
+    pub count: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mode: Option<CopyMode>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "batchSize")]
+    pub batch_size: Option<i32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Plan {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "promotionCode")]
+    pub promotion_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub publisher: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub product: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Identity {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "userAssignedIdentities")]
+    pub user_assigned_identities: Option<Map<String, Value>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Sku {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub capacity: Option<i32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Resource {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition: Option<String>,
     /// The fully qualified name of the resource type
     #[serde(rename = "type")]
     pub resource_type: String,
+    #[serde(skip_serializing_if = "Option::is_none", rename = "apiVersion")]
+    pub api_version: Option<String>,
     /// A friendly name for the resource instance
     pub name: String, // friendly unique instance name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comments: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location: Option<String>,
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
     #[schemars(regex(pattern = r"^\[resourceId\(\s*'[a-zA-Z0-9\.]+/[a-zA-Z0-9]+'\s*,\s*'[a-zA-Z0-9 ]+'\s*\)]$"))]
     pub depends_on: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identity: Option<Identity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sku: Option<Sku>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub copy: Option<Copy>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plan: Option<Plan>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<Map<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Metadata>,
+    pub resources: Option<Vec<Resource>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub condition: Option<String>,
+    pub metadata: Option<Metadata>,
 }
 
 impl Default for Configuration {
@@ -193,12 +271,11 @@ impl DscRepoSchema for Configuration {
     const SCHEMA_FOLDER_PATH: &'static str = "config";
     const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-    fn schema_metadata() -> schemars::schema::Metadata {
-        schemars::schema::Metadata {
-            title: Some(t!("configure.config_doc.configurationDocumentSchemaTitle").into()),
-            description: Some(t!("configure.config_doc.configurationDocumentSchemaDescription").into()),
-            ..Default::default()
-        }
+    fn schema_metadata() -> schemars::Schema {
+        json_schema!({
+            "title": t!("configure.config_doc.configurationDocumentSchemaTitle").to_string(),
+            "description": t!("configure.config_doc.configurationDocumentSchemaDescription").to_string(),
+        })
     }
 
     fn validate_schema_uri(&self) -> Result<(), DscError> {
@@ -238,6 +315,16 @@ impl Resource {
             properties: None,
             metadata: None,
             condition: None,
+            identity: None,
+            sku: None,
+            scope: None,
+            copy: None,
+            plan: None,
+            resources: None,
+            comments: None,
+            location: None,
+            tags: None,
+            api_version: None,
         }
     }
 }
