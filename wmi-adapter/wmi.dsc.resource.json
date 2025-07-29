@@ -35,6 +35,20 @@
       ],
       "input": "stdin"
     },
+    "set": {
+      "executable": "powershell",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$Input | ./wmi.resource.ps1 Set"
+      ],
+      "input": "stdin",
+      "implementsPretest": false
+    },
     "validate": {
         "executable": "powershell",
         "args": [

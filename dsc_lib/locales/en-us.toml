@@ -96,6 +96,7 @@ extensionResourceFound = "Extension found resource '%{resource}'"
 callingExtension = "Calling extension '%{extension}' to discover resources"
 extensionFoundResources = "Extension '%{extension}' found %{count} resources"
 invalidManifestVersion = "Manifest '%{path}' has invalid version: %{err}"
+importExtensionsEmpty = "Import extension '%{extension}' has no import extensions defined"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -183,6 +184,9 @@ secretExtensionReturnedInvalidJson = "Extension '%{extension}' returned invalid 
 extensionReturnedSecret = "Extension '%{extension}' returned secret"
 extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
 secretNoResults = "Extension '%{extension}' returned no output"
+importingFile = "Importing file '%{file}' with extension '%{extension}'"
+importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
+importNoResults = "Extension '%{extension}' returned no results for import"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"
@@ -191,6 +195,7 @@ extensionManifestSchemaDescription = "Defines the JSON Schema the extension mani
 [functions]
 invalidArgType = "Invalid argument type"
 invalidArguments = "Invalid argument(s)"
+typeMismatch = "Arguments must be of the same type (both numbers or both strings)"
 unknownFunction = "Unknown function '%{name}'"
 noArgsAccepted = "Function '%{name}' does not accept arguments"
 invalidArgCount = "Function '%{name}' requires exactly %{count} arguments"
@@ -217,6 +222,10 @@ description = "Encodes a string to Base64 format"
 description = "Converts a string or number to a boolean"
 invoked = "bool function"
 
+[functions.coalesce]
+description = "Returns the first non-null value from a list of arguments"
+invoked = "coalesce function"
+
 [functions.concat]
 description = "Concatenates two or more strings or arrays"
 invoked = "concat function"
@@ -231,6 +240,12 @@ argsMustAllBeArrays = "Arguments must all be arrays"
 argsMustAllBeIntegers = "Arguments must all be integers"
 argsMustAllBeObjects = "Arguments must all be objects"
 argsMustAllBeStrings = "Arguments must all be strings"
+
+[functions.createObject]
+description = "Creates an object from the given key-value pairs"
+invoked = "createObject function"
+argsMustBePairs = "Arguments must be provided in key-value pairs"
+keyMustBeString = "Object keys must be strings"
 
 [functions.div]
 description = "Divides the first number by the second"
@@ -247,6 +262,14 @@ description = "Evaluates if the two values are the same"
 [functions.false]
 description = "Returns the boolean value false"
 invoked = "false function"
+
+[functions.greater]
+description = "Evaluates if the first value is greater than the second value"
+invoked = "greater function"
+
+[functions.greaterOrEquals]
+description = "Evaluates if the first value is greater than or equal to the second value"
+invoked = "greaterOrEquals function"
 
 [functions.format]
 description = "Formats a string using the given arguments"
@@ -266,6 +289,14 @@ invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
+
+[functions.less]
+description = "Evaluates if the first value is less than the second value"
+invoked = "less function"
+
+[functions.lessOrEquals]
+description = "Evaluates if the first value is less than or equal to the second value"
+invoked = "lessOrEquals function"
 
 [functions.max]
 description = "Returns the largest number from a list of numbers"
@@ -291,6 +322,10 @@ invoked = "mul function"
 [functions.not]
 description = "Negates a boolean value"
 invoked = "not function"
+
+[functions.null]
+description = "Returns a null value"
+invoked = "null function"
 
 [functions.or]
 description = "Evaluates if any arguments are true"
@@ -436,3 +471,4 @@ foundSetting = "Found setting '%{name}' in %{path}"
 notFoundSetting = "Setting '%{name}' not found in %{path}"
 failedToGetExePath = "Can't get 'dsc' executable path"
 settingNotFound = "Setting '%{name}' not found"
+failedToAbsolutizePath = "Failed to absolutize path '%{path}'"

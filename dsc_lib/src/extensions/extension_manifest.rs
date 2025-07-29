@@ -2,14 +2,14 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use schemars::JsonSchema;
+use schemars::{Schema, JsonSchema, json_schema};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
-use crate::extensions::{discover::DiscoverMethod, secret::SecretMethod};
+use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -29,6 +29,8 @@ pub struct ExtensionManifest {
     pub tags: Option<Vec<String>>,
     /// Details how to call the Discover method of the extension.
     pub discover: Option<DiscoverMethod>,
+    /// Details how to call the Import method of the extension.
+    pub import: Option<ImportMethod>,
     /// Details how to call the Secret method of the extension.
     pub secret: Option<SecretMethod>,
     /// Mapping of exit codes to descriptions.  Zero is always success and non-zero is always failure.
@@ -41,12 +43,11 @@ impl DscRepoSchema for ExtensionManifest {
     const SCHEMA_FOLDER_PATH: &'static str = "extension";
     const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-    fn schema_metadata() -> schemars::schema::Metadata {
-        schemars::schema::Metadata {
-            title: Some(t!("extensions.extension_manifest.extensionManifestSchemaTitle").into()),
-            description: Some(t!("extensions.extension_manifest.extensionManifestSchemaDescription").into()),
-            ..Default::default()
-        }
+    fn schema_metadata() -> Schema {
+        json_schema!({
+            "title": t!("extensions.extension_manifest.extensionManifestSchemaTitle").to_string(),
+            "description": t!("extensions.extension_manifest.extensionManifestSchemaDescription").to_string(),
+        })
     }
 
     fn validate_schema_uri(&self) -> Result<(), DscError> {
