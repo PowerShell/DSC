@@ -40,7 +40,7 @@ differingProperties:
 - StartupType
 ```
 
-The `inDesiredState` field of the result object is set to `false`, indicating that the instance isn't in the desired state. The `differingProperties` field indicates that the `property` property is mismatched between the desired state and actual state.
+The `inDesiredState` field of the result object is set to `false`, indicating that the instance isn't in the desired state. The `differingProperties` field indicates that the `StartupType` property is mismatched between the desired state and actual state.
 
 ## Ensure a service is running with automatic startup
 

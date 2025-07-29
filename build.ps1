@@ -27,6 +27,8 @@ param(
 )
 
 $env:RUSTC_LOG=$null
+$env:RUSTFLAGS='-Dwarnings'
+
 if ($Verbose) {
     $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
 }
@@ -43,6 +45,7 @@ if ($GetPackageVersion) {
 $filesForWindowsPackage = @(
     'appx.dsc.extension.json',
     'appx-discover.ps1',
+    'bicep.dsc.extension.json',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -78,6 +81,7 @@ $filesForWindowsPackage = @(
 )
 
 $filesForLinuxPackage = @(
+    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -102,6 +106,7 @@ $filesForLinuxPackage = @(
 )
 
 $filesForMacPackage = @(
+    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -304,6 +309,7 @@ if (!$SkipBuild) {
         "dsc_lib",
         "dsc",
         "dscecho",
+        "extensions/bicep",
         "osinfo",
         "powershell-adapter",
         'resources/PSScript',
@@ -312,8 +318,7 @@ if (!$SkipBuild) {
         "sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j",
-        "."
+        "y2j"
     )
     $pedantic_unclean_projects = @()
     $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
@@ -553,7 +558,11 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -ErrorAction Stop
+    try {
+        Invoke-Pester -ErrorAction Stop
+    } catch {
+        throw "Pester had unexpected error: $($_.Exception.Message)"
+    }
 }
 
 function Find-MakeAppx() {
