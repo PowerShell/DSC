@@ -7,6 +7,7 @@ use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use std::fmt::Display;
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
@@ -106,6 +107,21 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum ValueOrCopy {
+    Value(String),
+    Copy(Copy),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Output {
+    pub condition: Option<String>,
+    pub r#type: DataType,
+    pub value_or_copy: ValueOrCopy,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -120,9 +136,12 @@ pub struct Configuration {
     pub resources: Vec<Resource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<HashMap<String, Output>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
 pub struct Parameter {
     #[serde(rename = "type")]
     pub parameter_type: DataType,
@@ -160,6 +179,20 @@ pub enum DataType {
     SecureObject,
     #[serde(rename = "array")]
     Array,
+}
+
+impl Display for DataType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DataType::String => write!(f, "string"),
+            DataType::SecureString => write!(f, "secureString"),
+            DataType::Int => write!(f, "int"),
+            DataType::Bool => write!(f, "bool"),
+            DataType::Object => write!(f, "object"),
+            DataType::SecureObject => write!(f, "secureObject"),
+            DataType::Array => write!(f, "array"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -300,6 +333,7 @@ impl Configuration {
             variables: None,
             resources: Vec::new(),
             metadata: None,
+            outputs: None,
         }
     }
 }
