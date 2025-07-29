@@ -25,7 +25,7 @@ Describe 'reboot_pending resource tests' {
 
             $out | dsc resource get -r Microsoft.Windows/RebootPending | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
-            $out.actualState.reason | Should -Not -BeNullOrEmpty
+            $out.actualState.reason.count | Should -BeGreaterThan 0
         } finally {
             Remove-ItemProperty -Path $keyPath -Name $keyName -ErrorAction Ignore
         }
