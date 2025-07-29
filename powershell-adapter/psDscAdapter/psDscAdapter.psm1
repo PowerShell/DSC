@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-$script:CurrentCacheSchemaVersion = 2
+$script:CurrentCacheSchemaVersion = 3
 
 function Write-DscTrace {
     param(
@@ -60,7 +60,7 @@ function Add-AstMembers {
 
     foreach ($member in $TypeAst.Members) {
         $property = $member -as [System.Management.Automation.Language.PropertyMemberAst]
-        if (($property -eq $null) -or ($property.IsStatic)) {
+        if (($null -eq $property) -or ($property.IsStatic)) {
             continue;
         }
         $skipProperty = $true
@@ -117,7 +117,7 @@ function FindAndParseResourceDefinitions {
     $typeDefinitions = $ast.FindAll(
         {
             $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
-            return $typeAst -ne $null;
+            return $null -ne $typeAst;
         },
         $false);
 
@@ -139,6 +139,7 @@ function FindAndParseResourceDefinitions {
                 $DscResourceInfo.Version = $moduleVersion
 
                 $DscResourceInfo.Properties = [System.Collections.Generic.List[DscResourcePropertyInfo]]::new()
+                $DscResourceInfo.Capabilities = GetClassBasedCapabilities $typeDefinitionAst.Members
                 Add-AstMembers $typeDefinitions $typeDefinitionAst $DscResourceInfo.Properties
 
                 $resourceList.Add($DscResourceInfo)
@@ -325,7 +326,7 @@ function Invoke-DscCacheRefresh {
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
             $lastWriteTimes = @{}
-            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | % {
+            Get-ChildItem -Recurse -File -Path $dscResource.ParentPath -Include "*.ps1", "*.psd1", "*.psm1", "*.mof" -ea Ignore | ForEach-Object {
                 $lastWriteTimes.Add($_.FullName, $_.LastWriteTime)
             }
 
@@ -338,7 +339,7 @@ function Invoke-DscCacheRefresh {
 
         [dscResourceCache]$cache = [dscResourceCache]::new()
         $cache.ResourceCache = $dscResourceCacheEntries
-        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | % { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
+        $m = $env:PSModulePath -split [IO.Path]::PathSeparator | ForEach-Object { Get-ChildItem -Directory -Path $_ -Depth 1 -ea SilentlyContinue }
         $cache.PSModulePaths = $m.FullName
         $cache.CacheSchemaVersion = $script:CurrentCacheSchemaVersion
 
@@ -445,7 +446,15 @@ function Invoke-DscOperation {
                         'Get' {
                             $Result = @{}
                             $raw_obj = $dscResourceInstance.Get()
-                            $ValidProperties | ForEach-Object { $Result[$_] = $raw_obj.$_ }
+                            $ValidProperties | ForEach-Object { 
+                                if ($raw_obj.$_ -is [System.Enum]) {
+                                    $Result[$_] = $raw_obj.$_.ToString()
+
+                                }
+                                else {
+                                    $Result[$_] = $raw_obj.$_
+                                }
+                            }
                             $addToActualState.properties = $Result
                         }
                         'Set' {
@@ -473,7 +482,14 @@ function Invoke-DscOperation {
                             $raw_obj_array = $method.Invoke($null, $null)
                             foreach ($raw_obj in $raw_obj_array) {
                                 $Result_obj = @{}
-                                $ValidProperties | ForEach-Object { $Result_obj[$_] = $raw_obj.$_ }
+                                $ValidProperties | ForEach-Object { 
+                                    if ($raw_obj.$_ -is [System.Enum]) {
+                                        $Result_obj[$_] = $raw_obj.$_.ToString()
+                                    }
+                                    else { 
+                                        $Result_obj[$_] = $raw_obj.$_ 
+                                    }
+                                }
                                 $resultArray += $Result_obj
                             }
                             $addToActualState = $resultArray
@@ -512,6 +528,28 @@ function GetTypeInstanceFromModule {
     )
     $instance = & (Import-Module $modulename -PassThru) ([scriptblock]::Create("'$classname' -as 'type'"))
     return $instance
+}
+
+function GetClassBasedCapabilities ($functionMemberAst) {
+    $capabilities = [System.Collections.Generic.List[string[]]]::new()
+    # These are the methods that we can potentially expect in a class-based DSC resource.
+    $availableMethods = @('get', 'set', 'setHandlesExist', 'whatIf', 'test', 'delete', 'export')
+    $methods = $functionMemberAst | Where-Object { $_ -is [System.Management.Automation.Language.FunctionMemberAst] -and $_.Name -in $availableMethods }
+
+    foreach ($method in $methods.Name) {
+        # We go through each method to properly case handle the method names.
+        switch ($method) {
+            'Get' { $capabilities.Add('get') }
+            'Set' { $capabilities.Add('set') }
+            'Test' { $capabilities.Add('test') }
+            'WhatIf' { $capabilities.Add('whatIf') }
+            'SetHandlesExist' { $capabilities.Add('setHandlesExist') }
+            'Delete' { $capabilities.Add('delete') }
+            'Export' { $capabilities.Add('export') }
+        }
+    }
+
+    return ($capabilities | Select-Object -Unique)
 }
 
 # cached resource
@@ -563,4 +601,5 @@ class DscResourceInfo {
     [string] $ImplementedAs
     [string] $CompanyName
     [System.Collections.Generic.List[DscResourcePropertyInfo]] $Properties
+    [string[]] $Capabilities
 }

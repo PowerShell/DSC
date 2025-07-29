@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/resource/stdout/schema.json",
+  "title": "Schema resource command stdout",
+  "description": "Represents the JSON Schema that validates instances of the resource. DSC expects a resource that defines the `schema.command` field in its resource manifest to return this value for that command.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "type",
+    "properties"
+  ]
+}

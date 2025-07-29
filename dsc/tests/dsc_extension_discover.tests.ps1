@@ -4,9 +4,8 @@
 Describe 'Discover extension tests' {
     BeforeAll {
         $oldPath = $env:PATH
-        $separator = [System.IO.Path]::PathSeparator
         $toolPath = Resolve-Path -Path "$PSScriptRoot/../../extensions/test/discover"
-        $env:PATH = "$toolPath$separator$oldPath"
+        $env:PATH = "$toolPath" + [System.IO.Path]::PathSeparator + $oldPath
     }
 
     AfterAll {
@@ -16,11 +15,15 @@ Describe 'Discover extension tests' {
     It 'Discover extensions' {
         $out = dsc extension list | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.Count | Should -Be 1
-        $out.type | Should -BeExactly 'Test/Discover'
-        $out.version | Should -BeExactly '0.1.0'
-        $out.capabilities | Should -BeExactly @('discover')
-        $out.manifest | Should -Not -BeNullOrEmpty
+        $out.Count | Should -Be 2 -Because ($out | Out-String)
+        $out[0].type | Should -Be 'Microsoft.DSC.Extension/Bicep'
+        $out[0].version | Should -Be '0.1.0'
+        $out[0].capabilities | Should -BeExactly @('import')
+        $out[0].manifest | Should -Not -BeNullOrEmpty
+        $out[1].type | Should -BeExactly 'Test/Discover'
+        $out[1].version | Should -BeExactly '0.1.0'
+        $out[1].capabilities | Should -BeExactly @('discover')
+        $out[1].manifest | Should -Not -BeNullOrEmpty
     }
 
     It 'Filtering works for extension discovered resources' {
@@ -75,10 +78,10 @@ Describe 'Discover extension tests' {
         Set-Content -Path "$TestDrive/test.dsc.extension.json" -Value $extension_json
         Copy-Item -Path "$toolPath/discover.ps1" -Destination $TestDrive | Out-Null
         Copy-Item -Path "$toolPath/resources" -Destination $TestDrive -Recurse | Out-Null
-        $env:DSC_RESOURCE_PATH = $TestDrive
+        $env:DSC_RESOURCE_PATH = "$TestDrive" + [System.IO.Path]::PathSeparator + (Split-Path (Get-Command pwsh).Source -Parent)
         try {
             $out = dsc extension list | ConvertFrom-Json
-            $out.Count | Should -Be 1
+            $out.Count | Should -Be 1 -Because ($out | Out-String)
             $out.type | Should -Be 'Test/DiscoverRelative'
             $out = dsc resource list 2> $TestDrive/error.log
             write-verbose -verbose (Get-Content -Path "$TestDrive/error.log" -Raw)
@@ -89,5 +92,17 @@ Describe 'Discover extension tests' {
         } finally {
             $env:DSC_RESOURCE_PATH = $null
         }
+    }
+
+    It 'Table can be not truncated' {
+        $output = dsc extension list --output-format table-no-truncate
+        $LASTEXITCODE | Should -Be 0
+        $foundWideLine = $false
+        foreach ($line in $output) {
+            if ($line.Length -gt [Console]::WindowWidth) {
+                $foundWideLine = $true
+            }
+        }
+        $foundWideLine | Should -BeTrue
     }
 }

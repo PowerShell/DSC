@@ -1,35 +1,50 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{DscType, OutputFormat, TraceFormat};
+use crate::args::{SchemaType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
-use dsc_lib::configure::config_result::ResourceTestResult;
 use dsc_lib::{
     configure::{
-        config_doc::Configuration,
+        config_doc::{
+            Configuration,
+            Resource,
+            RestartRequired,
+        },
         config_result::{
             ConfigurationGetResult,
             ConfigurationSetResult,
-            ConfigurationTestResult
-        }
+            ConfigurationTestResult,
+            ResourceTestResult,
+        },
     },
+    discovery::Discovery,
     dscerror::DscError,
     dscresources::{
         command_resource::TraceLevel,
-        dscresource::DscResource, invoke_result::{
+        dscresource::DscResource,
+        invoke_result::{
             GetResult,
             SetResult,
             TestResult,
             ResolveResult,
-        }, resource_manifest::ResourceManifest
+        },
+        resource_manifest::ResourceManifest
     },
-    util::parse_input_to_json,
-    util::get_setting,
+    extensions::{
+        discover::DiscoverResult,
+        dscextension::Capability,
+        extension_manifest::ExtensionManifest,
+    },
+    functions::FunctionDefinition,
+    util::{
+        get_setting,
+        parse_input_to_json,
+    },
 };
 use jsonschema::Validator;
 use path_absolutize::Absolutize;
 use rust_i18n::t;
-use schemars::{schema_for, schema::RootSchema};
+use schemars::{Schema, schema_for};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -139,43 +154,58 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 ///
 /// # Returns
 ///
-/// * `RootSchema` - The schema
+/// * `Schema` - The schema
 #[must_use]
-pub fn get_schema(dsc_type: DscType) -> RootSchema {
-    match dsc_type {
-        DscType::GetResult => {
+pub fn get_schema(schema: SchemaType) -> Schema {
+    match schema {
+        SchemaType::GetResult => {
             schema_for!(GetResult)
         },
-        DscType::SetResult => {
+        SchemaType::SetResult => {
             schema_for!(SetResult)
         },
-        DscType::TestResult => {
+        SchemaType::TestResult => {
             schema_for!(TestResult)
         },
-        DscType::ResolveResult => {
+        SchemaType::ResolveResult => {
             schema_for!(ResolveResult)
         }
-        DscType::DscResource => {
+        SchemaType::DscResource => {
             schema_for!(DscResource)
         },
-        DscType::ResourceManifest => {
+        SchemaType::Resource => {
+            schema_for!(Resource)
+        },
+        SchemaType::ResourceManifest => {
             schema_for!(ResourceManifest)
         },
-        DscType::Include => {
+        SchemaType::Include => {
             schema_for!(Include)
         },
-        DscType::Configuration => {
+        SchemaType::Configuration => {
             schema_for!(Configuration)
         },
-        DscType::ConfigurationGetResult => {
+        SchemaType::ConfigurationGetResult => {
             schema_for!(ConfigurationGetResult)
         },
-        DscType::ConfigurationSetResult => {
+        SchemaType::ConfigurationSetResult => {
             schema_for!(ConfigurationSetResult)
         },
-        DscType::ConfigurationTestResult => {
+        SchemaType::ConfigurationTestResult => {
             schema_for!(ConfigurationTestResult)
         },
+        SchemaType::ExtensionManifest => {
+            schema_for!(ExtensionManifest)
+        },
+        SchemaType::ExtensionDiscoverResult => {
+            schema_for!(DiscoverResult)
+        },
+        SchemaType::FunctionDefinition => {
+            schema_for!(FunctionDefinition)
+        },
+        SchemaType::RestartRequired => {
+            schema_for!(RestartRequired)
+        }
     }
 }
 
@@ -426,7 +456,7 @@ pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), D
     Ok(())
 }
 
-pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
+pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_stdin: bool) -> String {
     trace!("Input: {input:?}, File: {file:?}");
     let value = if let Some(input) = input {
         debug!("{}", t!("util.readingInput"));
@@ -442,6 +472,10 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
         // check if need to read from STDIN
         if path == "-" {
             info!("{}", t!("util.readingInputFromStdin"));
+            if parameters_from_stdin {
+                error!("{}", t!("util.stdinNotAllowedForBothParametersAndInput"));
+                exit(EXIT_INVALID_INPUT);
+            }
             let mut stdin = Vec::<u8>::new();
             match std::io::stdin().read_to_end(&mut stdin) {
                 Ok(_) => {
@@ -461,9 +495,22 @@ pub fn get_input(input: Option<&String>, file: Option<&String>) -> String {
                 }
             }
         } else {
+            // see if an extension should handle this file
+            let mut discovery = Discovery::new();
+            for extension in discovery.get_extensions(&Capability::Import) {
+                if let Ok(content) = extension.import(path) {
+                    return content;
+                }
+            }
             match std::fs::read_to_string(path) {
                 Ok(input) => {
-                    input
+                    // check if it contains UTF-8 BOM and remove it
+                    if input.as_bytes().starts_with(&[0xEF, 0xBB, 0xBF]) {
+                        info!("{}", t!("util.removingUtf8Bom"));
+                        input[3..].to_string()
+                    } else {
+                        input
+                    }
                 },
                 Err(err) => {
                     error!("{}: {err}", t!("util.failedToReadFile"));
@@ -535,13 +582,13 @@ pub fn set_dscconfigroot(config_path: &str) -> String
 
 
 /// Check if the test result is in the desired state.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `test_result` - The test result to check
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `bool` - True if the test result is in the desired state, false otherwise
 #[must_use]
 pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {

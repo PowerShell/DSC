@@ -24,6 +24,8 @@ param(
 )
 
 $env:RUSTC_LOG=$null
+$env:RUSTFLAGS='-Dwarnings'
+
 if ($Verbose) {
     $env:RUSTC_LOG='rustc_codegen_ssa::back::link=info'
 }
@@ -38,6 +40,9 @@ if ($GetPackageVersion) {
 }
 
 $filesForWindowsPackage = @(
+    'appx.dsc.extension.json',
+    'appx-discover.ps1',
+    'bicep.dsc.extension.json',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -51,20 +56,29 @@ $filesForWindowsPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
+    'winpsscript.dsc.resource.json',
     'reboot_pending.dsc.resource.json',
     'reboot_pending.resource.ps1',
     'registry.dsc.resource.json',
     'registry.exe',
     'RunCommandOnSet.dsc.resource.json',
     'RunCommandOnSet.exe',
+    'sshdconfig.exe',
+    'sshd-windows.dsc.resource.json',
+    'sshd_config.dsc.resource.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
+    'wmiAdapter.psd1',
+    'wmiAdapter.psm1',
     'windows_baseline.dsc.yaml',
     'windows_inventory.dsc.yaml'
 )
 
 $filesForLinuxPackage = @(
+    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -80,11 +94,16 @@ $filesForLinuxPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'sshdconfig',
+    'sshd_config.dsc.resource.json'
 )
 
 $filesForMacPackage = @(
+    'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
     'dsc.settings.json'
@@ -100,8 +119,12 @@ $filesForMacPackage = @(
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
     'psDscAdapter/',
+    'psscript.ps1',
+    'psscript.dsc.resource.json',
     'RunCommandOnSet.dsc.resource.json',
-    'runcommandonset'
+    'runcommandonset',
+    'sshdconfig',
+    'sshd_config.dsc.resource.json'
 )
 
 # the list of files other than the binaries which need to be executable
@@ -156,10 +179,35 @@ if ($null -ne $packageType) {
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
     }
+    else  {
+        Write-Verbose -Verbose "Rust found, updating..."
+        & $rustup update
+    }
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
     & $rustup default stable
+
+    ## Test if Node is installed
+    ## Skipping upgrade as users may have a specific version they want to use
+    if (!(Get-Command 'node' -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "Node.js not found, installing..."
+        if (!$IsWindows) {
+            if (Get-Command 'brew' -ErrorAction Ignore) {
+                brew install node@24
+            } else {
+                Write-Warning "Homebrew not found, please install Node.js manually"
+            }
+        }
+        else {
+            if (Get-Command 'winget' -ErrorAction Ignore) {
+                Write-Verbose -Verbose "Using winget to install Node.js"
+                winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
+            } else {
+                Write-Warning "winget not found, please install Node.js manually"
+            }
+        }
+    }
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
@@ -226,7 +274,7 @@ if (!$SkipBuild) {
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
 
-        if ($UseCFSAuth -or $null -ne $env:TF_BUILD) {
+        if ($UseCFSAuth) {
             if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
                 throw "Azure CLI not found"
             }
@@ -238,9 +286,9 @@ if (!$SkipBuild) {
                     Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
                 } else {
                     $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
                     $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
                     $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
                 }
             }
             else {
@@ -250,29 +298,32 @@ if (!$SkipBuild) {
     }
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry", "reboot_pending", "wmi-adapter", "configurations/windows")
+    $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
     # projects are in dependency order
     $projects = @(
         "tree-sitter-dscexpression",
+        "tree-sitter-ssh-server-config",
         "security_context_lib",
         "dsc_lib",
         "dsc",
         "dscecho",
+        "extensions/bicep",
         "osinfo",
         "powershell-adapter",
+        'resources/PSScript',
         "process",
         "runcommandonset",
+        "sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j",
-        "."
+        "y2j"
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression")
+    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
+    $skip_test_projects_on_windows = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
         $projects += $windows_projects
@@ -293,7 +344,8 @@ if (!$SkipBuild) {
         try {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
 
-            if ($project -eq 'tree-sitter-dscexpression') {
+            # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
+            if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
                 }
@@ -383,7 +435,8 @@ if (!$SkipBuild) {
                 Copy-Item "*.dsc.resource.json" $target -Force -ErrorAction Ignore
             }
             else { # don't copy WindowsPowerShell resource manifest
-                Copy-Item "*.dsc.resource.json" $target -Exclude 'windowspowershell.dsc.resource.json' -Force -ErrorAction Ignore
+                $exclude = @('windowspowershell.dsc.resource.json', 'winpsscript.dsc.resource.json')
+                Copy-Item "*.dsc.resource.json" $target -Exclude $exclude -Force -ErrorAction Ignore
             }
 
             # be sure that the files that should be executable are executable
@@ -516,7 +569,11 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -ErrorAction Stop
+    try {
+        Invoke-Pester -ErrorAction Stop
+    } catch {
+        throw "Pester had unexpected error: $($_.Exception.Message)"
+    }
 }
 
 function Find-MakeAppx() {

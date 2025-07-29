@@ -22,13 +22,25 @@ dsc config test [Options] --file <FILE>
 ### Configuration document from option string
 
 ```sh
-dsc config test [Options] --document <INPUT>
+dsc config test [Options] --input <INPUT>
 ```
 
 ### Configuration document from stdin
 
 ```sh
 cat <FILE> | dsc config test [Options] --file -
+```
+
+### Configuration document from file with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - test [Options] --file <FILE>
+```
+
+### Configuration document from option string with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - test [Options] --input <INPUT>
 ```
 
 ## Description

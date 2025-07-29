@@ -1,7 +1,7 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Microsoft.Windows/WMI",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "kind": "adapter",
     "description": "Resource adapter to WMI resources.",
     "tags": [
@@ -14,6 +14,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "./wmi.resource.ps1 List"
         ]
@@ -26,10 +28,26 @@
         "-NoLogo",
         "-NonInteractive",
         "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-Command",
         "$Input | ./wmi.resource.ps1 Get"
       ],
       "input": "stdin"
+    },
+    "set": {
+      "executable": "powershell",
+      "args": [
+        "-NoLogo",
+        "-NonInteractive",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$Input | ./wmi.resource.ps1 Set"
+      ],
+      "input": "stdin",
+      "implementsPretest": false
     },
     "validate": {
         "executable": "powershell",
@@ -37,6 +55,8 @@
           "-NoLogo",
           "-NonInteractive",
           "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
           "-Command",
           "$Input | ./wmi.resource.ps1 Validate"
           ]

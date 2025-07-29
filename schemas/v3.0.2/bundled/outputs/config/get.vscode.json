@@ -1,0 +1,352 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/outputs/config/get.json",
+  "title": "Result for `dsc config get` command",
+  "description": "Represents the data structure returned by the `dsc config get` command.",
+  "type": "object",
+  "required": [
+    "metadata",
+    "results",
+    "messages",
+    "hadErrors"
+  ],
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/configurationDocumentResult.json"
+    },
+    "results": {
+      "title": "Results",
+      "description": "The results of the `get` method for every DSC resource instance in the DSC configuration document with the instance's name and type.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/outputs/resource/get.full.json"
+      }
+    },
+    "messages": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/definitions/messages.json"
+    },
+    "hadErrors": {
+      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/definitions/hadErrors.json"
+    }
+  },
+  "$defs": {
+    "PowerShell": {
+      "DSC": {
+        "main": {
+          "schemas": {
+            "v3.0.2": {
+              "metadata": {
+                "configurationDocumentResult.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/configurationDocumentResult.json",
+                  "title": "Configuration result metadata",
+                  "description": "Defines metadata DSC returns for a configuration operation, as from the `dsc config get` or `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe the context of the operation.",
+                  "markdownDescription": "Defines metadata DSC returns for a configuration operation, as from the `dsc config get` or\n`dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe\nthe context of the operation.",
+                  "type": "object",
+                  "required": [
+                    "Microsoft.DSC"
+                  ],
+                  "properties": {
+                    "Microsoft.DSC": {
+                      "title": "DSC context metadata",
+                      "description": "The child properties for this metadata describe the context of a DSC operation, including the version of DSC used, when the operation started and ended, and the security context the operation was invoked under.",
+                      "type": "object",
+                      "required": [
+                        "version",
+                        "operation",
+                        "executionType",
+                        "startDatetime",
+                        "endDatetime",
+                        "duration",
+                        "securityContext"
+                      ],
+                      "properties": {
+                        "version": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/version.json"
+                        },
+                        "operation": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/operation.json"
+                        },
+                        "executionType": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/executionType.json"
+                        },
+                        "startDatetime": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/startDatetime.json"
+                        },
+                        "endDatetime": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/endDatetime.json"
+                        },
+                        "duration": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/duration.json"
+                        },
+                        "securityContext": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/securityContext.json"
+                        }
+                      }
+                    }
+                  }
+                },
+                "Microsoft.DSC": {
+                  "version.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/version.json",
+                    "title": "DSC Version",
+                    "description": "Defines the version of DSC that ran the command. This value is always the semantic version of the DSC command, like `3.0.0-preview.7`.",
+                    "markdownDescription": "Defines the version of DSC that ran the command. This value is always the semantic version of the\nDSC command, like `3.0.0-preview.7`.",
+                    "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/definitions/semver.json"
+                  },
+                  "operation.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/operation.json",
+                    "title": "Operation",
+                    "description": "Defines the operation that DSC applied to the configuration document: `Get`, `Set`, `Test`, or `Export`.",
+                    "markdownDescription": "Defines the operation that DSC applied to the configuration document: `Get`, `Set`, `Test`, or\n`Export`.",
+                    "type": "string",
+                    "enum": [
+                      "get",
+                      "set",
+                      "test",
+                      "export"
+                    ]
+                  },
+                  "executionType.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/executionType.json",
+                    "title": "Execution type",
+                    "description": "Defines whether DSC actually applied an operation to the configuration or was run in `WhatIf` mode. This property is always `Actual` for `Get`, `Test`, and `Export` operations. For `Set` operations, this value is `WhatIf` when DSC is invoked with the `--whatIf` argument.",
+                    "markdownDescription": "Defines whether DSC actually applied an operation to the configuration or was run in `WhatIf`\nmode. This property is always `Actual` for `Get`, `Test`, and `Export` operations. For `Set`\noperations, this value is `WhatIf` when DSC is invoked with the `--whatIf` argument.",
+                    "type": "string",
+                    "enum": [
+                      "actual",
+                      "whatIf"
+                    ]
+                  },
+                  "startDatetime.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/startDatetime.json",
+                    "title": "Start date and time",
+                    "description": "Defines the start date and time for the DSC operation as a timestamp following the format defined in RFC3339, section 5.6 as `date-time`, like `2024-04-14T08:49:51.395686600-07:00`.",
+                    "markdownDescription": "Defines the start date and time for the DSC operation as a timestamp following the format defined\nin [RFC3339, section 5.6 (see `date-time`)][01].\n\nFor example: `2024-04-14T08:49:51.395686600-07:00`\n\n[01]: https://datatracker.ietf.org/doc/html/rfc3339#section-5.6",
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "endDatetime.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/endDatetime.json",
+                    "title": "Start date and time",
+                    "description": "Defines the end date and time for the DSC operation as a timestamp following the format defined in RFC3339, section 5.6 as `date-time`, like `2024-04-14T08:49:51.395686600-07:00`.",
+                    "markdownDescription": "Defines the end date and time for the DSC operation as a timestamp following the format defined\nin [RFC3339, section 5.6 (see `date-time`)][01].\n\nFor example: `2024-04-14T08:49:51.395686600-07:00`\n\n[01]: https://datatracker.ietf.org/doc/html/rfc3339#section-5.6",
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "duration.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/duration.json",
+                    "title": "Duration",
+                    "description": "Defines the duration of a DSC operation against a configuration document or resource instance as a string following the format defined in ISO8601 ABNF for `duration`. For example, `PT0.611216S` represents a duration of about `0.61` seconds. For more information, see: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A",
+                    "markdownDescription": "Defines the duration of a DSC operation against a configuration document or resource instance as\na string following the format defined in [ISO8601 ABNF for `duration`][01]. For example,\n`PT0.611216S` represents a duration of about `0.61` seconds.\n\n[01]: https://datatracker.ietf.org/doc/html/rfc3339#appendix-A",
+                    "type": "string",
+                    "format": "duration"
+                  },
+                  "securityContext.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/securityContext.json",
+                    "title": "Security context",
+                    "description": "Defines the security context that DSC was run under. If the value for this metadata property is `elevated`, DSC was run as root (non-Windows) or an elevated session with Administrator privileges (on Windows). If the value is `restricted`, DSC was run as a normal user or account in a non-elevated session.",
+                    "markdownDescription": "Defines the security context that DSC was run under. If the value for this metadata property is\n`elevated`, DSC was run as `root` (non-Windows) or an elevated session with Administrator\nprivileges (on Windows). If the value is `restricted`, DSC was run as a normal user or account in\na non-elevated session.",
+                    "type": "string",
+                    "enum": [
+                      "current",
+                      "elevated",
+                      "restricted"
+                    ]
+                  }
+                },
+                "resourceInstanceResult.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/metadata/resourceInstanceResult.json",
+                  "title": "Resource instance result metadata",
+                  "description": "Defines metadata DSC returns for a DSC configuration operation against a resource instance in a configuration document, as from the `dsc config get` or `dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe the context of the operation.",
+                  "markdownDescription": "Defines metadata DSC returns for a configuration operation, as from the `dsc config get` or\n`dsc config set` commands. The metadata properties under the `Microsoft.DSC` property describe\nthe context of the operation.",
+                  "type": "object",
+                  "required": [
+                    "Microsoft.DSC"
+                  ],
+                  "properties": {
+                    "Microsoft.DSC": {
+                      "title": "DSC context metadata",
+                      "description": "The child properties for this metadata describe the context of the DSC operation against a resource instance, including the duration of the operation.",
+                      "type": "object",
+                      "required": [
+                        "duration"
+                      ],
+                      "properties": {
+                        "duration": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/Microsoft.DSC/duration.json"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "outputs": {
+                "resource": {
+                  "get.full.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/outputs/resource/get.full.json",
+                    "title": "dsc resource get result (full)",
+                    "description": "Describes the return data for the full result of the `get` operation for a\nresource instance. This data is returned:\n\n- For every instance in a configuration document when you use the\n  `dsc config get` command.\n\n- For nested instances of a group or adapter resource when you use the\n  `dsc resource get` command.",
+                    "type": "object",
+                    "required": [
+                      "metadata",
+                      "name",
+                      "result",
+                      "type"
+                    ],
+                    "properties": {
+                      "metadata": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/metadata/resourceInstanceResult.json"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/definitions/instanceName.json"
+                      },
+                      "type": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/definitions/resourceType.json"
+                      },
+                      "result": {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/outputs/resource/get.json"
+                      }
+                    }
+                  },
+                  "get.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/outputs/resource/get.json",
+                    "title": "dsc resource get result",
+                    "description": "Describes the return data for a DSC resource instance from the `dsc resource get` command. The return data is either a single object that describes the actual state of a non-nested instance or an array of objects that describe the actual state of the nested instances for a group or adapter resource.",
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/outputs/resource/get.simple.json"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/outputs/resource/get.full.json"
+                        }
+                      }
+                    ]
+                  },
+                  "get.simple.json": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/outputs/resource/get.simple.json",
+                    "title": "dsc resource get result (simple)",
+                    "description": "Describes the return data for a single DSC resource instance from the `dsc resource get` command. This data is returned for instances that aren't group resources, adapter resources, or nested inside a group or adapter resource.\nWhen you use `dsc resource get` for a group or adapter resource, the command returns an array of full test result objects that include the name and type for the nested instances.",
+                    "type": "object",
+                    "required": [
+                      "actualState"
+                    ],
+                    "properties": {
+                      "actualState": {
+                        "title": "Actual state",
+                        "description": "This property always represents the current state of the DSC resource instance as returned by its `get` method. DSC validates this return value against the DSC resource's schema.",
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              },
+              "definitions": {
+                "messages.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/definitions/messages.json",
+                  "title": "Messages",
+                  "description": "A list of structured messages emitted by the DSC resources during an operation.",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/definitions/message.json"
+                  }
+                },
+                "hadErrors.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/definitions/hadErrors.json",
+                  "title": "Had Errors",
+                  "description": "Indicates whether any of the DSC resources returned a non-zero exit code.",
+                  "type": "boolean"
+                },
+                "semver.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/definitions/semver.json",
+                  "type": "string",
+                  "title": "Semantic Version",
+                  "description": "A valid semantic version (semver) string.\n\nFor reference, see https://semver.org/\n",
+                  "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+                  "patternErrorMessage": "Invalid value, must be a semantic version like `<major>.<minor>.<patch>`, such as `1.2.3`.\n\nThe value may also include pre-release version information and build metadata.\n",
+                  "$comment": "A valid semantic version ([semver][01]) string.\n\nThis value uses the [suggested regular expression][02] to validate whether the string is valid\nsemver. This is the same pattern, made multi-line for easier readability:\n\n```regex\n^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\n(?:-(\n  (?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)\n  (?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))\n*))?\n(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$\n```\n\nThe first line matches the `major.minor.patch` components of the version. The middle lines match\nthe pre-release components. The last line matches the build metadata component.\n\n[01]: https://semver.org/\n[02]: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string\n"
+                },
+                "instanceName.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/definitions/instanceName.json",
+                  "title": "Instance name",
+                  "description": "The short, human-readable name for a DSC resource instance. Must be unique within a DSC Configuration document. Must be a non-empty string containing only letters, numbers, and spaces.",
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9 ]+$",
+                  "minLength": 1,
+                  "patternErrorMessage": "Invalid value for instance name. An instance name must be a non-empty string containing only\nletters, numbers, and spaces.\n",
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nDefines the short, human-readable name for a DSC resource instance. This property must be unique\nwithin a DSC configuration document. If any resource instances share the same name, DSC raises an\nerror.\n\nThe instance name must be a non-empty string containing only letters, numbers, and spaces.\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/config/resource?view=dsc-3.0&preserve-view=true#name\n"
+                },
+                "resourceType.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/definitions/resourceType.json",
+                  "title": "DSC resource fully qualified type name",
+                  "description": "The namespaced name of the DSC resource, using the syntax:\n\nowner[.group][.area]/name\n\nFor example:\n\n  - Microsoft.SqlServer/Database\n  - Microsoft.SqlServer.Database/User\n",
+                  "type": "string",
+                  "pattern": "^\\w+(\\.\\w+){0,2}\\/\\w+$",
+                  "markdownDescription": "***\n[_Online Documentation_][01]\n***\n\nThe namespaced name of the DSC resource, using the syntax:\n\n```yaml\nowner[.group][.area]/name\n```\n\nFor example:\n\n- `Microsoft.SqlServer/Database`\n- `Microsoft.SqlServer.Database/User`\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/schemas/definitions/resourcetype?view=dsc-3.0&preserve-view=true\n",
+                  "patternErrorMessage": "Invalid type name. Valid resource type names always define an owner and a name separated by a\nslash, like `Microsoft/OSInfo`. Type names may optionally include a group and area to namespace\nthe resource under the owner, like `Microsoft.Windows/Registry`.\n"
+                },
+                "message.json": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/definitions/message.json",
+                  "title": "Message",
+                  "description": "A message emitted by a DSC resource with associated metadata.",
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "type",
+                    "message",
+                    "level"
+                  ],
+                  "properties": {
+                    "name": {
+                      "title": "Message source instance name",
+                      "description": "The short, human-readable name for the instance that emitted the message, as defined in the DSC configuration document.",
+                      "type": "string"
+                    },
+                    "type": {
+                      "$ref": "#/$defs/PowerShell/DSC/main/schemas/v3.0.2/definitions/resourceType.json"
+                    },
+                    "message": {
+                      "title": "Message content",
+                      "description": "The actual content of the message as emitted by the DSC resource.",
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "level": {
+                      "title": "Message level",
+                      "description": "Indicates the severity of the message.",
+                      "type": "string",
+                      "enum": [
+                        "error",
+                        "warning",
+                        "information"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

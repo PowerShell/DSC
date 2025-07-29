@@ -5,10 +5,11 @@ pub mod command_discovery;
 pub mod discovery_trait;
 
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery};
-use crate::extensions::dscextension::DscExtension;
-use crate::{dscresources::dscresource::DscResource, dscerror::DscError, progress::ProgressFormat};
+use crate::extensions::dscextension::{Capability, DscExtension};
+use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
+use core::result::Result::Ok;
 use std::collections::BTreeMap;
-use command_discovery::ImportedManifest;
+use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
 #[derive(Clone)]
@@ -24,11 +25,12 @@ impl Discovery {
     ///
     /// This function will return an error if the underlying instance creation fails.
     ///
-    pub fn new() -> Result<Self, DscError> {
-        Ok(Self {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
             resources: BTreeMap::new(),
             extensions: BTreeMap::new(),
-        })
+        }
     }
 
     /// List operation for getting available resources based on the filters.
@@ -64,9 +66,23 @@ impl Discovery {
                     resources.push(resource.clone());
                 }
             };
+
+            if let Ok(extensions) = discovery_type.get_extensions() {
+                self.extensions.extend(extensions);
+            }
         }
 
         resources
+    }
+
+    pub fn get_extensions(&mut self, capability: &Capability) -> Vec<DscExtension> {
+        if self.extensions.is_empty() {
+            self.list_available(&DiscoveryKind::Extension, "*", "", ProgressFormat::None);
+        }
+        self.extensions.values()
+            .filter(|ext| ext.capabilities.contains(capability))
+            .cloned()
+            .collect()
     }
 
     #[must_use]
@@ -80,8 +96,9 @@ impl Discovery {
     ///
     /// * `required_resource_types` - The required resource types.
     pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) {
+        let command_discovery = CommandDiscovery::new(progress_format);
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
-            Box::new(command_discovery::CommandDiscovery::new(progress_format)),
+            Box::new(command_discovery),
         ];
         let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
@@ -98,40 +115,16 @@ impl Discovery {
                 self.resources.insert(resource.0.clone(), resource.1);
                 remaining_required_resource_types.retain(|x| *x != resource.0);
             };
+            if let Ok(extensions) = discovery_type.get_extensions() {
+                self.extensions.extend(extensions);
+            }
         }
-    }
-}
-
-fn convert_wildcard_to_regex(wildcard: &str) -> String {
-    let mut regex = wildcard.to_string().replace('.', "\\.").replace('?', ".").replace('*', ".*?");
-    regex.insert(0, '^');
-    regex.push('$');
-    regex
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_convert_wildcard_to_regex() {
-        let wildcard = "*";
-        let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^.*?$");
-
-        let wildcard = "File";
-        let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^File$");
-
-        let wildcard = "r*";
-        let regex = convert_wildcard_to_regex(wildcard);
-        assert_eq!(regex, "^r.*?$");
     }
 }
 
 impl Default for Discovery {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new()
     }
 }
 

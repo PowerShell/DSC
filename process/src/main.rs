@@ -12,13 +12,19 @@ fn get_task_list() -> Vec<ProcessInfo>
 {
     let mut result = Vec::new();
     let mut s = System::new();
-    s.refresh_processes(ProcessesToUpdate::All);
+    s.refresh_processes(ProcessesToUpdate::All, true);
+    let mut count = 0;
     for (pid, process) in s.processes() {
         let mut p = ProcessInfo::new();
         p.pid = pid.as_u32();
-        p.name = format!("{:?}", process.name());
+        p.name = process.name().to_string_lossy().to_string();
         p.cmdline = format!("{:?}", process.cmd());
         result.push(p);
+        count += 1;
+        if count > 3 {
+            // limit to 3 processes as this is just for testing
+            break;
+        }
     }
 
     result

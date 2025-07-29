@@ -1,0 +1,370 @@
+=====
+case-insensitive directive with quoted argument
+=====
+authorizedKEYSfile "path to authorized keys file"
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+comment
+=====
+# authorizedkeysfile "path to authorized keys file"
+
+---
+
+(server_config
+  (comment))
+=====
+case-insensitive match
+=====
+mAtCh user MyUser
+authorizedkeysfile "path to authorized keys file"
+
+---
+
+(server_config
+  (match
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))))
+=====
+boolean and match
+=====
+permitrootlogin no
+match user MyUser
+authorizedkeysfile "path to authorized keys file"
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (boolean)))
+  (match
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))))
+=====
+directive with = operator
+=====
+AllowTcpForwarding=local
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+directive with spaced = operator
+=====
+AllowTcpForwarding = local
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+directive with tab
+=====
+AllowTcpForwarding  local
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+directive with multiple arguments
+=====
+AllowGroups group1 "group two"
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)
+      (string))))
+=====
+directive with comma-separated arguments
+=====
+CASignatureAlgorithms ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp38
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)
+      (string)
+      (string))))
+=====
+directive with '+' character
+=====
+CASignatureAlgorithms +ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp38
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (operator)
+    (arguments
+      (string)
+      (string)
+      (string))))
+=====
+directive with '-' character
+=====
+CASignatureAlgorithms -ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp38
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (operator)
+    (arguments
+      (string)
+      (string)
+      (string))))
+=====
+directive with integer value
+=====
+ClientAliveInterval 50
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (number))))
+=====
+directive with unix path
+=====
+AuthorizedKeysFile ~/path/to/file
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+directive with '^' character value
+=====
+HostBasedAcceptedAlgorithms ^rsa-sha2-512-cert-v01@openssh.com,rsa-sha2-256-cert-v01@openssh.com,ssh-ed25519
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (operator)
+    (arguments
+      (string)
+      (string)
+      (string))))
+=====
+directive with '*' character value
+=====
+HostBasedAcceptedAlgorithms -rsa-*@openssh.com
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (operator)
+    (arguments
+      (string))))
+=====
+directive with ip address
+=====
+ListenAddress 1.2.3.4:22
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+multiple match blocks
+=====
+match user A
+gssapiauthentication yes
+match user B
+passwordauthentication yes
+
+---
+
+(server_config
+  (match
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean))))
+  (match
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))))
+=====
+directive with ':' operator
+=====
+MaxStartups 10:30:100
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+directive with '[]' operators
+=====
+PermitOpen [0001.a1b2.3333.4567]:2222
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+directive and string with spaces value
+=====
+Subsystem	sftp	sftp-server.exe -f LOCAL0 -l DEBUG3
+
+---
+
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string))))
+=====
+parse mini config
+=====
+syslogfacility LOCAL0
+loglevel  DEBUG3
+match user A
+gssapiauthentication yes
+authorizedkeysfile /path/to/file "C:\\users\\user\\file"
+match user B
+passwordauthentication yes
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)))
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)))
+  (match
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)
+        (string))))
+  (match
+    (keyword
+      (alphanumeric)
+      (arguments
+        (string)))
+    (keyword
+      (alphanumeric)
+      (arguments
+        (boolean)))))
+====
+parse directive with alpha-numeric characters
+====
+x11displayoffset 10
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (number))))
+====
+parse directive with numbers
+====
+port 1234
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (number))))
+====
+parse empty line
+====
+
+
+---
+(server_config
+  (empty_line))
+====
+parse repeatable keyword
+====
+allowgroups administrators "openssh users"
+
+---
+(server_config
+  (keyword
+    (alphanumeric)
+    (arguments
+      (string)
+      (string))))

@@ -5,10 +5,12 @@ use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
 use rust_i18n::{i18n, t};
-use std::{io, process::exit};
+use std::{io, io::Read, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
 use tracing::{error, info, warn, debug};
 use dsc_lib::progress::ProgressFormat;
+
+use crate::util::EXIT_INVALID_INPUT;
 
 #[cfg(debug_assertions)]
 use crossterm::event;
@@ -51,9 +53,32 @@ fn main() {
         },
         SubCommand::Config { subcommand, parameters, parameters_file, system_root, as_group, as_assert, as_include } => {
             if let Some(file_name) = parameters_file {
+                if file_name == "-" {
+                    info!("{}", t!("main.readingParametersFromStdin"));
+                    let mut stdin = Vec::<u8>::new();
+                    let parameters = match io::stdin().read_to_end(&mut stdin) {
+                        Ok(_) => {
+                            match String::from_utf8(stdin) {
+                                Ok(input) => {
+                                    input
+                                },
+                                Err(err) => {
+                                    error!("{}: {err}", t!("util.invalidUtf8"));
+                                    exit(EXIT_INVALID_INPUT);
+                                }
+                            }
+                        },
+                        Err(err) => {
+                            error!("{}: {err}", t!("util.failedToReadStdin"));
+                            exit(EXIT_INVALID_INPUT);
+                        }
+                    };
+                    subcommand::config(&subcommand, &Some(parameters), true, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
+                    return;
+                }
                 info!("{}: {file_name}", t!("main.readingParametersFile"));
                 match std::fs::read_to_string(&file_name) {
-                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format),
+                    Ok(parameters) => subcommand::config(&subcommand, &Some(parameters), false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format),
                     Err(err) => {
                         error!("{} '{file_name}': {err}", t!("main.failedReadingParametersFile"));
                         exit(util::EXIT_INVALID_INPUT);
@@ -61,11 +86,14 @@ fn main() {
                 }
             }
             else {
-                subcommand::config(&subcommand, &parameters, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
+                subcommand::config(&subcommand, &parameters, false, system_root.as_ref(), &as_group, &as_assert, &as_include, progress_format);
             }
         },
         SubCommand::Extension { subcommand } => {
             subcommand::extension(&subcommand, progress_format);
+        },
+        SubCommand::Function { subcommand } => {
+            subcommand::function(&subcommand);
         },
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, progress_format);

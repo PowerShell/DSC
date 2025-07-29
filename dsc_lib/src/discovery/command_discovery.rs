@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 use crate::discovery::discovery_trait::{ResourceDiscovery, DiscoveryKind};
-use crate::discovery::convert_wildcard_to_regex;
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -10,6 +9,7 @@ use crate::dscerror::DscError;
 use crate::extensions::dscextension::{self, DscExtension, Capability as ExtensionCapability};
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
+use crate::util::convert_wildcard_to_regex;
 use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use rust_i18n::t;
@@ -36,6 +36,7 @@ pub enum ImportedManifest {
     Extension(DscExtension),
 }
 
+#[derive(Clone)]
 pub struct CommandDiscovery {
     // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
     adapters: BTreeMap<String, Vec<DscResource>>,
@@ -77,6 +78,11 @@ impl CommandDiscovery {
             adapted_resources: BTreeMap::new(),
             progress_format,
         }
+    }
+
+    #[must_use]
+    pub fn get_extensions(&self) -> &BTreeMap<String, DscExtension> {
+        &self.extensions
     }
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
@@ -149,8 +155,16 @@ impl CommandDiscovery {
         let mut uniques: HashSet<PathBuf> = HashSet::new();
         paths.retain(|e|uniques.insert((*e).clone()));
 
-        // if exe home is not already in PATH env var then add it to env var and list of searched paths
-        if !using_custom_path {
+        if using_custom_path {
+            // when using custom path, intent is to isolate the search of manifests and executables to the custom path
+            // so we replace the PATH with the custom path
+            if let Ok(new_path) = env::join_paths(paths.clone()) {
+                env::set_var("PATH", new_path);
+            } else {
+                return Err(DscError::Operation(t!("discovery.commandDiscovery.failedJoinEnvPath").to_string()));
+            }
+        } else {
+            // if exe home is not already in PATH env var then add it to env var and list of searched paths
             if let Some(exe_home) = get_exe_path()?.parent() {
                 let exe_home_pb = exe_home.to_path_buf();
                 if paths.contains(&exe_home_pb) {
@@ -538,6 +552,13 @@ impl ResourceDiscovery for CommandDiscovery {
         }
         Ok(found_resources)
     }
+
+    fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError> {
+        if self.extensions.is_empty() {
+            self.discover(&DiscoveryKind::Extension, "*")?;
+        }
+        Ok(self.extensions.clone())
+    }
 }
 
 // TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
@@ -567,7 +588,7 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
                 },
             };
             // if the version already exists, we might skip it
-            if !skip_duplicate_version && resource_instance_version == resource_version {
+            if skip_duplicate_version && resource_instance_version == resource_version {
                 return;
             }
 
@@ -619,7 +640,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
     let manifest = match serde_yaml::from_str::<ExtensionManifest>(&contents) {
         Ok(manifest) => manifest,
         Err(err) => {
-            return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+            return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
         }
     };
     let extension = load_extension_manifest(path, &manifest)?;
@@ -628,7 +649,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
     }
 
     let kind = if let Some(kind) = manifest.kind.clone() {
@@ -693,7 +714,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(format!("Invalid manifest {path:?} version value: {err}")));
+        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
     }
 
     let mut capabilities: Vec<dscextension::Capability> = vec![];
@@ -701,12 +722,29 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         verify_executable(&manifest.r#type, "discover", &discover.executable);
         capabilities.push(dscextension::Capability::Discover);
     }
+    if let Some(secret) = &manifest.secret {
+        verify_executable(&manifest.r#type, "secret", &secret.executable);
+        capabilities.push(dscextension::Capability::Secret);
+    }
+    let import_extensions = if let Some(import) = &manifest.import {
+        verify_executable(&manifest.r#type, "import", &import.executable);
+        capabilities.push(dscextension::Capability::Import);
+        if import.file_extensions.is_empty() {
+            warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
+            None
+        } else {
+            Some(import.file_extensions.clone())
+        }
+    } else {
+        None
+    };
 
     let extension = DscExtension {
         type_name: manifest.r#type.clone(),
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
+        import_file_extensions: import_extensions,
         path: path.to_str().unwrap().to_string(),
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: serde_json::to_value(manifest)?,

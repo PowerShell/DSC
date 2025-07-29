@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/commandArgs.json",
+  "title": "Executable Command Arguments",
+  "description": "The list of arguments to pass to the command. The arguments can be any number of strings. If you want to pass the JSON object representing the property bag for the resource to an argument, you can define a single item in the array as a JSON object, indicating the name of the argument with the `jsonInputArg` string property and whether the argument is mandatory for the command with the `mandatory` boolean property.",
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "type": "string",
+        "title": "String argument",
+        "description": "Any item in the argument array can be a string representing a static argument to pass to the command."
+      },
+      {
+        "type": "object",
+        "title": "JSON input argument",
+        "description": "Defines an argument for the command that accepts the JSON input object as a string. DSC passes the JSON input to the named argument when available. You can define the `mandatory` property to indicate whether DSC should always pass the argument to the command, even when there's no JSON input for the command. In that case, DSC passes an empty string to the JSON input argument. You can only define one JSON input argument per arguments array.",
+        "required": [
+          "jsonInputArg"
+        ],
+        "unevaluatedProperties": false,
+        "properties": {
+          "jsonInputArg": {
+            "title": "JSON input argument name",
+            "description": "Defines the argument that accepts the JSON property bag for the resource as input.",
+            "type": "string"
+          },
+          "mandatory": {
+            "title": "Mandatory argument",
+            "description": "Defines whether the argument is mandatory. If this property is set to `true`, DSC passes an empty string when no JSON input is provided. The default value is `false`.",
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    ]
+  }
+}

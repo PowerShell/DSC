@@ -1,14 +1,16 @@
 [package]
 name = "dsc"
-version = "3.1.0-preview.5"
+version = "3.2.0-preview.3"
 edition = "2021"
 
 [profile.release]
-strip = true
-# optimize for size
-opt-level = 2
-# enable link time optimization to remove dead code
-lto = true
+codegen-units = 1           # reduces binary size by ~2%
+debug = "full"              # No one needs an undebuggable release binary
+lto = true                  # reduces binary size by ~14%
+opt-level = "s"             # reduces binary size by ~25%
+panic = "abort"             # reduces binary size by ~50% in combination with -Zbuild-std-features=panic_immediate_abort
+split-debuginfo = "packed"  # generates a seperate *.dwp/*.dSYM so the binary can get stripped
+strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
@@ -16,16 +18,17 @@ clap_complete = { version = "4.5" }
 crossterm = { version = "0.29" }
 ctrlc = { version = "3.4" }
 dsc_lib = { path = "../dsc_lib" }
-indicatif = { version = "0.17" }
+indicatif = { version = "0.18" }
 jsonschema = { version = "0.30", default-features = false }
 path-absolutize = { version = "3.1" }
+regex = "1.11"
 rust-i18n = { version = "3.1" }
-schemars = { version = "0.8" }
+schemars = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = { version = "0.9" }
 syntect = { version = "5.0", features = ["default-fancy"], default-features = false }
-sysinfo = { version = "0.35" }
+sysinfo = { version = "0.36" }
 thiserror = "2.0"
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "json"] }

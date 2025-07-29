@@ -40,13 +40,13 @@ variables:
   message: Hello, world!
 resources:
   - name: Echo message variable
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[variables('message')]"
 ```
 
 ```bash
-dsc config get --document variables.example.1.dsc.config.yaml
+dsc config get --file variables.example.1.dsc.config.yaml
 ```
 
 ```yaml
@@ -55,7 +55,7 @@ results:
     Microsoft.DSC:
       duration: PT0.0883345S
   name: Echo message variable
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: Hello, world!

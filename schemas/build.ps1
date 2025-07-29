@@ -4,7 +4,7 @@ using namespace System.Collections
 <#
     .SYNOPSIS
         Build the DSC schema files from the source YAML files.
-    
+
     .DESCRIPTION
         This build script composes the JSON Schema files from the source YAML files, creating new
         files in the specified output directory. It creates a schema registry to analyze the source
@@ -15,11 +15,11 @@ using namespace System.Collections
 param(
     [string]
     $OutputDirectory = "$PSScriptRoot",
-    
+
     [Parameter(ParameterSetName='ByPath')]
     [string[]]
     $ConfigFilePath,
-    
+
     [string[]]
     [ValidateSet('Json', 'JsonVSCode', 'Yaml', 'YamlVSCode')]
     $OutputFormat = @(
@@ -40,7 +40,7 @@ begin {
 
         [Specialized.OrderedDictionary]
         $Map
-        
+
         [Generic.List[Specialized.OrderedDictionary]]
         $List
 
@@ -102,7 +102,7 @@ begin {
                             # Need to ensure single-item returns get correctly handled as arays,
                             # not munged into scalars.
                             if (
-                                ($MungedKeyValue.Count -eq 1) -or 
+                                ($MungedKeyValue.Count -eq 1) -or
                                 ($MungedKeyValue -is [Specialized.OrderedDictionary])
                             ) {
                                 $MungedSchema.Add($_.Key, [object[]]$MungedKeyValue)
@@ -308,18 +308,18 @@ begin {
             [Parameter(ParameterSetName='FromPath', Mandatory)]
             [string]
             $Path,
-            
+
             [Parameter(ParameterSetName='FromSchema', Mandatory)]
             [Specialized.OrderedDictionary]
             $Schema,
-            
+
             [Parameter(ParameterSetName='FromPreset', Mandatory)]
             [ValidateSet('ConfigDocument', 'ResourceManifest')]
             [string]
             $Preset,
 
             [LocalJsonSchemaRegistry] $SchemaRegistry,
-            
+
             [switch]$ForVSCode,
             [switch]$WithoutComments,
             [switch]$WithoutExamples
@@ -379,9 +379,14 @@ begin {
                         continue
                     }
 
+                    if ($ID -match "$Reference`$") {
+                        Write-Verbose "$ID`n`tSkipping adding self ($Reference) to `$defs"
+                        continue
+                    }
+
                     $ReferenceSegments = $Reference.Trim('/') -split '/'
                     $Working = $MergedSchema.'$defs'
-                    
+
                     for ($i = 0; $i -lt $ReferenceSegments.Count; $i++) {
                         $Segment = $ReferenceSegments[$i]
 
@@ -390,7 +395,7 @@ begin {
                             $Working = $Working.$Segment
                             continue
                         }
-                        
+
                         # Add an empty dictionary for non-final segments
                         if ($i -ne ($ReferenceSegments.Count - 1)) {
                             $Working.Add($Segment, [Specialized.OrderedDictionary]::new())
@@ -443,6 +448,11 @@ begin {
 
                     if ($null -eq $ReferenceSchema) {
                         Write-Verbose "$ID`n`tSkipping apparent remote reference: '$Reference'"
+                        continue
+                    }
+
+                    if ($ID -match "$Reference`$") {
+                        Write-Verbose "$ID`n`tSkipping adding self ($Reference) to `$defs"
                         continue
                     }
 
@@ -524,7 +534,7 @@ begin {
 
             [string]
             $OutputDirectory = $PWD,
-            
+
             [string[]]
             [ValidateSet('Json', 'JsonVSCode', 'Yaml', 'YamlVSCode')]
             $OutputFormat = @(
@@ -567,7 +577,7 @@ begin {
                 Path           = $ConfigFilePath
                 SchemaRegistry = $SchemaRegistry
             }
-            
+
             if ($MergeForNormal) {
                 $Bundled = Merge-JsonSchema @SharedMergeParams
                 | Set-BundledSchemaID -BundledName $Name
@@ -665,6 +675,7 @@ process {
             "$OutputDirectory/config"
             "$OutputDirectory/metadata"
             "$OutputDirectory/definitions"
+            "$OutputDirectory/extension"
             "$OutputDirectory/outputs"
             "$OutputDirectory/resource"
         )
@@ -716,7 +727,7 @@ process {
         foreach ($VSCodeKeyword in $VSCodeKeywords) {
             $SchemaData = Remove-JsonSchemaKey -Schema $SchemaData -KeyName $VSCodeKeyword
         }
-        
+
         $SchemaData
         | ConvertTo-Json -Depth 99
         | ForEach-Object { $_ -replace '\r\n', "`n" }

@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function};
+use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
 use rust_i18n::t;
 use serde_json::Value;
 
@@ -11,6 +11,14 @@ use serde_json::Value;
 pub struct ResourceId {}
 
 impl Function for ResourceId {
+    fn description(&self) -> String {
+        t!("functions.resourceId.description").to_string()
+    }
+
+    fn category(&self) -> FunctionCategory {
+        FunctionCategory::Resource
+    }
+
     fn min_args(&self) -> usize {
         2
     }

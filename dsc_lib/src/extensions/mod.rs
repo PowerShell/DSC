@@ -4,3 +4,5 @@
 pub mod discover;
 pub mod dscextension;
 pub mod extension_manifest;
+pub mod secret;
+pub mod import;

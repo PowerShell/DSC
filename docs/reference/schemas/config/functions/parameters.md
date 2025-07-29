@@ -42,7 +42,7 @@ parameters:
     defaultValue: Hello, world!
 resources:
   - name: Echo message parameter
-    type: Test/Echo
+    type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('message')]"
 ```
@@ -59,7 +59,7 @@ cat $config_file | dsc config get
 ```yaml
 results:
 - name: Echo message parameter
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: Hello, world!
@@ -77,7 +77,7 @@ cat $config_file | dsc config --parameters $params get
 ```yaml
 results:
 - name: Echo message parameter
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: Hi, override.

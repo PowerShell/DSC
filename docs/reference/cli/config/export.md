@@ -31,6 +31,18 @@ dsc config export [Options] --input <INPUT>
 cat <FILE> | dsc config export [Options] --file -
 ```
 
+### Configuration document from file with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - export [Options] --file <FILE>
+```
+
+### Configuration document from option string with parameters from stdin
+
+```sh
+cat <PARAMETERS_FILE> | dsc config --parameters-file - export [Options] --input <INPUT>
+```
+
 ## Description
 
 The `export` subcommand generates a configuration document that includes every instance of a set of

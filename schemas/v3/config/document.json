@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json",
-  "title": "DSC Configuration Document schema",
-  "description": "Describes a valid DSC Configuration Document.",
+  "title": "DSC configuration document schema",
+  "description": "Describes a valid DSC configuration document.",
   "type": "object",
   "required": [
     "$schema",
@@ -11,23 +11,56 @@
   "properties": {
     "$schema": {
       "title": "Schema",
-      "description": "This property must be the canonical URL of the DSC Configuration Document schema that the document is implemented for.",
+      "description": "Indicates the URI that resolves to the version of this schema that the document adheres to. DSC uses this property when validating and processing the configuration document.",
       "type": "string",
       "format": "uri",
       "enum": [
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json",
         "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/config/document.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/10/bundled/config/document.vscode.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/config/document.json",
-        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/bundled/config/document.vscode.json"
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json",
+        "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3/config/document.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.1/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.vscode.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.json",
+        "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.vscode.json"
       ]
     },
     "parameters": {
-      "title": "DSC Configuration document parameters",
+      "title": "DSC configuration document parameters",
       "description": "Defines runtime options for the configuration. Users and integrating tools can override use the defined parameters to pass alternate values to the configuration.",
       "type": "object",
       "additionalProperties": {
@@ -40,10 +73,10 @@
       "type": "object"
     },
     "resources": {
-      "title": "DSC Configuration document resources",
-      "description": "Defines a list of DSC Resource instances for the configuration to manage.",
+      "title": "DSC configuration document resources",
+      "description": "Defines a list of DSC resource instances for the configuration to manage.",
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "items": {
         "$ref": "/PowerShell/DSC/main/schemas/v3/config/document.resource.json"
       }

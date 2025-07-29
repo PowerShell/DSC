@@ -27,7 +27,9 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        ($resources | ? { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
+        ($resources | Where-Object { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
+        ($resources | Where-Object -Property type -EQ 'TestClassResource/TestClassResource').capabilities | Should -BeIn @('get', 'set', 'test', 'export')
+        ($resources | Where-Object -Property type -EQ 'TestClassResource/NoExport').capabilities | Should -BeIn @('get', 'set', 'test')
     }
 
     It 'Get works on class-based resource' {
@@ -49,6 +51,22 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.EnumProp | Should -BeExactly 'Expected'
+    }
+
+    It 'Get should return the correct properties on class-based resource' {
+        $r = "{'Name':'TestClassResource1'}" | dsc resource get -r 'TestClassResource/TestClassResource' -f -
+        $LASTEXITCODE | Should -Be 0
+        $res = $r | ConvertFrom-Json -AsHashtable
+        $res.actualState.ContainsKey('Name') | Should -Be $True
+        $res.actualState.ContainsKey('Prop1') | Should -Be $True
+        $res.actualState.ContainsKey('HashTableProp') | Should -Be $True
+        $res.actualState.ContainsKey('EnumProp') | Should -Be $True
+        $res.actualState.ContainsKey('Credential') | Should -Be $True
+        $res.actualState.ContainsKey('Ensure') | Should -Be $True
+        $res.actualState.ContainsKey('BaseProperty') | Should -Be $True
+        $res.actualState.ContainsKey('HiddenDscProperty') | Should -Be $True
+        $res.actualState.ContainsKey('NonDscProperty') | Should -Be $False
+        $res.actualState.ContainsKey('HiddenNonDscProperty') | Should -Be $False
     }
 
     It 'Test works on class-based resource' {

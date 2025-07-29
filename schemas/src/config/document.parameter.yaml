@@ -2,14 +2,14 @@
 $schema:     https://json-schema.org/draft/2020-12/schema
 $id:         <HOST>/<PREFIX>/<VERSION>/config/document.parameter.yaml
 title:       Parameter
-description: Defines a runtime option for a DSC Configuration Document.
+description: Defines a runtime option for a DSC configuration document.
 
 markdownDescription: | # VS Code only
   ***
   [_Online Documentation_][01]
   ***
 
-  Defines a runtime option for a DSC Configuration Document.
+  Defines a runtime option for a DSC configuration document.
 
   [01]: <DOCS_BASE_URL>/reference/schemas/config/parameter?<DOCS_VERSION_PIN>
 

@@ -2,19 +2,10 @@
 # Licensed under the MIT License.
 
 Describe 'tests for runcommandonset set' {
-    BeforeAll {
-        $oldPath = $env:DSC_RESOURCE_PATH
-        $env:DSC_RESOURCE_PATH = Join-Path $PSScriptRoot ".."
-    }
-
     AfterEach {
         if (Test-Path $TestDrive/output.txt) {
             Remove-Item -Path $TestDrive/output.txt
         }
-    }
-
-    AfterAll {
-        $env:DSC_RESOURCE_PATH = $oldPath
     }
 
     It 'Input for executable and arguments can be sent to the resource' {
@@ -89,7 +80,7 @@ Describe 'tests for runcommandonset set' {
     It 'Input provided via configuration doc' {
         $command = "Write-Output Hello | Out-File " + $TestDrive + "/output.txt" + " -Append"
         $config_yaml = @"
-            `$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: set
               type: Microsoft.DSC.Transitional/RunCommandOnSet

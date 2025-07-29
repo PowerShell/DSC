@@ -36,19 +36,19 @@ example synopsis
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo array of integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[createArray(1, 3, 5)]"
 ```
 
 ```bash
-dsc config get --document createArray.example.1.dsc.config.yaml config get
+dsc config get --file createArray.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
 results:
 - name: Echo array of integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
@@ -69,19 +69,19 @@ sub-array contains only integers. The second sub-array contains only strings.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Create array of arrays
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[createArray(createArray(1,3,5), createArray('a', 'b', 'c'))]"
 ```
 
 ```bash
-dsc config get --document createArray.example.2.dsc.config.yaml
+dsc config get --file createArray.example.2.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Create array of arrays
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:
@@ -105,7 +105,7 @@ strings. It uses YAML's folded multiline string syntax to make the function more
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Echo flattened array
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: >-
       [concat(
@@ -115,13 +115,13 @@ resources:
 ```
 
 ```bash
-dsc config get --document createArray.example.3.dsc.config.yaml
+dsc config get --file createArray.example.3.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Echo flattened array
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output:

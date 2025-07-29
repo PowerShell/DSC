@@ -4,9 +4,9 @@ $id:     <HOST>/<PREFIX>/<VERSION>/resource/properties/purge.yaml
 
 title: Purge
 description: >-
-  Indicates that only the components described in the DSC Resource should exist. If other
-  components exist, the DSC Resource is out of the desired state. When enforcing desired state, the
-  DSC Resource removes unmanaged components.
+  Indicates that only the components described in the DSC resource should exist. If other
+  components exist, the DSC resource is out of the desired state. When enforcing desired state, the
+  DSC resource removes unmanaged components.
 
 type:
   - boolean
@@ -19,8 +19,8 @@ markdownDescription: |
   [_Online Documentation_][01]
   ***
 
-  Indicates that only the components described in the DSC Resource should exist. If other
-  components exist, the DSC Resource is out of the desired state. When enforcing desired state, the
-  DSC Resource removes unmanaged components.
+  Indicates that only the components described in the DSC resource should exist. If other
+  components exist, the DSC resource is out of the desired state. When enforcing desired state, the
+  DSC resource removes unmanaged components.
 
   [01]: <DOCS_BASE_URL>/reference/schemas/resource/properties/purge?<DOCS_VERSION_PIN>

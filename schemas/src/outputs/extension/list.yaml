@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/outputs/extension/list.yaml
+
+title: dsc extension list result
+description: >-
+  Describes the return data for a DSC extension instance from the
+  `dsc extension list` command.
+
+type: object
+properties:
+  type:
+    $ref: /<PREFIX>/<VERSION>/definitions/extensionType.yaml
+  version:
+    $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+  capabilities:
+    $ref: /<PREFIX>/<VERSION>/definitions/extensionCapabilities.yaml
+  description:
+    title: Extension description
+    description: >-
+      A short synopsis of the DSC extension's purpose.
+    # Should this include a maximum length or a pattern that forbids newlines?
+    type: string
+  path:
+    title: Path
+    description: >-
+      Indicates the path to the DSC extension on the file system.
+    type: string
+  directory:
+    title: Directory
+    description: >-
+      Indicates the path to the folder containing the DSC extension on the file
+      system.
+    type: string
+  author:
+    title: Author
+    description: >-
+      Indicates the name of the person or organization that developed and
+      maintains the DSC extension.
+    type:
+      - string
+      - 'null'
+  manifest:
+    $ref: /<PREFIX>/<VERSION>/extension/manifest.yaml

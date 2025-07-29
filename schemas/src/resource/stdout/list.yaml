@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+$schema: https://json-schema.org/draft/2020-12/schema
+$id:     <HOST>/<PREFIX>/<VERSION>/resource/stdout/list.yaml
+
+title: List resource operation stdout
+description: >-
+  Defines the representation of an adapted resource in DSC. DSC expects every JSON Line emitted to
+  stdout for the **List** operation to adhere to this schema.
+markdownDescription: | # VS Code only
+  ***
+  [_Online Documentation_][00]
+  ***
+
+  Defines the representation of an adapted resource in DSC. DSC expects every JSON Line emitted to
+  stdout for the **List** operation to adhere to this schema.
+
+  DSC includes the following adapter resources:
+
+  - `Microsoft.DSC/PowerShell` run PowerShell and enables you to use PowerShell DSC (PSDSC)
+    resources implemented as PowerShell classes in DSC.
+  - `Microsoft.Windows/WindowsPowerShell` runs Windows PowerShell and enables you to use any
+    available PSDSC resources in DSC. This adapter is only available when you install DSC on
+    Windows.
+  - `Microsoft.Windows/WMI` enables you to use WMI classes as resources in DSC. This adapter is
+    only available when you install DSC on Windows.
+
+  [00]: <DOCS_BASE_URL>/reference/schemas/resource/stdout/list?<DOCS_VERSION_PIN>
+
+type: object
+required:
+  - type
+  - kind
+  - version
+  - capabilities
+  - path
+  - directory
+  - implementedAs
+  - properties
+  - requireAdapter
+properties:
+  type:
+    $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml
+  kind:
+    $ref: /<PREFIX>/<VERSION>/definitions/resourceKind.yaml
+  version:
+    $ref: /<PREFIX>/<VERSION>/definitions/semver.yaml
+  capabilities:
+    $ref: /<PREFIX>/<VERSION>/definitions/resourceCapabilities.yaml
+  path:
+    title: Path
+    description: >-
+      Indicates the path to the adapted resource on the file system.
+    type: string
+  directory:
+    title: Directory
+    description: >-
+      Indicates the path to the folder containing the adapted resource on the file system.
+  implementedAs:
+    title: Custom implementation name
+    description: >-
+      Indicates that the adapted resource uses a custom implementation. The name can be used to
+      distinguish between different implementations for the adapted resources.
+    type: string
+  author:
+    title: Author
+    description: >-
+      Indicates the name of the person or organization that developed and maintains the adapted
+      Resource.
+    type:
+      - string
+      - 'null'
+    pattern: ^\w+( \w+)*
+  properties:
+    title: Properties
+    description: >-
+      Defines the adapted resource's property names.
+    type: array
+    items:
+      type: string
+      pattern: ^\w+$
+  requireAdapter:
+    title: Required adapter
+    description: >-
+      Defines the fully qualified type name of the adapter that the adapted resource depends on. An
+      adapter should always set this value to its own fully qualified resource type name.
+    $ref: /<PREFIX>/<VERSION>/definitions/resourceType.yaml

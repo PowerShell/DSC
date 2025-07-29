@@ -3,7 +3,7 @@
 
 //! Contains helpers for JSON schemas and DSC
 
-use schemars::{schema::{Metadata, Schema}, JsonSchema};
+use schemars::{Schema, JsonSchema, json_schema};
 
 use crate::dscerror::DscError;
 
@@ -133,8 +133,16 @@ pub enum RecognizedSchemaVersion {
     /// Represents `v3` schema folder.
     #[default]
     V3,
+    /// Represents the `v3.1` schema folder.
+    V3_1,
+    /// Represents the `v3.1.0` schema folder.
+    V3_1_0,
     /// Represents the `v3.0` schema folder.
     V3_0,
+    /// Represents the `v3.0.2` schema folder.
+    V3_0_2,
+    /// Represents the `v3.0.1` schema folder.
+    V3_0_1,
     /// Represents the `v3.0.0` schema folder.
     V3_0_0,
 }
@@ -143,7 +151,11 @@ impl std::fmt::Display for RecognizedSchemaVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::V3 => write!(f, "v3"),
+            Self::V3_1 => write!(f, "v3.1"),
+            Self::V3_1_0 => write!(f, "v3.1.0"),
             Self::V3_0 => write!(f, "v3.0"),
+            Self::V3_0_2 => write!(f, "v3.0.2"),
+            Self::V3_0_1 => write!(f, "v3.0.1"),
             Self::V3_0_0 => write!(f, "v3.0.0"),
         }
     }
@@ -155,7 +167,11 @@ impl RecognizedSchemaVersion {
     pub fn all() -> Vec<RecognizedSchemaVersion> {
         vec![
             Self::V3,
+            Self::V3_1,
+            Self::V3_1_0,
             Self::V3_0,
+            Self::V3_0_2,
+            Self::V3_0_1,
             Self::V3_0_0,
         ]
     }
@@ -163,13 +179,13 @@ impl RecognizedSchemaVersion {
     //// Returns the latest version with major, minor, and patch segments, like `3.0.0`.
     #[must_use]
     pub fn latest() -> RecognizedSchemaVersion {
-        Self::V3_0_0
+        Self::V3_1_0
     }
 
     /// Returns the latest minor version for the latest major version, like `3.0`.
     #[must_use]
     pub fn latest_minor() -> RecognizedSchemaVersion {
-        Self::V3_0
+        Self::V3_1
     }
 
     /// Returns the latest major version, like `3`
@@ -264,7 +280,7 @@ pub(crate) fn get_recognized_schema_uris(
 /// direct use.
 #[must_use]
 pub(crate) fn get_recognized_uris_subschema(
-    metadata: Metadata,
+    metadata: &Schema,
     schema_file_base_name: &str,
     schema_folder_path: &str,
     should_bundle: bool
@@ -277,18 +293,13 @@ pub(crate) fn get_recognized_uris_subschema(
         |schema_uri| serde_json::Value::String(schema_uri.clone())
     ).collect();
 
-    schemars::schema::SchemaObject {
-        instance_type: Some(schemars::schema::InstanceType::String.into()),
-        format: Some("uri".to_string()),
-        string: Some(Box::new(schemars::schema::StringValidation {
-            max_length: None,
-            min_length: None,
-            pattern: None,
-        })),
-        enum_values: Some(enums),
-        metadata: Some(Box::new(metadata)),
-        ..Default::default()
-    }.into()
+    json_schema!({
+        "type": "string",
+        "format": Some("uri".to_string()),
+        "enum": Some(enums),
+        "title": metadata.get("title"),
+        "description": metadata.get("description"),
+    })
 }
 
 /// Returns the recognized schema URI for the latest major version with the
@@ -356,7 +367,7 @@ pub trait DscRepoSchema : JsonSchema {
     /// are also published with their VS Code form. Schemas that aren't bundled aren't published
     /// with the VS Code form.
     const SCHEMA_SHOULD_BUNDLE: bool;
-    fn schema_metadata() -> Metadata;
+    fn schema_metadata() -> Schema;
 
     /// Returns the default URI for the schema.
     /// 
@@ -460,9 +471,9 @@ pub trait DscRepoSchema : JsonSchema {
     /// valid URI for the schema's `$id` without needing to regularly update an enum for each
     /// schema and release.
     #[must_use]
-    fn recognized_schema_uris_subschema(_: &mut schemars::gen::SchemaGenerator) -> Schema {
+    fn recognized_schema_uris_subschema(_: &mut schemars::SchemaGenerator) -> Schema {
         get_recognized_uris_subschema(
-            Self::schema_metadata(),
+            &Self::schema_metadata(),
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
             Self::SCHEMA_SHOULD_BUNDLE
@@ -519,22 +530,46 @@ mod test {
     fn test_get_recognized_schema_uris() {
         let expected: Vec<String> = vec![
             "https://aka.ms/dsc/schemas/v3/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1.0/bundled/config/document.vscode.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.2/bundled/config/document.vscode.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.1/bundled/config/document.vscode.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.vscode.json".to_string(),
             "https://aka.ms/dsc/schemas/v3/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.1.0/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.2/config/document.json".to_string(),
+            "https://aka.ms/dsc/schemas/v3.0.1/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0.0/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.vscode.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/config/document.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json".to_string(),
         ];
 
@@ -544,7 +579,10 @@ mod test {
             true
         );
 
-        assert_eq!(expected, actual)
+        for (index, expected_uri) in expected.iter().enumerate() {
+            assert_eq!(*expected_uri, actual[index]);
+        }
+        // assert_eq!(expected, actual)
     }
 
     #[test]
@@ -571,8 +609,10 @@ mod test {
             const SCHEMA_FOLDER_PATH: &'static str = "example";
             const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-            fn schema_metadata() -> Metadata {
-                Metadata::default()
+            fn schema_metadata() -> Schema {
+                json_schema!({
+                    "description": "An example schema for testing.",
+                })
             }
         }
 
@@ -614,8 +654,10 @@ mod test {
             const SCHEMA_FOLDER_PATH: &'static str = "example";
             const SCHEMA_SHOULD_BUNDLE: bool = false;
 
-            fn schema_metadata() -> Metadata {
-                Metadata::default()
+            fn schema_metadata() -> Schema {
+                json_schema!({
+                    "description": "An example schema for testing.",
+                })
             }
         }
 

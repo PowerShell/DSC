@@ -1,6 +1,6 @@
 ---
 description: JSON schema reference for resource kind
-ms.date:     02/28/2025
+ms.date:     07/03/2025
 ms.topic:    reference
 title:       DSC Resource kind schema reference
 ---
@@ -15,7 +15,7 @@ Identifies whether a resource is an adapter resource, a group resource, or a nor
 
 ```yaml
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
-SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/definitions/resourceKind.json
+SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceKind.json
 Type:          string
 ValidValues:  [resource, adapter, group, importer]
 ```
@@ -28,6 +28,7 @@ DSC supports three kinds of command-based DSC Resources:
 - `group` - Indicates that the manifest is for a [group resource](#group-resources).
 - `adapter` - Indicates that the manifest is for an [adapter resource](#adapter-resources).
 - `importer` - Indicates that the manifest is for an [importer resource](#importer-resources).
+- `exporter` - Indicates that the manifest is for an [exporter resource](#exporter-resources).
 
 When `kind` isn't defined in the resource manifest, DSC infers the value for the property. If the
 `adapter` property is defined in the resource manifest, DSC infers the value of `kind` as
@@ -73,6 +74,18 @@ manifest.
 For example, the `Microsoft.DSC/Import` importer resource resolves instances from an external
 configuration document, enabling you to compose configurations from multiple files.
 
+### Exporter resources
+
+Exporter resources implement the **Export** operation to return full resource instances for DSC to
+recursively export. This allows an exporter resource to help users quickly export the current
+configuration of a system without having to know every available resource.
+
+For example, an exporter resource might discover whether Apache is installed and then return an
+instance for every supported resource to fully export the configuration for Apache.
+
+An exporter resource must always define the [kind][03] and [export][06] properties in the resource
+manifest.
+
 ### Nested resource instances
 
 The resource instances declared in adapter and group resources or resolved by importer resources
@@ -103,7 +116,7 @@ Consider the following configuration snippet. It defines seven resource instance
 ```yaml
 resources:
 - name: TopLevelEcho
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties: { output: 'top level instance' }
 - name: TopLevelOSInfo
   type: Microsoft/OSInfo
@@ -114,7 +127,7 @@ resources:
     $schema:
     resources:
     - name: NestedEcho
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       properties: { output: 'nested instance' }
     - name: NestedGroup
       type: Microsoft.DSC/Group
@@ -122,7 +135,7 @@ resources:
         $schema:
         resources:
         - name: DeeplyNestedEcho
-          type: Test/Echo
+          type: Microsoft.DSC.Debug/Echo
           properties: { output: 'deeply nested instance' }
         - name: DeeplyNestedOSInfo
           type: Microsoft/OSInfo
@@ -144,7 +157,7 @@ The following matrix defines the relations of each instance in the configuration
 ### Referencing nested instances
 
 Nested resource instances have limitations for the [dependsOn][04] property and the
-[reference()][06] configuration function.
+[reference()][07] configuration function.
 
 1. You can only reference adjacent instances. You can't reference a nested instance from outside of
    the instance that declares or resolves it. You can't use a reference to a resource outside of the
@@ -161,8 +174,8 @@ The following examples show valid and invalid references and dependencies. The e
 This example configuration defines several valid references and dependencies. It also defines two
 instances of the `Microsoft.DSC/Group` resource, one nested inside the other.
 
-The top level instance of the `Test/Echo` resource references and depends on the top-level instance
-of the `Microsoft/OSInfo` resource. The top-level instances of the `Test/Echo` and
+The top level instance of the `Microsoft.DSC.Debug/Echo` resource references and depends on the top-level instance
+of the `Microsoft/OSInfo` resource. The top-level instances of the `Microsoft.DSC.Debug/Echo` and
 `Microsoft/OSInfo` resources both depend on the top-level instance of the `Microsoft.DSC/Group`
 resource.
 
@@ -172,7 +185,7 @@ resources:
 # The top level echo references and depends on the top-level OSInfo.
 # It also depends on the top-level Group.
 - name: Top level echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output:  >-
       [reference(
@@ -193,7 +206,7 @@ resources:
 ```
 
 The top-level instance of `Microsoft.DSC/Group` defines three nested resource instances:
-`Test/Echo`, `Microsoft/OSInfo`, and `Microsoft.DSC/Group`. As at the top-level, the `Test/Echo`
+`Microsoft.DSC.Debug/Echo`, `Microsoft/OSInfo`, and `Microsoft.DSC/Group`. As at the top-level, the `Microsoft.DSC.Debug/Echo`
 instance references and depends on the adjacent nested`Microsoft/OSInfo` instance and that instance
 depends on the adjacent nested `Microsoft.DSC/Group` instance.
 
@@ -206,7 +219,7 @@ depends on the adjacent nested `Microsoft.DSC/Group` instance.
     resources:
     # The nested echo references and depends on the adjacent nested OSInfo.
     - name: Nested echo
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       properties:
         output:  >-
           [reference(
@@ -224,7 +237,7 @@ depends on the adjacent nested `Microsoft.DSC/Group` instance.
 ```
 
 Finally, the nested instance of `Microsoft.DSC/Group` defines two nested instances. The deeply
-nested instance of `Test/Echo` references and depends on the deeply nested instance of
+nested instance of `Microsoft.DSC.Debug/Echo` references and depends on the deeply nested instance of
 `Microsoft/OSInfo`.
 
 ```yaml
@@ -233,7 +246,7 @@ nested instance of `Test/Echo` references and depends on the deeply nested insta
   properties:
     $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
-    # Snipped the Test/Echo and Microsoft/OSInfo instances for brevity
+    # Snipped the Microsoft.DSC.Debug/Echo and Microsoft/OSInfo instances for brevity
     - name: Nested Group
       type: Microsoft.DSC/Group
       properties:
@@ -242,7 +255,7 @@ nested instance of `Test/Echo` references and depends on the deeply nested insta
         # The deeply nested echo references and depends on the adjacent
         # deeply nested OSInfo.
         - name: Deeply nested echo
-          type: Test/Echo
+          type: Microsoft.DSC.Debug/Echo
           properties:
             output:  >-
               [reference(
@@ -269,7 +282,7 @@ $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 # The top level echo references and depends on the top-level OSInfo.
 - name: Top level echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output:  >-
       [reference(
@@ -290,7 +303,7 @@ resources:
     resources:
     # The nested echo references and depends on the adjacent nested OSInfo.
     - name: Nested echo
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       properties:
         output:  >-
           [reference(
@@ -310,7 +323,7 @@ resources:
         # The deeply nested echo references and depends on the adjacent
         # deeply nested OSInfo.
         - name: Deeply nested echo
-          type: Test/Echo
+          type: Microsoft.DSC.Debug/Echo
           properties:
             output:  >-
               [reference(
@@ -325,7 +338,7 @@ resources:
 
 #### Example 2 - Invalid reference and dependency on a nested instance
 
-This example configuration is invalid, because the top-level instance of the `Test/Echo` resource
+This example configuration is invalid, because the top-level instance of the `Microsoft.DSC.Debug/Echo` resource
 references and depends on the nested `Microsoft/OSInfo` instance. The nested instance is external
 to the top-level instance, not adjacent.
 
@@ -334,7 +347,7 @@ to the top-level instance, not adjacent.
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Top level echo
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output:  >-
       [reference(
@@ -354,7 +367,7 @@ resources:
 
 #### Example 3 - Invalid reference and dependency on an external instance
 
-This example configuration is invalid, because the nested instance of the `Test/Echo` resource
+This example configuration is invalid, because the nested instance of the `Microsoft.DSC.Debug/Echo` resource
 references and depends on the top-level `Microsoft/OSInfo` instance. The top-level instance is
 external to the nested instance, not adjacent.
 
@@ -371,7 +384,7 @@ resources:
     $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
     resources:
     - name: Nested echo
-      type: Test/Echo
+      type: Microsoft.DSC.Debug/Echo
       properties:
         output:  >-
           [reference(
@@ -386,4 +399,5 @@ resources:
 [03]: ../resource/manifest/root.md#kind
 [04]: ../config/resource.md#dependson
 [05]: ../resource/manifest/resolve.md
-[06]: ../config/functions/reference.md
+[06]: ../resource/manifest/export.md
+[07]: ../config/functions/reference.md

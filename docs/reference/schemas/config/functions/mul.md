@@ -33,19 +33,19 @@ This example document multiplies two integers to return a product for the output
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Multiplying integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
   output: "[mul(3, 5)]"
 ```
 
 ```bash
-dsc config get --document mul.example.1.dsc.config.yaml config get
+dsc config get --file mul.example.1.dsc.config.yaml config get
 ```
 
 ```yaml
 results:
 - name: Multiplying integers
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 15
@@ -62,19 +62,19 @@ This document shows how you can multiply the output of nested configuration func
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Multiplying nested function outputs
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
     output: "[mul(add(3, 2), div(12, 4))]"
 ```
 
 ```bash
-dsc config get --document mul.example.2.dsc.config.yaml
+dsc config get --file mul.example.2.dsc.config.yaml
 ```
 
 ```yaml
 results:
 - name: Multiplying nested function outputs
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: 15

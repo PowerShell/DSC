@@ -37,7 +37,7 @@ earlier instances. The instances don't need to be of the same type.
 
 ### Example 1 - Referencing a top-level instance
 
-In this example configuration, the `Test/Echo` resource instance echoes the `bitness` property of
+In this example configuration, the `Microsoft.DSC.Debug/Echo` resource instance echoes the `bitness` property of
 the `Microsoft/OSInfo` resource. It uses the `reference()` function to retrieve the actual state of
 the resource and uses the dot-path notation to access the **bitness** property of that resource.
 
@@ -49,15 +49,15 @@ resources:
   type: Microsoft/OSInfo
   properties: {}
 - name: Echo bitness
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[reference(resourceId('Microsoft/OSInfo', 'System')).actualState.bitness]"
+    output: "[reference(resourceId('Microsoft/OSInfo', 'System')).bitness]"
   dependsOn:
   - "[resourceId('Microsoft/OSInfo', 'System')]"
 ```
 
 ```bash
-dsc config get --document reference.example.1.dsc.config.yaml config get
+dsc config get --file reference.example.1.dsc.config.yaml
 ```
 
 ```yaml
@@ -72,7 +72,7 @@ results:
       edition: Windows 11 Enterprise
       bitness: '64'
 - name: Echo bitness
-  type: Test/Echo
+  type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
       output: '64'
