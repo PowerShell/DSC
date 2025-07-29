@@ -19,9 +19,6 @@ param(
     [switch]$UpdateLockFile,
     [switch]$Audit,
     [switch]$UseCFSAuth,
-    [switch]$SubmitWinGetManifest,
-    [switch]$PreRelease,
-    [string]$GitToken,
     [switch]$Clean,
     [switch]$Verbose
 )
@@ -781,48 +778,6 @@ if ($packageType -eq 'msixbundle') {
     }
 
     Write-Host -ForegroundColor Green "`ntar.gz file is created at $tarFile"
-}
-
-function Submit-DSCWinGetAssets {
-    param(
-        [string]$GitToken,
-        [switch] $IsPreRelease
-    )
-
-    $project = 'PowerShell/DSC'
-    $packageId = 'Microsoft.DSC'
-    $restParameters = @{
-        SslProtocol = 'Tls13'
-        Headers     = @{'X-GitHub-Api-Version' = '2022-11-28' }
-    }
-
-    $assets = ((Invoke-RestMethod -uri "https://api.github.com/repos/$Project/releases" -Headers $restParameters) | 
-        Where-Object -Property prerelease -EQ $IsPreRelease.IsPresent |
-         Select-Object -First 1 -Property assets).assets # ExpandProperty did not work
-    # Grab the download URLs for supported WinGet
-    
-    $downloadUrls = $assets.Where({ $_.content_type -in @('application/zip', 'application/octet-stream') }).browser_download_url
-    
-    if (-not (Get-Command wingetcreate -ErrorAction SilentlyContinue)) {
-        Invoke-RestMethod https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-    }
-
-    # TODO: Version number might change in the future
-    $url = $downloadUrls[0]
-    if ($url -match 'v(\d+\.\d+\.\d+)-preview\.(\d+)') {
-        $firstPart = $matches[1].Remove(3) # Remove the last digit
-        $lastPart = $matches[2] + ".0"
-        $version = "$firstPart.$lastPart"
-
-        $packageId = "$packageId.Preview"
-    }
-
-
-    & wingetcreate.exe update $packageId --version $version --urls $downloadUrls --submit --token $GitToken
-}
-
-if ($SubmitWinGetManifest) {
-    Submit-DSCWinGetAssets -GitToken $GitToken -IsPreRelease:$PreRelease
 }
 
 $env:RUST_BACKTRACE = 1
