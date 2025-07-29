@@ -97,46 +97,6 @@ messages: []
 hadErrors: false
 ```
 
-### Example 3 - Configuration fallbacks
-
-The following example shows a practical use case for providing configuration defaults.
-
-```yaml
-# coalesce.example.3.dsc.config.yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-parameters:
-  customValue:
-    type: string
-    defaultValue: 'customValue'
-  timeout:
-    type: int
-    defaultValue: 0
-resources:
-- name: Configuration with fallbacks
-  type: Microsoft.DSC.Debug/Echo
-  properties:
-    output:
-      configValue: "[coalesce(parameters('customValue'), 'default-config')]"
-      timeout:     "[coalesce(parameters('timeout'), 30)]"
-```
-
-```bash
-dsc config get --file coalesce.example.3.dsc.config.yaml
-```
-
-```yaml
-results:
-- name: Configuration with fallbacks
-  type: Microsoft.DSC.Debug/Echo
-  result:
-    actualState:
-      output:
-        configValue: customValue
-        timeout: 0
-messages: []
-hadErrors: false
-```
-
 ## Parameters
 
 ### value1, value2
