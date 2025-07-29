@@ -1,27 +1,31 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'WindowsPowerShell adapter resource tests - requires elevated permissions' {
+BeforeDiscovery {
+    if ($IsWindows) {
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
+        $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+}
+
+Describe 'WindowsPowerShell adapter resource tests - requires elevated permissions' -Skip:(!$IsWindows -or !$isElevated) {
 
   BeforeAll {
-    if ($isWindows) {
-      winrm quickconfig -quiet -force
-      $OldPSModulePath = $env:PSModulePath
-      $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
+    $null = winrm quickconfig -quiet -force 2>&1
+    $OldPSModulePath = $env:PSModulePath
+    $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
 
-      $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
-      if ($isWindows) {
-        $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
-      }
+    $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
+    if ($isWindows) {
+      $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
     }
   }
   AfterAll {
-    if ($isWindows) {
-      $env:PSModulePath = $OldPSModulePath
+    $env:PSModulePath = $OldPSModulePath
 
-      # Remove after all the tests are done
-      Remove-Module $script:winPSModule -Force -ErrorAction Ignore
-    }
+    # Remove after all the tests are done
+    Remove-Module $script:winPSModule -Force -ErrorAction Ignore
   }
 
   BeforeEach {
@@ -30,7 +34,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     }
   }
 
-  It 'Windows PowerShell adapter supports File resource' -Skip:(!$IsWindows) {
+  It 'Windows PowerShell adapter supports File resource' {
 
     $r = dsc resource list --adapter Microsoft.Windows/WindowsPowerShell
     $LASTEXITCODE | Should -Be 0
@@ -38,7 +42,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     ($resources | Where-Object { $_.Type -eq 'PSDesiredStateConfiguration/File' }).Count | Should -Be 1
   }
 
-  It 'Get works on Binary "File" resource' -Skip:(!$IsWindows) {
+  It 'Get works on Binary "File" resource' {
 
     $testFile = "$testdrive\test.txt"
     'test' | Set-Content -Path $testFile -Force
@@ -48,7 +52,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     $res.actualState.DestinationPath | Should -Be "$testFile"
   }
 
-  It 'Set works on Binary "File" resource' -Skip:(!$IsWindows) {
+  It 'Set works on Binary "File" resource' {
 
     $testFile = "$testdrive\test.txt"
     $null = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '", type: File, contents: HelloWorld, Ensure: present}' | dsc resource set -r 'PSDesiredStateConfiguration/File' -f -
@@ -56,7 +60,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     Get-Content -Raw -Path $testFile | Should -Be "HelloWorld"
   }
 
-  It 'Get works on traditional "Script" resource' -Skip:(!$IsWindows) {
+  It 'Get works on traditional "Script" resource' {
 
     $testFile = "$testdrive\test.txt"
     'test' | Set-Content -Path $testFile -Force
@@ -66,7 +70,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     $res.actualState.result | Should -Be 'test'
   }
 
-  It 'Get works on config with File resource for WinPS' -Skip:(!$IsWindows) {
+  It 'Get works on config with File resource for WinPS' {
 
     $testFile = "$testdrive\test.txt"
     'test' | Set-Content -Path $testFile -Force
@@ -76,7 +80,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
   }
 
-  It 'Verify that there are no cache rebuilds for several sequential executions' -Skip:(!$IsWindows) {
+  It 'Verify that there are no cache rebuilds for several sequential executions' {
     # remove cache file
     $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
     Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
@@ -92,7 +96,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     }
   }
 
-  It 'Verify if assertion is used that no module is cleared in the cache' -Skip:(!$IsWindows) {
+  It 'Verify if assertion is used that no module is cleared in the cache' {
     # create a test file in the test drive
     $testFile = "$testdrive\test.txt"
     New-Item -Path $testFile -ItemType File -Force | Out-Null
@@ -180,7 +184,7 @@ resources:
     $cache.ResourceCache.Type | Should -Contain 'PSDesiredStateConfiguration/File'
   }
 
-  It '_inDesiredState is returned correction: <Context>' -Skip:(!$IsWindows) -TestCases @(
+  It '_inDesiredState is returned correction: <Context>' -TestCases @(
     @{ Context = 'Both running'; FirstState = 'Running'; SecondState = 'Running' }
     @{ Context = 'Both stopped'; FirstState = 'Stopped'; SecondState = 'Stopped' }
     @{ Context = 'First Stopped'; FirstState = 'Stopped'; SecondState = 'Running' }
@@ -218,14 +222,12 @@ resources:
     $out.results[0].result.inDesiredState | Should -Be $inDesiredState
   }
 
-  It 'Config works with credential object' -Skip:(!$IsWindows) {
-    BeforeDiscovery {
-      $script:winPSModule = Resolve-Path -Path (Join-Path $PSScriptRoot '..' 'psDscAdapter' 'win_psDscAdapter.psm1') | Select-Object -ExpandProperty Path
-      Import-Module $winPSModule -Force -ErrorAction Stop
+  It 'Config works with credential object' {
+    $script:winPSModule = Resolve-Path -Path (Join-Path $PSScriptRoot '..' 'psDscAdapter' 'win_psDscAdapter.psm1') | Select-Object -ExpandProperty Path
+    Import-Module $winPSModule -Force -ErrorAction Stop
 
-      # Mock the command to work on GitHub runners because Microsoft.PowerShell.Security is not available
-      Mock -CommandName ConvertTo-SecureString -MockWith { [System.Security.SecureString]::new() }
-    }
+    # Mock the command to work on GitHub runners because Microsoft.PowerShell.Security is not available
+    Mock -CommandName ConvertTo-SecureString -MockWith { [System.Security.SecureString]::new() }
 
     $jsonInput = @{
       resources = @{
@@ -252,7 +254,7 @@ resources:
     Should -Invoke -CommandName ConvertTo-SecureString -Exactly -Times 1 -Scope It
   }
 
-  It 'Config does not work when credential properties are missing required fields' -Skip:(!$IsWindows) {
+  It 'Config does not work when credential properties are missing required fields' {
     $yaml = @"
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
@@ -271,7 +273,7 @@ resources:
     $out | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*"
   }
 
-  It 'List works with class-based PS DSC resources' -Skip:(!$IsWindows) {
+  It 'List works with class-based PS DSC resources' {
     BeforeDiscovery {
       $windowsPowerShellPath = Join-Path $testDrive 'WindowsPowerShell' 'Modules'
       $env:PSModulePath += [System.IO.Path]::PathSeparator + $windowsPowerShellPath
@@ -376,7 +378,7 @@ class PSClassResource {
     ($out | Where-Object -Property type -EQ 'PSClassResource/PSClassResource').capabilities | Should -BeIn @('get', 'test', 'set', 'export')
   }
 
-  It 'Get works with class-based PS DSC resources' -Skip:(!$IsWindows) {
+  It 'Get works with class-based PS DSC resources' {
 
     $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
@@ -385,14 +387,14 @@ class PSClassResource {
     $propCount.Count | Should -Be 1 # Only the DscProperty should be returned
   }
 
-  It 'Set works with class-based PS DSC resources' -Skip:(!$IsWindows) {
+  It 'Set works with class-based PS DSC resources' {
 
     $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
     $out.afterstate.InDesiredState | Should -Be $true
   }
 
-  It 'Export works with class-based PS DSC resources' -Skip:(!$IsWindows) {
+  It 'Export works with class-based PS DSC resources' {
 
     $out = dsc resource export -r PSClassResource/PSClassResource | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0
