@@ -83,7 +83,6 @@ the `Microsoft.DSC/PowerShell` adapter, which doesn't rely on PSDSC 1.1.
 ### Possible causes
 
 - A PSDSC resource module is installed only for the current user, not for all users.
-- Using PSDSC 1.1, which restricts resource visibility to the **AllUsers** scope.
 
 ### Recommendation
 
