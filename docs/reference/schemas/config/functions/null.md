@@ -123,17 +123,6 @@ messages: []
 hadErrors: false
 ```
 
-## Parameters
-
-The `null()` function accepts no parameters.
-
-```yaml
-Type:         none
-Required:     false
-MinimumCount: 0
-MaximumCount: 0
-```
-
 ## Output
 
 The `null()` function always returns a JSON null value.
@@ -144,11 +133,11 @@ Type: null
 
 ## Notes
 
-- The `null()` function is particularly useful when working with other functions that handle null values
-  , such as `coalesce()`
-- Unlike undefined or missing values, `null()` explicitly represents the JSON null value
-- When used in object creation with `createObject()`, null properties are included in the resulting object
-- The function takes no arguments and will return an error if any arguments are provided
+- The `null()` function is particularly useful when working with other functions that handle null
+  values, such as `coalesce()`.
+- Unlike undefined or missing values, `null()` explicitly represents the JSON null value.
+- When used in object creation with `createObject()`, null properties are included in the resulting object.
+- The function takes no arguments and will return an error if any arguments are provided.
 
 ## Related functions
 

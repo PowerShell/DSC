@@ -110,7 +110,7 @@ resources:
   properties:
     output:
       nestedObject:   "[createObject('config', createObject('timeout', 30, 'enabled', true))]"
-      objectWithArray: "[createObject('items', createArray('Yoda', 'Darth Vader', 'Palpetine'))]"
+      objectWithArray: "[createObject('items', createArray('foo', 'bar', 'baz'))]"
 ```
 
 ```bash
@@ -130,9 +130,9 @@ results:
             enabled: true
         objectWithArray:
           items:
-          - Yoda
-          - 'Darth Vader'
-          - Palpetine
+          - foo
+          - bar
+          - baz
 messages: []
 hadErrors: false
 ```
@@ -180,7 +180,7 @@ hadErrors: false
 
 ## Parameters
 
-### key, value pairs
+### Key-value pairs
 
 The `createObject()` function accepts zero or more key-value pairs. Each key must be a string,
 and values can be of any type.
@@ -228,11 +228,11 @@ The function will return an error in the following cases:
 
 ## Notes
 
-- Keys must be strings; numeric or other types are not allowed as keys
-- Values can be any valid JSON type including null, arrays, and nested objects
-- Duplicate keys will result in the last value overwriting previous values
-- Empty object creation (`createObject()` with no arguments) is supported
-- The function preserves the order of properties as specified
+- Keys must be strings. If you specify numeric or other types, DSC raises an error.
+- Values can be any valid JSON type including null, arrays, and nested objects.
+- Duplicate keys will result in the last value overwriting previous values.
+- Empty object creation (`createObject()` with no arguments) is supported.
+- The function preserves the order of properties as specified.
 
 ## Related functions
 
