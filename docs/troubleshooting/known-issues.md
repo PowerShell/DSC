@@ -15,7 +15,7 @@ This article lists known issues and troubleshooting guidance for Microsoft Desir
 The following table lists known issues with Microsoft DSC v3:
 
 |                                                         Issue                                                         | Description                                                                     | Status    | Reported on                                          |
-| :-------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------ | :-------- | :--------------------------------------------------- |
+|:---------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------|:----------|:-----------------------------------------------------|
 |               [Unable to parse content from `<manifestUrl>`](#unable-to-parse-content-from-manifesturl)               | When authoring a resource manifest in VSCode, you may encounter parsing errors. | Confirmed | [#917](https://github.com/PowerShell/DSC/issues/917) |
 | [Resource not found when using Windows PowerShell adapter](#resource-not-found-when-using-windows-powershell-adapter) | A resource cannot be found when running DSC configuration using WinPS adapter.  | Confirmed | [#765](https://github.com/PowerShell/DSC/issues/765) |
 
@@ -82,6 +82,63 @@ included with Windows and requires separate installation.
 
 Install all DSC resources, whether script-based and binary resources, for all users
 ("AllUsers" scope) to ensure they are available for the WinPS adapter.
+
+## Validation errors when executing dsc.exe in Windows PowerShell sessions
+
+When executing `dsc.exe` commands in Windows PowerShell sessions, you may encounter
+validation errors when using manually crafted JSON input or the `ConvertTo-Json` cmdlet
+with the `-Compress` parameter. This issue is related to how Windows PowerShell handles
+string encoding and JSON formatting.
+
+### Prerequisites
+
+- Windows PowerShell session
+- Direct execution of `dsc.exe` commands
+- Use of JSON input via `--input` parameter
+
+### Problem details
+
+When running `dsc.exe` commands in Windows PowerShell, validation errors may occur
+when passing JSON input to resources. This typically happens when using manually
+crafted JSON strings or when using PowerShell's `ConvertTo-Json` cmdlet with the `-Compress` parameter.
+
+Commands that work correctly:
+
+- `dsc resource get -r PSDesiredStateConfiguration/Service --input '{ "Name": "bits" }'`
+- `dsc resource get -r PSDesiredStateConfiguration/Service --input (@{Name = 'bits'} | ConvertTo-Json)`
+
+Common error symptoms include:
+
+- JSON parsing failures when using compressed JSON output
+- Property validation errors with valid JSON input
+- Cannot validate argument on parameter `<parameterName>`. The argument is null
+  or empty, or an element of the argument collection contains a null value.
+
+### Resolution steps
+
+1. **Avoid the `-Compress` parameter**: Use `ConvertTo-Json` without the `-Compress` parameter
+   for better compatibility.
+2. **Use properly formatted JSON**: Ensure JSON strings are properly quoted and formatted.
+3. **Test with uncompressed JSON**: When using PowerShell hashtables, convert to JSON
+   without compression:
+
+   ```powershell
+   $input = @{Name = 'bits'} | ConvertTo-Json
+   dsc resource get -r PSDesiredStateConfiguration/Service --input $input
+   ```
+
+### Root causes
+
+- Windows PowerShell's handling of compressed JSON may introduce formatting issues
+- String encoding differences between Windows PowerShell and `dsc.exe`
+- JSON parsing inconsistencies when using the `-Compress` parameter with `ConvertTo-Json`
+
+### Recommendation
+
+When executing `dsc.exe` commands in Windows PowerShell:
+
+- Use `ConvertTo-Json` without the `-Compress` parameter
+- Consider using PowerShell 7+ for improved JSON handling compatibility
 
 ## See also
 
