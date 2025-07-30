@@ -35,7 +35,7 @@ resource invalid 'Microsoft.DSC.Extension/Bicep:1.0' = {
         $content | Should -Match "BCP033"
     }
 
-    It 'Example bicep file with condition works' -Skip:(!$foundBicep -and !$IsWindows) {
+    It 'Example bicep file with condition works' -Skip:(!$foundBicep -or !$IsWindows) {
         $params = @{ parameters = @{ restartService = $true } } | ConvertTo-Json -Compress
         $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\file_with_condition.dsc.bicep"
         $out = dsc config --parameters $params get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
