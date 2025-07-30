@@ -1,6 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+BeforeDiscovery {
+    try {
+        $windowWidth = [Console]::WindowWidth
+    } catch {
+        $consoleUnavailable = $true
+    }
+}
+
 Describe 'Discover extension tests' {
     BeforeAll {
         $oldPath = $env:PATH
@@ -110,12 +118,12 @@ Describe 'Discover extension tests' {
         }
     }
 
-    It 'Table can be not truncated' {
+    It 'Table can be not truncated' -Skip:($consoleUnavailable) {
         $output = dsc extension list --output-format table-no-truncate
         $LASTEXITCODE | Should -Be 0
         $foundWideLine = $false
         foreach ($line in $output) {
-            if ($line.Length -gt [Console]::WindowWidth) {
+            if ($line.Length -gt $windowWidth) {
                 $foundWideLine = $true
             }
         }
