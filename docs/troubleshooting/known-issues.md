@@ -26,7 +26,7 @@ For the most up-to-date information on known issues, see the [DSC GitHub reposit
 
 <a id="t01"></a>
 
-When authoring a resource manifest in Visual Studio Code (VSCode), you may encounter a parsing error:
+When authoring a resource manifest in Visual Studio Code (VS Code), you may encounter a parsing error:
 
 > Unable to parse content from `<manifestUrl>`
 
