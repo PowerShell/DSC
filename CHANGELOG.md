@@ -75,6 +75,15 @@ changes since the last release, see the [diff on GitHub][unreleased].
     for the `v3.0.0.0-alpha.5` release. Leave the release links under the release section.
 -->
 
+## [v3.1.0][release-v3.1.0] - 2025-06-18
+
+This section includes a summary of changes for the `3.1.0` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.1.0].
+
+<!-- Release links -->
+[release-v3.1.0]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0 "Link to the DSC v3.1.0 release on GitHub"
+[compare-v3.1.0]: https://github.com/PowerShell/DSC/compare/v3.0.2...v3.1.0
+
 ### Added
 
 - Added support for defining adapted resource instances in configuration documents without
