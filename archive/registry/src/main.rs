@@ -7,8 +7,8 @@ use crossterm::event;
 use std::env;
 
 use args::Arguments;
-use atty::Stream;
 use clap::Parser;
+use crossterm::tty::{is_tty, Stream};
 use schemars::schema_for;
 use std::{io::{self, Read}, process::exit};
 
@@ -32,7 +32,7 @@ fn main() {
     check_debug();
 
     let args = Arguments::parse();
-    let input: Option<String> = if atty::is(Stream::Stdin) {
+    let input: Option<String> = if is_tty(Stream::Stdin) {
         None
     } else {
         let mut buffer: Vec<u8> = Vec::new();
