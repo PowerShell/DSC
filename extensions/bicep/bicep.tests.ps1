@@ -15,6 +15,7 @@ Describe 'Bicep extension tests' -Skip:(!$foundBicep) {
         $out = dsc -l trace config get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $out.results[0].result.actualState.output | Should -BeExactly 'Hello, world!'
+        $bicepFile = $bicepFile.ToString().Replace('\', '\\')
         (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$bicepFile' with extension 'Microsoft.DSC.Extension/Bicep'"
     }
 
@@ -28,9 +29,10 @@ resource invalid 'Microsoft.DSC.Extension/Bicep:1.0' = {
     properties: {
         output: 'This is invalid'
 "@
-        $out = dsc -l trace config get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
+        dsc -l trace config get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 4 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $content = (Get-Content -Path $TestDrive/error.log -Raw)
+        $bicepFile = $bicepFile.ToString().Replace('\', '\\')
         $content | Should -Match "Importing file '$bicepFile' with extension 'Microsoft.DSC.Extension/Bicep'"
         $content | Should -Match "BCP033"
     }
