@@ -1,0 +1,22 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.Extension/PowerShell",
+    "version": "0.1.0",
+    "description": "Enable passing PowerShell v2 configuration document file directly to DSC, but requires pwsh executable to be available.",
+    "import": {
+        "fileExtensions": ["ps1"],
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            {
+                "fileArg": "Get-Content"
+            },
+            "$args | ./convert-resource.ps1 $args"
+        ]
+    }
+}

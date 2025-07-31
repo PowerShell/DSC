@@ -1,0 +1,4 @@
+powershell.dsc.extension.json 
+convert-resource.ps1
+convertDscResource.psd1
+convertDscResource.psm1
