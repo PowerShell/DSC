@@ -266,7 +266,7 @@ impl Configurator {
     ///
     /// This function will return an error if the configuration is invalid or the underlying discovery fails.
     pub fn new(json: &str, progress_format: ProgressFormat) -> Result<Configurator, DscError> {
-        let discovery = Discovery::new()?;
+        let discovery = Discovery::new();
         let mut config = Configurator {
             json: json.to_owned(),
             config: Configuration::new(),

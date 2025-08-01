@@ -41,7 +41,7 @@ extension manifests.
 The article [DSC command resource manifest schema reference][06] describes the root JSON schema for
 resource manifests.
 
-The article [# DSC canonical properties reference][07] describes DSC canonical resource properties
+The article [DSC canonical properties reference][07] describes DSC canonical resource properties
 generally and links to the reference documentation for the available canonical properties.
 
 ## Output schemas

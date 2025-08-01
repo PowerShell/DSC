@@ -29,7 +29,7 @@ function returns an array of arrays.
 
 ### Example 1 - Create an array of integers
 
-example synopsis
+The following example shows how to create a simple array with integers.
 
 ```yaml
 # createArray.example.1.dsc.config.yaml

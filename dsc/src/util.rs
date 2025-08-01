@@ -3,39 +3,48 @@
 
 use crate::args::{SchemaType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
-use dsc_lib::configure::config_result::ResourceTestResult;
-use dsc_lib::extensions::discover::DiscoverResult;
-use dsc_lib::extensions::extension_manifest::ExtensionManifest;
 use dsc_lib::{
     configure::{
         config_doc::{
             Configuration,
+            Resource,
             RestartRequired,
         },
         config_result::{
             ConfigurationGetResult,
             ConfigurationSetResult,
-            ConfigurationTestResult
-        }
+            ConfigurationTestResult,
+            ResourceTestResult,
+        },
     },
+    discovery::Discovery,
     dscerror::DscError,
     dscresources::{
         command_resource::TraceLevel,
-        dscresource::DscResource, invoke_result::{
+        dscresource::DscResource,
+        invoke_result::{
             GetResult,
             SetResult,
             TestResult,
             ResolveResult,
-        }, resource_manifest::ResourceManifest
+        },
+        resource_manifest::ResourceManifest
+    },
+    extensions::{
+        discover::DiscoverResult,
+        dscextension::Capability,
+        extension_manifest::ExtensionManifest,
     },
     functions::FunctionDefinition,
-    util::parse_input_to_json,
-    util::get_setting,
+    util::{
+        get_setting,
+        parse_input_to_json,
+    },
 };
 use jsonschema::Validator;
 use path_absolutize::Absolutize;
 use rust_i18n::t;
-use schemars::{schema_for, schema::RootSchema};
+use schemars::{Schema, schema_for};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -145,9 +154,9 @@ pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -
 ///
 /// # Returns
 ///
-/// * `RootSchema` - The schema
+/// * `Schema` - The schema
 #[must_use]
-pub fn get_schema(schema: SchemaType) -> RootSchema {
+pub fn get_schema(schema: SchemaType) -> Schema {
     match schema {
         SchemaType::GetResult => {
             schema_for!(GetResult)
@@ -163,6 +172,9 @@ pub fn get_schema(schema: SchemaType) -> RootSchema {
         }
         SchemaType::DscResource => {
             schema_for!(DscResource)
+        },
+        SchemaType::Resource => {
+            schema_for!(Resource)
         },
         SchemaType::ResourceManifest => {
             schema_for!(ResourceManifest)
@@ -483,6 +495,13 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
                 }
             }
         } else {
+            // see if an extension should handle this file
+            let mut discovery = Discovery::new();
+            for extension in discovery.get_extensions(&Capability::Import) {
+                if let Ok(content) = extension.import(path) {
+                    return content;
+                }
+            }
             match std::fs::read_to_string(path) {
                 Ok(input) => {
                     // check if it contains UTF-8 BOM and remove it

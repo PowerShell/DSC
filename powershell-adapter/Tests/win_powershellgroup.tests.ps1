@@ -373,6 +373,7 @@ class PSClassResource {
     $LASTEXITCODE | Should -Be 0
     $out.type | Should -Contain 'PSClassResource/PSClassResource'
     $out | Where-Object -Property type -EQ PSClassResource/PSClassResource | Select-Object -ExpandProperty implementedAs | Should -Be 1 # Class-based
+    ($out | Where-Object -Property type -EQ 'PSClassResource/PSClassResource').capabilities | Should -BeIn @('get', 'test', 'set', 'export')
   }
 
   It 'Get works with class-based PS DSC resources' -Skip:(!$IsWindows) {

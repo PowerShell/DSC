@@ -3,7 +3,7 @@
 
 //! Contains helpers for JSON schemas and DSC
 
-use schemars::{schema::{Metadata, Schema}, JsonSchema};
+use schemars::{Schema, JsonSchema, json_schema};
 
 use crate::dscerror::DscError;
 
@@ -280,7 +280,7 @@ pub(crate) fn get_recognized_schema_uris(
 /// direct use.
 #[must_use]
 pub(crate) fn get_recognized_uris_subschema(
-    metadata: Metadata,
+    metadata: &Schema,
     schema_file_base_name: &str,
     schema_folder_path: &str,
     should_bundle: bool
@@ -293,18 +293,13 @@ pub(crate) fn get_recognized_uris_subschema(
         |schema_uri| serde_json::Value::String(schema_uri.clone())
     ).collect();
 
-    schemars::schema::SchemaObject {
-        instance_type: Some(schemars::schema::InstanceType::String.into()),
-        format: Some("uri".to_string()),
-        string: Some(Box::new(schemars::schema::StringValidation {
-            max_length: None,
-            min_length: None,
-            pattern: None,
-        })),
-        enum_values: Some(enums),
-        metadata: Some(Box::new(metadata)),
-        ..Default::default()
-    }.into()
+    json_schema!({
+        "type": "string",
+        "format": Some("uri".to_string()),
+        "enum": Some(enums),
+        "title": metadata.get("title"),
+        "description": metadata.get("description"),
+    })
 }
 
 /// Returns the recognized schema URI for the latest major version with the
@@ -372,7 +367,7 @@ pub trait DscRepoSchema : JsonSchema {
     /// are also published with their VS Code form. Schemas that aren't bundled aren't published
     /// with the VS Code form.
     const SCHEMA_SHOULD_BUNDLE: bool;
-    fn schema_metadata() -> Metadata;
+    fn schema_metadata() -> Schema;
 
     /// Returns the default URI for the schema.
     /// 
@@ -476,9 +471,9 @@ pub trait DscRepoSchema : JsonSchema {
     /// valid URI for the schema's `$id` without needing to regularly update an enum for each
     /// schema and release.
     #[must_use]
-    fn recognized_schema_uris_subschema(_: &mut schemars::gen::SchemaGenerator) -> Schema {
+    fn recognized_schema_uris_subschema(_: &mut schemars::SchemaGenerator) -> Schema {
         get_recognized_uris_subschema(
-            Self::schema_metadata(),
+            &Self::schema_metadata(),
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
             Self::SCHEMA_SHOULD_BUNDLE
@@ -614,8 +609,10 @@ mod test {
             const SCHEMA_FOLDER_PATH: &'static str = "example";
             const SCHEMA_SHOULD_BUNDLE: bool = true;
 
-            fn schema_metadata() -> Metadata {
-                Metadata::default()
+            fn schema_metadata() -> Schema {
+                json_schema!({
+                    "description": "An example schema for testing.",
+                })
             }
         }
 
@@ -657,8 +654,10 @@ mod test {
             const SCHEMA_FOLDER_PATH: &'static str = "example";
             const SCHEMA_SHOULD_BUNDLE: bool = false;
 
-            fn schema_metadata() -> Metadata {
-                Metadata::default()
+            fn schema_metadata() -> Schema {
+                json_schema!({
+                    "description": "An example schema for testing.",
+                })
             }
         }
 
