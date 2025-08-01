@@ -34,6 +34,14 @@ The `config` command manages a DSC Configuration document. You can use it to:
 
 For more information, see [dsc config][02].
 
+### function
+
+The `function` command manages DSC functions. You can use it to:
+
+- List the available functions with their descriptions and argument requirements.
+
+For more information, see [dsc function][03]
+
 ### resource
 
 The `resource` command manages a DSC Resource. You can use it to:
@@ -44,12 +52,12 @@ The `resource` command manages a DSC Resource. You can use it to:
 - Test whether a resource instance is in the desired state.
 - Set a resource instance to the desired state.
 
-For more information, see [dsc resource][03]
+For more information, see [dsc resource][04]
 
 ### schema
 
 The `schema` command returns the JSON schema for a specific DSC type. For more information, see
-[dsc schema][04].
+[dsc schema][05].
 
 ### help
 
@@ -212,5 +220,6 @@ file, ensure that the input is encoded as UTF-8.
 
 [01]: completer/index.md
 [02]: config/index.md
-[03]: resource/index.md
-[04]: schema/index.md
+[03]: function/index.md
+[04]: resource/index.md
+[05]: schema/index.md
