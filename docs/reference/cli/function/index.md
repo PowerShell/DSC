@@ -153,13 +153,18 @@ Type:      string
 Required:  false
 Position:  0
 ```
+
 ## Options
+
 ### -o, --output-format
+
 <a id="-o"></a>
 <a id="--output-format"></a>
+
 Defines the output format for the command. By default, when run in an interactive terminal, the
 command outputs a human-readable table. When run non-interactively or when the output is
 redirected, the command outputs JSON.
+
 ```yaml
 Type:         string
 Mandatory:    false
@@ -168,26 +173,35 @@ ValidValues:  [json, pretty-json, yaml, table-no-truncate]
 LongSyntax:   --output-format <FORMAT>
 ShortSyntax:  -o <FORMAT>
 ```
+
 ### -h, --help
+
 <a id="-h"></a>
 <a id="--help"></a>
+
 Displays the help for the current command. When you specify this option, the application ignores
 all other options and arguments.
+
 ```yaml
 Type        : boolean
 Mandatory   : false
 LongSyntax  : --help
 ShortSyntax : -h
 ```
+
 ## Output
+
 The command returns information about DSC functions. The output includes:
+
 - **name** - The name of the function
 - **category** - The category the function belongs to (Logical, Numeric, String, Array, System, Resource)
 - **description** - A description of what the function does
 - **minArgs** - The minimum number of arguments the function accepts
 - **maxArgs** - The maximum number of arguments the function accepts
 - **acceptedArgTypes** - The types of arguments the function accepts
+
 ### Argument Types
+
 The `acceptedArgTypes` field uses the following abbreviations in table format:
 
 - **a** - Array
