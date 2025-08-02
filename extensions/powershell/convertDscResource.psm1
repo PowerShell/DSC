@@ -1,3 +1,14 @@
+$Script:IsPowerShellCore = $PSVersionTable.PSEdition -eq 'Core'
+
+if ($Script:IsPowerShellCore)
+{
+    if ($IsWindows)
+    {
+        Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -UseWindowsPowerShell -WarningAction SilentlyContinue
+    }
+    Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh'
+}
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
@@ -178,11 +189,11 @@ function ConvertTo-DscObject
 
         if ($null -eq $loadedModuleTest -and -not [System.String]::IsNullOrEmpty($moduleToLoad.ModuleVersion))
         {
-            throw "Module {$($moduleToLoad.ModuleName)} version {$($moduleToLoad.ModuleVersion)} specified in the configuration isn't installed on the machine/agent. Install it by running: Install-Module -Name '$($moduleToLoad.ModuleName)' -RequiredVersion '$($moduleToLoad.ModuleVersion)'"
+            "Module {$($moduleToLoad.ModuleName)} version {$($moduleToLoad.ModuleVersion)} specified in the configuration isn't installed on the machine/agent. Install it by running: Install-Module -Name '$($moduleToLoad.ModuleName)' -RequiredVersion '$($moduleToLoad.ModuleVersion)'" | Write-DscTrace -Operation Error
+            exit 1
         }
         else
         {
-            "Retrieving module: '$($moduleToLoad.ModuleName)'" | Write-DscTrace -Operation Debug
             if ($Script:IsPowerShellCore)
             {
                 $currentResources = Get-PwshDscResource -Module $moduleToLoad.ModuleName
@@ -198,6 +209,12 @@ function ConvertTo-DscObject
             }
             $DSCResources += $currentResources
         }
+    }
+
+    if ($DSCResources.Count -eq 0)
+    {
+        "No DSC resources found in the imported modules." | Write-DscTrace -Operation Error
+        exit 1
     }
 
     # Drill down
@@ -310,7 +327,6 @@ function ConvertTo-DscObject
             if ($null -eq $valueType)
             {
                 $propertyFound = $false
-                "Defined property {$key} was not found in resource {$resourceType}" | Write-DscTrace -Operation Warn
             }
 
             if ($propertyFound)
