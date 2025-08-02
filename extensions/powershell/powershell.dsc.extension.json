@@ -13,10 +13,11 @@
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
+            "Get-Content",
             {
-                "fileArg": "Get-Content"
+                "fileArg": ""
             },
-            "$args | ./convert-resource.ps1 $args"
+            "| ./convert-resource.ps1"
         ]
     }
 }
