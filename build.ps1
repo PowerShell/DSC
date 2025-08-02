@@ -43,6 +43,9 @@ $filesForWindowsPackage = @(
     'appx.dsc.extension.json',
     'appx-discover.ps1',
     'bicep.dsc.extension.json',
+    'convert-resource.ps1',
+    'convertDscResource.psd1',
+    'convertDscResource.psm1',
     'dsc.exe',
     'dsc_default.settings.json',
     'dsc.settings.json',
@@ -55,6 +58,7 @@ $filesForWindowsPackage = @(
     'osinfo.exe',
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
+    'powershell.dsc.extension.json'
     'psDscAdapter/',
     'psscript.ps1',
     'psscript.dsc.resource.json',
@@ -79,9 +83,12 @@ $filesForWindowsPackage = @(
 
 $filesForLinuxPackage = @(
     'bicep.dsc.extension.json',
+    'convert-resource.ps1',
+    'convertDscResource.psd1',
+    'convertDscResource.psm1',
     'dsc',
     'dsc_default.settings.json',
-    'dsc.settings.json'
+    'dsc.settings.json',
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -93,6 +100,7 @@ $filesForLinuxPackage = @(
     'osinfo',
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
+    'powershell.dsc.extension.json'
     'psDscAdapter/',
     'psscript.ps1',
     'psscript.dsc.resource.json',
@@ -104,9 +112,12 @@ $filesForLinuxPackage = @(
 
 $filesForMacPackage = @(
     'bicep.dsc.extension.json',
+    'convert-resource.ps1',
+    'convertDscResource.psd1',
+    'convertDscResource.psm1',
     'dsc',
     'dsc_default.settings.json',
-    'dsc.settings.json'
+    'dsc.settings.json',
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -118,6 +129,7 @@ $filesForMacPackage = @(
     'osinfo',
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
+    'powershell.dsc.extension.json'
     'psDscAdapter/',
     'psscript.ps1',
     'psscript.dsc.resource.json',
@@ -311,6 +323,7 @@ if (!$SkipBuild) {
         "dsc",
         "dscecho",
         "extensions/bicep",
+        "extensions/powershell"
         "osinfo",
         "powershell-adapter",
         'resources/PSScript',

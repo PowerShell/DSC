@@ -1,0 +1,41 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+BeforeDiscovery {
+    if ($IsWindows) {
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
+        $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+}
+
+Describe 'PowerShell extension tests' {
+    It 'Example PowerShell file should work' -Skip:(!$isElevated) {
+        $psFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\variable.dsc.ps1"
+        $out = dsc -l trace config get -f $psFile 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
+        $out.results[0].result.actualState.Ensure | Should -Be 'Absent'
+        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$psFile' with extension 'Microsoft.DSC.Extension/PowerShell'"
+    }
+
+    It 'Invalid PowerShell configuration document file returns error' {
+        $psFile = "$TestDrive/invalid.ps1"
+        Set-Content -Path $psFile -Value @"
+configuration InvalidConfiguration {
+    Import-DscResource -ModuleName InvalidModule
+    Node localhost
+    {
+        Test Invalid {
+            Name = 'InvalidTest'
+            Ensure = 'Present'
+        }
+    }
+}
+"@
+        $out = dsc -l trace config get -f $psFile 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
+        $content = (Get-Content -Path $TestDrive/error.log -Raw)
+        $content | Should -BeLike "*Importing file '$psFile' with extension 'Microsoft.DSC.Extension/PowerShell'*"
+        $content | Should -Match "No DSC resources found in the imported modules."
+    }
+}
