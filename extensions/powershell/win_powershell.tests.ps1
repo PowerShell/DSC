@@ -10,7 +10,7 @@ BeforeDiscovery {
 }
 
 Describe 'PowerShell extension tests' {
-    It 'Example PowerShell file should work' -Skip:(!$isElevated) {
+    It 'Example PowerShell file should work' -Skip:(!$IsWindows -or !$isElevated) {
         $psFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\variable.dsc.ps1"
         $out = dsc -l trace config get -f $psFile 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
@@ -18,7 +18,7 @@ Describe 'PowerShell extension tests' {
         (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$psFile' with extension 'Microsoft.DSC.Extension/PowerShell'"
     }
 
-    It 'Invalid PowerShell configuration document file returns error' {
+    It 'Invalid PowerShell configuration document file returns error' -Skip:(!$IsWindows) {
         $psFile = "$TestDrive/invalid.ps1"
         Set-Content -Path $psFile -Value @"
 configuration InvalidConfiguration {
