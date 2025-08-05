@@ -13,7 +13,7 @@ Describe 'reboot_pending resource tests' -Skip:(!$IsWindows -or !$isElevated) {
     BeforeAll {
         $keyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update"
         $keyName = "RebootRequired"
-        if (-not (Get-ItemProperty "$keyPath\$keyName" -ErrorAction SilentlyContinue)) {
+        if (-not (Get-ItemProperty "$keyPath\$keyName" -ErrorAction Ignore)) {
             New-ItemProperty -Path $keyPath -Name $keyName -Value 1 -PropertyType DWord -Force | Out-Null
         }
     }

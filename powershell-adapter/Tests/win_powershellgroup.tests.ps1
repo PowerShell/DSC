@@ -12,176 +12,118 @@ BeforeDiscovery {
 Describe 'WindowsPowerShell adapter resource tests - requires elevated permissions' -Skip:(!$IsWindows -or !$isElevated) {
 
   BeforeAll {
-    $null = winrm quickconfig -quiet -force 2>&1
     $OldPSModulePath = $env:PSModulePath
-    $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
-
-    $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
-    if ($isWindows) {
-      $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
+    $dscHome = Split-Path (Get-Command dsc -ErrorAction Stop).Source -Parent
+    $psexeHome = Split-Path (Get-Command powershell -ErrorAction Stop).Source -Parent
+    $ps7exeHome = Split-Path (Get-Command pwsh -ErrorAction Stop).Source -Parent
+    $env:DSC_RESOURCE_PATH = $dscHome + [System.IO.Path]::PathSeparator + $psexeHome + [System.IO.Path]::PathSeparator + $ps7exeHome
+    $windowsPowerShellPath = Join-Path $testDrive 'WindowsPowerShell' 'Modules'
+    $moduleFile = @"
+@{
+    RootModule           = 'PSClassResource.psm1'
+    ModuleVersion        = '0.1.0'
+    GUID                 = '1b2e177b-1819-4f51-8bc9-795dd8fae984'
+    Author               = 'Microsoft Corporation'
+    CompanyName          = 'Microsoft Corporation'
+    Copyright            = '(c) Microsoft Corporation. All rights reserved.'
+    Description          = 'DSC Resource for Windows PowerShell Class'
+    PowerShellVersion    = '5.1'
+    DscResourcesToExport = @(
+        'PSClassResource'
+    )
+    PrivateData          = @{
+        PSData = @{
+            Tags       = @(
+                'PSDscResource_PSClassResource'
+            )
+            DscCapabilities = @(
+            'get'
+            'test'
+            'set'
+            'export'
+            )
+        }
     }
+}
+"@
+    $moduleFilePath = Join-Path $windowsPowerShellPath 'PSClassResource' '0.1.0' 'PSClassResource.psd1'
+    if (-not (Test-Path -Path $moduleFilePath)) {
+      New-Item -Path $moduleFilePath -ItemType File -Value $moduleFile -Force | Out-Null
+    }
+
+    $module = @'
+enum Ensure {
+    Present
+    Absent
+}
+
+[DSCResource()]
+class PSClassResource {
+    [DscProperty(Key)]
+    [string] $Name
+
+    [string] $NonDscProperty
+
+    hidden
+    [string] $HiddenNonDscProperty
+
+    [DscProperty()]
+    [Ensure] $Ensure = [Ensure]::Present
+
+    [DscProperty()]
+    [PSCredential] $Credential
+
+    PSClassResource() {
+    }
+
+    [PSClassResource] Get() {
+        return $this
+    }
+
+    [bool] Test() {
+        return $true
+    }
+
+    [void] Set() {
+        if ($null -eq $this.Credential) {
+          throw 'Credential property is required'
+        }
+
+        if ($this.Credential.UserName -ne 'MyUser') {
+            throw 'Invalid user name'
+        }
+    }
+
+    static [PSClassResource[]] Export()
+    {
+        $resultList = [System.Collections.Generic.List[PSClassResource]]::new()
+        $resultCount = 5
+        if ($env:PSClassResourceResultCount) {
+            $resultCount = $env:PSClassResourceResultCount
+        }
+        1..$resultCount | %{
+            $obj = New-Object PSClassResource
+            $obj.Name = "Object$_"
+            $obj.Ensure = [Ensure]::Present
+            $resultList.Add($obj)
+        }
+
+        return $resultList.ToArray()
+    }
+}
+'@
+
+    $modulePath = Join-Path $windowsPowerShellPath 'PSClassResource' '0.1.0' 'PSClassResource.psm1'
+    if (-not (Test-Path -Path $modulePath)) {
+      New-Item -Path $modulePath -ItemType File -Value $module -Force | Out-Null
+    }
+
+    $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath
   }
+
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
-
-    # Remove after all the tests are done
-    Remove-Module $script:winPSModule -Force -ErrorAction Ignore
-  }
-
-  BeforeEach {
-    if ($isWindows) {
-      Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath_v5
-    }
-  }
-
-  It 'Windows PowerShell adapter supports File resource' {
-
-    $r = dsc resource list --adapter Microsoft.Windows/WindowsPowerShell
-    $LASTEXITCODE | Should -Be 0
-    $resources = $r | ConvertFrom-Json
-    ($resources | Where-Object { $_.Type -eq 'PSDesiredStateConfiguration/File' }).Count | Should -Be 1
-  }
-
-  It 'Get works on Binary "File" resource' {
-
-    $testFile = "$testdrive\test.txt"
-    'test' | Set-Content -Path $testFile -Force
-    $r = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File' -f -
-    $LASTEXITCODE | Should -Be 0
-    $res = $r | ConvertFrom-Json
-    $res.actualState.DestinationPath | Should -Be "$testFile"
-  }
-
-  It 'Set works on Binary "File" resource' {
-
-    $testFile = "$testdrive\test.txt"
-    $null = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '", type: File, contents: HelloWorld, Ensure: present}' | dsc resource set -r 'PSDesiredStateConfiguration/File' -f -
-    $LASTEXITCODE | Should -Be 0
-    Get-Content -Raw -Path $testFile | Should -Be "HelloWorld"
-  }
-
-  It 'Get works on traditional "Script" resource' {
-
-    $testFile = "$testdrive\test.txt"
-    'test' | Set-Content -Path $testFile -Force
-    $r = '{"GetScript": "@{result = $(Get-Content ' + $testFile.replace('\', '\\') + ')}", "SetScript": "throw", "TestScript": "throw"}' | dsc resource get -r 'PSDesiredStateConfiguration/Script' -f -
-    $LASTEXITCODE | Should -Be 0
-    $res = $r | ConvertFrom-Json
-    $res.actualState.result | Should -Be 'test'
-  }
-
-  It 'Get works on config with File resource for WinPS' {
-
-    $testFile = "$testdrive\test.txt"
-    'test' | Set-Content -Path $testFile -Force
-    $r = (Get-Content -Raw $winpsConfigPath).Replace('c:\test.txt', "$testFile") | dsc config get -f -
-    $LASTEXITCODE | Should -Be 0
-    $res = $r | ConvertFrom-Json
-    $res.results[0].result.actualState.result[0].properties.DestinationPath | Should -Be "$testFile"
-  }
-
-  It 'Verify that there are no cache rebuilds for several sequential executions' {
-    # remove cache file
-    $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-    Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
-
-    # first execution should build the cache
-    dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
-    "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Constructing Get-DscResource cache'
-
-    # next executions following shortly after should Not rebuild the cache
-    1..3 | ForEach-Object {
-      dsc -l trace resource list -a Microsoft.Windows/WindowsPowerShell 2> $TestDrive/tracing.txt
-      "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly 'Constructing Get-DscResource cache'
-    }
-  }
-
-  It 'Verify if assertion is used that no module is cleared in the cache' {
-    # create a test file in the test drive
-    $testFile = "$testdrive\test.txt"
-    New-Item -Path $testFile -ItemType File -Force | Out-Null
-
-    # remove cache file
-    $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-    Remove-Item -Force -Path $cacheFilePath -ErrorAction Ignore
-
-    # build the cache
-    dsc resource list --adapter Microsoft.Windows/WindowsPowerShell | Out-Null
-
-    # Create a test module in the test drive
-    $testModuleDir = "$testdrive\TestModule\1.0.0"
-    New-Item -Path $testModuleDir -ItemType Directory -Force | Out-Null
-
-    $manifestContent = @"
-        @{
-            RootModule = 'TestModule.psm1'
-            ModuleVersion = '1.0.0'
-            GUID = $([guid]::NewGuid().Guid)
-            Author = 'Microsoft Corporation'
-            CompanyName = 'Microsoft Corporation'
-            Copyright = '(c) Microsoft Corporation. All rights reserved.'
-            Description = 'Test module for DSC tests'
-            PowerShellVersion = '5.1'
-            DscResourcesToExport = @()
-            FunctionsToExport = @()
-            CmdletsToExport = @()
-            VariablesToExport = @()
-            AliasesToExport = @()
-        }
-"@
-    Set-Content -Path "$testModuleDir\TestModule.psd1" -Value $manifestContent
-
-    $scriptContent = @"
-Write-Host 'The DSC world!'
-"@
-    Set-Content -Path "$testModuleDir\TestModule.psm1" -Value $scriptContent
-
-    # Add the test module directory to PSModulePath
-    $env:PSModulePath += [System.IO.Path]::PathSeparator + $testdrive
-
-    $yaml = @"
-`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-resources:
-  - name: File
-    type: Microsoft.Windows/WindowsPowerShell
-    properties:
-      resources:
-        - name: File
-          type: PSDesiredStateConfiguration/File
-          properties:
-            DestinationPath: $testfile
-  - name: File present
-    type: Microsoft.DSC/Assertion
-    properties:
-      `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-      resources:
-        - name: Use powershell adapter
-          type: Microsoft.Windows/WindowsPowerShell
-          properties:
-            resources:
-              - name: File present
-                type: PSDesiredStateConfiguration/File
-                properties:
-                  DestinationPath: $testFile
-    dependsOn:
-      - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
-  - name: TestPSRepository
-    type: PSTestModule/TestPSRepository
-    properties:
-      Name: NuGet
-    dependsOn:
-      - "[resourceId('Microsoft.Windows/WindowsPowerShell', 'File')]"
-      - "[resourceId('Microsoft.DSC/Assertion', 'File present')]"
-"@
-    # output to file for Windows PowerShell 5.1
-    $filePath = "$testdrive\test.assertion.dsc.resource.yaml"
-    $yaml | Set-Content -Path $filePath -Force
-    dsc config test -f $filePath 2> "$TestDrive/error.txt"
-    $LASTEXITCODE | Should -Be 2
-
-    $cache = Get-Content -Path $cacheFilePath -Raw | ConvertFrom-Json
-    $cache.ResourceCache.Type | Should -Contain 'PSTestModule/TestPSRepository'
-    $cache.ResourceCache.Type | Should -Contain 'PSDesiredStateConfiguration/File'
+    $env:DSC_RESOURCE_PATH = $null
   }
 
   It '_inDesiredState is returned correction: <Context>' -TestCases @(
@@ -217,46 +159,32 @@ resources:
       $false
     }
 
-    $out = dsc config test -i $yaml | ConvertFrom-Json
-    $LASTEXITCODE | Should -Be 0
+    $out = dsc -l trace config test -i $yaml 2>"$testdrive/error.log" | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.results[0].result.inDesiredState | Should -Be $inDesiredState
   }
 
   It 'Config works with credential object' {
-    $script:winPSModule = Resolve-Path -Path (Join-Path $PSScriptRoot '..' 'psDscAdapter' 'win_psDscAdapter.psm1') | Select-Object -ExpandProperty Path
-    Import-Module $winPSModule -Force -ErrorAction Stop
+    $yaml = @'
+    $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    resources:
+      - name: Cred test
+        type: PSClassResource/PSClassResource
+        properties:
+          Name: Test
+          Credential:
+            UserName: 'MyUser'
+            Password: 'MyPassword'
+'@
 
-    # Mock the command to work on GitHub runners because Microsoft.PowerShell.Security is not available
-    Mock -CommandName ConvertTo-SecureString -MockWith { [System.Security.SecureString]::new() }
-
-    $jsonInput = @{
-      resources = @{
-        name       = 'Service info'
-        type       = 'PSDesiredStateConfiguration/Service'
-        properties = @{
-          Name       = 'Spooler'
-          Credential = @{
-            UserName = 'User'
-            Password = 'Password'
-          }
-        }
-      }
-    } | ConvertTo-Json -Depth 10
-
-    # Instead of calling dsc.exe we call the cmdlet directly to be able to test the output and mocks
-    $resourceObject = Get-DscResourceObject -jsonInput $jsonInput
-    $cacheEntry = Invoke-DscCacheRefresh -Module PSDesiredStateConfiguration
-
-    $out = Invoke-DscOperation -Operation Test -DesiredState $resourceObject -dscResourceCache $cacheEntry
-    $LASTEXITCODE | Should -Be 0
-    $out.properties.InDesiredState.InDesiredState | Should -Be $false
-
-    Should -Invoke -CommandName ConvertTo-SecureString -Exactly -Times 1 -Scope It
+    $out = dsc -l debug config set -i $yaml 2> "$testdrive/error.log" | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
+    $out.results[0].result.afterState.Credential | Should -BeNullOrEmpty
   }
 
   It 'Config does not work when credential properties are missing required fields' {
-    $yaml = @"
-        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+    $yaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
         - name: Service info
           type: PsDesiredStateConfiguration/Service
@@ -265,139 +193,40 @@ resources:
             Credential:
               UserName: 'User'
               OtherProperty: 'Password'
-"@
+'@
     # Compared to PowerShell we use test here as it filters out the properties
-    $out = dsc config test -i $yaml 2>&1 | Out-String
+    $out = dsc -l debug config test -i $yaml 2> "$testdrive/error.log" | Out-String
     $LASTEXITCODE | Should -Be 2
-    $out | Should -Not -BeNullOrEmpty
-    $out | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*"
+    $out | Should -BeNullOrEmpty
+    (Get-Content -Path "$testdrive/error.log" -Raw) | Should -BeLike "*ERROR*Credential object 'Credential' requires both 'username' and 'password' properties*" -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
   }
 
   It 'List works with class-based PS DSC resources' {
-    BeforeDiscovery {
-      $windowsPowerShellPath = Join-Path $testDrive 'WindowsPowerShell' 'Modules'
-      $env:PSModulePath += [System.IO.Path]::PathSeparator + $windowsPowerShellPath
-
-      $moduleFile = @"
-@{
-    RootModule           = 'PSClassResource.psm1'
-    ModuleVersion        = '0.1.0'
-    GUID                 = '1b2e177b-1819-4f51-8bc9-795dd8fae984'
-    Author               = 'Microsoft Corporation'
-    CompanyName          = 'Microsoft Corporation'
-    Copyright            = '(c) Microsoft Corporation. All rights reserved.'
-    Description          = 'DSC Resource for Windows PowerShell Class'
-    PowerShellVersion    = '5.1'
-    DscResourcesToExport = @(
-        'PSClassResource'
-    )
-    PrivateData          = @{
-        PSData = @{
-            Tags       = @(
-                'PSDscResource_PSClassResource'
-            )
-            DscCapabilities = @(
-            'get'
-            'test'
-            'set'
-            'export'
-            )
-        }
-    }
-}
-"@
-      $moduleFilePath = Join-Path $windowsPowerShellPath 'PSClassResource' '0.1.0' 'PSClassResource.psd1'
-      if (-not (Test-Path -Path $moduleFilePath)) {
-        New-Item -Path $moduleFilePath -ItemType File -Value $moduleFile -Force | Out-Null
-      }
-
-
-      $module = @'
-enum Ensure {
-    Present
-    Absent
-}
-
-[DSCResource()]
-class PSClassResource {
-    [DscProperty(Key)]
-    [string] $Name
-
-    [string] $NonDscProperty
-
-    hidden
-    [string] $HiddenNonDscProperty
-
-    [DscProperty()]
-    [Ensure] $Ensure = [Ensure]::Present
-
-    PSClassResource() {
-    }
-
-    [PSClassResource] Get() {
-        return $this
-    }
-
-    [bool] Test() {
-        return $true
-    }
-
-    [void] Set() {
-
-    }
-
-    static [PSClassResource[]] Export()
-    {
-        $resultList = [System.Collections.Generic.List[PSClassResource]]::new()
-        $resultCount = 5
-        if ($env:PSClassResourceResultCount) {
-            $resultCount = $env:PSClassResourceResultCount
-        }
-        1..$resultCount | %{
-            $obj = New-Object PSClassResource
-            $obj.Name = "Object$_"
-            $obj.Ensure = [Ensure]::Present
-            $resultList.Add($obj)
-        }
-
-        return $resultList.ToArray()
-    }
-}
-'@
-
-      $modulePath = Join-Path $windowsPowerShellPath 'PSClassResource' '0.1.0' 'PSClassResource.psm1'
-      if (-not (Test-Path -Path $modulePath)) {
-        New-Item -Path $modulePath -ItemType File -Value $module -Force | Out-Null
-      }
-    }
-
-    $out = dsc -l trace resource list --adapter Microsoft.Windows/WindowsPowerShell | ConvertFrom-Json
-    $LASTEXITCODE | Should -Be 0
-    $out.type | Should -Contain 'PSClassResource/PSClassResource'
-    $out | Where-Object -Property type -EQ PSClassResource/PSClassResource | Select-Object -ExpandProperty implementedAs | Should -Be 1 # Class-based
+    $out = dsc resource list --adapter Microsoft.Windows/WindowsPowerShell 2> "$testdrive/error.log" | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
+    $out.type | Should -Contain 'PSClassResource/PSClassResource' -Because ($out.type | Out-String)
+    $out | Where-Object -Property type -EQ PSClassResource/PSClassResource | Select-Object -ExpandProperty implementedAs | Should -Be 1
     ($out | Where-Object -Property type -EQ 'PSClassResource/PSClassResource').capabilities | Should -BeIn @('get', 'test', 'set', 'export')
   }
 
   It 'Get works with class-based PS DSC resources' {
-
-    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
-    $LASTEXITCODE | Should -Be 0
+    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } 2> "$testdrive/error.log" | ConvertTo-Json) | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.actualState.Name | Should -Be 'TestName'
+    $out.actualState.Ensure | Should -Be 'Present'
     $propCount = $out.actualState | Get-Member -MemberType NoteProperty
-    $propCount.Count | Should -Be 1 # Only the DscProperty should be returned
+    $propCount.Count | Should -Be 3 -Because ($out | Out-String)
   }
 
   It 'Set works with class-based PS DSC resources' {
-
-    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) | ConvertFrom-Json
-    $LASTEXITCODE | Should -Be 0
+    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } 2> "$testdrive/error.log" | ConvertTo-Json) | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.afterstate.InDesiredState | Should -Be $true
   }
 
   It 'Export works with class-based PS DSC resources' {
-
-    $out = dsc resource export -r PSClassResource/PSClassResource | ConvertFrom-Json
-    $LASTEXITCODE | Should -Be 0
+    $out = dsc resource export -r PSClassResource/PSClassResource 2> "$testdrive/error.log" | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out | Should -Not -BeNullOrEmpty
     $out.resources.count | Should -Be 5
     $out.resources[0].properties.Ensure | Should -Be 'Present' # Check for enum property

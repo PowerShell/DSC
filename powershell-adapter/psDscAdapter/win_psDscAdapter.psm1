@@ -4,6 +4,10 @@
 $global:ProgressPreference = 'SilentlyContinue'
 $script:CurrentCacheSchemaVersion = 1
 
+trap {
+    Write-DscTrace -Operation Debug -Message ($_ | Format-List -Force | Out-String)
+}
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
@@ -133,11 +137,14 @@ function Invoke-DscCacheRefresh {
 
         # improve by performance by having the option to only get details for named modules
         # workaround for File and SignatureValidation resources that ship in Windows
+        Write-DscTrace -Operation Debug "Named module count: $($namedModules.Count)"
         if ($namedModules.Count -gt 0) {
+            Write-DscTrace -Operation Debug "Modules specified, getting DSC resources from modules: $($namedModules -join ', ')"
             $DscResources = [System.Collections.Generic.List[Object]]::new()
             $Modules = [System.Collections.Generic.List[Object]]::new()
             $filteredResources = @()
             foreach ($m in $namedModules) {
+                Write-DscTrace -Operation Debug "Getting DSC resources for module '$($m | Out-String)'"
                 $DscResources.AddRange(@(Get-DscResource -Module $m))
                 $Modules.AddRange(@(Get-Module -Name $m -ListAvailable))
             }
@@ -156,7 +163,7 @@ function Invoke-DscCacheRefresh {
             # Exclude the one module that was passed in as a parameter
             $existingDscResourceCacheEntries = @($cache.ResourceCache | Where-Object -Property Type -NotIn $filteredResources)
         } else {
-            # if no module is specified, get all resources
+            Write-DscTrace -Operation Debug "No modules specified, getting all DSC resources"
             $DscResources = Get-DscResource
             $Modules = Get-Module -ListAvailable
         }
@@ -352,7 +359,7 @@ function Invoke-DscOperation {
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                        Write-DscTrace -Operation Debug -Message ($validateProperty | Out-String)
+                        Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
                             if (-not $_.Value.Username -or -not $_.Value.Password) {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
@@ -406,7 +413,8 @@ function Invoke-DscOperation {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                                if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                                Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
+                                if ($validateProperty.PropertyType -eq 'PSCredential') {
                                     if (-not $_.Value.Username -or -not $_.Value.Password) {
                                         "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                         exit 1
@@ -483,6 +491,7 @@ function Invoke-DscOperation {
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
+                        Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty.PropertyType -eq '[PSCredential]') {
                             if (-not $_.Value.Username -or -not $_.Value.Password) {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error

@@ -200,8 +200,8 @@ impl ResourceDiscovery for CommandDiscovery {
     fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
         info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter));
 
-        // if kind is DscResource, we need to discover extensions first
-        if *kind == DiscoveryKind::Resource {
+        // if kind is DscResource and DSC_RESOURCE_PATH is not defined, we need to discover extensions first
+        if *kind == DiscoveryKind::Resource && env::var("DSC_RESOURCE_PATH").is_err() {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
 
