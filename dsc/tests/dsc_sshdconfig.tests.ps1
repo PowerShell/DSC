@@ -5,10 +5,12 @@ BeforeDiscovery {
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+        $sshdExists = ($null -ne (Get-Command sshd -CommandType Application -ErrorAction Ignore))
+        $skipTest = !$isElevated -or !$sshdExists
     }
 }
 
-Describe 'SSHDConfig resource tests' -Skip:(!$IsWindows -or !$isElevated) {
+Describe 'SSHDConfig resource tests' -Skip:(!$IsWindows -or $skipTest) {
     BeforeAll {
         $yaml = @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
