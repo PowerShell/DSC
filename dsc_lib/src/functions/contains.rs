@@ -37,9 +37,9 @@ impl Function for Contains {
         let mut found = false;
 
         let (string_to_find, number_to_find) = if let Some(string) = args[1].as_str() {
-            (string.to_string(), 0)
+            (Some(string.to_string()), None)
         } else if let Some(number) = args[1].as_i64() {
-            (number.to_string(), number)
+            (None, Some(number))
         } else {
             return Err(DscError::Parser(t!("functions.contains.invalidItemToFind").to_string()));
         };
@@ -48,14 +48,18 @@ impl Function for Contains {
         if let Some(array) = args[0].as_array() {
             for item in array {
                 if let Some(item_str) = item.as_str() {
-                    if item_str == string_to_find {
-                        found = true;
-                        break;
+                    if let Some(string) = &string_to_find {
+                        if item_str == string {
+                            found = true;
+                            break;
+                        }
                     }
                 } else if let Some(item_num) = item.as_i64() {
-                    if item_num == number_to_find {
-                        found = true;
-                        break;
+                    if let Some(number) = number_to_find {
+                        if item_num == number {
+                            found = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -66,9 +70,16 @@ impl Function for Contains {
         if let Some(object) = args[0].as_object() {
             // see if key exists
             for key in object.keys() {
-                if key == &string_to_find {
-                    found = true;
-                    break;
+                if let Some(string) = &string_to_find {
+                    if key == string {
+                        found = true;
+                        break;
+                    }
+                } else if let Some(number) = number_to_find {
+                    if key == &number.to_string() {
+                        found = true;
+                        break;
+                    }
                 }
             }
             return Ok(Value::Bool(found));
@@ -76,8 +87,10 @@ impl Function for Contains {
 
         // for string, we check if the string contains the substring or number
         if let Some(str) = args[0].as_str() {
-            if str.contains(&string_to_find) {
-                found = true;
+            if let Some(string) = &string_to_find {
+                found = str.contains(string);
+            } else if let Some(number) = number_to_find {
+                found = str.contains(&number.to_string());
             }
             return Ok(Value::Bool(found));
         }

@@ -115,6 +115,7 @@ Describe 'tests for function expressions' {
         @{ expression = "[contains(parameters('array'), 'a')]" ; expected = $true }
         @{ expression = "[contains(parameters('array'), 2)]" ; expected = $false }
         @{ expression = "[contains(parameters('array'), 1)]" ; expected = $true }
+        @{ expression = "[contains(parameters('array'), 'z')]" ; expected = $false }
         @{ expression = "[contains(parameters('object'), 'a')]" ; expected = $true }
         @{ expression = "[contains(parameters('object'), 'c')]" ; expected = $false }
         @{ expression = "[contains(parameters('object'), 3)]" ; expected = $true }
@@ -134,6 +135,7 @@ Describe 'tests for function expressions' {
                 defaultValue:
                 - a
                 - b
+                - 0
                 - 1
               object:
                 type: object
