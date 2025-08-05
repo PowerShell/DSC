@@ -15,12 +15,13 @@ Describe 'PowerShell adapter resource tests' {
       $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
     }
   }
+
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
   }
 
   BeforeEach {
-    Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
+    Remove-Item -Force -ErrorAction Ignore -Path $cacheFilePath
   }
 
   It 'Get works on config with class-based resources' {
