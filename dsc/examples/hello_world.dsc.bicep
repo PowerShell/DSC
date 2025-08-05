@@ -9,3 +9,5 @@ resource echo 'Microsoft.DSC.Debug/Echo@2025-01-01' = {
     output: 'Hello, world!'
   }
 }
+
+output exampleOutput string = echo.properties.output
