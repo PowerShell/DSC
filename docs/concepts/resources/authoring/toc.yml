@@ -1,0 +1,21 @@
+items:
+  - name: Overview
+    href: index.md
+  - name: Defining manifest metadata
+    href: manifest-metadata.md
+  - name: Defining exit codes
+    href: exit-codes.md
+  - name: Emitting messages
+    href: emitting-messages.md
+  - name: Defining operation invocations
+    href: defining-operation-invocations.md
+  - name: Typical resources
+    items:
+      - name: Resource manifest
+        href: typical/resource-manifest.md
+      - name: Resource instance schema
+        href: typical/resource-instance-schema.md
+  - name: Exporter resources
+    items:
+      - name: Resource manifest
+        href: exporter/resource-manifest.md
