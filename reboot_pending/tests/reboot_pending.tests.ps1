@@ -38,6 +38,6 @@ Describe 'reboot_pending resource tests' -Skip:(!$IsWindows -or !$isElevated) {
     It 'reboot_pending should have a reason' {
         $out = dsc resource get -r Microsoft.Windows/RebootPending | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $out.actualState.reason.count | Should -BeGreaterThan 0 -Because ($out | Out-String)
+        $out.actualState.reason.count | Should -BeGreaterThan 0 -Because ($out | ConvertTo-Json -Depth 10 |Out-String)
     }
 }

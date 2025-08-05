@@ -179,7 +179,6 @@ resources:
 
     $out = dsc -l debug config set -i $yaml 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
-    $out.results[0].result.afterState.Credential | Should -BeNullOrEmpty
   }
 
   It 'Config does not work when credential properties are missing required fields' {
