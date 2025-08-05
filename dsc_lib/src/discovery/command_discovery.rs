@@ -286,10 +286,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                                 if manifest.kind == Some(Kind::Adapter) {
                                                     trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
                                                     insert_resource(&mut adapters, &resource, true);
-                                                } else {
-                                                    trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
-                                                    insert_resource(&mut resources, &resource, true);
                                                 }
+                                                // also make sure to add adapters as a resource as well
+                                                trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
+                                                insert_resource(&mut resources, &resource, true);
                                             }
                                         }
                                     }
@@ -563,27 +563,20 @@ impl ResourceDiscovery for CommandDiscovery {
 
 // TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource, skip_duplicate_version: bool) {
-    if resources.contains_key(&resource.type_name) {
-        let Some(resource_versions) = resources.get_mut(&resource.type_name) else {
-            resources.insert(resource.type_name.clone(), vec![resource.clone()]);
-            return;
-        };
+    if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
+        debug!("Resource '{}' already exists, checking versions", resource.type_name);
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
             let resource_instance_version = match Version::parse(&resource_instance.version) {
                 Ok(v) => v,
-                Err(err) => {
-                    // write as info since PowerShell resources tend to have invalid semver
-                    info!("Resource '{}' has invalid version: {err}", resource_instance.type_name);
+                Err(_err) => {
                     continue;
                 },
             };
             let resource_version = match Version::parse(&resource.version) {
                 Ok(v) => v,
-                Err(err) => {
-                    // write as info since PowerShell resources tend to have invalid semver
-                    info!("Resource '{}' has invalid version: {err}", resource.type_name);
+                Err(_err) => {
                     continue;
                 },
             };
@@ -726,12 +719,25 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
         verify_executable(&manifest.r#type, "secret", &secret.executable);
         capabilities.push(dscextension::Capability::Secret);
     }
+    let import_extensions = if let Some(import) = &manifest.import {
+        verify_executable(&manifest.r#type, "import", &import.executable);
+        capabilities.push(dscextension::Capability::Import);
+        if import.file_extensions.is_empty() {
+            warn!("{}", t!("discovery.commandDiscovery.importExtensionsEmpty", extension = manifest.r#type));
+            None
+        } else {
+            Some(import.file_extensions.clone())
+        }
+    } else {
+        None
+    };
 
     let extension = DscExtension {
         type_name: manifest.r#type.clone(),
         description: manifest.description.clone(),
         version: manifest.version.clone(),
         capabilities,
+        import_file_extensions: import_extensions,
         path: path.to_str().unwrap().to_string(),
         directory: path.parent().unwrap().to_str().unwrap().to_string(),
         manifest: serde_json::to_value(manifest)?,
@@ -743,7 +749,7 @@ fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<
 
 fn verify_executable(resource: &str, operation: &str, executable: &str) {
     if which(executable).is_err() {
-        warn!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
+        info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
 }
 

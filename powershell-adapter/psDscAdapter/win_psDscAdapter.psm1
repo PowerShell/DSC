@@ -4,6 +4,10 @@
 $global:ProgressPreference = 'SilentlyContinue'
 $script:CurrentCacheSchemaVersion = 1
 
+trap {
+    Write-DscTrace -Operation Debug -Message ($_ | Format-List -Force | Out-String)
+}
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
@@ -133,11 +137,14 @@ function Invoke-DscCacheRefresh {
 
         # improve by performance by having the option to only get details for named modules
         # workaround for File and SignatureValidation resources that ship in Windows
+        Write-DscTrace -Operation Debug "Named module count: $($namedModules.Count)"
         if ($namedModules.Count -gt 0) {
+            Write-DscTrace -Operation Debug "Modules specified, getting DSC resources from modules: $($namedModules -join ', ')"
             $DscResources = [System.Collections.Generic.List[Object]]::new()
             $Modules = [System.Collections.Generic.List[Object]]::new()
             $filteredResources = @()
             foreach ($m in $namedModules) {
+                Write-DscTrace -Operation Debug "Getting DSC resources for module '$($m | Out-String)'"
                 $DscResources.AddRange(@(Get-DscResource -Module $m))
                 $Modules.AddRange(@(Get-Module -Name $m -ListAvailable))
             }
@@ -156,7 +163,7 @@ function Invoke-DscCacheRefresh {
             # Exclude the one module that was passed in as a parameter
             $existingDscResourceCacheEntries = @($cache.ResourceCache | Where-Object -Property Type -NotIn $filteredResources)
         } else {
-            # if no module is specified, get all resources
+            Write-DscTrace -Operation Debug "No modules specified, getting all DSC resources"
             $DscResources = Get-DscResource
             $Modules = Get-Module -ListAvailable
         }
@@ -226,6 +233,8 @@ function Invoke-DscCacheRefresh {
                 if ($null -ne $properties) {
                     $DscResourceInfo.Properties = $properties
                 }
+
+                $dscResourceInfo.Capabilities = GetClassBasedCapabilities -filePath $dscResource.Path -className $dscResource.Name
             }
 
             # fill in resource files (and their last-write-times) that will be used for up-do-date checks
@@ -350,7 +359,7 @@ function Invoke-DscOperation {
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                        Write-DscTrace -Operation Debug -Message ($validateProperty | Out-String)
+                        Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty -and $validateProperty.PropertyType -eq '[PSCredential]') {
                             if (-not $_.Value.Username -or -not $_.Value.Password) {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
@@ -404,7 +413,8 @@ function Invoke-DscOperation {
                             # handle input objects by converting them to a hash table
                             if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                                 $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
-                                if ($validateProperty.PropertyType -eq '[PSCredential]') {
+                                Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
+                                if ($validateProperty.PropertyType -eq 'PSCredential') {
                                     if (-not $_.Value.Username -or -not $_.Value.Password) {
                                         "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
                                         exit 1
@@ -481,6 +491,7 @@ function Invoke-DscOperation {
                 $DesiredState.properties.psobject.properties | ForEach-Object -Begin { $property = @{} } -Process {
                     if ($_.Value -is [System.Management.Automation.PSCustomObject]) {
                         $validateProperty = $cachedDscResourceInfo.Properties | Where-Object -Property Name -EQ $_.Name
+                        Write-DscTrace -Operation Debug -Message "Property type: $($validateProperty.PropertyType)"
                         if ($validateProperty.PropertyType -eq '[PSCredential]') {
                             if (-not $_.Value.Username -or -not $_.Value.Password) {
                                 "Credential object '$($_.Name)' requires both 'username' and 'password' properties" | Write-DscTrace -Operation Error
@@ -632,6 +643,64 @@ function GetClassBasedProperties {
     }
 }
 
+function GetClassBasedCapabilities {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $filePath,
+
+        [Parameter(Mandatory = $true)]
+        [string] $className
+    )
+
+    if (".psd1" -notcontains ([System.IO.Path]::GetExtension($filePath))) {
+        return @('get', 'set', 'test')
+    }
+
+    $module = $filePath.Replace('.psd1', '.psm1')
+
+    if (Test-Path $module -ErrorAction Ignore) {
+        [System.Management.Automation.Language.Token[]] $tokens = $null
+        [System.Management.Automation.Language.ParseError[]] $errors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($module, [ref]$tokens, [ref]$errors)
+        foreach ($e in $errors) {
+            $e | Out-String | Write-DscTrace -Operation Error
+        }
+
+        $typeDefinitions = $ast.FindAll(
+            {
+                $typeAst = $args[0] -as [System.Management.Automation.Language.TypeDefinitionAst]
+                return $null -ne $typeAst;
+            },
+            $false);
+
+
+        $capabilities = [System.Collections.Generic.List[string[]]]::new()
+        $availableMethods = @('get', 'set', 'setHandlesExist', 'whatIf', 'test', 'delete', 'export')
+        foreach ($typeDefinitionAst in $typeDefinitions) {
+            foreach ($a in $typeDefinitionAst.Attributes) {
+                if ($a.TypeName.Name -eq 'DscResource' -and $a.Parent.Name -eq $className) {
+                    $methods = $typeDefinitionAst.Members | Where-Object { $_ -is [System.Management.Automation.Language.FunctionMemberAst] -and $_.Name -in $availableMethods }
+
+                    foreach ($method in $methods.Name) {
+                        # We go through each method to properly case handle the method names.
+                        switch ($method) {
+                            'Get' { $capabilities.Add('get') }
+                            'Set' { $capabilities.Add('set') }
+                            'Test' { $capabilities.Add('test') }
+                            'WhatIf' { $capabilities.Add('whatIf') }
+                            'SetHandlesExist' { $capabilities.Add('setHandlesExist') }
+                            'Delete' { $capabilities.Add('delete') }
+                            'Export' { $capabilities.Add('export') }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $capabilities
+    }
+}
+
 # cached resource
 class dscResourceCacheEntry {
     [string] $Type
@@ -681,4 +750,5 @@ class DscResourceInfo {
     [string] $ImplementedAs
     [string] $CompanyName
     [psobject[]] $Properties
+    [string[]] $Capabilities
 }

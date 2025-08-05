@@ -14,12 +14,13 @@ Describe 'PowerShell adapter resource tests' {
             $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
         }
     }
+
     AfterAll {
         $env:PSModulePath = $OldPSModulePath
     }
 
     BeforeEach {
-        Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
+        Remove-Item -Force -ErrorAction Ignore -Path $cacheFilePath
     }
 
     It 'Discovery includes class-based resources' {
@@ -27,7 +28,9 @@ Describe 'PowerShell adapter resource tests' {
         $r = dsc resource list '*' -a Microsoft.DSC/PowerShell
         $LASTEXITCODE | Should -Be 0
         $resources = $r | ConvertFrom-Json
-        ($resources | ? { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
+        ($resources | Where-Object { $_.Type -eq 'TestClassResource/TestClassResource' }).Count | Should -Be 1
+        ($resources | Where-Object -Property type -EQ 'TestClassResource/TestClassResource').capabilities | Should -BeIn @('get', 'set', 'test', 'export')
+        ($resources | Where-Object -Property type -EQ 'TestClassResource/NoExport').capabilities | Should -BeIn @('get', 'set', 'test')
     }
 
     It 'Get works on class-based resource' {
@@ -171,7 +174,7 @@ Describe 'PowerShell adapter resource tests' {
             # remove the module files
             Remove-Item -Recurse -Force -Path "$TestDrive/TestClassResource"
             # verify that cache rebuid happened
-            dsc -l trace resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+            $null = dsc -l trace resource list '*' -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
 
             $LASTEXITCODE | Should -Be 0
             "$TestDrive/tracing.txt" | Should -FileContentMatchExactly 'Detected non-existent cache entry'

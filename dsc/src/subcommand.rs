@@ -480,7 +480,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     let schema = serde_json::to_value(get_schema(SchemaType::Configuration))?;
     let config_value = serde_json::to_value(config)?;
     validate_json("Configuration", &schema, &config_value)?;
-    let mut dsc = DscManager::new()?;
+    let mut dsc = DscManager::new();
 
     // then validate each resource
     let Some(resources) = config_value["resources"].as_array() else {
@@ -551,13 +551,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
 }
 
 pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressFormat) {
-    let mut dsc = match DscManager::new() {
-        Ok(dsc) => dsc,
-        Err(err) => {
-            error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
+    let mut dsc = DscManager::new();
 
     match subcommand {
         ExtensionSubCommand::List{extension_name, output_format} => {
@@ -577,13 +571,7 @@ pub fn function(subcommand: &FunctionSubCommand) {
 
 #[allow(clippy::too_many_lines)]
 pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat) {
-    let mut dsc = match DscManager::new() {
-        Ok(dsc) => dsc,
-        Err(err) => {
-            error!("Error: {err}");
-            exit(EXIT_DSC_ERROR);
-        }
-    };
+    let mut dsc = DscManager::new();
 
     match subcommand {
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {

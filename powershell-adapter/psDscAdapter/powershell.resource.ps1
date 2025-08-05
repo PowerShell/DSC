@@ -22,6 +22,10 @@ function Write-DscTrace {
     $host.ui.WriteErrorLine($trace)
 }
 
+trap {
+    Write-DscTrace -Operation Debug -Message ($_ | Format-List -Force | Out-String)
+}
+
 # Adding some debug info to STDERR
 'PSVersion=' + $PSVersionTable.PSVersion.ToString() | Write-DscTrace
 'PSPath=' + $PSHome | Write-DscTrace
@@ -91,10 +95,13 @@ switch ($Operation) {
             # TODO: for perf, it is better to take capabilities from psd1 in Invoke-DscCacheRefresh, not by extra call to Get-Module
             if ($DscResourceInfo.ModuleName) {
                 $module = Get-Module -Name $DscResourceInfo.ModuleName -ListAvailable | Sort-Object -Property Version -Descending | Select-Object -First 1
-                if ($module.PrivateData.PSData.DscCapabilities) {
+                # If the DscResourceInfo does have capabilities, use them or else use the module's capabilities
+                if ($DscResourceInfo.Capabilities) {
+                    $capabilities = $DscResourceInfo.Capabilities
+                } elseif ($module.PrivateData.PSData.DscCapabilities) {
+                    
                     $capabilities = $module.PrivateData.PSData.DscCapabilities
-                }
-                else {
+                } else {
                     $capabilities = @('get', 'set', 'test')
                 }
             }
