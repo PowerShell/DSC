@@ -200,7 +200,7 @@ impl ResourceDiscovery for CommandDiscovery {
     fn discover(&mut self, kind: &DiscoveryKind, filter: &str) -> Result<(), DscError> {
         info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter));
 
-        // if kind is DscResource and DSC_RESOURCE_PATH is not defined, we need to discover extensions first
+        // if kind is DscResource, we need to discover extensions first
         if *kind == DiscoveryKind::Resource {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
@@ -287,6 +287,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                                     trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
                                                     insert_resource(&mut adapters, &resource, true);
                                                 }
+                                                // also make sure to add adapters as a resource as well
                                                 trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
                                                 insert_resource(&mut resources, &resource, true);
                                             }
@@ -562,7 +563,6 @@ impl ResourceDiscovery for CommandDiscovery {
 
 // TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource, skip_duplicate_version: bool) {
-    debug!("Inserting resource: {} version {} from {}", resource.type_name, resource.version, resource.directory);
     if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
         debug!("Resource '{}' already exists, checking versions", resource.type_name);
         // compare the resource versions and insert newest to oldest using semver
@@ -571,16 +571,12 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
             let resource_instance_version = match Version::parse(&resource_instance.version) {
                 Ok(v) => v,
                 Err(err) => {
-                    // write as info since PowerShell resources tend to have invalid semver
-                    info!("Resource '{}' has invalid version: {err}", resource_instance.type_name);
                     continue;
                 },
             };
             let resource_version = match Version::parse(&resource.version) {
                 Ok(v) => v,
                 Err(err) => {
-                    // write as info since PowerShell resources tend to have invalid semver
-                    info!("Resource '{}' has invalid version: {err}", resource.type_name);
                     continue;
                 },
             };
