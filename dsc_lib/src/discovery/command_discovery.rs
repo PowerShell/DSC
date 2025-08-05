@@ -570,13 +570,13 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
         for (index, resource_instance) in resource_versions.iter().enumerate() {
             let resource_instance_version = match Version::parse(&resource_instance.version) {
                 Ok(v) => v,
-                Err(err) => {
+                Err(_err) => {
                     continue;
                 },
             };
             let resource_version = match Version::parse(&resource.version) {
                 Ok(v) => v,
-                Err(err) => {
+                Err(_err) => {
                     continue;
                 },
             };
