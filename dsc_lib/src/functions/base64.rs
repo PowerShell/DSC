@@ -5,7 +5,7 @@ use base64::{Engine as _, engine::general_purpose};
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, FunctionCategory};
+use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use super::Function;
@@ -14,24 +14,17 @@ use super::Function;
 pub struct Base64 {}
 
 impl Function for Base64 {
-    fn description(&self) -> String {
-        t!("functions.base64.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::String
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String]
-    }
-
-    fn min_args(&self) -> usize {
-        1
-    }
-
-    fn max_args(&self) -> usize {
-        1
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "base64".to_string(),
+            description: t!("functions.base64.description").to_string(),
+            category: FunctionCategory::String,
+            min_args: 1,
+            max_args: 1,
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::String],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

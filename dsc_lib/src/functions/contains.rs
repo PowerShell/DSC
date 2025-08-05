@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,24 +12,20 @@ use tracing::debug;
 pub struct Contains {}
 
 impl Function for Contains {
-    fn description(&self) -> String {
-        t!("functions.contains.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Array
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        2
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Array, AcceptedArgKind::Object, AcceptedArgKind::String, AcceptedArgKind::Number]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "contains".to_string(),
+            description: t!("functions.contains.description").to_string(),
+            category: FunctionCategory::Array,
+            min_args: 2,
+            max_args: 2,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::Array, FunctionArgKind::Object, FunctionArgKind::String],
+                vec![FunctionArgKind::String, FunctionArgKind::Number],
+            ],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::Boolean],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

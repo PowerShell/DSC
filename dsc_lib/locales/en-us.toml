@@ -207,6 +207,8 @@ noBooleanArgs = "Function '%{name}' does not accept boolean arguments, accepted 
 noNumberArgs = "Function '%{name}' does not accept number arguments, accepted types are: %{accepted_args_string}"
 noObjectArgs = "Function '%{name}' does not accept object arguments, accepted types are: %{accepted_args_string}"
 noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
+tooFewArgs = "Function '%{name}' requires at least %{count} arguments"
+tooManyArgs = "Function '%{name}' does not accept more than %{count} arguments"
 
 [functions.add]
 description = "Adds two or more numbers together"

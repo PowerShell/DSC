@@ -6,7 +6,7 @@ use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, validate_json, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
-use dsc_lib::functions::AcceptedArgKind;
+use dsc_lib::functions::FunctionArgKind;
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -698,11 +698,11 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     }
     let mut include_separator = false;
     let accepted_arg_types= [
-        (AcceptedArgKind::Array, "a"),
-        (AcceptedArgKind::Boolean, "b"),
-        (AcceptedArgKind::Number, "n"),
-        (AcceptedArgKind::String, "s"),
-        (AcceptedArgKind::Object, "o"),
+        (FunctionArgKind::Array, "a"),
+        (FunctionArgKind::Boolean, "b"),
+        (FunctionArgKind::Number, "n"),
+        (FunctionArgKind::String, "s"),
+        (FunctionArgKind::Object, "o"),
     ];
 
     let asterisks = String::from("*");
@@ -726,7 +726,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
             // construct arg_types from '-' times number of accepted_arg_types
             let mut arg_types = "-".repeat(accepted_arg_types.len());
             for (i, (arg_type, letter)) in accepted_arg_types.iter().enumerate() {
-                if function.accepted_arg_types.contains(arg_type) {
+                if function.return_types.contains(arg_type) {
                     arg_types.replace_range(i..=i, letter);
                 }
             }

@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::{Map, Value};
 use tracing::debug;
@@ -12,49 +12,42 @@ use tracing::debug;
 pub struct CreateObject {}
 
 impl Function for CreateObject {
-    fn description(&self) -> String {
-        t!("functions.createObject.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Object
-    }
-
-    fn min_args(&self) -> usize {
-        0
-    }
-
-    fn max_args(&self) -> usize {
-        usize::MAX
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![
-            AcceptedArgKind::Array,
-            AcceptedArgKind::Boolean,
-            AcceptedArgKind::Number,
-            AcceptedArgKind::Object,
-            AcceptedArgKind::String,
-        ]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "createObject".to_string(),
+            description: t!("functions.createObject.description").to_string(),
+            category: FunctionCategory::Object,
+            min_args: 0,
+            max_args: usize::MAX,
+            accepted_arg_ordered_types: vec![],
+            remaining_arg_accepted_types: Some(vec![
+                FunctionArgKind::String,
+                FunctionArgKind::Number,
+                FunctionArgKind::Boolean,
+                FunctionArgKind::Object,
+                FunctionArgKind::Array,
+            ]),
+            return_types: vec![FunctionArgKind::Object],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.createObject.invoked"));
-        
+
         if args.len() % 2 != 0 {
             return Err(DscError::Parser(t!("functions.createObject.argsMustBePairs").to_string()));
         }
 
         let mut object_result = Map::<String, Value>::new();
-        
+
         for chunk in args.chunks(2) {
             let key = &chunk[0];
             let value = &chunk[1];
-            
+
             if !key.is_string() {
                 return Err(DscError::Parser(t!("functions.createObject.keyMustBeString").to_string()));
             }
-            
+
             let key_str = key.as_str().unwrap().to_string();
             object_result.insert(key_str, value.clone());
         }
@@ -86,7 +79,7 @@ mod tests {
     fn mixed_value_types() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[createObject('string', 'hello', 'number', 123, 'boolean', true)]", &Context::new()).unwrap();
-        
+
         let json: serde_json::Value = serde_json::from_str(&result.to_string()).unwrap();
         assert_eq!(json["string"], "hello");
         assert_eq!(json["number"], 123);
