@@ -201,7 +201,7 @@ impl ResourceDiscovery for CommandDiscovery {
         info!("{}", t!("discovery.commandDiscovery.discoverResources", kind = kind : {:?}, filter = filter));
 
         // if kind is DscResource and DSC_RESOURCE_PATH is not defined, we need to discover extensions first
-        if *kind == DiscoveryKind::Resource && env::var("DSC_RESOURCE_PATH").is_err() {
+        if *kind == DiscoveryKind::Resource {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
 
@@ -286,10 +286,9 @@ impl ResourceDiscovery for CommandDiscovery {
                                                 if manifest.kind == Some(Kind::Adapter) {
                                                     trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
                                                     insert_resource(&mut adapters, &resource, true);
-                                                } else {
-                                                    trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
-                                                    insert_resource(&mut resources, &resource, true);
                                                 }
+                                                trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
+                                                insert_resource(&mut resources, &resource, true);
                                             }
                                         }
                                     }
@@ -563,11 +562,9 @@ impl ResourceDiscovery for CommandDiscovery {
 
 // TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource, skip_duplicate_version: bool) {
-    if resources.contains_key(&resource.type_name) {
-        let Some(resource_versions) = resources.get_mut(&resource.type_name) else {
-            resources.insert(resource.type_name.clone(), vec![resource.clone()]);
-            return;
-        };
+    debug!("Inserting resource: {} version {} from {}", resource.type_name, resource.version, resource.directory);
+    if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
+        debug!("Resource '{}' already exists, checking versions", resource.type_name);
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
