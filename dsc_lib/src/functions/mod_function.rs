@@ -49,28 +49,28 @@ mod tests {
     #[test]
     fn numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[mod(7, 3)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[mod(7, 3)]", &Context::new()).unwrap();
         assert_eq!(result, 1);
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[mod(18, mod(8, 3))]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[mod(18, mod(8, 3))]", &Context::new()).unwrap();
         assert_eq!(result, 0);
     }
 
     #[test]
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[mod(5)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[mod(5)]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn invalid_div_by_zero() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[mod(5, 0)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[mod(5, 0)]", &Context::new());
         assert!(result.is_err());
     }
 
@@ -78,7 +78,7 @@ mod tests {
     fn overflow_input() {
         let mut parser = Statement::new().unwrap();
         // max value for i64 is 2^63 -1 (or 9,223,372,036,854,775,807)
-        let result = parser.parse_and_execute("[mod(9223372036854775808, 2)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[mod(9223372036854775808, 2)]", &Context::new());
         assert!(result.is_err());
     }
 }

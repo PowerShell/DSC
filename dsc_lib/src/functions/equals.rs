@@ -42,35 +42,35 @@ mod tests {
     #[test]
     fn int_equal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals(1,1)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[equals(1,1)]", &Context::new()).unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
     #[test]
     fn int_notequal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals(1,2]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[equals(1,2)]", &Context::new()).unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 
     #[test]
     fn string_equal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals('test','test')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[equals('test','test')]", &Context::new()).unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
     #[test]
     fn string_notequal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals('test','TEST')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[equals('test','TEST')]", &Context::new()).unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 
     #[test]
     fn different_types() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals(1,'string')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[equals(1,'string')]", &Context::new()).unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 

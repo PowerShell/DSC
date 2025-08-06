@@ -49,21 +49,21 @@ mod tests {
     #[test]
     fn parser_with_null() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[null()]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[null()]", &Context::new()).unwrap();
         assert_eq!(result, Value::Null);
     }
 
     #[test]
     fn null_with_coalesce() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce(null(), 'fallback')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[coalesce(null(), 'fallback')]", &Context::new()).unwrap();
         assert_eq!(result, "fallback");
     }
 
     #[test]
     fn null_in_object() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('key', null())]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[createObject('key', null())]", &Context::new()).unwrap();
         assert_eq!(result.to_string(), r#"{"key":null}"#);
     }
 }

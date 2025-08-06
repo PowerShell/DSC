@@ -53,14 +53,14 @@ mod tests {
     #[test]
     fn empty_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[length('')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[length('')]", &Context::new()).unwrap();
         assert_eq!(result, Value::Number(0.into()));
     }
 
     #[test]
     fn not_empty_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[length('foo')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[length('foo')]", &Context::new()).unwrap();
         assert_eq!(result, Value::Number(3.into()));
     }
 }

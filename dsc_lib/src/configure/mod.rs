@@ -39,7 +39,6 @@ pub struct Configurator {
     discovery: Discovery,
     statement_parser: Statement,
     progress_format: ProgressFormat,
-    pub process_expressions: bool,
 }
 
 /// Add the results of an export operation to a configuration.
@@ -275,7 +274,6 @@ impl Configurator {
             discovery: discovery.clone(),
             statement_parser: Statement::new()?,
             progress_format,
-            process_expressions: true,
         };
         config.validate_config()?;
         for extension in discovery.extensions.values() {
@@ -672,7 +670,7 @@ impl Configurator {
 
     fn skip_resource(&mut self, resource: &Resource) -> Result<bool, DscError> {
         if let Some(condition) = &resource.condition {
-            let condition_result = self.statement_parser.parse_and_execute(condition, &self.context, self.process_expressions)?;
+            let condition_result = self.statement_parser.parse_and_execute(condition, &self.context)?;
             if condition_result != Value::Bool(true) {
                 info!("{}", t!("configure.config_doc.skippingResource", name = resource.name, condition = condition, result = condition_result));
                 return Ok(true);
@@ -724,7 +722,7 @@ impl Configurator {
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
-                        self.statement_parser.parse_and_execute(value, &self.context, self.process_expressions)?
+                        self.statement_parser.parse_and_execute(value, &self.context)?
                     } else {
                         return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
                     }
@@ -785,7 +783,7 @@ impl Configurator {
 
         for (name, value) in variables {
             let new_value = if let Some(string) = value.as_str() {
-                self.statement_parser.parse_and_execute(string, &self.context, self.process_expressions)?
+                self.statement_parser.parse_and_execute(string, &self.context)?
             }
             else {
                 value.clone()
@@ -889,7 +887,7 @@ impl Configurator {
                                     let Some(statement) = element.as_str() else {
                                         return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                                     };
-                                    let statement_result = self.statement_parser.parse_and_execute(statement, &self.context, self.process_expressions)?;
+                                    let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                                     let Some(string_result) = statement_result.as_str() else {
                                         return Err(DscError::Parser(t!("configure.mod.arrayElementCouldNotTransformAsString").to_string()));
                                     };
@@ -907,7 +905,7 @@ impl Configurator {
                         let Some(statement) = value.as_str() else {
                             return Err(DscError::Parser(t!("configure.mod.valueCouldNotBeTransformedAsString", value = value).to_string()));
                         };
-                        let statement_result = self.statement_parser.parse_and_execute(statement, &self.context, self.process_expressions)?;
+                        let statement_result = self.statement_parser.parse_and_execute(statement, &self.context)?;
                         if let Some(string_result) = statement_result.as_str() {
                             result.insert(name.clone(), Value::String(string_result.to_string()));
                         } else {

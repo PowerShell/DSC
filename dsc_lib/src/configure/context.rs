@@ -19,6 +19,7 @@ pub struct Context {
     pub variables: Map<String, Value>,
     pub start_datetime: DateTime<Local>,
     pub restart_required: Option<Vec<RestartRequired>>,
+    pub process_expressions: bool,
 }
 
 impl Context {
@@ -37,6 +38,7 @@ impl Context {
             variables: Map::new(),
             start_datetime: chrono::Local::now(),
             restart_required: None,
+            process_expressions: true,
         }
     }
 }

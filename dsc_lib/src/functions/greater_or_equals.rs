@@ -54,35 +54,35 @@ mod tests {
     #[test]
     fn number_greater_or_equals() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[greaterOrEquals(5,3)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[greaterOrEquals(5,3)]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn number_not_greater_or_equals() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[greaterOrEquals(3,5)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[greaterOrEquals(3,5)]", &Context::new()).unwrap();
         assert_eq!(result, false);
     }
 
     #[test]
     fn number_equal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[greaterOrEquals(5,5)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[greaterOrEquals(5,5)]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn string_greater_or_equals() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[greaterOrEquals('b','a')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[greaterOrEquals('b','a')]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn type_mismatch_string_number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[greaterOrEquals('5', 3)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[greaterOrEquals('5', 3)]", &Context::new());
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Arguments must be of the same type"));
     }

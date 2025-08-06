@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn start_with_drive_letter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('C:\\','test')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[path('C:\\','test')]", &Context::new()).unwrap();
 
         #[cfg(target_os = "windows")]
         assert_eq!(result, format!("C:{SEPARATOR}test"));
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn drive_letter_in_middle() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('a','C:\\','test')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[path('a','C:\\','test')]", &Context::new()).unwrap();
 
         // if any part of the path is absolute, it replaces it instead of appending on Windows
         #[cfg(target_os = "windows")]
@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn multiple_drive_letters() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('C:\\','D:\\','test')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[path('C:\\','D:\\','test')]", &Context::new()).unwrap();
 
         // if any part of the path is absolute, it replaces it instead of appending on Windows
         #[cfg(target_os = "windows")]
@@ -98,35 +98,35 @@ mod tests {
     #[test]
     fn relative_path() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('a','..','b')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[path('a','..','b')]", &Context::new()).unwrap();
         assert_eq!(result, format!("a{SEPARATOR}..{SEPARATOR}b"));
     }
 
     #[test]
     fn path_segement_with_separator() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute(format!("[path('a','b{SEPARATOR}c')]").as_str(), &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute(format!("[path('a','b{SEPARATOR}c')]").as_str(), &Context::new()).unwrap();
         assert_eq!(result, format!("a{SEPARATOR}b{SEPARATOR}c"));
     }
 
     #[test]
     fn unix_absolute_path() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('/','a','b')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[path('/','a','b')]", &Context::new()).unwrap();
         assert_eq!(result, format!("/a{SEPARATOR}b"));
     }
 
     #[test]
     fn two_args() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('a','b')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[path('a','b')]", &Context::new()).unwrap();
         assert_eq!(result, format!("a{SEPARATOR}b"));
     }
 
     #[test]
     fn three_args() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[path('a','b','c')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[path('a','b','c')]", &Context::new()).unwrap();
         assert_eq!(result, format!("a{SEPARATOR}b{SEPARATOR}c"));
     }
 }

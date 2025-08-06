@@ -49,28 +49,28 @@ mod tests {
     #[test]
     fn true_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[bool('true')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[bool('true')]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn false_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[bool('false')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[bool('false')]", &Context::new()).unwrap();
         assert_eq!(result, false);
     }
 
     #[test]
     fn number_1() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[bool(1)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[bool(1)]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn number_0() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[bool(0)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[bool(0)]", &Context::new()).unwrap();
         assert_eq!(result, false);
     }
 }

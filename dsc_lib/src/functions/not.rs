@@ -43,14 +43,14 @@ mod tests {
     #[test]
     fn not_true() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[not(true)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[not(true)]", &Context::new()).unwrap();
         assert_eq!(result, false);
     }
 
     #[test]
     fn not_false() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[not(false)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[not(false)]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 }

@@ -40,21 +40,21 @@ mod tests {
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64('hello world')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[base64('hello world')]", &Context::new()).unwrap();
         assert_eq!(result, "aGVsbG8gd29ybGQ=");
     }
 
     #[test]
     fn numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64(123)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[base64(123)]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64(base64('hello world'))]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[base64(base64('hello world'))]", &Context::new()).unwrap();
         assert_eq!(result, "YUdWc2JHOGdkMjl5YkdRPQ==");
     }
 }

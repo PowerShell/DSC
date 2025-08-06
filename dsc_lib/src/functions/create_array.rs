@@ -77,21 +77,21 @@ mod tests {
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray('a', 'b')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[createArray('a', 'b')]", &Context::new()).unwrap();
         assert_eq!(result.to_string(), r#"["a","b"]"#);
     }
 
     #[test]
     fn integers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray(1,2,3)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[createArray(1,2,3)]", &Context::new()).unwrap();
         assert_eq!(result.to_string(), "[1,2,3]");
     }
 
     #[test]
     fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray(createArray('a','b'), createArray('c','d'))]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[createArray(createArray('a','b'), createArray('c','d'))]", &Context::new()).unwrap();
         assert_eq!(result.to_string(), r#"[["a","b"],["c","d"]]"#);
     }
 
@@ -103,14 +103,14 @@ mod tests {
     #[test]
     fn mixed_types() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray(1,'a')]", &Context::new(), true);
+        let result = parser.parse_and_execute("[createArray(1,'a')]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn empty() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createArray()]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[createArray()]", &Context::new()).unwrap();
         assert_eq!(result.to_string(), "[]");
     }
 }

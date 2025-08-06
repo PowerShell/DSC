@@ -89,56 +89,56 @@ mod tests {
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', 'b')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[concat('a', 'b')]", &Context::new()).unwrap();
         assert_eq!(result, "ab");
     }
 
     #[test]
     fn strings_with_spaces() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a ', ' ', ' b')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[concat('a ', ' ', ' b')]", &Context::new()).unwrap();
         assert_eq!(result, "a   b");
     }
 
     #[test]
     fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat(createArray('a','b'), createArray('c','d'))]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[concat(createArray('a','b'), createArray('c','d'))]", &Context::new()).unwrap();
         assert_eq!(result.to_string(), r#"["a","b","c","d"]"#);
     }
 
     #[test]
     fn string_and_numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', 1)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[concat('a', 1)]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', concat('b', 'c'), 'd')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[concat('a', concat('b', 'c'), 'd')]", &Context::new()).unwrap();
         assert_eq!(result, "abcd");
     }
 
     #[test]
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a')]", &Context::new(), true);
+        let result = parser.parse_and_execute("[concat('a')]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn string_and_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('a', createArray('b','c'))]", &Context::new(), true);
+        let result = parser.parse_and_execute("[concat('a', createArray('b','c'))]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn array_and_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat(createArray('a','b'), 'c')]", &Context::new(), true);
+        let result = parser.parse_and_execute("[concat(createArray('a','b'), 'c')]", &Context::new());
         assert!(result.is_err());
     }
 }

@@ -150,13 +150,13 @@ mod tests {
     #[test]
     fn parser_with_values() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[coalesce('hello', 'world')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[coalesce('hello', 'world')]", &Context::new()).unwrap();
         assert_eq!(result, "hello");
 
-        let result = parser.parse_and_execute("[coalesce(42, 'fallback')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[coalesce(42, 'fallback')]", &Context::new()).unwrap();
         assert_eq!(result, 42);
 
-        let result = parser.parse_and_execute("[coalesce(true)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[coalesce(true)]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 }

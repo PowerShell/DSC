@@ -103,21 +103,21 @@ mod tests {
     #[test]
     fn string_contains_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[contains('hello', 'lo')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[contains('hello', 'lo')]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn string_does_not_contain_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[contains('hello', 'world')]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[contains('hello', 'world')]", &Context::new()).unwrap();
         assert_eq!(result, false);
     }
 
     #[test]
     fn string_contains_number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[contains('hello123', 123)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[contains('hello123', 123)]", &Context::new()).unwrap();
         assert_eq!(result, true);
     }
 }

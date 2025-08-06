@@ -43,7 +43,7 @@ mod tests {
     #[test]
     fn init() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[systemRoot()]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[systemRoot()]", &Context::new()).unwrap();
         // on windows, the default is SYSTEMDRIVE env var
         #[cfg(target_os = "windows")]
         assert_eq!(result, format!("{}\\", std::env::var("SYSTEMDRIVE").unwrap()));
@@ -58,7 +58,7 @@ mod tests {
         let mut context = Context::new();
         let separator = std::path::MAIN_SEPARATOR;
         context.system_root = PathBuf::from(format!("{separator}mnt"));
-        let result = parser.parse_and_execute("[systemRoot()]", &context, true).unwrap();
+        let result = parser.parse_and_execute("[systemRoot()]", &context).unwrap();
         assert_eq!(result, format!("{separator}mnt"));
     }
 

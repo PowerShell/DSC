@@ -83,7 +83,7 @@ mod tests {
     #[test]
     fn not_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[secret(1)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[secret(1)]", &Context::new());
         assert!(result.is_err());
     }
 }

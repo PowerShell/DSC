@@ -116,7 +116,7 @@ impl DscResource {
         let config_json = serde_json::to_string(&configuration)?;
         let mut configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
         // don't process expressions again as they would have already been processed before being passed to the adapter
-        configurator.process_expressions = false;
+        configurator.context.process_expressions = false;
         Ok(configurator)
     }
 }

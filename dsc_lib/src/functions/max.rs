@@ -55,63 +55,63 @@ mod tests {
     #[test]
     fn list() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(3,2,5,4)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[max(3,2,5,4)]", &Context::new()).unwrap();
         assert_eq!(result, 5);
     }
 
     #[test]
     fn list_with_spaces() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(3, 2, 5, 4)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[max(3, 2, 5, 4)]", &Context::new()).unwrap();
         assert_eq!(result, 5);
     }
 
     #[test]
     fn array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0, 3, 2, 7, 4)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[max(createArray(0, 3, 2, 7, 4))]", &Context::new()).unwrap();
         assert_eq!(result, 7);
     }
 
     #[test]
     fn array_single_value() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[max(createArray(0))]", &Context::new()).unwrap();
         assert_eq!(result, 0);
     }
 
     #[test]
     fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0, 3), createArray(2, 5))]", &Context::new(), true);
+        let result = parser.parse_and_execute("[max(createArray(0, 3), createArray(2, 5))]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn string_and_numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max('a', 1)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[max('a', 1)]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(-10, max(-2, -9), -5)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[max(-10, max(-2, -9), -5)]", &Context::new()).unwrap();
         assert_eq!(result, -2);
     }
 
     #[test]
     fn int_and_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(1, createArray(0,2))]", &Context::new(), true);
+        let result = parser.parse_and_execute("[max(1, createArray(0,2))]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn array_and_int() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0,2), 1)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[max(createArray(0,2), 1)]", &Context::new());
         assert!(result.is_err());
     }
 }

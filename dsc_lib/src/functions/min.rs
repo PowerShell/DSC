@@ -55,63 +55,63 @@ mod tests {
     #[test]
     fn list() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(3,2,5,4)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[min(3,2,5,4)]", &Context::new()).unwrap();
         assert_eq!(result, 2);
     }
 
     #[test]
     fn list_with_spaces() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(3, 2, 5, 4)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[min(3, 2, 5, 4)]", &Context::new()).unwrap();
         assert_eq!(result, 2);
     }
 
     #[test]
     fn array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(0, 3, 2, 5, 4)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[min(createArray(0, 3, 2, 5, 4))]", &Context::new()).unwrap();
         assert_eq!(result, 0);
     }
 
     #[test]
     fn array_single_value() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(0)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[min(createArray(0))]", &Context::new()).unwrap();
         assert_eq!(result, 0);
     }
 
     #[test]
     fn arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(0, 3), createArray(2, 5))]", &Context::new(), true);
+        let result = parser.parse_and_execute("[min(createArray(0, 3), createArray(2, 5))]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn string_and_numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min('a', 1)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[min('a', 1)]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(8, min(2, -9), 3)]", &Context::new(), true).unwrap();
+        let result = parser.parse_and_execute("[min(8, min(2, -9), 3)]", &Context::new()).unwrap();
         assert_eq!(result, -9);
     }
 
     #[test]
     fn int_and_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(1, createArray(0,2))]", &Context::new(), true);
+        let result = parser.parse_and_execute("[min(1, createArray(0,2))]", &Context::new());
         assert!(result.is_err());
     }
 
     #[test]
     fn array_and_int() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(0,2), 1)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[min(createArray(0,2), 1)]", &Context::new());
         assert!(result.is_err());
     }
 }
