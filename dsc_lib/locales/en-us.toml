@@ -26,7 +26,7 @@ notAllowedValue = "Parameter '%{name}' has allowed values constraint but is not 
 allowedValuesNotStringOrInteger = "Parameter '%{name}' has allowed values constraint but is not a string or integer"
 
 [configure.dependsOn]
-duplicateResource = "Resource named '%{name}' is specified more than once in the configuration"
+duplicateResource = "Resource named '%{name}' for type '%{type_name}' is specified more than once in the configuration"
 syntaxIncorrect = "'dependsOn' syntax is incorrect: %{dependency}"
 dependencyNotFound = "'dependsOn' resource name '%{dependency_name}' does not exist for resource named '%{resource_name}'"
 dependencyTypeMismatch = "'dependsOn' resource type '%{resource_type}' does not match resource type '%{dependency_type}' for resource named '%{resource_name}'"
