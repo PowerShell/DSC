@@ -22,6 +22,7 @@ impl Function for CreateObject {
             accepted_arg_ordered_types: vec![],
             remaining_arg_accepted_types: Some(vec![
                 FunctionArgKind::String,
+                FunctionArgKind::Null,
                 FunctionArgKind::Number,
                 FunctionArgKind::Boolean,
                 FunctionArgKind::Object,

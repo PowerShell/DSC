@@ -22,6 +22,7 @@ impl Function for Coalesce {
             accepted_arg_ordered_types: vec![vec![
                 FunctionArgKind::Array,
                 FunctionArgKind::Boolean,
+                FunctionArgKind::Null,
                 FunctionArgKind::Number,
                 FunctionArgKind::Object,
                 FunctionArgKind::String,
@@ -29,6 +30,7 @@ impl Function for Coalesce {
             remaining_arg_accepted_types: Some(vec![
                 FunctionArgKind::Array,
                 FunctionArgKind::Boolean,
+                FunctionArgKind::Null,
                 FunctionArgKind::Number,
                 FunctionArgKind::Object,
                 FunctionArgKind::String,
@@ -36,6 +38,7 @@ impl Function for Coalesce {
             return_types: vec![
                 FunctionArgKind::Array,
                 FunctionArgKind::Boolean,
+                FunctionArgKind::Null,
                 FunctionArgKind::Number,
                 FunctionArgKind::Object,
                 FunctionArgKind::String,
