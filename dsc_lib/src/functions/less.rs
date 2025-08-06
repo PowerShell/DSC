@@ -82,7 +82,7 @@ mod tests {
     #[test]
     fn type_mismatch_string_number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[lessOrEquals('5', 3)]", &Context::new(), true);
+        let result = parser.parse_and_execute("[less('5', 3)]", &Context::new(), true);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Arguments must be of the same type"));
     }
