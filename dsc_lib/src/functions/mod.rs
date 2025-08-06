@@ -263,7 +263,7 @@ pub struct FunctionDefinition {
     pub min_args: usize,
     #[serde(rename = "maxArgs")]
     pub max_args: usize,
-    #[serde(rename = "returnType")]
+    #[serde(rename = "returnTypes")]
     pub return_types: Vec<FunctionArgKind>,
 }
 
