@@ -166,23 +166,24 @@ Required: false
 
 ### kind
 
-The `kind` property defines how DSC should handle the resource. DSC supports three kinds of
-command-based DSC Resources: `Resource`, `Group`, and `Adapter`.
+The `kind` property defines how DSC should handle the resource. DSC supports several kinds
+of DSC resources: `resource`, `group`, `adapter`, `importer`, and `exporter`.
 
 When `kind` isn't defined in the resource manifest, DSC infers the value for the property. If the
 `adapter` property is defined in the resource manifest, DSC infers the value of `kind` as
-`Adapter`. If the `adapter` property isn't defined, DSC infers the value of `kind` as `Resource`.
-DSC can't infer whether a manifest is for a group resource.
+`adapter`. If the `adapter` property isn't defined, DSC infers the value of `kind` as `resource`.
+DSC can't infer whether a manifest is for a `group` or `importer` resource.
 
 When defining a group resource, always explicitly define the `kind` property in the manifest as
-`Group`.
+`group`. When defining an importer resource, always explicitly define the `kind` property in the
+manifest as `importer`.
 
 For more information, see [DSC Resource kind schema reference][02].
 
 ```yaml
 Type:        string
 Required:    false
-ValidValues: [Resource, Adapter, Group]
+ValidValues: [resource, adapter, group, importer, exporter]
 ```
 
 ### tags
