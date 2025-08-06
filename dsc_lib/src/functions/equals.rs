@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, FunctionCategory};
+use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use super::Function;
 use serde_json::Value;
@@ -12,24 +12,20 @@ use serde_json::Value;
 pub struct Equals {}
 
 impl Function for Equals {
-    fn description(&self) -> String {
-        t!("functions.equals.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Comparison
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Number, AcceptedArgKind::String, AcceptedArgKind::Array, AcceptedArgKind::Object]
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        2
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "equals".to_string(),
+            description: t!("functions.equals.description").to_string(),
+            category: FunctionCategory::Comparison,
+            min_args: 2,
+            max_args: 2,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![FunctionArgKind::Number, FunctionArgKind::String, FunctionArgKind::Array, FunctionArgKind::Object],
+            ],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::Boolean],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

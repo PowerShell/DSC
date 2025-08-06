@@ -155,7 +155,7 @@ Describe 'tests for function expressions' {
         $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
         if ($isError) {
             $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
-            (Get-Content $TestDrive/error.log -Raw) | Should -Match 'Invalid item to find, must be a string or number'
+            (Get-Content $TestDrive/error.log -Raw) | Should -Match 'accepted types are: String, Number'
         } else {
             $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
             ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)

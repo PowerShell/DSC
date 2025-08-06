@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,24 +12,23 @@ use tracing::debug;
 pub struct Reference {}
 
 impl Function for Reference {
-    fn description(&self) -> String {
-        t!("functions.reference.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Resource
-    }
-
-    fn min_args(&self) -> usize {
-        1
-    }
-
-    fn max_args(&self) -> usize {
-        1
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "reference".to_string(),
+            description: t!("functions.reference.description").to_string(),
+            category: FunctionCategory::Resource,
+            min_args: 1,
+            max_args: 1,
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
+            remaining_arg_accepted_types: None,
+            return_types: vec![
+                FunctionArgKind::Array,
+                FunctionArgKind::Boolean,
+                FunctionArgKind::Number,
+                FunctionArgKind::Object,
+                FunctionArgKind::String,
+            ],
+        }
     }
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {

@@ -205,6 +205,7 @@ argCountRequired = "Function '%{name}' requires between %{min_args} and %{max_ar
 noArrayArgs = "Function '%{name}' does not accept array arguments, accepted types are: %{accepted_args_string}"
 noBooleanArgs = "Function '%{name}' does not accept boolean arguments, accepted types are: %{accepted_args_string}"
 noNumberArgs = "Function '%{name}' does not accept number arguments, accepted types are: %{accepted_args_string}"
+noNullArgs = "Function '%{name}' does not accept null arguments, accepted types are: %{accepted_args_string}"
 noObjectArgs = "Function '%{name}' does not accept object arguments, accepted types are: %{accepted_args_string}"
 noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
 
