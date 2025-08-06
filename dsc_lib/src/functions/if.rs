@@ -22,7 +22,7 @@ impl Function for If {
             accepted_arg_ordered_types: vec![
                 vec![FunctionArgKind::Boolean],
                 vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
-                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object]
+                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
                 ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],

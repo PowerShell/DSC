@@ -697,7 +697,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         write_table = true;
     }
     let mut include_separator = false;
-    let accepted_arg_types= [
+    let returned_types= [
         (FunctionArgKind::Array, "a"),
         (FunctionArgKind::Boolean, "b"),
         (FunctionArgKind::Number, "n"),
@@ -724,8 +724,8 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
 
         if write_table {
             // construct arg_types from '-' times number of accepted_arg_types
-            let mut arg_types = "-".repeat(accepted_arg_types.len());
-            for (i, (arg_type, letter)) in accepted_arg_types.iter().enumerate() {
+            let mut arg_types = "-".repeat(returned_types.len());
+            for (i, (arg_type, letter)) in returned_types.iter().enumerate() {
                 if function.return_types.contains(arg_type) {
                     arg_types.replace_range(i..=i, letter);
                 }
