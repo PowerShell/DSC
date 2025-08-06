@@ -65,21 +65,21 @@ mod tests {
     #[test]
     fn simple_object() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('name', 'test')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[createObject('name', 'test')]", &Context::new(), true).unwrap();
         assert_eq!(result.to_string(), r#"{"name":"test"}"#);
     }
 
     #[test]
     fn multiple_properties() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('name', 'test', 'value', 42)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[createObject('name', 'test', 'value', 42)]", &Context::new(), true).unwrap();
         assert_eq!(result.to_string(), r#"{"name":"test","value":42}"#);
     }
 
     #[test]
     fn mixed_value_types() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('string', 'hello', 'number', 123, 'boolean', true)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[createObject('string', 'hello', 'number', 123, 'boolean', true)]", &Context::new(), true).unwrap();
 
         let json: serde_json::Value = serde_json::from_str(&result.to_string()).unwrap();
         assert_eq!(json["string"], "hello");
@@ -90,35 +90,35 @@ mod tests {
     #[test]
     fn nested_objects() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('outer', createObject('inner', 'value'))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[createObject('outer', createObject('inner', 'value'))]", &Context::new(), true).unwrap();
         assert_eq!(result.to_string(), r#"{"outer":{"inner":"value"}}"#);
     }
 
     #[test]
     fn with_arrays() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('items', createArray('a', 'b', 'c'))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[createObject('items', createArray('a', 'b', 'c'))]", &Context::new(), true).unwrap();
         assert_eq!(result.to_string(), r#"{"items":["a","b","c"]}"#);
     }
 
     #[test]
     fn odd_number_of_args() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject('name')]", &Context::new());
+        let result = parser.parse_and_execute("[createObject('name')]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn non_string_key() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject(123, 'value')]", &Context::new());
+        let result = parser.parse_and_execute("[createObject(123, 'value')]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn empty() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[createObject()]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[createObject()]", &Context::new(), true).unwrap();
         assert_eq!(result.to_string(), "{}");
     }
 }

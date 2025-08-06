@@ -66,35 +66,35 @@ mod tests {
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a/b', 'c')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[resourceId('a/b', 'c')]", &Context::new(), true).unwrap();
         assert_eq!(result, "a/b:c");
     }
 
     #[test]
     fn strings_with_dots() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a.b/c', 'd')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[resourceId('a.b/c', 'd')]", &Context::new(), true).unwrap();
         assert_eq!(result, "a.b/c:d");
     }
 
     #[test]
     fn invalid_type() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a/b/c','d')]", &Context::new());
+        let result = parser.parse_and_execute("[resourceId('a/b/c','d')]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn invalid_name() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a','b/c')]", &Context::new());
+        let result = parser.parse_and_execute("[resourceId('a','b/c')]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[resourceId('a')]", &Context::new());
+        let result = parser.parse_and_execute("[resourceId('a')]", &Context::new(), true);
         assert!(result.is_err());
     }
 }

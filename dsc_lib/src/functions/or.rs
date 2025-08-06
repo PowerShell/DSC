@@ -51,21 +51,21 @@ mod tests {
     #[test]
     fn two_values() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[or(true, false)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[or(true, false)]", &Context::new(), true).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn multiple_values() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[or(true, false, true)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[or(true, false, true)]", &Context::new(), true).unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn all_false() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[or(false, false)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[or(false, false)]", &Context::new(), true).unwrap();
         assert_eq!(result, false);
     }
 }

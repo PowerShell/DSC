@@ -39,7 +39,7 @@ mod tests {
     #[test]
     fn false_function() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[false()]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[false()]", &Context::new(), true).unwrap();
         assert_eq!(result, false);
     }
 }

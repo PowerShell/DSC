@@ -50,28 +50,28 @@ mod tests {
     #[test]
     fn numbers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[div(8, 3)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[div(8, 3)]", &Context::new(), true).unwrap();
         assert_eq!(result, 2);
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[div(18, div(9, 3))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[div(18, div(9, 3))]", &Context::new(), true).unwrap();
         assert_eq!(result, 6);
     }
 
     #[test]
     fn invalid_one_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[div(5)]", &Context::new());
+        let result = parser.parse_and_execute("[div(5)]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn invalid_div_by_zero() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[div(5, 0)]", &Context::new());
+        let result = parser.parse_and_execute("[div(5, 0)]", &Context::new(), true);
         assert!(result.is_err());
     }
 
@@ -79,7 +79,7 @@ mod tests {
     fn overflow_input() {
         let mut parser = Statement::new().unwrap();
         // max value for i64 is 2^63 -1 (or 9,223,372,036,854,775,807)
-        let result = parser.parse_and_execute("[div(9223372036854775808, 2)]", &Context::new());
+        let result = parser.parse_and_execute("[div(9223372036854775808, 2)]", &Context::new(), true);
         assert!(result.is_err());
     }
 }

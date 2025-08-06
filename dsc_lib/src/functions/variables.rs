@@ -55,14 +55,14 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let mut context = Context::new();
         context.variables.insert("hello".to_string(), "world".into());
-        let result = parser.parse_and_execute("[variables('hello')]", &context).unwrap();
+        let result = parser.parse_and_execute("[variables('hello')]", &context, true).unwrap();
         assert_eq!(result, "world");
     }
 
     #[test]
     fn invalid_resourceid() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[variables('foo')]", &Context::new());
+        let result = parser.parse_and_execute("[variables('foo')]", &Context::new(), true);
         assert!(result.is_err());
     }
 }

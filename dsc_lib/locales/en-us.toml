@@ -442,6 +442,7 @@ failedToParseEscapedStringLiteral = "Unable to parse escaped string literal"
 parsingEscapedStringLiteral = "Parsing escaped string literal: %{value}"
 parsingExpression = "Parsing expression"
 unknownExpressionType = "Unknown expression type: %{kind}"
+skippingExpressionProcessing = "Skipping expression processing"
 
 [dscerror]
 adapterNotFound = "Adapter not found"

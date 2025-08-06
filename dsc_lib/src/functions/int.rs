@@ -51,56 +51,56 @@ mod tests {
     #[test]
     fn string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[int('4')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[int('4')]", &Context::new(), true).unwrap();
         assert_eq!(result, 4);
     }
 
     #[test]
     fn string_with_decimal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[int('4.0')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[int('4.0')]", &Context::new(), true).unwrap();
         assert_eq!(result, 4);
     }
 
     #[test]
     fn number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[int(123)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[int(123)]", &Context::new(), true).unwrap();
         assert_eq!(result, 123);
     }
 
     #[test]
     fn float() {
         let mut parser = Statement::new().unwrap();
-        let err = parser.parse_and_execute("[int(1.0)]", &Context::new()).unwrap_err();
+        let err = parser.parse_and_execute("[int(1.0)]", &Context::new(), true).unwrap_err();
         assert!(matches!(err, DscError::Parser(_)));
     }
 
     #[test]
     fn incomplete_float_missing_digit() {
         let mut parser = Statement::new().unwrap();
-        let err = parser.parse_and_execute("[int(.2)]", &Context::new()).unwrap_err();
+        let err = parser.parse_and_execute("[int(.2)]", &Context::new(), true).unwrap_err();
         assert!(matches!(err, DscError::Parser(_)));
     }
 
     #[test]
     fn incomplete_float_missing_decimal() {
         let mut parser = Statement::new().unwrap();
-        let err = parser.parse_and_execute("[int(2.)]", &Context::new()).unwrap_err();
+        let err = parser.parse_and_execute("[int(2.)]", &Context::new(), true).unwrap_err();
         assert!(matches!(err, DscError::Parser(_)));
     }
 
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[int(int('-1'))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[int(int('-1'))]", &Context::new(), true).unwrap();
         assert_eq!(result, -1);
     }
 
     #[test]
     fn error() {
         let mut parser = Statement::new().unwrap();
-        let err = parser.parse_and_execute("[int('foo.1')]", &Context::new()).unwrap_err();
+        let err = parser.parse_and_execute("[int('foo.1')]", &Context::new(), true).unwrap_err();
         assert!(matches!(err, DscError::FunctionArg(_, _)));
     }
 }

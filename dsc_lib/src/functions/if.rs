@@ -50,21 +50,21 @@ mod tests {
     #[test]
     fn invalid_condition() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[if('PATH', 1 , 2)]", &Context::new());
+        let result = parser.parse_and_execute("[if('PATH', 1 , 2)]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn condition_true() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[if(true, 'left', 'right')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[if(true, 'left', 'right')]", &Context::new(), true).unwrap();
         assert_eq!(result, "left");
     }
 
     #[test]
     fn condition_false() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[if(false, 'left', 'right')]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[if(false, 'left', 'right')]", &Context::new(), true).unwrap();
         assert_eq!(result, "right");
     }
 }

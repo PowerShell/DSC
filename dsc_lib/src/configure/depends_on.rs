@@ -35,7 +35,7 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
         let mut dependency_already_in_order = true;
         if let Some(depends_on) = resource.depends_on.clone() {
             for dependency in depends_on {
-                let statement = parser.parse_and_execute(&dependency, context)?;
+                let statement = parser.parse_and_execute(&dependency, context, true)?;
                 let Some(string_result) = statement.as_str() else {
                     return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = dependency).to_string()));
                 };
@@ -69,7 +69,7 @@ pub fn get_resource_invocation_order(config: &Configuration, parser: &mut Statem
                 // check if the order has resource before its dependencies
                 let resource_index = order.iter().position(|r| r.name == resource.name && r.resource_type == resource.resource_type).ok_or(DscError::Validation(t!("configure.dependsOn.resourceNotInOrder").to_string()))?;
                 for dependency in depends_on {
-                  let statement = parser.parse_and_execute(dependency, context)?;
+                  let statement = parser.parse_and_execute(dependency, context, true)?;
                   let Some(string_result) = statement.as_str() else {
                       return Err(DscError::Validation(t!("configure.dependsOn.syntaxIncorrect", dependency = dependency).to_string()));
                   };

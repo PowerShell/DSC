@@ -44,8 +44,13 @@ impl Statement {
     /// # Errors
     ///
     /// This function will return an error if the statement fails to parse or execute.
-    pub fn parse_and_execute(&mut self, statement: &str, context: &Context) -> Result<Value, DscError> {
+    pub fn parse_and_execute(&mut self, statement: &str, context: &Context, process_expressions: bool) -> Result<Value, DscError> {
         debug!("{}", t!("parser.parsingStatement", statement = statement));
+        if !process_expressions {
+            debug!("{}", t!("parser.skippingExpressionProcessing"));
+            return Ok(Value::String(statement.to_string()));
+        }
+
         let Some(tree) = &mut self.parser.parse(statement, None) else {
             return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
         };
@@ -102,49 +107,49 @@ mod tests {
     #[test]
     fn string_literal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("this is a string", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("this is a string", &Context::new(), true).unwrap();
         assert_eq!(result, "this is a string");
     }
 
     #[test]
     fn bracket_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[[this is a string]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[[this is a string]", &Context::new(), true).unwrap();
         assert_eq!(result, "[this is a string]");
     }
 
     #[test]
     fn bracket_in_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[this] is a string", &Context::new());
+        let result = parser.parse_and_execute("[this] is a string", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn invalid_function() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[invalid()]", &Context::new());
+        let result = parser.parse_and_execute("[invalid()]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn nonquoted_string_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat(abc)]", &Context::new());
+        let result = parser.parse_and_execute("[concat(abc)]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn missing_endquote_string_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('abc)]", &Context::new());
+        let result = parser.parse_and_execute("[concat('abc)]", &Context::new(), true);
         assert!(result.is_err());
     }
 
     #[test]
     fn empty_parameter() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[concat('abc', , 'def')]", &Context::new());
+        let result = parser.parse_and_execute("[concat('abc', , 'def')]", &Context::new(), true);
         assert!(result.is_err());
     }
 }
