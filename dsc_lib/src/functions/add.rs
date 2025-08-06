@@ -19,7 +19,10 @@ impl Function for Add {
             category: FunctionCategory::Numeric,
             min_args: 2,
             max_args: 2,
-            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Number], vec![FunctionArgKind::Number]],
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::Number],
+                vec![FunctionArgKind::Number],
+            ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Number],
         }

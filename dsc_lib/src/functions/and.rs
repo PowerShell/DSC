@@ -19,7 +19,10 @@ impl Function for And {
             category: FunctionCategory::Logical,
             min_args: 2,
             max_args: usize::MAX,
-            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Boolean], vec![FunctionArgKind::Boolean]],
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::Boolean],
+                vec![FunctionArgKind::Boolean],
+            ],
             remaining_arg_accepted_types: Some(vec![FunctionArgKind::Boolean]),
             return_types: vec![FunctionArgKind::Boolean],
         }

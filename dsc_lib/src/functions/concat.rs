@@ -19,7 +19,10 @@ impl Function for Concat {
             category: FunctionCategory::String,
             min_args: 2,
             max_args: usize::MAX,
-            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String, FunctionArgKind::Array], vec![FunctionArgKind::String, FunctionArgKind::Array]],
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::String, FunctionArgKind::Array],
+                vec![FunctionArgKind::String, FunctionArgKind::Array],
+            ],
             remaining_arg_accepted_types: Some(vec![FunctionArgKind::String, FunctionArgKind::Array]),
             return_types: vec![FunctionArgKind::String, FunctionArgKind::Array],
         }
