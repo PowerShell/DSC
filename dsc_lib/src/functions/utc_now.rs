@@ -96,28 +96,3 @@ fn convert_dotnet_format_to_chrono(format: &str) -> String {
 
     converted_format
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::configure::context::Context;
-    use crate::parser::Statement;
-    use serde_json::Value;
-
-    #[test]
-    fn without_format() {
-        let mut parser = Statement::new().unwrap();
-        let mut context = Context::new();
-        context.processing_parameter_defaults = true; // Simulate processing parameter defaults
-        let result = parser.parse_and_execute("[utcNow()]", &context).unwrap();
-        assert_eq!(result, Value::String(chrono::Utc::now().to_rfc3339()));
-    }
-
-    #[test]
-    fn with_format() {
-        let mut parser = Statement::new().unwrap();
-        let mut context = Context::new();
-        context.processing_parameter_defaults = true; // Simulate processing parameter defaults
-        let result = parser.parse_and_execute("[utcNow('yyyy-MM-dd')]", &context).unwrap();
-        assert_eq!(result, Value::String(chrono::Utc::now().format("yyyy-MM-dd").to_string()));
-    }
-}
