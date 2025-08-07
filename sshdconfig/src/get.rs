@@ -14,8 +14,8 @@ use tracing::debug;
 
 use crate::args::Setting;
 use crate::error::SshdConfigError;
-use crate::export::invoke_export;
-use crate::util::{extract_metadata_from_input, extract_sshd_defaults};
+use crate::parser::parse_text_to_map;
+use crate::util::{extract_metadata_from_input, extract_sshd_defaults, invoke_sshd_config_validation};
 
 /// Invoke the get command.
 ///
@@ -91,7 +91,8 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 
 fn get_sshd_settings(input: Option<&String>) -> Result<Map<String, Value>, SshdConfigError> {
     let cmd_info = extract_metadata_from_input(input)?;
-    let mut result = invoke_export(cmd_info.sshd_args)?;
+    let sshd_config_text = invoke_sshd_config_validation(cmd_info.sshd_args)?;
+    let mut result = parse_text_to_map(&sshd_config_text)?;
 
     if !cmd_info.metadata.include_defaults {
         let defaults = extract_sshd_defaults()?;

@@ -30,7 +30,13 @@
     "export": {
         "executable": "sshdconfig",
         "args": [
-            "export"
+            "get",
+            "-s",
+            "sshd-config",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
         ]
     },
     "schema": {

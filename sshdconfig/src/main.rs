@@ -9,7 +9,6 @@ use std::process::exit;
 use tracing::{debug, error};
 
 use args::{Args, Command, DefaultShell, Setting};
-use export::invoke_export;
 use get::invoke_get;
 use parser::SshdConfigParser;
 use set::invoke_set;
@@ -17,7 +16,6 @@ use util::enable_tracing;
 
 mod args;
 mod error;
-mod export;
 mod get;
 mod inputs;
 mod metadata;
@@ -36,10 +34,6 @@ fn main() {
     let args = Args::parse();
 
     let result = match &args.command {
-        Command::Export => {
-            debug!("{}", t!("main.export").to_string());
-            invoke_export(None)
-        },
         Command::Get { input, setting } => {
             invoke_get(input.as_ref(), setting)
         },

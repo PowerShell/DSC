@@ -26,8 +26,6 @@ pub enum Command {
         #[clap(short = 'i', long, help = t!("args.setInput").to_string())]
         input: String
     },
-    /// Export `sshd_config`
-    Export,
     Schema {
         // Used to inform which schema to generate
         #[clap(short = 's', long, hide = true)]

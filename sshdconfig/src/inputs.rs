@@ -24,14 +24,18 @@ impl CommandInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Metadata {
     /// Filepath for the `sshd_config` file to be processed
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filepath: Option<String>,
     /// Switch to include defaults in the output
-    #[serde(rename = "includeDefaults")]
+    #[serde(rename = "includeDefaults", default = "include_defaults")]
     pub include_defaults: bool,
+}
+
+pub fn include_defaults() -> bool {
+    true
 }
 
 impl Metadata {
