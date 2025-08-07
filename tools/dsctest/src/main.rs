@@ -139,13 +139,13 @@ fn main() {
             ];
             // depending on the input, return the appropriate instance whether it is name or id or both
             let resource = if let Some(name) = get.name {
-                instances.into_iter().find(|i| i.name == Some(name.clone())).unwrap_or_else(|| {
-                    eprintln!("No instance found with name: {}", name);
+                instances.into_iter().find(|i| i.name.as_ref() == Some(&name)).unwrap_or_else(|| {
+                    eprintln!("No instance found with name: {name}");
                     std::process::exit(1);
                 })
             } else if let Some(id) = get.id {
                 instances.into_iter().find(|i| i.id == Some(id)).unwrap_or_else(|| {
-                    eprintln!("No instance found with id: {}", id);
+                    eprintln!("No instance found with id: {id}");
                     std::process::exit(1);
                 })
             } else {
