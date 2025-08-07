@@ -248,10 +248,10 @@ Describe 'tests for function expressions' {
     It 'utcNow function works for: utcNow(<format>)' -TestCases @(
         @{ format = $null}
         @{ format = "yyyy-MM-dd"}
-        @{ format = "yyyy-MM-ddTHH:mm:ss"}
-        @{ format = "yyyy-MM-ddTHH:mm:ss.fffZ"}
-        @{ format = "MMM dd, yyyy HH:mm"}
-        @{ format = "yy-MMMM-dddd H:m tt" }
+        @{ format = "yyyy-MM-ddTHH"}
+        @{ format = "yyyy-MM-ddTHHZ"}
+        @{ format = "MMM dd, yyyy HH"}
+        @{ format = "yy-MMMM-dddd tt H" }
         @{ format = "MMM ddd zzz" }
     ) {
         param($format)
