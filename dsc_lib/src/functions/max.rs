@@ -69,14 +69,14 @@ mod tests {
     #[test]
     fn array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0, 3, 2, 7, 4)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[max(createArray(0, 3, 2, 7, 4))]", &Context::new()).unwrap();
         assert_eq!(result, 7);
     }
 
     #[test]
     fn array_single_value() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[max(createArray(0))]", &Context::new()).unwrap();
         assert_eq!(result, 0);
     }
 

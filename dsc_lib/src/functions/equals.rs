@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn int_notequal() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[equals(1,2]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[equals(1,2)]", &Context::new()).unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 

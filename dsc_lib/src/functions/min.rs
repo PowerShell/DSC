@@ -69,14 +69,14 @@ mod tests {
     #[test]
     fn array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(0, 3, 2, 5, 4)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[min(createArray(0, 3, 2, 5, 4))]", &Context::new()).unwrap();
         assert_eq!(result, 0);
     }
 
     #[test]
     fn array_single_value() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[min(createArray(0)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[min(createArray(0))]", &Context::new()).unwrap();
         assert_eq!(result, 0);
     }
 
