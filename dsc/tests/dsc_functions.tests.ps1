@@ -253,6 +253,7 @@ Describe 'tests for function expressions' {
         @{ format = "MMM dd, yyyy HH"}
         @{ format = "yy-MMMM-dddd tt H" }
         @{ format = "MMM ddd zzz" }
+        @{ format = "YY YYYY MM MMM MMMM" }
     ) {
         param($format)
 
