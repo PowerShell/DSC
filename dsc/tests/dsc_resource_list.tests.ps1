@@ -84,10 +84,12 @@ Describe 'Tests for listing resources' {
     }
 
     It 'Capabilities are returned' {
-        $resource = dsc resource list Microsoft/OSInfo | ConvertFrom-Json
+        $resource = dsc resource list Microsoft.DSC.Debug/Echo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        $resource.capabilities.Count | Should -Be 2
+        $resource.capabilities.Count | Should -Be 4
         $resource.capabilities | Should -Contain 'get'
+        $resource.capabilities | Should -Contain 'set'
+        $resource.capabilities | Should -Contain 'test'
         $resource.capabilities | Should -Contain 'export'
     }
 
