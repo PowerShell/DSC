@@ -265,6 +265,10 @@ description = "Checks if an array, object, or string is empty"
 invoked = "empty function"
 invalidArgType = "Invalid argument type, argument must be an array, object, or string"
 
+[functions.endsWith]
+description = "Checks if a string ends with a specific suffix"
+invoked = "endsWith function"
+
 [functions.envvar]
 description = "Retrieves the value of an environment variable"
 notFound = "Environment variable not found"
@@ -381,6 +385,10 @@ extensionReturnedError = "Extension '%{extension}': %{error}"
 noExtensions = "No extensions supporting secrets was found"
 secretNotFound = "Secret '%{name}' not found"
 
+[functions.startsWith]
+description = "Checks if a string starts with a specific prefix"
+invoked = "startsWith function"
+
 [functions.sub]
 description = "Subtracts the second number from the first"
 invoked = "sub function"
@@ -397,6 +405,15 @@ invoked = "true function"
 description = "Returns a single array or object with all elements from the parameters"
 invoked = "union function"
 invalidArgType = "All arguments must either be arrays or objects"
+
+[functions.uniqueString]
+description = "Returns a deterministic unique string from the given strings"
+invoked = "uniqueString function"
+
+[functions.utcNow]
+description = "Returns the current UTC time"
+invoked = "utcNow function"
+onlyUsedAsParameterDefault = "utcNow function can only be used as a parameter default"
 
 [functions.variables]
 description = "Retrieves the value of a variable"

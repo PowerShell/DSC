@@ -22,6 +22,7 @@ pub mod create_array;
 pub mod create_object;
 pub mod div;
 pub mod empty;
+pub mod ends_with;
 pub mod envvar;
 pub mod equals;
 pub mod greater;
@@ -45,10 +46,13 @@ pub mod path;
 pub mod reference;
 pub mod resource_id;
 pub mod secret;
+pub mod starts_with;
 pub mod sub;
 pub mod system_root;
 pub mod r#true;
 pub mod union;
+pub mod unique_string;
+pub mod utc_now;
 pub mod variables;
 
 /// The kind of argument that a function accepts.
@@ -111,45 +115,55 @@ impl FunctionDispatcher {
     #[must_use]
     pub fn new() -> Self {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
-        functions.insert("add".to_string(), Box::new(add::Add{}));
-        functions.insert("and".to_string(), Box::new(and::And{}));
-        functions.insert("base64".to_string(), Box::new(base64::Base64{}));
-        functions.insert("bool".to_string(), Box::new(bool::Bool{}));
-        functions.insert("coalesce".to_string(), Box::new(coalesce::Coalesce{}));
-        functions.insert("concat".to_string(), Box::new(concat::Concat{}));
-        functions.insert("contains".to_string(), Box::new(contains::Contains{}));
-        functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
-        functions.insert("createObject".to_string(), Box::new(create_object::CreateObject{}));
-        functions.insert("div".to_string(), Box::new(div::Div{}));
-        functions.insert("empty".to_string(), Box::new(empty::Empty{}));
-        functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
-        functions.insert("equals".to_string(), Box::new(equals::Equals{}));
-        functions.insert("false".to_string(), Box::new(r#false::False{}));
-        functions.insert("greater".to_string(), Box::new(greater::Greater{}));
-        functions.insert("greaterOrEquals".to_string(), Box::new(greater_or_equals::GreaterOrEquals{}));
-        functions.insert("if".to_string(), Box::new(r#if::If{}));
-        functions.insert("format".to_string(), Box::new(format::Format{}));
-        functions.insert("int".to_string(), Box::new(int::Int{}));
-        functions.insert("length".to_string(), Box::new(length::Length{}));
-        functions.insert("less".to_string(), Box::new(less::Less{}));
-        functions.insert("lessOrEquals".to_string(), Box::new(less_or_equals::LessOrEquals{}));
-        functions.insert("max".to_string(), Box::new(max::Max{}));
-        functions.insert("min".to_string(), Box::new(min::Min{}));
-        functions.insert("mod".to_string(), Box::new(mod_function::Mod{}));
-        functions.insert("mul".to_string(), Box::new(mul::Mul{}));
-        functions.insert("not".to_string(), Box::new(not::Not{}));
-        functions.insert("null".to_string(), Box::new(null::Null{}));
-        functions.insert("or".to_string(), Box::new(or::Or{}));
-        functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
-        functions.insert("path".to_string(), Box::new(path::Path{}));
-        functions.insert("reference".to_string(), Box::new(reference::Reference{}));
-        functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
-        functions.insert("secret".to_string(), Box::new(secret::Secret{}));
-        functions.insert("sub".to_string(), Box::new(sub::Sub{}));
-        functions.insert("systemRoot".to_string(), Box::new(system_root::SystemRoot{}));
-        functions.insert("true".to_string(), Box::new(r#true::True{}));
-        functions.insert("union".to_string(), Box::new(union::Union{}));
-        functions.insert("variables".to_string(), Box::new(variables::Variables{}));
+        let function_list : Vec<Box<dyn Function>> = vec![
+            Box::new(add::Add{}),
+            Box::new(and::And{}),
+            Box::new(base64::Base64{}),
+            Box::new(bool::Bool{}),
+            Box::new(coalesce::Coalesce{}),
+            Box::new(concat::Concat{}),
+            Box::new(contains::Contains{}),
+            Box::new(create_array::CreateArray{}),
+            Box::new(create_object::CreateObject{}),
+            Box::new(div::Div{}),
+            Box::new(empty::Empty{}),
+            Box::new(ends_with::EndsWith{}),
+            Box::new(envvar::Envvar{}),
+            Box::new(equals::Equals{}),
+            Box::new(greater::Greater{}),
+            Box::new(greater_or_equals::GreaterOrEquals{}),
+            Box::new(r#if::If{}),
+            Box::new(r#false::False{}),
+            Box::new(length::Length{}),
+            Box::new(less::Less{}),
+            Box::new(less_or_equals::LessOrEquals{}),
+            Box::new(format::Format{}),
+            Box::new(int::Int{}),
+            Box::new(max::Max{}),
+            Box::new(min::Min{}),
+            Box::new(mod_function::Mod{}),
+            Box::new(mul::Mul{}),
+            Box::new(not::Not{}),
+            Box::new(null::Null{}),
+            Box::new(or::Or{}),
+            Box::new(parameters::Parameters{}),
+            Box::new(path::Path{}),
+            Box::new(reference::Reference{}),
+            Box::new(resource_id::ResourceId{}),
+            Box::new(secret::Secret{}),
+            Box::new(starts_with::StartsWith{}),
+            Box::new(sub::Sub{}),
+            Box::new(system_root::SystemRoot{}),
+            Box::new(r#true::True{}),
+            Box::new(utc_now::UtcNow{}),
+            Box::new(union::Union{}),
+            Box::new(unique_string::UniqueString{}),
+            Box::new(variables::Variables{}),
+        ];
+        for function in function_list {
+            functions.insert(function.get_metadata().name.clone(), function);
+        }
+
         Self {
             functions,
         }

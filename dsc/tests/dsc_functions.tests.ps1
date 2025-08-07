@@ -244,4 +244,77 @@ Describe 'tests for function expressions' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
     }
+
+    It 'utcNow function works for: utcNow(<format>)' -TestCases @(
+        @{ format = $null}
+        @{ format = "yyyy-MM-dd"}
+        @{ format = "yyyy-MM-ddTHH:mm:ss"}
+        @{ format = "yyyy-MM-ddTHH:mm:ss.fffZ"}
+        @{ format = "MMM dd, yyyy HH:mm"}
+        @{ format = "yy-MMMM-dddd H:m tt" }
+        @{ format = "MMM ddd zzz" }
+    ) {
+        param($format)
+
+        if ($null -eq $format) {
+            $expected = (Get-Date -AsUTC).ToString("o")
+        } else {
+            $expected = (Get-Date -AsUTC).ToString($format)
+            $format = "'$format'"
+        }
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              test:
+                type: string
+                defaultValue: "[utcNow($format)]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('test')]"
+"@
+        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json -DateKind String
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $actual = $out.results[0].result.actualState.output
+        # since the datetimes might slightly differ, we remove the seconds and milliseconds
+        $expected = $expected -replace ':\d+\.\d+Z$', 'Z'
+        $actual = $actual -replace ':\d+\.\d+Z$', 'Z'
+        $actual | Should -BeExactly $expected -Because "Expected: '$expected', Actual: '$actual'"
+    }
+
+    It 'utcNow errors if used not as a parameter default' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[utcNow()]"
+"@
+        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
+        (Get-Content $TestDrive/error.log -Raw) | Should -Match 'utcNow function can only be used as a parameter default'
+    }
+
+    It 'uniqueString function works for: <expression>' -TestCases @(
+        @{ expression = "[uniqueString('a')]" ; expected = 'cfvwxu6sc4lqo' }
+        @{ expression = "[uniqueString('a', 'b', 'c')]" ; expected = 'bhw7m6t6ntwd6' }
+        @{ expression = "[uniqueString('a', 'b', 'c', 'd')]" ; expected = 'yxzg7ur4qetcy' }
+    ) {
+        param($expression, $expected)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $out.results[0].result.actualState.output | Should -BeExactly $expected
+    }
 }
