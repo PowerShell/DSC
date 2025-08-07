@@ -275,9 +275,11 @@ Describe 'tests for function expressions' {
               properties:
                 output: "[parameters('test')]"
 "@
-        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json -DateKind String
+        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
-        $actual = $out.results[0].result.actualState.output
+        # ConvertFrom-Json will convert the date to a DateTime object, so we use regex to capture the string
+        $out -match '"output":"(?<date>.*?)"' | Should -BeTrue -Because "Output should contain a date"
+        $actual = $matches['date']
         # since the datetimes might slightly differ, we remove the seconds and milliseconds
         $expected = $expected -replace ':\d+\.\d+Z$', 'Z'
         $actual = $actual -replace ':\d+\.\d+Z$', 'Z'
