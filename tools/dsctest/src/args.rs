@@ -10,6 +10,7 @@ pub enum Schemas {
     ExitCode,
     Export,
     Exporter,
+    Get,
     InDesiredState,
     Metadata,
     Sleep,
@@ -54,6 +55,12 @@ pub enum SubCommand {
     #[clap(name = "exporter", about = "Exports different types of resources")]
     Exporter {
         #[clap(name = "input", short, long, help = "The input to the exporter command as JSON")]
+        input: String,
+    },
+
+    #[clap(name = "get", about = "Get a resource")]
+    Get {
+        #[clap(name = "input", short, long, help = "The input to the get command as JSON")]
         input: String,
     },
 
