@@ -22,6 +22,10 @@ function Write-DscTrace {
     $host.ui.WriteErrorLine($trace)
 }
 
+trap {
+    Write-DscTrace -Operation Debug -Message ($_ | Format-List -Force | Out-String)
+}
+
 # Adding some debug info to STDERR
 'PSVersion=' + $PSVersionTable.PSVersion.ToString() | Write-DscTrace
 'PSPath=' + $PSHome | Write-DscTrace

@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,24 +12,17 @@ use tracing::debug;
 pub struct Not {}
 
 impl Function for Not {
-    fn description(&self) -> String {
-        t!("functions.not.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Logical
-    }
-
-    fn min_args(&self) -> usize {
-        1
-    }
-
-    fn max_args(&self) -> usize {
-        1
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Boolean]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "not".to_string(),
+            description: t!("functions.not.description").to_string(),
+            category: FunctionCategory::Logical,
+            min_args: 1,
+            max_args: 1,
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Boolean]],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::Boolean],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

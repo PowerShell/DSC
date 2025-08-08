@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,53 +12,51 @@ use tracing::debug;
 pub struct CreateArray {}
 
 impl Function for CreateArray {
-    fn description(&self) -> String {
-        t!("functions.createArray.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Array
-    }
-
-    fn min_args(&self) -> usize {
-        0
-    }
-
-    fn max_args(&self) -> usize {
-        usize::MAX
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String, AcceptedArgKind::Number, AcceptedArgKind::Object, AcceptedArgKind::Array]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "createArray".to_string(),
+            description: t!("functions.createArray.description").to_string(),
+            category: FunctionCategory::Array,
+            min_args: 0,
+            max_args: usize::MAX,
+            accepted_arg_ordered_types: vec![],
+            remaining_arg_accepted_types: Some(vec![
+                FunctionArgKind::String,
+                FunctionArgKind::Number,
+                FunctionArgKind::Object,
+                FunctionArgKind::Array,
+            ]),
+            return_types: vec![FunctionArgKind::Array],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.createArray.invoked"));
         let mut array_result = Vec::<Value>::new();
-        let mut input_type : Option<AcceptedArgKind> = None;
+        let mut input_type : Option<FunctionArgKind> = None;
         for value in args {
             if value.is_array() {
                 if input_type.is_none() {
-                    input_type = Some(AcceptedArgKind::Array);
-                } else if input_type != Some(AcceptedArgKind::Array) {
+                    input_type = Some(FunctionArgKind::Array);
+                } else if input_type != Some(FunctionArgKind::Array) {
                     return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeArrays").to_string()));
                 }
             } else if value.is_number() {
                 if input_type.is_none() {
-                    input_type = Some(AcceptedArgKind::Number);
-                } else if input_type != Some(AcceptedArgKind::Number) {
+                    input_type = Some(FunctionArgKind::Number);
+                } else if input_type != Some(FunctionArgKind::Number) {
                     return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeIntegers").to_string()));
                 }
             } else if value.is_object() {
                 if input_type.is_none() {
-                    input_type = Some(AcceptedArgKind::Object);
-                } else if input_type != Some(AcceptedArgKind::Object) {
+                    input_type = Some(FunctionArgKind::Object);
+                } else if input_type != Some(FunctionArgKind::Object) {
                     return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeObjects").to_string()));
                 }
             } else if value.is_string() {
                 if input_type.is_none() {
-                    input_type = Some(AcceptedArgKind::String);
-                } else if input_type != Some(AcceptedArgKind::String) {
+                    input_type = Some(FunctionArgKind::String);
+                } else if input_type != Some(FunctionArgKind::String) {
                     return Err(DscError::Parser(t!("functions.createArray.argsMustAllBeStrings").to_string()));
                 }
             } else {

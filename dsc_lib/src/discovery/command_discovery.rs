@@ -126,11 +126,12 @@ impl CommandDiscovery {
         let mut paths: Vec<PathBuf> = vec![];
 
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
-        if resource_path_setting.allow_env_override && dsc_resource_path.is_some(){
-            let value = dsc_resource_path.unwrap();
-            debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
-            using_custom_path = true;
-            paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+        if resource_path_setting.allow_env_override && dsc_resource_path.is_some() {
+            if let Some(value) = dsc_resource_path {
+                debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
+                using_custom_path = true;
+                paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+            }
         } else {
             for p in resource_path_setting.directories {
                 let v = PathBuf::from_str(&p);
@@ -286,10 +287,10 @@ impl ResourceDiscovery for CommandDiscovery {
                                                 if manifest.kind == Some(Kind::Adapter) {
                                                     trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
                                                     insert_resource(&mut adapters, &resource, true);
-                                                } else {
-                                                    trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
-                                                    insert_resource(&mut resources, &resource, true);
                                                 }
+                                                // also make sure to add adapters as a resource as well
+                                                trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
+                                                insert_resource(&mut resources, &resource, true);
                                             }
                                         }
                                     }
@@ -563,27 +564,20 @@ impl ResourceDiscovery for CommandDiscovery {
 
 // TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource, skip_duplicate_version: bool) {
-    if resources.contains_key(&resource.type_name) {
-        let Some(resource_versions) = resources.get_mut(&resource.type_name) else {
-            resources.insert(resource.type_name.clone(), vec![resource.clone()]);
-            return;
-        };
+    if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
+        debug!("Resource '{}' already exists, checking versions", resource.type_name);
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
             let resource_instance_version = match Version::parse(&resource_instance.version) {
                 Ok(v) => v,
-                Err(err) => {
-                    // write as info since PowerShell resources tend to have invalid semver
-                    info!("Resource '{}' has invalid version: {err}", resource_instance.type_name);
+                Err(_err) => {
                     continue;
                 },
             };
             let resource_version = match Version::parse(&resource.version) {
                 Ok(v) => v,
-                Err(err) => {
-                    // write as info since PowerShell resources tend to have invalid semver
-                    info!("Resource '{}' has invalid version: {err}", resource.type_name);
+                Err(_err) => {
                     continue;
                 },
             };

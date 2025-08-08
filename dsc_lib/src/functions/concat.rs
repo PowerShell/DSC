@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,44 +12,40 @@ use tracing::debug;
 pub struct Concat {}
 
 impl Function for Concat {
-    fn description(&self) -> String {
-        t!("functions.concat.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::String
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        usize::MAX
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String, AcceptedArgKind::Array]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "concat".to_string(),
+            description: t!("functions.concat.description").to_string(),
+            category: FunctionCategory::String,
+            min_args: 2,
+            max_args: usize::MAX,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::String, FunctionArgKind::Array],
+                vec![FunctionArgKind::String, FunctionArgKind::Array],
+            ],
+            remaining_arg_accepted_types: Some(vec![FunctionArgKind::String, FunctionArgKind::Array]),
+            return_types: vec![FunctionArgKind::String, FunctionArgKind::Array],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.concat.invoked"));
         let mut string_result = String::new();
         let mut array_result: Vec<String> = Vec::new();
-        let mut input_type : Option<AcceptedArgKind> = None;
+        let mut input_type : Option<FunctionArgKind> = None;
         for value in args {
             if value.is_string() {
                 if input_type.is_none() {
-                    input_type = Some(AcceptedArgKind::String);
-                } else if input_type != Some(AcceptedArgKind::String) {
+                    input_type = Some(FunctionArgKind::String);
+                } else if input_type != Some(FunctionArgKind::String) {
                     return Err(DscError::Parser(t!("functions.concat.argsMustBeStrings").to_string()));
                 }
 
                 string_result.push_str(value.as_str().unwrap_or_default());
             } else if value.is_array() {
                 if input_type.is_none() {
-                    input_type = Some(AcceptedArgKind::Array);
-                } else if input_type != Some(AcceptedArgKind::Array) {
+                    input_type = Some(FunctionArgKind::Array);
+                } else if input_type != Some(FunctionArgKind::Array) {
                     return Err(DscError::Parser(t!("functions.concat.argsMustBeArrays").to_string()));
                 }
 
@@ -72,10 +68,10 @@ impl Function for Concat {
         }
 
         match input_type {
-            Some(AcceptedArgKind::String) => {
+            Some(FunctionArgKind::String) => {
                 Ok(Value::String(string_result))
             },
-            Some(AcceptedArgKind::Array) => {
+            Some(FunctionArgKind::Array) => {
                 Ok(Value::Array(array_result.into_iter().map(Value::String).collect()))
             },
             _ => {
