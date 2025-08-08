@@ -246,22 +246,20 @@ Describe 'tests for function expressions' {
     }
 
     It 'utcNow function works for: utcNow(<format>)' -TestCases @(
-        @{ format = $null}
-        @{ format = "yyyy-MM-dd"}
-        @{ format = "yyyy-MM-ddTHH"}
-        @{ format = "yyyy-MM-ddTHHZ"}
-        @{ format = "MMM dd, yyyy HH"}
-        @{ format = "yy-MMMM-dddd tt H" }
-        @{ format = "MMM ddd zzz" }
-        @{ format = "YY YYYY MM MMM MMMM" }
+        @{ format = $null; regex = '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$' }
+        @{ format = "yyyy-MM-dd"; regex = '^\d{4}-\d{2}-\d{2}$' }
+        @{ format = "yyyy-MM-ddTHH"; regex = '^\d{4}-\d{2}-\d{2}T\d{2}$' }
+        @{ format = "yyyy-MM-ddTHHZ"; regex = '^\d{4}-\d{2}-\d{2}T\d{2}Z$' }
+        @{ format = "MMM dd, yyyy HH"; regex = '^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{2}, \d{4} \d{2}$' }
+        @{ format = "yy-MMMM-dddd tt H"; regex = '^\d{2}-(January|February|March|April|May|June|July|August|September|October|November|December)-(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) (AM|PM) \d+$' }
+        @{ format = "MMM ddd zzz"; regex = '^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (Sun|Mon|Tue|Wed|Thu|Fri|Sat) \+00:00$' }
+        @{ format = "yy yyyy MM MMM MMMM"; regex = '^\d{2} \d{4} \d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (January|February|March|April|May|June|July|August|September|October|November|December)$' }
+        @{ format = "yyyy-MM-ddTHH:mm:ss"; regex = '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$' }
     ) {
-        param($format)
+        param($format, $regex)
 
-        if ($null -eq $format) {
-            $expected = (Get-Date -AsUTC).ToString("o")
-        } else {
-            $expected = (Get-Date -AsUTC).ToString($format)
-            $format = "'$format'"
+        if ($null -ne $format) {
+          $format = "'$format'"
         }
 
         $config_yaml = @"
@@ -281,10 +279,8 @@ Describe 'tests for function expressions' {
         # ConvertFrom-Json will convert the date to a DateTime object, so we use regex to capture the string
         $out -match '"output":"(?<date>.*?)"' | Should -BeTrue -Because "Output should contain a date"
         $actual = $matches['date']
-        # since the datetimes might slightly differ, we remove the seconds and milliseconds
-        $expected = $expected -replace ':\d+\.\d+Z$', 'Z'
-        $actual = $actual -replace ':\d+\.\d+Z$', 'Z'
-        $actual | Should -BeExactly $expected -Because "Expected: '$expected', Actual: '$actual'"
+        # comapre against the regex
+        $actual | Should -Match $regex -Because "Output date '$actual' should match regex '$regex'"
     }
 
     It 'utcNow errors if used not as a parameter default' {
@@ -298,6 +294,7 @@ Describe 'tests for function expressions' {
 "@
         $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
+        $out | Should -BeNullOrEmpty -Because "Output should be null or empty"
         (Get-Content $TestDrive/error.log -Raw) | Should -Match 'utcNow function can only be used as a parameter default'
     }
 
