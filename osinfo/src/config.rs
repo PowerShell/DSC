@@ -72,7 +72,12 @@ impl OsInfo {
             family,
             version,
             architecture.as_deref().unwrap_or("")
-        ));
+        let name = Some(
+            match &architecture {
+                Some(arch) => format!("{:?} {} {}", family, version, arch),
+                None => format!("{:?} {}", family, version),
+            }
+        );
         Self {
             id: ID.to_string(),
             family,
