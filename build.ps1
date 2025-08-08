@@ -63,7 +63,7 @@ $filesForWindowsPackage = @(
     'osinfo.exe',
     'osinfo.dsc.resource.json',
     'powershell.dsc.resource.json',
-    'powershell.dsc.extension.json'
+    'windowspowershell.dsc.extension.json'
     'psDscAdapter/',
     'psscript.ps1',
     'psscript.dsc.resource.json',

@@ -7,7 +7,7 @@ param (
 begin {
     $lines = [System.Collections.Generic.List[string]]::new()
 
-    $scriptModule = Import-Module "$PSScriptRoot/convertDscResource.psd1" -Force -PassThru
+    $scriptModule = Import-Module "$PSScriptRoot/convertDscResource.psd1" -Force -PassThru -ErrorAction Ignore
 }
 
 process {
@@ -19,7 +19,7 @@ process {
 end {
     if ($lines.Count -ne 0) {
         $result = $scriptModule.invoke( { param($lines) Build-DscConfigDocument -Content $lines }, ($lines | Out-String) )
-        
+
         return ($result | ConvertTo-Json -Depth 10 -Compress)
     }
 }

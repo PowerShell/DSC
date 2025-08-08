@@ -32,7 +32,7 @@ configuration InvalidConfiguration {
     }
 }
 "@
-        $out = dsc -l trace config get -f $psFile 2>$TestDrive/error.log | ConvertFrom-Json
+        dsc -l trace config get -f $psFile 2>$TestDrive/error.log 
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $content = (Get-Content -Path $TestDrive/error.log -Raw)
         $content | Should -BeLike "*Importing file '$psFile' with extension 'Microsoft.DSC.Extension/PowerShell'*"
