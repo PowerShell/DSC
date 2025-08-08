@@ -98,6 +98,12 @@ function ConvertTo-DscObject
     $Tokens = $null
     $ParseErrors = $null
 
+    # Load the PSDesiredStateConfiguration module
+    Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -ErrorAction stop -ErrorVariable $importModuleError
+    if (-not [string]::IsNullOrEmpty($importModuleError)) {
+        'Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace -Operation Error
+    }
+
     # Remove the module version information.
     $start = $Content.ToLower().IndexOf('import-dscresource')
     if ($start -ge 0)
