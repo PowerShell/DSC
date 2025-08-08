@@ -67,15 +67,10 @@ impl OsInfo {
             _ => Bitness::Unknown,
         };
         let version = os_info.version().to_string();
-        let name = Some(format!(
-            "{:?} {} {}",
-            family,
-            version,
-            architecture.as_deref().unwrap_or("")
         let name = Some(
             match &architecture {
-                Some(arch) => format!("{:?} {} {}", family, version, arch),
-                None => format!("{:?} {}", family, version),
+                Some(arch) => format!("{family:?} {version} {arch}"),
+                None => format!("{family:?} {version}"),
             }
         );
         Self {
