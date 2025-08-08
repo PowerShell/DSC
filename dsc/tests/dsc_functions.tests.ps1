@@ -279,7 +279,7 @@ Describe 'tests for function expressions' {
         # ConvertFrom-Json will convert the date to a DateTime object, so we use regex to capture the string
         $out -match '"output":"(?<date>.*?)"' | Should -BeTrue -Because "Output should contain a date"
         $actual = $matches['date']
-        # comapre against the regex
+        # compare against the regex
         $actual | Should -Match $regex -Because "Output date '$actual' should match regex '$regex'"
     }
 
