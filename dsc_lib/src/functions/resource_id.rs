@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 
@@ -11,24 +11,20 @@ use serde_json::Value;
 pub struct ResourceId {}
 
 impl Function for ResourceId {
-    fn description(&self) -> String {
-        t!("functions.resourceId.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Resource
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        2
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "resourceId".to_string(),
+            description: t!("functions.resourceId.description").to_string(),
+            category: FunctionCategory::Resource,
+            min_args: 2,
+            max_args: 2,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::String],
+                vec![FunctionArgKind::String],
+            ],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::String],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

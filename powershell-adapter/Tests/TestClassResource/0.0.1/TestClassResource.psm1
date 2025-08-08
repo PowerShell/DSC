@@ -71,6 +71,10 @@ class TestClassResource : BaseTestClass
         {
             $this.Prop1 = "ValueForProp1"
         }
+        elseif ($this.Name -eq 'EchoBack')
+        {
+            # don't change the property, just echo it back
+        }
         else
         {
             $this.Prop1 = $env:DSC_CONFIG_ROOT
@@ -98,11 +102,11 @@ class TestClassResource : BaseTestClass
 
     static [TestClassResource[]] Export([bool]$UseExport)
     {
-        if ($UseExport) 
+        if ($UseExport)
         {
             return [TestClassResource]::Export()
         }
-        else 
+        else
         {
             $resultList = [List[TestClassResource]]::new()
             $resultCount = 5

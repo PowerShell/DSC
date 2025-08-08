@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, FunctionCategory};
+use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use num_traits::cast::NumCast;
 use rust_i18n::t;
 use serde_json::Value;
@@ -13,24 +13,17 @@ use super::Function;
 pub struct Int {}
 
 impl Function for Int {
-    fn description(&self) -> String {
-        t!("functions.int.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Numeric
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String, AcceptedArgKind::Number]
-    }
-
-    fn min_args(&self) -> usize {
-        1
-    }
-
-    fn max_args(&self) -> usize {
-        1
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "int".to_string(),
+            description: t!("functions.int.description").to_string(),
+            category: FunctionCategory::Numeric,
+            min_args: 1,
+            max_args: 1,
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String, FunctionArgKind::Number]],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::Number],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

@@ -26,7 +26,7 @@ notAllowedValue = "Parameter '%{name}' has allowed values constraint but is not 
 allowedValuesNotStringOrInteger = "Parameter '%{name}' has allowed values constraint but is not a string or integer"
 
 [configure.dependsOn]
-duplicateResource = "Resource named '%{name}' is specified more than once in the configuration"
+duplicateResource = "Resource named '%{name}' for type '%{type_name}' is specified more than once in the configuration"
 syntaxIncorrect = "'dependsOn' syntax is incorrect: %{dependency}"
 dependencyNotFound = "'dependsOn' resource name '%{dependency_name}' does not exist for resource named '%{resource_name}'"
 dependencyTypeMismatch = "'dependsOn' resource type '%{resource_type}' does not match resource type '%{dependency_type}' for resource named '%{resource_name}'"
@@ -135,6 +135,7 @@ processChildExit = "Process '%{executable}' id %{id} exited with code %{code}"
 processChildTerminated = "Process '%{executable}' id %{id} terminated by signal"
 processTerminated = "Process terminated by signal"
 commandInvoke = "Invoking command '%{executable}' with args %{args}"
+commandCwd = "Current working directory: %{cwd}"
 noArgs = "No args to process"
 parseAsEnvVars = "Parsing input as environment variables"
 parseAsStdin = "Parsing input as stdin"
@@ -204,6 +205,7 @@ argCountRequired = "Function '%{name}' requires between %{min_args} and %{max_ar
 noArrayArgs = "Function '%{name}' does not accept array arguments, accepted types are: %{accepted_args_string}"
 noBooleanArgs = "Function '%{name}' does not accept boolean arguments, accepted types are: %{accepted_args_string}"
 noNumberArgs = "Function '%{name}' does not accept number arguments, accepted types are: %{accepted_args_string}"
+noNullArgs = "Function '%{name}' does not accept null arguments, accepted types are: %{accepted_args_string}"
 noObjectArgs = "Function '%{name}' does not accept object arguments, accepted types are: %{accepted_args_string}"
 noStringArgs = "Function '%{name}' does not accept string arguments, accepted types are: %{accepted_args_string}"
 
@@ -233,6 +235,12 @@ argsMustBeStrings = "Arguments must all be strings"
 argsMustBeArrays = "Arguments must all be arrays"
 onlyArraysOfStrings = "Arguments must all be arrays of strings"
 
+[functions.contains]
+description = "Checks if an array contains a specific item"
+invoked = "contains function"
+invalidItemToFind = "Invalid item to find, must be a string or number"
+invalidArgType = "Invalid argument type, first argument must be an array, object, or string"
+
 [functions.createArray]
 description = "Creates an array from the given elements"
 invoked = "createArray function"
@@ -251,6 +259,15 @@ keyMustBeString = "Object keys must be strings"
 description = "Divides the first number by the second"
 invoked = "div function"
 divideByZero = "Cannot divide by zero"
+
+[functions.empty]
+description = "Checks if an array, object, or string is empty"
+invoked = "empty function"
+invalidArgType = "Invalid argument type, argument must be an array, object, or string"
+
+[functions.endsWith]
+description = "Checks if a string ends with a specific suffix"
+invoked = "endsWith function"
 
 [functions.envvar]
 description = "Retrieves the value of an environment variable"
@@ -289,6 +306,11 @@ invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
+
+[functions.length]
+description = "Returns the length of a string, array, or object"
+invoked = "length function"
+invalidArgType = "Invalid argument type, argument must be a string, array, or object"
 
 [functions.less]
 description = "Evaluates if the first value is less than the second value"
@@ -363,6 +385,10 @@ extensionReturnedError = "Extension '%{extension}': %{error}"
 noExtensions = "No extensions supporting secrets was found"
 secretNotFound = "Secret '%{name}' not found"
 
+[functions.startsWith]
+description = "Checks if a string starts with a specific prefix"
+invoked = "startsWith function"
+
 [functions.sub]
 description = "Subtracts the second number from the first"
 invoked = "sub function"
@@ -374,6 +400,20 @@ invoked = "systemRoot function"
 [functions.true]
 description = "Returns the boolean value true"
 invoked = "true function"
+
+[functions.union]
+description = "Returns a single array or object with all elements from the parameters"
+invoked = "union function"
+invalidArgType = "All arguments must either be arrays or objects"
+
+[functions.uniqueString]
+description = "Returns a deterministic unique string from the given strings"
+invoked = "uniqueString function"
+
+[functions.utcNow]
+description = "Returns the current UTC time"
+invoked = "utcNow function"
+onlyUsedAsParameterDefault = "utcNow function can only be used as a parameter default"
 
 [functions.variables]
 description = "Retrieves the value of a variable"
@@ -419,6 +459,7 @@ failedToParseEscapedStringLiteral = "Unable to parse escaped string literal"
 parsingEscapedStringLiteral = "Parsing escaped string literal: %{value}"
 parsingExpression = "Parsing expression"
 unknownExpressionType = "Unknown expression type: %{kind}"
+skippingExpressionProcessing = "Skipping expression processing"
 
 [dscerror]
 adapterNotFound = "Adapter not found"

@@ -46,6 +46,11 @@ impl Statement {
     /// This function will return an error if the statement fails to parse or execute.
     pub fn parse_and_execute(&mut self, statement: &str, context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("parser.parsingStatement", statement = statement));
+        if !context.process_expressions {
+            debug!("{}", t!("parser.skippingExpressionProcessing"));
+            return Ok(Value::String(statement.to_string()));
+        }
+
         let Some(tree) = &mut self.parser.parse(statement, None) else {
             return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
         };

@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -16,24 +16,20 @@ pub struct Path {}
 /// Accepts a variable number of arguments, each of which is a string.
 /// Returns a string that is the concatenation of the arguments, separated by the platform's path separator.
 impl Function for Path {
-    fn description(&self) -> String {
-        t!("functions.path.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::System
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        usize::MAX
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "path".to_string(),
+            description: t!("functions.path.description").to_string(),
+            category: FunctionCategory::System,
+            min_args: 2,
+            max_args: usize::MAX,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::String],
+                vec![FunctionArgKind::String],
+            ],
+            remaining_arg_accepted_types: Some(vec![FunctionArgKind::String]),
+            return_types: vec![FunctionArgKind::String],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
