@@ -52,5 +52,6 @@ Describe 'osinfo resource tests' {
         elseif ($IsMacOS) {
             $out.resources[0].properties.family | Should -BeExactly 'macOS'
         }
+        $out.resources[0].name | Should -BeExactly "$($out.resources[0].properties.family) $($out.resources[0].properties.version) $($out.resources[0].properties.architecture)"
     }
 }
