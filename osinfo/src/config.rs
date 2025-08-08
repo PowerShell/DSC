@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use serde::Serialize;
+use std::fmt::Display;
 use std::string::ToString;
 
 /// Returns information about the operating system.
@@ -48,6 +49,16 @@ pub enum Family {
     Windows,
 }
 
+impl Display for Family {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Family::Linux => write!(f, "Linux"),
+            Family::MacOS => write!(f, "macOS"),
+            Family::Windows => write!(f, "Windows"),
+        }
+    }
+}
+
 const ID: &str = "https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json";
 
 impl OsInfo {
@@ -69,7 +80,7 @@ impl OsInfo {
         let version = os_info.version().to_string();
         let name = Some(
             match &architecture {
-                Some(arch) => format!("{family:?} {version} {arch}"),
+                Some(arch) => format!("{family} {version} {arch}"),
                 None => format!("{family:?} {version}"),
             }
         );
