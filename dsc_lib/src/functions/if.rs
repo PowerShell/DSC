@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, FunctionCategory};
+use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use super::Function;
 use rust_i18n::t;
 use serde_json::Value;
@@ -12,24 +12,21 @@ use serde_json::Value;
 pub struct If {}
 
 impl Function for If {
-    fn description(&self) -> String {
-        t!("functions.if.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Logical
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Boolean, AcceptedArgKind::String, AcceptedArgKind::Number, AcceptedArgKind::Array, AcceptedArgKind::Object]
-    }
-
-    fn min_args(&self) -> usize {
-        3
-    }
-
-    fn max_args(&self) -> usize {
-        3
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "if".to_string(),
+            description: t!("functions.if.description").to_string(),
+            category: FunctionCategory::Logical,
+            min_args: 3,
+            max_args: 3,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::Boolean],
+                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+                ],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

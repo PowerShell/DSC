@@ -4,7 +4,7 @@
 use crate::DscError;
 use crate::configure::context::Context;
 use crate::extensions::dscextension::Capability;
-use crate::functions::AcceptedArgKind;
+use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use super::Function;
@@ -14,24 +14,20 @@ use tracing::warn;
 pub struct Secret {}
 
 impl Function for Secret {
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String]
-    }
-
-    fn description(&self) -> String {
-        t!("functions.secret.description").to_string()
-    }
-
-    fn category(&self) -> super::FunctionCategory {
-        super::FunctionCategory::System
-    }
-
-    fn min_args(&self) -> usize {
-        1
-    }
-
-    fn max_args(&self) -> usize {
-        2
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "secret".to_string(),
+            description: t!("functions.secret.description").to_string(),
+            category: FunctionCategory::System,
+            min_args: 1,
+            max_args: 2,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::String],
+                vec![FunctionArgKind::String],
+            ],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::String],
+        }
     }
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {

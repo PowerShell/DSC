@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,24 +12,20 @@ use tracing::debug;
 pub struct Mul {}
 
 impl Function for Mul {
-    fn description(&self) -> String {
-        t!("functions.mul.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Numeric
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        2
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Number]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "mul".to_string(),
+            description: t!("functions.mul.description").to_string(),
+            category: FunctionCategory::Numeric,
+            min_args: 2,
+            max_args: 2,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::Number],
+                vec![FunctionArgKind::Number],
+            ],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::Number],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

@@ -15,12 +15,13 @@ Describe 'PowerShell adapter resource tests' {
       $cacheFilePath = Join-Path $env:LocalAppData "dsc" "PSAdapterCache.json"
     }
   }
+
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
   }
 
   BeforeEach {
-    Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
+    Remove-Item -Force -ErrorAction Ignore -Path $cacheFilePath
   }
 
   It 'Get works on config with class-based resources' {
@@ -33,7 +34,7 @@ Describe 'PowerShell adapter resource tests' {
   }
 
   It 'Get does not work on config when module does not exist' {
-        
+
     $yaml = @'
             $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
             resources:
@@ -194,7 +195,7 @@ Describe 'PowerShell adapter resource tests' {
                   type: TestClassResource/TestClassResource
                   properties:
                     Name: 'TestClassResource1'
-                    HashTableProp: 
+                    HashTableProp:
                       Name: 'DSCv3'
 "@
 
@@ -217,7 +218,7 @@ Describe 'PowerShell adapter resource tests' {
               type: TestClassResource/TestClassResource
               properties:
                 Name: 'TestClassResource1'
-                HashTableProp: 
+                HashTableProp:
                   Name: 'DSCv3'
 "@
 
@@ -268,7 +269,7 @@ Describe 'PowerShell adapter resource tests' {
             Credential:
               UserName: 'User'
               OtherProperty: 'Password'
-"@  
+"@
     $out = dsc config get -i $yaml 2>&1 | Out-String
     $LASTEXITCODE | Should -Be 2
     $out | Should -Not -BeNullOrEmpty
@@ -308,6 +309,24 @@ Describe 'PowerShell adapter resource tests' {
     $out.resources[0].properties.result.count | Should -Be 5
     $out.resources[0].properties.result[0].Name | Should -Be "Object1"
     $out.resources[0].properties.result[0].Prop1 | Should -Be "Property of object1"
+  }
+
+  It 'Expressions get passed correctly to adapted resource' {
+    $yaml = @"
+        `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+        - name: Class-resource Info
+          type: TestClassResource/TestClassResource
+          properties:
+            Name: EchoBack
+            Prop1: "[[this is a string literal]"
+            EnumProp: 'Expected'
+"@
+    $out = dsc config get -i $yaml | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0
+    $out.results.result.actualState.Name | Should -BeExactly 'EchoBack'
+    $out.results.result.actualState.Prop1 | Should -BeExactly '[this is a string literal]'
+    $out.results.result.actualState.EnumProp | Should -BeExactly 'Expected'
   }
 }
 

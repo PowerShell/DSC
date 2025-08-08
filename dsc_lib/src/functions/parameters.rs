@@ -5,7 +5,7 @@ use crate::configure::config_doc::DataType;
 use crate::configure::parameters::SecureKind;
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::{debug, trace};
@@ -14,24 +14,17 @@ use tracing::{debug, trace};
 pub struct Parameters {}
 
 impl Function for Parameters {
-    fn description(&self) -> String {
-        t!("functions.parameters.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Deployment
-    }
-
-    fn min_args(&self) -> usize {
-        1
-    }
-
-    fn max_args(&self) -> usize {
-        1
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "parameters".to_string(),
+            description: t!("functions.parameters.description").to_string(),
+            category: FunctionCategory::Deployment,
+            min_args: 1,
+            max_args: 1,
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Boolean, FunctionArgKind::Object, FunctionArgKind::Array, FunctionArgKind::Null],
+        }
     }
 
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {

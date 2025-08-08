@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,24 +12,17 @@ use tracing::debug;
 pub struct Null {}
 
 impl Function for Null {
-    fn description(&self) -> String {
-        t!("functions.null.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Object
-    }
-
-    fn min_args(&self) -> usize {
-        0
-    }
-
-    fn max_args(&self) -> usize {
-        0
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "null".to_string(),
+            description: t!("functions.null.description").to_string(),
+            category: FunctionCategory::Object,
+            min_args: 0,
+            max_args: 0,
+            accepted_arg_ordered_types: vec![],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::Null],
+        }
     }
 
     fn invoke(&self, _args: &[Value], _context: &Context) -> Result<Value, DscError> {
@@ -48,7 +41,7 @@ mod tests {
     fn direct_function_call() {
         let null_fn = Null {};
         let context = Context::new();
-        
+
         let result = null_fn.invoke(&[], &context).unwrap();
         assert_eq!(result, Value::Null);
     }
