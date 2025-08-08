@@ -98,7 +98,7 @@ function ConvertTo-DscObject
     $Tokens = $null
     $ParseErrors = $null
 
-    (Get-Module -Name 'PSDesiredStateConfiguration' | ConvertTo-Json) | Write-DscTrace Debug
+    (Get-Module -Name 'PSDesiredStateConfiguration' -ListAvailable | ConvertTo-Json) | Write-DscTrace Debug
 
     # Load the PSDesiredStateConfiguration module
     Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -ErrorAction stop -ErrorVariable $importModuleError
