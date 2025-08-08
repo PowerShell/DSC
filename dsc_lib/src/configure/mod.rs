@@ -722,7 +722,10 @@ impl Configurator {
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
-                        self.statement_parser.parse_and_execute(value, &self.context)?
+                        self.context.processing_parameter_defaults = true;
+                        let result = self.statement_parser.parse_and_execute(value, &self.context)?;
+                        self.context.processing_parameter_defaults = false;
+                        result
                     } else {
                         return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
                     }

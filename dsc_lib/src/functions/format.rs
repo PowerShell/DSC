@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rt_format::{Format as RtFormat, FormatArgument, ParsedFormat, argument::NoNamedArguments};
 use rust_i18n::t;
 use serde_json::Value;
@@ -83,24 +83,21 @@ impl FormatArgument for Variant {
 pub struct Format {}
 
 impl Function for Format {
-    fn description(&self) -> String {
-        t!("functions.format.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::String
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        usize::MAX
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Boolean, AcceptedArgKind::Number, AcceptedArgKind::String]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "format".to_string(),
+            description: t!("functions.format.description").to_string(),
+            category: FunctionCategory::String,
+            min_args: 2,
+            max_args: usize::MAX,
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
+            remaining_arg_accepted_types: Some(vec![
+                FunctionArgKind::Boolean,
+                FunctionArgKind::Number,
+                FunctionArgKind::String,
+            ]),
+            return_types: vec![FunctionArgKind::String],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {

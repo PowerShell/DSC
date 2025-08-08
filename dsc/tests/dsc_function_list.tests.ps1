@@ -19,7 +19,7 @@ Describe 'Tests for function list subcommand' {
         $out.name | Should -BeExactly 'resourceId'
         $out.minArgs | Should -Be 2
         $out.maxArgs | Should -Be 2
-        $out.acceptedArgTypes | Should -Be @('String')
+        $out.returnTypes | Should -Be @('String')
         $out.description | Should -Not -BeNullOrEmpty
     }
 }

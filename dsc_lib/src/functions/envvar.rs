@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, FunctionCategory};
+use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use super::Function;
 use rust_i18n::t;
 use serde_json::Value;
@@ -13,24 +13,17 @@ use std::env;
 pub struct Envvar {}
 
 impl Function for Envvar {
-    fn description(&self) -> String {
-        t!("functions.envvar.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::System
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::String]
-    }
-
-    fn min_args(&self) -> usize {
-        1
-    }
-
-    fn max_args(&self) -> usize {
-        1
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "envvar".to_string(),
+            description: t!("functions.envvar.description").to_string(),
+            category: FunctionCategory::System,
+            min_args: 1,
+            max_args: 1,
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::String],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
