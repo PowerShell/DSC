@@ -24,6 +24,8 @@ pub struct OsInfo {
     /// Defines the processor architecture as reported by `uname -m` on the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
     architecture: Option<String>,
+    #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
 }
 
 /// Defines whether the operating system is a 32-bit or 64-bit operating system.
@@ -64,14 +66,22 @@ impl OsInfo {
             os_info::Bitness::X64 => Bitness::Bit64,
             _ => Bitness::Unknown,
         };
+        let version = os_info.version().to_string();
+        let name = Some(format!(
+            "{:?} {} {}",
+            family,
+            version,
+            architecture.as_deref().unwrap_or("")
+        ));
         Self {
             id: ID.to_string(),
             family,
-            version: os_info.version().to_string(),
+            version,
             edition,
             codename,
             bitness: bits,
             architecture,
+            name,
         }
     }
 }
