@@ -15,7 +15,7 @@ resource powerShellAdapter 'PSDesiredStateConfiguration/File@2025-01-07' = {
   properties: {
         Ensure: 'Present'
         Type: 'File'
-        DestinationPath: '${systemroot()}\\DSC\\config.txt'
+        DestinationPath: 'C:\\DSC\\config.txt'
         Contents: 'This file was created using Bicep extension from DSC.'
     }
 }

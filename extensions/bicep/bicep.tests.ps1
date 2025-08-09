@@ -38,12 +38,6 @@ resource invalid 'Microsoft.DSC.Extension/Bicep:1.0' = {
     }
 
     It 'Example bicep file with condition works' -Skip:(!$foundBicep -or !$IsWindows) {
-        Write-Verbose -Message (Get-Module -Name PSDesiredStateConfiguration -ListAvailable | Select -ExpandProperty Path) -Verbose
-
-        foreach ($module in (Get-ChildItem "$env:SystemRoot\System32\WindowsPowerShell\v1.0\Modules").Name) {
-            Write-Verbose -Message "Found module: $module" -Verbose
-        }
-
         $params = @{ parameters = @{ restartService = $true } } | ConvertTo-Json -Compress
         $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\file_with_condition.dsc.bicep"
         $out = dsc -l trace config --parameters $params get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json

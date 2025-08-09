@@ -582,7 +582,7 @@ if ($Test) {
         Invoke-Pester -Output Detailed -ErrorAction Stop
     }
 
-    # Invoke-Pester -Output Detailed -ErrorAction Stop
+    Invoke-Pester -Output Detailed -ErrorAction Stop
 }
 
 function Find-MakeAppx() {
