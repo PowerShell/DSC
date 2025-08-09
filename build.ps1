@@ -166,6 +166,10 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     $rustup = 'echo'
 }
 
+if ($IsWindows) {
+    Get-Module -ListAvailable PSDesiredStateConfiguration
+}
+
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
