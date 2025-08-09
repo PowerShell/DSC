@@ -2,11 +2,14 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
+use serde_json::{Map, Value};
 use std::process::Command;
+use tracing::debug;
 use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
 use crate::error::SshdConfigError;
-
+use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
+use crate::parser::parse_text_to_map;
 
 /// Enable tracing.
 ///
@@ -36,16 +39,20 @@ pub fn enable_tracing() {
 /// # Errors
 ///
 /// This function will return an error if sshd -T fails to validate `sshd_config`.
-pub fn invoke_sshd_config_validation() -> Result<String, SshdConfigError> {
-    let sshd_command = if cfg!(target_os = "windows") {
-        "sshd.exe"
-    } else {
-        "sshd"
-    };
+pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<String, SshdConfigError> {
+    let mut command = Command::new("sshd");
+    command.arg("-T");
 
-    let output = Command::new(sshd_command)
-        .arg("-T")
-        .output()
+    if let Some(args) = args {
+        if let Some(filepath) = args.filepath {
+            command.arg("-f").arg(filepath);
+        }
+        if let Some(additional_args) = args.additional_args {
+            command.args(additional_args);
+        }
+    }
+
+    let output = command.output()
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
     if output.status.success() {
@@ -62,4 +69,68 @@ pub fn invoke_sshd_config_validation() -> Result<String, SshdConfigError> {
         }
         Err(SshdConfigError::CommandError(stderr))
     }
+}
+
+/// Extract SSH server defaults by running sshd -T with an empty configuration file.
+///
+/// # Errors
+///
+/// This function will return an error if it fails to extract the defaults from sshd.
+pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
+    let temp_file = tempfile::Builder::new()
+        .prefix("sshd_config_empty_")
+        .suffix(".tmp")
+        .tempfile()?;
+
+    // on Windows, sshd cannot read from the file if it is still open
+    let temp_path = temp_file.path().to_string_lossy().into_owned();
+    // do not automatically delete the file when it goes out of scope
+    let (file, path) = temp_file.keep()?;
+    // close the file handle to allow sshd to read it
+    drop(file);
+
+    debug!("temporary file created at: {}", temp_path);
+    let args = Some(
+        SshdCommandArgs {
+            filepath: Some(temp_path.clone()),
+            additional_args: None,
+        }
+    );
+
+    // Clean up the temporary file regardless of success or failure
+    let output = invoke_sshd_config_validation(args);
+    if let Err(e) = std::fs::remove_file(&path) {
+        debug!("Failed to clean up temporary file {}: {}", path.display(), e);
+    }
+    let result = output?;
+    let sshd_config: Map<String, Value> = parse_text_to_map(&result)?;
+    Ok(sshd_config)
+}
+
+/// Extract _metadata field from the input string, if it can be parsed as JSON.
+///
+/// # Errors
+///
+/// This function will return an error if it fails to parse the input string and if the _metadata field exists, extract it.
+pub fn extract_metadata_from_input(input: Option<&String>) -> Result<CommandInfo, SshdConfigError> {
+    if let Some(inputs) = input {
+        let mut sshd_config: Map<String, Value> = serde_json::from_str(inputs.as_str())?;
+        let metadata: Metadata = if let Some(value) = sshd_config.remove("_metadata") {
+            serde_json::from_value(value)?
+        } else {
+            Metadata::new()
+        };
+        let sshd_args = metadata.filepath.as_ref().map(|filepath| {
+            SshdCommandArgs {
+                filepath: Some(filepath.clone()),
+                additional_args: None,
+            }
+        });
+        return Ok(CommandInfo {
+            input: sshd_config,
+            metadata,
+            sshd_args
+        })
+    }
+    Ok(CommandInfo::new())
 }

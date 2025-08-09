@@ -9,21 +9,27 @@ use {
 };
 
 use rust_i18n::t;
+use serde_json::{Map, Value};
 use tracing::debug;
 
 use crate::args::Setting;
 use crate::error::SshdConfigError;
+use crate::export::invoke_export;
+use crate::util::{extract_metadata_from_input, extract_sshd_defaults};
 
 /// Invoke the get command.
 ///
 /// # Errors
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
-pub fn invoke_get(setting: &Setting) -> Result<(), SshdConfigError> {
+pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<Map<String, Value>, SshdConfigError> {
     debug!("{}: {:?}", t!("get.debugSetting").to_string(), setting);
     match *setting {
-        Setting::SshdConfig => Err(SshdConfigError::NotImplemented(t!("get.notImplemented").to_string())),
-        Setting::WindowsGlobal => get_default_shell()
+        Setting::SshdConfig => get_sshd_settings(input),
+        Setting::WindowsGlobal => {
+            get_default_shell()?;
+            Ok(Map::new())
+        }
     }
 }
 
@@ -81,4 +87,36 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 #[cfg(not(windows))]
 fn get_default_shell() -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
+}
+
+fn get_sshd_settings(input: Option<&String>) -> Result<Map<String, Value>, SshdConfigError> {
+    let cmd_info = extract_metadata_from_input(input)?;
+    let mut result = invoke_export(cmd_info.sshd_args)?;
+
+    if !cmd_info.metadata.include_defaults {
+        let defaults = extract_sshd_defaults()?;
+        // Filter result based on default settings.
+        // If a value in result is equal to the default, it will be excluded.
+        // Note that this excludes all defaults, even if they are explicitly set in sshd_config.
+        result.retain(|key, value| {
+            if let Some(default) = defaults.get(key) {
+                default != value
+            } else {
+                true
+            }
+        });
+    }
+
+    if !cmd_info.input.is_empty() {
+        // Filter result based on the keys provided in the input JSON.
+        // If a provided key is not found in the result, its value is null.
+        result.retain(|key, _| cmd_info.input.contains_key(key));
+        for key in cmd_info.input.keys() {
+            result.entry(key.clone()).or_insert(Value::Null);
+        }
+    }
+
+    // Add the _metadata field to the result
+    result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata)?);
+    Ok(result)
 }
