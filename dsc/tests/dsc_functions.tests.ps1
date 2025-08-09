@@ -320,4 +320,32 @@ Describe 'tests for function expressions' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $out.results[0].result.actualState.output | Should -BeExactly $expected
     }
+
+    It 'string function works for: <expression>' -TestCases @(
+        @{ expression = "[string('hello')]"; expected = 'hello' }
+        @{ expression = "[string(123)]"; expected = '123' }
+        @{ expression = "[string(true)]"; expected = 'true' }
+        @{ expression = "[string(null)]"; expected = 'null' }
+        @{ expression = "[string(createArray('a', 1))]"; expected = '[
+    "a",
+    1
+]' }
+        @{ expression = "[string(createObject('a', 1))]"; expected = '{
+    "a": 1
+}' }
+    ) {
+        param($expression, $expected)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+        $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    }
 }
