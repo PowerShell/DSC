@@ -38,6 +38,8 @@ resource invalid 'Microsoft.DSC.Extension/Bicep:1.0' = {
     }
 
     It 'Example bicep file with condition works' -Skip:(!$foundBicep -or !$IsWindows) {
+        Write-Verbose -Message $env:PSModulePath -Verbose
+
         $params = @{ parameters = @{ restartService = $true } } | ConvertTo-Json -Compress
         $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\file_with_condition.dsc.bicep"
         $out = dsc config --parameters $params get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json

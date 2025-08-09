@@ -166,12 +166,6 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     $rustup = 'echo'
 }
 
-if ($IsWindows) {
-    $s = Get-Module -ListAvailable PSDesiredStateConfiguration
-    Write-Verbose -Message "Got $($s.Count) PSDesiredStateConfiguration modules" -Verbose
-    Write-Verbose ($s | ConvertTo-Json | Out-String) -Verbose
-}
-
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
