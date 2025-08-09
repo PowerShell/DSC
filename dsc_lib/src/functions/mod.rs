@@ -47,6 +47,7 @@ pub mod reference;
 pub mod resource_id;
 pub mod secret;
 pub mod starts_with;
+pub mod string;
 pub mod sub;
 pub mod system_root;
 pub mod r#true;
@@ -152,6 +153,7 @@ impl FunctionDispatcher {
             Box::new(resource_id::ResourceId{}),
             Box::new(secret::Secret{}),
             Box::new(starts_with::StartsWith{}),
+            Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
             Box::new(system_root::SystemRoot{}),
             Box::new(r#true::True{}),
