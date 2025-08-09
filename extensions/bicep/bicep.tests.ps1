@@ -42,7 +42,6 @@ resource invalid 'Microsoft.DSC.Extension/Bicep:1.0' = {
         $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\file_with_condition.dsc.bicep"
         $out = dsc -l trace config --parameters $params get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
-        Write-Verbose -Message "Output: $($out | ConvertTo-Json -Depth 10)" -Verbose
         $out.results[0].result.actualState.Ensure | Should -Be 'Absent' # As set is not called
         $out.results[1].result.actualState.StartupType | Should -Be 'Automatic'
     }
