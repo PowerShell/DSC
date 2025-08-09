@@ -200,6 +200,59 @@ messages: []
 hadErrors: false
 ```
 
+### Example 5 - Union with string conversion for logging
+
+The following example shows how to use union with string conversion for
+building comprehensive log messages.
+
+```yaml
+# union.example.5.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  baseLogData:
+    type: object
+    defaultValue:
+      timestamp: 1691596800
+      level: "INFO"
+  requestData:
+    type: object
+    defaultValue:
+      requestId: 12345
+      method: "GET"
+  responseData:
+    type: object
+    defaultValue:
+      statusCode: 200
+      duration: 150
+resources:
+- name: Build comprehensive log entry
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output:
+      logEntry: "[string(union(parameters('baseLogData'), parameters('requestData'), parameters('responseData')))]"
+      logArray: "[union(createArray('timestamp'), createArray('level', 'requestId'))]"
+```
+
+```bash
+dsc config get --file union.example.5.dsc.config.yaml
+```
+
+```yaml
+results:
+- name: Build comprehensive log entry
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output:
+        logEntry: '{"timestamp":1691596800,"level":"INFO","requestId":12345,"method":"GET","statusCode":200,"duration":150}'
+        logArray:
+        - timestamp
+        - level
+        - requestId
+messages: []
+hadErrors: false
+```
+
 ## Parameters
 
 ### collection1
@@ -247,4 +300,15 @@ input collections.
 Type: [array, object]
 ```
 
+## Related functions
+
+- [`createArray()`][00] - Creates arrays that can be combined with union
+- [`createObject()`][01] - Creates objects that can be merged with union
+- [`string()`][02] - Converts objects or arrays to JSON strings
+- [`concat()`][03] - Concatenates arrays (alternative to union for arrays)
+
 <!-- Link reference definitions -->
+[00]: ./createArray.md
+[01]: ./createObject.md
+[02]: ./string.md
+[03]: ./concat.md
