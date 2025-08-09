@@ -389,6 +389,9 @@ secretNotFound = "Secret '%{name}' not found"
 description = "Checks if a string starts with a specific prefix"
 invoked = "startsWith function"
 
+[functions.string]
+description = "Converts a value to a string"
+
 [functions.sub]
 description = "Subtracts the second number from the first"
 invoked = "sub function"
