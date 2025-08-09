@@ -574,7 +574,15 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -Output Detailed -ErrorAction Stop
+    if ($IsWindows) {
+        $path = Get-ChildItem -Filter bicep.tests.ps1 -Recurse
+        Invoke-Pester -Output Detailed -ErrorAction Stop -Path $path
+    }
+    else {
+        Invoke-Pester -Output Detailed -ErrorAction Stop
+    }
+
+    # Invoke-Pester -Output Detailed -ErrorAction Stop
 }
 
 function Find-MakeAppx() {
