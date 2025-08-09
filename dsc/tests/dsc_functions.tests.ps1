@@ -325,14 +325,9 @@ Describe 'tests for function expressions' {
         @{ expression = "[string('hello')]"; expected = 'hello' }
         @{ expression = "[string(123)]"; expected = '123' }
         @{ expression = "[string(true)]"; expected = 'true' }
-        @{ expression = "[string(null)]"; expected = 'null' }
-        @{ expression = "[string(createArray('a', 1))]"; expected = '[
-    "a",
-    1
-]' }
-        @{ expression = "[string(createObject('a', 1))]"; expected = '{
-    "a": 1
-}' }
+        @{ expression = "[string(null())]"; expected = 'null' }
+        @{ expression = "[string(createArray('a', 'b'))]"; expected = '["a","b"]' }
+        @{ expression = "[string(createObject('a', 1))]"; expected = '{"a":1}' }
     ) {
         param($expression, $expected)
 
