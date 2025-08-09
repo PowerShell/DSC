@@ -75,21 +75,21 @@ mod tests {
     #[test]
     fn string_from_null() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[string(null)]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[string(null())]", &Context::new()).unwrap();
         assert_eq!(result, "null");
     }
 
     #[test]
     fn string_from_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[string(createArray('a', 1))]", &Context::new()).unwrap();
-        assert_eq!(result, json!(["a", 1]).to_string());
+        let result = parser.parse_and_execute("[string(createArray('a', 'b'))]", &Context::new()).unwrap();
+        assert_eq!(result, json!(["a", "b"]).to_string());
     }
 
     #[test]
     fn string_from_object() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[string(createObject('a', 1))]", &Context::new()).unwrap();
-        assert_eq!(result, json!({"a": 1}).to_string());
+        let result = parser.parse_and_execute("[string(createObject('a', 'hello'))]", &Context::new()).unwrap();
+        assert_eq!(result, json!({"a": "hello"}).to_string());
     }
 }
