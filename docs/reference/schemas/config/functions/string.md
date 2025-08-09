@@ -241,4 +241,17 @@ The `string()` function returns the string representation of the input value.
 Type: string
 ```
 
+## Related functions
+
+- [`concat()`][00] - Concatenates strings together
+- [`int()`][01] - Converts a string to an integer
+- [`bool()`][02] - Converts a string to a boolean
+- [`base64()`][03] - Encodes a string to Base64 format
+- [`length()`][04] - Returns the length of a string
+
 <!-- Link reference definitions -->
+[00]: ./concat.md
+[01]: ./int.md
+[02]: ./bool.md
+[03]: ./base64.md
+[04]: ./length.md
