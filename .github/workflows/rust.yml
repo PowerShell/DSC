@@ -50,6 +50,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Test 
+      shell: powershell
+      run: | 
+        Get-Module -ListAvailable PSDesiredStateConfiguration
     - name: Build
       shell: pwsh
       run: ./build.ps1 -clippy
