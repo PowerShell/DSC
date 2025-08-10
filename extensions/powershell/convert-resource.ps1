@@ -6,10 +6,22 @@ param (
 
 begin {
     $lines = [System.Collections.Generic.List[string]]::new()
-    $Operation = 'Trace'
+    
+    if ($PSVersionTable.PSEdition -ne 'Core') {
+        # Remove all PowerShell paths
+        $env:PSModulePath = ($env:PSModulePath -split ';' | Where-Object { 
+            $_ -notmatch 'PowerShell[\\/]7' -and 
+            $_ -notmatch 'Program Files[\\/]PowerShell[\\/]' -and
+            $_ -notmatch 'Documents[\\/]PowerShell[\\/]'
+        }) -join ';'
 
-    $trace = @{$Operation.ToLower() = "The current module paths: $env:PSModulePath" } | ConvertTo-Json -Compress
-    $host.ui.WriteErrorLine($trace)
+        # Make sure the default path is Windows PowerShell is included
+        $winPsPath = "$env:windir\System32\WindowsPowerShell\v1.0\Modules"
+        if ($env:PSModulePath -notmatch [regex]::Escape($winPsPath)) {
+            # Separator is already at the end
+            $env:PSModulePath = $env:PSModulePath + $winPsPath
+        }
+    }
 
     $scriptModule = Import-Module "$PSScriptRoot/convertDscResource.psd1" -Force -PassThru -WarningAction SilentlyContinue -ErrorAction Stop
 }
