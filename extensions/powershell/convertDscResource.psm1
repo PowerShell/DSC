@@ -5,7 +5,7 @@ if ($Script:IsPowerShellCore) {
         Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -UseWindowsPowerShell -WarningAction SilentlyContinue
     }
     Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh' -WarningAction SilentlyContinue
-} else {
+} else {    
     Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -WarningAction SilentlyContinue
 }
 
@@ -22,6 +22,7 @@ function Write-DscTrace {
     $host.ui.WriteErrorLine($trace)
 }
 
+"The current module paths: $env:PSModulePath" | Write-DscTrace -Operation Trace
 function Build-DscConfigDocument {
     [CmdletBinding()]
     [OutputType([System.Collections.Specialized.OrderedDictionary])]
