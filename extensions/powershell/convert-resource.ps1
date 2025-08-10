@@ -6,7 +6,10 @@ param (
 
 begin {
     $lines = [System.Collections.Generic.List[string]]::new()
-    "The current module paths: $env:PSModulePath" | Write-DscTrace -Operation Trace
+    $Operation = 'Trace'
+
+    $trace = @{$Operation.ToLower() = "The current module paths: $env:PSModulePath" } | ConvertTo-Json -Compress
+    $host.ui.WriteErrorLine($trace)
 
     $scriptModule = Import-Module "$PSScriptRoot/convertDscResource.psd1" -Force -PassThru -WarningAction SilentlyContinue -ErrorAction Stop
 }
