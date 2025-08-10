@@ -33,8 +33,6 @@ BeforeDiscovery {
 
 Describe 'PowerShell extension tests' {
     It 'Example PowerShell file should work' -Skip:(!$IsWindows -or !$isElevated) {
-        Write-Verbose -Message $env:PSModulePath -Verbose
-        
         $psFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\variable.dsc.ps1"
         $out = dsc -l trace config get -f $psFile 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
@@ -59,7 +57,7 @@ configuration InvalidConfiguration {
         dsc -l trace config get -f $psFile 2>$TestDrive/error.log 
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $content = (Get-Content -Path $TestDrive/error.log -Raw)
-        $content | Should -BeLike "*Importing file '$psFile' with extension 'Microsoft.DSC.Extension/PowerShell'*"
+        $content | Should -BeLike "*Importing file '$psFile' with extension 'Microsoft.DSC.Extension/WindowsPowerShell'*"
         $content | Should -Match "No DSC resources found in the imported modules."
     }
 }
@@ -69,5 +67,7 @@ AfterAll {
         Install-PSResource -Name 'PSDesiredStateConfiguration' -Version 2.0.7 -ErrorAction Stop -TrustRepository -Reinstall
     }
 
+    Write-Verbose -Message "Restoring original PSModulePath" -Verbose
+    Write-Verbose -Message ($script:currentModulePaths) -Verbose
     $env:PSModulePath = $script:currentModulePaths
 }
