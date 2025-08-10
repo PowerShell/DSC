@@ -579,7 +579,12 @@ if ($Test) {
         (Get-Module -Name Pester -ListAvailable).Path
     }
 
-    Invoke-Pester -Output Detailed -ErrorAction Stop
+    if ($IsWindows) {
+        $file = Get-ChildItem -Filter win_powershell.tests.ps1 -Recurse
+        Invoke-Pester -Path $file -Output Detailed -ErrorAction Stop
+    } else {
+        Invoke-Pester -Output Detailed -ErrorAction Stop    
+    }
 }
 
 function Find-MakeAppx() {

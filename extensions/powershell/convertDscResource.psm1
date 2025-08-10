@@ -1,3 +1,14 @@
+$Script:IsPowerShellCore = $PSVersionTable.PSEdition -eq 'Core'
+
+if ($Script:IsPowerShellCore)
+{
+    if ($IsWindows)
+    {
+        Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -UseWindowsPowerShell -WarningAction SilentlyContinue
+    }
+    Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh'
+}
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
@@ -100,12 +111,12 @@ function ConvertTo-DscObject
 
     (Get-Module -Name 'PSDesiredStateConfiguration' -ListAvailable | ConvertTo-Json) | Write-DscTrace Debug
 
-    # Load the PSDesiredStateConfiguration module
-    Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -ErrorAction stop -ErrorVariable $importModuleError
-    if (-not [string]::IsNullOrEmpty($importModuleError)) {
-        'Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace -Operation Error
-        exit 1
-    }
+    # # Load the PSDesiredStateConfiguration module
+    # Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -ErrorAction stop -ErrorVariable $importModuleError
+    # if (-not [string]::IsNullOrEmpty($importModuleError)) {
+    #     'Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace -Operation Error
+    #     exit 1
+    # }
 
     # Remove the module version information.
     $start = $Content.ToLower().IndexOf('import-dscresource')
