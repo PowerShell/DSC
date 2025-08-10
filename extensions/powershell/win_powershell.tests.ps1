@@ -33,11 +33,6 @@ BeforeDiscovery {
 Describe 'PowerShell extension tests' {
     It 'Example PowerShell file should work' -Skip:(!$IsWindows -or !$isElevated) {
         Write-Verbose -Message $env:PSModulePath -Verbose
-
-        $names = Get-ChildItem "$env:SystemRoot\System32\WindowsPowerShell\v1.0\Modules" 
-        foreach ($name in $names) {
-            Write-Verbose -Message "Found module: $($name.Name)" -Verbose
-        }
         
         $psFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\variable.dsc.ps1"
         $out = dsc -l trace config get -f $psFile 2>$TestDrive/error.log | ConvertFrom-Json

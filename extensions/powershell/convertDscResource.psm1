@@ -9,6 +9,8 @@ if ($Script:IsPowerShellCore)
     Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh'
 }
 
+$VerbosePreference = 'Continue'
+
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]
@@ -109,15 +111,6 @@ function ConvertTo-DscObject
     $Tokens = $null
     $ParseErrors = $null
 
-    (Get-Module -Name 'PSDesiredStateConfiguration' -ListAvailable | ConvertTo-Json) | Write-DscTrace Debug
-
-    # # Load the PSDesiredStateConfiguration module
-    # Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion '1.1' -Force -ErrorAction stop -ErrorVariable $importModuleError
-    # if (-not [string]::IsNullOrEmpty($importModuleError)) {
-    #     'Could not import PSDesiredStateConfiguration 1.1 in Windows PowerShell. ' + $importModuleError | Write-DscTrace -Operation Error
-    #     exit 1
-    # }
-
     # Remove the module version information.
     $start = $Content.ToLower().IndexOf('import-dscresource')
     if ($start -ge 0)
@@ -209,6 +202,7 @@ function ConvertTo-DscObject
             }
             else
             {
+                Write-Verbose -Message "Loading DSC resources from module '$($moduleToLoad.ModuleName)'" -Verbose
                 $currentResources = Get-DSCResource -Module $moduleToLoad.ModuleName
             }
 
