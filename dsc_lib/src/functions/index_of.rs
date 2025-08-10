@@ -48,7 +48,10 @@ impl Function for IndexOf {
             };
 
             if matches {
-                return Ok(Value::Number((index as i64).into()));
+                let index_i64 = i64::try_from(index).map_err(|_| {
+                    DscError::Parser("Array index too large to represent as integer".to_string())
+                })?;
+                return Ok(Value::Number(index_i64.into()));
             }
         }
 
