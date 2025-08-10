@@ -6,6 +6,27 @@ BeforeDiscovery {
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+
+        if ($env:GITHUB_ACTION) {
+            Write-Verbose -Message "Running in GitHub Actions" -Verbose
+            # Uninstall the PSDesiredStateConfiguration module as this requires v1.1 and the build script installs it 
+            Uninstall-PSResource -Name 'PSDesiredStateConfiguration' -Version 2.0.7 -ErrorAction Stop
+            # Get current PSModulePath and exclude PowerShell 7 paths
+            $currentPaths = $env:PSModulePath -split ';' | Where-Object { 
+                $_ -notmatch 'PowerShell[\\/]7' -and 
+                $_ -notmatch 'Program Files[\\/]PowerShell[\\/]' -and
+                $_ -notmatch 'Documents[\\/]PowerShell[\\/]'
+            }
+            
+            # Check if Windows PowerShell modules path exists
+            $windowsPSPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\Modules"
+            if ($windowsPSPath -notin $currentPaths) {
+                $currentPaths += $windowsPSPath
+            }
+            
+            # Update PSModulePath
+            $env:PSModulePath = $currentPaths -join ';'
+        }
     }
 }
 
