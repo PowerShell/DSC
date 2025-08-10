@@ -22,7 +22,6 @@ function Write-DscTrace {
     $host.ui.WriteErrorLine($trace)
 }
 
-"The current module paths: $env:PSModulePath" | Write-DscTrace -Operation Trace
 function Build-DscConfigDocument {
     [CmdletBinding()]
     [OutputType([System.Collections.Specialized.OrderedDictionary])]
