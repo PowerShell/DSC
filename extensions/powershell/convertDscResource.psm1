@@ -1,12 +1,12 @@
 $Script:IsPowerShellCore = $PSVersionTable.PSEdition -eq 'Core'
 
-if ($Script:IsPowerShellCore)
-{
-    if ($IsWindows)
-    {
+if ($Script:IsPowerShellCore) {
+    if ($IsWindows) {
         Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -UseWindowsPowerShell -WarningAction SilentlyContinue
     }
     Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh' -WarningAction SilentlyContinue
+} else {
+    Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -WarningAction SilentlyContinue
 }
 
 function Write-DscTrace {
@@ -22,8 +22,7 @@ function Write-DscTrace {
     $host.ui.WriteErrorLine($trace)
 }
 
-function Build-DscConfigDocument
-{
+function Build-DscConfigDocument {
     [CmdletBinding()]
     [OutputType([System.Collections.Specialized.OrderedDictionary])]
     param
@@ -42,8 +41,7 @@ function Build-DscConfigDocument
     # convert object to hashtable(s)
     $dscObjects = ConvertTo-DscObject @PSBoundParameters -ErrorAction SilentlyContinue
 
-    if (-not $dscObjects -or $dscObjects.Count -eq 0)
-    {
+    if (-not $dscObjects -or $dscObjects.Count -eq 0) {
         "No DSC objects found in the provided content." | Write-DscTrace -Operation Error
         exit 1
     }
@@ -51,8 +49,7 @@ function Build-DscConfigDocument
     # store all resources in variables
     $resources = [System.Collections.Generic.List[object]]::new()
 
-    foreach ($dscObject in $dscObjects)
-    {
+    foreach ($dscObject in $dscObjects) {
         $resource = [PSCustomObject]@{
             name       = $dscObject.ResourceInstanceName
             type       = ("{0}/{1}" -f $dscObject.ModuleName, $dscObject.ResourceName)
@@ -61,10 +58,8 @@ function Build-DscConfigDocument
 
         $properties = [ordered]@{}
 
-        foreach ($dscObjectProperty in $dscObject.GetEnumerator())
-        {
-            if ($dscObjectProperty.Key -notin @('ResourceInstanceName', 'ResourceName', 'ModuleName', 'DependsOn', 'ConfigurationName', 'Type'))
-            {
+        foreach ($dscObjectProperty in $dscObject.GetEnumerator()) {
+            if ($dscObjectProperty.Key -notin @('ResourceInstanceName', 'ResourceName', 'ModuleName', 'DependsOn', 'ConfigurationName', 'Type')) {
                 $properties.Add($dscObjectProperty.Key, $dscObjectProperty.Value)
             }
         }
@@ -72,13 +67,11 @@ function Build-DscConfigDocument
         # add properties
         $resource.properties = $properties
 
-        if ($dscObject.ContainsKey('DependsOn') -and $dscObject.DependsOn)
-        {
+        if ($dscObject.ContainsKey('DependsOn') -and $dscObject.DependsOn) {
             $dependsOnKeys = $dscObject.DependsOn.Split("]").Replace("[", "")
 
             $previousGroupHash = $dscObjects | Where-Object { $_.ResourceName -eq $dependsOnKeys[0] -and $_.ResourceInstanceName -eq $dependsOnKeys[1] }
-            if ($previousGroupHash)
-            {
+            if ($previousGroupHash) {
                 $dependsOnString = "[resourceId('$("{0}/{1}" -f $previousGroupHash.ModuleName, $previousGroupHash.ResourceName)','$($previousGroupHash.ResourceInstanceName)')]"
 
                 # add it to the object
@@ -94,8 +87,7 @@ function Build-DscConfigDocument
     return $configurationDocument
 }
 
-function ConvertTo-DscObject
-{
+function ConvertTo-DscObject {
     [CmdletBinding()]
     param
     (
@@ -110,14 +102,11 @@ function ConvertTo-DscObject
 
     # Remove the module version information.
     $start = $Content.ToLower().IndexOf('import-dscresource')
-    if ($start -ge 0)
-    {
+    if ($start -ge 0) {
         $end = $Content.IndexOf("`n", $start)
-        if ($end -gt $start)
-        {
+        if ($end -gt $start) {
             $start = $Content.ToLower().IndexOf("-moduleversion", $start)
-            if ($start -ge 0 -and $start -lt $end)
-            {
+            if ($start -ge 0 -and $start -lt $end) {
                 $Content = $Content.Remove($start, $end - $start)
             }
         }
@@ -125,18 +114,14 @@ function ConvertTo-DscObject
 
     # Rename the configuration node to ensure a valid name is used.
     $start = $Content.ToLower().IndexOf("`nconfiguration")
-    if ($start -lt 0)
-    {
+    if ($start -lt 0) {
         $start = $Content.ToLower().IndexOf(' configuration ')
     }
-    if ($start -ge 0)
-    {
+    if ($start -ge 0) {
         $end = $Content.IndexOf("`n", $start)
-        if ($end -gt $start)
-        {
+        if ($end -gt $start) {
             $start = $Content.ToLower().IndexOf(' ', $start + 1)
-            if ($start -ge 0 -and $start -lt $end)
-            {
+            if ($start -ge 0 -and $start -lt $end) {
                 $Content = $Content.Remove($start, $end - $start)
                 $Content = $Content.Insert($start, " TempDSCParserConfiguration")
             }
@@ -151,29 +136,21 @@ function ConvertTo-DscObject
     # Retrieve information about the DSC Modules imported in the config
     # and get the list of their associated resources.
     $ModulesToLoad = @()
-    foreach ($statement in $config.body.ScriptBlock.EndBlock.Statements)
-    {
+    foreach ($statement in $config.body.ScriptBlock.EndBlock.Statements) {
         if ($null -ne $statement.CommandElements -and $null -ne $statement.CommandElements[0].Value -and `
-                $statement.CommandElements[0].Value -eq 'Import-DSCResource')
-        {
+                $statement.CommandElements[0].Value -eq 'Import-DSCResource') {
             $currentModule = @{}
-            for ($i = 0; $i -le $statement.CommandElements.Count; $i++)
-            {
+            for ($i = 0; $i -le $statement.CommandElements.Count; $i++) {
                 if ($statement.CommandElements[$i].ParameterName -eq 'ModuleName' -and `
-                    ($i + 1) -lt $statement.CommandElements.Count)
-                {
+                    ($i + 1) -lt $statement.CommandElements.Count) {
                     $moduleName = $statement.CommandElements[$i + 1].Value
                     $currentModule.Add('ModuleName', $moduleName)
-                }
-                elseif ($statement.CommandElements[$i].ParameterName -eq 'Module' -and `
-                    ($i + 1) -lt $statement.CommandElements.Count)
-                {
+                } elseif ($statement.CommandElements[$i].ParameterName -eq 'Module' -and `
+                    ($i + 1) -lt $statement.CommandElements.Count) {
                     $moduleName = $statement.CommandElements[$i + 1].Value
                     $currentModule.Add('ModuleName', $moduleName)
-                }
-                elseif ($statement.CommandElements[$i].ParameterName -eq 'ModuleVersion' -and `
-                    ($i + 1) -lt $statement.CommandElements.Count)
-                {
+                } elseif ($statement.CommandElements[$i].ParameterName -eq 'ModuleVersion' -and `
+                    ($i + 1) -lt $statement.CommandElements.Count) {
                     $moduleVersion = $statement.CommandElements[$i + 1].Value
                     $currentModule.Add('ModuleVersion', $moduleVersion)
                 }
@@ -182,36 +159,27 @@ function ConvertTo-DscObject
         }
     }
     $DSCResources = @()
-    foreach ($moduleToLoad in $ModulesToLoad)
-    {
+    foreach ($moduleToLoad in $ModulesToLoad) {
         $loadedModuleTest = Get-Module -Name $moduleToLoad.ModuleName -ListAvailable | Where-Object -FilterScript { $_.Version -eq $moduleToLoad.ModuleVersion }
 
-        if ($null -eq $loadedModuleTest -and -not [System.String]::IsNullOrEmpty($moduleToLoad.ModuleVersion))
-        {
+        if ($null -eq $loadedModuleTest -and -not [System.String]::IsNullOrEmpty($moduleToLoad.ModuleVersion)) {
             "Module {$($moduleToLoad.ModuleName)} version {$($moduleToLoad.ModuleVersion)} specified in the configuration isn't installed on the machine/agent. Install it by running: Install-Module -Name '$($moduleToLoad.ModuleName)' -RequiredVersion '$($moduleToLoad.ModuleVersion)'" | Write-DscTrace -Operation Error
             exit 1
-        }
-        else
-        {
-            if ($Script:IsPowerShellCore)
-            {
+        } else {
+            if ($Script:IsPowerShellCore) {
                 $currentResources = Get-PwshDscResource -Module $moduleToLoad.ModuleName
-            }
-            else
-            {
+            } else {
                 $currentResources = Get-DSCResource -Module $moduleToLoad.ModuleName
             }
 
-            if (-not [System.String]::IsNullOrEmpty($moduleToLoad.ModuleVersion))
-            {
+            if (-not [System.String]::IsNullOrEmpty($moduleToLoad.ModuleVersion)) {
                 $currentResources = $currentResources | Where-Object -FilterScript { $_.Version -eq $moduleToLoad.ModuleVersion }
             }
             $DSCResources += $currentResources
         }
     }
 
-    if ($DSCResources.Count -eq 0)
-    {
+    if ($DSCResources.Count -eq 0) {
         "No DSC resources found in the imported modules." | Write-DscTrace -Operation Error
         exit 1
     }
@@ -220,12 +188,9 @@ function ConvertTo-DscObject
     # Body.ScriptBlock is the part after "Configuration <InstanceName> {"
     # EndBlock is the actual code within that Configuration block
     # Find the first DynamicKeywordStatement that has a word "Node" in it, find all "NamedBlockAst" elements, these are the DSC resource definitions
-    try
-    {
+    try {
         $resourceInstances = $Config.Body.ScriptBlock.EndBlock.Statements.Find({ $Args[0].GetType().Name -eq 'DynamicKeywordStatementAst' -and $Args[0].CommandElements[0].StringConstantType -eq 'BareWord' -and $Args[0].CommandElements[0].Value -eq 'Node' }, $False).commandElements[2].ScriptBlock.Find({ $Args[0].GetType().Name -eq 'NamedBlockAst' }, $False).Statements
-    }
-    catch
-    {
+    } catch {
         $resourceInstances = $Config.Body.ScriptBlock.EndBlock.Statements | Where-Object -FilterScript { $null -ne $_.CommandElements -and $_.CommandElements[0].Value -ne 'Import-DscResource' }
     }
 
@@ -233,8 +198,7 @@ function ConvertTo-DscObject
     $configurationName = $Config.InstanceName.Value
 
     $totalCount = 1
-    foreach ($resource in $resourceInstances)
-    {
+    foreach ($resource in $resourceInstances) {
         $currentResourceInfo = @{}
 
         # CommandElements
@@ -257,61 +221,41 @@ function ConvertTo-DscObject
         $currentResource = $DSCResources | Where-Object -FilterScript { $_.Name -eq $resourceType }
 
         # Loop through all the key/pair value
-        foreach ($keyValuePair in $resource.CommandElements[2].KeyValuePairs)
-        {
+        foreach ($keyValuePair in $resource.CommandElements[2].KeyValuePairs) {
             $isVariable = $false
             $key = $keyValuePair.Item1.Value
 
-            if ($null -ne $keyValuePair.Item2.PipelineElements)
-            {
-                if ($null -eq $keyValuePair.Item2.PipelineElements.Expression.Value)
-                {
-                    if ($null -ne $keyValuePair.Item2.PipelineElements.Expression)
-                    {
-                        if ($keyValuePair.Item2.PipelineElements.Expression.StaticType.Name -eq 'Object[]')
-                        {
+            if ($null -ne $keyValuePair.Item2.PipelineElements) {
+                if ($null -eq $keyValuePair.Item2.PipelineElements.Expression.Value) {
+                    if ($null -ne $keyValuePair.Item2.PipelineElements.Expression) {
+                        if ($keyValuePair.Item2.PipelineElements.Expression.StaticType.Name -eq 'Object[]') {
                             $value = $keyValuePair.Item2.PipelineElements.Expression.SubExpression
                             $newValue = @()
-                            foreach ($expression in $value.Statements.PipelineElements.Expression)
-                            {
-                                if ($null -ne $expression.Elements)
-                                {
-                                    foreach ($element in $expression.Elements)
-                                    {
-                                        if ($null -ne $element.VariablePath)
-                                        {
+                            foreach ($expression in $value.Statements.PipelineElements.Expression) {
+                                if ($null -ne $expression.Elements) {
+                                    foreach ($element in $expression.Elements) {
+                                        if ($null -ne $element.VariablePath) {
                                             $newValue += "`$" + $element.VariablePath.ToString()
-                                        }
-                                        elseif ($null -ne $element.Value)
-                                        {
+                                        } elseif ($null -ne $element.Value) {
                                             $newValue += $element.Value
                                         }
                                     }
-                                }
-                                else
-                                {
+                                } else {
                                     $newValue += $expression.Value
                                 }
                             }
                             $value = $newValue
-                        }
-                        else
-                        {
+                        } else {
                             $value = $keyValuePair.Item2.PipelineElements.Expression.ToString()
                         }
-                    }
-                    else
-                    {
+                    } else {
                         $value = $keyValuePair.Item2.PipelineElements.Parent.ToString()
                     }
 
-                    if ($value.GetType().Name -eq 'String' -and $value.StartsWith('$'))
-                    {
+                    if ($value.GetType().Name -eq 'String' -and $value.StartsWith('$')) {
                         $isVariable = $true
                     }
-                }
-                else
-                {
+                } else {
                     $value = $keyValuePair.Item2.PipelineElements.Expression.Value
                 }
             }
@@ -323,19 +267,16 @@ function ConvertTo-DscObject
             # If the value type is null, then the parameter doesn't exist
             # in the resource's schema and we throw a warning
             $propertyFound = $true
-            if ($null -eq $valueType)
-            {
+            if ($null -eq $valueType) {
                 $propertyFound = $false
             }
 
-            if ($propertyFound)
-            {
+            if ($propertyFound) {
                 # If the current property is not a CIMInstance
                 if (-not $valueType.StartsWith('[MSFT_') -and `
                         $valueType -ne '[string]' -and `
                         $valueType -ne '[string[]]' -and `
-                        -not $isVariable)
-                {
+                        -not $isVariable) {
                     # Try to parse the value based on the retrieved type.
                     $scriptBlock = @"
                                     `$typeStaticMethods = $valueType | gm -static
@@ -345,44 +286,29 @@ function ConvertTo-DscObject
                                     }
 "@
                     Invoke-Expression -Command $scriptBlock | Out-Null
-                }
-                elseif ($valueType -eq '[String]' -or $isVariable)
-                {
-                    if ($isVariable -and [Boolean]::TryParse($value.TrimStart('$'), [ref][Boolean]))
-                    {
-                        if ($value -eq "`$true")
-                        {
+                } elseif ($valueType -eq '[String]' -or $isVariable) {
+                    if ($isVariable -and [Boolean]::TryParse($value.TrimStart('$'), [ref][Boolean])) {
+                        if ($value -eq "`$true") {
                             $value = $true
-                        }
-                        else
-                        {
+                        } else {
                             $value = $false
                         }
-                    }
-                    else
-                    {
+                    } else {
                         $value = $value
                     }
-                }
-                elseif ($valueType -eq '[string[]]')
-                {
+                } elseif ($valueType -eq '[string[]]') {
                     # If the property is an array but there's only one value
                     # specified as a string (not specifying the @()) then
                     # we need to create the array.
-                    if ($value.GetType().Name -eq 'String' -and -not $value.StartsWith('@('))
-                    {
+                    if ($value.GetType().Name -eq 'String' -and -not $value.StartsWith('@(')) {
                         $value = @($value)
                     }
-                }
-                else
-                {
+                } else {
                     $isArray = $false
-                    if ($keyValuePair.Item2.ToString().StartsWith('@('))
-                    {
+                    if ($keyValuePair.Item2.ToString().StartsWith('@(')) {
                         $isArray = $true
                     }
-                    if ($isArray)
-                    {
+                    if ($isArray) {
                         $value = @($value)
                     }
                 }

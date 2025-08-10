@@ -7,7 +7,7 @@ param (
 begin {
     $lines = [System.Collections.Generic.List[string]]::new()
 
-    $scriptModule = Import-Module "$PSScriptRoot/convertDscResource.psd1" -Force -PassThru -ErrorAction Ignore
+    $scriptModule = Import-Module "$PSScriptRoot/convertDscResource.psd1" -Force -PassThru -WarningAction SilentlyContinue -ErrorAction Stop
 }
 
 process {

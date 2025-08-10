@@ -6,9 +6,6 @@ BeforeDiscovery {
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
-
-        Write-Verbose -Message $env:Path -Verbose
-        Write-Verbose -Message $env:Path -Verbose
     }
 }
 
