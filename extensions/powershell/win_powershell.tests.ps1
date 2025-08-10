@@ -8,6 +8,7 @@ BeforeDiscovery {
         $isElevated = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 
         if ($env:GITHUB_ACTION) {
+            $script:currentModulePaths = $env:PSModulePath
             Write-Verbose -Message "Running in GitHub Actions" -Verbose
             # Uninstall the PSDesiredStateConfiguration module as this requires v1.1 and the build script installs it 
             Uninstall-PSResource -Name 'PSDesiredStateConfiguration' -Version 2.0.7 -ErrorAction Stop
@@ -61,4 +62,12 @@ configuration InvalidConfiguration {
         $content | Should -BeLike "*Importing file '$psFile' with extension 'Microsoft.DSC.Extension/PowerShell'*"
         $content | Should -Match "No DSC resources found in the imported modules."
     }
+}
+
+AfterAll {
+    if ($IsWindows -and $env:GITHUB_ACTION) {
+        Install-PSResource -Name 'PSDesiredStateConfiguration' -Version 2.0.7 -ErrorAction Stop -TrustRepository -Reinstall
+    }
+
+    $env:PSModulePath = $script:currentModulePaths
 }

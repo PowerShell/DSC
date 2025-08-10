@@ -6,7 +6,7 @@ if ($Script:IsPowerShellCore)
     {
         Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -UseWindowsPowerShell -WarningAction SilentlyContinue
     }
-    Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh'
+    Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh' -WarningAction SilentlyContinue
 }
 
 function Write-DscTrace {
@@ -81,7 +81,6 @@ function Build-DscConfigDocument
             {
                 $dependsOnString = "[resourceId('$("{0}/{1}" -f $previousGroupHash.ModuleName, $previousGroupHash.ResourceName)','$($previousGroupHash.ResourceInstanceName)')]"
 
-                Write-Verbose -Message "Found '$dependsOnstring' for resource: $($dscObject.ResourceInstanceName)"
                 # add it to the object
                 $resource | Add-Member -MemberType NoteProperty -Name 'dependsOn' -Value @($dependsOnString)
             }
@@ -200,7 +199,6 @@ function ConvertTo-DscObject
             }
             else
             {
-                Write-Verbose -Message "Loading DSC resources from module '$($moduleToLoad.ModuleName)'" -Verbose
                 $currentResources = Get-DSCResource -Module $moduleToLoad.ModuleName
             }
 
