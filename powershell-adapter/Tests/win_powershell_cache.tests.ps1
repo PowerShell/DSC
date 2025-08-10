@@ -48,10 +48,11 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
   }
 
   It 'Get works on Binary "File" resource' {
-
+    Write-Verbose -Message $env:Path -Verbose 
+    Write-Verbose -Message $env:PSModulePath -Verbose
     $testFile = "$testdrive\test.txt"
     'test' | Set-Content -Path $testFile -Force
-    $r = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File' -f -
+    $r = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '"}' | dsc -l trace resource get -r 'PSDesiredStateConfiguration/File' -f -
     $LASTEXITCODE | Should -Be 0
     $res = $r | ConvertFrom-Json
     $res.actualState.DestinationPath | Should -Be "$testFile"
