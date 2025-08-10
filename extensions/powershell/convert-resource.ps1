@@ -18,8 +18,7 @@ begin {
         # Make sure the default path is Windows PowerShell is included
         $winPsPath = "$env:windir\System32\WindowsPowerShell\v1.0\Modules"
         if ($env:PSModulePath -notmatch [regex]::Escape($winPsPath)) {
-            # Separator is already at the end
-            $env:PSModulePath = $env:PSModulePath + $winPsPath
+            $env:PSModulePath = $env:PSModulePath + [System.IO.Path]::PathSeparator + $winPsPath
         }
     }
 
