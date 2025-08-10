@@ -11,12 +11,25 @@ BeforeDiscovery {
 
 Describe 'PowerShell extension tests' {
     It 'Example PowerShell file should work' -Skip:(!$IsWindows -or !$isElevated) {
-        $psFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\variable.dsc.ps1"
-        $out = dsc -l trace config get -f $psFile 2>$TestDrive/error.log | ConvertFrom-Json
+            $powerShellConfiguration = @"
+configuration TestClassConfiguration {
+    Import-DscResource -ModuleName TestClassResource
+    Node localhost
+    {
+        TestClassResource TestClass {
+            Name   = 'Test'
+        }
+    }
+}
+"@
+        $config_path = "$TestDrive/testclass.ps1"
+        $powerShellConfiguration | Set-Content -Path $config_path
+        $out = dsc -l trace config get -f $config_path 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
-        $out.results[0].result.actualState.Ensure | Should -Be 'Absent'
-        $psFile = $psFile.ToString().Replace('\', '\\')
-        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$psFile' with extension 'Microsoft.Windows.Extension/WindowsPowerShell'"
+        $out.results[0].result.actualState.Ensure | Should -Be 'Present'
+        $out.results[0].result.actualState.Name | Should -Be 'Test'
+        $config_path = $config_path.ToString().Replace('\', '\\')
+        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$config_path' with extension 'Microsoft.DSC.Extension/PowerShell'"
     }
 
     It 'Invalid PowerShell configuration document file returns error' -Skip:(!$IsWindows) {
@@ -37,7 +50,7 @@ configuration InvalidConfiguration {
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $content = (Get-Content -Path $TestDrive/error.log -Raw)
         $psFile = $psFile.ToString().Replace('\', '\\')
-        $content | Should -Match "Importing file '$psFile' with extension 'Microsoft.Windows.Extension/WindowsPowerShell'"
+        $content | Should -Match "Importing file '$psFile' with extension 'Microsoft.DSC.Extension/PowerShell'"
         $content | Should -Match "No DSC resources found in the imported modules."
     }
 }
