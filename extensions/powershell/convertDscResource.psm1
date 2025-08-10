@@ -9,8 +9,6 @@ if ($Script:IsPowerShellCore)
     Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh'
 }
 
-$VerbosePreference = 'Continue'
-
 function Write-DscTrace {
     param(
         [Parameter(Mandatory = $false)]

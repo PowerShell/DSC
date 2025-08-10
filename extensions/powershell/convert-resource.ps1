@@ -20,6 +20,8 @@ end {
     if ($lines.Count -ne 0) {
         $result = $scriptModule.invoke( { param($lines) Build-DscConfigDocument -Content $lines }, ($lines | Out-String) )
 
+        ($result | ConvertTo-Json -Depth 10 -Compress) | Write-DscTrace Debug
+
         return ($result | ConvertTo-Json -Depth 10 -Compress)
     }
 }
