@@ -48,6 +48,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
   }
 
   It 'Get works on Binary "File" resource' {
+    
     $testFile = "$testdrive\test.txt"
     'test' | Set-Content -Path $testFile -Force
     $r = '{"DestinationPath":"' + $testFile.replace('\', '\\') + '"}' | dsc resource get -r 'PSDesiredStateConfiguration/File' -f -
