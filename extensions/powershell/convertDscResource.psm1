@@ -2,11 +2,12 @@ $Script:IsPowerShellCore = $PSVersionTable.PSEdition -eq 'Core'
 
 if ($Script:IsPowerShellCore) {
     if ($IsWindows) {
-        Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -UseWindowsPowerShell -WarningAction SilentlyContinue
+        Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -UseWindowsPowerShell -WarningAction SilentlyContinue -ErrorAction Stop
     }
-    Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh' -WarningAction SilentlyContinue
-} else {    
-    Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -WarningAction SilentlyContinue
+    Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh' -WarningAction SilentlyContinue -ErrorAction Stop
+} else {
+    "Loaded module paths: $env:PSModulePath" | Write-DscTrace -Operation Trace
+    Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -WarningAction SilentlyContinue -ErrorAction Stop
 }
 
 function Write-DscTrace {
