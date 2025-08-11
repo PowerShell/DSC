@@ -10,7 +10,7 @@ BeforeDiscovery {
 }
 
 Describe 'PowerShell extension tests' {
-    It 'Example PowerShell file should work' -Skip:(!$IsWindows -or !$isElevated) {
+    It 'Example PowerShell file should work' -Skip:(!$isElevated) {
             $powerShellConfiguration = @"
 configuration TestClassConfiguration {
     Import-DscResource -ModuleName TestClassResource
@@ -32,7 +32,7 @@ configuration TestClassConfiguration {
         (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$config_path' with extension 'Microsoft.DSC.Extension/PowerShell'"
     }
 
-    It 'Invalid PowerShell configuration document file returns error' -Skip:(!$IsWindows) {
+    It 'Invalid PowerShell configuration document file returns error' {
         $psFile = "$TestDrive/invalid.ps1"
         Set-Content -Path $psFile -Value @"
 configuration InvalidConfiguration {
