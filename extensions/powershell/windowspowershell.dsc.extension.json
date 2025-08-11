@@ -1,8 +1,8 @@
 {
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
-    "type": "Microsoft.DSC.Extension/WindowsPowerShell",
+    "type": "Microsoft.DSC.Transitional/PSDesiredStateConfiguration",
     "version": "0.1.0",
-    "description": "Enable passing Windows PowerShell v1 configuration document file directly to DSC. Works only on Windows.",
+    "description": "Enable passing Windows PowerShell v1 configuration document file directly to DSC. Works only on Windows and leverages the built-in PSDesiredStateConfiguration module.",
     "import": {
         "fileExtensions": ["ps1"],
         "executable": "powershell",

@@ -16,7 +16,7 @@ Describe 'PowerShell extension tests' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $out.results[0].result.actualState.Ensure | Should -Be 'Absent'
         $psFile = $psFile.ToString().Replace('\', '\\')
-        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$psFile' with extension 'Microsoft.DSC.Extension/WindowsPowerShell'"
+        (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match "Importing file '$psFile' with extension 'Microsoft.DSC.Transitional/PSDesiredStateConfiguration'"
     }
 
     It 'Invalid PowerShell configuration document file returns error' -Skip:(!$IsWindows) {
@@ -37,7 +37,7 @@ configuration InvalidConfiguration {
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content -Path $TestDrive/error.log -Raw | Out-String)
         $content = (Get-Content -Path $TestDrive/error.log -Raw)
         $psFile = $psFile.ToString().Replace('\', '\\')
-        $content | Should -Match "Importing file '$psFile' with extension 'Microsoft.DSC.Extension/WindowsPowerShell'"
+        $content | Should -Match "Importing file '$psFile' with extension 'Microsoft.DSC.Transitional/PSDesiredStateConfiguration'"
         $content | Should -Match "No DSC resources found in the imported modules."
     }
 }
