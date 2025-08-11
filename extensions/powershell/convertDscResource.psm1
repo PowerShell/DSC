@@ -6,7 +6,6 @@ if ($Script:IsPowerShellCore) {
     }
     Import-Module -Name 'PSDesiredStateConfiguration' -MinimumVersion 2.0.7 -Prefix 'Pwsh' -WarningAction SilentlyContinue -ErrorAction Stop
 } else {
-    "Loaded module paths: $env:PSModulePath" | Write-DscTrace -Operation Trace
     Import-Module -Name 'PSDesiredStateConfiguration' -RequiredVersion 1.1 -WarningAction SilentlyContinue -ErrorAction Stop
 }
 
