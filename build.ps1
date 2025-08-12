@@ -324,7 +324,8 @@ if (!$SkipBuild) {
         "sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
-        "y2j"
+        "y2j",
+        "resources/repro.trace"
     )
     $pedantic_unclean_projects = @()
     $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
