@@ -1,5 +1,5 @@
 {
-    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/extension/manifest.json",
     "type": "Microsoft.DSC.Extension/Bicep",
     "version": "0.1.0",
     "description": "Enable passing Bicep file directly to DSC, but requires bicep executable to be available.",

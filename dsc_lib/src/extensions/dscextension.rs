@@ -9,7 +9,20 @@ use schemars::JsonSchema;
 use std::{fmt::Display, path::Path};
 use tracing::{debug, info, trace};
 
-use crate::{discovery::command_discovery::{load_manifest, ImportedManifest}, dscerror::DscError, dscresources::{command_resource::{invoke_command, process_args}, dscresource::DscResource}, extensions::{import::ImportArgKind, secret::SecretResult}};
+use crate::{
+    discovery::command_discovery::{
+        load_manifest, ImportedManifest
+    },
+    dscerror::DscError,
+    dscresources::{
+        command_resource::{
+            invoke_command,
+            process_args
+        },
+        dscresource::DscResource
+    },
+    extensions::import::ImportArgKind
+};
 
 use super::{discover::DiscoverResult, extension_manifest::ExtensionManifest, secret::SecretArgKind};
 
@@ -232,18 +245,8 @@ impl DscExtension {
                 info!("{}", t!("extensions.dscextension.secretNoResults", extension = self.type_name));
                 Ok(None)
             } else {
-                let result: SecretResult = match serde_json::from_str(&stdout) {
-                    Ok(value) => value,
-                    Err(err) => {
-                        return Err(DscError::Extension(t!("extensions.dscextension.secretExtensionReturnedInvalidJson", extension = self.type_name, error = err).to_string()));
-                    }
-                };
-                if result.secure_string.is_some() {
-                    debug!("{}", t!("extensions.dscextension.extensionReturnedSecret", extension = self.type_name));
-                } else {
-                    debug!("{}", t!("extensions.dscextension.extensionReturnedNoSecret", extension = self.type_name));
-                }
-                Ok(result.secure_string)
+                debug!("{}", t!("extensions.dscextension.extensionReturnedSecret", extension = self.type_name));
+                Ok(Some(stdout))
             }
         } else {
             Err(DscError::UnsupportedCapability(

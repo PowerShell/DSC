@@ -43,10 +43,8 @@ function get-secret($hashtable, $name, $vault) {
     return $null
 }
 
-$secret = if ($Second) {
+if ($Second) {
     get-secret -hashtable $secretTwo -name $Name -vault $Vault
 } else {
     get-secret -hashtable $secretsOne -name $Name -vault $Vault
 }
-
-@{ secureString = $secret } | ConvertTo-Json -Compress | Write-Output
