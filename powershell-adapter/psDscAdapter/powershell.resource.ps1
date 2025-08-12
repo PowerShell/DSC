@@ -2,8 +2,8 @@
 # Licensed under the MIT License.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, ClearCache.')]
-    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'ClearCache')]
+    [Parameter(Mandatory = $true, Position = 0, HelpMessage = 'Operation to perform. Choose from List, Get, Set, Test, Export, Validate, Schema, ClearCache.')]
+    [ValidateSet('List', 'Get', 'Set', 'Test', 'Export', 'Validate', 'Schema', 'ClearCache')]
     [string]$Operation,
     [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = 'Configuration or resource input in JSON format.')]
     [string]$jsonInput = '@{}'
@@ -31,19 +31,19 @@ trap {
 'PSPath=' + $PSHome | Write-DscTrace
 'PSModulePath=' + $env:PSModulePath | Write-DscTrace
 
-if ($Operation -eq 'ClearCache') {
-    $cacheFilePath = if ($IsWindows) {
-        # PS 6+ on Windows
-        Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
+$cacheFilePath = if ($IsWindows) {
+    # PS 6+ on Windows
+    Join-Path $env:LocalAppData "dsc\PSAdapterCache.json"
+} else {
+    # either WinPS or PS 6+ on Linux/Mac
+    if ($PSVersionTable.PSVersion.Major -le 5) {
+        Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
     } else {
-        # either WinPS or PS 6+ on Linux/Mac
-        if ($PSVersionTable.PSVersion.Major -le 5) {
-            Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
-        } else {
-            Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
-        }
+        Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
     }
+}
 
+if ($Operation -eq 'ClearCache') {
     'Deleting cache file ' + $cacheFilePath | Write-DscTrace
     Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
     exit 0
@@ -60,8 +60,7 @@ if ('Validate' -ne $Operation) {
     # load private functions of psDscAdapter stub module
     if ($PSVersionTable.PSVersion.Major -le 5) {
         $psDscAdapter = Import-Module "$PSScriptRoot/win_psDscAdapter.psd1" -Force -PassThru
-    }
-    else {
+    } else {
         $psDscAdapter = Import-Module "$PSScriptRoot/psDscAdapter.psd1" -Force -PassThru
     }
 
@@ -74,8 +73,7 @@ if ($jsonInput) {
         $inputobj_pscustomobj = $jsonInput | ConvertFrom-Json
     }
     $new_psmodulepath = $inputobj_pscustomobj.psmodulepath
-    if ($new_psmodulepath)
-    {
+    if ($new_psmodulepath) {
         $env:PSModulePath = $ExecutionContext.InvokeCommand.ExpandString($new_psmodulepath)
     }
 }
@@ -87,7 +85,7 @@ switch ($Operation) {
 
         # cache was refreshed on script load
         foreach ($dscResource in $dscResourceCache) {
-        
+
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
             $DscResourceInfo = $dscResource.DscResourceInfo
 
@@ -109,20 +107,17 @@ switch ($Operation) {
             # this text comes directly from the resource manifest for v3 native resources
             if ($DscResourceInfo.Description) {
                 $description = $DscResourceInfo.Description
-            }
-            elseif ($module.Description) {
+            } elseif ($module.Description) {
                 # some modules have long multi-line descriptions. to avoid issue, use only the first line.
                 $description = $module.Description.split("`r`n")[0]
-            }
-            else {
+            } else {
                 $description = ''
             }
 
             # match adapter to version of powershell
             if ($PSVersionTable.PSVersion.Major -le 5) {
                 $requireAdapter = 'Microsoft.Windows/WindowsPowerShell'
-            }
-            else {
+            } else {
                 $requireAdapter = 'Microsoft.DSC/PowerShell'
             }
 
@@ -142,7 +137,7 @@ switch ($Operation) {
             } | ConvertTo-Json -Compress
         }
     }
-    { @('Get','Set','Test','Export') -contains $_ } {
+    { @('Get', 'Set', 'Test', 'Export') -contains $_ } {
         $desiredState = $psDscAdapter.invoke(   { param($jsonInput) Get-DscResourceObject -jsonInput $jsonInput }, $jsonInput )
         if ($null -eq $desiredState) {
             Write-DscTrace -Operation Error -message 'Failed to create configuration object from provided input JSON.'
@@ -183,7 +178,7 @@ switch ($Operation) {
             }
             $result += $actualState
         }
-    
+
         # OUTPUT json to stderr for debug, and to stdout
         if ($Operation -eq 'Test') {
             $result = @{ result = $result; _inDesiredState = $inDesiredState } | ConvertTo-Json -Depth 10 -Compress
@@ -194,14 +189,47 @@ switch ($Operation) {
         Write-DscTrace -Operation Debug -Message "jsonOutput=$result"
         return $result
     }
+    'Schema' {
+        $cache = Get-Content $cacheFilePath | ConvertFrom-Json
+
+        # TODO: Validate how input is passed and remove hindden properties
+        $resourceInfoproperties = ($cache.ResourceCache | Where-Object { $_.Type -eq 'TestClassResource/TestClassResource' }).DscResourceInfo.Properties
+
+        $props = @{}
+        $resourceInfoproperties | Foreach-Object {
+            if ($_.IsMandatory -eq $true) {
+                $props[$_.Name] = [hashtable]@{
+                    type        = $_.PropertyType
+                    description = ""
+                }
+            } else {
+                $props[$_.Name] = [hashtable]@{
+                    type        = @($_.PropertyType, $null)
+                    description = ""
+                }
+            }
+        }
+
+        $out = [resourceProperties]@{
+            schema               = 'http://json-schema.org/draft-12/schema#'
+            title                = ($cache.ResourceCache | Where-Object { $_.Type -eq 'TestClassResource/TestClassResource' }).Type
+            type                 = 'object'
+            required             = @($resourceInfoproperties | Where-Object { $_.IsMandatory -eq $true }).Name
+            properties           = $props
+            additionalProperties = $false
+            # definitions = $null # TODO: Should we add definitions
+        }
+
+        $out | ConvertTo-Json -Depth 10 -Compress
+    }
     'Validate' {
         # VALIDATE not implemented
-        
+
         # OUTPUT
         @{ valid = $true } | ConvertTo-Json
     }
     Default {
-        Write-DscTrace -Operation Error -Message 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Validate'
+        Write-DscTrace -Operation Error -Message 'Unsupported operation. Please use one of the following: List, Get, Set, Test, Export, Schema, and Validate'
     }
 }
 
@@ -218,4 +246,13 @@ class resourceOutput {
     [string[]] $properties
     [string] $requireAdapter
     [string] $description
+}
+
+class resourceProperties {
+    [string] $schema
+    [string] $title
+    [string] $type
+    [string[]] $required
+    [hashtable] $properties
+    [bool] $additionalProperties
 }
