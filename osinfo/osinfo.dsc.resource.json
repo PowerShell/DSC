@@ -13,7 +13,10 @@
         "executable": "osinfo"
     },
     "export": {
-        "executable": "osinfo"
+        "executable": "osinfo",
+        "args": [
+            "export"
+        ]
     },
     "schema": {
         "embedded": {

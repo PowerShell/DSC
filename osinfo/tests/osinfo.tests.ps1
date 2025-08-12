@@ -22,6 +22,8 @@ Describe 'osinfo resource tests' {
         else {
             $out.actualState.bitness | Should -BeExactly '32'
         }
+
+        $out._name | Should -BeNullOrEmpty
     }
 
     It 'should perform synthetic test' {

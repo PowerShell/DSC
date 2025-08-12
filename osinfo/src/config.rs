@@ -62,7 +62,7 @@ impl Display for Family {
 const ID: &str = "https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json";
 
 impl OsInfo {
-    pub fn new() -> Self {
+    pub fn new(include_name: bool) -> Self {
         let os_info = os_info::get();
         let edition = os_info.edition().map(ToString::to_string);
         let codename = os_info.codename().map(ToString::to_string);
@@ -78,12 +78,16 @@ impl OsInfo {
             _ => Bitness::Unknown,
         };
         let version = os_info.version().to_string();
-        let name = Some(
-            match &architecture {
-                Some(arch) => format!("{family} {version} {arch}"),
-                None => format!("{family:?} {version}"),
-            }
-        );
+        let name = if include_name {
+            Some(
+                match &architecture {
+                    Some(arch) => format!("{family} {version} {arch}"),
+                    None => format!("{family:?} {version}"),
+                }
+            )
+        } else {
+            None
+        };
         Self {
             id: ID.to_string(),
             family,
