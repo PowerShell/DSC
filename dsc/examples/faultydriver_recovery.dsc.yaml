@@ -1,0 +1,9 @@
+# Example configuration mixing native app resources with classic PS resources
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2024/04/config/document.json
+resources:
+- name: check if faulty driver of CrowdStrike exists under system32\drivers
+  type: Microsoft.DSC/FileSystem
+  properties:
+    path: "[path(systemRoot(), 'windows', 'system32', 'drivers', 'crowdstrike', 'C-00000291-00000000-00000026.sys')]"
+    _exist: False
+    hash: '6454cc4779c1c8387c547099181cfcbecc17401fb22750431c15a3b02f8243ea'

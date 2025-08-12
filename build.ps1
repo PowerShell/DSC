@@ -320,6 +320,7 @@ if (!$SkipBuild) {
         "powershell-adapter",
         'resources/PSScript',
         "process",
+        "resources/filesys",
         "runcommandonset",
         "sshdconfig",
         "tools/dsctest",
