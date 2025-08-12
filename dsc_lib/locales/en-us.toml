@@ -188,6 +188,7 @@ secretNoResults = "Extension '%{extension}' returned no output"
 importingFile = "Importing file '%{file}' with extension '%{extension}'"
 importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
 importNoResults = "Extension '%{extension}' returned no results for import"
+secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines which is not supported for secrets"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"

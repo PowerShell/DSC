@@ -27,6 +27,7 @@ $secretTwo = @{
         DifferentSecret = 'Hello2'
         DuplicateSecret = 'World2'
         DuplicateSame = 'SameSecret'
+        MultiLine = "This`nis`nmultiline"
     }
 }
 

@@ -245,8 +245,15 @@ impl DscExtension {
                 info!("{}", t!("extensions.dscextension.secretNoResults", extension = self.type_name));
                 Ok(None)
             } else {
-                debug!("{}", t!("extensions.dscextension.extensionReturnedSecret", extension = self.type_name));
-                Ok(Some(stdout))
+                // see if multiple lines were returned
+                let secret = if stdout.lines().count() > 1 {
+                    return Err(DscError::NotSupported(t!("extensions.dscextension.secretMultipleLinesReturned", extension = self.type_name).to_string()));
+                } else {
+                    debug!("{}", t!("extensions.dscextension.extensionReturnedSecret", extension = self.type_name));
+                    // remove any trailing newline characters
+                    stdout.trim_end_matches('\n').to_string()
+                };
+                Ok(Some(secret))
             }
         } else {
             Err(DscError::UnsupportedCapability(
