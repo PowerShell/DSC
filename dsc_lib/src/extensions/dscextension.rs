@@ -242,7 +242,7 @@ impl DscExtension {
                 extension.exit_codes.as_ref(),
             )?;
             if stdout.is_empty() {
-                info!("{}", t!("extensions.dscextension.secretNoResults", extension = self.type_name));
+                debug!("{}", t!("extensions.dscextension.extensionReturnedNoSecret", extension = self.type_name));
                 Ok(None)
             } else {
                 // see if multiple lines were returned
