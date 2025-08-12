@@ -1,0 +1,14 @@
+# Provides an example of a DSC configuration that uses a PowerShell DSC Resource not contained in PsDesiredStateConfiguration.
+# You must install the ComputerManagementDsc module to use this configuration
+
+$schema: https://aka.ms/dsc/schemas/v3.0.0/bundled/config/document.json
+resources:
+  - type: Microsoft.Windows/WindowsPowerShell
+    name: Set Timezone
+    properties:
+      resources:
+        - name: Set Timezone
+          type: ComputerManagementDsc/TimeZone
+          properties:
+            IsSingleInstance: Yes
+            TimeZone: New Zealand Standard Time
