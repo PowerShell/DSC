@@ -116,13 +116,6 @@ fn main() {
             String::new()
         },
         SubCommand::Get { input } => {
-            let get = match serde_json::from_str::<Get>(&input) {
-                Ok(get) => get,
-                Err(err) => {
-                    eprintln!("Error JSON does not match schema: {err}");
-                    std::process::exit(1);
-                }
-            };
             let instances = vec![
                 Get {
                     name : Some("one".to_string()),
@@ -137,20 +130,38 @@ fn main() {
                     id: Some(3),
                 },
             ];
-            // depending on the input, return the appropriate instance whether it is name or id or both
-            let resource = if let Some(name) = get.name {
-                instances.into_iter().find(|i| i.name.as_ref() == Some(&name)).unwrap_or_else(|| {
-                    eprintln!("No instance found with name: {name}");
-                    std::process::exit(1);
-                })
-            } else if let Some(id) = get.id {
-                instances.into_iter().find(|i| i.id == Some(id)).unwrap_or_else(|| {
-                    eprintln!("No instance found with id: {id}");
+
+            let resource = if input.is_empty() {
+                // If neither name nor id is provided, return the first instance
+                instances.into_iter().next().unwrap_or_else(|| {
+                    eprintln!("No instances found");
                     std::process::exit(1);
                 })
             } else {
-                eprintln!("No name or id provided in input");
-                std::process::exit(1);
+                let get = match serde_json::from_str::<Get>(&input) {
+                    Ok(get) => get,
+                    Err(err) => {
+                        eprintln!("Error JSON does not match schema: {err}");
+                        std::process::exit(1);
+                    }
+                };
+                // depending on the input, return the appropriate instance whether it is name or id or both
+                if let Some(name) = get.name {
+                    instances.into_iter().find(|i| i.name.as_ref() == Some(&name)).unwrap_or_else(|| {
+                        eprintln!("No instance found with name: {name}");
+                        std::process::exit(1);
+                    })
+                } else if let Some(id) = get.id {
+                    instances.into_iter().find(|i| i.id == Some(id)).unwrap_or_else(|| {
+                        eprintln!("No instance found with id: {id}");
+                        std::process::exit(1);
+                    })
+                } else {
+                    instances.into_iter().next().unwrap_or_else(|| {
+                        eprintln!("No instances found");
+                        std::process::exit(1);
+                    })  
+                }
             };
             serde_json::to_string(&resource).unwrap()
         },

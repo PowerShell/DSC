@@ -203,20 +203,14 @@ resources:
       $yaml = @'
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
-  - name: OS
-    type: Microsoft/OSInfo
+  - name: NoFilter
+    type: Test/Get
 '@
       $out = dsc config export -i $yaml | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.resources.count | Should -Be 1
-      $out.resources[0].type | Should -BeExactly 'Microsoft/OSInfo'
-      $expectedOs = if ($IsWindows) {
-          'Windows'
-      } elseif ($IsMacOS) {
-          'macOS'
-      } else {
-          'Linux'
-      }
-      $out.resources[0].properties.family | Should -BeExactly $expectedOs
+      $out.resources[0].type | Should -BeExactly 'Test/Get'
+      $out.resources[0].properties.name | Should -BeExactly 'one'
+      $out.resources[0].properties.id | Should -Be 1
     }
 }
