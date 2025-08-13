@@ -1,12 +1,13 @@
 name: Publish to Winget
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
 
-env:
-  REGEX: 'DSC-(\d+\.\d+\.\d+(?:-preview\.\d+)?)-(?:x86_64|aarch64)-pc-windows-msvc\.zip'
+env:  
+  WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}  
 
 jobs:
   publish:
@@ -15,13 +16,14 @@ jobs:
       - name: Publish Microsoft.DSC ${{ github.event.release.prerelease && 'Preview' || 'Stable' }}
         run: |
           $assets = '${{ toJSON(github.event.release.assets) }}' | ConvertFrom-Json
-          $wingetRelevantAsset = $assets | Where-Object { $_.name -like '*.zip' -and $_.name -like '*.msixbundle' } | Select-Object -First 1
-          $regex = [Regex]::New($env:REGEX)
-          $version = $regex.Match($wingetRelevantAsset.name).Groups[1].Value
+          $x64ZIPInstallerUrl = $assets | Where-Object -Property name -like '*x86_64-pc-windows-msvc.zip' | Select-Object -ExpandProperty browser_download_url  
+          $arm64InstallerUrl = $assets | Where-Object -Property name -like '*aarch64-pc-windows-msvc.zip' | Select-Object -ExpandProperty browser_download_url  
+          $msixInstallerURL = $assets | Where-Object -Property name -like '*Win.msixbundle' | Select-Object -ExpandProperty browser_download_url
+          $version = (${{ toJSON(github.event.release.tag_name) }}).Trim('v')
 
-          $wingetPackage = "Microsoft.DSC${{ github.event.release.prerelease && '.Preview' || '' }}"
+          $wingetPackage = "Microsoft.DSC"
 
           & curl.exe -JLO https://aka.ms/wingetcreate/latest
-          & .\wingetcreate.exe update $wingetPackage -s -v $version -u $wingetRelevantAsset.browser_download_url -t "${{ secrets.WINGET_TOKEN }}"
+          & .\wingetcreate.exe update $wingetPackage --version $version --urls $x64ZIPInstallerUrl $arm64InstallerUrl $msixInstallerURL --submit 
 
 
