@@ -862,57 +862,42 @@ pub fn log_stderr_line<'a>(process_id: &u32, trace_line: &'a str) -> &'a str
     if !trace_line.is_empty()
     {
         if let Ok(trace_object) = serde_json::from_str::<Trace>(trace_line) {
-            let mut include_target = trace_object.level == TraceLevel::Debug || trace_object.level == TraceLevel::Trace;
-            let target = if let Some(t) = trace_object.target.as_deref() { t } else {
-                include_target = false;
-                ""
-            };
-            let line_number = if let Some(l) = trace_object.line_number { l } else {
-                include_target = false;
-                0
-            };
-            let trace_message = if include_target {
-                format!("PID {process_id}: {target}: {line_number}: {}", trace_object.fields.message)
-            } else {
-                format!("PID {process_id}: {}", trace_object.fields.message)
-            };
             match trace_object.level {
                 TraceLevel::Error => {
-                    error!(trace_message);
+                    error!(message = trace_object.fields.message, pid = process_id, target = trace_object.target, line_number = trace_object.line_number);
                 },
                 TraceLevel::Warn => {
-                    warn!(trace_message);
+                    warn!(message = trace_object.fields.message, pid = process_id, target = trace_object.target, line_number = trace_object.line_number);
                 },
                 TraceLevel::Info => {
-                    info!(trace_message);
+                    info!(message = trace_object.fields.message, pid = process_id, target = trace_object.target, line_number = trace_object.line_number);
                 },
                 TraceLevel::Debug => {
-                    debug!(trace_message);
+                    debug!(message = trace_object.fields.message, pid = process_id, target = trace_object.target, line_number = trace_object.line_number);
                 },
                 TraceLevel::Trace => {
-                    trace!(trace_message);
+                    trace!(message = trace_object.fields.message, pid = process_id, target = trace_object.target, line_number = trace_object.line_number);
                 },
             }
-        }
-        else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
+        } else if let Ok(json_obj) = serde_json::from_str::<Value>(trace_line) {
             if let Some(msg) = json_obj.get("error") {
-                error!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                error!(message = msg.as_str().unwrap_or_default(), pid = process_id);
             } else if let Some(msg) = json_obj.get("warn") {
-                warn!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                warn!(message = msg.as_str().unwrap_or_default(), pid = process_id);
             } else if let Some(msg) = json_obj.get("info") {
-                info!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                info!(message = msg.as_str().unwrap_or_default(), pid = process_id);
             } else if let Some(msg) = json_obj.get("debug") {
-                debug!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                debug!(message = msg.as_str().unwrap_or_default(), pid = process_id);
             } else if let Some(msg) = json_obj.get("trace") {
-                trace!("PID {process_id}: {}", msg.as_str().unwrap_or_default());
+                trace!(message = msg.as_str().unwrap_or_default(), pid = process_id);
             } else {
                 // the line is a valid json, but not one of standard trace lines - return it as filtered stderr_line
-                trace!("PID {process_id}: {trace_line}");
+                trace!(message = trace_line, pid = process_id);
                 return trace_line;
             }
         } else {
             // the line is not a valid json - return it as filtered stderr_line
-            trace!("PID {process_id}: {}", trace_line);
+            trace!(message = trace_line, pid = process_id);
             return trace_line;
         }
     }

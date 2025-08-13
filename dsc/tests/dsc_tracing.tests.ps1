@@ -89,13 +89,32 @@ Describe 'tracing tests' {
 
     It 'Pass-through tracing should only emit JSON for child processes' {
         $logPath = "$TestDrive/dsc_trace.log"
-        $out = dsc -l info -t pass-through config get -f ../examples/groups.dsc.yaml 2> $logPath
+        $out = dsc -l trace -t pass-through config get -f "$PSScriptRoot/../examples/groups.dsc.yaml" 2> $logPath
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path $logPath -Raw)
+        $foundPID = $false
+        $foundTarget = $false
+        $foundLineNumber = $false
         foreach ($line in (Get-Content $logPath)) {
             $line | Should -Not -BeNullOrEmpty
             $json = $line | ConvertFrom-Json
-            $json.timestamp | Should -Not -BeNullOrEmpty
+            $json.timestamp | Should -Not -BeNullOrEmpty -Because "Line: $line"
             $json.level | Should -BeIn 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'
+            $json.fields.message | Should -Not -BeNullOrEmpty -Because "Line: $line"
+            if ($json.fields.pid) {
+                $json.fields.pid | Should -BeGreaterThan 0 -Because "Line: $line"
+                $foundPID = $true
+            }
+            if ($json.fields.target) {
+                $foundTarget = $true
+            }
+            if ($json.fields.line_number) {
+                $json.fields.line_number | Should -BeGreaterThan 0 -Because "Line: $line"
+                $foundLineNumber = $true
+            }
         }
-        $out | Should -BeNullOrEmpty
+        $foundTarget | Should -BeTrue -Because "No target found in log"
+        $foundLineNumber | Should -BeTrue -Because "No line number found in log"
+        $foundPID | Should -BeTrue -Because "No PID found in log"
+        $out | Should -Not -BeNullOrEmpty
     }
 }
