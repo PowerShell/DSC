@@ -12,8 +12,11 @@ env:
 jobs:
   publish:
     runs-on: windows-latest # Action can only run on Windows
+
+    # Only submit stable releases
+    if: ${{ !github.event.release.prerelease }}
     steps:
-      - name: Publish Microsoft.DSC ${{ github.event.release.prerelease && 'Preview' || 'Stable' }}
+      - name: Publish DSC package
         run: |
           $assets = '${{ toJSON(github.event.release.assets) }}' | ConvertFrom-Json
           $x64ZIPInstallerUrl = $assets | Where-Object -Property name -like '*x86_64-pc-windows-msvc.zip' | Select-Object -ExpandProperty browser_download_url  
