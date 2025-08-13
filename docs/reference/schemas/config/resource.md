@@ -69,7 +69,7 @@ Pattern:  ^\w+(\.\w+){0,2}\/\w+$
 ### properties
 
 The `properties` of a resource instance define its desired state. The value of this property must
-be an object. For assertion  resources, the value may be an empty object (`{}`). DSC uses the
+be an object. For assertion  resources, the value can be an empty object (`{}`). DSC uses the
 DSC Resource's instance schema to validate the defined properties.
 
 <!-- For more information about instance schemas in DSC, see [DSC Resource instance schemas][aa]. -->
