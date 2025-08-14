@@ -8,10 +8,15 @@ pr:
     - release/v*
 
 variables:
-  BuildConfiguration: 'release'
-  PackageRoot: '$(System.ArtifactsDirectory)/Packages'
-  WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
-  Codeql.TSAEnabled: true
+  - name: BuildConfiguration
+    value: 'release'
+  - name: PackageRoot
+    value: '$(System.ArtifactsDirectory)/Packages'
+  - name: WindowsContainerImage
+    value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
+  - name: Codeql.TSAEnabled
+    value: true
+  - group: DSC-Rust.SDK
 
 resources:
   repositories:
@@ -106,6 +111,7 @@ extends:
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
             token: '$(AzToken)'
+            rustSDK: $(Rust.SDK)
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -125,6 +131,7 @@ extends:
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
             token: '$(AzToken)'
+            rustSDK: $(Rust.SDK)
 
       - job: CreateMsixBundle
         dependsOn:
@@ -208,7 +215,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: x86_64-unknown-linux-musl
           displayName: Install Rust
           env:
@@ -243,7 +250,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: aarch64-unknown-linux-musl
           displayName: Install Rust
           env:
@@ -302,7 +309,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: $(buildName)
           displayName: Install Rust
           env:
