@@ -14,8 +14,9 @@ use tracing::debug;
 
 use crate::args::Setting;
 use crate::error::SshdConfigError;
+use crate::inputs::CommandInfo;
 use crate::parser::parse_text_to_map;
-use crate::util::{extract_metadata_from_input, extract_sshd_defaults, invoke_sshd_config_validation};
+use crate::util::{build_command_info, extract_sshd_defaults, invoke_sshd_config_validation};
 
 /// Invoke the get command.
 ///
@@ -25,7 +26,10 @@ use crate::util::{extract_metadata_from_input, extract_sshd_defaults, invoke_ssh
 pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<Map<String, Value>, SshdConfigError> {
     debug!("{}: {:?}", t!("get.debugSetting").to_string(), setting);
     match *setting {
-        Setting::SshdConfig => get_sshd_settings(input),
+        Setting::SshdConfig => {
+            let cmd_info = build_command_info(input, true)?;
+            get_sshd_settings(&cmd_info)
+        },
         Setting::WindowsGlobal => {
             get_default_shell()?;
             Ok(Map::new())
@@ -89,12 +93,12 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
 }
 
-fn get_sshd_settings(input: Option<&String>) -> Result<Map<String, Value>, SshdConfigError> {
-    let cmd_info = extract_metadata_from_input(input)?;
-    let sshd_config_text = invoke_sshd_config_validation(cmd_info.sshd_args)?;
+pub fn get_sshd_settings(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+    let sshd_config_text = invoke_sshd_config_validation(cmd_info.sshd_args.clone())?;
     let mut result = parse_text_to_map(&sshd_config_text)?;
+    let mut inherited_defaults: Vec<String> = Vec::new();
 
-    if !cmd_info.metadata.include_defaults {
+    if !cmd_info.include_defaults {
         let defaults = extract_sshd_defaults()?;
         // Filter result based on default settings.
         // If a value in result is equal to the default, it will be excluded.
@@ -117,7 +121,10 @@ fn get_sshd_settings(input: Option<&String>) -> Result<Map<String, Value>, SshdC
         }
     }
 
-    // Add the _metadata field to the result
-    result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata)?);
+    // does _metadata need to be checked if it has any value or will serde ignore during serialization?
+    result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
+    if cmd_info.include_defaults {
+        result.insert("_inheritedDefaults".to_string(), serde_json::to_value(inherited_defaults)?);
+    }
     Ok(result)
 }

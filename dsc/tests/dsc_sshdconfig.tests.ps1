@@ -12,6 +12,9 @@ BeforeDiscovery {
 
 Describe 'SSHDConfig resource tests' -Skip:(!$IsWindows -or $skipTest) {
     BeforeAll {
+        # set a non-default value in a temporary sshd_config file
+        "LogLevel Debug3`nPasswordAuthentication no" | Set-Content -Path $TestDrive/test_sshd_config
+        $filepath = Join-Path $TestDrive 'test_sshd_config'
         $yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
@@ -24,39 +27,34 @@ resources:
     _metadata:
       filepath: $filepath
 "@
-        # set a non-default value in a temporary sshd_config file
-        "LogLevel Debug3" | Set-Content -Path $TestDrive/test_sshd_config
     }
 
-
     It '<command> works' -TestCases @(
-        @{ command = 'get' }
-        @{ command = 'export' }
+        @{ command = 'get'; default = $true }
+        @{ command = 'export'; default = $false }
     ) {
-        param($command)
+        param($command, $default)
         $out = dsc config $command -i "$yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         if ($command -eq 'export') {
             $out.resources.count | Should -Be 1
-            $out.resources[0].metadata.includeDefaults | Should -Be $true
+            # $out.resources[0]._includeDefaults | Should -Be $default
             $out.resources[0].properties | Should -Not -BeNullOrEmpty
-            $out.resources[0].properties.port[0] | Should -Be 22
-            $out.resources[0].properties.passwordAuthentication | Should -Be 'yes'
+            $out.resources[0].properties.port | Should -BeNullOrEmpty
+            $out.resources[0].properties.passwordAuthentication | Should -Be 'no'
+            $out.resources[0].properties._inheritedDefaults | Should -BeNullOrEmpty
         } else {
             $out.results.count | Should -Be 1
-            $out.results.metadata.includeDefaults | Should -Be $true
+            # $out.results._includeDefaults | Should -Be $default
             $out.results.result.actualState | Should -Not -BeNullOrEmpty
-            $out.results.result.actualState.port | Should -Be 22
-            $out.results.result.actualState.passwordAuthentication | Should -Be 'yes'
+            $out.results.result.actualState.port[0] | Should -Be 22
+            $out.results.result.actualState.passwordAuthentication | Should -Be 'no'
+            $out.results.result.actualState._inheritedDefaults | Should -Contain 'port'
         }
     }
 
-    It '<command> with filter works' -TestCases @(
-        @{ command = 'get' }
-        @{ command = 'export' }
-    ) {
-        param($command)
-        $get_yaml = @"
+    It 'Export with filter works' {
+        $export_yaml = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
     Microsoft.DSC:
@@ -65,30 +63,24 @@ resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
-    passwordauthentication: 'no'
+    passwordauthentication: 'yes'
     _metadata:
       filepath: $filepath
 "@
-        $out = dsc config $command -i "$get_yaml" | ConvertFrom-Json -Depth 10
+        $out = dsc config $command -i "$export_yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
-        if ($command -eq 'export') {
-            $out.resources.count | Should -Be 1
-            ($out.resources[0].properties | Measure-Object).count | Should -Be 1
-            $out.resources[0].properties.passwordAuthentication | Should -Be 'yes'
-        } else {
-            $out.results.count | Should -Be 1
-            ($out.results.result.actualState.psobject.properties | Measure-Object).count | Should -Be 1
-            $out.results.result.actualState.passwordauthentication | Should -Be 'yes'
-        }
+        $out.resources.count | Should -Be 1
+        ($out.resources[0].properties | Measure-Object).count | Should -Be 1
+        $out.resources[0].properties.passwordAuthentication | Should -Be 'no'
     }
 
-    It '<command> with defaults excluded works' -TestCases @(
-        @{ command = 'get' }
-        @{ command = 'export' }
+    It '<command> with _includeDefaults specified works' -TestCases @(
+        @{ command = 'get'; includeDefaults = $false }
+        @{ command = 'export'; includeDefaults = $true }
     ) {
-        param($command)
+        param($command, $includeDefaults)
         $filepath = Join-Path $TestDrive 'test_sshd_config'
-        $get_yaml = @"
+        $input = @"
 `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 metadata:
   Microsoft.DSC:
@@ -97,22 +89,54 @@ resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
   properties:
+    _includeDefaults: $includeDefaults
     _metadata:
-        includeDefaults: false
         filepath: $filepath
 "@
-        $out = dsc config $command -i "$get_yaml" | ConvertFrom-Json -Depth 10
+        $out = dsc config $command -i "$input" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         if ($command -eq 'export') {
             $out.resources.count | Should -Be 1
-            $out.resources[0].metadata.includeDefaults | Should -Be $false
+            # $out.resources[0].metadata.includeDefaults | Should -Be $includeDefaults
             ($out.resources[0].properties | Measure-Object).count | Should -Be 1
             $out.resources[0].properties.loglevel | Should -Be 'debug3'
+            $out.resources[0].properties._inheritedDefaults | Should -Contain 'port'
         } else {
             $out.results.count | Should -Be 1
-            $out.results.metadata.includeDefaults | Should -Be $false
+            # $out.results.metadata.includeDefaults | Should -Be $includeDefaults
             ($out.results.result.actualState.psobject.properties | Measure-Object).count | Should -Be 1
             $out.results.result.actualState.loglevel | Should -Be 'debug3'
+            $out.results.result.actualState._inheritedDefaults | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'Explicit Default Setting Behavior' {
+        BeforeAll {
+            "Port 22" | Set-Content -Path $TestDrive/test_sshd_config
+        }
+
+        It '<command> works' -TestCases @(
+            @{ command = 'get'; default = $true }
+            @{ command = 'export'; default = $false }
+        ) {
+            param($command, $default)
+            $out = dsc config $command -i "$yaml" | ConvertFrom-Json -Depth 10
+            $LASTEXITCODE | Should -Be 0
+            if ($command -eq 'export') {
+                $out.resources.count | Should -Be 1
+                # $out.resources[0]._includeDefaults | Should -Be $default
+                $out.resources[0].properties | Should -Not -BeNullOrEmpty
+                $out.resources[0].properties.port[0] | Should -Be 22
+                $out.resources[0].properties.passwordauthentication | Should -BeNullOrEmpty
+                $out.resources[0].properties._inheritedDefaults | Should -BeNullOrEmpty
+            } else {
+                $out.results.count | Should -Be 1
+                # $out.results._includeDefaults | Should -Be $default
+                $out.results.result.actualState | Should -Not -BeNullOrEmpty
+                $out.results.result.actualState.port | Should -Be 22
+                $out.results.result.actualState.passwordAuthentication | Should -Be 'yes'
+                $out.results.result.actualState._inheritedDefaults | Should -Not -Contain 'port'
+            }
         }
     }
 }

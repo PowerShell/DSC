@@ -9,10 +9,10 @@ use std::process::exit;
 use tracing::{debug, error};
 
 use args::{Args, Command, DefaultShell, Setting};
-use get::invoke_get;
+use get::{get_sshd_settings, invoke_get};
 use parser::SshdConfigParser;
 use set::invoke_set;
-use util::enable_tracing;
+use util::{build_command_info, enable_tracing};
 
 mod args;
 mod error;
@@ -34,6 +34,12 @@ fn main() {
     let args = Args::parse();
 
     let result = match &args.command {
+        Command::Export { input } => {
+            match build_command_info(input.as_ref(), false) {
+                Ok(cmd_info) => get_sshd_settings(&cmd_info),
+                Err(e) => Err(e),
+            }
+        },
         Command::Get { input, setting } => {
             invoke_get(input.as_ref(), setting)
         },

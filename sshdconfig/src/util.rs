@@ -112,7 +112,7 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
 /// # Errors
 ///
 /// This function will return an error if it fails to parse the input string and if the _metadata field exists, extract it.
-pub fn extract_metadata_from_input(input: Option<&String>) -> Result<CommandInfo, SshdConfigError> {
+pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<CommandInfo, SshdConfigError> {
     if let Some(inputs) = input {
         let mut sshd_config: Map<String, Value> = serde_json::from_str(inputs.as_str())?;
         let metadata: Metadata = if let Some(value) = sshd_config.remove("_metadata") {
@@ -126,11 +126,24 @@ pub fn extract_metadata_from_input(input: Option<&String>) -> Result<CommandInfo
                 additional_args: None,
             }
         });
+        let include_defaults: bool = if let Some(value) = sshd_config.remove("_includeDefaults") {
+            if let Value::Bool(b) = value {
+                b
+            } else {
+                return Err(SshdConfigError::InvalidInput(t!("util.includeDefaultsMustBeBoolean").to_string()));
+            }
+        } else {
+            is_get
+        };
+        if is_get && !sshd_config.is_empty() {
+            return Err(SshdConfigError::InvalidInput(t!("util.inputMustBeEmpty").to_string()));
+        }
         return Ok(CommandInfo {
+            include_defaults,
             input: sshd_config,
             metadata,
             sshd_args
         })
     }
-    Ok(CommandInfo::new())
+    Ok(CommandInfo::new(is_get))
 }
