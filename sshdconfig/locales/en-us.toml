@@ -25,7 +25,7 @@ defaultShellMustBeString = "shell must be a string"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
 [main]
-export = "Export"
+export = "Export command: %{input}"
 schema = "Schema command:"
 set = "Set command: '%{input}'"
 
