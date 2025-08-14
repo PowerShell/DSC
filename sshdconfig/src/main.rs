@@ -36,7 +36,7 @@ fn main() {
     let result = match &args.command {
         Command::Export { input } => {
             match build_command_info(input.as_ref(), false) {
-                Ok(cmd_info) => get_sshd_settings(&cmd_info),
+                Ok(cmd_info) => get_sshd_settings(&cmd_info, false),
                 Err(e) => Err(e),
             }
         },

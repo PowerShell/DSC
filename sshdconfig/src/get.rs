@@ -33,7 +33,7 @@ pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<Map<Strin
     match *setting {
         Setting::SshdConfig => {
             let cmd_info = build_command_info(input, true)?;
-            get_sshd_settings(&cmd_info)
+            get_sshd_settings(&cmd_info, true)
         },
         Setting::WindowsGlobal => {
             get_default_shell()?;
@@ -102,12 +102,12 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
 ///
 /// # Arguments
 ///
-/// * `cmd_info` - CommandInfo struct containing optional filters, metadata, and includeDefaults flag.
+/// * `cmd_info` - `CommandInfo` struct containing optional filters, metadata, and includeDefaults flag.
 ///
 /// # Errors
 ///
 /// This function will return an error if it cannot retrieve the sshd settings.
-pub fn get_sshd_settings(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
+pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<String, Value>, SshdConfigError> {
     let sshd_config_text = invoke_sshd_config_validation(cmd_info.sshd_args.clone())?;
     let mut result = parse_text_to_map(&sshd_config_text)?;
     let mut inherited_defaults: Vec<String> = Vec::new();
@@ -161,7 +161,7 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo) -> Result<Map<String, Value>, S
     if cmd_info.metadata.filepath.is_some() {
         result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
     }
-    if cmd_info.include_defaults {
+    if cmd_info.include_defaults && is_get {
         result.insert("_inheritedDefaults".to_string(), serde_json::to_value(inherited_defaults)?);
     }
     Ok(result)

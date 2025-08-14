@@ -96,7 +96,8 @@ resources:
         if ($command -eq 'export') {
             $out.resources.count | Should -Be 1
             $out.resources[0].properties.loglevel | Should -Be 'debug3'
-            $out.resources[0].properties._inheritedDefaults | Should -Contain 'port'
+            $out.resources[0].properties.port | Should -Be 22
+            $out.resources[0].properties._inheritedDefaults | Should -BeNullOrEmpty
         } else {
             $out.results.count | Should -Be 1
             ($out.results.result.actualState.psobject.properties | Measure-Object).count | Should -Be 2

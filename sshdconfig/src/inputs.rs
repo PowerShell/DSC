@@ -19,9 +19,9 @@ pub struct CommandInfo {
 
 impl CommandInfo {
     /// Create a new `CommandInfo` instance.
-    pub fn new(is_get: bool) -> Self {
+    pub fn new(include_defaults: bool) -> Self {
         Self {
-            include_defaults: is_get,
+            include_defaults,
             input: Map::new(),
             metadata: Metadata::new(),
             sshd_args: None
