@@ -83,7 +83,7 @@ extends:
         - task: AzureCLI@2
           displayName: Get Az Token
           inputs:
-            azureSubscription: az-blob-cicd-infra
+            azureSubscription: PowerShell-CICD-Feed-Access
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
@@ -258,7 +258,7 @@ extends:
         - task: AzureCLI@2
           displayName: Azure CLI
           inputs:
-            azureSubscription: az-blob-cicd-infra
+            azureSubscription: PowerShell-CICD-Feed-Access
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
@@ -317,7 +317,7 @@ extends:
         - task: AzureCLI@2
           displayName: Azure CLI
           inputs:
-            azureSubscription: az-blob-cicd-infra
+            azureSubscription: PowerShell-CICD-Feed-Access
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
