@@ -29,7 +29,7 @@ Parameters are defined as key-value pairs in the `parameters` property of a conf
 The key is the parameter's name, which is used to reference the parameter in the [resources][01]
 property of the configuration document. The value is an object that defines the parameter.
 
-Every parameter defines its data type. Parameters may also define a default value, validation
+Every parameter defines its data type. Parameters can also define a default value, validation
 checks, a description of their purpose, and arbitrary metadata.
 
 To reference parameters in resource instances, use the [parameters() configuration function][02].
@@ -42,7 +42,7 @@ To reference parameters in resource instances, use the [parameters() configurati
 
 ### description
 
-Parameters may define a short explanation of their purpose and usage with the `description`
+Parameters can define a short explanation of their purpose and usage with the `description`
 property. To define a longer explanation in YAML, use the folded block syntax or literal block
 syntax.
 
@@ -68,8 +68,8 @@ data type for every passed parameter before executing a configuration operation.
 
 The `secure*` data types indicate that DSC and integrating tools shouldn't log or record the
 values. If a secure data type parameter is used for a resource instance property that doesn't
-expect a secure value, the resource may still log or record the value. If the resource has
-independent logging or recording that isn't handled by DSC, the value may be stored insecurely.
+expect a secure value, the resource might still log or record the value. If the resource has
+independent logging or recording that isn't handled by DSC, the value might be stored insecurely.
 
 Use secure strings for passwords and secrets.
 
@@ -84,7 +84,7 @@ ValidValues: [string, securestring, int, bool, object, secureobject, array]
 
 ### defaultValue
 
-Parameters may define a default value with the `defaultValue` property. If the parameter isn't
+Parameters can define a default value with the `defaultValue` property. If the parameter isn't
 passed at runtime, DSC uses the default value for the parameter. If the parameter isn't passed at
 runtime and no default value is defined, DSC raises an error. The value must be valid for the
 parameter's `type`.
@@ -96,7 +96,7 @@ ValidJSONTypes: [string, integer, object, array, boolean]
 
 ### allowedValues
 
-Parameters may limit the set of valid values for the parameter by defining the `allowedValues`
+Parameters can limit the set of valid values for the parameter by defining the `allowedValues`
 property. DSC validates parameters passed at runtime and defined as `defaultValue` against this
 list of values. If any of the values is invalid, DSC raises an error.
 
