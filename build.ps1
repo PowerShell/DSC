@@ -309,6 +309,7 @@ if (!$SkipBuild) {
 
     # projects are in dependency order
     $projects = @(
+        ".",
         "tree-sitter-dscexpression",
         "tree-sitter-ssh-server-config",
         "security_context_lib",
