@@ -30,9 +30,3 @@ pub struct SecretMethod {
     /// The arguments to pass to the command to perform a Get.
     pub args: Option<Vec<SecretArgKind>>,
 }
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct SecretResult {
-    #[serde(rename = "secureString")]
-    pub secure_string: Option<String>,
-}
