@@ -60,7 +60,7 @@ impl SshdConfigParser {
         }
         match node.kind() {
             "keyword" => self.parse_keyword_node(node, input, input_bytes),
-            "comment" | "empty_line" => Ok(()),
+            "comment" | "empty_line" | "match" => Ok(()), // TODO: do not ignore match nodes when parsing
             _ => Err(SshdConfigError::ParserError(t!("parser.unknownNodeType", node = node.kind()).to_string())),
         }
     }
