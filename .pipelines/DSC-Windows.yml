@@ -10,6 +10,8 @@ parameters:
     default: Release
   - name: token
     type: string
+  - name: RustSDK
+    type: string
 
 steps:
 - checkout: self
@@ -31,7 +33,7 @@ steps:
 - task: RustInstaller@1
   inputs:
     rustVersion: ms-stable
-    toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+    toolchainFeed: ${{ parameters.RustSDK }}
     additionalTargets: ${{ parameters.buildName }}
   displayName: Install Rust
   env:
