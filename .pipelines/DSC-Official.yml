@@ -271,7 +271,8 @@ extends:
             apt -y install clang
             apt -y install llvm
             apt -y install musl-tools
-            apt -y install gcc-multilib
+            apt -y install musi-gcc
+            #apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
             msrustup default stable-aarch64-unknown-linux-musl
