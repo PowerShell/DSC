@@ -53,6 +53,7 @@ shellPathDoesNotExist = "shell path does not exist: '%{shell}'"
 shellPathMustNotBeRelative = "shell path must not be relative"
 
 [util]
+includeDefaultsMustBeBoolean = "_includeDefaults must be true or false"
 inputMustBeEmpty = "get command does not support filtering based on input settings"
 sshdConfigNotFound = "sshd_config not found at path: '%{path}'"
 sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
