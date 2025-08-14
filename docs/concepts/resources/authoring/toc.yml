@@ -1,0 +1,22 @@
+items:
+  - name: Overview
+    href: index.md
+  - name: Typical resources
+    items:
+      - name: Resource manifest
+        href: typical/resource-manifest.md
+      - name: Resource instance schema
+        href: typical/resource-instance-schema.md
+  - name: Adapter resources
+    items:
+      - name: Resource manifest
+        href: adapter/resource-manifest.md
+  - name: Exporter resources
+    items:
+      - name: Resource manifest
+        href: exporter/resource-manifest.md
+  - name: Emitting messages
+    href: emitting-messages.md
+  - name: Defining exit codes
+    href: exit-codes.md
+  - 
