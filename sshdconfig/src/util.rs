@@ -3,7 +3,7 @@
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
-use std::process::Command;
+use std::{path::Path, process::Command};
 use tracing::debug;
 use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
 
@@ -146,4 +146,39 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         })
     }
     Ok(CommandInfo::new(is_get))
+}
+
+/// Reads `sshd_config` file.
+///
+/// # Arguments
+///
+/// * `input` - Optional string with `sshd_config` filepath.
+///
+/// # Errors
+///
+/// This function will return an error if the file cannot be found or read.
+pub fn read_sshd_config(input: Option<String>) -> Result<String, SshdConfigError> {
+    let sshd_config_path = if let Some(input) = input {
+        input
+    } else if cfg!(windows) {
+            let program_data = std::env::var("ProgramData").unwrap_or_else(|_| "C:\\ProgramData".into());
+            format!("{program_data}\\ssh\\sshd_config")
+    } else {
+        "/etc/ssh/sshd_config".to_string()
+    };
+    let filepath = Path::new(&sshd_config_path);
+
+    if filepath.exists() {
+        let mut sshd_config_content = String::new();
+        if let Ok(mut file) = std::fs::OpenOptions::new().read(true).open(filepath) {
+            use std::io::Read;
+            file.read_to_string(&mut sshd_config_content)
+                .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
+        } else {
+            return Err(SshdConfigError::CommandError(t!("util.sshdConfigReadFailed", path = filepath.display()).to_string()));
+        }
+        Ok(sshd_config_content)
+    } else {
+        Err(SshdConfigError::CommandError(t!("util.sshdConfigNotFound", path = filepath.display()).to_string()))
+    }
 }

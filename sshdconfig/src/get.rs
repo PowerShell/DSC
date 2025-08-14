@@ -16,7 +16,12 @@ use crate::args::Setting;
 use crate::error::SshdConfigError;
 use crate::inputs::CommandInfo;
 use crate::parser::parse_text_to_map;
-use crate::util::{build_command_info, extract_sshd_defaults, invoke_sshd_config_validation};
+use crate::util::{
+    build_command_info,
+    extract_sshd_defaults,
+    invoke_sshd_config_validation,
+    read_sshd_config
+};
 
 /// Invoke the get command.
 ///
@@ -93,16 +98,47 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     Err(SshdConfigError::InvalidInput(t!("get.windowsOnly").to_string()))
 }
 
+/// Retrieve sshd settings.
+///
+/// # Arguments
+///
+/// * `cmd_info` - CommandInfo struct containing optional filters, metadata, and includeDefaults flag.
+///
+/// # Errors
+///
+/// This function will return an error if it cannot retrieve the sshd settings.
 pub fn get_sshd_settings(cmd_info: &CommandInfo) -> Result<Map<String, Value>, SshdConfigError> {
     let sshd_config_text = invoke_sshd_config_validation(cmd_info.sshd_args.clone())?;
     let mut result = parse_text_to_map(&sshd_config_text)?;
     let mut inherited_defaults: Vec<String> = Vec::new();
 
-    if !cmd_info.include_defaults {
-        let defaults = extract_sshd_defaults()?;
-        // Filter result based on default settings.
-        // If a value in result is equal to the default, it will be excluded.
-        // Note that this excludes all defaults, even if they are explicitly set in sshd_config.
+    // parse settings from sshd_config file
+    let sshd_config_file = read_sshd_config(cmd_info.metadata.filepath.clone())?;
+    let explicit_settings = parse_text_to_map(&sshd_config_file)?;
+
+    // get default from SSHD -T with empty config
+    let mut defaults = extract_sshd_defaults()?;
+
+    // remove any explicit keys from default settings list
+    for key in explicit_settings.keys() {
+        if defaults.contains_key(key) {
+            defaults.remove(key);
+        }
+    }
+
+    if cmd_info.include_defaults {
+        // Update inherited_defaults with any keys that are not explicitly set
+        // check result for any keys that are in defaults
+        for (key, value) in &result {
+            if let Some(default) = defaults.get(key) {
+                if default == value {
+                    inherited_defaults.push(key.clone());
+                }
+            }
+        }
+    } else {
+        // Filter result based on default settings
+        // If a value in result is equal to the default, it will be excluded
         result.retain(|key, value| {
             if let Some(default) = defaults.get(key) {
                 default != value
@@ -116,13 +152,15 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo) -> Result<Map<String, Value>, S
         // Filter result based on the keys provided in the input JSON.
         // If a provided key is not found in the result, its value is null.
         result.retain(|key, _| cmd_info.input.contains_key(key));
+        inherited_defaults.retain(|key| cmd_info.input.contains_key(key));
         for key in cmd_info.input.keys() {
             result.entry(key.clone()).or_insert(Value::Null);
         }
     }
 
-    // does _metadata need to be checked if it has any value or will serde ignore during serialization?
-    result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
+    if cmd_info.metadata.filepath.is_some() {
+        result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
+    }
     if cmd_info.include_defaults {
         result.insert("_inheritedDefaults".to_string(), serde_json::to_value(inherited_defaults)?);
     }

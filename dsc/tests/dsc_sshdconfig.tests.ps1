@@ -30,22 +30,20 @@ resources:
     }
 
     It '<command> works' -TestCases @(
-        @{ command = 'get'; default = $true }
-        @{ command = 'export'; default = $false }
+        @{ command = 'get' }
+        @{ command = 'export' }
     ) {
-        param($command, $default)
+        param($command)
         $out = dsc config $command -i "$yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         if ($command -eq 'export') {
             $out.resources.count | Should -Be 1
-            # $out.resources[0]._includeDefaults | Should -Be $default
             $out.resources[0].properties | Should -Not -BeNullOrEmpty
             $out.resources[0].properties.port | Should -BeNullOrEmpty
             $out.resources[0].properties.passwordAuthentication | Should -Be 'no'
             $out.resources[0].properties._inheritedDefaults | Should -BeNullOrEmpty
         } else {
             $out.results.count | Should -Be 1
-            # $out.results._includeDefaults | Should -Be $default
             $out.results.result.actualState | Should -Not -BeNullOrEmpty
             $out.results.result.actualState.port[0] | Should -Be 22
             $out.results.result.actualState.passwordAuthentication | Should -Be 'no'
@@ -67,10 +65,10 @@ resources:
     _metadata:
       filepath: $filepath
 "@
-        $out = dsc config $command -i "$export_yaml" | ConvertFrom-Json -Depth 10
+        $out = dsc config export -i "$export_yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
         $out.resources.count | Should -Be 1
-        ($out.resources[0].properties | Measure-Object).count | Should -Be 1
+        ($out.resources[0].properties.psobject.properties | Measure-Object).count | Should -Be 1
         $out.resources[0].properties.passwordAuthentication | Should -Be 'no'
     }
 
@@ -97,41 +95,36 @@ resources:
         $LASTEXITCODE | Should -Be 0
         if ($command -eq 'export') {
             $out.resources.count | Should -Be 1
-            # $out.resources[0].metadata.includeDefaults | Should -Be $includeDefaults
-            ($out.resources[0].properties | Measure-Object).count | Should -Be 1
             $out.resources[0].properties.loglevel | Should -Be 'debug3'
             $out.resources[0].properties._inheritedDefaults | Should -Contain 'port'
         } else {
             $out.results.count | Should -Be 1
-            # $out.results.metadata.includeDefaults | Should -Be $includeDefaults
-            ($out.results.result.actualState.psobject.properties | Measure-Object).count | Should -Be 1
+            ($out.results.result.actualState.psobject.properties | Measure-Object).count | Should -Be 2
             $out.results.result.actualState.loglevel | Should -Be 'debug3'
             $out.results.result.actualState._inheritedDefaults | Should -BeNullOrEmpty
         }
     }
 
-    Context 'Explicit Default Setting Behavior' {
+    Context 'Surface a default value that has been set in file' {
         BeforeAll {
             "Port 22" | Set-Content -Path $TestDrive/test_sshd_config
         }
 
         It '<command> works' -TestCases @(
-            @{ command = 'get'; default = $true }
-            @{ command = 'export'; default = $false }
+            @{ command = 'get' }
+            @{ command = 'export' }
         ) {
-            param($command, $default)
+            param($command)
             $out = dsc config $command -i "$yaml" | ConvertFrom-Json -Depth 10
             $LASTEXITCODE | Should -Be 0
             if ($command -eq 'export') {
                 $out.resources.count | Should -Be 1
-                # $out.resources[0]._includeDefaults | Should -Be $default
                 $out.resources[0].properties | Should -Not -BeNullOrEmpty
                 $out.resources[0].properties.port[0] | Should -Be 22
                 $out.resources[0].properties.passwordauthentication | Should -BeNullOrEmpty
                 $out.resources[0].properties._inheritedDefaults | Should -BeNullOrEmpty
             } else {
                 $out.results.count | Should -Be 1
-                # $out.results._includeDefaults | Should -Be $default
                 $out.results.result.actualState | Should -Not -BeNullOrEmpty
                 $out.results.result.actualState.port | Should -Be 22
                 $out.results.result.actualState.passwordAuthentication | Should -Be 'yes'

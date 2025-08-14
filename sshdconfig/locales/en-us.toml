@@ -54,5 +54,7 @@ shellPathMustNotBeRelative = "shell path must not be relative"
 
 [util]
 inputMustBeEmpty = "get command does not support filtering based on input settings"
+sshdConfigNotFound = "sshd_config not found at path: '%{path}'"
+sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
 sshdElevation = "elevated security context required"
 tracingInitError = "Failed to initialize tracing"

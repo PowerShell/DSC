@@ -204,7 +204,10 @@ fn parse_arguments_node(arg_node: tree_sitter::Node, input: &str, input_bytes: &
 pub fn parse_text_to_map(input: &str) -> Result<Map<String,Value>, SshdConfigError> {
     let mut parser = SshdConfigParser::new();
     parser.parse_text(input)?;
-    Ok(parser.map)
+    let lowercased_map = parser.map.into_iter()
+        .map(|(k, v)| (k.to_lowercase(), v))
+        .collect();
+    Ok(lowercased_map)
 }
 
 #[cfg(test)]
