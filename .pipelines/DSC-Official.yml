@@ -8,7 +8,7 @@ pr:
     - release/v*
 
 parameters:
-  - name: UnofficialDevBuild
+  - name: OfficialBuild
     type: boolean
     default: false
 
@@ -22,7 +22,7 @@ variables:
   - name: Codeql.TSAEnabled
     value: true
   - name: templateFile
-    value: ${{ iif ( parameters.UnofficialDevBuild, 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates' ) }}
+    value: ${{ iif ( parameters.OfficialBuild, 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.NonsOfficial.CrossPlat.yml@onebranchTemplates' ) }}
   - group: DSC-Rust.SDK
 
 resources:
