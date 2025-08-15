@@ -21,7 +21,7 @@ variables:
     value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
   - name: Codeql.TSAEnabled
     value: true
-  - name: template
+  - name: templateFile
     value: ${{ iif ( parameters.DebugBuild, './DebugTemplate.yml', 'v2/OneBranch.Official.Debug.yml@onebranchTemplates' ) }}
   - group: DSC-Rust.SDK
 
@@ -33,7 +33,7 @@ resources:
     ref: refs/heads/main
 
 extends:
-  template: $(template)
+  template: ${{ variables.templateFile }}
   parameters:
     featureFlags:
       WindowsHostVersion:
