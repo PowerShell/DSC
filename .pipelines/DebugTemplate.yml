@@ -9,6 +9,10 @@ parameters:
     type: object
     default: {}
 
-steps:
-- pwsh: |
-    Write-Host "This is a debug build, compliance checks will be skipped."
+stages:
+- stage: Test
+  displayName: 'Test Stage'
+  jobs:
+  - job: SkipComplianceCheck
+    steps:
+    - script: echo "This is a debug build, compliance checks will be skipped."
