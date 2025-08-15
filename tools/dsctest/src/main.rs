@@ -7,6 +7,7 @@ mod exist;
 mod exit_code;
 mod export;
 mod exporter;
+mod get;
 mod in_desired_state;
 mod metadata;
 mod sleep;
@@ -22,6 +23,7 @@ use crate::exist::{Exist, State};
 use crate::exit_code::ExitCode;
 use crate::export::Export;
 use crate::exporter::{Exporter, Resource};
+use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
 use crate::sleep::Sleep;
@@ -113,6 +115,56 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::Get { input } => {
+            let instances = vec![
+                Get {
+                    name : Some("one".to_string()),
+                    id: Some(1),
+                },
+                Get {
+                    name : Some("two".to_string()),
+                    id: Some(2),
+                },
+                Get {
+                    name : Some("three".to_string()),
+                    id: Some(3),
+                },
+            ];
+
+            let resource = if input.is_empty() {
+                // If neither name nor id is provided, return the first instance
+                instances.into_iter().next().unwrap_or_else(|| {
+                    eprintln!("No instances found");
+                    std::process::exit(1);
+                })
+            } else {
+                let get = match serde_json::from_str::<Get>(&input) {
+                    Ok(get) => get,
+                    Err(err) => {
+                        eprintln!("Error JSON does not match schema: {err}");
+                        std::process::exit(1);
+                    }
+                };
+                // depending on the input, return the appropriate instance whether it is name or id or both
+                if let Some(name) = get.name {
+                    instances.into_iter().find(|i| i.name.as_ref() == Some(&name)).unwrap_or_else(|| {
+                        eprintln!("No instance found with name: {name}");
+                        std::process::exit(1);
+                    })
+                } else if let Some(id) = get.id {
+                    instances.into_iter().find(|i| i.id == Some(id)).unwrap_or_else(|| {
+                        eprintln!("No instance found with id: {id}");
+                        std::process::exit(1);
+                    })
+                } else {
+                    instances.into_iter().next().unwrap_or_else(|| {
+                        eprintln!("No instances found");
+                        std::process::exit(1);
+                    })  
+                }
+            };
+            serde_json::to_string(&resource).unwrap()
+        },
         SubCommand::InDesiredState { input } => {
             let mut in_desired_state = match serde_json::from_str::<in_desired_state::InDesiredState>(&input) {
                 Ok(in_desired_state) => in_desired_state,
@@ -161,6 +213,9 @@ fn main() {
                 },
                 Schemas::Exporter => {
                     schema_for!(Exporter)
+                },
+                Schemas::Get => {
+                    schema_for!(Get)
                 },
                 Schemas::InDesiredState => {
                     schema_for!(InDesiredState)
