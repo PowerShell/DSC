@@ -155,7 +155,10 @@ function Find-LinkExe {
 }
 
 $channel = 'stable'
-if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
+$rustup = 'echo'
+if ($usingADO) {
+    return
+} elseif ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
     $rustup = 'msrustup'
     $channel = 'ms-stable'
     if ($architecture -eq 'current') {
@@ -163,8 +166,6 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     }
 } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
         $rustup = 'rustup'
-} else {
-    $rustup = 'echo'
 }
 
 if ($null -ne $packageType) {
@@ -185,7 +186,7 @@ if ($null -ne $packageType) {
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
     }
-    elseif (!$usingADO) {
+    else {
         Write-Verbose -Verbose "Rust found, updating..."
         & $rustup update
     }
