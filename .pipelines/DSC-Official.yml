@@ -176,13 +176,14 @@ extends:
           condition: succeeded()
 
       - job: SignMsixBundle
-        condition: and(succeeded(), eq(parameters.OfficialBuild, true))
+        condition: and(succeeded(), variables.officialBuild)
         dependsOn: CreateMsixBundle
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: false
+          officialBuild: ${{ parameters.OfficialBuild }}
         pool:
           type: windows
         steps:
