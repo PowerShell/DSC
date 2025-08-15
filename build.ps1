@@ -25,6 +25,7 @@ param(
 
 $env:RUSTC_LOG=$null
 $env:RUSTFLAGS='-Dwarnings'
+$usingADO = ($null -ne $env:TF_BUILD)
 
 trap {
     Write-Error "An error occurred: $($_ | Out-String)"
@@ -184,7 +185,7 @@ if ($null -ne $packageType) {
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
     }
-    else  {
+    elseif (!$usingADO) {
         Write-Verbose -Verbose "Rust found, updating..."
         & $rustup update
     }
@@ -500,8 +501,6 @@ if (!$Clippy -and !$SkipBuild) {
 
 if ($Test) {
     $failed = $false
-
-    $usingADO = ($null -ne $env:TF_BUILD)
     $repository = 'PSGallery'
 
     if ($usingADO) {
