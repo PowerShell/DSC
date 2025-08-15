@@ -157,7 +157,7 @@ function Find-LinkExe {
 $channel = 'stable'
 $rustup = 'echo'
 if ($usingADO) {
-    break
+    return
 } elseif ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
     $rustup = 'msrustup'
     $channel = 'ms-stable'
