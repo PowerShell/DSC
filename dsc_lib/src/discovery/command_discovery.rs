@@ -126,11 +126,12 @@ impl CommandDiscovery {
         let mut paths: Vec<PathBuf> = vec![];
 
         let dsc_resource_path = env::var_os("DSC_RESOURCE_PATH");
-        if resource_path_setting.allow_env_override && dsc_resource_path.is_some(){
-            let value = dsc_resource_path.unwrap();
-            debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
-            using_custom_path = true;
-            paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+        if resource_path_setting.allow_env_override && dsc_resource_path.is_some() {
+            if let Some(value) = dsc_resource_path {
+                debug!("DSC_RESOURCE_PATH: {:?}", value.to_string_lossy());
+                using_custom_path = true;
+                paths.append(&mut env::split_paths(&value).collect::<Vec<_>>());
+            }
         } else {
             for p in resource_path_setting.directories {
                 let v = PathBuf::from_str(&p);

@@ -17,15 +17,19 @@ pub mod base64;
 pub mod bool;
 pub mod coalesce;
 pub mod concat;
+pub mod contains;
 pub mod create_array;
 pub mod create_object;
 pub mod div;
+pub mod empty;
+pub mod ends_with;
 pub mod envvar;
 pub mod equals;
 pub mod greater;
 pub mod greater_or_equals;
 pub mod r#if;
 pub mod r#false;
+pub mod length;
 pub mod less;
 pub mod less_or_equals;
 pub mod format;
@@ -42,29 +46,53 @@ pub mod path;
 pub mod reference;
 pub mod resource_id;
 pub mod secret;
+pub mod starts_with;
+pub mod string;
 pub mod sub;
 pub mod system_root;
 pub mod r#true;
+pub mod union;
+pub mod unique_string;
+pub mod utc_now;
 pub mod variables;
 
 /// The kind of argument that a function accepts.
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]
-pub enum AcceptedArgKind {
+pub enum FunctionArgKind {
     Array,
     Boolean,
+    Null,
     Number,
     Object,
     String,
 }
 
+impl Display for FunctionArgKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FunctionArgKind::Array => write!(f, "Array"),
+            FunctionArgKind::Boolean => write!(f, "Boolean"),
+            FunctionArgKind::Null => write!(f, "Null"),
+            FunctionArgKind::Number => write!(f, "Number"),
+            FunctionArgKind::Object => write!(f, "Object"),
+            FunctionArgKind::String => write!(f, "String"),
+        }
+    }
+}
+
+pub struct FunctionMetadata {
+    pub name: String,
+    pub description: String,
+    pub category: FunctionCategory,
+    pub min_args: usize,
+    pub max_args: usize,
+    pub accepted_arg_ordered_types: Vec<Vec<FunctionArgKind>>,
+    pub remaining_arg_accepted_types: Option<Vec<FunctionArgKind>>,
+    pub return_types: Vec<FunctionArgKind>,
+}
+
 /// A function that can be invoked.
 pub trait Function {
-    /// The minimum number of arguments that the function accepts.
-    fn min_args(&self) -> usize;
-    /// The maximum number of arguments that the function accepts.
-    fn max_args(&self) -> usize;
-    /// The types of arguments that the function accepts.
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind>;
     /// Invoke the function.
     ///
     /// # Arguments
@@ -75,8 +103,7 @@ pub trait Function {
     ///
     /// This function will return an error if the function fails to execute.
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError>;
-    fn description(&self) -> String;
-    fn category(&self) -> FunctionCategory;
+    fn get_metadata(&self) -> FunctionMetadata;
 }
 
 /// A dispatcher for functions.
@@ -89,41 +116,56 @@ impl FunctionDispatcher {
     #[must_use]
     pub fn new() -> Self {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
-        functions.insert("add".to_string(), Box::new(add::Add{}));
-        functions.insert("and".to_string(), Box::new(and::And{}));
-        functions.insert("base64".to_string(), Box::new(base64::Base64{}));
-        functions.insert("bool".to_string(), Box::new(bool::Bool{}));
-        functions.insert("coalesce".to_string(), Box::new(coalesce::Coalesce{}));
-        functions.insert("concat".to_string(), Box::new(concat::Concat{}));
-        functions.insert("createArray".to_string(), Box::new(create_array::CreateArray{}));
-        functions.insert("createObject".to_string(), Box::new(create_object::CreateObject{}));
-        functions.insert("div".to_string(), Box::new(div::Div{}));
-        functions.insert("envvar".to_string(), Box::new(envvar::Envvar{}));
-        functions.insert("equals".to_string(), Box::new(equals::Equals{}));
-        functions.insert("false".to_string(), Box::new(r#false::False{}));
-        functions.insert("greater".to_string(), Box::new(greater::Greater{}));
-        functions.insert("greaterOrEquals".to_string(), Box::new(greater_or_equals::GreaterOrEquals{}));
-        functions.insert("if".to_string(), Box::new(r#if::If{}));
-        functions.insert("format".to_string(), Box::new(format::Format{}));
-        functions.insert("int".to_string(), Box::new(int::Int{}));
-        functions.insert("less".to_string(), Box::new(less::Less{}));
-        functions.insert("lessOrEquals".to_string(), Box::new(less_or_equals::LessOrEquals{}));
-        functions.insert("max".to_string(), Box::new(max::Max{}));
-        functions.insert("min".to_string(), Box::new(min::Min{}));
-        functions.insert("mod".to_string(), Box::new(mod_function::Mod{}));
-        functions.insert("mul".to_string(), Box::new(mul::Mul{}));
-        functions.insert("not".to_string(), Box::new(not::Not{}));
-        functions.insert("null".to_string(), Box::new(null::Null{}));
-        functions.insert("or".to_string(), Box::new(or::Or{}));
-        functions.insert("parameters".to_string(), Box::new(parameters::Parameters{}));
-        functions.insert("path".to_string(), Box::new(path::Path{}));
-        functions.insert("reference".to_string(), Box::new(reference::Reference{}));
-        functions.insert("resourceId".to_string(), Box::new(resource_id::ResourceId{}));
-        functions.insert("secret".to_string(), Box::new(secret::Secret{}));
-        functions.insert("sub".to_string(), Box::new(sub::Sub{}));
-        functions.insert("systemRoot".to_string(), Box::new(system_root::SystemRoot{}));
-        functions.insert("true".to_string(), Box::new(r#true::True{}));
-        functions.insert("variables".to_string(), Box::new(variables::Variables{}));
+        let function_list : Vec<Box<dyn Function>> = vec![
+            Box::new(add::Add{}),
+            Box::new(and::And{}),
+            Box::new(base64::Base64{}),
+            Box::new(bool::Bool{}),
+            Box::new(coalesce::Coalesce{}),
+            Box::new(concat::Concat{}),
+            Box::new(contains::Contains{}),
+            Box::new(create_array::CreateArray{}),
+            Box::new(create_object::CreateObject{}),
+            Box::new(div::Div{}),
+            Box::new(empty::Empty{}),
+            Box::new(ends_with::EndsWith{}),
+            Box::new(envvar::Envvar{}),
+            Box::new(equals::Equals{}),
+            Box::new(greater::Greater{}),
+            Box::new(greater_or_equals::GreaterOrEquals{}),
+            Box::new(r#if::If{}),
+            Box::new(r#false::False{}),
+            Box::new(length::Length{}),
+            Box::new(less::Less{}),
+            Box::new(less_or_equals::LessOrEquals{}),
+            Box::new(format::Format{}),
+            Box::new(int::Int{}),
+            Box::new(max::Max{}),
+            Box::new(min::Min{}),
+            Box::new(mod_function::Mod{}),
+            Box::new(mul::Mul{}),
+            Box::new(not::Not{}),
+            Box::new(null::Null{}),
+            Box::new(or::Or{}),
+            Box::new(parameters::Parameters{}),
+            Box::new(path::Path{}),
+            Box::new(reference::Reference{}),
+            Box::new(resource_id::ResourceId{}),
+            Box::new(secret::Secret{}),
+            Box::new(starts_with::StartsWith{}),
+            Box::new(string::StringFn{}),
+            Box::new(sub::Sub{}),
+            Box::new(system_root::SystemRoot{}),
+            Box::new(r#true::True{}),
+            Box::new(utc_now::UtcNow{}),
+            Box::new(union::Union{}),
+            Box::new(unique_string::UniqueString{}),
+            Box::new(variables::Variables{}),
+        ];
+        for function in function_list {
+            functions.insert(function.get_metadata().name.clone(), function);
+        }
+
         Self {
             functions,
         }
@@ -139,14 +181,16 @@ impl FunctionDispatcher {
     /// # Errors
     ///
     /// This function will return an error if the function fails to execute.
-    pub fn invoke(&self, name: &str, args: &Vec<Value>, context: &Context) -> Result<Value, DscError> {
+    pub fn invoke(&self, name: &str, args: &[Value], context: &Context) -> Result<Value, DscError> {
         let Some(function) = self.functions.get(name) else {
             return Err(DscError::Parser(t!("functions.unknownFunction", name = name).to_string()));
         };
 
+        let metadata = function.get_metadata();
+
         // check if arg number are valid
-        let min_args = function.min_args();
-        let max_args = function.max_args();
+        let min_args = metadata.min_args;
+        let max_args = metadata.max_args;
         if args.len() < min_args || args.len() > max_args {
             if max_args == 0 {
                 return Err(DscError::Parser(t!("functions.noArgsAccepted", name = name).to_string()));
@@ -160,36 +204,55 @@ impl FunctionDispatcher {
 
             return Err(DscError::Parser(t!("functions.argCountRequired", name = name, min = min_args, max = max_args).to_string()));
         }
-        // check if arg types are valid
-        let accepted_arg_types = function.accepted_arg_types();
-        let accepted_args_string = accepted_arg_types.iter().map(|x| format!("{x:?}")).collect::<Vec<String>>().join(", ");
-        for value in args {
-            if value.is_array() && !accepted_arg_types.contains(&AcceptedArgKind::Array) {
-                return Err(DscError::Parser(t!("functions.noArrayArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
-            } else if value.is_boolean() && !accepted_arg_types.contains(&AcceptedArgKind::Boolean) {
-                return Err(DscError::Parser(t!("functions.noBooleanArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
-            } else if value.is_number() && !accepted_arg_types.contains(&AcceptedArgKind::Number) {
-                return Err(DscError::Parser(t!("functions.noNumberArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
-            } else if value.is_object() && !accepted_arg_types.contains(&AcceptedArgKind::Object) {
-                return Err(DscError::Parser(t!("functions.noObjectArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
-            } else if value.is_string() && !accepted_arg_types.contains(&AcceptedArgKind::String) {
-                return Err(DscError::Parser(t!("functions.noStringArgs", name = name, accepted_args_string = accepted_args_string).to_string()));
+
+        for (index, value) in args.iter().enumerate() {
+            if index >= metadata.accepted_arg_ordered_types.len() {
+                break;
+            }
+
+            Self::check_arg_against_expected_types(value, &metadata.accepted_arg_ordered_types[index])?;
+        }
+
+        // if we have remaining args, they must match one of the remaining_arg_types
+        if let Some(remaining_arg_types) = metadata.remaining_arg_accepted_types {
+            for value in args.iter().skip(metadata.accepted_arg_ordered_types.len()) {
+                Self::check_arg_against_expected_types(value, &remaining_arg_types)?;
             }
         }
 
         function.invoke(args, context)
     }
 
+    fn check_arg_against_expected_types(arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {
+        if arg.is_array() && !expected_types.contains(&FunctionArgKind::Array) {
+            return Err(DscError::Parser(t!("functions.noArrayArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        } else if arg.is_boolean() && !expected_types.contains(&FunctionArgKind::Boolean) {
+            return Err(DscError::Parser(t!("functions.noBooleanArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        } else if arg.is_null() && !expected_types.contains(&FunctionArgKind::Null) {
+            return Err(DscError::Parser(t!("functions.noNullArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        } else if arg.is_number() && !expected_types.contains(&FunctionArgKind::Number) {
+            return Err(DscError::Parser(t!("functions.noNumberArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        } else if arg.is_object() && !expected_types.contains(&FunctionArgKind::Object) {
+            return Err(DscError::Parser(t!("functions.noObjectArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        } else if arg.is_string() && !expected_types.contains(&FunctionArgKind::String) {
+            return Err(DscError::Parser(t!("functions.noStringArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+        }
+        Ok(())
+    }
+
     #[must_use]
     pub fn list(&self) -> Vec<FunctionDefinition> {
         self.functions.iter().map(|(name, function)| {
+            let metadata = function.get_metadata();
             FunctionDefinition {
-                category: function.category(),
+                category: metadata.category,
                 name: name.clone(),
-                description: function.description(),
-                min_args: function.min_args(),
-                max_args: function.max_args(),
-                accepted_arg_types: function.accepted_arg_types().clone(),
+                description: metadata.description,
+                min_args: metadata.min_args,
+                max_args: metadata.max_args,
+                accepted_arg_ordered_types: metadata.accepted_arg_ordered_types.clone(),
+                remaining_arg_accepted_types: metadata.remaining_arg_accepted_types.clone(),
+                return_types: metadata.return_types,
             }
         }).collect()
     }
@@ -211,8 +274,12 @@ pub struct FunctionDefinition {
     pub min_args: usize,
     #[serde(rename = "maxArgs")]
     pub max_args: usize,
-    #[serde(rename = "acceptedArgTypes")]
-    pub accepted_arg_types: Vec<AcceptedArgKind>,
+    #[serde(rename = "acceptedArgOrderedTypes")]
+    pub accepted_arg_ordered_types: Vec<Vec<FunctionArgKind>>,
+    #[serde(rename = "remainingArgAcceptedTypes")]
+    pub remaining_arg_accepted_types: Option<Vec<FunctionArgKind>>,
+    #[serde(rename = "returnTypes")]
+    pub return_types: Vec<FunctionArgKind>,
 }
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]

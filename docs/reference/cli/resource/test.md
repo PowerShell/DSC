@@ -16,19 +16,19 @@ Validates the actual state of a resource instance against a desired state.
 ### Instance properties from input option
 
 ```sh
-dsc resource set --input <INPUT> --resource <RESOURCE>
+dsc resource test --input <INPUT> --resource <RESOURCE>
 ```
 
 ### Instance properties from file
 
 ```sh
-dsc resource set --file <FILE> --resource <RESOURCE>
+dsc resource test --file <FILE> --resource <RESOURCE>
 ```
 
 ### Instance properties from stdin
 
 ```sh
-cat <FILE> | dsc resource set [Options] --resource <RESOURCE> --file -
+cat <FILE> | dsc resource test [Options] --resource <RESOURCE> --file -
 ```
 
 ## Description

@@ -3,7 +3,7 @@
 
 use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{AcceptedArgKind, Function, FunctionCategory};
+use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -12,24 +12,20 @@ use tracing::debug;
 pub struct Less {}
 
 impl Function for Less {
-    fn description(&self) -> String {
-        t!("functions.less.description").to_string()
-    }
-
-    fn category(&self) -> FunctionCategory {
-        FunctionCategory::Comparison
-    }
-
-    fn min_args(&self) -> usize {
-        2
-    }
-
-    fn max_args(&self) -> usize {
-        2
-    }
-
-    fn accepted_arg_types(&self) -> Vec<AcceptedArgKind> {
-        vec![AcceptedArgKind::Number, AcceptedArgKind::String]
+    fn get_metadata(&self) -> FunctionMetadata {
+        FunctionMetadata {
+            name: "less".to_string(),
+            description: t!("functions.less.description").to_string(),
+            category: FunctionCategory::Comparison,
+            min_args: 2,
+            max_args: 2,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::Number, FunctionArgKind::String],
+                vec![FunctionArgKind::Number, FunctionArgKind::String],
+            ],
+            remaining_arg_accepted_types: None,
+            return_types: vec![FunctionArgKind::Boolean],
+        }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
@@ -86,7 +82,7 @@ mod tests {
     #[test]
     fn type_mismatch_string_number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[lessOrEquals('5', 3)]", &Context::new());
+        let result = parser.parse_and_execute("[less('5', 3)]", &Context::new());
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Arguments must be of the same type"));
     }

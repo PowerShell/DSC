@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use serde::Serialize;
+use std::fmt::Display;
 use std::string::ToString;
 
 /// Returns information about the operating system.
@@ -24,6 +25,8 @@ pub struct OsInfo {
     /// Defines the processor architecture as reported by `uname -m` on the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
     architecture: Option<String>,
+    #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
+    name: Option<String>,
 }
 
 /// Defines whether the operating system is a 32-bit or 64-bit operating system.
@@ -46,10 +49,20 @@ pub enum Family {
     Windows,
 }
 
+impl Display for Family {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Family::Linux => write!(f, "Linux"),
+            Family::MacOS => write!(f, "macOS"),
+            Family::Windows => write!(f, "Windows"),
+        }
+    }
+}
+
 const ID: &str = "https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json";
 
 impl OsInfo {
-    pub fn new() -> Self {
+    pub fn new(include_name: bool) -> Self {
         let os_info = os_info::get();
         let edition = os_info.edition().map(ToString::to_string);
         let codename = os_info.codename().map(ToString::to_string);
@@ -64,14 +77,26 @@ impl OsInfo {
             os_info::Bitness::X64 => Bitness::Bit64,
             _ => Bitness::Unknown,
         };
+        let version = os_info.version().to_string();
+        let name = if include_name {
+            Some(
+                match &architecture {
+                    Some(arch) => format!("{family} {version} {arch}"),
+                    None => format!("{family:?} {version}"),
+                }
+            )
+        } else {
+            None
+        };
         Self {
             id: ID.to_string(),
             family,
-            version: os_info.version().to_string(),
+            version,
             edition,
             codename,
             bitness: bits,
             architecture,
+            name,
         }
     }
 }
