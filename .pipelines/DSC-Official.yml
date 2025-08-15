@@ -22,7 +22,7 @@ variables:
   - name: Codeql.TSAEnabled
     value: true
   - name: templateFile
-    value: ${{ iif ( parameters.OfficialBuild, 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.NonsOfficial.CrossPlat.yml@onebranchTemplates' ) }}
+    value: ${{ iif ( parameters.OfficialBuild, 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates' ) }}
   - group: DSC-Rust.SDK
 
 resources:
