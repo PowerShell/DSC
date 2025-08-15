@@ -8,7 +8,7 @@ pr:
     - release/v*
 
 parameters:
-  - name: DebugBuild
+  - name: UnofficialDevBuild
     type: boolean
     default: false
 
@@ -22,7 +22,7 @@ variables:
   - name: Codeql.TSAEnabled
     value: true
   - name: templateFile
-    value: ${{ iif ( parameters.DebugBuild, 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates' ) }}
+    value: ${{ iif ( parameters.UnofficialDevBuild, 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates' ) }}
   - group: DSC-Rust.SDK
 
 resources:
@@ -230,7 +230,7 @@ extends:
         - pwsh: |
             apt update
             apt -y install musl-tools
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
@@ -286,7 +286,7 @@ extends:
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
@@ -331,9 +331,10 @@ extends:
             inlineScript: |
               az account show
         - pwsh: |
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            Write-Verbose -Verbose "Building for $(buildName)"
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"
