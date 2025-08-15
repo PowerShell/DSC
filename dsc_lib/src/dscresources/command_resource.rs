@@ -487,6 +487,26 @@ pub fn get_schema(resource: &ResourceManifest, cwd: &str) -> Result<String, DscE
 /// Error returned if the resource does not successfully export the current state
 pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>) -> Result<ExportResult, DscError> {
     let Some(export) = resource.export.as_ref() else {
+        // see if get is supported and use that instead
+        if resource.get.is_some() {
+            info!("{}", t!("dscresources.commandResource.exportNotSupportedUsingGet", resource = &resource.resource_type));
+            let get_result = invoke_get(resource, cwd, input.unwrap_or(""))?;
+            let mut instances: Vec<Value> = Vec::new();
+            match get_result {
+                GetResult::Group(group_response) => {
+                    for result in group_response {
+                        instances.push(serde_json::to_value(result)?);
+                    }
+                },
+                GetResult::Resource(response) => {
+                    instances.push(response.actual_state);
+                }
+            }
+            return Ok(ExportResult {
+                actual_state: instances,
+            });
+        }
+        // if neither export nor get is supported, return an error
         return Err(DscError::Operation(t!("dscresources.commandResource.exportNotSupported", resource = &resource.resource_type).to_string()))
     };
 
@@ -840,7 +860,7 @@ fn json_to_hashmap(json: &str) -> Result<HashMap<String, String>, DscError> {
                 },
                 Value::Null => {
                     // ignore null values
-                },  
+                },
                 Value::Object(_) => {
                     return Err(DscError::Operation(t!("dscresources.commandResource.invalidKey", key = key).to_string()));
                 },

@@ -146,6 +146,7 @@ resourceInvalidJson = "Resource reported input JSON is not valid"
 invalidArrayKey = "Unsupported array value for key '%{key}'.  Only string and number is supported."
 invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, and array is supported."
 inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
+exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' using get operation"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -181,13 +182,12 @@ discoverNoResults = "No results returned for discovery extension '%{extension}'"
 discoverNotAbsolutePath = "Resource path from extension '%{extension}' is not an absolute path: %{path}"
 extensionReturned = "Extension '%{extension}' returned line: %{line}"
 retrievingSecretFromExtension = "Retrieving secret '%{name}' from extension '%{extension}'"
-secretExtensionReturnedInvalidJson = "Extension '%{extension}' returned invalid JSON: %{error}"
 extensionReturnedSecret = "Extension '%{extension}' returned secret"
 extensionReturnedNoSecret = "Extension '%{extension}' did not return a secret"
-secretNoResults = "Extension '%{extension}' returned no output"
 importingFile = "Importing file '%{file}' with extension '%{extension}'"
 importNotSupported = "Import is not supported by extension '%{extension}' for file '%{file}'"
 importNoResults = "Extension '%{extension}' returned no results for import"
+secretMultipleLinesReturned = "Extension '%{extension}' returned multiple lines which is not supported for secrets"
 
 [extensions.extension_manifest]
 extensionManifestSchemaTitle = "Extension manifest schema URI"

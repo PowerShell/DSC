@@ -116,4 +116,19 @@ Describe 'Tests for the secret() function and extensions' {
         $out.results.Count | Should -Be 1
         $out.results[0].result.actualState.Output | Should -BeExactly 'SameSecret'
     }
+
+    It 'Secret with multiple lines' {
+        $configYaml = @'
+            $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[secret('MultiLine')]"
+'@
+        dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 2
+        $errorMessage = Get-Content -Raw -Path $TestDrive/error.log
+        $errorMessage | Should -Match "Extension 'Test/Secret2' returned multiple lines which is not supported for secrets"
+    }
 }
