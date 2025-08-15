@@ -192,7 +192,9 @@ if ($null -ne $packageType) {
 
     $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
 
-    & $rustup default stable
+    if (!$usingADO) {
+        & $rustup default stable
+    }
 
     ## Test if Node is installed
     ## Skipping upgrade as users may have a specific version they want to use
@@ -261,7 +263,7 @@ else {
 }
 
 if (!$SkipBuild) {
-    if ($architecture -ne 'Current') {
+    if ($architecture -ne 'Current' -and !$usingADO) {
         & $rustup target add --toolchain $channel $architecture
     }
 
