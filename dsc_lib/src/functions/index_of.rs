@@ -31,23 +31,14 @@ impl Function for IndexOf {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.indexOf.invoked"));
         
-        let array = args[0].as_array().ok_or_else(|| {
-            DscError::Parser(t!("functions.indexOf.invalidArrayArg").to_string())
-        })?;
+        let Some(array) = args[0].as_array() else {
+            return Err(DscError::Parser(t!("functions.indexOf.invalidArrayArg").to_string()));
+        };
 
         let item_to_find = &args[1];
 
         for (index, item) in array.iter().enumerate() {
-            let matches = match (item_to_find, item) {
-                // String comparison (case-sensitive)
-                (Value::String(find_str), Value::String(item_str)) => find_str == item_str,
-                (Value::Number(find_num), Value::Number(item_num)) => find_num == item_num,
-                (Value::Array(find_arr), Value::Array(item_arr)) => find_arr == item_arr,
-                (Value::Object(find_obj), Value::Object(item_obj)) => find_obj == item_obj,
-                _ => false,
-            };
-
-            if matches {
+            if item == item_to_find {
                 let index_i64 = i64::try_from(index).map_err(|_| {
                     DscError::Parser("Array index too large to represent as integer".to_string())
                 })?;

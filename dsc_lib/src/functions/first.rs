@@ -55,7 +55,7 @@ mod tests {
     fn array_of_strings() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[first(createArray('hello', 'world'))]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "\"hello\"");
+        assert_eq!(result.as_str(), Some("hello"));
     }
 
     #[test]
@@ -69,21 +69,21 @@ mod tests {
     fn array_of_mixed() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[first(array('hello', 42))]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "\"hello\"");
+        assert_eq!(result.as_str(), Some("hello"));
     }
 
     #[test]
     fn string_input() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[first('hello')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "\"h\"");
+        assert_eq!(result.as_str(), Some("h"));
     }
 
     #[test]
     fn single_character_string() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[first('a')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "\"a\"");
+        assert_eq!(result.as_str(), Some("a"));
     }
 
     #[test]
