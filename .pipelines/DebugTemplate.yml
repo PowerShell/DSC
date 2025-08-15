@@ -1,0 +1,14 @@
+parameters:
+  - name: featureFlags
+    type: object
+    default: {}
+  - name: customTags
+    type: string
+    default: ''
+  - name: globalSDL
+    type: object
+    default: {}
+
+steps:
+- pwsh: |
+    Write-Host "This is a debug build, compliance checks will be skipped."

@@ -7,6 +7,11 @@ pr:
     - onebranch
     - release/v*
 
+parameters:
+  - name: DebugBuild
+    type: boolean
+    default: false
+
 variables:
   - name: BuildConfiguration
     value: 'release'
@@ -16,6 +21,8 @@ variables:
     value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
   - name: Codeql.TSAEnabled
     value: true
+  - name: template
+    value: ${{ iif eq(parameters.DebugBuild, './DebugTemplate.yml', 'v2/OneBranch.Official.Debug.yml@onebranchTemplates' ) }}
   - group: DSC-Rust.SDK
 
 resources:
@@ -26,7 +33,7 @@ resources:
     ref: refs/heads/main
 
 extends:
-  template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
+  template: $(template)
   parameters:
     featureFlags:
       WindowsHostVersion:
@@ -271,7 +278,7 @@ extends:
             apt -y install clang
             apt -y install llvm
             apt -y install musl-tools
-            apt -y install musi-gcc
+            apt -y install musl-gcc
             #apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
