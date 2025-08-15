@@ -25,4 +25,4 @@ tree-sitter = "0.25"
 tree-sitter-language = "0.1"
 
 [build-dependencies]
-cc = "1.0"
+cc = "*"

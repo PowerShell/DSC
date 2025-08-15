@@ -181,4 +181,36 @@ resources:
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_securityContext'
         $out.resources[0].properties.psobject.properties.name | Should -Not -Contain '_name'
     }
+
+    It 'Export can be used with a resource that only implements Get with filter' {
+      $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: NoExport
+    type: Test/Get
+    properties:
+      name: two
+'@
+      $out = dsc config export -i $yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.resources.count | Should -Be 1
+      $out.resources[0].type | Should -BeExactly 'Test/Get'
+      $out.resources[0].properties.name | Should -BeExactly 'two'
+      $out.resources[0].properties.id | Should -Be 2
+    }
+
+    It 'Export can be used with a resource that only implements Get with no filter' {
+      $yaml = @'
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+  - name: NoFilter
+    type: Test/Get
+'@
+      $out = dsc config export -i $yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.resources.count | Should -Be 1
+      $out.resources[0].type | Should -BeExactly 'Test/Get'
+      $out.resources[0].properties.name | Should -BeExactly 'one'
+      $out.resources[0].properties.id | Should -Be 1
+    }
 }
