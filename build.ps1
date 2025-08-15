@@ -219,6 +219,12 @@ if ($null -ne $packageType) {
             }
         }
     }
+
+    ## Test if tree-sitter is installed
+    if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "tree-sitter not found, installing..."
+        cargo install tree-sitter-cli
+    }
 }
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {

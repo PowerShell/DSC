@@ -39,7 +39,7 @@ steps:
   env:
     ob_restore_phase: true
 - pwsh: |
-    $header = "Bearer ${ parameters.token }"
+    $header = "Bearer ${{ parameters.token }}"
     $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
     $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
     Set-Location "$(Build.SourcesDirectory)/DSC"
