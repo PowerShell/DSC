@@ -350,6 +350,7 @@ if (!$SkipBuild) {
     }
 
     $failed = $false
+    Write-Verbose -Verbose "LASTEXITCODE is $LASTEXITCODE"
     foreach ($project in $projects) {
         ## Build format_json
         Write-Host -ForegroundColor Cyan "Building '$project' for $architecture"
@@ -371,6 +372,7 @@ if (!$SkipBuild) {
                         cargo audit fix
                     }
 
+                    Write-Verbose -Verbose "Running build.ps1 for $project"
                     ./build.ps1
                 }
             }
@@ -407,13 +409,14 @@ if (!$SkipBuild) {
                             cargo clean
                         }
 
+                        Write-Verbose -Verbose "Building $project"
                         cargo build @flags
                     }
                 }
             }
 
             if ($LASTEXITCODE -ne 0) {
-                Write-Errror "Last exit code is $LASTEXITCODE, build failed for '$project'"
+                Write-Error "Last exit code is $LASTEXITCODE, build failed for '$project'"
                 $failed = $true
                 break
             }
