@@ -17,7 +17,7 @@ impl Function for Array {
             name: "array".to_string(),
             description: t!("functions.array.description").to_string(),
             category: FunctionCategory::Array,
-            min_args: 0,
+            min_args: 1,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![],
             remaining_arg_accepted_types: Some(vec![
@@ -81,10 +81,10 @@ mod tests {
     }
 
     #[test]
-    fn empty_array() {
+    fn empty_array_not_allowed() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[array()]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "[]");
+        let result = parser.parse_and_execute("[array()]", &Context::new());
+        assert!(result.is_err());
     }
 
     #[test]

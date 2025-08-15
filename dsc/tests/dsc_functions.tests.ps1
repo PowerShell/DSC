@@ -345,7 +345,6 @@ Describe 'tests for function expressions' {
     @{ expression = "[array('hello', 42)]"; expected = @('hello', 42) }
     @{ expression = "[array('a', 'b', 'c')]"; expected = @('a', 'b', 'c') }
     @{ expression = "[array(1, 2, 3)]"; expected = @(1, 2, 3) }
-    @{ expression = "[array()]"; expected = @() }
     @{ expression = "[array('string', 123, createObject('key', 'value'))]"; expected = @('string', 123, [pscustomobject]@{ key = 'value' }) }
     @{ expression = "[array(createArray('a', 'b'), 'string')]"; expected = @(@('a', 'b'), 'string') }
   ) {
