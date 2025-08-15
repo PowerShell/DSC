@@ -352,9 +352,10 @@ if (!$SkipBuild) {
     $failed = $false
     foreach ($project in $projects) {
         ## Build format_json
-        Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
+        Write-Host -ForegroundColor Cyan "Building '$project' for $architecture"
         try {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
+            Write-Verbose -Verbose "Current directory is $(Get-Location)"
 
             # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
             if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
@@ -412,6 +413,7 @@ if (!$SkipBuild) {
             }
 
             if ($LASTEXITCODE -ne 0) {
+                Write-Errror "Last exit code is $LASTEXITCODE, build failed for '$project'"
                 $failed = $true
                 break
             }
