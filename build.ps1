@@ -350,7 +350,6 @@ if (!$SkipBuild) {
     }
 
     $failed = $false
-    Write-Verbose -Verbose "LASTEXITCODE is $LASTEXITCODE"
     foreach ($project in $projects) {
         ## Build format_json
         Write-Host -ForegroundColor Cyan "Building '$project' for $architecture"
@@ -415,7 +414,7 @@ if (!$SkipBuild) {
                 }
             }
 
-            if ($LASTEXITCODE -ne 0) {
+            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
                 Write-Error "Last exit code is $LASTEXITCODE, build failed for '$project'"
                 $failed = $true
                 break
