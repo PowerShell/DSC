@@ -156,6 +156,7 @@ function Find-LinkExe {
 
 $channel = 'stable'
 if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
+    Write-Verbose -Verbose "Using msrustup"
     $rustup = 'msrustup'
     $channel = 'ms-stable'
     if ($architecture -eq 'current') {
@@ -171,7 +172,7 @@ if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
     ## Test if Rust is installed
-    if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
+    if (!$usingADO -and !(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Rust not found, installing..."
         if (!$IsWindows) {
             curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -190,7 +191,9 @@ if ($null -ne $packageType) {
         & $rustup update
     }
 
-    $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    if ($IsWindows) {
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    }
 
     if (!$usingADO) {
         & $rustup default stable
@@ -457,7 +460,10 @@ if (!$SkipBuild) {
                     }
                 }
             }
-
+        } catch {
+            Write-Error "Failed to build $project : $($_ | Out-String)"
+            $failed = $true
+            break
         } finally {
             Pop-Location
         }
