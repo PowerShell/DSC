@@ -185,6 +185,9 @@ if ($null -ne $packageType) {
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Rust"
+        }
     }
     elseif (!$usingADO) {
         Write-Verbose -Verbose "Rust found, updating..."
@@ -218,12 +221,18 @@ if ($null -ne $packageType) {
                 Write-Warning "winget not found, please install Node.js manually"
             }
         }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Node.js"
+        }
     }
 
     ## Test if tree-sitter is installed
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
         cargo install tree-sitter-cli --config .cargo/config.toml
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install tree-sitter-cli"
+        }
     }
 }
 
