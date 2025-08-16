@@ -39,7 +39,6 @@ steps:
   env:
     ob_restore_phase: true
 - pwsh: |
-    write-verbose -verbose "Token: ${{ parameters.aztoken }}"
     $header = "Bearer ${{ parameters.aztoken }}"
     $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
     $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
