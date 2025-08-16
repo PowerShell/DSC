@@ -24,6 +24,8 @@ variables:
   - name: templateFile
     value: ${{ iif ( parameters.OfficialBuild, 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates' ) }}
   - group: DSC-Rust.SDK
+  - name: officialBuild
+    value: ${{ parameters.OfficialBuild }}
 
 resources:
   repositories:
@@ -177,14 +179,13 @@ extends:
           condition: succeeded()
 
       - job: SignMsixBundle
-        condition: and(succeeded(), parameters.officialBuild)
+        condition: and(succeeded(), eq(variables.officialBuild, true)
         dependsOn: CreateMsixBundle
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           ob_sdl_sbom_enabled: false
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: false
-          officialBuild: ${{ parameters.OfficialBuild }}
         pool:
           type: windows
         steps:
