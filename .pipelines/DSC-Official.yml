@@ -288,7 +288,7 @@ extends:
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
-            $header = "Bearer $(AzToken)"
+            $header = "Bearer " + $(AzToken)
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
