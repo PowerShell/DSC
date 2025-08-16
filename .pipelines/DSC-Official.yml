@@ -117,7 +117,7 @@ extends:
             buildName: x86_64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            token: '$(AzToken)'
+            token: $(AzToken)
             rustSDK: $(Rust.SDK)
 
       - job: BuildWin_arm64
@@ -137,7 +137,7 @@ extends:
             buildName: aarch64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            token: '$(AzToken)'
+            token: $(AzToken)
             rustSDK: $(Rust.SDK)
 
       - job: CreateMsixBundle

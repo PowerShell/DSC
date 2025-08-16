@@ -223,7 +223,7 @@ if ($null -ne $packageType) {
     ## Test if tree-sitter is installed
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
-        cargo install tree-sitter-cli
+        cargo install tree-sitter-cli --config .cargo/config.toml
     }
 }
 
@@ -371,7 +371,7 @@ if (!$SkipBuild) {
                 else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            cargo install cargo-audit --features=fix
+                            cargo install cargo-audit --features=fix --config .cargo/config.toml
                         }
 
                         cargo audit fix
@@ -404,7 +404,7 @@ if (!$SkipBuild) {
                     else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                cargo install cargo-audit --features=fix
+                                cargo install cargo-audit --features=fix --config .cargo/config.toml
                             }
 
                             cargo audit fix
