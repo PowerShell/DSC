@@ -177,7 +177,7 @@ extends:
           condition: succeeded()
 
       - job: SignMsixBundle
-        condition: and(succeeded(), variables.officialBuild)
+        condition: and(succeeded(), parameters.officialBuild)
         dependsOn: CreateMsixBundle
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
