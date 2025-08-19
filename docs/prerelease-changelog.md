@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.4...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.5...main
 
 <!--
     Unreleased change entry instructions:
@@ -74,6 +74,87 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased change links -->
 
 
+
+## [v3.1.0-preview.5][release-v3.1.0-preview.5] - 2025-05-07
+
+This section includes a summary of changes for the `v3.1.0-preview.5` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.5].
+
+<!-- Release links -->
+[release-v3.1.0-preview.5]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-preview.5 "Link to the DSC v3.1.0-preview.5 release on GitHub"
+[compare-v3.1.0-preview.5]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.4...v3.1.0-preview.5
+
+### Added
+
+- Add `equals()` configuration function for equality comparisons.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#767][#767].
+  - PRs: [#770][#770]
+
+  </details>
+
+- Add `if()` configuration function for conditional selection.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#767][#767].
+  - PRs: [#776][#776]
+
+  </details>
+
+- Add experimental `format()` configuration function for string formatting. Emits a warning when
+  used as it doesn't yet match all .NET format options.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#767][#767].
+  - PRs: [#779][#779]
+
+  </details>
+
+- Add support for discovery extensions, including extension manifests and CLI support.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#681][#681].
+  - PRs: [#760][#760]
+
+  </details>
+
+### Changed
+
+- For the Windows PowerShell adapter, remove PowerShell 7 paths from `PSModulePath` to avoid
+  discovering incompatible modules when running under PowerShell 7.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#707][#707].
+  - PRs: [#777][#777]
+
+  </details>
+
+### Fixed
+
+- Add a null check in the PowerShell adapter when validating a property that may be `$null`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#769][#769]
+
+  </details>
+
+- Fix adapter configuration `set` response mapping when using implicit PowerShell adapter wrapping
+  so `before_state` contains `resources` instead of `result`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#774][#774]
+
+  </details>
 
 ## [v3.1.0-preview.4][release-v3.1.0-preview.4] - 2025-04-29
 
@@ -2557,10 +2638,13 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#668]: https://github.com/PowerShell/DSC/issues/668
 [#674]: https://github.com/PowerShell/DSC/issues/674
 [#678]: https://github.com/PowerShell/DSC/issues/678
+[#681]: https://github.com/PowerShell/DSC/issues/681
 [#683]: https://github.com/PowerShell/DSC/issues/683
 [#692]: https://github.com/PowerShell/DSC/issues/692
 [#693]: https://github.com/PowerShell/DSC/issues/693
+[#707]: https://github.com/PowerShell/DSC/issues/707
 [#709]: https://github.com/PowerShell/DSC/issues/709
+[#767]: https://github.com/PowerShell/DSC/issues/767
 [#745]: https://github.com/PowerShell/DSC/issues/745
 [#635]: https://github.com/PowerShell/DSC/pull/635
 [#644]: https://github.com/PowerShell/DSC/pull/644
@@ -2583,6 +2667,13 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#715]: https://github.com/PowerShell/DSC/pull/715
 [#731]: https://github.com/PowerShell/DSC/issues/731
 [#736]: https://github.com/PowerShell/DSC/pull/736
+[#760]: https://github.com/PowerShell/DSC/pull/760
+[#769]: https://github.com/PowerShell/DSC/pull/769
+[#770]: https://github.com/PowerShell/DSC/pull/770
+[#774]: https://github.com/PowerShell/DSC/pull/774
+[#776]: https://github.com/PowerShell/DSC/pull/776
+[#777]: https://github.com/PowerShell/DSC/pull/777
+[#779]: https://github.com/PowerShell/DSC/pull/779
 [#748]: https://github.com/PowerShell/DSC/pull/748
 [#758]: https://github.com/PowerShell/DSC/pull/758
 [#764]: https://github.com/PowerShell/DSC/pull/764
