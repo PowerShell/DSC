@@ -8,7 +8,7 @@ ms.date: 06/24/2024
 
 # Changelog
 
-<!-- markdownlint-disable-file MD033 -->
+<!-- markdownlint-disable-file MD033 MD024 -->
 
 <!--
     Helpful docs snippets
@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.1...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.2...main
 
 <!--
     Unreleased change entry instructions:
@@ -74,6 +74,37 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased change links -->
 
 
+
+## [v3.1.0-preview.2][release-v3.1.0-preview.2] - 2025-04-01
+
+This section includes a summary of changes for the `v3.1.0-preview.2` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.2].
+
+<!-- Release links -->
+[release-v3.1.0-preview.2]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-preview.2 "Link to the DSC v3.1.0-preview.2 release on GitHub"
+[compare-v3.1.0-preview.2]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.1...v3.1.0-preview.2
+
+### Changed
+
+- Enable using adapter resources without the adapter wrapper.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#693][#693].
+  - PRs: [#720][#720]
+
+  </details>
+
+### Added
+
+- Add validation to check key-value pairs for class-based and script-based DSC resources.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#709][#709].
+  - PRs: [#713][#713]
+
+  </details>
 
 ## [v3.1.0-preview.1][release-v3.1.0-preview.1] - 2025-03-18
 
@@ -2451,6 +2482,8 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#678]: https://github.com/PowerShell/DSC/issues/678
 [#683]: https://github.com/PowerShell/DSC/issues/683
 [#692]: https://github.com/PowerShell/DSC/issues/692
+[#693]: https://github.com/PowerShell/DSC/issues/693
+[#709]: https://github.com/PowerShell/DSC/issues/709
 [#635]: https://github.com/PowerShell/DSC/pull/635
 [#644]: https://github.com/PowerShell/DSC/pull/644
 [#645]: https://github.com/PowerShell/DSC/pull/645
@@ -2466,3 +2499,5 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#688]: https://github.com/PowerShell/DSC/pull/688
 [#695]: https://github.com/PowerShell/DSC/pull/695
 [#699]: https://github.com/PowerShell/DSC/pull/699
+[#713]: https://github.com/PowerShell/DSC/pull/713
+[#720]: https://github.com/PowerShell/DSC/pull/720
