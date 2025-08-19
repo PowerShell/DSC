@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.8...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.11...main
 
 <!--
     Unreleased change entry instructions:
@@ -72,6 +72,106 @@ changes since the last release, see the [diff on GitHub][unreleased].
 -->
 
 <!-- Unreleased change links -->
+
+## [v3.0.0-preview.11][release-v3.0.0-preview.11] - 2024-10-24
+
+This section includes a summary of changes for the `preview.11` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-preview.11].
+
+<!-- Release links -->
+[release-v3.0.0-preview.11]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-preview.11 "Link to the DSC v3.0.0-preview.11 release on GitHub"
+[compare-v3.0.0-preview.11]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.10...v3.0.0-preview.11
+
+### Changed
+
+- Renamed the resource `kind` value `Import` to `Importer`. If your resource manifest sets the
+  `kind` property to `Import`, update it to `Importer`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues:[#436][#436].
+  - PRs: [#552][#552]
+
+  </details>
+
+- Improved performance for the adapter lookup table used to resolve adapted resources, reducing
+  lookup overhead during operations. See also [dsc resource list][p10-aa].
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#568][#568]
+
+  </details>
+
+- `dsc` now returns a non-zero exit code when a requested resource isn't found, making failures
+  easier to detect in automation.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#561][#561]
+
+  </details>
+
+- Changed the Echo test resource to `Microsoft.DSC.Debug/Echo`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#537][#537].
+  - PRs: [#553][#553]
+
+  </details>
+
+### Added
+
+- Added example configurations for common Windows baselines to help users get started.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#572][#572]
+
+  </details>
+
+### Fixed
+
+- Class-based PowerShell DSC Resources no longer include hidden properties in their output.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#157][#157].
+  - PRs: [#556][#556]
+
+  </details>
+
+- Improved trace messaging for the `Microsoft.Windows/Registry` resource, emitting messages at the
+  proper levels.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#555][#555]
+
+  </details>
+
+- Fixed input schema validation for the `Microsoft.Windows/RebootPending` resource.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#485][#485].
+  - PRs: [#488][#488]
+
+  </details>
+
+- Fixed a regression in the PowerShell adapter `Test` operation.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#565][#565]
+
+  </details>
 
 ## [v3.0.0-preview.10][release-v3.0.0-preview.10] - 2024-09-17
 
@@ -1795,6 +1895,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#139]: https://github.com/PowerShell/DSC/issues/139
 [#150]: https://github.com/PowerShell/DSC/issues/150
 [#156]: https://github.com/PowerShell/DSC/issues/156
+[#157]: https://github.com/PowerShell/DSC/issues/157
 [#158]: https://github.com/PowerShell/DSC/issues/158
 [#159]: https://github.com/PowerShell/DSC/issues/159
 [#162]: https://github.com/PowerShell/DSC/issues/162
@@ -1905,6 +2006,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#432]: https://github.com/PowerShell/DSC/issues/432
 [#434]: https://github.com/PowerShell/DSC/issues/434
 [#435]: https://github.com/PowerShell/DSC/issues/435
+[#436]: https://github.com/PowerShell/DSC/issues/436
 [#438]: https://github.com/PowerShell/DSC/issues/438
 [#439]: https://github.com/PowerShell/DSC/issues/439
 [#441]: https://github.com/PowerShell/DSC/issues/441
@@ -1925,6 +2027,8 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#481]: https://github.com/PowerShell/DSC/issues/481
 [#482]: https://github.com/PowerShell/DSC/issues/482
 [#484]: https://github.com/PowerShell/DSC/issues/484
+[#485]: https://github.com/PowerShell/DSC/issues/485
+[#488]: https://github.com/PowerShell/DSC/issues/488
 [#487]: https://github.com/PowerShell/DSC/issues/487
 [#489]: https://github.com/PowerShell/DSC/issues/489
 [#49]:  https://github.com/PowerShell/DSC/issues/49
@@ -1938,7 +2042,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#503]: https://github.com/PowerShell/DSC/issues/503
 [#504]: https://github.com/PowerShell/DSC/issues/504
 [#505]: https://github.com/PowerShell/DSC/issues/505
-[#506]: https://github.com/PowerShell/DSC/issues/504
+[#506]: https://github.com/PowerShell/DSC/issues/506
 [#509]: https://github.com/PowerShell/DSC/issues/509
 [#511]: https://github.com/PowerShell/DSC/issues/511
 [#512]: https://github.com/PowerShell/DSC/issues/512
@@ -1953,9 +2057,26 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#533]: https://github.com/PowerShell/DSC/issues/533
 [#541]: https://github.com/PowerShell/DSC/issues/541
 [#548]: https://github.com/PowerShell/DSC/issues/548
+[#549]: https://github.com/PowerShell/DSC/issues/549
+[#551]: https://github.com/PowerShell/DSC/issues/551
+[#552]: https://github.com/PowerShell/DSC/issues/552
+[#553]: https://github.com/PowerShell/DSC/issues/553
+[#555]: https://github.com/PowerShell/DSC/issues/555
+[#556]: https://github.com/PowerShell/DSC/issues/556
+[#561]: https://github.com/PowerShell/DSC/issues/561
+[#564]: https://github.com/PowerShell/DSC/issues/564
+[#565]: https://github.com/PowerShell/DSC/issues/565
+[#568]: https://github.com/PowerShell/DSC/issues/568
+[#572]: https://github.com/PowerShell/DSC/issues/572
+[#573]: https://github.com/PowerShell/DSC/issues/573
+[#577]: https://github.com/PowerShell/DSC/issues/577
 [#57]:  https://github.com/PowerShell/DSC/issues/57
 [#70]:  https://github.com/PowerShell/DSC/issues/70
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#75]:  https://github.com/PowerShell/DSC/issues/75
 [#89]:  https://github.com/PowerShell/DSC/issues/89
 [#98]:  https://github.com/PowerShell/DSC/issues/98
+[#157]: https://github.com/PowerShell/DSC/issues/157
+[#436]: https://github.com/PowerShell/DSC/issues/436
+[#485]: https://github.com/PowerShell/DSC/issues/485
+[#537]: https://github.com/PowerShell/DSC/issues/537
