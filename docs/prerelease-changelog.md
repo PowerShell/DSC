@@ -73,7 +73,35 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased change links -->
 
+## [v3.1.0-preview.3][release-v3.1.0-preview.3] - 2025-04-08
 
+This section includes a summary of changes for the `v3.1.0-preview.3` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.3].
+
+<!-- Release links -->
+[release-v3.1.0-preview.3]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-preview.3 "Link to the DSC v3.1.0-preview.3 release on GitHub"
+[compare-v3.1.0-preview.3]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.2...v3.1.0-preview.3
+
+### Fixed
+
+- Fix `Assertion` resource to fail when test fails.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#731][#731].
+  - PRs: [#736][#736]
+
+  </details>
+
+- Set `Bypass` execution policy when calling PowerShell from the adapter to avoid failures on
+  Windows with restricted execution policy.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#714][#714].
+  - PRs: [#715][#715]
+
+  </details>
 
 ## [v3.1.0-preview.2][release-v3.1.0-preview.2] - 2025-04-01
 
@@ -2501,3 +2529,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#699]: https://github.com/PowerShell/DSC/pull/699
 [#713]: https://github.com/PowerShell/DSC/pull/713
 [#720]: https://github.com/PowerShell/DSC/pull/720
+[#714]: https://github.com/PowerShell/DSC/issues/714
+[#715]: https://github.com/PowerShell/DSC/pull/715
+[#731]: https://github.com/PowerShell/DSC/issues/731
+[#736]: https://github.com/PowerShell/DSC/pull/736
