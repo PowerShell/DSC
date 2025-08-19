@@ -8,7 +8,7 @@ ms.date: 06/24/2024
 
 # Changelog
 
-<!-- markdownlint-disable-file MD033 MD024 MD053 -->
+<!-- markdownlint-disable-file MD033 -->
 
 <!--
     Helpful docs snippets
@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.12...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-rc.1...main
 
 <!--
     Unreleased change entry instructions:
@@ -73,7 +73,112 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased change links -->
 
+## [v3.0.0-rc.1][release-v3.0.0-rc.1] - 2025-02-06
 
+This section includes a summary of changes for the `rc.1` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-rc.1].
+
+<!-- Release links -->
+[release-v3.0.0-rc.1]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-rc.1 "Link to the DSC v3.0.0-rc.1 release on GitHub"
+[compare-v3.0.0-rc.1]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.12...v3.0.0-rc.1
+
+### Changed
+
+- Internationalize the `dsc` CLI. Localized user-facing strings and removed redundant prefixes
+  from some error messages.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#612][#612]
+
+  </details>
+
+- Change the behavior of `reference()` to use the raw output of a resource instead of the
+  DSC-decorated output. This makes configurations reusable across `get`, `test`, `set`, and
+  `export` operations.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#389][#389].
+  - PRs: [#634][#634]
+
+  </details>
+
+- Ensure `systemRoot()` always includes a trailing path separator (and have `path()` adopt this
+  behavior). This aligns behavior across platforms and avoids path-join surprises on Windows.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#616][#616]
+
+  </details>
+
+- Update README to remove the outdated mention of a dependency on the PSDSC module.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#623][#623]
+
+  </details>
+
+### Added
+
+- Add support for the `contentVersion` property in configuration documents. If present in input,
+  the value is accepted but not validated; generated configurations (for example, `export`) set
+  `contentVersion` to `1.0.0`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#621][#621]
+
+  </details>
+
+- Enable the `Microsoft.DSC/Include` resource to accept configuration and parameters as string
+  content with `configurationContent` and `parametersContent` (in addition to the existing
+  `configurationFile` and `parametersFile`).
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#626][#626]
+
+  </details>
+
+- Support writing progress as JSON with a new `--progress-format` (`-p`) root option. When set to
+  `json`, progress messages are also emitted to STDERR as JSON objects.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#592][#592].
+  - PRs: [#614][#614]
+
+  </details>
+
+### Fixed
+
+- Fix built-in resource and settings discovery when `dsc` is invoked via a symlink (for example,
+  when installed by WinGet), ensuring built-ins are found correctly.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#618][#618].
+  - PRs: [#625][#625]
+
+  </details>
+
+- Fix table header resource IDs casing mismatch between code and localization file for consistent
+  table output.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#629][#629]
+
+  </details>
 
 ## [v3.0.0-preview.12][release-v3.0.0-preview.12] - 2024-12-10
 
@@ -2193,3 +2298,16 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#606]: https://github.com/PowerShell/DSC/pull/606
 [#608]: https://github.com/PowerShell/DSC/pull/608
 [#609]: https://github.com/PowerShell/DSC/pull/609
+[#612]: https://github.com/PowerShell/DSC/pull/612
+[#614]: https://github.com/PowerShell/DSC/pull/614
+[#616]: https://github.com/PowerShell/DSC/pull/616
+[#621]: https://github.com/PowerShell/DSC/pull/621
+[#623]: https://github.com/PowerShell/DSC/pull/623
+[#625]: https://github.com/PowerShell/DSC/pull/625
+[#626]: https://github.com/PowerShell/DSC/pull/626
+[#629]: https://github.com/PowerShell/DSC/pull/629
+[#631]: https://github.com/PowerShell/DSC/pull/631
+[#634]: https://github.com/PowerShell/DSC/pull/634
+[#389]: https://github.com/PowerShell/DSC/issues/389
+[#592]: https://github.com/PowerShell/DSC/issues/592
+[#618]: https://github.com/PowerShell/DSC/issues/618
