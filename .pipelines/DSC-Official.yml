@@ -7,11 +7,25 @@ pr:
     - onebranch
     - release/v*
 
+parameters:
+  - name: OfficialBuild
+    type: boolean
+    default: false
+
 variables:
-  BuildConfiguration: 'release'
-  PackageRoot: '$(System.ArtifactsDirectory)/Packages'
-  WindowsContainerImage: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
-  Codeql.TSAEnabled: true
+  - name: BuildConfiguration
+    value: 'release'
+  - name: PackageRoot
+    value: '$(System.ArtifactsDirectory)/Packages'
+  - name: WindowsContainerImage
+    value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
+  - name: Codeql.TSAEnabled
+    value: true
+  - name: templateFile
+    value: ${{ iif ( parameters.OfficialBuild, 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates' ) }}
+  - group: DSC-Rust.SDK
+  - name: officialBuild
+    value: ${{ parameters.OfficialBuild }}
 
 resources:
   repositories:
@@ -21,7 +35,7 @@ resources:
     ref: refs/heads/main
 
 extends:
-  template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
+  template: ${{ variables.templateFile }}
   parameters:
     featureFlags:
       WindowsHostVersion:
@@ -78,7 +92,7 @@ extends:
         - task: AzureCLI@2
           displayName: Get Az Token
           inputs:
-            azureSubscription: az-blob-cicd-infra
+            azureSubscription: PowerShell-CICD-Feed-Access
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
@@ -105,7 +119,8 @@ extends:
             buildName: x86_64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            token: '$(AzToken)'
+            aztoken: '$(AzToken)'
+            rustSDK: '$(Rust.SDK)'
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -113,6 +128,7 @@ extends:
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
@@ -124,7 +140,8 @@ extends:
             buildName: aarch64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            token: '$(AzToken)'
+            aztoken: '$(AzToken)'
+            rustSDK: '$(Rust.SDK)'
 
       - job: CreateMsixBundle
         dependsOn:
@@ -162,6 +179,7 @@ extends:
           condition: succeeded()
 
       - job: SignMsixBundle
+        condition: and(succeeded(), eq(variables.officialBuild, true))
         dependsOn: CreateMsixBundle
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
@@ -208,7 +226,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: x86_64-unknown-linux-musl
           displayName: Install Rust
           env:
@@ -216,7 +234,7 @@ extends:
         - pwsh: |
             apt update
             apt -y install musl-tools
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
@@ -243,7 +261,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: aarch64-unknown-linux-musl
           displayName: Install Rust
           env:
@@ -251,7 +269,7 @@ extends:
         - task: AzureCLI@2
           displayName: Azure CLI
           inputs:
-            azureSubscription: az-blob-cicd-infra
+            azureSubscription: PowerShell-CICD-Feed-Access
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
@@ -264,14 +282,15 @@ extends:
             apt -y install clang
             apt -y install llvm
             apt -y install musl-tools
-            apt -y install gcc-multilib
+            apt -y install musl-gcc
+            #apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
             msrustup default stable-aarch64-unknown-linux-musl
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
@@ -302,7 +321,7 @@ extends:
         - task: RustInstaller@1
           inputs:
             rustVersion: ms-stable
-            toolchainFeed: https://pkgs.dev.azure.com/mscodehub/Rust/_packaging/Rust/nuget/v3/index.json
+            toolchainFeed: $(Rust.SDK)
             additionalTargets: $(buildName)
           displayName: Install Rust
           env:
@@ -310,15 +329,16 @@ extends:
         - task: AzureCLI@2
           displayName: Azure CLI
           inputs:
-            azureSubscription: az-blob-cicd-infra
+            azureSubscription: PowerShell-CICD-Feed-Access
             scriptType: pscore
             scriptLocation: inlineScript
             inlineScript: |
               az account show
         - pwsh: |
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            Write-Verbose -Verbose "Building for $(buildName)"
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"

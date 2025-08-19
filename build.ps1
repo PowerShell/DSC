@@ -25,6 +25,7 @@ param(
 
 $env:RUSTC_LOG=$null
 $env:RUSTFLAGS='-Dwarnings'
+$usingADO = ($null -ne $env:TF_BUILD)
 
 trap {
     Write-Error "An error occurred: $($_ | Out-String)"
@@ -155,6 +156,7 @@ function Find-LinkExe {
 
 $channel = 'stable'
 if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore)) {
+    Write-Verbose -Verbose "Using msrustup"
     $rustup = 'msrustup'
     $channel = 'ms-stable'
     if ($architecture -eq 'current') {
@@ -170,7 +172,7 @@ if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
     ## Test if Rust is installed
-    if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
+    if (!$usingADO -and !(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Rust not found, installing..."
         if (!$IsWindows) {
             curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -183,15 +185,22 @@ if ($null -ne $packageType) {
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
         }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Rust"
+        }
     }
-    else  {
+    elseif (!$usingADO) {
         Write-Verbose -Verbose "Rust found, updating..."
         & $rustup update
     }
 
-    $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    if ($IsWindows) {
+        $BuildToolsPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+    }
 
-    & $rustup default stable
+    if (!$usingADO) {
+        & $rustup default stable
+    }
 
     ## Test if Node is installed
     ## Skipping upgrade as users may have a specific version they want to use
@@ -211,6 +220,18 @@ if ($null -ne $packageType) {
             } else {
                 Write-Warning "winget not found, please install Node.js manually"
             }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Node.js"
+        }
+    }
+
+    ## Test if tree-sitter is installed
+    if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "tree-sitter not found, installing..."
+        cargo install tree-sitter-cli --config .cargo/config.toml
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install tree-sitter-cli"
         }
     }
 }
@@ -260,7 +281,7 @@ else {
 }
 
 if (!$SkipBuild) {
-    if ($architecture -ne 'Current') {
+    if ($architecture -ne 'Current' -and !$usingADO) {
         & $rustup target add --toolchain $channel $architecture
     }
 
@@ -309,6 +330,7 @@ if (!$SkipBuild) {
 
     # projects are in dependency order
     $projects = @(
+        ".",
         "tree-sitter-dscexpression",
         "tree-sitter-ssh-server-config",
         "security_context_lib",
@@ -345,9 +367,10 @@ if (!$SkipBuild) {
     $failed = $false
     foreach ($project in $projects) {
         ## Build format_json
-        Write-Host -ForegroundColor Cyan "Building $project ... for $architecture"
+        Write-Host -ForegroundColor Cyan "Building '$project' for $architecture"
         try {
             Push-Location "$PSScriptRoot/$project" -ErrorAction Stop
+            Write-Verbose -Verbose "Current directory is $(Get-Location)"
 
             # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
             if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
@@ -357,12 +380,13 @@ if (!$SkipBuild) {
                 else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            cargo install cargo-audit --features=fix
+                            cargo install cargo-audit --features=fix --config .cargo/config.toml
                         }
 
                         cargo audit fix
                     }
 
+                    Write-Verbose -Verbose "Running build.ps1 for $project"
                     ./build.ps1
                 }
             }
@@ -389,7 +413,7 @@ if (!$SkipBuild) {
                     else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                cargo install cargo-audit --features=fix
+                                cargo install cargo-audit --features=fix --config .cargo/config.toml
                             }
 
                             cargo audit fix
@@ -399,12 +423,14 @@ if (!$SkipBuild) {
                             cargo clean
                         }
 
+                        Write-Verbose -Verbose "Building $project"
                         cargo build @flags
                     }
                 }
             }
 
-            if ($LASTEXITCODE -ne 0) {
+            if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
+                Write-Error "Last exit code is $LASTEXITCODE, build failed for '$project'"
                 $failed = $true
                 break
             }
@@ -453,7 +479,10 @@ if (!$SkipBuild) {
                     }
                 }
             }
-
+        } catch {
+            Write-Error "Failed to build $project : $($_ | Out-String)"
+            $failed = $true
+            break
         } finally {
             Pop-Location
         }
@@ -499,8 +528,6 @@ if (!$Clippy -and !$SkipBuild) {
 
 if ($Test) {
     $failed = $false
-
-    $usingADO = ($null -ne $env:TF_BUILD)
     $repository = 'PSGallery'
 
     if ($usingADO) {
