@@ -8,7 +8,7 @@ ms.date: 06/24/2024
 
 # Changelog
 
-<!-- markdownlint-disable-file MD033 -->
+<!-- markdownlint-disable-file MD033 MD024 MD053 -->
 
 <!--
     Helpful docs snippets
@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.11...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.12...main
 
 <!--
     Unreleased change entry instructions:
@@ -72,6 +72,102 @@ changes since the last release, see the [diff on GitHub][unreleased].
 -->
 
 <!-- Unreleased change links -->
+
+
+
+## [v3.0.0-preview.12][release-v3.0.0-preview.12] - 2024-12-10
+
+This section includes a summary of changes for the `preview.12` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.0.0-preview.12].
+
+<!-- Release links -->
+[release-v3.0.0-preview.12]: https://github.com/PowerShell/DSC/releases/tag/v3.0.0-preview.12 "Link to the DSC v3.0.0-preview.12 release on GitHub"
+[compare-v3.0.0-preview.12]: https://github.com/PowerShell/DSC/compare/v3.0.0-preview.11...v3.0.0-preview.12
+
+### Changed
+
+- Allow multiple `export` methods for class-based PSDSC resources in the PowerShell adapter.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#578][#578].
+  - PRs: [#579][#579]
+
+  </details>
+
+- Change how to pass STDIN via the CLI and rename several arguments for consistency:
+  `--file -` indicates read-from-STDIN; `--format` is now `--output-format` (short `-o`);
+  `--document` is now `--input`; and the shorthand for `--trace-format` is now `-t`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#588][#588].
+  - PRs: [#601][#601]
+
+  </details>
+
+- Internationalization updates for resources and packaging tweaks:
+  - Make `Microsoft.DSC.Debug/dscecho` resource internationalization compliant.
+  - Internationalize `Microsoft.DSC.Transitional/RunCommandOnSet`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#606][#606], [#608][#608]
+
+  </details>
+
+### Added
+
+- Add `--system-root` parameter to `dsc`, plus new configuration functions `systemRoot()` and
+  `path()` to support offline configuration scenarios and OS-appropriate path joining.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#534][#534].
+  - PRs: [#589][#589]
+
+  </details>
+
+- Add DSC meta configuration support (settings/policy JSON files), including default and policy
+  settings files.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#282][#282].
+  - PRs: [#574][#574]
+
+  </details>
+
+- Include the `Microsoft/OSInfo` resource in release packages.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#606][#606]
+
+  </details>
+
+### Fixed
+
+- Fix output of the `Microsoft.DSC/Assertion` resource when running `test` so it resembles a
+  configuration and add array comparison support to the synthetic diff.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#165][#165].
+  - PRs: [#595][#595]
+
+  </details>
+
+- Fix VS Code settings for the `dscecho` resource to align with the renamed project.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#597][#597]
+
+  </details>
 
 ## [v3.0.0-preview.11][release-v3.0.0-preview.11] - 2024-10-24
 
@@ -2080,3 +2176,20 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#436]: https://github.com/PowerShell/DSC/issues/436
 [#485]: https://github.com/PowerShell/DSC/issues/485
 [#537]: https://github.com/PowerShell/DSC/issues/537
+
+[#282]: https://github.com/PowerShell/DSC/issues/282
+[#534]: https://github.com/PowerShell/DSC/issues/534
+[#578]: https://github.com/PowerShell/DSC/issues/578
+[#588]: https://github.com/PowerShell/DSC/issues/588
+[#574]: https://github.com/PowerShell/DSC/pull/574
+[#579]: https://github.com/PowerShell/DSC/pull/579
+[#581]: https://github.com/PowerShell/DSC/pull/581
+[#587]: https://github.com/PowerShell/DSC/pull/587
+[#589]: https://github.com/PowerShell/DSC/pull/589
+[#595]: https://github.com/PowerShell/DSC/pull/595
+[#597]: https://github.com/PowerShell/DSC/pull/597
+[#601]: https://github.com/PowerShell/DSC/pull/601
+[#603]: https://github.com/PowerShell/DSC/pull/603
+[#606]: https://github.com/PowerShell/DSC/pull/606
+[#608]: https://github.com/PowerShell/DSC/pull/608
+[#609]: https://github.com/PowerShell/DSC/pull/609
