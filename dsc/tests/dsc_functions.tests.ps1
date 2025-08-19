@@ -367,7 +367,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[first(createArray(1, 2, 3))]"; expected = 1 }
     @{ expression = "[first('hello')]"; expected = 'h' }
     @{ expression = "[first('a')]"; expected = 'a' }
-    @{ expression = "[first(array('mixed', 42))]"; expected = 'mixed' }
+    @{ expression = "[first(array('mixed'))]"; expected = 'mixed' }
   ) {
     param($expression, $expected)
 
@@ -391,7 +391,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[indexOf(createArray('apple', 'banana'), 'orange')]"; expected = -1 }
     @{ expression = "[indexOf(createArray('Apple', 'Banana'), 'apple')]"; expected = -1 }
     @{ expression = "[indexOf(createArray(), 'test')]"; expected = -1 }
-    @{ expression = "[indexOf(array(createArray('a', 'b'), createArray('c', 'd')), createArray('c', 'd'))]"; expected = 1 }
+    @{ expression = "[indexOf(createArray(createArray('a', 'b'), createArray('c', 'd')), createArray('c', 'd'))]"; expected = 1 }
   ) {
     param($expression, $expected)
 
