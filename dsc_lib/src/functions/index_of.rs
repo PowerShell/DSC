@@ -94,14 +94,14 @@ mod tests {
     #[test]
     fn find_array_in_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(array(createArray('a', 'b'), createArray('c', 'd')), createArray('c', 'd'))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[indexOf(createArray(createArray('a', 'b'), createArray('c', 'd')), createArray('c', 'd'))]", &Context::new()).unwrap();
         assert_eq!(result, 1);
     }
 
     #[test]
     fn find_object_in_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[indexOf(array(createObject('name', 'John'), createObject('name', 'Jane')), createObject('name', 'Jane'))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[indexOf(createArray(createObject('name', 'John'), createObject('name', 'Jane')), createObject('name', 'Jane'))]", &Context::new()).unwrap();
         assert_eq!(result, 1);
     }
 
