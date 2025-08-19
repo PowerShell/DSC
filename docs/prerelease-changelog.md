@@ -3100,7 +3100,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#89]:  https://github.com/PowerShell/DSC/issues/89
 [#98]:  https://github.com/PowerShell/DSC/issues/98
 [#537]: https://github.com/PowerShell/DSC/issues/537
-
 [#282]: https://github.com/PowerShell/DSC/issues/282
 [#534]: https://github.com/PowerShell/DSC/issues/534
 [#578]: https://github.com/PowerShell/DSC/issues/578
@@ -3184,7 +3183,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#791]: https://github.com/PowerShell/DSC/issues/791
 [#800]: https://github.com/PowerShell/DSC/pull/800
 [#823]: https://github.com/PowerShell/DSC/pull/823
-
 [#811]: https://github.com/PowerShell/DSC/issues/811
 [#813]: https://github.com/PowerShell/DSC/issues/813
 [#814]: https://github.com/PowerShell/DSC/issues/814
@@ -3198,7 +3196,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#861]: https://github.com/PowerShell/DSC/pull/861
 [#825]: https://github.com/PowerShell/DSC/pull/825
 [#832]: https://github.com/PowerShell/DSC/issues/832
-
 [#834]: https://github.com/PowerShell/DSC/issues/834
 [#858]: https://github.com/PowerShell/DSC/issues/858
 [#866]: https://github.com/PowerShell/DSC/issues/866
@@ -3213,22 +3210,18 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#892]: https://github.com/PowerShell/DSC/pull/892
 [#897]: https://github.com/PowerShell/DSC/pull/897
 [#874]: https://github.com/PowerShell/DSC/pull/874
-
 [#598]: https://github.com/PowerShell/DSC/issues/598
-
 [#467]: https://github.com/PowerShell/DSC/issues/467
 [#915]: https://github.com/PowerShell/DSC/issues/915
 [#918]: https://github.com/PowerShell/DSC/issues/918
 [#878]: https://github.com/PowerShell/DSC/issues/878
 [#829]: https://github.com/PowerShell/DSC/issues/829
-
 [#947]: https://github.com/PowerShell/DSC/pull/947
 [#932]: https://github.com/PowerShell/DSC/pull/932
 [#920]: https://github.com/PowerShell/DSC/pull/920
 [#879]: https://github.com/PowerShell/DSC/pull/879
 [#944]: https://github.com/PowerShell/DSC/pull/944
 [#820]: https://github.com/PowerShell/DSC/pull/820
-
 [#685]: https://github.com/PowerShell/DSC/issues/685
 [#972]: https://github.com/PowerShell/DSC/issues/972
 [#50]:  https://github.com/PowerShell/DSC/issues/50
@@ -3236,7 +3229,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#885]: https://github.com/PowerShell/DSC/issues/885
 [#853]: https://github.com/PowerShell/DSC/issues/853
 [#923]: https://github.com/PowerShell/DSC/issues/923
-
 [#908]: https://github.com/PowerShell/DSC/pull/908
 [#959]: https://github.com/PowerShell/DSC/pull/959
 [#978]: https://github.com/PowerShell/DSC/pull/978
