@@ -386,6 +386,7 @@ Describe 'tests for function expressions' {
 
   It 'indexOf function works for: <expression>' -TestCases @(
     @{ expression = "[indexOf(createArray('apple', 'banana', 'cherry'), 'banana')]"; expected = 1 }
+    @{ expression = "[indexOf(createArray('apple', 'banana', 'cherry'), 'cherry')]"; expected = 2 }
     @{ expression = "[indexOf(createArray(10, 20, 30), 20)]"; expected = 1 }
     @{ expression = "[indexOf(createArray('a', 'b', 'a', 'c'), 'a')]"; expected = 0 }
     @{ expression = "[indexOf(createArray('apple', 'banana'), 'orange')]"; expected = -1 }

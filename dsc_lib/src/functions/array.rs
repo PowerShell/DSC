@@ -30,13 +30,7 @@ impl Function for Array {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.array.invoked"));
         
-        let value = &args[0];
-        
-        if value.is_number() || value.is_string() || value.is_array() || value.is_object() {
-            Ok(Value::Array(vec![value.clone()]))
-        } else {
-            Err(DscError::Parser(t!("functions.array.invalidArgType").to_string()))
-        }
+        Ok(Value::Array(vec![args[0].clone()]))
     }
 }
 

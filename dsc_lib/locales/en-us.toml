@@ -220,7 +220,6 @@ invoked = "and function"
 [functions.array]
 description = "Convert the value to an array"
 invoked = "array function"
-invalidArgType = "Invalid argument type, only int, string, array, or object are accepted"
 
 [functions.base64]
 description = "Encodes a string to Base64 format"
