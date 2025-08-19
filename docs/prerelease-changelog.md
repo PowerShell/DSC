@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.6...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.7...main
 
 <!--
     Unreleased change entry instructions:
@@ -72,6 +72,86 @@ changes since the last release, see the [diff on GitHub][unreleased].
 -->
 
 <!-- Unreleased change links -->
+
+
+
+## [v3.1.0-preview.7][release-v3.1.0-preview.7] - 2025-06-04
+
+This section includes a summary of changes for the `v3.1.0-preview.7` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.7].
+
+<!-- Release links -->
+[release-v3.1.0-preview.7]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-preview.7 "Link to the DSC v3.1.0-preview.7 release on GitHub"
+[compare-v3.1.0-preview.7]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.6...v3.1.0-preview.7
+
+### Added
+
+- Windows PowerShell adapter: implement `export` capability to match the PowerShell adapter.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#811][#811].
+  - PRs: [#848][#848]
+
+  </details>
+
+- Add `json-array` as a supported output format for `dsc resource get --all` to return a single JSON array instead of JSON Lines.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#813][#813].
+  - PRs: [#861][#861]
+
+  </details>
+
+### Changed
+
+- Appx discovery extension: set execution policy to `Bypass` so it runs under restricted policies.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#850][#850]
+
+  </details>
+
+- Respect `DSC_RESOURCE_PATH` for executable lookup by aligning the process `PATH` to the same value so executable search is limited to `DSC_RESOURCE_PATH`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#814][#814].
+  - PRs: [#825][#825]
+
+  </details>
+
+### Fixed
+
+- Improve error message when duplicate resource names are detected during `set`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#841][#841].
+  - PRs: [#844][#844]
+
+  </details>
+
+- Windows registry resource: treat deleting a non-existing key/value as success instead of erroring.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#843][#843].
+  - PRs: [#847][#847]
+
+  </details>
+
+- Windows PowerShell adapter: exclude hidden properties from output.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#832][#832].
+  - PRs: [#855][#855]
+
+  </details>
 
 ## [v3.1.0-preview.6][release-v3.1.0-preview.6] - 2025-05-22
 
@@ -2781,3 +2861,20 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#791]: https://github.com/PowerShell/DSC/issues/791
 [#800]: https://github.com/PowerShell/DSC/pull/800
 [#823]: https://github.com/PowerShell/DSC/pull/823
+
+[#811]: https://github.com/PowerShell/DSC/issues/811
+[#813]: https://github.com/PowerShell/DSC/issues/813
+[#814]: https://github.com/PowerShell/DSC/issues/814
+[#830]: https://github.com/PowerShell/DSC/pull/830
+[#837]: https://github.com/PowerShell/DSC/pull/837
+[#838]: https://github.com/PowerShell/DSC/pull/838
+[#841]: https://github.com/PowerShell/DSC/issues/841
+[#843]: https://github.com/PowerShell/DSC/issues/843
+[#844]: https://github.com/PowerShell/DSC/pull/844
+[#847]: https://github.com/PowerShell/DSC/pull/847
+[#848]: https://github.com/PowerShell/DSC/pull/848
+[#850]: https://github.com/PowerShell/DSC/pull/850
+[#855]: https://github.com/PowerShell/DSC/pull/855
+[#861]: https://github.com/PowerShell/DSC/pull/861
+[#825]: https://github.com/PowerShell/DSC/pull/825
+[#832]: https://github.com/PowerShell/DSC/issues/832
