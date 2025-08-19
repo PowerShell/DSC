@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.2...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.4...main
 
 <!--
     Unreleased change entry instructions:
@@ -72,6 +72,54 @@ changes since the last release, see the [diff on GitHub][unreleased].
 -->
 
 <!-- Unreleased change links -->
+
+
+
+## [v3.1.0-preview.4][release-v3.1.0-preview.4] - 2025-04-29
+
+This section includes a summary of changes for the `v3.1.0-preview.4` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.4].
+
+<!-- Release links -->
+[release-v3.1.0-preview.4]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-preview.4 "Link to the DSC v3.1.0-preview.4 release on GitHub"
+[compare-v3.1.0-preview.4]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.3...v3.1.0-preview.4
+
+### Added
+
+- Add credential support on PowerShell adapters to create PSCredential objects from input when the
+  target property expects a credential.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#328][#328].
+  - PRs: [#758][#758]
+
+  </details>
+
+### Changed
+
+- Prefer Windows PowerShell modules first in the Windows PowerShell adapter by prepending the
+  Windows module path; add a warning when a resource isn't found (resource must be installed for
+  AllUsers).
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#764][#764]
+
+  </details>
+
+### Fixed
+
+- Fix resource cache behavior when PowerShell modules are installed during a run so subsequent
+  modules aren't lost from the cache.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#745][#745].
+  - PRs: [#748][#748]
+
+  </details>
 
 ## [v3.1.0-preview.3][release-v3.1.0-preview.3] - 2025-04-08
 
@@ -2363,6 +2411,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#321]: https://github.com/PowerShell/DSC/issues/321
 [#322]: https://github.com/PowerShell/DSC/issues/322
 [#323]: https://github.com/PowerShell/DSC/issues/323
+[#328]: https://github.com/PowerShell/DSC/issues/328
 [#329]: https://github.com/PowerShell/DSC/issues/329
 [#333]: https://github.com/PowerShell/DSC/issues/333
 [#334]: https://github.com/PowerShell/DSC/issues/334
@@ -2512,6 +2561,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#692]: https://github.com/PowerShell/DSC/issues/692
 [#693]: https://github.com/PowerShell/DSC/issues/693
 [#709]: https://github.com/PowerShell/DSC/issues/709
+[#745]: https://github.com/PowerShell/DSC/issues/745
 [#635]: https://github.com/PowerShell/DSC/pull/635
 [#644]: https://github.com/PowerShell/DSC/pull/644
 [#645]: https://github.com/PowerShell/DSC/pull/645
@@ -2533,3 +2583,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#715]: https://github.com/PowerShell/DSC/pull/715
 [#731]: https://github.com/PowerShell/DSC/issues/731
 [#736]: https://github.com/PowerShell/DSC/pull/736
+[#748]: https://github.com/PowerShell/DSC/pull/748
+[#758]: https://github.com/PowerShell/DSC/pull/758
+[#764]: https://github.com/PowerShell/DSC/pull/764
