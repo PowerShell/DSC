@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-rc.1...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.2.0-preview.1...main
 
 <!--
     Unreleased change entry instructions:
@@ -74,6 +74,75 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased change links -->
 
 
+
+## [v3.2.0-preview.1][release-v3.2.0-preview.1] - 2025-06-26
+
+This section includes a summary of changes for the `v3.2.0-preview.1` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.1].
+
+<!-- Release links -->
+[release-v3.2.0-preview.1]: https://github.com/PowerShell/DSC/releases/tag/v3.2.0-preview.1 "Link to the DSC v3.2.0-preview.1 release on GitHub"
+[compare-v3.2.0-preview.1]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.7...v3.2.0-preview.1
+
+### Added
+
+- Add `sshdconfig` project providing resources to manage OpenSSH server configuration on Windows.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#869][#869]
+
+  </details>
+
+- Windows RebootPending resource: include pending reboot reason in the result output.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#873][#873]
+
+  </details>
+
+### Changed
+
+- Export output: surface `_kind`, `_securityContext`, and `_name` fields from resources during export.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#598][#598]
+  - PRs: [#884][#884]
+
+  </details>
+
+- Registry internals: separate shared helper into a library and refactor registry implementation.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#865][#865], [#892][#892]
+
+  </details>
+
+- WMI adapter refactor implementation.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#897][#897]
+
+  </details>
+
+### Fixed
+
+- Fix regression in default output for `get --all` (ensure interactive default output is correct).
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#866][#866].
+  - PRs: [#874][#874]
+
+  </details>
 
 ## [v3.1.0-rc.1][release-v3.1.0-rc.1] - 2025-06-10
 
@@ -2937,3 +3006,20 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#863]: https://github.com/PowerShell/DSC/pull/863
 [#875]: https://github.com/PowerShell/DSC/pull/875
 [#859]: https://github.com/PowerShell/DSC/pull/859
+[#869]: https://github.com/PowerShell/DSC/pull/869
+[#873]: https://github.com/PowerShell/DSC/pull/873
+[#884]: https://github.com/PowerShell/DSC/pull/884
+[#865]: https://github.com/PowerShell/DSC/pull/865
+[#892]: https://github.com/PowerShell/DSC/pull/892
+[#897]: https://github.com/PowerShell/DSC/pull/897
+[#891]: https://github.com/PowerShell/DSC/pull/891
+[#874]: https://github.com/PowerShell/DSC/pull/874
+[#901]: https://github.com/PowerShell/DSC/pull/901
+[#900]: https://github.com/PowerShell/DSC/pull/900
+[#886]: https://github.com/PowerShell/DSC/pull/886
+[#888]: https://github.com/PowerShell/DSC/pull/888
+[#899]: https://github.com/PowerShell/DSC/pull/899
+[#857]: https://github.com/PowerShell/DSC/pull/857
+[#598]: https://github.com/PowerShell/DSC/issues/598
+[#665]: https://github.com/PowerShell/DSC/issues/665
+[#539]: https://github.com/PowerShell/DSC/issues/539
