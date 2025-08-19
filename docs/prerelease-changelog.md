@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.7...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-rc.1...main
 
 <!--
     Unreleased change entry instructions:
@@ -74,6 +74,57 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased change links -->
 
 
+
+## [v3.1.0-rc.1][release-v3.1.0-rc.1] - 2025-06-10
+
+This section includes a summary of changes for the `rc.1` release. For the full list of changes
+in this release, see the [diff on GitHub][compare-v3.1.0-rc.1].
+
+<!-- Release links -->
+[release-v3.1.0-rc.1]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-rc.1 "Link to the DSC v3.1.0-rc.1 release on GitHub"
+[compare-v3.1.0-rc.1]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.7...v3.1.0-rc.1
+
+### Added
+
+- Enable reading parameters from STDIN by allowing the parameters file name `-`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#834][#834].
+  - PRs: [#863][#863]
+
+  </details>
+
+- Add `pass-through` output format for `dsc resource get` to emit the resource's JSON without a DSC wrapper.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#862][#862]
+
+  </details>
+
+### Changed
+
+- Windows RebootPending resource: convert the pending reboot value to an object (removes a read-only property and keeps the field optional).
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#858][#858].
+  - PRs: [#859][#859]
+
+  </details>
+
+### Fixed
+
+- Fix regression in default output for `get --all` (ensure interactive default output is correct).
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#866][#866].
+  - PRs: [#875][#875]
+
+  </details>
 
 ## [v3.1.0-preview.7][release-v3.1.0-preview.7] - 2025-06-04
 
@@ -2878,3 +2929,11 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#861]: https://github.com/PowerShell/DSC/pull/861
 [#825]: https://github.com/PowerShell/DSC/pull/825
 [#832]: https://github.com/PowerShell/DSC/issues/832
+
+[#834]: https://github.com/PowerShell/DSC/issues/834
+[#858]: https://github.com/PowerShell/DSC/issues/858
+[#866]: https://github.com/PowerShell/DSC/issues/866
+[#862]: https://github.com/PowerShell/DSC/pull/862
+[#863]: https://github.com/PowerShell/DSC/pull/863
+[#875]: https://github.com/PowerShell/DSC/pull/875
+[#859]: https://github.com/PowerShell/DSC/pull/859
