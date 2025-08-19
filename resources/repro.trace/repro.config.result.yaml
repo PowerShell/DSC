@@ -1,0 +1,89 @@
+# STDERR messages START
+# 2025-08-12T20:26:24.687009Z  WARN PID 5020: Simple message
+# 2025-08-12T20:26:25.459746Z  WARN trace_message="PID 10368: structured trace message"
+# 2025-08-12T20:26:26.165380Z  WARN trace_message="PID 19292: structured trace message"
+# 2025-08-12T20:26:27.156677Z  WARN trace_message="PID 25044: structured trace message"
+# 2025-08-12T20:26:27.793703Z  WARN trace_message="PID 5984: structured trace message"
+# STDERR messages END
+metadata:
+  Microsoft.DSC:
+    version: 3.1.0
+    operation: get
+    executionType: actual
+    startDatetime: 2025-08-12T15:26:19.134728100-05:00
+    endDatetime: 2025-08-12T15:26:27.907077900-05:00
+    duration: PT8.7723498S
+    securityContext: restricted
+results:
+- metadata:
+    Microsoft.DSC:
+      duration: PT1.0954907S
+  name: Simple messaging
+  type: Dsc.Repro/Trace
+  result:
+    actualState:
+      case: simpleMessage
+      emittedData:
+        warn: Simple message
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.7814828S
+  name: Minimal struct
+  type: Dsc.Repro/Trace
+  result:
+    actualState:
+      case: minimalStruct
+      emittedData:
+        timestamp: 2024-08-12T15:26:25.4477204-05:00
+        level: WARN
+        fields:
+          message: structured trace message
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.7530085S
+  name: Struct with metadata
+  type: Dsc.Repro/Trace
+  result:
+    actualState:
+      case: structWithMetadata
+      emittedData:
+        timestamp: 2024-08-12T15:26:26.1439312-05:00
+        level: WARN
+        fields:
+          message: structured trace message
+        target: C:\code\powershell\working\docs\DSC\bin\debug\repro.trace.resource.ps1
+        lineNumber: 94
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.9343058S
+  name: Sruct with additional fields
+  type: Dsc.Repro/Trace
+  result:
+    actualState:
+      case: structWithAdditionalFields
+      emittedData:
+        timestamp: 2024-08-12T15:26:27.1288515-05:00
+        level: WARN
+        fields:
+          message: structured trace message
+          extraInteger: 10
+          extraString: additional data
+- metadata:
+    Microsoft.DSC:
+      duration: PT0.6398828S
+  name: Struct with metadata and additional fields
+  type: Dsc.Repro/Trace
+  result:
+    actualState:
+      case: structWithMetadataAndAdditionalFields
+      emittedData:
+        timestamp: 2024-08-12T15:26:27.7689792-05:00
+        level: WARN
+        fields:
+          message: structured trace message
+          extraInteger: 10
+          extraString: additional data
+        target: C:\code\powershell\working\docs\DSC\bin\debug\repro.trace.resource.ps1
+        lineNumber: 94
+messages: []
+hadErrors: false

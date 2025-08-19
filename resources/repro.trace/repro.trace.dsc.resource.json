@@ -1,0 +1,45 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.vscode.json",
+    "type": "Dsc.Repro/Trace",
+    "version": "0.1.0",
+    "description": "Repro resource for trace messaging",
+    "schema": {
+        "embedded": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "case": {
+                    "title": "Test case",
+                    "description": "Defines which test case to emit messages for",
+                    "type": "string",
+                    "enum": [
+                        "simpleMessage",
+                        "minimalStruct",
+                        "structWithMetadata",
+                        "structWithAdditionalFields",
+                        "structWithMetadataAndAdditionalFields"
+                    ]
+                },
+                "emittedData":{
+                    "title": "Emitted data",
+                    "description": "Contains the message data emitted by the resource as compressed JSON to stderr",
+                    "type": "object",
+                    "readOnly": true
+                }
+            }
+        }
+    },
+    "get": {
+        "executable": "pwsh",
+        "args": [
+            "-NoLogo",
+            "-NonInteractive",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            "$Input | ./repro.trace.resource.ps1 Get"
+        ],
+        "input": "stdin"
+    }
+}
