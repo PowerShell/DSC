@@ -18,9 +18,3 @@ rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-arg
 # The following is only needed for release builds
 [source.crates-io]
 replace-with = "POWERSHELL"
-
-[target.aarch64-unknown-linux-gnu]
-linker = "aarch64-linux-gnu-gcc"
-
-[target.aarch64-unknown-linux-musl]
-linker = "aarch64-linux-musl-gcc"

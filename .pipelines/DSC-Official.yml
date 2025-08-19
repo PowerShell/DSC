@@ -7,6 +7,11 @@ pr:
     - onebranch
     - release/v*
 
+parameters:
+  - name: OfficialBuild
+    type: boolean
+    default: false
+
 variables:
   - name: BuildConfiguration
     value: 'release'
@@ -16,7 +21,11 @@ variables:
     value: 'onebranch.azurecr.io/windows/ltsc2022/vse2022:latest'
   - name: Codeql.TSAEnabled
     value: true
+  - name: templateFile
+    value: ${{ iif ( parameters.OfficialBuild, 'v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates', 'v2/OneBranch.NonOfficial.CrossPlat.yml@onebranchTemplates' ) }}
   - group: DSC-Rust.SDK
+  - name: officialBuild
+    value: ${{ parameters.OfficialBuild }}
 
 resources:
   repositories:
@@ -26,7 +35,7 @@ resources:
     ref: refs/heads/main
 
 extends:
-  template: v2/OneBranch.Official.CrossPlat.yml@onebranchTemplates
+  template: ${{ variables.templateFile }}
   parameters:
     featureFlags:
       WindowsHostVersion:
@@ -110,8 +119,8 @@ extends:
             buildName: x86_64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            token: '$(AzToken)'
-            rustSDK: $(Rust.SDK)
+            aztoken: '$(AzToken)'
+            rustSDK: '$(Rust.SDK)'
 
       - job: BuildWin_arm64
         dependsOn: SetPackageVersion
@@ -119,6 +128,7 @@ extends:
           ob_sdl_tsa_configFile: '$(Build.SourcesDirectory)\DSC\.config\tsaoptions.json'
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
           signSrcPath: '$(Build.SourcesDirectory)\out'
+          AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_sdl_sbom_enabled: true
           ob_signing_setup_enabled: true
           ob_sdl_codeql_compiled_enabled: true
@@ -130,8 +140,8 @@ extends:
             buildName: aarch64-pc-windows-msvc
             signSrcPath: '$(signSrcPath)'
             PackageRoot: '$(PackageRoot)'
-            token: '$(AzToken)'
-            rustSDK: $(Rust.SDK)
+            aztoken: '$(AzToken)'
+            rustSDK: '$(Rust.SDK)'
 
       - job: CreateMsixBundle
         dependsOn:
@@ -169,6 +179,7 @@ extends:
           condition: succeeded()
 
       - job: SignMsixBundle
+        condition: and(succeeded(), eq(variables.officialBuild, true))
         dependsOn: CreateMsixBundle
         variables:
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
@@ -223,7 +234,7 @@ extends:
         - pwsh: |
             apt update
             apt -y install musl-tools
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture x86_64-unknown-linux-musl
@@ -271,7 +282,7 @@ extends:
             apt -y install clang
             apt -y install llvm
             apt -y install musl-tools
-            apt -y install musi-gcc
+            apt -y install musl-gcc
             #apt -y install gcc-multilib
             apt -y install libssl-dev
             apt -y install pkg-config
@@ -279,7 +290,7 @@ extends:
             if ((openssl version -d) -match 'OPENSSLDIR: "(?<dir>.*?)"') {
               $env:OPENSSL_LIB_DIR = $matches['dir']
             }
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
             ./build.ps1 -Release -Architecture aarch64-unknown-linux-musl
@@ -324,9 +335,10 @@ extends:
             inlineScript: |
               az account show
         - pwsh: |
-            $header = "Bearer $accessToken"
+            $header = "Bearer $(AzToken)"
             $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
             $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+            Write-Verbose -Verbose "Building for $(buildName)"
             ./build.ps1 -Release -Architecture $(buildName)
             ./build.ps1 -PackageType tgz -Architecture $(buildName) -Release
             Copy-Item ./bin/*.tar.gz "$(ob_outputDirectory)"

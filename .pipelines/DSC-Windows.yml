@@ -8,7 +8,9 @@ parameters:
   - name: BuildConfiguration
     type: string
     default: Release
-  - name: token
+  - name: aztoken
+    type: string
+  - name: RustSDK
     type: string
   - name: RustSDK
     type: string
@@ -39,7 +41,7 @@ steps:
   env:
     ob_restore_phase: true
 - pwsh: |
-    $header = "Bearer ${ parameters.token }"
+    $header = "Bearer ${{ parameters.aztoken }}"
     $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
     $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
     Set-Location "$(Build.SourcesDirectory)/DSC"
@@ -49,6 +51,7 @@ steps:
     }
     $env:PATH += ";$LLVMBIN"
     write-verbose -verbose (gcm clang.exe | out-string)
+    Write-Verbose -Verbose "Building for ${{ parameters.buildName }}"
     ./build.ps1 -Release -Architecture ${{ parameters.buildName }} -SkipLinkCheck
   displayName: 'Build ${{ parameters.buildName }}'
   env:
