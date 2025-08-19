@@ -18,32 +18,25 @@ impl Function for Array {
             description: t!("functions.array.description").to_string(),
             category: FunctionCategory::Array,
             min_args: 1,
-            max_args: usize::MAX,
-            accepted_arg_ordered_types: vec![],
-            remaining_arg_accepted_types: Some(vec![
-                FunctionArgKind::String,
-                FunctionArgKind::Number,
-                FunctionArgKind::Object,
-                FunctionArgKind::Array,
-            ]),
+            max_args: 1,
+            accepted_arg_ordered_types: vec![
+                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Object, FunctionArgKind::Array],
+            ],
+            remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Array],
         }
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.array.invoked"));
-        let mut array_result = Vec::<Value>::new();
         
-        for value in args {
-            // Only accept int, string, array, or object as specified
-            if value.is_number() || value.is_string() || value.is_array() || value.is_object() {
-                array_result.push(value.clone());
-            } else {
-                return Err(DscError::Parser(t!("functions.array.invalidArgType").to_string()));
-            }
+        let value = &args[0];
+        
+        if value.is_number() || value.is_string() || value.is_array() || value.is_object() {
+            Ok(Value::Array(vec![value.clone()]))
+        } else {
+            Err(DscError::Parser(t!("functions.array.invalidArgType").to_string()))
         }
-
-        Ok(Value::Array(array_result))
     }
 }
 
@@ -53,37 +46,44 @@ mod tests {
     use crate::parser::Statement;
 
     #[test]
-    fn mixed_types() {
+    fn single_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[array('hello', 42)]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), r#"["hello",42]"#);
+        let result = parser.parse_and_execute("[array('hello')]", &Context::new()).unwrap();
+        assert_eq!(result.to_string(), r#"["hello"]"#);
     }
 
     #[test]
-    fn strings_only() {
+    fn single_number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[array('a', 'b', 'c')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), r#"["a","b","c"]"#);
+        let result = parser.parse_and_execute("[array(42)]", &Context::new()).unwrap();
+        assert_eq!(result.to_string(), "[42]");
     }
 
     #[test]
-    fn numbers_only() {
+    fn single_object() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[array(1, 2, 3)]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "[1,2,3]");
+        let result = parser.parse_and_execute("[array(createObject('key', 'value'))]", &Context::new()).unwrap();
+        assert_eq!(result.to_string(), r#"[{"key":"value"}]"#);
     }
 
     #[test]
-    fn arrays_and_objects() {
+    fn single_array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[array(createArray('a','b'), createObject('key', 'value'))]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), r#"[["a","b"],{"key":"value"}]"#);
+        let result = parser.parse_and_execute("[array(createArray('a','b'))]", &Context::new()).unwrap();
+        assert_eq!(result.to_string(), r#"[["a","b"]]"#);
     }
 
     #[test]
     fn empty_array_not_allowed() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[array()]", &Context::new());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn multiple_args_not_allowed() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[array('hello', 42)]", &Context::new());
         assert!(result.is_err());
     }
 

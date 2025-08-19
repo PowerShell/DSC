@@ -60,56 +60,56 @@ mod tests {
     fn find_string_in_array() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(createArray('apple', 'banana', 'cherry'), 'banana')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "1");
+        assert_eq!(result, 1);
     }
 
     #[test]
     fn find_number_in_array() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(createArray(10, 20, 30), 20)]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "1");
+        assert_eq!(result, 1);
     }
 
     #[test]
     fn find_first_occurrence() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(createArray('a', 'b', 'a', 'c'), 'a')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "0");
+        assert_eq!(result, 0);
     }
 
     #[test]
     fn item_not_found() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(createArray('apple', 'banana'), 'orange')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "-1");
+        assert_eq!(result, -1);
     }
 
     #[test]
     fn case_sensitive_string() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(createArray('Apple', 'Banana'), 'apple')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "-1");
+        assert_eq!(result, -1);
     }
 
     #[test]
     fn find_array_in_array() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(array(createArray('a', 'b'), createArray('c', 'd')), createArray('c', 'd'))]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "1");
+        assert_eq!(result, 1);
     }
 
     #[test]
     fn find_object_in_array() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(array(createObject('name', 'John'), createObject('name', 'Jane')), createObject('name', 'Jane'))]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "1");
+        assert_eq!(result, 1);
     }
 
     #[test]
     fn empty_array() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[indexOf(createArray(), 'test')]", &Context::new()).unwrap();
-        assert_eq!(result.to_string(), "-1");
+        assert_eq!(result, -1);
     }
 
     #[test]

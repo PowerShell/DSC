@@ -218,7 +218,7 @@ description = "Evaluates if all arguments are true"
 invoked = "and function"
 
 [functions.array]
-description = "Creates an array from the given elements of mixed types"
+description = "Convert the value to an array"
 invoked = "array function"
 invalidArgType = "Invalid argument type, only int, string, array, or object are accepted"
 

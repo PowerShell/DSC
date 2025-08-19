@@ -342,11 +342,10 @@ Describe 'tests for function expressions' {
   }
 
   It 'array function works for: <expression>' -TestCases @(
-    @{ expression = "[array('hello', 42)]"; expected = @('hello', 42) }
-    @{ expression = "[array('a', 'b', 'c')]"; expected = @('a', 'b', 'c') }
-    @{ expression = "[array(1, 2, 3)]"; expected = @(1, 2, 3) }
-    @{ expression = "[array('string', 123, createObject('key', 'value'))]"; expected = @('string', 123, [pscustomobject]@{ key = 'value' }) }
-    @{ expression = "[array(createArray('a', 'b'), 'string')]"; expected = @(@('a', 'b'), 'string') }
+    @{ expression = "[array('hello')]"; expected = @('hello') }
+    @{ expression = "[array(42)]"; expected = @(42) }
+    @{ expression = "[array(createObject('key', 'value'))]"; expected = @([pscustomobject]@{ key = 'value' }) }
+    @{ expression = "[array(createArray('a', 'b'))]"; expected = @(@('a', 'b')) }
   ) {
     param($expression, $expected)
 
