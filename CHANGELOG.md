@@ -42,7 +42,7 @@ To see the changes for the earlier development of DSC before version `3.0.0`, se
 <!-- Meta links -->
 [m1]: https://keepachangelog.com/en/1.1.0/
 [m2]: https://semver.org/spec/v2.0.0.html
-[m3]: https://github.com/PowerShell/DSC/blob/main/CHANGELOG.md
+[m3]: https://github.com/PowerShell/DSC/blob/main/docs/prerelease-changelog.md
 
 ## Unreleased
 
@@ -50,7 +50,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag -->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.2...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.1...main
 
 <!--
     Unreleased change entry instructions:
@@ -74,6 +74,27 @@ changes since the last release, see the [diff on GitHub][unreleased].
     <prefix> is a two-character prefix for the release. For alpha releases, we use `a#`, like `a5`
     for the `v3.0.0.0-alpha.5` release. Leave the release links under the release section.
 -->
+
+## [v3.1.1][release-v3.1.1] - 2025-07-14
+
+This section includes a summary of changes for the `3.1.1` patch release. For the
+full list of changes in this release, see the
+[diff on GitHub][compare-v3.1.1].
+
+<!-- Release links -->
+[release-v3.1.1]: https://github.com/PowerShell/DSC/releases/tag/v3.1.1 "Link to the DSC v3.1.1 release on GitHub"
+[compare-v3.1.1]: https://github.com/PowerShell/DSC/compare/v3.1.0...v3.1.1
+
+### Fixed
+
+- Backport: Fix default output to YAML when used interactively.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#918][#918]
+  - PRs: [#960][#960]
+
+  </details>
 
 ## [v3.1.0][release-v3.1.0] - 2025-06-18
 
@@ -662,3 +683,5 @@ Version `3.0.0` is the first generally available release of DSC.
 [#862]: https://github.com/PowerShell/DSC/issues/862
 [#834]: https://github.com/PowerShell/DSC/issues/834
 [#863]: https://github.com/PowerShell/DSC/issues/863
+[#918]: https://github.com/PowerShell/DSC/issues/918
+[#960]: https://github.com/PowerShell/DSC/issues/960

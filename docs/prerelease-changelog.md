@@ -86,7 +86,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
 ### Added
 
-- Add support for `secret()` function and "secret" extensions to retrieve secrets during configuration evaluation.
+- Add support for `secret()` function and "secret" extensions to retrieve
+  secrets during configuration evaluation.
 
   <details><summary>Related work items</summary>
 
@@ -104,7 +105,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
   </details>
 
-- Add `condition` support for resource instances within a configuration document.
+- Add `condition` support for resource instances within a configuration
+  document.
 
   <details><summary>Related work items</summary>
 
@@ -113,7 +115,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
   </details>
 
-- Enable resources to return `_restartRequired` metadata that aggregates at the configuration result level.
+- Enable resources to return `_restartRequired` metadata that aggregates at the
+  configuration result level.
 
   <details><summary>Related work items</summary>
 
@@ -122,7 +125,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
   </details>
 
-- Add remaining logical functions to the function library: `and`, `bool`, `false`, `true`, `not`, `or`.
+- Add remaining logical functions to the function library: `and`, `bool`,
+  `false`, `true`, `not`, `or`.
 
   <details><summary>Related work items</summary>
 
@@ -131,7 +135,9 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
   </details>
 
-- Introduce inline script resources: `Microsoft.DSC.Transitional/PowerShellScript` and `Microsoft.DSC.Transitional/WindowsPowerShellScript`.
+- Introduce inline script resources:
+  `Microsoft.DSC.Transitional/PowerShellScript` and
+  `Microsoft.DSC.Transitional/WindowsPowerShellScript`.
 
   <details><summary>Related work items</summary>
 
@@ -171,7 +177,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
 ### Fixed
 
-- Correct trace message to use `results` and emit JSON for function evaluation traces.
+- Correct trace message to use `results` and emit JSON for function evaluation
+  traces.
 
   <details><summary>Related work items</summary>
 
@@ -189,7 +196,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
   </details>
 
-- Adapter capability discovery: fix discovery of capabilities in the PowerShell adapter and Windows PowerShell adapter.
+- Adapter capability discovery: fix discovery of capabilities in the PowerShell
+  adapter and Windows PowerShell adapter.
 
   <details><summary>Related work items</summary>
 
@@ -200,8 +208,9 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.3].
 
 ## [v3.2.0-preview.2][release-v3.2.0-preview.2] - 2025-07-11
 
-This section includes a summary of changes for the `v3.2.0-preview.2` release. For the full list of
-changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.2].
+This section includes a summary of changes for the `v3.2.0-preview.2` release.
+For the full list of changes in this release, see the
+[diff on GitHub][compare-v3.2.0-preview.2].
 
 <!-- Release links -->
 [release-v3.2.0-preview.2]: https://github.com/PowerShell/DSC/releases/tag/v3.2.0-preview.2 "Link to the DSC v3.2.0-preview.2 release on GitHub"
@@ -209,7 +218,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.2].
 
 ### Added
 
-- Enable resources to return metadata that DSC merges into the resource result output's `metadata`.
+- Enable resources to return metadata that DSC merges into the resource result
+  output's `metadata`.
 
   <details><summary>Related work items</summary>
 
@@ -220,7 +230,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.2].
 
 ### Changed
 
-- Rename `Microsoft.Windows/sshd_config` resource to `Microsoft/sshd_config` to reflect cross-platform scope.
+- Rename `Microsoft.Windows/sshd_config` resource to
+  `Microsoft/sshd_config` to reflect cross-platform scope.
 
   <details><summary>Related work items</summary>
 
@@ -240,7 +251,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.2].
 
   </details>
 
-- Fix property discovery for class-based resources in the Windows PowerShell adapter.
+- Fix property discovery for class-based resources in the Windows
+  PowerShell adapter.
 
   <details><summary>Related work items</summary>
 
@@ -269,7 +281,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.1].
 
 ### Added
 
-- Add `sshdconfig` project providing resources to manage OpenSSH server configuration on Windows.
+- Add `sshdconfig` project providing resources to manage OpenSSH server
+  configuration on Windows.
 
   <details><summary>Related work items</summary>
 
@@ -278,7 +291,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.1].
 
   </details>
 
-- Windows RebootPending resource: include pending reboot reason in the result output.
+- `Microsoft.Windows/RebootPending` resource: include pending reboot reason in the result
+  output.
 
   <details><summary>Related work items</summary>
 
@@ -289,7 +303,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.1].
 
 ### Changed
 
-- Export output: surface `_kind`, `_securityContext`, and `_name` fields from resources during export.
+- Export output: surface `_kind`, `_securityContext`, and `_name` fields from
+  resources during export.
 
   <details><summary>Related work items</summary>
 
@@ -298,7 +313,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.1].
 
   </details>
 
-- Registry internals: separate shared helper into a library and refactor registry implementation.
+- Registry internals: separate shared helper into a library and refactor
+  registry implementation.
 
   <details><summary>Related work items</summary>
 
@@ -318,7 +334,8 @@ changes in this release, see the [diff on GitHub][compare-v3.2.0-preview.1].
 
 ### Fixed
 
-- Fix regression in default output for `get --all` (ensure interactive default output is correct).
+- Fix regression in default output for `get --all` (ensure interactive default
+  output is correct).
 
   <details><summary>Related work items</summary>
 
@@ -338,7 +355,8 @@ in this release, see the [diff on GitHub][compare-v3.1.0-rc.1].
 
 ### Added
 
-- Enable reading parameters from STDIN by allowing the parameters file name `-`.
+- Enable reading parameters from STDIN by allowing the parameters file name
+  `-`.
 
   <details><summary>Related work items</summary>
 
@@ -347,7 +365,8 @@ in this release, see the [diff on GitHub][compare-v3.1.0-rc.1].
 
   </details>
 
-- Add `pass-through` output format for `dsc resource get` to emit the resource's JSON without a DSC wrapper.
+- Add `pass-through` output format for `dsc resource get` to emit the
+  resource's JSON without a DSC wrapper.
 
   <details><summary>Related work items</summary>
 
@@ -358,7 +377,8 @@ in this release, see the [diff on GitHub][compare-v3.1.0-rc.1].
 
 ### Changed
 
-- Windows RebootPending resource: convert the pending reboot value to an object (removes a read-only property and keeps the field optional).
+- `Microsoft.Windows/RebootPending` resource: convert the pending reboot value to an
+  object (removes a read-only property and keeps the field optional).
 
   <details><summary>Related work items</summary>
 
@@ -369,7 +389,8 @@ in this release, see the [diff on GitHub][compare-v3.1.0-rc.1].
 
 ### Fixed
 
-- Fix regression in default output for `get --all` (ensure interactive default output is correct).
+- Fix regression in default output for `get --all` (ensure interactive
+  default output is correct).
 
   <details><summary>Related work items</summary>
 
@@ -398,7 +419,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.7].
 
   </details>
 
-- Add `json-array` as a supported output format for `dsc resource get --all` to return a single JSON array instead of JSON Lines.
+- Add `json-array` as a supported output format for `dsc resource get --all`
+  to return a single JSON array instead of JSON Lines.
 
   <details><summary>Related work items</summary>
 
@@ -409,7 +431,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.7].
 
 ### Changed
 
-- Appx discovery extension: set execution policy to `Bypass` so it runs under restricted policies.
+- Appx discovery extension: set execution policy to `Bypass` so it runs under
+  restricted policies.
 
   <details><summary>Related work items</summary>
 
@@ -418,7 +441,9 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.7].
 
   </details>
 
-- Respect `DSC_RESOURCE_PATH` for executable lookup by aligning the process `PATH` to the same value so executable search is limited to `DSC_RESOURCE_PATH`.
+- Respect `DSC_RESOURCE_PATH` for executable lookup by aligning the process
+  `PATH` to the same value so executable search is limited to
+  `DSC_RESOURCE_PATH`.
 
   <details><summary>Related work items</summary>
 
@@ -429,7 +454,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.7].
 
 ### Fixed
 
-- Improve error message when duplicate resource names are detected during `set`.
+- Improve error message when duplicate resource names are detected during
+  `set`.
 
   <details><summary>Related work items</summary>
 
@@ -438,7 +464,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.7].
 
   </details>
 
-- Windows registry resource: treat deleting a non-existing key/value as success instead of erroring.
+- `Microsoft.Windows/Registry` resource: treat deleting a non-existing key/value as
+  success instead of erroring.
 
   <details><summary>Related work items</summary>
 
@@ -467,7 +494,9 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
 
 ### Added
 
-- Experimental Appx resource discovery extension to discover resources packaged in Appx; also removes duplicate discoveries by type name and version.
+- Experimental Appx resource discovery extension to discover resources
+  packaged in Appx; also removes duplicate discoveries by type name and
+  version.
 
   <details><summary>Related work items</summary>
 
@@ -476,7 +505,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
 
   </details>
 
-- Add `table-no-truncate` format option to `dsc resource list` and `dsc extension list` to avoid truncating wide tables in narrow consoles.
+- Add `table-no-truncate` format option to `dsc resource list` and
+  `dsc extension list` to avoid truncating wide tables in narrow consoles.
 
   <details><summary>Related work items</summary>
 
@@ -487,7 +517,9 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
 
 ### Changed
 
-- Windows PowerShell adapter: allow a workaround to detect class-based resources using type instances so class-based PSDSC resources are discoverable.
+- Windows PowerShell adapter: allow a workaround to detect class-based
+  resources using type instances so class-based PSDSC resources are
+  discoverable.
 
   <details><summary>Related work items</summary>
 
@@ -496,7 +528,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
 
   </details>
 
-- WMI adapter: set execution policy to `Bypass` to align with PowerShell adapters and avoid failures under restricted policies.
+- WMI adapter: set execution policy to `Bypass` to align with PowerShell
+  adapters and avoid failures under restricted policies.
 
   <details><summary>Related work items</summary>
 
@@ -507,7 +540,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
 
 ### Fixed
 
-- Export adapted resources correctly by aligning `export` output to use the `result` property and fixing the test adapter.
+- Export adapted resources correctly by aligning `export` output to use the
+  `result` property and fixing the test adapter.
 
   <details><summary>Related work items</summary>
 
@@ -516,7 +550,9 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
 
   </details>
 
-- Windows PowerShell adapter caching: ensure full refresh when `PSModulePath` changes and on cold cache to avoid broken cache states from targeted refreshes.
+- Windows PowerShell adapter caching: ensure full refresh when
+  `PSModulePath` changes and on cold cache to avoid broken cache states from
+  targeted refreshes.
 
   <details><summary>Related work items</summary>
 
@@ -525,7 +561,9 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
 
   </details>
 
-- Class-based detection: add validation ensuring the type instance has the `DscResource` attribute to avoid false positives for types with matching names.
+- Class-based detection: add validation ensuring the type instance has the
+  `DscResource` attribute to avoid false positives for types with matching
+  names.
 
   <details><summary>Related work items</summary>
 
@@ -635,8 +673,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.4].
 
 ### Added
 
-- Add credential support on PowerShell adapters to create PSCredential objects from input when the
-  target property expects a credential.
+- Add credential support on PowerShell adapters to create PSCredential
+  objects from input when the target property expects a credential.
 
   <details><summary>Related work items</summary>
 
@@ -647,9 +685,9 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.4].
 
 ### Changed
 
-- Prefer Windows PowerShell modules first in the Windows PowerShell adapter by prepending the
-  Windows module path; add a warning when a resource isn't found (resource must be installed for
-  AllUsers).
+- Prefer Windows PowerShell modules first in the Windows PowerShell adapter by
+  prepending the Windows module path; add a warning when a resource isn't
+  found (resource must be installed for AllUsers).
 
   <details><summary>Related work items</summary>
 
@@ -660,8 +698,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.4].
 
 ### Fixed
 
-- Fix resource cache behavior when PowerShell modules are installed during a run so subsequent
-  modules aren't lost from the cache.
+- Fix resource cache behavior when PowerShell modules are installed during a
+  run so subsequent modules aren't lost from the cache.
 
   <details><summary>Related work items</summary>
 
@@ -690,8 +728,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.3].
 
   </details>
 
-- Set `Bypass` execution policy when calling PowerShell from the adapter to avoid failures on
-  Windows with restricted execution policy.
+- Set `Bypass` execution policy when calling PowerShell from the adapter to
+  avoid failures on Windows with restricted execution policy.
 
   <details><summary>Related work items</summary>
 
@@ -722,7 +760,8 @@ changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.2].
 
 ### Added
 
-- Add validation to check key-value pairs for class-based and script-based DSC resources.
+- Add validation to check key-value pairs for class-based and script-based DSC
+  resources.
 
   <details><summary>Related work items</summary>
 
@@ -2852,26 +2891,16 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 
 <!-- CLI reference links -->
 [cmd]:             ./docs/reference/cli/dsc.md
-[cmd-completion]:  ./docs/reference/cli/completer/command.md
-[cmd-schema]:      ./docs/reference/cli/schema/command.md
-[cmd-c]:         ./docs/reference/cli/config/command.md
 [cmd-cexport]:  ./docs/reference/cli/config/export.md
-[cmd-cget]:     ./docs/reference/cli/config/get.md
 [cmd-cset]:     ./docs/reference/cli/config/set.md
-[cmd-ctest]:    ./docs/reference/cli/config/test.md
-[cmd-r]:         ./docs/reference/cli/resource/command.md
 [cmd-rdelete]:  ./docs/reference/cli/resource/delete.md
 [cmd-rexport]:  ./docs/reference/cli/resource/export.md
 [cmd-rget]:     ./docs/reference/cli/resource/get.md
 [cmd-rlist]:    ./docs/reference/cli/resource/list.md
-[cmd-rschema]:  ./docs/reference/cli/resource/schema.md
 [cmd-rset]:     ./docs/reference/cli/resource/set.md
-[cmd-rtest]:    ./docs/reference/cli/resource/test.md
 <!-- Configuration function links -->
 [cfuncs]: ./docs/reference/schemas/config/functions/overview.md
 [add()]: ./docs/reference/schemas/config/functions/add.md
-[base64()]: ./docs/reference/schemas/config/functions/base64.md
-[concat()]: ./docs/reference/schemas/config/functions/concat.md
 [createArray()]: ./docs/reference/schemas/config/functions/createArray.md
 [div()]: ./docs/reference/schemas/config/functions/div.md
 [envvar()]: ./docs/reference/schemas/config/functions/envvar.md
@@ -2880,9 +2909,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [min()]: ./docs/reference/schemas/config/functions/min.md
 [mod()]: ./docs/reference/schemas/config/functions/mod.md
 [mul()]: ./docs/reference/schemas/config/functions/mul.md
-[parameters()]: ./docs/reference/schemas/config/functions/parameters.md
 [reference()]: ./docs/reference/schemas/config/functions/reference.md
-[resourceId()]: ./docs/reference/schemas/config/functions/resourceId.md
 [sub()]: ./docs/reference/schemas/config/functions/sub.md
 
 <!-- Issue and PR links -->
@@ -3149,13 +3176,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#763]: https://github.com/PowerShell/DSC/issues/763
 [#797]: https://github.com/PowerShell/DSC/pull/797
 [#798]: https://github.com/PowerShell/DSC/issues/798
-[#734]: https://github.com/PowerShell/DSC/pull/734
-[#717]: https://github.com/PowerShell/DSC/issues/717
-[#708]: https://github.com/PowerShell/DSC/issues/708
-[#819]: https://github.com/PowerShell/DSC/pull/819
-[#818]: https://github.com/PowerShell/DSC/issues/818
-[#820]: https://github.com/PowerShell/DSC/pull/820
-[#821]: https://github.com/PowerShell/DSC/pull/821
 [#782]: https://github.com/PowerShell/DSC/issues/782
 [#789]: https://github.com/PowerShell/DSC/pull/789
 [#807]: https://github.com/PowerShell/DSC/issues/807
@@ -3168,9 +3188,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#811]: https://github.com/PowerShell/DSC/issues/811
 [#813]: https://github.com/PowerShell/DSC/issues/813
 [#814]: https://github.com/PowerShell/DSC/issues/814
-[#830]: https://github.com/PowerShell/DSC/pull/830
-[#837]: https://github.com/PowerShell/DSC/pull/837
-[#838]: https://github.com/PowerShell/DSC/pull/838
 [#841]: https://github.com/PowerShell/DSC/issues/841
 [#843]: https://github.com/PowerShell/DSC/issues/843
 [#844]: https://github.com/PowerShell/DSC/pull/844
@@ -3195,41 +3212,22 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#865]: https://github.com/PowerShell/DSC/pull/865
 [#892]: https://github.com/PowerShell/DSC/pull/892
 [#897]: https://github.com/PowerShell/DSC/pull/897
-[#891]: https://github.com/PowerShell/DSC/pull/891
 [#874]: https://github.com/PowerShell/DSC/pull/874
-[#901]: https://github.com/PowerShell/DSC/pull/901
-[#900]: https://github.com/PowerShell/DSC/pull/900
-[#886]: https://github.com/PowerShell/DSC/pull/886
-[#888]: https://github.com/PowerShell/DSC/pull/888
-[#899]: https://github.com/PowerShell/DSC/pull/899
-[#857]: https://github.com/PowerShell/DSC/pull/857
+
 [#598]: https://github.com/PowerShell/DSC/issues/598
-[#665]: https://github.com/PowerShell/DSC/issues/665
-[#539]: https://github.com/PowerShell/DSC/issues/539
 
 [#467]: https://github.com/PowerShell/DSC/issues/467
 [#915]: https://github.com/PowerShell/DSC/issues/915
 [#918]: https://github.com/PowerShell/DSC/issues/918
 [#878]: https://github.com/PowerShell/DSC/issues/878
 [#829]: https://github.com/PowerShell/DSC/issues/829
-[#921]: https://github.com/PowerShell/DSC/issues/921
-[#914]: https://github.com/PowerShell/DSC/issues/914
-[#909]: https://github.com/PowerShell/DSC/issues/909
 
 [#947]: https://github.com/PowerShell/DSC/pull/947
 [#932]: https://github.com/PowerShell/DSC/pull/932
 [#920]: https://github.com/PowerShell/DSC/pull/920
 [#879]: https://github.com/PowerShell/DSC/pull/879
 [#944]: https://github.com/PowerShell/DSC/pull/944
-[#935]: https://github.com/PowerShell/DSC/pull/935
-[#902]: https://github.com/PowerShell/DSC/pull/902
-[#916]: https://github.com/PowerShell/DSC/pull/916
-[#910]: https://github.com/PowerShell/DSC/pull/910
-[#927]: https://github.com/PowerShell/DSC/pull/927
-[#929]: https://github.com/PowerShell/DSC/pull/929
-[#939]: https://github.com/PowerShell/DSC/pull/939
-[#936]: https://github.com/PowerShell/DSC/pull/936
-[#919]: https://github.com/PowerShell/DSC/pull/919
+[#820]: https://github.com/PowerShell/DSC/pull/820
 
 [#685]: https://github.com/PowerShell/DSC/issues/685
 [#972]: https://github.com/PowerShell/DSC/issues/972
@@ -3238,7 +3236,6 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#885]: https://github.com/PowerShell/DSC/issues/885
 [#853]: https://github.com/PowerShell/DSC/issues/853
 [#923]: https://github.com/PowerShell/DSC/issues/923
-[#967]: https://github.com/PowerShell/DSC/issues/967
 
 [#908]: https://github.com/PowerShell/DSC/pull/908
 [#959]: https://github.com/PowerShell/DSC/pull/959
@@ -3249,10 +3246,7 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#907]: https://github.com/PowerShell/DSC/pull/907
 [#946]: https://github.com/PowerShell/DSC/pull/946
 [#958]: https://github.com/PowerShell/DSC/pull/958
-[#971]: https://github.com/PowerShell/DSC/pull/971
-[#989]: https://github.com/PowerShell/DSC/pull/989
 [#955]: https://github.com/PowerShell/DSC/pull/955
 [#964]: https://github.com/PowerShell/DSC/pull/964
-[#969]: https://github.com/PowerShell/DSC/pull/969
 [#876]: https://github.com/PowerShell/DSC/pull/876
 [#877]: https://github.com/PowerShell/DSC/pull/877
