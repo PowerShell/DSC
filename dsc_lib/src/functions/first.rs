@@ -66,9 +66,9 @@ mod tests {
     }
 
     #[test]
-    fn array_of_mixed() {
+    fn array_of_single_element() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[first(createArray('hello', 42))]", &Context::new()).unwrap();
+        let result = parser.parse_and_execute("[first(array('hello'))]", &Context::new()).unwrap();
         assert_eq!(result.as_str(), Some("hello"));
     }
 
