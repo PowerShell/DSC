@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.0.0-rc.1...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.1...main
 
 <!--
     Unreleased change entry instructions:
@@ -72,6 +72,149 @@ changes since the last release, see the [diff on GitHub][unreleased].
 -->
 
 <!-- Unreleased change links -->
+
+
+
+## [v3.1.0-preview.1][release-v3.1.0-preview.1] - 2025-03-18
+
+This section includes a summary of changes for the `v3.1.0-preview.1` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.1].
+
+<!-- Release links -->
+[release-v3.1.0-preview.1]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-preview.1 "Link to the DSC v3.1.0-preview.1 release on GitHub"
+[compare-v3.1.0-preview.1]: https://github.com/PowerShell/DSC/compare/v3.0.0-rc.1...v3.1.0-preview.1
+
+### Changed
+
+- Add object separators to YAML output (`---`) when multiple objects are emitted.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#628][#628].
+  - PRs: [#635][#635]
+
+  </details>
+
+- Enhance progress output: improve JSON progress format, add `None` option, and refine the progress schema.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#644][#644]
+
+  </details>
+
+- Canonicalize casing across `dsc_lib` to ensure camelCase for property names and enum values; allow camelCase alias for the tracing `line_number` field.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#642][#642].
+  - PRs: [#648][#648], [#645][#645]
+
+  </details>
+
+- Emit a warning during discovery if an executable referenced by a resource manifest can't be found.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#688][#688]
+
+  </details>
+
+- Improve tracing and ensure `_inDesiredState` aggregation is surfaced consistently in the PowerShell adapter.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#699][#699]
+
+  </details>
+
+### Added
+
+- Add `exporter` resource kind for generating complete resource instances as JSON Lines during export.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#515][#515].
+  - PRs: [#682][#682]
+
+  </details>
+
+- Support passing input to direct resource `export` via CLI arguments.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#678][#678].
+  - PRs: [#680][#680]
+
+  </details>
+
+- Preserve custom metadata when exporting a configuration.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#668][#668].
+  - PRs: [#679][#679]
+
+  </details>
+
+### Fixed
+
+- Validate modules in the PowerShell adapter cache to address configuration size limits.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#640][#640].
+  - PRs: [#647][#647]
+
+  </details>
+
+- Respect a resource-provided `_inDesiredState` value from `test` results instead of relying solely on diff.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#674][#674].
+  - PRs: [#676][#676]
+
+  </details>
+
+- Allow resources in configuration documents to omit the `properties` object when not needed.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#675][#675]
+
+  </details>
+
+- Permit setting a Windows registry value with no data (use the `None` type) and improve related handling.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#683][#683].
+  - PRs: [#684][#684]
+
+  </details>
+
+- Parse expressions correctly for `Group` resources (skip premature evaluation so the group can resolve within its scope).
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#692][#692].
+  - PRs: [#695][#695]
+
+  </details>
+
+- Ensure `RunCommandOnSet` works within configuration documents (adds `implementsPreTest` and tests).
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#658][#658].
+  - PRs: [#659][#659]
+
+  </details>
 
 ## [v3.0.0-rc.1][release-v3.0.0-rc.1] - 2025-02-06
 
@@ -2258,28 +2401,20 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#533]: https://github.com/PowerShell/DSC/issues/533
 [#541]: https://github.com/PowerShell/DSC/issues/541
 [#548]: https://github.com/PowerShell/DSC/issues/548
-[#549]: https://github.com/PowerShell/DSC/issues/549
-[#551]: https://github.com/PowerShell/DSC/issues/551
 [#552]: https://github.com/PowerShell/DSC/issues/552
 [#553]: https://github.com/PowerShell/DSC/issues/553
 [#555]: https://github.com/PowerShell/DSC/issues/555
 [#556]: https://github.com/PowerShell/DSC/issues/556
 [#561]: https://github.com/PowerShell/DSC/issues/561
-[#564]: https://github.com/PowerShell/DSC/issues/564
 [#565]: https://github.com/PowerShell/DSC/issues/565
 [#568]: https://github.com/PowerShell/DSC/issues/568
 [#572]: https://github.com/PowerShell/DSC/issues/572
-[#573]: https://github.com/PowerShell/DSC/issues/573
-[#577]: https://github.com/PowerShell/DSC/issues/577
 [#57]:  https://github.com/PowerShell/DSC/issues/57
 [#70]:  https://github.com/PowerShell/DSC/issues/70
 [#73]:  https://github.com/PowerShell/DSC/issues/73
 [#75]:  https://github.com/PowerShell/DSC/issues/75
 [#89]:  https://github.com/PowerShell/DSC/issues/89
 [#98]:  https://github.com/PowerShell/DSC/issues/98
-[#157]: https://github.com/PowerShell/DSC/issues/157
-[#436]: https://github.com/PowerShell/DSC/issues/436
-[#485]: https://github.com/PowerShell/DSC/issues/485
 [#537]: https://github.com/PowerShell/DSC/issues/537
 
 [#282]: https://github.com/PowerShell/DSC/issues/282
@@ -2288,16 +2423,12 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#588]: https://github.com/PowerShell/DSC/issues/588
 [#574]: https://github.com/PowerShell/DSC/pull/574
 [#579]: https://github.com/PowerShell/DSC/pull/579
-[#581]: https://github.com/PowerShell/DSC/pull/581
-[#587]: https://github.com/PowerShell/DSC/pull/587
 [#589]: https://github.com/PowerShell/DSC/pull/589
 [#595]: https://github.com/PowerShell/DSC/pull/595
 [#597]: https://github.com/PowerShell/DSC/pull/597
 [#601]: https://github.com/PowerShell/DSC/pull/601
-[#603]: https://github.com/PowerShell/DSC/pull/603
 [#606]: https://github.com/PowerShell/DSC/pull/606
 [#608]: https://github.com/PowerShell/DSC/pull/608
-[#609]: https://github.com/PowerShell/DSC/pull/609
 [#612]: https://github.com/PowerShell/DSC/pull/612
 [#614]: https://github.com/PowerShell/DSC/pull/614
 [#616]: https://github.com/PowerShell/DSC/pull/616
@@ -2306,8 +2437,32 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#625]: https://github.com/PowerShell/DSC/pull/625
 [#626]: https://github.com/PowerShell/DSC/pull/626
 [#629]: https://github.com/PowerShell/DSC/pull/629
-[#631]: https://github.com/PowerShell/DSC/pull/631
 [#634]: https://github.com/PowerShell/DSC/pull/634
 [#389]: https://github.com/PowerShell/DSC/issues/389
 [#592]: https://github.com/PowerShell/DSC/issues/592
 [#618]: https://github.com/PowerShell/DSC/issues/618
+[#515]: https://github.com/PowerShell/DSC/issues/515
+[#628]: https://github.com/PowerShell/DSC/issues/628
+[#640]: https://github.com/PowerShell/DSC/issues/640
+[#642]: https://github.com/PowerShell/DSC/issues/642
+[#658]: https://github.com/PowerShell/DSC/issues/658
+[#668]: https://github.com/PowerShell/DSC/issues/668
+[#674]: https://github.com/PowerShell/DSC/issues/674
+[#678]: https://github.com/PowerShell/DSC/issues/678
+[#683]: https://github.com/PowerShell/DSC/issues/683
+[#692]: https://github.com/PowerShell/DSC/issues/692
+[#635]: https://github.com/PowerShell/DSC/pull/635
+[#644]: https://github.com/PowerShell/DSC/pull/644
+[#645]: https://github.com/PowerShell/DSC/pull/645
+[#647]: https://github.com/PowerShell/DSC/pull/647
+[#648]: https://github.com/PowerShell/DSC/pull/648
+[#659]: https://github.com/PowerShell/DSC/pull/659
+[#675]: https://github.com/PowerShell/DSC/pull/675
+[#676]: https://github.com/PowerShell/DSC/pull/676
+[#679]: https://github.com/PowerShell/DSC/pull/679
+[#680]: https://github.com/PowerShell/DSC/pull/680
+[#682]: https://github.com/PowerShell/DSC/pull/682
+[#684]: https://github.com/PowerShell/DSC/pull/684
+[#688]: https://github.com/PowerShell/DSC/pull/688
+[#695]: https://github.com/PowerShell/DSC/pull/695
+[#699]: https://github.com/PowerShell/DSC/pull/699
