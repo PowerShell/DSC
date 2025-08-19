@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.5...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.6...main
 
 <!--
     Unreleased change entry instructions:
@@ -73,7 +73,92 @@ changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased change links -->
 
+## [v3.1.0-preview.6][release-v3.1.0-preview.6] - 2025-05-22
 
+This section includes a summary of changes for the `v3.1.0-preview.6` release. For the full list of
+changes in this release, see the [diff on GitHub][compare-v3.1.0-preview.6].
+
+<!-- Release links -->
+[release-v3.1.0-preview.6]: https://github.com/PowerShell/DSC/releases/tag/v3.1.0-preview.6 "Link to the DSC v3.1.0-preview.6 release on GitHub"
+[compare-v3.1.0-preview.6]: https://github.com/PowerShell/DSC/compare/v3.1.0-preview.5...v3.1.0-preview.6
+
+### Added
+
+- Experimental Appx resource discovery extension to discover resources packaged in Appx; also removes duplicate discoveries by type name and version.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#762][#762]
+
+  </details>
+
+- Add `table-no-truncate` format option to `dsc resource list` and `dsc extension list` to avoid truncating wide tables in narrow consoles.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#763][#763].
+  - PRs: [#823][#823]
+
+  </details>
+
+### Changed
+
+- Windows PowerShell adapter: allow a workaround to detect class-based resources using type instances so class-based PSDSC resources are discoverable.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#798][#798].
+  - PRs: [#797][#797]
+
+  </details>
+
+- WMI adapter: set execution policy to `Bypass` to align with PowerShell adapters and avoid failures under restricted policies.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#820][#820]
+
+  </details>
+
+### Fixed
+
+- Export adapted resources correctly by aligning `export` output to use the `result` property and fixing the test adapter.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#782][#782].
+  - PRs: [#789][#789]
+
+  </details>
+
+- Windows PowerShell adapter caching: ensure full refresh when `PSModulePath` changes and on cold cache to avoid broken cache states from targeted refreshes.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#807][#807], [#745][#745].
+  - PRs: [#787][#787]
+
+  </details>
+
+- Class-based detection: add validation ensuring the type instance has the `DscResource` attribute to avoid false positives for types with matching names.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#812][#812]
+
+  </details>
+
+- PowerShell adapter output: return enum string labels instead of integer values.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#791][#791].
+  - PRs: [#800][#800]
+
+  </details>
 
 ## [v3.1.0-preview.5][release-v3.1.0-preview.5] - 2025-05-07
 
@@ -2677,3 +2762,22 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#748]: https://github.com/PowerShell/DSC/pull/748
 [#758]: https://github.com/PowerShell/DSC/pull/758
 [#764]: https://github.com/PowerShell/DSC/pull/764
+[#762]: https://github.com/PowerShell/DSC/pull/762
+[#763]: https://github.com/PowerShell/DSC/issues/763
+[#797]: https://github.com/PowerShell/DSC/pull/797
+[#798]: https://github.com/PowerShell/DSC/issues/798
+[#734]: https://github.com/PowerShell/DSC/pull/734
+[#717]: https://github.com/PowerShell/DSC/issues/717
+[#708]: https://github.com/PowerShell/DSC/issues/708
+[#819]: https://github.com/PowerShell/DSC/pull/819
+[#818]: https://github.com/PowerShell/DSC/issues/818
+[#820]: https://github.com/PowerShell/DSC/pull/820
+[#821]: https://github.com/PowerShell/DSC/pull/821
+[#782]: https://github.com/PowerShell/DSC/issues/782
+[#789]: https://github.com/PowerShell/DSC/pull/789
+[#807]: https://github.com/PowerShell/DSC/issues/807
+[#787]: https://github.com/PowerShell/DSC/pull/787
+[#812]: https://github.com/PowerShell/DSC/pull/812
+[#791]: https://github.com/PowerShell/DSC/issues/791
+[#800]: https://github.com/PowerShell/DSC/pull/800
+[#823]: https://github.com/PowerShell/DSC/pull/823
