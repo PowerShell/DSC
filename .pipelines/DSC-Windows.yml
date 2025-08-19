@@ -12,8 +12,6 @@ parameters:
     type: string
   - name: RustSDK
     type: string
-  - name: RustSDK
-    type: string
 
 steps:
 - checkout: self
