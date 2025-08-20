@@ -229,6 +229,8 @@ if ($null -ne $packageType) {
     ## Test if tree-sitter is installed
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
         cargo install tree-sitter-cli --config .cargo/config.toml
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
