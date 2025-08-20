@@ -8,7 +8,7 @@ ms.date: 06/24/2024
 
 # Changelog
 
-<!-- markdownlint-disable-file MD033 MD024 -->
+<!-- markdownlint-disable-file MD033 MD024 MD025 -->
 
 <!--
     Helpful docs snippets
@@ -46,7 +46,7 @@ This section includes a summary of user-facing changes since the last release. F
 changes since the last release, see the [diff on GitHub][unreleased].
 
 <!-- Unreleased comparison link - always update version to match last release tag-->
-[unreleased]: https://github.com/PowerShell/DSC/compare/v3.2.0-preview.3...main
+[unreleased]: https://github.com/PowerShell/DSC/compare/v3.2.0-preview.4...main
 
 <!--
     Unreleased change entry instructions:
@@ -74,6 +74,130 @@ changes since the last release, see the [diff on GitHub][unreleased].
 <!-- Unreleased change links -->
 
 
+
+## [v3.2.0-preview.4][release-v3.2.0-preview.4] - 2025-08-14
+
+This section includes a summary of changes for the `v3.2.0-preview.4` release.
+For the full list of changes in this release, see the
+[diff on GitHub][compare-v3.2.0-preview.4].
+
+<!-- Release links -->
+[release-v3.2.0-preview.4]: https://github.com/PowerShell/DSC/releases/tag/v3.2.0-preview.4 "Link to the DSC v3.2.0-preview.4 release on GitHub"
+[compare-v3.2.0-preview.4]: https://github.com/PowerShell/DSC/compare/v3.2.0-preview.3...v3.2.0-preview.4
+
+### Added
+
+- Add comparison operators: `Less`, `LessOrEquals`, `Greater`, and
+  `GreaterOrEquals`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#988][#988]
+  - PRs: [#990][#990], [#998][#998]
+
+  </details>
+
+- Add Bicep extension support to work with Bicep files.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#997][#997]
+
+  </details>
+
+- Add array functions: `contains()`, `union()`, `length()`, and `empty()`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#1005][#1005], [#1039][#1039], [#1043][#1043]
+
+  </details>
+
+- Add string and utility functions: `string()`, `endsWith()`, `startsWith()`,
+  `uniqueString()`, and `utcNow()`.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#1040][#1040], [#1032][#1032], [#1045][#1045]
+
+  </details>
+
+### Changed
+
+- Align the `Resource` schema to match ARM conventions.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#980][#980]
+  - PRs: [#995][#995]
+
+  </details>
+
+- Improve duplicate resource error messages to include the resource type
+  name.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#1022][#1022]
+  - PRs: [#1029][#1029]
+
+  </details>
+
+- OSInfo: have export return `_name` for consistency with other resources.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#1038][#1038]
+
+  </details>
+
+- Secret extensions: require emitting the secret as plaintext to STDOUT with a
+  trailing newline (no JSON wrapper). Multiple lines to STDOUT is an error.
+  Also fix extensions that referenced the resource schema instead of the
+  extension schema, and reformat a use statement for readability.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#1046][#1046]
+
+  </details>
+
+- CLI/Adapters: treat a resource without `export` as usable with `get` when
+  listing or invoking.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#428][#428]
+  - PRs: [#1035][#1035]
+
+  </details>
+
+- Functions metadata: refactor how functions return metadata and include
+  return type information in listings.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: _None_.
+  - PRs: [#1028][#1028]
+
+  </details>
+
+### Fixed
+
+- Fix parsing so expressions aren't re-parsed when passed to adapted
+  resources.
+
+  <details><summary>Related work items</summary>
+
+  - Issues: [#1024][#1024]
+  - PRs: [#1031][#1031]
+
+  </details>
 
 ## [v3.2.0-preview.3][release-v3.2.0-preview.3] - 2025-07-19
 
@@ -3242,3 +3366,24 @@ For the full list of changes in this release, see the [diff on GitHub][compare-v
 [#964]: https://github.com/PowerShell/DSC/pull/964
 [#876]: https://github.com/PowerShell/DSC/pull/876
 [#877]: https://github.com/PowerShell/DSC/pull/877
+[#428]: https://github.com/PowerShell/DSC/issues/428
+[#980]: https://github.com/PowerShell/DSC/issues/980
+[#988]: https://github.com/PowerShell/DSC/issues/988
+[#990]: https://github.com/PowerShell/DSC/pull/990
+[#995]: https://github.com/PowerShell/DSC/pull/995
+[#997]: https://github.com/PowerShell/DSC/pull/997
+[#998]: https://github.com/PowerShell/DSC/pull/998
+[#1005]: https://github.com/PowerShell/DSC/pull/1005
+[#1022]: https://github.com/PowerShell/DSC/issues/1022
+[#1024]: https://github.com/PowerShell/DSC/issues/1024
+[#1028]: https://github.com/PowerShell/DSC/pull/1028
+[#1029]: https://github.com/PowerShell/DSC/pull/1029
+[#1031]: https://github.com/PowerShell/DSC/pull/1031
+[#1032]: https://github.com/PowerShell/DSC/pull/1032
+[#1035]: https://github.com/PowerShell/DSC/pull/1035
+[#1038]: https://github.com/PowerShell/DSC/pull/1038
+[#1039]: https://github.com/PowerShell/DSC/pull/1039
+[#1040]: https://github.com/PowerShell/DSC/pull/1040
+[#1043]: https://github.com/PowerShell/DSC/pull/1043
+[#1045]: https://github.com/PowerShell/DSC/pull/1045
+[#1046]: https://github.com/PowerShell/DSC/pull/1046
