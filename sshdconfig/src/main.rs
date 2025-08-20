@@ -4,20 +4,20 @@
 use clap::{Parser};
 use rust_i18n::{i18n, t};
 use schemars::schema_for;
+use serde_json::Map;
 use std::process::exit;
 use tracing::{debug, error};
 
 use args::{Args, Command, DefaultShell, Setting};
-use export::invoke_export;
-use get::invoke_get;
+use get::{get_sshd_settings, invoke_get};
 use parser::SshdConfigParser;
 use set::invoke_set;
-use util::enable_tracing;
+use util::{build_command_info, enable_tracing};
 
 mod args;
 mod error;
-mod export;
 mod get;
+mod inputs;
 mod metadata;
 mod parser;
 mod set;
@@ -34,12 +34,15 @@ fn main() {
     let args = Args::parse();
 
     let result = match &args.command {
-        Command::Export => {
-            debug!("{}", t!("main.export").to_string());
-            invoke_export()
+        Command::Export { input } => {
+            debug!("{}: {:?}", t!("main.export").to_string(), input);
+            match build_command_info(input.as_ref(), false) {
+                Ok(cmd_info) => get_sshd_settings(&cmd_info, false),
+                Err(e) => Err(e),
+            }
         },
-        Command::Get { setting } => {
-            invoke_get(setting)
+        Command::Get { input, setting } => {
+            invoke_get(input.as_ref(), setting)
         },
         Command::Schema { setting } => {
             debug!("{}; {:?}", t!("main.schema").to_string(), setting);
@@ -52,7 +55,7 @@ fn main() {
                 }
             };
             println!("{}", serde_json::to_string(&schema).unwrap());
-            Ok(())
+            Ok(Map::new())
         },
         Command::Set { input } => {
             debug!("{}", t!("main.set", input = input).to_string());
@@ -60,10 +63,22 @@ fn main() {
         },
     };
 
-    if let Err(e) = result {
-        error!("{e}");
-        exit(EXIT_FAILURE);
+    match result {
+        Ok(output) => {
+            if !output.is_empty() {
+                match serde_json::to_string(&output) {
+                    Ok(json) => println!("{json}"),
+                    Err(e) => {
+                        error!("{}", e);
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+            exit(EXIT_SUCCESS);
+        },
+        Err(e) => {
+            error!("{}", e);
+            exit(EXIT_FAILURE);
+        }
     }
-
-    exit(EXIT_SUCCESS);
 }
