@@ -191,7 +191,7 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>>, resourc
     }
 
     if let Some(resource_metadata) = resource_metadata {
-        let other_metadata = resource_metadata.other.clone();
+        let other_metadata = resource_metadata.other;
         if let Some(mut properties) = properties {
             properties.insert("_metadata".to_string(), Value::Object(other_metadata));
             return Ok(serde_json::to_string(&properties)?);
