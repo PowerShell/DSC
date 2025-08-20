@@ -23,9 +23,9 @@ metadata:
 resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
+  metadata:
+    filepath: $filepath
   properties:
-    _metadata:
-      filepath: $filepath
 "@
     }
 
@@ -60,10 +60,10 @@ metadata:
 resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
+  metadata:
+    filepath: $filepath
   properties:
     passwordauthentication: 'yes'
-    _metadata:
-      filepath: $filepath
 "@
         $out = dsc config export -i "$export_yaml" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
@@ -86,10 +86,10 @@ metadata:
 resources:
 - name: sshdconfig
   type: Microsoft.OpenSSH.SSHD/sshd_config
+  metadata:
+    filepath: $filepath
   properties:
     _includeDefaults: $includeDefaults
-    _metadata:
-        filepath: $filepath
 "@
         $out = dsc config $command -i "$input" | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0
