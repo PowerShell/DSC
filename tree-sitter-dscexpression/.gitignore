@@ -5,13 +5,14 @@ target/
 build/
 prebuilds/
 node_modules/
-package-lock.json
+*.tgz
 
 # Swift artifacts
 .build/
-Package.resolved
+Package.swift
 
 # Go artifacts
+go.sum
 _obj/
 
 # Python artifacts
@@ -19,6 +20,8 @@ _obj/
 dist/
 *.egg-info
 *.whl
+pyproject.toml
+setup.py
 
 # C artifacts
 *.a
@@ -27,13 +30,7 @@ dist/
 *.dylib
 *.dll
 *.pc
-*.exp
-*.lib
-
-# Zig artifacts
-.zig-cache/
-zig-cache/
-zig-out/
+Makefile
 
 # Example dirs
 /examples/*/
@@ -43,7 +40,4 @@ zig-out/
 *.obj
 *.o
 
-# Archives
-*.tar.gz
-*.tgz
-*.zip
+.editorconfig
