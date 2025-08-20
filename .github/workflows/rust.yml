@@ -2,7 +2,7 @@ name: Rust
 
 on:
   push:
-    branches: [ "main", "release/*" ]
+    branches: [ "*" ]
   pull_request:
     branches: [ "main", "release/*" ]
     paths-ignore:
@@ -52,10 +52,10 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build
       shell: pwsh
-      run: ./build.ps1 -clippy
+      run: ./build.ps1 -clippy -UseCratesIO
     - name: Run tests
       shell: pwsh
-      run: ./build.ps1 -test
+      run: ./build.ps1 -test -UseCratesIO
 
   build-macos:
 
