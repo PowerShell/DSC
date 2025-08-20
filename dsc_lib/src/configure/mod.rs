@@ -799,10 +799,15 @@ impl Configurator {
 
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
+    let version = self
+        .context
+        .dsc_version
+        .clone()
+        .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                    version: Some(version),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
