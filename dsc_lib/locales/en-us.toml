@@ -217,6 +217,10 @@ invoked = "add function"
 description = "Evaluates if all arguments are true"
 invoked = "and function"
 
+[functions.array]
+description = "Convert the value to an array"
+invoked = "array function"
+
 [functions.base64]
 description = "Encodes a string to Base64 format"
 
@@ -280,6 +284,13 @@ description = "Evaluates if the two values are the same"
 description = "Returns the boolean value false"
 invoked = "false function"
 
+[functions.first]
+description = "Returns the first element of an array or first character of a string"
+invoked = "first function"
+emptyArray = "Cannot get first element of empty array"
+emptyString = "Cannot get first character of empty string"
+invalidArgType = "Invalid argument type, argument must be an array or string"
+
 [functions.greater]
 description = "Evaluates if the first value is greater than the second value"
 invoked = "greater function"
@@ -306,6 +317,11 @@ invalidInput = "invalid input string"
 parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
+
+[functions.indexOf]
+description = "Returns the index of the first occurrence of an item in an array"
+invoked = "indexOf function"
+invalidArrayArg = "First argument must be an array"
 
 [functions.length]
 description = "Returns the length of a string, array, or object"
