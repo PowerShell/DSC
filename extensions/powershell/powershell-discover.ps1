@@ -1,13 +1,15 @@
 $psPaths = $env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ -notmatch 'WindowsPowerShell' }
-$manifests = [System.Collections.Generic.List[hashtable]]::new()
+
+$m = [System.Collections.Concurrent.ConcurrentBag[hashtable]]::new()
 
 $psPaths | ForEach-Object -Parallel {
-    $queue = $using:manifests
-    $files = Get-ChildItem -Path $_ -Recurse -File -Include '*.dsc.resource.json', '*.dsc.resource.yaml', '*.dsc.resource.yml' -ErrorAction Ignore
+    $queue = $using:m
+    $files = Get-ChildItem -Path $_ -Recurse -File -Filter '*.dsc.resource.*' -ErrorAction Ignore | 
+             Where-Object -Property Extension -In @('.json', '.yaml', '.yml')
+    
     foreach ($file in $files) {
-        $m = @{ manifestPath = $file.FullName }
-        $queue.Add($m)
+        $queue.Add(@{ manifestPath = $file.FullName })
     }
 } -ThrottleLimit 10
 
-$manifests | ConvertTo-Json -Compress
+@($m) | ConvertTo-Json -Compress
