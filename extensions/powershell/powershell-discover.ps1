@@ -4,12 +4,14 @@ $m = [System.Collections.Concurrent.ConcurrentBag[hashtable]]::new()
 
 $psPaths | ForEach-Object -Parallel {
     $queue = $using:m
-    $files = Get-ChildItem -Path $_ -Recurse -File -Filter '*.dsc.resource.*' -ErrorAction Ignore | 
-             Where-Object -Property Extension -In @('.json', '.yaml', '.yml')
-    
-    foreach ($file in $files) {
-        $queue.Add(@{ manifestPath = $file.FullName })
+    $searchPatterns = @('*.dsc.resource.json', '*.dsc.resource.yaml', '*.dsc.resource.yml')
+    foreach ($pattern in $searchPatterns) {
+        try {
+            [System.IO.Directory]::EnumerateFiles($_, $pattern, 'AllDirectories') | ForEach-Object {
+                $queue.Add(@{ manifestPath = $_ })
+            }
+        } catch { }
     }
-} -ThrottleLimit 10
+} -ThrottleLimit 30
 
-@($m) | ConvertTo-Json -Compress
+[array]$m | ConvertTo-Json -Compress
