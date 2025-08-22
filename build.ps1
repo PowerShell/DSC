@@ -74,6 +74,7 @@ $filesForWindowsPackage = @(
     'sshdconfig.exe',
     'sshd-windows.dsc.resource.json',
     'sshd_config.dsc.resource.json',
+    'windowspowershell.dsc.extension.json',
     'windowspowershell.dsc.resource.json',
     'wmi.dsc.resource.json',
     'wmi.resource.ps1',
@@ -87,7 +88,7 @@ $filesForLinuxPackage = @(
     'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
-    'dsc.settings.json'
+    'dsc.settings.json',
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -112,7 +113,7 @@ $filesForMacPackage = @(
     'bicep.dsc.extension.json',
     'dsc',
     'dsc_default.settings.json',
-    'dsc.settings.json'
+    'dsc.settings.json',
     'dscecho',
     'echo.dsc.resource.json',
     'assertion.dsc.resource.json',
@@ -338,6 +339,7 @@ if (!$SkipBuild) {
         "dsc",
         "dscecho",
         "extensions/bicep",
+        "extensions/powershell"
         "osinfo",
         "powershell-adapter",
         'resources/PSScript',
