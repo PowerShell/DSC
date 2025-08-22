@@ -94,7 +94,7 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      hasFeature: "[indexOf(array(createObject('name','Preview'), createObject('name','Beta')), createObject('name','Beta'))]"
+      hasFeature: "[indexOf(array(createObject('name','Beta')), createObject('name','Beta'))]"
 ```
 
 ```bash
@@ -108,7 +108,7 @@ results:
   result:
     actualState:
       output:
-        hasFeature: 1
+        hasFeature: 0
 messages: []
 hadErrors: false
 ```

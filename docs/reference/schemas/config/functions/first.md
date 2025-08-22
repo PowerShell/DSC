@@ -109,7 +109,8 @@ hadErrors: false
 ### Example 3 - Chain with array construction
 
 This example shows how `first()` can be combined with `array()` to get the
-first element from a dynamically constructed array containing mixed data types.
+first element from a dynamically constructed array, by wrapping a single
+generated collection.
 
 ```yaml
 # first.example.3.dsc.config.yaml
@@ -119,7 +120,7 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      firstMixed: "[first(array(createArray('a','b'), createObject('k','v')))]"
+      firstMixed: "[first(array(createArray('a','b')))]"
 ```
 
 ```bash
@@ -133,9 +134,7 @@ results:
   result:
     actualState:
       output:
-        firstMixed:
-        - a
-        - b
+  firstMixed: a
 messages: []
 hadErrors: false
 ```
