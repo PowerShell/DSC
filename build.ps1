@@ -171,6 +171,39 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
+    if ($UseCFS -or $UseCFSAuth -or $usingADO) {
+        Write-Host "Using CFS for cargo source replacement"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+
+        if ($UseCFSAuth) {
+            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+                throw "Azure CLI not found"
+            }
+
+            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
+                Write-Host "Getting token"
+                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+                } else {
+                    $header = "Bearer $accessToken"
+                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
+                }
+            }
+            else {
+                Write-Warning "Azure CLI not found, proceeding with anonymous access."
+            }
+        }
+    } else {
+        # this will override the config.toml
+        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
+    }
+
     ## Test if Rust is installed
     if (!$usingADO -and !(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Rust not found, installing..."
@@ -289,39 +322,6 @@ if (!$SkipBuild) {
         Remove-Item $target -Recurse -ErrorAction Ignore
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
-
-    if ($UseCFS -or $UseCFSAuth -or $usingADO) {
-        Write-Host "Using CFS for cargo source replacement"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-        if ($UseCFSAuth) {
-            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                throw "Azure CLI not found"
-            }
-
-            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                Write-Host "Getting token"
-                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                } else {
-                    $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                }
-            }
-            else {
-                Write-Warning "Azure CLI not found, proceeding with anonymous access."
-            }
-        }
-    } else {
-        # this will override the config.toml
-        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
-    }
 
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
