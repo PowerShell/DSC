@@ -15,7 +15,7 @@ param(
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCratesIO,
+    [switch]$UseCFS,
     [switch]$UpdateLockFile,
     [switch]$Audit,
     [switch]$UseCFSAuth,
@@ -290,12 +290,7 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
-    if ($UseCratesIO) {
-        # this will override the config.toml
-        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
-    } else {
+    if ($UseCFS -or $UseCFSAuth -or $usingADO) {
         Write-Host "Using CFS for cargo source replacement"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
@@ -321,6 +316,11 @@ if (!$SkipBuild) {
                 Write-Warning "Azure CLI not found, proceeding with anonymous access."
             }
         }
+    } else {
+        # this will override the config.toml
+        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
     }
 
     # make sure dependencies are built first so clippy runs correctly
