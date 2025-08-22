@@ -57,6 +57,8 @@ $filesForWindowsPackage = @(
     'assertion.dsc.resource.json',
     'group.dsc.resource.json',
     'include.dsc.resource.json',
+    'microsoft.powershell.dsc.extension.json',
+    'microsoft.powershell.secret.ps1',
     'NOTICE.txt',
     'osinfo.exe',
     'osinfo.dsc.resource.json',
@@ -95,6 +97,8 @@ $filesForLinuxPackage = @(
     'apt.dsc.resource.sh',
     'group.dsc.resource.json',
     'include.dsc.resource.json',
+    'microsoft.powershell.dsc.extension.json',
+    'microsoft.powershell.secret.ps1',
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
@@ -120,6 +124,8 @@ $filesForMacPackage = @(
     'brew.dsc.resource.sh',
     'group.dsc.resource.json',
     'include.dsc.resource.json',
+    'microsoft.powershell.dsc.extension.json',
+    'microsoft.powershell.secret.ps1',
     'NOTICE.txt',
     'osinfo',
     'osinfo.dsc.resource.json',
@@ -324,9 +330,9 @@ if (!$SkipBuild) {
     }
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
-    $macOS_projects = @("resources/brew")
-    $linux_projects = @("resources/apt")
+    $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", "extensions/appx", "extensions/powershell/secret")
+    $macOS_projects = @("resources/brew", "extensions/powershell/secret")
+    $linux_projects = @("resources/apt", "extensions/powershell/secret")
 
     # projects are in dependency order
     $projects = @(
