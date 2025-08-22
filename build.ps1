@@ -164,8 +164,6 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     }
 } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
         $rustup = 'rustup'
-} else {
-    $rustup = 'echo'
 }
 
 if ($null -ne $packageType) {
@@ -229,7 +227,11 @@ if ($null -ne $packageType) {
     ## Test if tree-sitter is installed
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
-        cargo install tree-sitter-cli --config .cargo/config.toml
+        if ($UseCratesIO) {
+            cargo install tree-sitter-cli
+        } else {
+            cargo install tree-sitter-cli --config .cargo/config.toml
+        }
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
         }
@@ -380,7 +382,11 @@ if (!$SkipBuild) {
                 else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            if ($UseCratesIO) {
+                                cargo install cargo-audit --features=fix
+                            } else {
+                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            }
                         }
 
                         cargo audit fix
@@ -413,7 +419,11 @@ if (!$SkipBuild) {
                     else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                if ($UseCratesIO) {
+                                    cargo install cargo-audit --features=fix
+                                } else {
+                                    cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                }
                             }
 
                             cargo audit fix
