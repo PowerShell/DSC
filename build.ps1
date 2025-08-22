@@ -23,13 +23,16 @@ param(
     [switch]$Verbose
 )
 
-$env:RUSTC_LOG=$null
-$env:RUSTFLAGS='-Dwarnings'
-$usingADO = ($null -ne $env:TF_BUILD)
-
 trap {
     Write-Error "An error occurred: $($_ | Out-String)"
     exit 1
+}
+
+$env:RUSTC_LOG=$null
+$env:RUSTFLAGS='-Dwarnings'
+$usingADO = ($null -ne $env:TF_BUILD)
+if ($usingADO -or $UseCFSAuth) {
+    $UseCFS = $true
 }
 
 if ($Verbose) {
@@ -171,7 +174,7 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
-    if ($UseCFS -or $UseCFSAuth -or $usingADO) {
+    if ($UseCFS) {
         Write-Host "Using CFS for cargo source replacement"
         ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
         $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
@@ -262,7 +265,11 @@ if ($null -ne $packageType) {
     ## Test if tree-sitter is installed
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
-        cargo install tree-sitter-cli --config .cargo/config.toml
+        if ($UseCFS) {
+            cargo install tree-sitter-cli --config .cargo/config.toml
+        } else {
+            cargo install tree-sitter-cli
+        }
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
         }
@@ -380,7 +387,11 @@ if (!$SkipBuild) {
                 else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            if ($UseCFS) {
+                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            } else {
+                                cargo install cargo-audit --features=fix
+                            }
                         }
 
                         cargo audit fix
@@ -413,7 +424,11 @@ if (!$SkipBuild) {
                     else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                if ($UseCFS) {
+                                    cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                } else {
+                                    cargo install cargo-audit --features=fix
+                                }
                             }
 
                             cargo audit fix
