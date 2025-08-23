@@ -100,7 +100,6 @@ impl Discovery {
                 if let Ok(version_req) = VersionReq::parse(version_string) {
                     for resource in resources {
                         if let Ok(resource_version) = Version::parse(&resource.version) {
-                            debug!("Comparing resource version {} to required version {}", resource_version, version_req);
                             if version_req.matches(&resource_version) {
                                 return Some(resource);
                             }
