@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::discovery_trait::{ResourceDiscovery, DiscoveryKind};
+use crate::discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -10,10 +10,9 @@ use crate::extensions::dscextension::{self, DscExtension, Capability as Extensio
 use crate::extensions::extension_manifest::ExtensionManifest;
 use crate::progress::{ProgressBar, ProgressFormat};
 use crate::util::convert_wildcard_to_regex;
-use linked_hash_map::LinkedHashMap;
 use regex::RegexBuilder;
 use rust_i18n::t;
-use semver::Version;
+use semver::{Version, VersionReq};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet, HashMap};
 use std::env;
@@ -263,7 +262,7 @@ impl ResourceDiscovery for CommandDiscovery {
                                 match resource {
                                     ImportedManifest::Extension(extension) => {
                                         if regex.is_match(&extension.type_name) {
-                                            trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name));
+                                            trace!("{}", t!("discovery.commandDiscovery.extensionFound", extension = extension.type_name, version = extension.version));
                                             // we only keep newest version of the extension so compare the version and only keep the newest
                                             if let Some(existing_extension) = extensions.get_mut(&extension.type_name) {
                                                 let Ok(existing_version) = Version::parse(&existing_extension.version) else {
@@ -285,12 +284,12 @@ impl ResourceDiscovery for CommandDiscovery {
                                             if let Some(ref manifest) = resource.manifest {
                                                 let manifest = import_manifest(manifest.clone())?;
                                                 if manifest.kind == Some(Kind::Adapter) {
-                                                    trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name));
-                                                    insert_resource(&mut adapters, &resource, true);
+                                                    trace!("{}", t!("discovery.commandDiscovery.adapterFound", adapter = resource.type_name, version = resource.version));
+                                                    insert_resource(&mut adapters, &resource);
                                                 }
                                                 // also make sure to add adapters as a resource as well
-                                                trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name));
-                                                insert_resource(&mut resources, &resource, true);
+                                                trace!("{}", t!("discovery.commandDiscovery.resourceFound", resource = resource.type_name, version = resource.version));
+                                                insert_resource(&mut resources, &resource);
                                             }
                                         }
                                     }
@@ -315,7 +314,7 @@ impl ResourceDiscovery for CommandDiscovery {
                         for resource in discovered_resources {
                             if regex.is_match(&resource.type_name) {
                                 trace!("{}", t!("discovery.commandDiscovery.extensionResourceFound", resource = resource.type_name));
-                                insert_resource(&mut resources, &resource, true);
+                                insert_resource(&mut resources, &resource);
                             }
                         }
                     }
@@ -412,9 +411,7 @@ impl ResourceDiscovery for CommandDiscovery {
                             }
 
                             if name_regex.is_match(&resource.type_name) {
-                                // we allow duplicate versions since it can come from different adapters
-                                // like PowerShell vs WindowsPowerShell
-                                insert_resource(&mut adapted_resources, &resource, false);
+                                insert_resource(&mut adapted_resources, &resource);
                                 adapter_resources_count += 1;
                             }
                         },
@@ -439,10 +436,7 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 
     fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str) -> Result<BTreeMap<String, Vec<ImportedManifest>>, DscError> {
-
-        trace!("Listing resources with type_name_filter '{type_name_filter}' and adapter_name_filter '{adapter_name_filter}'");
         let mut resources = BTreeMap::<String, Vec<ImportedManifest>>::new();
-
         if *kind == DiscoveryKind::Resource {
             if adapter_name_filter.is_empty() {
                 self.discover(kind, type_name_filter)?;
@@ -473,84 +467,98 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(resources)
     }
 
-    // TODO: handle version requirements
-    fn find_resources(&mut self, required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>
-    {
-        debug!("Searching for resources: {:?}", required_resource_types);
+    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
+        debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
         self.discover( &DiscoveryKind::Resource, "*")?;
+        let mut found_resources = BTreeMap::<String, Vec<DscResource>>::new();
+        let mut required_resources = HashMap::<DiscoveryFilter, bool>::new();
+        for filter in required_resource_types {
+            required_resources.insert(filter.clone(), false);
+        }
 
-        // convert required_resource_types to lowercase to handle case-insentiive search
-        let mut remaining_required_resource_types = required_resource_types.iter().map(|x| x.to_lowercase()).collect::<Vec<String>>();
-        remaining_required_resource_types.sort_unstable();
-        remaining_required_resource_types.dedup();
-
-        let mut found_resources = BTreeMap::<String, DscResource>::new();
-
-        for (resource_name, resources) in &self.resources {
-            // TODO: handle version requirements
-            let Some(resource ) = resources.first() else {
-                // skip if no resources
-                continue;
-            };
-
-            if remaining_required_resource_types.contains(&resource_name.to_lowercase())
-            {
-                // remove the resource from the list of required resources
-                remaining_required_resource_types.retain(|x| *x != resource_name.to_lowercase());
-                found_resources.insert(resource_name.to_lowercase(), resource.clone());
-                if remaining_required_resource_types.is_empty()
-                {
-                    return Ok(found_resources);
+        for filter in required_resource_types.iter() {
+            if let Some(resources) = self.resources.get(filter.resource_type()) {
+                debug!("Found type, looking for version {:?}", filter.version());
+                for resource in resources.iter() {
+                    if let Some(required_version) = filter.version() {
+                        if let Ok(resource_version) = Version::parse(&resource.version) {
+                            debug!("Comparing resource version {} to required version {}", resource_version, required_version);
+                            if let Ok(version_req) = VersionReq::parse(&required_version) {
+                                if version_req.matches(&resource_version) {
+                                    found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                                    required_resources.insert(filter.clone(), true);
+                                    debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
+                                    break;
+                                }
+                            } else {
+                                return Err(DscError::InvalidRequiredVersion(filter.resource_type().to_string(), required_version.to_string()));
+                            }
+                        } else {
+                            warn!("{}", t!("discovery.commandDiscovery.invalidVersionForResource", version = resource.version, resource = resource.type_name));
+                        }
+                    } else {
+                        // if no version specified, get first one which will be latest
+                        if let Some(resource) = resources.first() {
+                            required_resources.insert(filter.clone(), true);
+                            found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                            break;
+                        }
+                    }
                 }
+            } else {
+                let version = match &filter.version() {
+                    Some(v) => v.to_string(),
+                    None => String::new(),
+                };
+                return Err(DscError::ResourceNotFound(filter.resource_type().to_string(), version));
+            }
+            if required_resources.values().all(|&v| v) {
+                debug!("Found all resources: {:?}", found_resources);
+                return Ok(found_resources);
             }
         }
-        debug!("Found {} matching non-adapter-based resources", found_resources.len());
+        debug!("{}", t!("discovery.commandDiscovery.foundNonAdapterResources", count = found_resources.len()));
 
-        // now go through the adapters
-        let sorted_adapters = sort_adapters_based_on_lookup_table(&self.adapters, &remaining_required_resource_types);
-        for (adapter_name, adapters) in sorted_adapters {
-            // TODO: handle version requirements
-            let Some(adapter) = adapters.first() else {
-                // skip if no adapters
-                continue;
-            };
+        if required_resources.values().all(|&v| v) {
+            return Ok(found_resources);
+        }
 
-            if remaining_required_resource_types.contains(&adapter_name.to_lowercase())
-            {
-                // remove the adapter from the list of required resources
-                remaining_required_resource_types.retain(|x| *x != adapter_name.to_lowercase());
-                found_resources.insert(adapter_name.to_lowercase(), adapter.clone());
-                if remaining_required_resource_types.is_empty()
-                {
-                    return Ok(found_resources);
-                }
-            }
-
+        // now go through the adapters, this is for implicit adapters so version can't be specified so use latest version
+        for adapter_name in self.adapters.clone().keys() {
             self.discover_adapted_resources("*", &adapter_name)?;
-            // add/update found adapted resources to the lookup_table
             add_resources_to_lookup_table(&self.adapted_resources);
-
-            // now go through the adapter resources and add them to the list of resources
-            for (adapted_name, adapted_resource) in &self.adapted_resources {
-                let Some(adapted_resource) = adapted_resource.first() else {
-                    // skip if no resources
-                    continue;
-                };
-
-                if remaining_required_resource_types.contains(&adapted_name.to_lowercase())
-                {
-                    remaining_required_resource_types.retain(|x| *x != adapted_name.to_lowercase());
-                    found_resources.insert(adapted_name.to_lowercase(), adapted_resource.clone());
-
-                    // also insert the adapter
-                    found_resources.insert(adapter_name.to_lowercase(), adapter.clone());
-                    if remaining_required_resource_types.is_empty()
-                    {
-                        return Ok(found_resources);
+            for filter in required_resource_types.iter() {
+                if let Some(adapted_resources) = self.adapted_resources.get(filter.resource_type()) {
+                    for resource in adapted_resources.iter().rev() {
+                        if let Some(required_version) = filter.version() {
+                            if let Ok(resource_version) = Version::parse(&resource.version) {
+                                if let Ok(version_req) = VersionReq::parse(&required_version) {
+                                    if version_req.matches(&resource_version) {
+                                        found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                                        required_resources.insert(filter.clone(), true);
+                                        debug!("{}", t!("discovery.commandDiscovery.foundAdaptedResourceWithVersion", resource = resource.type_name, version = resource.version));
+                                    }
+                                }
+                            } else {
+                                warn!("{}", t!("discovery.commandDiscovery.invalidVersionForResource", version = required_version, resource = filter.resource_type()));
+                            }
+                        } else {
+                            // no version specified, use latest
+                            if let Some(resource) = adapted_resources.first() {
+                                found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                            }
+                        }
+                        if required_resources.values().all(|&v| v) {
+                            break;
+                        }
                     }
                 }
             }
+            if required_resources.values().all(|&v| v) {
+                break;
+            }
         }
+
         Ok(found_resources)
     }
 
@@ -562,9 +570,8 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 }
 
-// TODO: This should be a BTreeMap of the resource name and a BTreeMap of the version and DscResource, this keeps it version sorted more efficiently
-fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource, skip_duplicate_version: bool) {
-    if let Some(resource_versions) = resources.get_mut(&resource.type_name) {
+fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
+    if let Some(resource_versions) = resources.get_mut(&resource.type_name.to_lowercase()) {
         debug!("Resource '{}' already exists, checking versions", resource.type_name);
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
@@ -581,19 +588,16 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
                     continue;
                 },
             };
-            // if the version already exists, we might skip it
-            if skip_duplicate_version && resource_instance_version == resource_version {
-                return;
-            }
 
             if resource_instance_version < resource_version {
+                debug!("Found newer resource '{}' with version '{}' at index {}", resource.type_name, resource.version, index);
                 insert_index = index;
                 break;
             }
         }
         resource_versions.insert(insert_index, resource.clone());
     } else {
-        resources.insert(resource.type_name.clone(), vec![resource.clone()]);
+        resources.insert(resource.type_name.to_lowercase(), vec![resource.clone()]);
     }
 }
 
@@ -752,30 +756,6 @@ fn verify_executable(resource: &str, operation: &str, executable: &str) {
     if which(executable).is_err() {
         info!("{}", t!("discovery.commandDiscovery.executableNotFound", resource = resource, operation = operation, executable = executable));
     }
-}
-
-fn sort_adapters_based_on_lookup_table(unsorted_adapters: &BTreeMap<String, Vec<DscResource>>, needed_resource_types: &Vec<String>) -> LinkedHashMap<String, Vec<DscResource>>
-{
-    let mut result = LinkedHashMap::<String, Vec<DscResource>>::new();
-    let lookup_table = load_adapted_resources_lookup_table();
-    // first add adapters (for needed types) that can be found in the lookup table
-    for needed_resource in needed_resource_types {
-        if let Some(adapter_name) = lookup_table.get(needed_resource) {
-            if let Some(resource_vec) = unsorted_adapters.get(adapter_name) {
-                debug!("Lookup table found resource '{}' in adapter '{}'", needed_resource, adapter_name);
-                result.insert(adapter_name.to_string(), resource_vec.clone());
-            }
-        }
-    }
-
-    // now add remaining adapters
-    for (adapter_name, adapters) in unsorted_adapters {
-        if !result.contains_key(adapter_name) {
-            result.insert(adapter_name.to_string(), adapters.clone());
-        }
-    }
-
-    result
 }
 
 fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscResource>>)

@@ -12,6 +12,7 @@ mod in_desired_state;
 mod metadata;
 mod sleep;
 mod trace;
+mod version;
 mod whatif;
 
 use args::{Args, Schemas, SubCommand};
@@ -28,6 +29,7 @@ use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
+use crate::version::Version;
 use crate::whatif::WhatIf;
 use std::{thread, time::Duration};
 
@@ -229,6 +231,9 @@ fn main() {
                 Schemas::Trace => {
                     schema_for!(Trace)
                 },
+                Schemas::Version => {
+                    schema_for!(Version)
+                },
                 Schemas::WhatIf => {
                     schema_for!(WhatIf)
                 },
@@ -256,6 +261,12 @@ fn main() {
                 level,
             };
             serde_json::to_string(&trace).unwrap()
+        },
+        SubCommand::Version { version } => {
+            let version = Version {
+                version,
+            };
+            serde_json::to_string(&version).unwrap()
         },
         SubCommand::WhatIf { what_if } => {
             let result: WhatIf = if what_if {
