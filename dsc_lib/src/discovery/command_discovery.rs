@@ -478,11 +478,9 @@ impl ResourceDiscovery for CommandDiscovery {
 
         for filter in required_resource_types.iter() {
             if let Some(resources) = self.resources.get(filter.resource_type()) {
-                debug!("Found type, looking for version {:?}", filter.version());
                 for resource in resources.iter() {
                     if let Some(required_version) = filter.version() {
                         if let Ok(resource_version) = Version::parse(&resource.version) {
-                            debug!("Comparing resource version {} to required version {}", resource_version, required_version);
                             if let Ok(version_req) = VersionReq::parse(&required_version) {
                                 if version_req.matches(&resource_version) {
                                     found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
@@ -513,7 +511,6 @@ impl ResourceDiscovery for CommandDiscovery {
                 return Err(DscError::ResourceNotFound(filter.resource_type().to_string(), version));
             }
             if required_resources.values().all(|&v| v) {
-                debug!("Found all resources: {:?}", found_resources);
                 return Ok(found_resources);
             }
         }
@@ -572,7 +569,6 @@ impl ResourceDiscovery for CommandDiscovery {
 
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
     if let Some(resource_versions) = resources.get_mut(&resource.type_name.to_lowercase()) {
-        debug!("Resource '{}' already exists, checking versions", resource.type_name);
         // compare the resource versions and insert newest to oldest using semver
         let mut insert_index = resource_versions.len();
         for (index, resource_instance) in resource_versions.iter().enumerate() {
@@ -590,7 +586,6 @@ fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource:
             };
 
             if resource_instance_version < resource_version {
-                debug!("Found newer resource '{}' with version '{}' at index {}", resource.type_name, resource.version, index);
                 insert_index = index;
                 break;
             }
