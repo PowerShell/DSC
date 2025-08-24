@@ -3,7 +3,6 @@
 
 use crate::{dscerror::DscError, extensions::dscextension::DscExtension, dscresources::dscresource::DscResource};
 use std::collections::BTreeMap;
-
 use super::command_discovery::ImportedManifest;
 
 #[derive(Debug, PartialEq)]
