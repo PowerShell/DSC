@@ -861,7 +861,7 @@ impl Configurator {
         // create an array of DiscoveryFilter using the resource types and api_versions from the config
         let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
         for resource in &config.resources {
-            let filter = DiscoveryFilter::new(resource.resource_type.clone(), resource.api_version.clone());
+            let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.clone());
             if !discovery_filter.contains(&filter) {
                 discovery_filter.push(filter);
             }

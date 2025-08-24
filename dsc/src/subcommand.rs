@@ -496,7 +496,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-        resource_types.push(DiscoveryFilter::new(type_name.to_lowercase().to_string(), resource_block["api_version"].as_str().map(|s| s.to_string())));
+        resource_types.push(DiscoveryFilter::new(&type_name.to_lowercase(), resource_block["api_version"].as_str().map(std::string::ToString::to_string)));
     }
     dsc.find_resources(&resource_types, progress_format);
 
@@ -576,16 +576,16 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
         ResourceSubCommand::Schema { resource , version, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource.clone(), version.clone())], progress_format);
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             resource_command::schema(&mut dsc, resource, version.as_deref(), output_format.as_ref());
         },
         ResourceSubCommand::Export { resource, version, input, file, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource.clone(), version.clone())], progress_format);
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
             resource_command::export(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource.clone(), version.clone())], progress_format);
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             if *all {
                 resource_command::get_all(&mut dsc, resource, version.as_deref(), output_format.as_ref());
             }
@@ -599,17 +599,17 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
             }
         },
         ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource.clone(), version.clone())], progress_format);
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource.clone(), version.clone())], progress_format);
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::test(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
         ResourceSubCommand::Delete { resource, version, input, file: path } => {
-            dsc.find_resources(&[DiscoveryFilter::new(resource.clone(), version.clone())], progress_format);
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::delete(&mut dsc, resource, version.as_deref(), &parsed_input);
         },
