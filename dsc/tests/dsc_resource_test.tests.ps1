@@ -26,4 +26,11 @@ Describe 'Invoke a resource test directly' {
         $LASTEXITCODE | Should -Be 1
         $out | Should -BeLike '*ERROR*'
     }
+
+     It 'version works' {
+        $out = dsc resource test -r Test/Version --version 1.1.2 --input '{"version":"1.1.2"}' | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.version | Should -BeExactly '1.1.2'
+        $out.inDesiredState | Should -Be $true
+    }
 }
