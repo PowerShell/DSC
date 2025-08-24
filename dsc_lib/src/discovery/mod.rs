@@ -89,7 +89,7 @@ impl Discovery {
     #[must_use]
     pub fn find_resource(&mut self, type_name: &str, version_string: Option<&str>) -> Option<&DscResource> {
         if self.resources.is_empty() {
-            let discovery_filter = DiscoveryFilter::new(type_name.to_string(), version_string.map(|v| v.to_string()));
+            let discovery_filter = DiscoveryFilter::new(type_name, version_string.map(std::string::ToString::to_string));
             self.find_resources(&[discovery_filter], ProgressFormat::None);
         }
 
@@ -98,7 +98,7 @@ impl Discovery {
             if let Some(version) = version_string {
                 // The semver crate uses caret (meaning compatible) by default instead of exact if not specified
                 // If the first character is a number, then we prefix with =
-                let version = if version.chars().next().map_or(false, |c| c.is_ascii_digit()) {
+                let version = if version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
                     format!("={version}")
                 } else {
                     version.to_string()

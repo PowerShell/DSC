@@ -476,12 +476,12 @@ impl ResourceDiscovery for CommandDiscovery {
             required_resources.insert(filter.clone(), false);
         }
 
-        for filter in required_resource_types.iter() {
+        for filter in required_resource_types {
             if let Some(resources) = self.resources.get(filter.resource_type()) {
-                for resource in resources.iter() {
+                for resource in resources {
                     if let Some(required_version) = filter.version() {
                         if let Ok(resource_version) = Version::parse(&resource.version) {
-                            if let Ok(version_req) = VersionReq::parse(&required_version) {
+                            if let Ok(version_req) = VersionReq::parse(required_version) {
                                 if version_req.matches(&resource_version) {
                                     found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
                                     required_resources.insert(filter.clone(), true);
@@ -505,7 +505,7 @@ impl ResourceDiscovery for CommandDiscovery {
                 }
             } else {
                 let version = match &filter.version() {
-                    Some(v) => v.to_string(),
+                    Some(v) => (*v).to_string(),
                     None => String::new(),
                 };
                 return Err(DscError::ResourceNotFound(filter.resource_type().to_string(), version));
@@ -522,14 +522,14 @@ impl ResourceDiscovery for CommandDiscovery {
 
         // now go through the adapters, this is for implicit adapters so version can't be specified so use latest version
         for adapter_name in self.adapters.clone().keys() {
-            self.discover_adapted_resources("*", &adapter_name)?;
+            self.discover_adapted_resources("*", adapter_name)?;
             add_resources_to_lookup_table(&self.adapted_resources);
-            for filter in required_resource_types.iter() {
+            for filter in required_resource_types {
                 if let Some(adapted_resources) = self.adapted_resources.get(filter.resource_type()) {
                     for resource in adapted_resources.iter().rev() {
                         if let Some(required_version) = filter.version() {
                             if let Ok(resource_version) = Version::parse(&resource.version) {
-                                if let Ok(version_req) = VersionReq::parse(&required_version) {
+                                if let Ok(version_req) = VersionReq::parse(required_version) {
                                     if version_req.matches(&resource_version) {
                                         found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
                                         required_resources.insert(filter.clone(), true);
