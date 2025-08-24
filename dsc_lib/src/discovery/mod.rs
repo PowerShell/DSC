@@ -12,7 +12,6 @@ use semver::{Version, VersionReq};
 use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
-use tracing::debug;
 
 #[derive(Clone)]
 pub struct Discovery {
@@ -96,8 +95,15 @@ impl Discovery {
 
         let type_name = type_name.to_lowercase();
         if let Some(resources) = self.resources.get(&type_name) {
-            if let Some(version_string) = version_string {
-                if let Ok(version_req) = VersionReq::parse(version_string) {
+            if let Some(version) = version_string {
+                // The semver crate uses caret (meaning compatible) by default instead of exact if not specified
+                // If the first character is a number, then we prefix with =
+                let version = if version.chars().next().map_or(false, |c| c.is_ascii_digit()) {
+                    format!("={version}")
+                } else {
+                    version.to_string()
+                };
+                if let Ok(version_req) = VersionReq::parse(&version) {
                     for resource in resources {
                         if let Ok(resource_version) = Version::parse(&resource.version) {
                             if version_req.matches(&resource_version) {

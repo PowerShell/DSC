@@ -56,4 +56,25 @@ Describe 'Tests for resource versioning' {
         $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
         $out.results[0].result.actualState.version | Should -BeExactly $expected
     }
+
+    It 'Multiple versions should be handled correctly' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Test Version 1
+              type: Test/Version
+              apiVersion: '1.1.2'
+            - name: Test Version 2
+              type: Test/Version
+              apiVersion: '1.1.0'
+            - name: Test Version 3
+              type: Test/Version
+              apiVersion: '2'
+"@
+        $out = dsc -l trace config get -i $config_yaml 2> $TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+        $out.results[0].result.actualState.version | Should -BeExactly '1.1.2'
+        $out.results[1].result.actualState.version | Should -BeExactly '1.1.0'
+        $out.results[2].result.actualState.version | Should -BeExactly '2.0.0'
+    }
 }
