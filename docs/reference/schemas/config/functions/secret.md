@@ -230,7 +230,7 @@ The `secret()` function can return errors in the following situations:
 
 To support the `secret()` function, extensions must:
 
-1. Declare the `Secret` capability in their manifest
+1. Declare the `secret` capability in their manifest
 2. Implement a secret retrieval method that accepts name and optional vault
    parameters
 3. Return secret values as single-line strings (multi-line values are not
