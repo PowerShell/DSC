@@ -222,7 +222,7 @@ The `secret()` function can return errors in the following situations:
 
 - Secret values are retrieved at runtime and should be handled securely
 - Secrets are not cached by DSC and are retrieved fresh on each function call
-- Secret values are not logged in trace output for security reasons
+- Secret values are logged in trace output
 - Extensions should implement appropriate authentication and authorization for
   secret access
 
