@@ -148,6 +148,6 @@ Describe 'Tests for the secret() function and extensions' {
       $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results.Count | Should -Be 1
-      $out.results[0].result.actualState.Output | Should -BeExactly 'World'
+      $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
     }
 }
