@@ -699,9 +699,10 @@ impl Configurator {
     /// This function will return an error if the parameters are invalid.
     pub fn set_context(&mut self, parameters_input: Option<&Value>) -> Result<(), DscError> {
         let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
+
+        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
-        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         Ok(())
     }
 
