@@ -131,4 +131,23 @@ Describe 'Tests for the secret() function and extensions' {
         $errorMessage = Get-Content -Raw -Path $TestDrive/error.log
         $errorMessage | Should -Match "Extension 'Test/Secret2' returned multiple lines which is not supported for secrets"
     }
+
+    It 'Allows to pass in secret() through parameters' {
+      $configYaml = @'
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          parameters:
+            myString:
+              type: secureString
+              defaultValue: "[secret('MySecret')]"
+          resources:
+          - name: Database Connection
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output: "[parameters('myString')]"
+'@
+      $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results.Count | Should -Be 1
+      $out.results[0].result.actualState.Output | Should -BeExactly 'World'
+    }
 }
