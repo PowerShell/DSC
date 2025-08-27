@@ -102,6 +102,7 @@ foundResourceWithVersion = "Found matching resource '%{resource}' version %{vers
 invalidRequiredVersion = "Invalid required version '%{version}' for resource '%{resource}'"
 foundNonAdapterResources = "Found %{count} non-adapter resources"
 foundAdaptedResourceWithVersion = "Found adapted resource '%{resource}' with version %{version}"
+invalidVersionForResource = "Invalid version '%{version}' for resource '%{resource}'"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -538,7 +539,6 @@ validSchemaUrisAre = "Valid schema URIs are"
 extension = "Extension"
 unsupportedCapability = "does not support capability"
 setting = "Setting"
-invalidRequiredVersion = "Invalid required version"
 
 [progress]
 failedToSerialize = "Failed to serialize progress JSON: %{json}"
