@@ -503,12 +503,6 @@ impl ResourceDiscovery for CommandDiscovery {
                         }
                     }
                 }
-            } else {
-                let version = match &filter.version() {
-                    Some(v) => (*v).to_string(),
-                    None => String::new(),
-                };
-                return Err(DscError::ResourceNotFound(filter.resource_type().to_string(), version));
             }
             if required_resources.values().all(|&v| v) {
                 return Ok(found_resources);
