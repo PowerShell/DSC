@@ -40,7 +40,7 @@ systems.
 ### Example 1 - Retrieve a secret by name
 
 The following example retrieves a secret named 'DatabasePassword' from any
-available vault.
+available vault. The secret expression is used directly as the output value.
 
 ```yaml
 # secret.example.1.dsc.config.yaml
@@ -49,7 +49,7 @@ resources:
 - name: Database Connection
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "Connection string with password: [secret('DatabasePassword')]"
+    output: "[secret('DatabasePassword')]"
 ```
 
 ```bash
@@ -62,24 +62,29 @@ results:
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: "Connection string with password: MySecretPassword123"
+      output: "MySecretPassword123"
 messages: []
 hadErrors: false
 ```
 
-### Example 2 - Retrieve a secret from a specific vault
+### Example 2 - Pass a secret through a parameter default
 
-The following example retrieves a secret from a specific vault to avoid
-ambiguity when the same secret name exists in multiple vaults.
+The following example defines a secureString parameter whose default value
+is the secret. The resource then uses the parameter value for the output
+property.
 
 ```yaml
 # secret.example.2.dsc.config.yaml
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+parameters:
+  myString:
+    type: secureString
+    defaultValue: "[secret('MySecret')]"
 resources:
-- name: API Configuration
+- name: Database Connection
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "API Key: [secret('ApiKey', 'ProductionVault')]"
+    output: "[parameters('myString')]"
 ```
 
 ```bash
@@ -88,86 +93,11 @@ dsc config get --file secret.example.2.dsc.config.yaml
 
 ```yaml
 results:
-- name: API Configuration
+- name: Database Connection
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: "API Key: prod-api-key-xyz789"
-messages: []
-hadErrors: false
-```
-
-### Example 3 - Multiple secrets in configuration
-
-The following example demonstrates using multiple secrets within a single
-resource configuration.
-
-```yaml
-# secret.example.3.dsc.config.yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-resources:
-- name: Service Configuration
-  type: Microsoft.DSC.Debug/Echo
-  properties:
-    output:
-      username: "[secret('ServiceUsername')]"
-      password: "[secret('ServicePassword')]"
-      connectionString: "Server=myserver;User=[secret('DbUser')];Password=[secret('DbPassword')]"
-```
-
-```bash
-dsc config get --file secret.example.3.dsc.config.yaml
-```
-
-```yaml
-results:
-- name: Service Configuration
-  type: Microsoft.DSC.Debug/Echo
-  result:
-    actualState:
-      output:
-        username: "serviceaccount"
-        password: "SecurePassword456"
-        connectionString: "Server=myserver;User=dbuser;Password=DbPass789"
-messages: []
-hadErrors: false
-```
-
-### Example 4 - Conditional secret usage
-
-The following example shows using secrets conditionally based on environment
-parameters.
-
-```yaml
-# secret.example.4.dsc.config.yaml
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-parameters:
-  environment:
-    type: string
-    defaultValue: production
-resources:
-- name: Environment-specific config
-  type: Microsoft.DSC.Debug/Echo
-  properties:
-    output:
-      apiKey: >-
-        [if(equals(parameters('environment'), 'production'),
-        secret('ProdApiKey', 'ProdVault'),
-        secret('DevApiKey', 'DevVault'))]
-```
-
-```bash
-dsc config get --file secret.example.4.dsc.config.yaml
-```
-
-```yaml
-results:
-- name: Environment-specific config
-  type: Microsoft.DSC.Debug/Echo
-  result:
-    actualState:
-      output:
-        apiKey: "prod-secure-key-abc123"
+      output: "MySecretPassword123"
 messages: []
 hadErrors: false
 ```
@@ -240,13 +170,8 @@ To support the `secret()` function, extensions must:
 
 ## Related functions
 
-- [`if()`][00] - Returns values based on a condition for conditional secret
-  usage
-- [`equals()`][01] - Compares values for conditional logic
-- [`parameters()`][02] - Access configuration parameters that may influence
+- [`parameters()`][00] - Access configuration parameters that may influence
   secret selection
 
 <!-- Link reference definitions -->
-[00]: ./if.md
-[01]: ./equals.md
-[02]: ./parameters.md
+[00]: ./parameters.md
