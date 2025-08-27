@@ -26,7 +26,6 @@ Describe 'Discover extension tests' {
         $expectedExtensions = if ($IsWindows) {
             @(
             @{ type = 'Microsoft.DSC.Extension/Bicep'; version = '0.1.0'; capabilities = @('import') }
-            @{ type = 'Microsoft.DSC.Transitional/PSDesiredStateConfiguration'; version = '0.1.0'; capabilities = @('import') }
             @{ type = 'Microsoft.Windows.Appx/Discover'; version = '0.1.0'; capabilities = @('discover') }
             @{ type = 'Microsoft.PowerShell/Discover'; version = '0.1.0'; capabilities = @('discover') }
             @{ type = 'Test/Discover'; version = '0.1.0'; capabilities = @('discover') }
