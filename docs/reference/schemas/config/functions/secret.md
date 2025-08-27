@@ -214,7 +214,7 @@ The `secret()` function can return errors in the following situations:
   available vault
 - **Multiple different values**: Multiple extensions return different values
   for the same secret name (specify a vault to disambiguate)
-- **Vault not found**: The specified vault does not exist or is not accessible
+- **Vault not found**: The specified vault does not exist or is not accessible.
 - **Extension error**: An underlying secret management extension returns an
   error
 
@@ -222,7 +222,7 @@ The `secret()` function can return errors in the following situations:
 
 - Secret values are retrieved at runtime and should be handled securely
 - Secrets are not cached by DSC and are retrieved fresh on each function call
-- Secret values are not logged in trace output for security reasons
+- Secret values are logged when `--trace-level` is "TRACE"
 - Extensions should implement appropriate authentication and authorization for
   secret access
 
