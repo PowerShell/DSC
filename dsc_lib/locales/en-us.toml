@@ -100,7 +100,6 @@ importExtensionsEmpty = "Import extension '%{extension}' has no import extension
 searchingForResources = "Searching for resources: %{resources}"
 foundResourceWithVersion = "Found matching resource '%{resource}' version %{version}"
 foundNonAdapterResources = "Found %{count} non-adapter resources"
-foundAdaptedResourceWithVersion = "Found adapted resource '%{resource}' with version %{version}"
 resourceMissingRequireAdapter = "Resource '%{resource}' is missing 'require_adapter' field."
 
 [dscresources.commandResource]
