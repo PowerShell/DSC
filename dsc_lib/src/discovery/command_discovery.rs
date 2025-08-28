@@ -748,13 +748,11 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
         if let Some(adapter_name) = &res_vec[0].require_adapter {
             let new_value = adapter_name.to_string();
             let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
-            let old_value = oldvalue.clone();
             if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {
-                debug!("Resource '{resource_name}' in 'adapted_resources' has changed adapter from '{old_value:?}' to '{new_value}'.");
                 lookup_table_changed = true;
             }
         } else {
-            info!("Resource '{resource_name}' in 'adapted_resources' is missing 'require_adapter' field.");
+            debug!("{}", t!("discovery.commandDiscovery.resourceMissingRequireAdapter", resource = resource_name));
         }
     }
 

@@ -20,10 +20,7 @@ pub struct DiscoveryFilter {
 impl DiscoveryFilter {
     #[must_use]
     pub fn new(resource_type: &str, version: Option<String>) -> Self {
-        let version = match version {
-            Some(v) => Some(fix_semver(&v)),
-            None => None,
-        };
+        let version = version.map(|v| fix_semver(&v));
         Self {
             resource_type: resource_type.to_lowercase(),
             version,
