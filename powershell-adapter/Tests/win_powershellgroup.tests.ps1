@@ -218,7 +218,7 @@ resources:
   }
 
   It 'Set works with class-based PS DSC resources' {
-    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
+    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName'; Credential = @{"UserName" = "MyUser"; "Password" = "MyPassword"} } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.afterstate.InDesiredState | Should -Be $true
   }
