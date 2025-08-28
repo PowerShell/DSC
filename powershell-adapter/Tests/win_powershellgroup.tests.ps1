@@ -209,7 +209,7 @@ resources:
   }
 
   It 'Get works with class-based PS DSC resources' {
-    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } 2> "$testdrive/error.log" | ConvertTo-Json) | ConvertFrom-Json
+    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.actualState.Name | Should -Be 'TestName'
     $out.actualState.Ensure | Should -Be 'Present'
@@ -218,7 +218,7 @@ resources:
   }
 
   It 'Set works with class-based PS DSC resources' {
-    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } 2> "$testdrive/error.log" | ConvertTo-Json) | ConvertFrom-Json
+    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.afterstate.InDesiredState | Should -Be $true
   }

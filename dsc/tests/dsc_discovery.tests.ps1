@@ -166,19 +166,19 @@ Describe 'tests for resource discovery' {
 
     It 'Verify non-zero exit code when resource not found' {
 
-        $out = dsc resource get -r abc/def
+        $out = dsc resource get -r abc/def 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = dsc resource get --all -r abc/def
+        $out = dsc resource get --all -r abc/def >$null
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource set -r abc/def -f -
+        $out = 'abc' | dsc resource set -r abc/def -f - 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource test -r abc/def -f -
+        $out = 'abc' | dsc resource test -r abc/def -f - 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource delete -r abc/def -f -
+        $out = 'abc' | dsc resource delete -r abc/def -f - 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = dsc resource export -r abc/def
+        $out = dsc resource export -r abc/def 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = dsc resource schema -r abc/def
+        $out = dsc resource schema -r abc/def 2>$null
         $LASTEXITCODE | Should -Be 7
     }
 
