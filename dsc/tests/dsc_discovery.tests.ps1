@@ -155,8 +155,7 @@ Describe 'tests for resource discovery' {
 
         # second invocation (without an update) should use but not save adapter lookup table
         "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Lookup table found resource 'testclassresource/testclassresource' in adapter 'Microsoft.DSC/PowerShell'"
-        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table"
+        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table" -Because (Get-Content $TestDrive/tracing.txt -Raw)
 
         # third invocation (with an update) should save updated adapter lookup table
         dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt

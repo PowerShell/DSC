@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{dscerror::DscError, extensions::dscextension::DscExtension, dscresources::dscresource::DscResource};
+use crate::{dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
 use std::collections::BTreeMap;
-use super::command_discovery::ImportedManifest;
+use super::{command_discovery::ImportedManifest, fix_semver};
 
 #[derive(Debug, PartialEq)]
 pub enum DiscoveryKind {
@@ -20,11 +20,9 @@ pub struct DiscoveryFilter {
 impl DiscoveryFilter {
     #[must_use]
     pub fn new(resource_type: &str, version: Option<String>) -> Self {
-        // The semver crate uses caret (meaning compatible) by default instead of exact if not specified
-        // If the first character is a number, then we prefix with =
         let version = match version {
-            Some(v) if v.chars().next().is_some_and(|c| c.is_ascii_digit()) => Some(format!("={v}")),
-            other => other,
+            Some(v) => Some(fix_semver(&v)),
+            None => None,
         };
         Self {
             resource_type: resource_type.to_lowercase(),
