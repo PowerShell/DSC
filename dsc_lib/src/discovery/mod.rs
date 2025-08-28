@@ -158,13 +158,12 @@ impl Discovery {
     }
 }
 
+#[must_use]
 pub fn fix_semver(version: &str) -> String {
     // The semver crate uses caret (meaning compatible) by default instead of exact if not specified
     // Check if is semver, then if the first character is a number, then we prefix with =
-    if let Ok(_) = Version::parse(version) {
-        if version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
-            return format!("={version}");
-        }
+    if Version::parse(version).is_ok() && version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+        return format!("={version}");
     }
     version.to_string()
 }
