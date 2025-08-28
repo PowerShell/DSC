@@ -496,7 +496,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-        resource_types.push(DiscoveryFilter::new(&type_name.to_lowercase(), resource_block["api_version"].as_str().map(std::string::ToString::to_string)));
+        resource_types.push(DiscoveryFilter::new(&type_name, resource_block["api_version"].as_str().map(std::string::ToString::to_string)));
     }
     dsc.find_resources(&resource_types, progress_format);
 
