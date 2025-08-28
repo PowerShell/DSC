@@ -478,34 +478,10 @@ impl ResourceDiscovery for CommandDiscovery {
 
         for filter in required_resource_types {
             if let Some(resources) = self.resources.get(filter.resource_type()) {
-                for resource in resources {
-                    if let Some(required_version) = filter.version() {
-                        if let Ok(resource_version) = Version::parse(&resource.version) {
-                            if let Ok(version_req) = VersionReq::parse(required_version) {
-                                if version_req.matches(&resource_version) {
-                                    found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                                    required_resources.insert(filter.clone(), true);
-                                    debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
-                                    break;
-                                }
-                            } else {
-                                return Err(DscError::InvalidRequiredVersion(filter.resource_type().to_string(), required_version.to_string()));
-                            }
-                        } else {
-                            warn!("{}", t!("discovery.commandDiscovery.invalidVersionForResource", version = resource.version, resource = resource.type_name));
-                        }
-                    } else {
-                        // if no version specified, get first one which will be latest
-                        if let Some(resource) = resources.first() {
-                            required_resources.insert(filter.clone(), true);
-                            found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                            break;
-                        }
-                    }
-                }
+                filter_resources(&mut found_resources, &mut required_resources, resources, filter);
             }
             if required_resources.values().all(|&v| v) {
-                return Ok(found_resources);
+                break;
             }
         }
         debug!("{}", t!("discovery.commandDiscovery.foundNonAdapterResources", count = found_resources.len()));
@@ -520,29 +496,10 @@ impl ResourceDiscovery for CommandDiscovery {
             add_resources_to_lookup_table(&self.adapted_resources);
             for filter in required_resource_types {
                 if let Some(adapted_resources) = self.adapted_resources.get(filter.resource_type()) {
-                    for resource in adapted_resources.iter().rev() {
-                        if let Some(required_version) = filter.version() {
-                            if let Ok(resource_version) = Version::parse(&resource.version) {
-                                if let Ok(version_req) = VersionReq::parse(required_version) {
-                                    if version_req.matches(&resource_version) {
-                                        found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                                        required_resources.insert(filter.clone(), true);
-                                        debug!("{}", t!("discovery.commandDiscovery.foundAdaptedResourceWithVersion", resource = resource.type_name, version = resource.version));
-                                    }
-                                }
-                            } else {
-                                warn!("{}", t!("discovery.commandDiscovery.invalidVersionForResource", version = required_version, resource = filter.resource_type()));
-                            }
-                        } else {
-                            // no version specified, use latest
-                            if let Some(resource) = adapted_resources.first() {
-                                found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
-                            }
-                        }
-                        if required_resources.values().all(|&v| v) {
-                            break;
-                        }
-                    }
+                    filter_resources(&mut found_resources, &mut required_resources, adapted_resources, filter);
+                }
+                if required_resources.values().all(|&v| v) {
+                    break;
                 }
             }
             if required_resources.values().all(|&v| v) {
@@ -558,6 +515,41 @@ impl ResourceDiscovery for CommandDiscovery {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
         Ok(self.extensions.clone())
+    }
+}
+
+fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, required_resources: &mut HashMap<DiscoveryFilter, bool>, resources: &[DscResource], filter: &DiscoveryFilter) {
+    for resource in resources {
+        if let Some(required_version) = filter.version() {
+            if let Ok(resource_version) = Version::parse(&resource.version) {
+                if let Ok(version_req) = VersionReq::parse(required_version) {
+                    if version_req.matches(&resource_version) {
+                        found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                        required_resources.insert(filter.clone(), true);
+                        debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
+                        break;
+                    }
+                }
+            } else {
+                // if not semver, we do a string comparison
+                if resource.version == *required_version {
+                    found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                    required_resources.insert(filter.clone(), true);
+                    debug!("{}", t!("discovery.commandDiscovery.foundResourceWithVersion", resource = resource.type_name, version = resource.version));
+                    break;
+                }
+            }
+        } else {
+            // if no version specified, get first one which will be latest
+            if let Some(resource) = resources.first() {
+                required_resources.insert(filter.clone(), true);
+                found_resources.entry(filter.resource_type().to_string()).or_default().push(resource.clone());
+                break;
+            }
+        }
+        if required_resources.values().all(|&v| v) {
+            break;
+        }
     }
 }
 
@@ -627,7 +619,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
     let manifest = match serde_yaml::from_str::<ExtensionManifest>(&contents) {
         Ok(manifest) => manifest,
         Err(err) => {
-            return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
+            return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifest", path = path.to_string_lossy(), err = err).to_string()));
         }
     };
     let extension = load_extension_manifest(path, &manifest)?;
@@ -636,7 +628,7 @@ pub fn load_manifest(path: &Path) -> Result<ImportedManifest, DscError> {
 
 fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<DscResource, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
+        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
     }
 
     let kind = if let Some(kind) = manifest.kind.clone() {
@@ -701,7 +693,7 @@ fn load_resource_manifest(path: &Path, manifest: &ResourceManifest) -> Result<Ds
 
 fn load_extension_manifest(path: &Path, manifest: &ExtensionManifest) -> Result<DscExtension, DscError> {
     if let Err(err) = validate_semver(&manifest.version) {
-        return Err(DscError::Validation(t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string()));
+        warn!("{}", t!("discovery.commandDiscovery.invalidManifestVersion", path = path.to_string_lossy(), err = err).to_string());
     }
 
     let mut capabilities: Vec<dscextension::Capability> = vec![];
@@ -756,7 +748,9 @@ fn add_resources_to_lookup_table(adapted_resources: &BTreeMap<String, Vec<DscRes
         if let Some(adapter_name) = &res_vec[0].require_adapter {
             let new_value = adapter_name.to_string();
             let oldvalue = lookup_table.insert(resource_name.to_string().to_lowercase(), new_value.clone());
+            let old_value = oldvalue.clone();
             if !lookup_table_changed && (oldvalue.is_none() || oldvalue.is_some_and(|val| val != new_value)) {
+                debug!("Resource '{resource_name}' in 'adapted_resources' has changed adapter from '{old_value:?}' to '{new_value}'.");
                 lookup_table_changed = true;
             }
         } else {

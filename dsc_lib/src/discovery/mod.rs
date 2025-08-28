@@ -96,13 +96,7 @@ impl Discovery {
         let type_name = type_name.to_lowercase();
         if let Some(resources) = self.resources.get(&type_name) {
             if let Some(version) = version_string {
-                // The semver crate uses caret (meaning compatible) by default instead of exact if not specified
-                // If the first character is a number, then we prefix with =
-                let version = if version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
-                    format!("={version}")
-                } else {
-                    version.to_string()
-                };
+                let version = fix_semver(version);
                 if let Ok(version_req) = VersionReq::parse(&version) {
                     for resource in resources {
                         if let Ok(resource_version) = Version::parse(&resource.version) {
@@ -113,6 +107,11 @@ impl Discovery {
                     }
                     None
                 } else {
+                    for resource in resources {
+                        if resource.version == version {
+                            return Some(resource);
+                        }
+                    }
                     None
                 }
             } else {
@@ -157,6 +156,17 @@ impl Discovery {
             }
         }
     }
+}
+
+pub fn fix_semver(version: &str) -> String {
+    // The semver crate uses caret (meaning compatible) by default instead of exact if not specified
+    // Check if is semver, then if the first character is a number, then we prefix with =
+    if let Ok(_) = Version::parse(version) {
+        if version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+            return format!("={version}");
+        }
+    }
+    version.to_string()
 }
 
 impl Default for Discovery {
