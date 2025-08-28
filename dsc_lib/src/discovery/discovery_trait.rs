@@ -13,7 +13,7 @@ pub enum DiscoveryKind {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct DiscoveryFilter {
-    resource_type: String,
+    r#type: String,
     version: Option<String>,
 }
 
@@ -22,14 +22,14 @@ impl DiscoveryFilter {
     pub fn new(resource_type: &str, version: Option<String>) -> Self {
         let version = version.map(|v| fix_semver(&v));
         Self {
-            resource_type: resource_type.to_lowercase(),
+            r#type: resource_type.to_lowercase(),
             version,
         }
     }
 
     #[must_use]
     pub fn resource_type(&self) -> &str {
-        &self.resource_type
+        &self.r#type
     }
 
     #[must_use]
