@@ -175,7 +175,19 @@ Describe 'tests for resource discovery' {
     ) {
         param($cmdline)
 
-        Invoke-Expression $cmdline 2>$null
+        $out = dsc resource get -r abc/def 2>$null
+        $LASTEXITCODE | Should -Be 7
+        $out = dsc resource get --all -r abc/def 2>$null
+        $LASTEXITCODE | Should -Be 7
+        $out = 'abc' | dsc resource set -r abc/def -f - 2>$null
+        $LASTEXITCODE | Should -Be 7
+        $out = 'abc' | dsc resource test -r abc/def -f - 2>$null
+        $LASTEXITCODE | Should -Be 7
+        $out = 'abc' | dsc resource delete -r abc/def -f - 2>$null
+        $LASTEXITCODE | Should -Be 7
+        $out = dsc resource export -r abc/def 2>$null
+        $LASTEXITCODE | Should -Be 7
+        $out = dsc resource schema -r abc/def 2>$null
         $LASTEXITCODE | Should -Be 7
     }
 

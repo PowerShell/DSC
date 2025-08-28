@@ -112,7 +112,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get --all works on PS class-based resource' -Pending {
 
-        $r = dsc resource get --all -r TestClassResource/TestClassResource
+        $r = dsc resource get --all -r TestClassResource/TestClassResource 2>$null
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.count | Should -Be 5
