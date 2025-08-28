@@ -158,9 +158,16 @@ impl Discovery {
     }
 }
 
+/// Fix the semantic versioning requirements of a given version requirements string.
+/// The `semver` crate uses caret (meaning compatible) by default instead of exact if not specified
+///
+/// # Parameters
+/// * `version` - The version requirements string to fix.
+///
+/// # Returns
+/// The fixed version requirements string.
 #[must_use]
 pub fn fix_semver(version: &str) -> String {
-    // The semver crate uses caret (meaning compatible) by default instead of exact if not specified
     // Check if is semver, then if the first character is a number, then we prefix with =
     if Version::parse(version).is_ok() && version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
         return format!("={version}");

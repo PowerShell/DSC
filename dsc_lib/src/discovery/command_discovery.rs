@@ -548,11 +548,12 @@ fn filter_resources(found_resources: &mut BTreeMap<String, Vec<DscResource>>, re
             }
         }
         if required_resources.values().all(|&v| v) {
-            break;
+            return;
         }
     }
 }
 
+/// Inserts a resource into tree adding to vector if already exists
 fn insert_resource(resources: &mut BTreeMap<String, Vec<DscResource>>, resource: &DscResource) {
     if let Some(resource_versions) = resources.get_mut(&resource.type_name.to_lowercase()) {
         // compare the resource versions and insert newest to oldest using semver
