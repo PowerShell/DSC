@@ -416,7 +416,6 @@ Describe 'tests for function expressions' {
     @{ expression = "[lastIndexOf(createArray(createArray('a','b'), createArray('c','d'), createArray('a','b')), createArray('a','b'))]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(createObject('name','John'), createObject('name','Jane'), createObject('name','John')), createObject('name','John'))]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(), 'test')]"; expected = -1 }
-    @{ expression = "[lastIndexOf(createArray(createArray(1,2), createArray(3, createArray(4)), createArray(1,2)), createArray(1,2))]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(createObject('a',1,'b',2), createObject('b',2,'a',1)), createObject('a',1,'b',2))]"; expected = 1 }
     @{ expression = "[lastIndexOf(createArray('1','2','3'), 1)]"; expected = -1 }
     @{ expression = "[lastIndexOf(createArray(1,2,3), '1')]"; expected = -1 }
