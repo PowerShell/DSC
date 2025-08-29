@@ -90,7 +90,7 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser
             .parse_and_execute(
-                "[lastIndexOf(createArray(createArray(1,2), createArray(3, createArray(4)), createArray(1,2)), createArray(1,2))]",
+                "[lastIndexOf(createArray(createArray(1,2), createArray(3,4), createArray(1,2)), createArray(1,2))]",
                 &Context::new(),
             )
             .unwrap();
