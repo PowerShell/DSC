@@ -16,15 +16,15 @@ Describe 'registry config whatif tests' {
             "keyPath": "HKCU\\1\\2\\3"
         }
 '@
-        registry config set -w --input $json | Write-Host
-        $get_before = registry config get --input $json
-        $result = registry config set -w --input $json | ConvertFrom-Json
+        registry config set -w --input $json 2>$null | Write-Host
+        $get_before = registry config get --input $json 2>$null
+        $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result._metadata.whatIf[0] | Should -Match '.*1.*'
         $result._metadata.whatIf[1] | Should -Match '.*2.*'
         $result._metadata.whatIf[2] | Should -Match '.*3.*'
-        $get_after = registry config get --input $json
+        $get_after = registry config get --input $json 2>$null
         $get_before | Should -EQ $get_after
     }
 
@@ -38,7 +38,7 @@ Describe 'registry config whatif tests' {
             }
         }
 '@
-        $result = registry config set -w --input $json | ConvertFrom-Json
+        $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result.valueName | Should -Be 'Hello'
@@ -54,7 +54,7 @@ Describe 'registry config whatif tests' {
             "keyPath": "HKCU\\1\\2"
         }
 '@
-        registry config set --input $set_json
+        registry config set --input $set_json 2>$null
         $whatif_json = @'
             {
                 "keyPath": "HKCU\\1\\2",
@@ -64,7 +64,7 @@ Describe 'registry config whatif tests' {
                 }
             }
 '@
-        $result = registry config set -w --input $whatif_json | ConvertFrom-Json
+        $result = registry config set -w --input $whatif_json 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2'
         $result.valueName | Should -Be 'Hello'
@@ -82,7 +82,7 @@ Describe 'registry config whatif tests' {
             }
         }
 '@
-        registry config set --input $set_json
+        registry config set --input $set_json 2>$null
         $whatif_json = @'
         {
             "keyPath": "HKCU\\1\\2\\3",
@@ -92,7 +92,7 @@ Describe 'registry config whatif tests' {
             }
         }
 '@
-        $result = registry config set -w --input $whatif_json | ConvertFrom-Json
+        $result = registry config set -w --input $whatif_json 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result.valueName | Should -Be 'Hello'
@@ -110,7 +110,7 @@ Describe 'registry config whatif tests' {
             }
         }
 '@
-        registry config set --input $set_json
+        registry config set --input $set_json 2>$null
         $set_json = @'
         {
             "keyPath": "HKCU\\1\\2\\3",
@@ -120,13 +120,13 @@ Describe 'registry config whatif tests' {
             }
         }
 '@
-        registry config set --input $set_json
+        registry config set --input $set_json 2>$null
         $whatif_json = @'
         {
             "keyPath": "HKCU\\1\\2"
         }
 '@
-        $result = registry config set -w --input $whatif_json | ConvertFrom-Json
+        $result = registry config set -w --input $whatif_json 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2'
         ($result.psobject.properties | Measure-Object).Count | Should -Be 1

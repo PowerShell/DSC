@@ -61,7 +61,7 @@ Describe 'resource set tests' {
                 "_exist": false
             }
 '@
-            $null = registry config set --input $json
+            $null = registry config set --input $json 2>$null
         }
     }
 

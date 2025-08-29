@@ -166,21 +166,18 @@ Describe 'tests for resource discovery' {
         $env:PSModulePath = $oldPSModulePath
     }
 
-    It 'Verify non-zero exit code when resource not found' {
+    It 'Verify non-zero exit code when resource not found: <cmdline>' -TestCases @(
+        @{ cmdline = "dsc resource get -r abc/def" }
+        @{ cmdline = "dsc resource get --all -r abc/def" }
+        @{ cmdline = "dsc resource set -r abc/def -f -" }
+        @{ cmdline = "dsc resource test -r abc/def -f -" }
+        @{ cmdline = "dsc resource delete -r abc/def -f -" }
+        @{ cmdline = "dsc resource export -r abc/def" }
+        @{ cmdline = "dsc resource schema -r abc/def" }
+    ) {
+        param($cmdline)
 
-        $out = dsc resource get -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource get --all -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource set -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource test -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource delete -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource export -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource schema -r abc/def
+        Invoke-Expression $cmdline 2>$null
         $LASTEXITCODE | Should -Be 7
     }
 
