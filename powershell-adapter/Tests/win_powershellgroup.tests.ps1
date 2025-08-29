@@ -220,7 +220,7 @@ resources:
   It 'Set works with class-based PS DSC resources' {
     $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName'; Credential = @{"UserName" = "MyUser"; "Password" = "MyPassword"} } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
-    $out.afterState.inDesiredState | Should -Be $true -Because ($out | ConvertTo-Json | Out-String)
+    $out.changedProperties.Count | Should -Be 0 -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
   }
 
   It 'Export works with class-based PS DSC resources' {
