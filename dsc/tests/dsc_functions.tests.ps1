@@ -408,4 +408,27 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
+
+  It 'skip function works for: <expression>' -TestCases @(
+    @{ expression = "[skip(createArray('a','b','c','d'), 2)]"; expected = @('c','d') }
+    @{ expression = "[skip('hello', 2)]"; expected = 'llo' }
+    @{ expression = "[skip(createArray('a'), 0)]"; expected = @('a') }
+    @{ expression = "[skip('a', 0)]"; expected = 'a' }
+    @{ expression = "[skip(createArray('a','b'), 5)]"; expected = @() }
+    @{ expression = "[skip('', 1)]"; expected = '' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
 }
