@@ -95,7 +95,6 @@ Describe 'tests for resource discovery' {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
             $out = dsc resource list 2>&1
-            write-verbose -verbose ($out | Out-String)
             $out | Should -Match 'WARN.*?Validation.*?invalid version' -Because ($out | Out-String)
         }
         finally {
@@ -169,9 +168,9 @@ Describe 'tests for resource discovery' {
     It 'Verify non-zero exit code when resource not found: <cmdline>' -TestCases @(
         @{ cmdline = "dsc resource get -r abc/def" }
         @{ cmdline = "dsc resource get --all -r abc/def" }
-        @{ cmdline = "dsc resource set -r abc/def -f -" }
-        @{ cmdline = "dsc resource test -r abc/def -f -" }
-        @{ cmdline = "dsc resource delete -r abc/def -f -" }
+        @{ cmdline = "dsc resource set -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource test -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource delete -r abc/def -i 'abc'" }
         @{ cmdline = "dsc resource export -r abc/def" }
         @{ cmdline = "dsc resource schema -r abc/def" }
     ) {
