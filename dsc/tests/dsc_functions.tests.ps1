@@ -408,4 +408,31 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
+
+  It 'lastIndexOf function works for: <expression>' -TestCases @(
+    @{ expression = "[lastIndexOf(createArray('a', 'b', 'a', 'c'), 'a')]"; expected = 2 }
+    @{ expression = "[lastIndexOf(createArray(10, 20, 30, 20), 20)]"; expected = 3 }
+    @{ expression = "[lastIndexOf(createArray('Apple', 'Banana'), 'apple')]"; expected = -1 }
+    @{ expression = "[lastIndexOf(createArray(createArray('a','b'), createArray('c','d'), createArray('a','b')), createArray('a','b'))]"; expected = 2 }
+    @{ expression = "[lastIndexOf(createArray(createObject('name','John'), createObject('name','Jane'), createObject('name','John')), createObject('name','John'))]"; expected = 2 }
+    @{ expression = "[lastIndexOf(createArray(), 'test')]"; expected = -1 }
+    @{ expression = "[lastIndexOf(createArray(createArray(1,2), createArray(3, createArray(4)), createArray(1,2)), createArray(1,2))]"; expected = 2 }
+    @{ expression = "[lastIndexOf(createArray(createObject('a',1,'b',2), createObject('b',2,'a',1)), createObject('a',1,'b',2))]"; expected = 1 }
+    @{ expression = "[lastIndexOf(createArray('1','2','3'), 1)]"; expected = -1 }
+    @{ expression = "[lastIndexOf(createArray(1,2,3), '1')]"; expected = -1 }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
 }
