@@ -28,7 +28,11 @@ The `delimiter` can be any value; it is converted to a string.
 
 ## Examples
 
-### Example 1 - Join array of strings
+### Example 1 - Produce a list of servers
+
+Create a comma-separated string from a list of host names to pass to tools or
+APIs that accept CSV input. This example uses [`createArray()`][02] to build
+the server list and joins with ", ".
 
 ```yaml
 # join.example.1.dsc.config.yaml
@@ -37,7 +41,7 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[join(createArray('a','b','c'), '-')]"
+    output: "[join(createArray('web01','web02','web03'), ', ')]"
 ```
 
 ```bash
@@ -50,12 +54,15 @@ results:
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: a-b-c
+      output: web01, web02, web03
 messages: []
 hadErrors: false
 ```
 
-### Example 2 - Join characters of a string
+### Example 2 - Build a file system path from segments
+
+Join path segments into a single path string. This is useful when composing
+paths dynamically from parts.
 
 ```yaml
 # join.example.2.dsc.config.yaml
@@ -64,7 +71,7 @@ resources:
 - name: Echo
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[join('abc', '-')]"
+    output: "[join(createArray('/etc','nginx','sites-enabled'), '/')]"
 ```
 
 ```bash
@@ -77,7 +84,37 @@ results:
   type: Microsoft.DSC.Debug/Echo
   result:
     actualState:
-      output: a-b-c
+      output: /etc/nginx/sites-enabled
+messages: []
+hadErrors: false
+```
+
+### Example 3 - Format a version string from numeric parts
+
+Convert version components (numbers) into a dotted version string. Non-string
+elements are converted to strings automatically.
+
+```yaml
+# join.example.3.dsc.config.yaml
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+resources:
+- name: Echo
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[join(createArray(1,2,3), '.')]"
+```
+
+```bash
+dsc config get --file join.example.3.dsc.config.yaml
+```
+
+```yaml
+results:
+- name: Echo
+  type: Microsoft.DSC.Debug/Echo
+  result:
+    actualState:
+      output: 1.2.3
 messages: []
 hadErrors: false
 ```
