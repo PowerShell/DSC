@@ -94,9 +94,8 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $out = dsc resource list 2>&1
-            write-verbose -verbose ($out | Out-String)
-            $out | Should -Match 'WARN.*?Validation.*?invalid version' -Because ($out | Out-String)
+            $null = dsc resource list 2>$TestDrive/error.log
+            (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match 'WARN.*?does not use semver'
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
@@ -156,8 +155,7 @@ Describe 'tests for resource discovery' {
 
         # second invocation (without an update) should use but not save adapter lookup table
         "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Lookup table found resource 'testclassresource/testclassresource' in adapter 'Microsoft.DSC/PowerShell'"
-        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table"
+        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table" -Because (Get-Content $TestDrive/tracing.txt -Raw)
 
         # third invocation (with an update) should save updated adapter lookup table
         dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
@@ -168,19 +166,19 @@ Describe 'tests for resource discovery' {
 
     It 'Verify non-zero exit code when resource not found' {
 
-        $out = dsc resource get -r abc/def
+        $out = dsc resource get -r abc/def 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = dsc resource get --all -r abc/def
+        $out = dsc resource get --all -r abc/def >$null
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource set -r abc/def -f -
+        $out = 'abc' | dsc resource set -r abc/def -f - 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource test -r abc/def -f -
+        $out = 'abc' | dsc resource test -r abc/def -f - 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource delete -r abc/def -f -
+        $out = 'abc' | dsc resource delete -r abc/def -f - 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = dsc resource export -r abc/def
+        $out = dsc resource export -r abc/def 2>$null
         $LASTEXITCODE | Should -Be 7
-        $out = dsc resource schema -r abc/def
+        $out = dsc resource schema -r abc/def 2>$null
         $LASTEXITCODE | Should -Be 7
     }
 

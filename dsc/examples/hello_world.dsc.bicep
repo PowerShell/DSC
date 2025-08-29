@@ -3,7 +3,7 @@
 targetScope = 'desiredStateConfiguration'
 
 // use workaround where Bicep currently requires version in date format
-resource echo 'Microsoft.DSC.Debug/Echo@2025-01-01' = {
+resource echo 'Microsoft.DSC.Debug/Echo@2025-08-27' = {
   name: 'exampleEcho'
   properties: {
     output: 'Hello, world!'
