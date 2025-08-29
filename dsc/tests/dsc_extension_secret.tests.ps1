@@ -150,4 +150,21 @@ Describe 'Tests for the secret() function and extensions' {
       $out.results.Count | Should -Be 1
       $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
     }
+
+    It 'Allows to pass in secret() through variables' {
+      $configYaml = @'
+          $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+          variables:
+            myString: "[secret('MySecret')]"
+          resources:
+          - name: Database Connection
+            type: Microsoft.DSC.Debug/Echo
+            properties:
+              output: "[variables('myString')]"
+'@
+      $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results.Count | Should -Be 1
+      $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
+    }
 }
