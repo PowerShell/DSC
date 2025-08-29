@@ -16,7 +16,7 @@ Describe 'registry config whatif tests' {
             "keyPath": "HKCU\\1\\2\\3"
         }
 '@
-        registry config set -w --input $json 2>$null | Write-Host
+        $null = registry config set -w --input $json 2>$null
         $get_before = registry config get --input $json 2>$null
         $result = registry config set -w --input $json 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
