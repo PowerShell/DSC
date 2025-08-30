@@ -411,9 +411,7 @@ Describe 'tests for function expressions' {
 
   It 'join function works for: <expression>' -TestCases @(
     @{ expression = "[join(createArray('a','b','c'), '-')]"; expected = 'a-b-c' }
-    @{ expression = "[join('abc', '-')]"; expected = 'a-b-c' }
     @{ expression = "[join(createArray(), '-')]"; expected = '' }
-    @{ expression = "[join('', '-')]"; expected = '' }
   ) {
     param($expression, $expected)
 

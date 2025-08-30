@@ -7,7 +7,7 @@ title:       join
 
 ## Synopsis
 
-Joins a string array into a single string, separated using a delimiter.
+Joins an array into a single string, separated using a delimiter.
 
 ## Syntax
 
@@ -17,14 +17,12 @@ join(inputArray, delimiter)
 
 ## Description
 
-The `join()` function takes either an array or a string and a delimiter.
+The `join()` function takes an array and a delimiter.
 
-- If `inputArray` is an array, each element is converted to a string and
-  concatenated with the delimiter between elements.
-- If `inputArray` is a string, its characters are joined with the delimiter
-  between each character.
+- Each array element is converted to a string and concatenated with the
+  delimiter between elements.
 
-The `delimiter` can be any value; it is converted to a string.
+The `delimiter` can be any value; it’s converted to a string.
 
 ## Examples
 
@@ -123,17 +121,17 @@ hadErrors: false
 
 ### inputArray
 
-An array or a string.
+The array whose elements will be concatenated.
 
 ```yaml
-Type:     array | string
+Type:     array
 Required: true
 Position: 1
 ```
 
 ### delimiter
 
-Any value used between elements/characters. Converted to a string.
+Any value used between elements. Converted to a string.
 
 ```yaml
 Type:     any

@@ -29,7 +29,7 @@ impl Function for Join {
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::Array, FunctionArgKind::String],
+                vec![FunctionArgKind::Array],
                 // delimiter: accept any type (no validation), convert to string
                 vec![
                     FunctionArgKind::Array,
@@ -55,14 +55,7 @@ impl Function for Join {
             return Ok(Value::String(items.join(&delimiter)));
         }
 
-        if let Some(s) = args[0].as_str() {
-            // Edge case: empty string => empty string
-            if s.is_empty() { return Ok(Value::String(String::new())); }
-            let items: Vec<String> = s.chars().map(|c| c.to_string()).collect();
-            return Ok(Value::String(items.join(&delimiter)));
-        }
-
-        Err(DscError::Parser(t!("functions.join.invalidInputType").to_string()))
+        Err(DscError::Parser(t!("functions.join.invalidArrayArg").to_string()))
     }
 }
 
@@ -79,9 +72,9 @@ mod tests {
     }
 
     #[test]
-    fn join_string_chars() {
+    fn join_empty_array_returns_empty() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[join('abc', '-')]", &Context::new()).unwrap();
-        assert_eq!(result, "a-b-c");
+        let result = parser.parse_and_execute("[join(createArray(), '-')]", &Context::new()).unwrap();
+        assert_eq!(result, "");
     }
 }

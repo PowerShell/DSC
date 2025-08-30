@@ -324,9 +324,9 @@ invoked = "indexOf function"
 invalidArrayArg = "First argument must be an array"
 
 [functions.join]
-description = "Joins a string array into a single string, separated using a delimiter."
+description = "Joins the elements of an array into a single string, separated using a delimiter."
 invoked = "join function"
-invalidInputType = "The inputArray must be an array or a string."
+invalidArrayArg = "First argument must be an array"
 
 [functions.length]
 description = "Returns the length of a string, array, or object"
