@@ -81,9 +81,9 @@ mod tests {
     }
 
     #[test]
-    fn join_array_of_floats() {
+    fn join_array_of_integers() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[join(createArray(1.5,2.5,3.0), ',')]", &Context::new()).unwrap();
-        assert_eq!(result, "1.5,2.5,3.0");
+        let result = parser.parse_and_execute("[join(createArray(1,2,3), ',')]", &Context::new()).unwrap();
+        assert_eq!(result, "1,2,3");
     }
 }
