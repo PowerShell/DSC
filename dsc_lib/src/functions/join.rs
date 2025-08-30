@@ -12,12 +12,14 @@ use tracing::debug;
 pub struct Join {}
 
 fn stringify_value(v: &Value) -> String {
-    if let Some(s) = v.as_str() { return s.to_string(); }
-    if let Some(n) = v.as_i64() { return n.to_string(); }
-    if let Some(b) = v.as_bool() { return b.to_string(); }
-    if v.is_null() { return "null".to_string(); }
-    // Fallback to JSON for arrays/objects or other numbers
-    serde_json::to_string(v).unwrap_or_default()
+    match v {
+        Value::String(s) => s.clone(),
+        Value::Number(n) => n.to_string(),
+        Value::Bool(b) => b.to_string(),
+        Value::Null => "null".to_string(),
+        // Fallback to JSON for arrays/objects
+        _ => serde_json::to_string(v).unwrap_or_default(),
+    }
 }
 
 impl Function for Join {
@@ -76,5 +78,12 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[join(createArray(), '-')]", &Context::new()).unwrap();
         assert_eq!(result, "");
+    }
+
+    #[test]
+    fn join_array_of_floats() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[join(createArray(1.5,2.5,3.0), ',')]", &Context::new()).unwrap();
+        assert_eq!(result, "1.5,2.5,3.0");
     }
 }
