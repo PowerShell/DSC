@@ -416,6 +416,9 @@ Describe 'tests for function expressions' {
     @{ expression = "[lastIndexOf(createArray(createArray('a','b'), createArray('c','d'), createArray('a','b')), createArray('a','b'))]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(createObject('name','John'), createObject('name','Jane'), createObject('name','John')), createObject('name','John'))]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(), 'test')]"; expected = -1 }
+    # Objects are compared by deep equality: same keys and values are equal, regardless of property order.
+    # Both createObject('a',1,'b',2) and createObject('b',2,'a',1) are considered equal.
+    # Therefore, lastIndexOf returns 1 (the last position where an equal object occurs).
     @{ expression = "[lastIndexOf(createArray(createObject('a',1,'b',2), createObject('b',2,'a',1)), createObject('a',1,'b',2))]"; expected = 1 }
     @{ expression = "[lastIndexOf(createArray('1','2','3'), 1)]"; expected = -1 }
     @{ expression = "[lastIndexOf(createArray(1,2,3), '1')]"; expected = -1 }
