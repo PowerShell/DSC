@@ -26,9 +26,9 @@ specified number of items from the start.
 - For strings: returns a new string containing characters after the specified index
 
 Both parameters are required. `originalValue` must be an array or a string.
-`numberToSkip` must be an integer greater than or equal to zero. If the number
-is greater than the length of the array or string, the function returns an
-empty array or an empty string respectively.
+`numberToSkip` must be an integer; negative values are treated as zero. If the
+number is greater than the length of the array or string, the function returns
+an empty array or an empty string respectively.
 
 ## Examples
 
@@ -112,7 +112,8 @@ Position: 1
 
 ### numberToSkip
 
-The number of items to skip from the start. Must be a non-negative integer.
+The number of items to skip from the start. Must be an integer. Negative values
+are treated as zero.
 
 ```yaml
 Type:     int
@@ -135,7 +136,6 @@ Type: array | string
 
 - `originalValue` is not an array or string
 - `numberToSkip` is not an integer
-- `numberToSkip` is negative
 
 ## Related functions
 

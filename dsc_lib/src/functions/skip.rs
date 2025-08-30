@@ -31,27 +31,28 @@ impl Function for Skip {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.skip.invoked"));
 
-        let Some(count_i64) = args[1].as_i64() else {
-            return Err(DscError::Parser(t!("functions.skip.invalidNumberToSkip").to_string()));
-        };
-        if count_i64 < 0 {
-            return Err(DscError::Parser(t!("functions.skip.negativeNotAllowed").to_string()));
+        if let Some(count_i64) = args[1].as_i64() {
+            let count: usize = if count_i64 < 0 {
+                0
+            } else {
+                count_i64.try_into().unwrap_or(usize::MAX)
+            };
+
+            if let Some(array) = args[0].as_array() {
+                if count >= array.len() { return Ok(Value::Array(vec![])); }
+                let skipped = array.iter().skip(count).cloned().collect::<Vec<Value>>();
+                return Ok(Value::Array(skipped));
+            }
+
+            if let Some(s) = args[0].as_str() {
+                let result: String = s.chars().skip(count).collect();
+                return Ok(Value::String(result));
+            }
+
+            return Err(DscError::Parser(t!("functions.skip.invalidOriginalValue").to_string()));
         }
-        let count: usize = count_i64.try_into().unwrap_or(usize::MAX);
 
-        if let Some(array) = args[0].as_array() {
-            if count >= array.len() { return Ok(Value::Array(vec![])); }
-            let skipped = array.iter().skip(count).cloned().collect::<Vec<Value>>();
-            return Ok(Value::Array(skipped));
-        }
-
-        if let Some(s) = args[0].as_str() {
-
-            let result: String = s.chars().skip(count).collect();
-            return Ok(Value::String(result));
-        }
-
-        Err(DscError::Parser(t!("functions.skip.invalidOriginalValue").to_string()))
+        Err(DscError::Parser(t!("functions.skip.invalidNumberToSkip").to_string()))
     }
 }
 
@@ -80,5 +81,23 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[skip(createArray('a','b'), 5)]", &Context::new()).unwrap();
         assert_eq!(result, Value::Array(vec![]));
+    }
+
+    #[test]
+    fn skip_array_negative_is_zero() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[skip(createArray('a','b','c'), -1)]", &Context::new()).unwrap();
+        assert_eq!(result, Value::Array(vec![
+            Value::String("a".into()),
+            Value::String("b".into()),
+            Value::String("c".into()),
+        ]));
+    }
+
+    #[test]
+    fn skip_string_negative_is_zero() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[skip('ab', -2)]", &Context::new()).unwrap();
+        assert_eq!(result, Value::String("ab".into()));
     }
 }

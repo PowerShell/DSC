@@ -412,10 +412,13 @@ Describe 'tests for function expressions' {
   It 'skip function works for: <expression>' -TestCases @(
     @{ expression = "[skip(createArray('a','b','c','d'), 2)]"; expected = @('c','d') }
     @{ expression = "[skip('hello', 2)]"; expected = 'llo' }
-    @{ expression = "[skip(createArray('a'), 0)]"; expected = @('a') }
-    @{ expression = "[skip('a', 0)]"; expected = 'a' }
+    @{ expression = "[skip(createArray('a','b'), 0)]"; expected = @('a','b') }
+    @{ expression = "[skip('abc', 0)]"; expected = 'abc' }
     @{ expression = "[skip(createArray('a','b'), 5)]"; expected = @() }
     @{ expression = "[skip('', 1)]"; expected = '' }
+    # Negative counts are treated as zero
+    @{ expression = "[skip(createArray('x','y'), -3)]"; expected = @('x','y') }
+    @{ expression = "[skip('xy', -1)]"; expected = 'xy' }
   ) {
     param($expression, $expected)
 
