@@ -13,7 +13,19 @@ Metadata properties used and returned by DSC for configuration and resource oper
 
 ## Description
 
-Blah
+The `Microsoft.DSC` metadata object captures execution details that DSC adds to
+command output and, when applicable, to resource results. It describes what
+operation ran, when it started and finished, how long it took, the security
+context DSC ran under, and the DSC version that produced the output. These
+properties are informational and help with diagnostics, auditing, and tooling.
+
+Not every property is present for every operation. For example, `executionType`
+is only meaningful for `Set` (and is `WhatIf` when you invoke DSC with
+`--whatIf`), while `operation` is always provided. Timestamps use RFC 3339
+`date-time` format, and durations use the ISO 8601 `duration` format.
+
+Consumers should tolerate additional, future metadata fields. Producers should
+preserve unknown metadata they do not interpret.
 
 ## Properties
 
