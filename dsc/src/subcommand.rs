@@ -319,6 +319,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         }
     };
 
+    configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
+
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {
             configurator.context.execution_type = ExecutionKind::WhatIf;
