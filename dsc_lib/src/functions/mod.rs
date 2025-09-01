@@ -37,6 +37,7 @@ pub mod less_or_equals;
 pub mod format;
 pub mod int;
 pub mod index_of;
+pub mod last_index_of;
 pub mod max;
 pub mod min;
 pub mod mod_function;
@@ -147,6 +148,7 @@ impl FunctionDispatcher {
             Box::new(format::Format{}),
             Box::new(int::Int{}),
             Box::new(index_of::IndexOf{}),
+            Box::new(last_index_of::LastIndexOf{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
             Box::new(mod_function::Mod{}),

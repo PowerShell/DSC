@@ -8,7 +8,7 @@ Describe 'Registry config get tests' {
             "keyPath": "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion"
         }
 '@
-        $out = registry config get --input $json 
+        $out = registry config get --input $json 2>$null
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.keyPath | Should -Be 'HKLM\Software\Microsoft\Windows\CurrentVersion'
@@ -22,7 +22,7 @@ Describe 'Registry config get tests' {
             "valueName": "ProgramFilesPath"
         }
 '@
-        $out = registry config get --input $json
+        $out = registry config get --input $json 2>$null
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.keyPath | Should -Be 'HKLM\Software\Microsoft\Windows\CurrentVersion'
