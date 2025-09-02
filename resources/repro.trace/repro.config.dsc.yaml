@@ -1,0 +1,51 @@
+$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.vscode.json
+resources:
+  - type: Dsc.Repro/Trace
+    name: Simple messaging
+    properties:
+      case: simpleMessage
+      # emittedData: # Output from repro testing
+      #   warn: Simple message
+  - type: Dsc.Repro/Trace
+    name: Minimal struct
+    properties:
+      case: minimalStruct
+      # emittedData: # Output from repro testing
+      #   timestamp: 2024-08-12T15:26:25.4477204-05:00
+      #   level: WARN
+      #   fields:
+      #     message: structured trace message
+  - type: Dsc.Repro/Trace
+    name: Struct with metadata
+    properties:
+      case: structWithMetadata
+      # emittedData: # Output from repro testing
+      #   timestamp: 2024-08-12T15:26:26.1439312-05:00
+      #   level: WARN
+      #   fields:
+      #     message: structured trace message
+      #   target: C:\code\powershell\working\docs\DSC\bin\debug\repro.trace.resource.ps1
+  - type: Dsc.Repro/Trace
+    name: Sruct with additional fields
+    properties:
+      case: structWithAdditionalFields
+      # emittedData: # Output from repro testing
+      #   timestamp: 2024-08-12T15:26:27.1288515-05:00
+      #   level: WARN
+      #   fields:
+      #     message: structured trace message
+      #     extraInteger: 10
+      #     extraString: additional data
+  - type: Dsc.Repro/Trace
+    name: Struct with metadata and additional fields
+    properties:
+      case: structWithMetadataAndAdditionalFields
+      # emittedData: # Output from repro testing
+      #   timestamp: 2024-08-12T15:26:27.7689792-05:00
+      #   level: WARN
+      #   fields:
+      #     message: structured trace message
+      #     extraInteger: 10
+      #     extraString: additional data
+      #   target: C:\code\powershell\working\docs\DSC\bin\debug\repro.trace.resource.ps1
+      #   lineNumber: 94
