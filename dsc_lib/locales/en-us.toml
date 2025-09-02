@@ -410,6 +410,12 @@ secretNotFound = "Secret '%{name}' not found"
 description = "Checks if a string starts with a specific prefix"
 invoked = "startsWith function"
 
+[functions.skip]
+description = "Returns an array with all elements after the specified number, or a string with all characters after the specified number"
+invoked = "skip function"
+invalidNumberToSkip = "Second argument must be an integer"
+invalidOriginalValue = "First argument must be an array or string"
+
 [functions.string]
 description = "Converts a value to a string"
 

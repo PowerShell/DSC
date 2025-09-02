@@ -409,6 +409,32 @@ Describe 'tests for function expressions' {
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
 
+  It 'skip function works for: <expression>' -TestCases @(
+    @{ expression = "[skip(createArray('a','b','c','d'), 2)]"; expected = @('c','d') }
+    @{ expression = "[skip('hello', 2)]"; expected = 'llo' }
+    @{ expression = "[skip(createArray('a','b'), 0)]"; expected = @('a','b') }
+    @{ expression = "[skip('abc', 0)]"; expected = 'abc' }
+    @{ expression = "[skip(createArray('a','b'), 5)]"; expected = @() }
+    @{ expression = "[skip('', 1)]"; expected = '' }
+    # Negative counts are treated as zero
+    @{ expression = "[skip(createArray('x','y'), -3)]"; expected = @('x','y') }
+    @{ expression = "[skip('xy', -1)]"; expected = 'xy' }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
   It 'lastIndexOf function works for: <expression>' -TestCases @(
     @{ expression = "[lastIndexOf(createArray('a', 'b', 'a', 'c'), 'a')]"; expected = 2 }
     @{ expression = "[lastIndexOf(createArray(10, 20, 30, 20), 20)]"; expected = 3 }
