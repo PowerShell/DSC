@@ -94,8 +94,8 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $out = dsc resource list 2>&1
-            $out | Should -Match 'WARN.*?Validation.*?invalid version' -Because ($out | Out-String)
+            $null = dsc resource list 2>$TestDrive/error.log
+            (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match 'WARN.*?does not use semver'
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
