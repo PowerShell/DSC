@@ -94,8 +94,8 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $null = dsc resource list 2>$TestDrive/error.log
-            (Get-Content -Path $TestDrive/error.log -Raw) | Should -Match 'WARN.*?does not use semver'
+            $null = dsc resource list 2> "$testdrive/error.txt"
+            "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?does not use semver' -Because (Get-Content -Raw "$testdrive/error.txt")
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
@@ -113,7 +113,6 @@ Describe 'tests for resource discovery' {
         $env:DSC_RESOURCE_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
-        gc -raw $script:lookupTableFilePath
         $script:lookupTableFilePath | Should -FileContentMatchExactly 'Microsoft.DSC/PowerShell'
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
         $env:PSModulePath = $oldPSModulePath
@@ -149,16 +148,16 @@ Describe 'tests for resource discovery' {
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # initial invocation should populate and save adapter lookup table
-        dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        $null = dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Read 0 items into lookup table"
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table" -Because (Get-Content -Raw "$TestDrive/tracing.txt")
 
         # second invocation (without an update) should use but not save adapter lookup table
         "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table" -Because (Get-Content $TestDrive/tracing.txt -Raw)
+        "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table"
 
         # third invocation (with an update) should save updated adapter lookup table
-        dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
+        $null = dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
 
         $env:PSModulePath = $oldPSModulePath
@@ -175,19 +174,7 @@ Describe 'tests for resource discovery' {
     ) {
         param($cmdline)
 
-        $out = dsc resource get -r abc/def 2>$null
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource get --all -r abc/def 2>$null
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource set -r abc/def -f - 2>$null
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource test -r abc/def -f - 2>$null
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource delete -r abc/def -f - 2>$null
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource export -r abc/def 2>$null
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource schema -r abc/def 2>$null
+        Invoke-Expression $cmdline 2>$null
         $LASTEXITCODE | Should -Be 7
     }
 
