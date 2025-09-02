@@ -34,6 +34,7 @@ getAll = "Get all instances of the resource"
 resource = "The name of the resource to invoke"
 functionAbout = "Operations on DSC functions"
 listFunctionAbout = "List or find functions"
+version = "The version of the resource to invoke in semver format"
 
 [main]
 ctrlCReceived = "Ctrl-C received"

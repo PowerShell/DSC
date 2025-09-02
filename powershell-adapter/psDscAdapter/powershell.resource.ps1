@@ -26,11 +26,6 @@ trap {
     Write-DscTrace -Operation Debug -Message ($_ | Format-List -Force | Out-String)
 }
 
-# Adding some debug info to STDERR
-'PSVersion=' + $PSVersionTable.PSVersion.ToString() | Write-DscTrace
-'PSPath=' + $PSHome | Write-DscTrace
-'PSModulePath=' + $env:PSModulePath | Write-DscTrace
-
 if ($Operation -eq 'ClearCache') {
     $cacheFilePath = if ($IsWindows) {
         # PS 6+ on Windows
@@ -44,10 +39,14 @@ if ($Operation -eq 'ClearCache') {
         }
     }
 
-    'Deleting cache file ' + $cacheFilePath | Write-DscTrace
     Remove-Item -Force -ea SilentlyContinue -Path $cacheFilePath
     exit 0
 }
+
+# Adding some debug info to STDERR
+'PSVersion=' + $PSVersionTable.PSVersion.ToString() | Write-DscTrace
+'PSPath=' + $PSHome | Write-DscTrace
+'PSModulePath=' + $env:PSModulePath | Write-DscTrace
 
 if ($PSVersionTable.PSVersion.Major -le 5) {
     # For Windows PowerShell, we want to remove any PowerShell 7 paths from PSModulePath
@@ -87,7 +86,7 @@ switch ($Operation) {
 
         # cache was refreshed on script load
         foreach ($dscResource in $dscResourceCache) {
-        
+
             # https://learn.microsoft.com/dotnet/api/system.management.automation.dscresourceinfo
             $DscResourceInfo = $dscResource.DscResourceInfo
 
@@ -99,7 +98,7 @@ switch ($Operation) {
                 if ($DscResourceInfo.Capabilities) {
                     $capabilities = $DscResourceInfo.Capabilities
                 } elseif ($module.PrivateData.PSData.DscCapabilities) {
-                    
+
                     $capabilities = $module.PrivateData.PSData.DscCapabilities
                 } else {
                     $capabilities = @('get', 'set', 'test')
@@ -183,7 +182,7 @@ switch ($Operation) {
             }
             $result += $actualState
         }
-    
+
         # OUTPUT json to stderr for debug, and to stdout
         if ($Operation -eq 'Test') {
             $result = @{ result = $result; _inDesiredState = $inDesiredState } | ConvertTo-Json -Depth 10 -Compress
@@ -196,7 +195,7 @@ switch ($Operation) {
     }
     'Validate' {
         # VALIDATE not implemented
-        
+
         # OUTPUT
         @{ valid = $true } | ConvertTo-Json
     }

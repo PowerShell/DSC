@@ -3,6 +3,7 @@
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
+use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
@@ -338,7 +339,7 @@ impl Configurator {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Get '{}'", resource.name).as_str());
@@ -346,13 +347,11 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            debug!("resource_type {}", &resource.resource_type);
             let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
-            trace!("filter: {filter}");
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
@@ -418,7 +417,7 @@ impl Configurator {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Set '{}'", resource.name).as_str());
@@ -426,8 +425,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -570,7 +569,7 @@ impl Configurator {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Test '{}'", resource.name).as_str());
@@ -578,8 +577,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -647,7 +646,7 @@ impl Configurator {
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in &resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Export '{}'", resource.name).as_str());
@@ -655,8 +654,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
             let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
@@ -720,9 +719,10 @@ impl Configurator {
     /// This function will return an error if the parameters are invalid.
     pub fn set_context(&mut self, parameters_input: Option<&Value>) -> Result<(), DscError> {
         let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
+
+        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
-        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         Ok(())
     }
 
@@ -820,10 +820,15 @@ impl Configurator {
 
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
+        let version = self
+            .context
+            .dsc_version
+            .clone()
+            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                    version: Some(version),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
@@ -874,8 +879,16 @@ impl Configurator {
         check_security_context(config.metadata.as_ref())?;
 
         // Perform discovery of resources used in config
-        let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
-        self.discovery.find_resources(&required_resources, self.progress_format);
+        // create an array of DiscoveryFilter using the resource types and api_versions from the config
+        let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
+        for resource in &config.resources {
+            let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.clone());
+            if !discovery_filter.contains(&filter) {
+                discovery_filter.push(filter);
+            }
+        }
+
+        self.discovery.find_resources(&discovery_filter, self.progress_format);
         self.config = config;
         Ok(())
     }
