@@ -2,6 +2,23 @@
 # Licensed under the MIT License.
 
 Describe 'metadata tests' {
+    It 'metadata not provided if not declared in resource schema' {
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Microsoft.DSC.Debug/Echo
+            metadata:
+              ignoreKey: true
+            properties:
+              output: hello world
+'@
+        $out = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Will not add '_metadata' to properties because resource schema does not support it*"
+        $out.results.result.actualState.output | Should -BeExactly 'hello world'
+    }
+
     It 'resource can provide high-level metadata for <operation>' -TestCases @(
         @{ operation = 'get' }
         @{ operation = 'set' }

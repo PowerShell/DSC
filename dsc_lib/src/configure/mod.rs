@@ -6,7 +6,7 @@ use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff},
+    {dscresource::{Capability, Invoke, get_diff, validate_properties},
     invoke_result::{GetResult, SetResult, TestResult,  ResourceSetResponse}},
     resource_manifest::Kind,
 };
@@ -170,8 +170,8 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
-    if *kind == Kind::Adapter {
+fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
+    if dsc_resource.kind == Kind::Adapter {
         // add metadata to the properties so the adapter knows this is a config
         let mut metadata: Map<String, Value> = Map::new();
         if let Some(resource_metadata) = resource_metadata {
@@ -191,15 +191,19 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>>, resourc
     }
 
     if let Some(resource_metadata) = resource_metadata {
-        let other_metadata = resource_metadata.other.clone();
-        if let Some(mut properties) = properties {
-            properties.insert("_metadata".to_string(), Value::Object(other_metadata));
-            return Ok(serde_json::to_string(&properties)?);
-        }
-        let mut props = Map::new();
+        let other_metadata = resource_metadata.other;
+        let mut props = if let Some(props) = properties {
+            props
+        } else {
+            Map::new()
+        };
         props.insert("_metadata".to_string(), Value::Object(other_metadata));
-        properties = Some(props);
-        return Ok(serde_json::to_string(&properties)?);
+        let modified_props = Value::from(props.clone());
+        if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
+            warn!("{}", t!("configure.mod.schemaExcludesMetadata"));
+            props.remove("_metadata");
+        }
+        return Ok(serde_json::to_string(&props)?);
     }
 
     match properties {
@@ -347,7 +351,7 @@ impl Configurator {
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-            let filter = add_metadata(&dsc_resource.kind, properties, resource.metadata.clone())?;
+            let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("filter: {filter}");
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
@@ -442,7 +446,7 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(&dsc_resource.kind, properties, resource.metadata.clone())?;
+            let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
@@ -579,7 +583,7 @@ impl Configurator {
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-            let expected = add_metadata(&dsc_resource.kind, properties, resource.metadata.clone())?;
+            let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
             let mut test_result = match dsc_resource.test(&expected) {
@@ -655,7 +659,7 @@ impl Configurator {
                 return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
-            let input = add_metadata(&dsc_resource.kind, properties, resource.metadata.clone())?;
+            let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
