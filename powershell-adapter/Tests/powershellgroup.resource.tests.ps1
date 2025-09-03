@@ -112,7 +112,7 @@ Describe 'PowerShell adapter resource tests' {
 
     It 'Get --all works on PS class-based resource' -Pending {
 
-        $r = dsc resource get --all -r TestClassResource/TestClassResource
+        $r = dsc resource get --all -r TestClassResource/TestClassResource 2>$null
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.result.count | Should -Be 5
@@ -363,5 +363,17 @@ Describe 'PowerShell adapter resource tests' {
         $LASTEXITCODE | Should -Be 0
         $res = $r | ConvertFrom-Json
         $res.actualState.HashTableProp.Name | Should -Be 'DSCv3'
+    }
+
+    It 'Specifying version works' {
+        $out = dsc resource get -r TestClassResource/TestClassResource --version 0.0.1 | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.Ensure | Should -BeExactly 'Present'
+    }
+
+    It 'Specifying a non-existent version returns an error' {
+        $null = dsc resource get -r TestClassResource/TestClassResource --version 0.0.2 2> $TestDrive/error.log
+        $LASTEXITCODE | Should -Be 7
+        Get-Content -Path $TestDrive/error.log | Should -Match 'Resource not found: TestClassResource/TestClassResource 0.0.2'
     }
 }

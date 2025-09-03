@@ -1,0 +1,32 @@
+name: Publish to Winget
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+
+env:  
+  WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}  
+
+jobs:
+  publish:
+    runs-on: windows-latest # Action can only run on Windows
+
+    # Only submit stable releases
+    if: ${{ !github.event.release.prerelease }}
+    steps:
+      - name: Publish DSC package
+        run: |
+          $assets = '${{ toJSON(github.event.release.assets) }}' | ConvertFrom-Json
+          $x64ZIPInstallerUrl = $assets | Where-Object -Property name -like '*x86_64-pc-windows-msvc.zip' | Select-Object -ExpandProperty browser_download_url  
+          $arm64InstallerUrl = $assets | Where-Object -Property name -like '*aarch64-pc-windows-msvc.zip' | Select-Object -ExpandProperty browser_download_url  
+          $msixInstallerURL = $assets | Where-Object -Property name -like '*Win.msixbundle' | Select-Object -ExpandProperty browser_download_url
+          $version = (${{ toJSON(github.event.release.tag_name) }}).Trim('v')
+
+          $wingetPackage = "Microsoft.DSC"
+
+          & curl.exe -JLO https://aka.ms/wingetcreate/latest
+          & .\wingetcreate.exe update $wingetPackage --version $version --urls $x64ZIPInstallerUrl $arm64InstallerUrl $msixInstallerURL --submit 
+
+
