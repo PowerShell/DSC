@@ -43,7 +43,7 @@ impl McpServer {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let mut resources = Vec::new();
-            for resource in dsc.list_available(&DiscoveryKind::Resource, "*", "*", ProgressFormat::None) {
+            for resource in dsc.list_available(&DiscoveryKind::Resource, "*", "", ProgressFormat::None) {
                 resources.push(resource);
             }
             ResourceListResult { resources }
