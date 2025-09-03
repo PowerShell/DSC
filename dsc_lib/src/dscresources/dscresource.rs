@@ -588,24 +588,24 @@ pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result
         // convert to resource_manifest``
         let manifest: ResourceManifest = serde_json::from_value(manifest)?;
         if manifest.validate.is_some() {
-            debug!("{}: {type_name} ", t!("subcommand.resourceImplementsValidate"));
+            debug!("{}: {type_name} ", t!("dscresources.dscresource.resourceImplementsValidate"));
             let resource_config = properties.to_string();
             let result = resource.validate(&resource_config)?;
             if !result.valid {
-                let reason = result.reason.unwrap_or(t!("subcommand.noReason").to_string());
-                return Err(DscError::Validation(format!("{}: {type_name} {reason}", t!("subcommand.resourceValidationFailed"))));
+                let reason = result.reason.unwrap_or(t!("dscresources.dscresource.noReason").to_string());
+                return Err(DscError::Validation(format!("{}: {type_name} {reason}", t!("dscresources.dscresource.resourceValidationFailed"))));
             }
             return Ok(())
         }
         // use schema validation
-        trace!("{}: {type_name}", t!("subcommand.resourceDoesNotImplementValidate"));
+        trace!("{}: {type_name}", t!("dscresources.dscresource.resourceDoesNotImplementValidate"));
         let Ok(schema) = resource.schema() else {
-            return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noSchemaOrValidate"))));
+            return Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noSchemaOrValidate"))));
         };
         let schema = serde_json::from_str(&schema)?;
         return validate_json(&resource.type_name, &schema, properties)
     }
-    Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noManifest"))))
+    Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noManifest"))))
 }
 
 /// Validate the JSON against the schema.
@@ -624,18 +624,18 @@ pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result
 ///
 /// * `DscError` - The JSON is invalid
 pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
-    debug!("{}: {source}", t!("util.validatingSchema"));
+    debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
     trace!("JSON: {json}");
     trace!("Schema: {schema}");
     let compiled_schema = match Validator::new(schema) {
         Ok(compiled_schema) => compiled_schema,
         Err(err) => {
-            return Err(DscError::Validation(format!("{}: {err}", t!("util.failedToCompileSchema"))));
+            return Err(DscError::Validation(format!("{}: {err}", t!("dscresources.dscresource.failedToCompileSchema"))));
         }
     };
 
     if let Err(err) = compiled_schema.validate(json) {
-        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed"))));
+        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("dscresources.dscresource.validationFailed"))));
     }
 
     Ok(())
