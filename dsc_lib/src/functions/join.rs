@@ -11,14 +11,14 @@ use tracing::debug;
 #[derive(Debug, Default)]
 pub struct Join {}
 
-fn stringify_value(v: &Value) -> String {
+fn stringify_value(v: &Value) -> Result<String, DscError> {
     match v {
-        Value::String(s) => s.clone(),
-        Value::Number(n) => n.to_string(),
-        Value::Bool(b) => b.to_string(),
-        Value::Null => "null".to_string(),
-        // Fallback to JSON for arrays/objects
-        _ => serde_json::to_string(v).unwrap_or_default(),
+        Value::String(s) => Ok(s.clone()),
+        Value::Number(n) => Ok(n.to_string()),
+        Value::Bool(b) => Ok(b.to_string()),
+        Value::Null => Err(DscError::Parser("Array elements cannot be null".to_string())),
+        Value::Array(_) => Err(DscError::Parser("Array elements cannot be arrays".to_string())),
+        Value::Object(_) => Err(DscError::Parser("Array elements cannot be objects".to_string())),
     }
 }
 
@@ -32,15 +32,7 @@ impl Function for Join {
             max_args: 2,
             accepted_arg_ordered_types: vec![
                 vec![FunctionArgKind::Array],
-                // delimiter: accept any type (no validation), convert to string
-                vec![
-                    FunctionArgKind::Array,
-                    FunctionArgKind::Boolean,
-                    FunctionArgKind::Null,
-                    FunctionArgKind::Number,
-                    FunctionArgKind::Object,
-                    FunctionArgKind::String,
-                ],
+                vec![FunctionArgKind::String],
             ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::String],
@@ -50,11 +42,12 @@ impl Function for Join {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.join.invoked"));
 
-        let delimiter = stringify_value(&args[1]);
+        let delimiter = args[1].as_str().unwrap();
 
         if let Some(array) = args[0].as_array() {
-            let items: Vec<String> = array.iter().map(stringify_value).collect();
-            return Ok(Value::String(items.join(&delimiter)));
+            let items: Result<Vec<String>, DscError> = array.iter().map(stringify_value).collect();
+            let items = items?;
+            return Ok(Value::String(items.join(delimiter)));
         }
 
         Err(DscError::Parser(t!("functions.join.invalidArrayArg").to_string()))
@@ -65,6 +58,8 @@ impl Function for Join {
 mod tests {
     use crate::configure::context::Context;
     use crate::parser::Statement;
+    use super::Join;
+    use crate::functions::Function;
 
     #[test]
     fn join_array_of_strings() {
@@ -85,5 +80,49 @@ mod tests {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[join(createArray(1,2,3), ',')]", &Context::new()).unwrap();
         assert_eq!(result, "1,2,3");
+    }
+
+    #[test]
+    fn join_array_with_null_fails() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[join(createArray('a', null()), ',')]", &Context::new());
+        assert!(result.is_err());
+        // The error comes from argument validation, not our function
+        assert!(result.unwrap_err().to_string().contains("does not accept null arguments"));
+    }
+
+    #[test]
+    fn join_array_with_array_fails() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[join(createArray('a', createArray('b')), ',')]", &Context::new());
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Arguments must all be arrays") || error_msg.contains("mixed types"));
+    }
+
+    #[test]
+    fn join_array_with_object_fails() {
+        let mut parser = Statement::new().unwrap();
+        let result = parser.parse_and_execute("[join(createArray('a', createObject('key', 'value')), ',')]", &Context::new());
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Arguments must all be") || error_msg.contains("mixed types"));
+    }
+
+    #[test]
+    fn join_direct_test_with_mixed_array() {
+        use serde_json::json;
+        use crate::configure::context::Context;
+        
+        let join_fn = Join::default();
+        let args = vec![
+            json!(["hello", {"key": "value"}]), // Array with string and object
+            json!(",")
+        ];
+        let result = join_fn.invoke(&args, &Context::new());
+        
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Array elements cannot be objects"));
     }
 }
