@@ -1,15 +1,41 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{dscerror::DscError, extensions::dscextension::DscExtension, dscresources::dscresource::DscResource};
+use crate::{dscerror::DscError, dscresources::dscresource::DscResource, extensions::dscextension::DscExtension};
 use std::collections::BTreeMap;
-
-use super::command_discovery::ImportedManifest;
+use super::{command_discovery::ImportedManifest, fix_semver};
 
 #[derive(Debug, PartialEq)]
 pub enum DiscoveryKind {
     Resource,
     Extension,
+}
+
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+pub struct DiscoveryFilter {
+    r#type: String,
+    version: Option<String>,
+}
+
+impl DiscoveryFilter {
+    #[must_use]
+    pub fn new(resource_type: &str, version: Option<String>) -> Self {
+        let version = version.map(|v| fix_semver(&v));
+        Self {
+            r#type: resource_type.to_lowercase(),
+            version,
+        }
+    }
+
+    #[must_use]
+    pub fn resource_type(&self) -> &str {
+        &self.r#type
+    }
+
+    #[must_use]
+    pub fn version(&self) -> Option<&String> {
+        self.version.as_ref()
+    }
 }
 
 pub trait ResourceDiscovery {
@@ -76,7 +102,7 @@ pub trait ResourceDiscovery {
     /// # Errors
     ///
     /// This function will return an error if the underlying discovery fails.
-    fn find_resources(&mut self, required_resource_types: &[String]) -> Result<BTreeMap<String, DscResource>, DscError>;
+    fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError>;
 
     /// Get the available extensions.
     ///

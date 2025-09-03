@@ -38,6 +38,7 @@ pub mod format;
 pub mod int;
 pub mod index_of;
 pub mod join;
+pub mod last_index_of;
 pub mod max;
 pub mod min;
 pub mod mod_function;
@@ -50,6 +51,7 @@ pub mod path;
 pub mod reference;
 pub mod resource_id;
 pub mod secret;
+pub mod skip;
 pub mod starts_with;
 pub mod string;
 pub mod sub;
@@ -148,6 +150,7 @@ impl FunctionDispatcher {
             Box::new(int::Int{}),
             Box::new(index_of::IndexOf{}),
             Box::new(join::Join{}),
+            Box::new(last_index_of::LastIndexOf{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
             Box::new(mod_function::Mod{}),
@@ -160,6 +163,7 @@ impl FunctionDispatcher {
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),
             Box::new(secret::Secret{}),
+            Box::new(skip::Skip{}),
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),

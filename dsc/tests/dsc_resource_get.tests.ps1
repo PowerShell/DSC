@@ -70,4 +70,10 @@ Describe 'resource get tests' {
         $out.bitness | Should -BeIn @('32', '64')
         $out.architecture | Should -BeIn @('x86', 'x86_64', 'arm64')
     }
+
+    It 'version works' {
+        $out = dsc resource get -r Test/Version --version 1.1.2 | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.actualState.version | Should -BeExactly '1.1.2'
+    }
 }
