@@ -71,6 +71,7 @@ propertyNotString = "Property '%{name}' with value '%{value}' is not a string"
 metadataMicrosoftDscIgnored = "Resource returned '_metadata' property 'Microsoft.DSC' which is ignored"
 metadataNotObject = "Resource returned '_metadata' property which is not an object"
 metadataRestartRequiredInvalid = "Resource returned '_metadata' property '_restartRequired' which contains invalid value: %{value}"
+schemaExcludesMetadata = "Will not add '_metadata' to properties because resource schema does not support it"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
@@ -176,6 +177,15 @@ diffKeyMissing = "diff: key '%{key}' missing"
 diffKeyNotObject = "diff: key '%{key}' is not an object"
 diffArraySize = "diff: arrays have different lengths"
 diffMissingItem = "diff: actual array missing expected item"
+failedToCompileSchema = "JSON Schema Compilation"
+noManifest = "Resource does not have a manifest"
+noReason = "No reason provided"
+noSchemaOrValidate = "Resource does not have a schema nor supports validation"
+resourceDoesNotImplementValidate = "Resource does not implement validation, using schema"
+resourceImplementsValidate = "Resource implements validation"
+resourceValidationFailed = "Resource failed validation"
+validatingSchema = "Validating against schema"
+validationFailed = "Failed validation"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
