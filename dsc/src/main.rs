@@ -28,8 +28,7 @@ pub mod util;
 
 i18n!("locales", fallback = "en-us");
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
+fn main() {
     #[cfg(debug_assertions)]
     check_debug();
 
@@ -99,7 +98,7 @@ async fn main() {
             subcommand::function(&subcommand);
         },
         SubCommand::Mcp => {
-            if let Err(err) = start_mcp_server().await {
+            if let Err(err) = start_mcp_server() {
                 error!("{}", t!("main.failedToStartMcpServer", error = err));
                 exit(util::EXIT_MCP_FAILED);
             }

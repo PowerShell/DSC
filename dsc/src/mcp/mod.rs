@@ -48,6 +48,7 @@ impl ServerHandler for McpServer {
 /// # Errors
 ///
 /// This function will return an error if the MCP server fails to start.
+#[tokio::main(flavor = "multi_thread")]
 pub async fn start_mcp_server() -> Result<(), McpError> {
     let service = match McpServer::new().serve(stdio()).await {
         Ok(service) => service,
