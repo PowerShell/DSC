@@ -14,8 +14,10 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Get default shell, eventually to be used for `sshd_config` and repeatable keywords
+    /// Get default shell and `sshd_config`, eventually to be used for repeatable keywords
     Get {
+        #[clap(short = 'i', long, help = t!("args.getInput").to_string())]
+        input: Option<String>,
         #[clap(short = 's', long, hide = true)]
         setting: Setting,
     },
@@ -24,8 +26,11 @@ pub enum Command {
         #[clap(short = 'i', long, help = t!("args.setInput").to_string())]
         input: String
     },
-    /// Export `sshd_config`
-    Export,
+    /// Export `sshd_config`, eventually to be used for repeatable keywords
+    Export {
+        #[clap(short = 'i', long, help = t!("args.exportInput").to_string())]
+        input: Option<String>
+    },
     Schema {
         // Used to inform which schema to generate
         #[clap(short = 's', long, hide = true)]
