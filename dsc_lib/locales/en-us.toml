@@ -327,6 +327,14 @@ description = "Returns the index of the first occurrence of an item in an array"
 invoked = "indexOf function"
 invalidArrayArg = "First argument must be an array"
 
+[functions.join]
+description = "Joins the elements of an array into a single string, separated using a delimiter."
+invoked = "join function"
+invalidArrayArg = "First argument must be an array"
+invalidNullElement = "Array elements cannot be null"
+invalidArrayElement = "Array elements cannot be arrays"
+invalidObjectElement = "Array elements cannot be objects"
+
 [functions.lastIndexOf]
 description = "Returns the index of the last occurrence of an item in an array"
 invoked = "lastIndexOf function"
