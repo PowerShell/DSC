@@ -11,7 +11,7 @@ Describe 'tests for runcommandonset get' {
         }
 "@
 
-        $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f - | ConvertFrom-Json
+        $result = $json | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f - 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.actualState.arguments | Should -BeExactly @('bar', 'baz')
         $result.actualState.executable | Should -BeExactly 'foo'
@@ -19,12 +19,12 @@ Describe 'tests for runcommandonset get' {
     }
 
     It 'Executable is a required input via CLI arguments' {
-        $null = runcommandonset get -a foo
+        $null = runcommandonset get -a foo 2>$null
         $LASTEXITCODE | Should -Be 4
     }
 
     It 'Executable is a required input via STDIN' {
-        '{ "arguments": "foo" }' | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f -
+        '{ "arguments": "foo" }' | dsc resource get -r Microsoft.DSC.Transitional/RunCommandOnSet -f - 2>$null
         $LASTEXITCODE | Should -Be 2
     }
 
@@ -39,7 +39,7 @@ Describe 'tests for runcommandonset get' {
                 arguments:
                 - "bar"
 "@
-        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $out = $config_yaml | dsc config get -f - 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 1

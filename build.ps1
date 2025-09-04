@@ -15,7 +15,7 @@ param(
     [switch]$GetPackageVersion,
     [switch]$SkipLinkCheck,
     [switch]$UseX64MakeAppx,
-    [switch]$UseCratesIO,
+    [switch]$UseCFS,
     [switch]$UpdateLockFile,
     [switch]$Audit,
     [switch]$UseCFSAuth,
@@ -23,13 +23,16 @@ param(
     [switch]$Verbose
 )
 
-$env:RUSTC_LOG=$null
-$env:RUSTFLAGS='-Dwarnings'
-$usingADO = ($null -ne $env:TF_BUILD)
-
 trap {
     Write-Error "An error occurred: $($_ | Out-String)"
     exit 1
+}
+
+$env:RUSTC_LOG=$null
+$env:RUSTFLAGS='-Dwarnings'
+$usingADO = ($null -ne $env:TF_BUILD)
+if ($usingADO -or $UseCFSAuth) {
+    $UseCFS = $true
 }
 
 if ($Verbose) {
@@ -164,13 +167,44 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     }
 } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
         $rustup = 'rustup'
-} else {
-    $rustup = 'echo'
 }
 
 if ($null -ne $packageType) {
     $SkipBuild = $true
 } else {
+    if ($UseCFS) {
+        Write-Host "Using CFS for cargo source replacement"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
+
+        if ($UseCFSAuth) {
+            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
+                throw "Azure CLI not found"
+            }
+
+            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
+                Write-Host "Getting token"
+                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
+                } else {
+                    $header = "Bearer $accessToken"
+                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
+                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
+                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
+                }
+            }
+            else {
+                Write-Warning "Azure CLI not found, proceeding with anonymous access."
+            }
+        }
+    } else {
+        # this will override the config.toml
+        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
+        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
+        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
+    }
+
     ## Test if Rust is installed
     if (!$usingADO -and !(Get-Command 'cargo' -ErrorAction Ignore)) {
         Write-Verbose -Verbose "Rust not found, installing..."
@@ -229,7 +263,11 @@ if ($null -ne $packageType) {
     ## Test if tree-sitter is installed
     if ($null -eq (Get-Command tree-sitter -ErrorAction Ignore)) {
         Write-Verbose -Verbose "tree-sitter not found, installing..."
-        cargo install tree-sitter-cli --config .cargo/config.toml
+        if ($UseCFS) {
+            cargo install tree-sitter-cli --config .cargo/config.toml
+        } else {
+            cargo install tree-sitter-cli
+        }
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install tree-sitter-cli"
         }
@@ -290,39 +328,6 @@ if (!$SkipBuild) {
     }
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
-    if ($UseCratesIO) {
-        # this will override the config.toml
-        Write-Host "Setting CARGO_SOURCE_crates-io_REPLACE_WITH to 'crates-io'"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = 'CRATESIO'
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = 'sparse+https://index.crates.io/'
-    } else {
-        Write-Host "Using CFS for cargo source replacement"
-        ${env:CARGO_SOURCE_crates-io_REPLACE_WITH} = $null
-        $env:CARGO_REGISTRIES_CRATESIO_INDEX = $null
-
-        if ($UseCFSAuth) {
-            if ($null -eq (Get-Command 'az' -ErrorAction Ignore)) {
-                throw "Azure CLI not found"
-            }
-
-            if ($null -ne (Get-Command az -ErrorAction Ignore)) {
-                Write-Host "Getting token"
-                $accessToken = az account get-access-token --query accessToken --resource 499b84ac-1321-427f-aa17-267ca6975798 -o tsv
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to get access token, use 'az login' first, or use '-useCratesIO' to use crates.io.  Proceeding with anonymous access."
-                } else {
-                    $header = "Bearer $accessToken"
-                    $env:CARGO_REGISTRIES_POWERSHELL_TOKEN = $header
-                    $env:CARGO_REGISTRIES_POWERSHELL_CREDENTIAL_PROVIDER = 'cargo:token'
-                    $env:CARGO_REGISTRIES_POWERSHELL_INDEX = "sparse+https://pkgs.dev.azure.com/powershell/PowerShell/_packaging/powershell~force-auth/Cargo/index/"
-                }
-            }
-            else {
-                Write-Warning "Azure CLI not found, proceeding with anonymous access."
-            }
-        }
-    }
-
     # make sure dependencies are built first so clippy runs correctly
     $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
@@ -380,7 +385,11 @@ if (!$SkipBuild) {
                 else {
                     if ($Audit) {
                         if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                            cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            if ($UseCFS) {
+                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                            } else {
+                                cargo install cargo-audit --features=fix
+                            }
                         }
 
                         cargo audit fix
@@ -413,7 +422,11 @@ if (!$SkipBuild) {
                     else {
                         if ($Audit) {
                             if ($null -eq (Get-Command cargo-audit -ErrorAction Ignore)) {
-                                cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                if ($UseCFS) {
+                                    cargo install cargo-audit --features=fix --config .cargo/config.toml
+                                } else {
+                                    cargo install cargo-audit --features=fix
+                                }
                             }
 
                             cargo audit fix

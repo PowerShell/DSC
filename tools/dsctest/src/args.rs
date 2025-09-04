@@ -15,6 +15,7 @@ pub enum Schemas {
     Metadata,
     Sleep,
     Trace,
+    Version,
     WhatIf,
 }
 
@@ -92,6 +93,11 @@ pub enum SubCommand {
 
     #[clap(name = "trace", about = "The trace level")]
     Trace,
+
+    #[clap(name = "version", about = "Test multiple versions of same resource")]
+    Version {
+        version: String,
+    },
 
     #[clap(name = "whatif", about = "Check if it is a whatif operation")]
     WhatIf {

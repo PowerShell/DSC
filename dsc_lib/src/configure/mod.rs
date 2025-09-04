@@ -3,10 +3,11 @@
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
+use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff},
+    {dscresource::{Capability, Invoke, get_diff, validate_properties},
     invoke_result::{GetResult, SetResult, TestResult,  ResourceSetResponse}},
     resource_manifest::Kind,
 };
@@ -170,10 +171,15 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Result<String, DscError> {
-    if *kind == Kind::Adapter {
+fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
+    if dsc_resource.kind == Kind::Adapter {
         // add metadata to the properties so the adapter knows this is a config
-        let mut metadata = Map::new();
+        let mut metadata: Map<String, Value> = Map::new();
+        if let Some(resource_metadata) = resource_metadata {
+            if !resource_metadata.other.is_empty() {
+                metadata.extend(resource_metadata.other);
+            }
+        }
         let mut dsc_value = Map::new();
         dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
         metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
@@ -183,6 +189,22 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
         }
         properties = Some(metadata);
         return Ok(serde_json::to_string(&properties)?);
+    }
+
+    if let Some(resource_metadata) = resource_metadata {
+        let other_metadata = resource_metadata.other;
+        let mut props = if let Some(props) = properties {
+            props
+        } else {
+            Map::new()
+        };
+        props.insert("_metadata".to_string(), Value::Object(other_metadata));
+        let modified_props = Value::from(props.clone());
+        if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
+            warn!("{}", t!("configure.mod.schemaExcludesMetadata"));
+            props.remove("_metadata");
+        }
+        return Ok(serde_json::to_string(&props)?);
     }
 
     match properties {
@@ -317,7 +339,7 @@ impl Configurator {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Get '{}'", resource.name).as_str());
@@ -325,13 +347,11 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            debug!("resource_type {}", &resource.resource_type);
-            let filter = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("filter: {filter}");
+            let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
@@ -397,7 +417,7 @@ impl Configurator {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Set '{}'", resource.name).as_str());
@@ -405,8 +425,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -425,7 +445,7 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(&dsc_resource.kind, properties)?;
+            let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
@@ -549,7 +569,7 @@ impl Configurator {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Test '{}'", resource.name).as_str());
@@ -557,12 +577,12 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-            let expected = add_metadata(&dsc_resource.kind, properties)?;
+            let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
             let mut test_result = match dsc_resource.test(&expected) {
@@ -626,7 +646,7 @@ impl Configurator {
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in &resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Export '{}'", resource.name).as_str());
@@ -634,11 +654,11 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
-            let input = add_metadata(&dsc_resource.kind, properties)?;
+            let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
@@ -699,9 +719,10 @@ impl Configurator {
     /// This function will return an error if the parameters are invalid.
     pub fn set_context(&mut self, parameters_input: Option<&Value>) -> Result<(), DscError> {
         let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
+
+        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
-        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         Ok(())
     }
 
@@ -799,10 +820,15 @@ impl Configurator {
 
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
+        let version = self
+            .context
+            .dsc_version
+            .clone()
+            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                    version: Some(version),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
@@ -853,8 +879,16 @@ impl Configurator {
         check_security_context(config.metadata.as_ref())?;
 
         // Perform discovery of resources used in config
-        let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
-        self.discovery.find_resources(&required_resources, self.progress_format);
+        // create an array of DiscoveryFilter using the resource types and api_versions from the config
+        let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
+        for resource in &config.resources {
+            let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.clone());
+            if !discovery_filter.contains(&filter) {
+                discovery_filter.push(filter);
+            }
+        }
+
+        self.discovery.find_resources(&discovery_filter, self.progress_format);
         self.config = config;
         Ok(())
     }

@@ -13,6 +13,7 @@ use std::fmt::Display;
 
 pub mod add;
 pub mod and;
+pub mod array;
 pub mod base64;
 pub mod bool;
 pub mod coalesce;
@@ -29,11 +30,15 @@ pub mod greater;
 pub mod greater_or_equals;
 pub mod r#if;
 pub mod r#false;
+pub mod first;
 pub mod length;
 pub mod less;
 pub mod less_or_equals;
 pub mod format;
 pub mod int;
+pub mod index_of;
+pub mod join;
+pub mod last_index_of;
 pub mod max;
 pub mod min;
 pub mod mod_function;
@@ -46,6 +51,7 @@ pub mod path;
 pub mod reference;
 pub mod resource_id;
 pub mod secret;
+pub mod skip;
 pub mod starts_with;
 pub mod string;
 pub mod sub;
@@ -119,6 +125,7 @@ impl FunctionDispatcher {
         let function_list : Vec<Box<dyn Function>> = vec![
             Box::new(add::Add{}),
             Box::new(and::And{}),
+            Box::new(array::Array{}),
             Box::new(base64::Base64{}),
             Box::new(bool::Bool{}),
             Box::new(coalesce::Coalesce{}),
@@ -135,11 +142,15 @@ impl FunctionDispatcher {
             Box::new(greater_or_equals::GreaterOrEquals{}),
             Box::new(r#if::If{}),
             Box::new(r#false::False{}),
+            Box::new(first::First{}),
             Box::new(length::Length{}),
             Box::new(less::Less{}),
             Box::new(less_or_equals::LessOrEquals{}),
             Box::new(format::Format{}),
             Box::new(int::Int{}),
+            Box::new(index_of::IndexOf{}),
+            Box::new(join::Join{}),
+            Box::new(last_index_of::LastIndexOf{}),
             Box::new(max::Max{}),
             Box::new(min::Min{}),
             Box::new(mod_function::Mod{}),
@@ -152,6 +163,7 @@ impl FunctionDispatcher {
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),
             Box::new(secret::Secret{}),
+            Box::new(skip::Skip{}),
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
