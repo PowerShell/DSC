@@ -89,12 +89,13 @@ Describe 'Tests for MCP server' {
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 3
-        $resources = dsc resource list | ConvertFrom-Json -Depth 20
+        $resources = dsc resource list | ConvertFrom-Json -Depth 20 | Select-Object type, kind, description -Unique
         $response.result.structuredContent.resources.Count | Should -Be $resources.Count
         for ($i = 0; $i -lt $resources.Count; $i++) {
-            $response.result.structuredContent.resources[$i].Resource.type | Should -BeExactly $resources[$i].type
-            $response.result.structuredContent.resources[$i].Resource.version | Should -BeExactly $resources[$i].version
-            $response.result.structuredContent.resources[$i].Resource.path | Should -BeExactly $resources[$i].path
+            ($response.result.structuredContent.resources[$i].psobject.properties | Measure-Object).Count | Should -Be 3
+            $response.result.structuredContent.resources[$i].type | Should -BeExactly $resources[$i].type -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].kind | Should -BeExactly $resources[$i].kind -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].description | Should -BeExactly $resources[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
         }
     }
 }
