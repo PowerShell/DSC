@@ -167,8 +167,6 @@ if ($null -ne (Get-Command msrustup -CommandType Application -ErrorAction Ignore
     }
 } elseif ($null -ne (Get-Command rustup -CommandType Application -ErrorAction Ignore)) {
         $rustup = 'rustup'
-} else {
-    $rustup = 'echo'
 }
 
 if ($null -ne $packageType) {
