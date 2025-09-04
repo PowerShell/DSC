@@ -13,7 +13,7 @@ use rmcp::{
 };
 use rust_i18n::t;
 
-pub mod list_resources;
+pub mod list_dsc_resources;
 
 #[derive(Debug, Clone)]
 pub struct McpServer {
@@ -48,24 +48,32 @@ impl ServerHandler for McpServer {
 /// # Errors
 ///
 /// This function will return an error if the MCP server fails to start.
-#[tokio::main(flavor = "multi_thread")]
-pub async fn start_mcp_server() -> Result<(), McpError> {
-    let service = match McpServer::new().serve(stdio()).await {
-        Ok(service) => service,
-        Err(err) => {
-            tracing::error!(error = %err, "Failed to start MCP server");
-            return Err(McpError::internal_error(t!("mcp.mod.failedToInitialize", error = err.to_string()), None));
-        }
-    };
+pub async fn start_mcp_server_async() -> Result<(), McpError> {
+    // Initialize the MCP server
+    let server = McpServer::new();
 
-    match service.waiting().await {
-        Ok(_) => {
-            tracing::info!("{}", t!("mcp.mod.serverStopped"));
-        }
-        Err(err) => {
-            tracing::error!("{}", t!("mcp.mod.failedToWait", error = err));
-        }
-    }
+    // Try to create the service with proper error handling
+    let service = server.serve(stdio()).await
+        .map_err(|err|  McpError::internal_error(t!("mcp.mod.failedToInitialize", error = err.to_string()), None))?;
 
+    // Wait for the service to complete with proper error handling
+    service.waiting().await
+        .map_err(|err| McpError::internal_error(t!("mcp.mod.serverWaitFailed", error = err.to_string()), None))?;
+
+    tracing::info!("{}", t!("mcp.mod.serverStopped"));
+    Ok(())
+}
+
+/// Synchronous wrapper to start the MCP server
+///
+/// # Errors
+///
+/// This function will return an error if the MCP server fails to start or if the tokio runtime cannot be created.
+pub fn start_mcp_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let rt = tokio::runtime::Runtime::new()
+        .map_err(|e| McpError::internal_error(t!("mcp.mod.failedToCreateRuntime", error = e.to_string()), None))?;
+
+    rt.block_on(start_mcp_server_async())
+        .map_err(|e| McpError::internal_error(t!("mcp.mod.failedToStart", error = e.to_string()), None))?;
     Ok(())
 }

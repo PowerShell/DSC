@@ -73,16 +73,16 @@ Describe 'Tests for MCP server' {
 
         $response.id | Should -Be 2
         $response.result.tools.Count | Should -Be 1
-        $response.result.tools[0].name | Should -BeExactly 'list_resources'
+        $response.result.tools[0].name | Should -BeExactly 'list_dsc_resources'
     }
 
-    It 'Calling list_resources works' {
+    It 'Calling list_dsc_resources works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
             id = 3
             method = "tools/call"
             params = @{
-                name = "list_resources"
+                name = "list_dsc_resources"
                 arguments = @{}
             }
         }

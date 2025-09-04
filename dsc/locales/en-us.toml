@@ -60,9 +60,11 @@ failedToStartMcpServer = "Failed to start MCP server: %{error}"
 
 [mcp.mod]
 failedToInitialize = "Failed to initialize MCP server: %{error}"
+failedToStart = "Failed to start MCP server: %{error}"
 instructions = "This server provides tools that work with DSC (DesiredStateConfiguration) which enables users to manage and configure their systems declaratively."
 serverStopped = "MCP server stopped"
 failedToWait = "Failed to wait for MCP server: %{error}"
+failedToCreateRuntime = "Failed to create async runtime: %{error}"
 
 [resolve]
 processingInclude = "Processing Include input"

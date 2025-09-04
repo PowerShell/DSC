@@ -39,7 +39,7 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    async fn list_resources(&self) -> Result<Json<ResourceListResult>, McpError> {
+    async fn list_dsc_resources(&self) -> Result<Json<ResourceListResult>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let mut resources = Vec::new();
