@@ -16,9 +16,9 @@ fn stringify_value(v: &Value) -> Result<String, DscError> {
         Value::String(s) => Ok(s.clone()),
         Value::Number(n) => Ok(n.to_string()),
         Value::Bool(b) => Ok(b.to_string()),
-        Value::Null => Err(DscError::Parser("Array elements cannot be null".to_string())),
-        Value::Array(_) => Err(DscError::Parser("Array elements cannot be arrays".to_string())),
-        Value::Object(_) => Err(DscError::Parser("Array elements cannot be objects".to_string())),
+        Value::Null => Err(DscError::Parser(t!("functions.join.invalidNullElement").to_string())),
+        Value::Array(_) => Err(DscError::Parser(t!("functions.join.invalidArrayElement").to_string())),
+        Value::Object(_) => Err(DscError::Parser(t!("functions.join.invalidObjectElement").to_string())),
     }
 }
 

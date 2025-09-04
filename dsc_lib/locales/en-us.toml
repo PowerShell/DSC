@@ -331,6 +331,9 @@ invalidArrayArg = "First argument must be an array"
 description = "Joins the elements of an array into a single string, separated using a delimiter."
 invoked = "join function"
 invalidArrayArg = "First argument must be an array"
+invalidNullElement = "Array elements cannot be null"
+invalidArrayElement = "Array elements cannot be arrays"
+invalidObjectElement = "Array elements cannot be objects"
 
 [functions.lastIndexOf]
 description = "Returns the index of the last occurrence of an item in an array"
