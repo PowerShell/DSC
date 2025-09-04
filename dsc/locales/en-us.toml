@@ -65,6 +65,7 @@ instructions = "This server provides tools that work with DSC (DesiredStateConfi
 serverStopped = "MCP server stopped"
 failedToWait = "Failed to wait for MCP server: %{error}"
 failedToCreateRuntime = "Failed to create async runtime: %{error}"
+serverWaitFailed = "Failed to wait for MCP server: %{error}"
 
 [resolve]
 processingInclude = "Processing Include input"
