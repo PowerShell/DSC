@@ -13,7 +13,8 @@ use crate::util::convert_wildcard_to_regex;
 use regex::RegexBuilder;
 use rust_i18n::t;
 use semver::{Version, VersionReq};
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet, HashMap};
 use std::env;
 use std::ffi::OsStr;
@@ -29,7 +30,7 @@ use crate::util::get_exe_path;
 const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
 pub enum ImportedManifest {
     Resource(DscResource),
     Extension(DscExtension),

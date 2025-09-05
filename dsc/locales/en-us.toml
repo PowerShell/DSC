@@ -35,6 +35,7 @@ resource = "The name of the resource to invoke"
 functionAbout = "Operations on DSC functions"
 listFunctionAbout = "List or find functions"
 version = "The version of the resource to invoke in semver format"
+mcpAbout = "Use DSC as a MCP server"
 
 [main]
 ctrlCReceived = "Ctrl-C received"
@@ -55,6 +56,15 @@ storeMessage = """DSC.exe is a command-line tool and cannot be run directly from
 Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
 
 Press any key to close this window"""
+failedToStartMcpServer = "Failed to start MCP server: %{error}"
+
+[mcp.mod]
+failedToInitialize = "Failed to initialize MCP server: %{error}"
+failedToStart = "Failed to start MCP server: %{error}"
+instructions = "This server provides tools that work with DSC (DesiredStateConfiguration) which enables users to manage and configure their systems declaratively."
+serverStopped = "MCP server stopped"
+failedToCreateRuntime = "Failed to create async runtime: %{error}"
+serverWaitFailed = "Failed to wait for MCP server: %{error}"
 
 [resolve]
 processingInclude = "Processing Include input"

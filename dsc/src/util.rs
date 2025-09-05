@@ -69,6 +69,7 @@ pub const EXIT_VALIDATION_FAILED: i32 = 5;
 pub const EXIT_CTRL_C: i32 = 6;
 pub const EXIT_DSC_RESOURCE_NOT_FOUND: i32 = 7;
 pub const EXIT_DSC_ASSERTION_FAILED: i32 = 8;
+pub const EXIT_MCP_FAILED: i32 = 9;
 
 pub const DSC_CONFIG_ROOT: &str = "DSC_CONFIG_ROOT";
 pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";

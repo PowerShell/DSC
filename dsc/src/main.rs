@@ -4,6 +4,7 @@
 use args::{Args, SubCommand};
 use clap::{CommandFactory, Parser};
 use clap_complete::generate;
+use mcp::start_mcp_server;
 use rust_i18n::{i18n, t};
 use std::{io, io::Read, process::exit};
 use sysinfo::{Process, RefreshKind, System, get_current_pid, ProcessRefreshKind};
@@ -18,6 +19,7 @@ use crossterm::event;
 use std::env;
 
 pub mod args;
+pub mod mcp;
 pub mod resolve;
 pub mod resource_command;
 pub mod subcommand;
@@ -95,6 +97,13 @@ fn main() {
         SubCommand::Function { subcommand } => {
             subcommand::function(&subcommand);
         },
+        SubCommand::Mcp => {
+            if let Err(err) = start_mcp_server() {
+                error!("{}", t!("main.failedToStartMcpServer", error = err));
+                exit(util::EXIT_MCP_FAILED);
+            }
+            exit(util::EXIT_SUCCESS);
+        }
         SubCommand::Resource { subcommand } => {
             subcommand::resource(&subcommand, progress_format);
         },

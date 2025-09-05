@@ -91,6 +91,8 @@ pub enum SubCommand {
         #[clap(subcommand)]
         subcommand: FunctionSubCommand,
     },
+    #[clap(name = "mcp", about = t!("args.mcpAbout").to_string())]
+    Mcp,
     #[clap(name = "resource", about = t!("args.resourceAbout").to_string())]
     Resource {
         #[clap(subcommand)]
