@@ -131,4 +131,52 @@ Describe 'registry config whatif tests' {
         $result.keyPath | Should -Be 'HKCU\1\2'
         ($result.psobject.properties | Measure-Object).Count | Should -Be 1
     }
+
+    It 'Can whatif delete an existing value using _exist is false' -Skip:(!$IsWindows) {
+        $set_json = @'
+        {
+            "keyPath": "HKCU\\1\\2\\3",
+            "valueName": "Hello",
+            "valueData": {
+                "String": "World"
+            }
+        }
+'@
+        registry config set --input $set_json | Out-Null
+
+        $whatif_delete_value = @'
+        {
+            "keyPath": "HKCU\\1\\2\\3",
+            "valueName": "Hello",
+            "_exist": false
+        }
+'@
+        $result = registry config set -w --input $whatif_delete_value | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result.keyPath | Should -Be 'HKCU\1\2\3'
+        $result.valueName | Should -Be 'Hello'
+        $result._metadata.whatIf | Should -Match "Would delete value 'Hello'"
+    }
+
+    It 'Can whatif delete an existing subkey using _exist is false' -Skip:(!$IsWindows) {
+        $set_key = @'
+        {
+            "keyPath": "HKCU\\1\\2\\3"
+        }
+'@
+        registry config set --input $set_key | Out-Null
+
+        $whatif_delete_key = @'
+        {
+            "keyPath": "HKCU\\1\\2\\3",
+            "_exist": false
+        }
+'@
+        $result = registry config set -w --input $whatif_delete_key | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $result.keyPath | Should -Be 'HKCU\1\2\3'
+        $result._metadata.whatIf | Should -Match "Would delete subkey '3'"
+        # For delete what-if, payload should only include keyPath (and optionally valueName when deleting a value)
+        ($result.psobject.properties | Where-Object { $_.Name -ne '_metadata' } | Measure-Object).Count | Should -Be 1
+    }
 }
