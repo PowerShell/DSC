@@ -108,7 +108,6 @@ Describe 'Discover extension tests' {
             $out.Count | Should -Be 1 -Because ($out | Out-String)
             $out.type | Should -Be 'Test/DiscoverRelative'
             $out = dsc resource list 2> $TestDrive/error.log
-            write-verbose -verbose (Get-Content -Path "$TestDrive/error.log" -Raw)
             $LASTEXITCODE | Should -Be 0
             $out | Should -BeNullOrEmpty
             $errorMessage = Get-Content -Path "$TestDrive/error.log" -Raw

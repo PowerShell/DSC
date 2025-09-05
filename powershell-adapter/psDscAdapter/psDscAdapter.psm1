@@ -172,7 +172,8 @@ function LoadPowerShellClassResourcesFromModule {
         $scriptPath = $moduleInfo.Path;
     }
 
-    $Resources = FindAndParseResourceDefinitions $scriptPath $moduleInfo.Version
+    $version = if ($moduleInfo.Version) { $moduleInfo.Version.ToString() } else { '0.0.0' }
+    $Resources = FindAndParseResourceDefinitions $scriptPath $version
 
     if ($moduleInfo.NestedModules) {
         foreach ($nestedModule in $moduleInfo.NestedModules) {

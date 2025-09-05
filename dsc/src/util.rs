@@ -41,12 +41,10 @@ use dsc_lib::{
         parse_input_to_json,
     },
 };
-use jsonschema::Validator;
 use path_absolutize::Absolutize;
 use rust_i18n::t;
 use schemars::{Schema, schema_for};
 use serde::Deserialize;
-use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 use std::io::{IsTerminal, Read};
@@ -421,39 +419,6 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     // set DSC_TRACE_LEVEL for child processes
     env::set_var(DSC_TRACE_LEVEL, tracing_level.to_string().to_ascii_lowercase());
     info!("Trace-level is {:?}", tracing_setting.level);
-}
-
-/// Validate the JSON against the schema.
-///
-/// # Arguments
-///
-/// * `source` - The source of the JSON
-/// * `schema` - The schema to validate against
-/// * `json` - The JSON to validate
-///
-/// # Returns
-///
-/// Nothing on success.
-///
-/// # Errors
-///
-/// * `DscError` - The JSON is invalid
-pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
-    debug!("{}: {source}", t!("util.validatingSchema"));
-    trace!("JSON: {json}");
-    trace!("Schema: {schema}");
-    let compiled_schema = match Validator::new(schema) {
-        Ok(compiled_schema) => compiled_schema,
-        Err(err) => {
-            return Err(DscError::Validation(format!("{}: {err}", t!("util.failedToCompileSchema"))));
-        }
-    };
-
-    if let Err(err) = compiled_schema.validate(json) {
-        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("util.validationFailed"))));
-    }
-
-    Ok(())
 }
 
 pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_stdin: bool) -> String {

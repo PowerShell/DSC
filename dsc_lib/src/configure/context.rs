@@ -21,6 +21,7 @@ pub struct Context {
     pub restart_required: Option<Vec<RestartRequired>>,
     pub process_expressions: bool,
     pub processing_parameter_defaults: bool,
+    pub dsc_version: Option<String>,
 }
 
 impl Context {
@@ -41,6 +42,7 @@ impl Context {
             restart_required: None,
             process_expressions: true,
             processing_parameter_defaults: false,
+            dsc_version: None,
         }
     }
 }

@@ -4,17 +4,18 @@
 pub mod command_discovery;
 pub mod discovery_trait;
 
-use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery};
+use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::extensions::dscextension::{Capability, DscExtension};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
+use semver::{Version, VersionReq};
 use std::collections::BTreeMap;
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
 #[derive(Clone)]
 pub struct Discovery {
-    pub resources: BTreeMap<String, DscResource>,
+    pub resources: BTreeMap<String, Vec<DscResource>>,
     pub extensions: BTreeMap<String, DscExtension>,
 }
 
@@ -86,8 +87,39 @@ impl Discovery {
     }
 
     #[must_use]
-    pub fn find_resource(&self, type_name: &str) -> Option<&DscResource> {
-        self.resources.get(&type_name.to_lowercase())
+    pub fn find_resource(&mut self, type_name: &str, version_string: Option<&str>) -> Option<&DscResource> {
+        if self.resources.is_empty() {
+            let discovery_filter = DiscoveryFilter::new(type_name, version_string.map(std::string::ToString::to_string));
+            self.find_resources(&[discovery_filter], ProgressFormat::None);
+        }
+
+        let type_name = type_name.to_lowercase();
+        if let Some(resources) = self.resources.get(&type_name) {
+            if let Some(version) = version_string {
+                let version = fix_semver(version);
+                if let Ok(version_req) = VersionReq::parse(&version) {
+                    for resource in resources {
+                        if let Ok(resource_version) = Version::parse(&resource.version) {
+                            if version_req.matches(&resource_version) {
+                                return Some(resource);
+                            }
+                        }
+                    }
+                    None
+                } else {
+                    for resource in resources {
+                        if resource.version == version {
+                            return Some(resource);
+                        }
+                    }
+                    None
+                }
+            } else {
+                resources.first()
+            }
+        } else {
+            None
+        }
     }
 
     /// Find resources based on the required resource types.
@@ -95,15 +127,19 @@ impl Discovery {
     /// # Arguments
     ///
     /// * `required_resource_types` - The required resource types.
-    pub fn find_resources(&mut self, required_resource_types: &[String], progress_format: ProgressFormat) {
+    pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) {
+        if !self.resources.is_empty() {
+            // If resources are already discovered, no need to re-discover.
+            return;
+        }
+
         let command_discovery = CommandDiscovery::new(progress_format);
         let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
             Box::new(command_discovery),
         ];
-        let mut remaining_required_resource_types = required_resource_types.to_owned();
         for mut discovery_type in discovery_types {
 
-            let discovered_resources = match discovery_type.find_resources(&remaining_required_resource_types) {
+            let discovered_resources = match discovery_type.find_resources(required_resource_types) {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");
@@ -111,15 +147,32 @@ impl Discovery {
                 }
             };
 
-            for resource in discovered_resources {
-                self.resources.insert(resource.0.clone(), resource.1);
-                remaining_required_resource_types.retain(|x| *x != resource.0);
-            };
+            for (resource_name, resources) in discovered_resources {
+                self.resources.entry(resource_name).or_default().extend(resources);
+            }
+
             if let Ok(extensions) = discovery_type.get_extensions() {
                 self.extensions.extend(extensions);
             }
         }
     }
+}
+
+/// Fix the semantic versioning requirements of a given version requirements string.
+/// The `semver` crate uses caret (meaning compatible) by default instead of exact if not specified
+///
+/// # Parameters
+/// * `version` - The version requirements string to fix.
+///
+/// # Returns
+/// The fixed version requirements string.
+#[must_use]
+pub fn fix_semver(version: &str) -> String {
+    // Check if is semver, then if the first character is a number, then we prefix with =
+    if Version::parse(version).is_ok() && version.chars().next().is_some_and(|c| c.is_ascii_digit()) {
+        return format!("={version}");
+    }
+    version.to_string()
 }
 
 impl Default for Discovery {

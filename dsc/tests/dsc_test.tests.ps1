@@ -9,7 +9,7 @@ Describe 'resource test tests' {
             "valueName": "ProductName"
         }
 '@
-        $current = registry config get --input $json
+        $current = registry config get --input $json 2>$null
         $out = $current | dsc resource test -r Microsoft.Windows/Registry -f -
         $LASTEXITCODE | Should -Be 0
         $out = $out | ConvertFrom-Json
