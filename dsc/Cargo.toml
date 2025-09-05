@@ -25,9 +25,7 @@ regex = "1.11"
 rmcp = { version = "0.6", features = [
     "server",
     "macros",
-    "transport-sse-server",
     "transport-io",
-    "transport-streamable-http-server",
     "auth",
     "elicitation",
     "schemars",
