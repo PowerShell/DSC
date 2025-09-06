@@ -150,7 +150,11 @@ When executing `dsc.exe` commands in Windows PowerShell:
 
 When running `dsc resource list --adapter Microsoft.Windows/WindowsPowerShell`, you
 may see zero resources returned. In trace or debug logs, an error like the following can
-appear: "Cannot bind argument to parameter 'Path' because it is an empty string."
+appear:
+
+```console
+Cannot bind argument to parameter 'Path' because it is an empty string.
+```
 
 ### Problem details
 
