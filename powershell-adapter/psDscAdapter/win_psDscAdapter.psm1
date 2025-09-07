@@ -711,7 +711,8 @@ function Set-ValidPSModulePath {
     end {
         if (($env:PSModulePath -split [System.IO.Path]::PathSeparator) -contains '') {
             "Removing empty entry from PSModulePath: '$env:PSModulePath'" | Write-DscTrace -Operation Debug
-            $env:PSModulePath = ($env:PSModulePath -split [System.IO.Path]::PathSeparator | Where-Object { $_ -ne '' }) -join [System.IO.Path]::PathSeparator
+            $env:PSModulePath = ($env:PSModulePath -split [System.IO.Path]::PathSeparator | 
+                Where-Object { $_ -ne '' }) -join [System.IO.Path]::PathSeparator
         }
     }
 }
