@@ -295,7 +295,7 @@ Describe 'tests for function expressions' {
     $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
     $out | Should -BeNullOrEmpty -Because "Output should be null or empty"
-    (Get-Content $TestDrive/error.log -Raw) | Should -Match "The 'utcNow()' function can only be used as a parameter default"
+    (Get-Content $TestDrive/error.log -Raw) | Should -Match "The 'utcNow\(\)' function can only be used as a parameter default"
   }
 
   It 'uniqueString function works for: <expression>' -TestCases @(
