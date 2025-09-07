@@ -760,7 +760,7 @@ impl Configurator {
                 } else {
                     default_value.clone()
                 };
-                Configurator::validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                validate_parameter_type(name, &value, &parameter.parameter_type)?;
                 self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
@@ -784,7 +784,7 @@ impl Configurator {
                 // TODO: additional array constraints
                 // TODO: object constraints
 
-                Configurator::validate_parameter_type(&name, &value, &constraint.parameter_type)?;
+                validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                 if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
                     info!("{}", t!("configure.mod.setSecureParameter", name = name));
                 } else {
@@ -836,7 +836,7 @@ impl Configurator {
                     return Err(DscError::Validation(t!("configure.mod.userFunctionAlreadyDefined", name = function_name, namespace = user_function.namespace).to_string()));
                 }
                 debug!("{}", t!("configure.mod.addingUserFunction", name = format!("{}.{}", user_function.namespace, function_name)));
-                self.context.user_functions.insert(format!("{}.{}", user_function.namespace.to_lowercase(), function_name.to_lowercase()), function_definition.clone());
+                self.context.user_functions.insert(format!("{}.{}", user_function.namespace, function_name), function_definition.clone());
             }
         }
         Ok(())
@@ -864,38 +864,6 @@ impl Configurator {
             ),
             other: Map::new(),
         }
-    }
-
-    fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
-        match parameter_type {
-            DataType::String | DataType::SecureString => {
-                if !value.is_string() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
-                }
-            },
-            DataType::Int => {
-                if !value.is_i64() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
-                }
-            },
-            DataType::Bool => {
-                if !value.is_boolean() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
-                }
-            },
-            DataType::Array => {
-                if !value.is_array() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
-                }
-            },
-            DataType::Object | DataType::SecureObject => {
-                if !value.is_object() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
-                }
-            },
-        }
-
-        Ok(())
     }
 
     fn validate_config(&mut self) -> Result<(), DscError> {
@@ -1009,6 +977,51 @@ impl Configurator {
         }
         Ok(Some(result))
     }
+}
+
+/// Validate that a parameter value matches the expected type.
+///
+/// # Arguments
+/// * `name` - The name of the parameter.
+/// * `value` - The value of the parameter.
+/// * `parameter_type` - The expected type of the parameter.
+///
+/// # Returns
+/// * `Result<(), DscError>` - Ok if the value matches the expected type, Err otherwise.
+///
+/// # Errors
+/// This function will return an error if the value does not match the expected type.
+///
+pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
+    match parameter_type {
+        DataType::String | DataType::SecureString => {
+            if !value.is_string() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
+            }
+        },
+        DataType::Int => {
+            if !value.is_i64() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
+            }
+        },
+        DataType::Bool => {
+            if !value.is_boolean() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
+            }
+        },
+        DataType::Array => {
+            if !value.is_array() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
+            }
+        },
+        DataType::Object | DataType::SecureObject => {
+            if !value.is_object() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
+            }
+        },
+    }
+
+    Ok(())
 }
 
 fn get_failure_from_error(err: &DscError) -> Option<Failure> {

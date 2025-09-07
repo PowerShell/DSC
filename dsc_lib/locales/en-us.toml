@@ -479,6 +479,16 @@ invalidArgType = "All arguments must either be arrays or objects"
 description = "Returns a deterministic unique string from the given strings"
 invoked = "uniqueString function"
 
+[functions.userFunction]
+expectedNoParamters = "User function '%{name}' does not accept parameters"
+unknownUserFunction = "Unknown user function '%{name}'"
+wrongParamCount = "User function '%{name}' expects %{expected} parameters, but %{got} were provided"
+outputNotString = "Output of user function '%{name}' returned a string, but was expected to be of type '%{expected_type}'"
+outputNotInteger = "Output of user function '%{name}' returned an integer, but was expected to be of type '%{expected_type}'"
+outputNotBoolean = "Output of user function '%{name}' returned a boolean, but was expected to be of type '%{expected_type}'"
+outputNotArray = "Output of user function '%{name}' returned an array, but was expected to be of type '%{expected_type}'"
+outputNotObject = "Output of user function '%{name}' returned an object, but was expected to be of type '%{expected_type}'"
+
 [functions.utcNow]
 description = "Returns the current UTC time"
 invoked = "utcNow function"

@@ -6,7 +6,7 @@ use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
@@ -186,6 +186,21 @@ pub enum DataType {
     SecureObject,
     #[serde(rename = "array")]
     Array,
+}
+
+impl Display for DataType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let type_str = match self {
+            DataType::String => "string",
+            DataType::SecureString => "secureString",
+            DataType::Int => "int",
+            DataType::Bool => "bool",
+            DataType::Object => "object",
+            DataType::SecureObject => "secureObject",
+            DataType::Array => "array",
+        };
+        write!(f, "{type_str}")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

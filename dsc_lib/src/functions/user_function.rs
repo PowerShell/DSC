@@ -1,14 +1,28 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::{config_doc::{DataType, UserFunctionDefinition}, context::ProcessMode};
+use crate::configure::{{config_doc::{DataType, UserFunctionDefinition}, context::ProcessMode}, validate_parameter_type};
 use crate::dscerror::DscError;
 use crate::functions::Context;
 use crate::parser::Statement;
+use rust_i18n::t;
 use serde_json::Value;
 
+/// Invoke a user-defined function by name with the provided arguments and context.
+///
+/// # Arguments
+/// * `name` - The name of the user-defined function to invoke.
+/// * `args` - The arguments to pass to the user-defined function.
+/// * `context` - The current execution context.
+///
+/// # Returns
+/// * `Result<Value, DscError>` - The result of the function invocation or an error.
+///
+/// # Errors
+/// * `DscError::Parser` - If the function is not found, parameters are invalid, or output type is incorrect.
+///
 pub fn invoke_user_function(name: &str, args: &[Value], context: &Context) -> Result<Value, DscError> {
-    if let Some(function_definition) = context.user_functions.get(name.to_lowercase().as_str()) {
+    if let Some(function_definition) = context.user_functions.get(name) {
         validate_parameters(name, function_definition, args)?;
         let mut user_context = context.clone();
         user_context.process_mode = ProcessMode::UserFunction;
@@ -18,7 +32,7 @@ pub fn invoke_user_function(name: &str, args: &[Value], context: &Context) -> Re
         user_context.user_functions.clear();
         for (i, arg) in args.iter().enumerate() {
             let Some(params) = &function_definition.parameters else {
-                return Err(DscError::Parser(format!("Function '{}' does not accept any parameters, but {} were provided", name, args.len())));
+                return Err(DscError::Parser(t!("functions.userFunction.expectedNoParamters", name = name).to_string()));
             };
             user_context.parameters.insert(params[i].name.clone(), (arg.clone(), params[i].r#type.clone()));
         }
@@ -27,85 +41,50 @@ pub fn invoke_user_function(name: &str, args: &[Value], context: &Context) -> Re
         validate_output_type(name, function_definition, &result)?;
         Ok(result)
     } else {
-        Err(DscError::Parser(format!("Unknown user function: {}", name)))
+        Err(DscError::Parser(t!("functions.userFunction.unknownUserFunction", name = name).to_string()))
     }
 }
 
 fn validate_parameters(name: &str, function_definition: &UserFunctionDefinition, args: &[Value]) -> Result<(), DscError> {
     if let Some(expected_params) = &function_definition.parameters {
         if args.len() != expected_params.len() {
-            return Err(DscError::Parser(format!("Function '{}' expects {} parameters, but {} were provided", name, expected_params.len(), args.len())));
+            return Err(DscError::Parser(t!("functions.userFunction.wrongParamCount", name = name, expected = expected_params.len(), got = args.len()).to_string()));
         }
-        for (i, (arg, expected_param)) in args.iter().zip(expected_params).enumerate() {
-            match expected_param.r#type {
-                DataType::String => {
-                    if !arg.is_string() {
-                        return Err(DscError::Parser(format!("Parameter {} of function '{}' expects a string", i + 1, name)));
-                    }
-                }
-                DataType::Int => {
-                    if !arg.is_number() {
-                        return Err(DscError::Parser(format!("Parameter {} of function '{}' expects a number", i + 1, name)));
-                    }
-                }
-                DataType::Bool => {
-                    if !arg.is_boolean() {
-                        return Err(DscError::Parser(format!("Parameter {} of function '{}' expects a boolean", i + 1, name)));
-                    }
-                }
-                DataType::Array => {
-                    if !arg.is_array() {
-                        return Err(DscError::Parser(format!("Parameter {} of function '{}' expects an array", i + 1, name)));
-                    }
-                }
-                DataType::Object => {
-                    if !arg.is_object() {
-                        return Err(DscError::Parser(format!("Parameter {} of function '{}' expects an object", i + 1, name)));
-                    }
-                }
-                _ => {
-                    return Err(DscError::Parser(format!("Function '{}' has an unsupported parameter type: {:?}", name, expected_param.r#type)));
-                }
-            }
-        }
-    } else {
-        if !args.is_empty() {
-            return Err(DscError::Parser(format!("Function '{}' does not accept any parameters, but {} were provided", name, args.len())));
+        for (arg, expected_param) in args.iter().zip(expected_params) {
+            validate_parameter_type(name, arg, &expected_param.r#type)?;
         }
     }
     Ok(())
 }
 
-fn validate_output_type(name: &str, function_definition: &UserFunctionDefinition, result: &Value) -> Result<(), DscError> {
+fn validate_output_type(name: &str, function_definition: &UserFunctionDefinition, output: &Value) -> Result<(), DscError> {
     match function_definition.output.r#type {
-        DataType::String => {
-            if !result.is_string() {
-                return Err(DscError::Parser(format!("Function '{}' is expected to return a string", name)));
+        DataType::String | DataType::SecureString => {
+            if !output.is_string() {
+                return Err(DscError::Validation(t!("functions.userFunction.outputNotString", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
             }
-        }
+        },
         DataType::Int => {
-            if !result.is_number() {
-                return Err(DscError::Parser(format!("Function '{}' is expected to return a number", name)));
+            if !output.is_i64() {
+                return Err(DscError::Validation(t!("functions.userFunction.outputNotInteger", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
             }
-        }
+        },
         DataType::Bool => {
-            if !result.is_boolean() {
-                return Err(DscError::Parser(format!("Function '{}' is expected to return a boolean", name)));
+            if !output.is_boolean() {
+                return Err(DscError::Validation(t!("functions.userFunction.outputNotBoolean", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
             }
-        }
+        },
         DataType::Array => {
-            if !result.is_array() {
-                return Err(DscError::Parser(format!("Function '{}' is expected to return an array", name)));
+            if !output.is_array() {
+                return Err(DscError::Validation(t!("functions.userFunction.outputNotArray", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
             }
-        }
-        DataType::Object => {
-            if !result.is_object() {
-                return Err(DscError::Parser(format!("Function '{}' is expected to return an object", name)));
+        },
+        DataType::Object | DataType::SecureObject => {
+            if !output.is_object() {
+                return Err(DscError::Validation(t!("functions.userFunction.outputNotObject", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
             }
-        }
-        _ => {
-            return Err(DscError::Parser(format!("Function '{}' has an unsupported output type: {:?}", name, function_definition.output.r#type)));
-        }
+        },
     }
+
     Ok(())
 }

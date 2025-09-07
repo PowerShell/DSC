@@ -74,8 +74,8 @@ resources:
         @{ expression = "[reference('foo/bar')]"; errorText = "The 'reference()' function is not available in user-defined functions" }
         @{ expression = "[utcNow()]"; errorText = "The 'utcNow()' function can only be used as a parameter default" }
         @{ expression = "[variables('myVar')]"; errorText = "The 'variables()' function is not available in user-defined functions" }
-        @{ expression = "[MyFunction.OtherFunction()]"; errorText = "Unknown user function: MyFunction.OtherFunctio" }
-        @{ expression = "[MyFunction.BadFunction()]"; errorText = "Unknown user function: MyFunction.BadFunction" }
+        @{ expression = "[MyFunction.OtherFunction()]"; errorText = "Unknown user function 'MyFunction.OtherFunction'" }
+        @{ expression = "[MyFunction.BadFunction()]"; errorText = "Unknown user function 'MyFunction.BadFunction'" }
     ) {
         param($expression, $errorText)
 
@@ -129,5 +129,26 @@ resources:
         dsc -l trace config get -i $configYaml 2>$testdrive/error.log | Out-Null
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $testdrive/error.log | Out-String)
         (Get-Content $testdrive/error.log -Raw) | Should -BeLike "*Parameter 'BadParam' not found in context*" -Because (Get-Content $testdrive/error.log | Out-String)
+    }
+
+    It 'user function with wrong output type fails' {
+        $configYaml = @"
+`$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+functions:
+- namespace: MyFunction
+  members:
+    BadFunction:
+      output:
+        type: int
+        value: "'this is a string'"
+resources:
+- name: test
+  type: Microsoft.DSC.Debug/Echo
+  properties:
+    output: "[MyFunction.BadFunction()]"
+"@
+        dsc -l trace config get -i $configYaml 2>$testdrive/error.log | Out-Null
+        $LASTEXITCODE | Should -Be 2 -Because (Get-Content $testdrive/error.log | Out-String)
+        (Get-Content $testdrive/error.log -Raw) | Should -BeLike "*Output of user function 'MyFunction.BadFunction' returned an integer, but was expected to be of type 'int'*" -Because (Get-Content $testdrive/error.log | Out-String)
     }
 }
