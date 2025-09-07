@@ -37,6 +37,9 @@ impl Function for Reference {
         if context.process_mode == ProcessMode::Copy {
             return Err(DscError::Parser(t!("functions.reference.cannotUseInCopyMode").to_string()));
         }
+        if context.process_mode == ProcessMode::UserFunction {
+            return Err(DscError::Parser(t!("functions.reference.unavailableInUserFunction").to_string()));
+        }
 
         if let Some(key) = args[0].as_str() {
             if context.references.contains_key(key) {

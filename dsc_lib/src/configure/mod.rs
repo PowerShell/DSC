@@ -16,7 +16,7 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
-use self::context::Context;
+use self::context::{Context, ProcessMode};
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -729,6 +729,7 @@ impl Configurator {
         self.context.extensions = self.discovery.extensions.values().cloned().collect();
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
+        self.set_user_functions(&config)?;
         Ok(())
     }
 
@@ -749,9 +750,9 @@ impl Configurator {
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
-                        self.context.processing_parameter_defaults = true;
+                        self.context.process_mode = ProcessMode::ParametersDefault;
                         let result = self.statement_parser.parse_and_execute(value, &self.context)?;
-                        self.context.processing_parameter_defaults = false;
+                        self.context.process_mode = ProcessMode::Normal;
                         result
                     } else {
                         return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
@@ -820,6 +821,23 @@ impl Configurator {
             };
             info!("{}", t!("configure.mod.setVariable", name = name, value = new_value));
             self.context.variables.insert(name.to_string(), new_value);
+        }
+        Ok(())
+    }
+
+    fn set_user_functions(&mut self, config: &Configuration) -> Result<(), DscError> {
+        let Some(functions) = &config.functions else {
+            return Ok(());
+        };
+
+        for user_function in functions {
+            for (function_name, function_definition) in &user_function.members {
+                if self.context.user_functions.contains_key(&format!("{}.{}", user_function.namespace, function_name)) {
+                    return Err(DscError::Validation(t!("configure.mod.userFunctionAlreadyDefined", name = function_name, namespace = user_function.namespace).to_string()));
+                }
+                debug!("{}", t!("configure.mod.addingUserFunction", name = format!("{}.{}", user_function.namespace, function_name)));
+                self.context.user_functions.insert(format!("{}.{}", user_function.namespace.to_lowercase(), function_name.to_lowercase()), function_definition.clone());
+            }
         }
         Ok(())
     }

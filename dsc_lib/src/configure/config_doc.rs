@@ -106,6 +106,30 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunction {
+    pub namespace: String,
+    pub members: HashMap<String, UserFunctionDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunctionDefinition {
+    pub parameters: Option<Vec<UserFunctionParameter>>,
+    pub output: UserFunctionOutput,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunctionParameter {
+    pub name: String,
+    pub r#type: DataType,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunctionOutput {
+    pub r#type: DataType,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -113,6 +137,8 @@ pub struct Configuration {
     pub schema: String,
     #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub functions: Option<Vec<UserFunction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<HashMap<String, Parameter>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -296,10 +322,11 @@ impl Configuration {
         Self {
             schema: Self::default_schema_id_uri(),
             content_version: Some("1.0.0".to_string()),
-            parameters: None,
-            variables: None,
-            resources: Vec::new(),
             metadata: None,
+            parameters: None,
+            resources: Vec::new(),
+            functions: None,
+            variables: None,
         }
     }
 }

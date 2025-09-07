@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
-use crate::{configure::config_doc::ExecutionKind, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::{ExecutionKind, UserFunctionDefinition}, extensions::dscextension::DscExtension};
 use security_context_lib::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, path::PathBuf};
@@ -34,6 +34,7 @@ pub struct Context {
     pub security_context: SecurityContextKind,
     pub start_datetime: DateTime<Local>,
     pub system_root: PathBuf,
+    pub user_functions: HashMap<String, UserFunctionDefinition>,
     pub variables: Map<String, Value>,
 }
 
@@ -58,6 +59,7 @@ impl Context {
             },
             start_datetime: chrono::Local::now(),
             system_root: get_default_os_system_root(),
+            user_functions: HashMap::new(),
             variables: Map::new(),
         }
     }
