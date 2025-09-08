@@ -22,6 +22,7 @@ defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
 defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
 defaultShellMustBeString = "shell must be a string"
+traceInput = "Get input:"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
 [main]

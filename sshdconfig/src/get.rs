@@ -10,7 +10,7 @@ use {
 
 use rust_i18n::t;
 use serde_json::{Map, Value};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::args::Setting;
 use crate::error::SshdConfigError;
@@ -29,7 +29,8 @@ use crate::util::{
 ///
 /// This function will return an error if the desired settings cannot be retrieved.
 pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<Map<String, Value>, SshdConfigError> {
-    debug!("{}: {:?} {:?}", t!("get.debugSetting").to_string(), setting, input);
+    debug!("{}: {:?}", t!("get.debugSetting").to_string(), setting);
+    trace!("{}: {:?}", t!("get.traceInput").to_string(), input);
     match *setting {
         Setting::SshdConfig => {
             let cmd_info = build_command_info(input, true)?;
