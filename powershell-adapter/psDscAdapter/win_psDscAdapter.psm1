@@ -711,7 +711,7 @@ function Repair-ValidPSModulePath {
     end {
         if (($env:PSModulePath -split [System.IO.Path]::PathSeparator) -contains '') {
             "Removing empty entry from PSModulePath: '$env:PSModulePath'" | Write-DscTrace -Operation Debug
-            $env:PSModulePath = [String]::Join([System.IO.Path]::PathSeparator, ($env:PSModulePath.Split([System.IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries)))
+            $env:PSModulePath = [String]::Join([System.IO.Path]::PathSeparator, ($env:PSModulePath.Split([System.IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries))).TrimEnd([System.IO.Path]::PathSeparator)
         }
     }
 }
