@@ -8,19 +8,22 @@ use {
     crate::metadata::windows::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
 };
 
+use rust_i18n::t;
+use serde_json::{Map, Value};
+
 use crate::args::DefaultShell;
 use crate::error::SshdConfigError;
-use rust_i18n::t;
 
 /// Invoke the set command.
 ///
 /// # Errors
 ///
 /// This function will return an error if the desired settings cannot be applied.
-pub fn invoke_set(input: &str) -> Result<(), SshdConfigError> {
+pub fn invoke_set(input: &str) -> Result<Map<String, Value>, SshdConfigError> {
     match serde_json::from_str::<DefaultShell>(input) {
         Ok(default_shell) => {
-            set_default_shell(default_shell.shell, default_shell.cmd_option, default_shell.escape_arguments)
+            set_default_shell(default_shell.shell, default_shell.cmd_option, default_shell.escape_arguments)?;
+            Ok(Map::new())
         },
         Err(e) => {
             Err(SshdConfigError::InvalidInput(t!("set.failedToParseInput", error = e).to_string()))
