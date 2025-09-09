@@ -2,6 +2,73 @@
 # Licensed under the MIT License.
 
 Describe 'metadata tests' {
+    It 'metadata not provided if not declared in resource schema' {
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Microsoft.DSC.Debug/Echo
+            metadata:
+              ignoreKey: true
+            properties:
+              output: hello world
+'@
+        $out = dsc config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Will not add '_metadata' to properties because resource schema does not support it*"
+        $out.results.result.actualState.output | Should -BeExactly 'hello world'
+    }
+
+    It 'resource can provide high-level metadata for <operation>' -TestCases @(
+        @{ operation = 'get' }
+        @{ operation = 'set' }
+        @{ operation = 'test' }
+    ) {
+        param($operation)
+
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/Metadata
+            metadata:
+              hello: world
+              myNumber: 42
+            properties:
+'@
+
+        $out = dsc config $operation -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results.count | Should -Be 1
+        $out.results[0].metadata.hello | Should -BeExactly 'world'
+        $out.results[0].metadata.myNumber | Should -Be 42
+    }
+
+    It 'resource can provide high-level metadata for export' {
+        $configYaml = @'
+        $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+        resources:
+          - name: test
+            type: Test/Metadata
+            metadata:
+              hello: There
+              myNumber: 16
+            properties:
+'@
+        $out = dsc config export -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.resources.count | Should -Be 3
+        $out.resources[0].metadata.hello | Should -BeExactly 'There'
+        $out.resources[0].metadata.myNumber | Should -Be 16
+        $out.resources[0].name | Should -BeExactly 'Metadata example 1'
+        $out.resources[1].metadata.hello | Should -BeExactly 'There'
+        $out.resources[1].metadata.myNumber | Should -Be 16
+        $out.resources[1].name | Should -BeExactly 'Metadata example 2'
+        $out.resources[2].metadata.hello | Should -BeExactly 'There'
+        $out.resources[2].metadata.myNumber | Should -Be 16
+        $out.resources[2].name | Should -BeExactly 'Metadata example 3'
+    }
+
     It 'resource can provide metadata for <operation>' -TestCases @(
         @{ operation = 'get' }
         @{ operation = 'set' }

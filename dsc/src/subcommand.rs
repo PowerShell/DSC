@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSub
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, validate_json, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
 use dsc_lib::functions::FunctionArgKind;
 use dsc_lib::{
     configure::{
@@ -26,8 +26,8 @@ use dsc_lib::{
         TestResult,
         ValidateResult,
     },
-    dscresources::dscresource::{Capability, ImplementedAs, Invoke},
-    dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
+    dscresources::resource_manifest::import_manifest,
     extensions::dscextension::Capability as ExtensionCapability,
     functions::FunctionDispatcher,
     progress::ProgressFormat,
@@ -514,34 +514,7 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
 
         // see if the resource is command based
         if resource.implemented_as == ImplementedAs::Command {
-            // if so, see if it implements validate via the resource manifest
-            if let Some(manifest) = resource.manifest.clone() {
-                // convert to resource_manifest
-                let manifest: ResourceManifest = serde_json::from_value(manifest)?;
-                if manifest.validate.is_some() {
-                    debug!("{}: {type_name} ", t!("subcommand.resourceImplementsValidate"));
-                    // get the resource's part of the config
-                    let resource_config = resource_block["properties"].to_string();
-                    let result = resource.validate(&resource_config)?;
-                    if !result.valid {
-                        let reason = result.reason.unwrap_or(t!("subcommand.noReason").to_string());
-                        let type_name = resource.type_name.clone();
-                        return Err(DscError::Validation(format!("{}: {type_name} {reason}", t!("subcommand.resourceValidationFailed"))));
-                    }
-                }
-                else {
-                    // use schema validation
-                    trace!("{}: {type_name}", t!("subcommand.resourceDoesNotImplementValidate"));
-                    let Ok(schema) = resource.schema() else {
-                        return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noSchemaOrValidate"))));
-                    };
-                    let schema = serde_json::from_str(&schema)?;
-
-                    validate_json(&resource.type_name, &schema, &resource_block["properties"])?;
-                }
-            } else {
-                return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noManifest"))));
-            }
+            validate_properties(resource, &resource_block["properties"])?;
         }
     }
 
