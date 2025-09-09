@@ -9,7 +9,7 @@ title:       DSC Resource kind schema reference
 
 ## Synopsis
 
-Identifies whether a resource is an adapter resource, a group resource, or a normal resource.
+Identifies whether a resource is an adapter resource, a group resource, an importer resource, an exporter resource, or a normal resource.
 
 ## Metadata
 
@@ -17,27 +17,25 @@ Identifies whether a resource is an adapter resource, a group resource, or a nor
 SchemaDialect: https://json-schema.org/draft/2020-12/schema
 SchemaID:      https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/definitions/resourceKind.json
 Type:          string
-ValidValues:  [resource, adapter, group, importer]
+ValidValues:  [resource, adapter, group, importer, exporter]
 ```
 
 ## Description
 
-DSC supports three kinds of command-based DSC Resources:
+DSC supports several kinds of command resources:
 
-- `resource` - Indicates that the manifest isn't for a group or adapter resource.
+- `resource` - Indicates that the manifest is for a typical resource.
 - `group` - Indicates that the manifest is for a [group resource](#group-resources).
 - `adapter` - Indicates that the manifest is for an [adapter resource](#adapter-resources).
 - `importer` - Indicates that the manifest is for an [importer resource](#importer-resources).
 - `exporter` - Indicates that the manifest is for an [exporter resource](#exporter-resources).
 
-When `kind` isn't defined in the resource manifest, DSC infers the value for the property. If the
-`adapter` property is defined in the resource manifest, DSC infers the value of `kind` as
-`adapter`. If the `adapter` property isn't defined, DSC infers the value of `kind` as `resource`.
-DSC can't infer whether a manifest is for a group or importer resource.
+When `kind` isn't defined in the resource manifest for a command resource, DSC infers the value for
+the property. If the `adapter` property is defined in the resource manifest, DSC infers the value
+of `kind` as `adapter`. If the `adapter` property isn't defined, DSC infers the value of `kind` as
+`resource`. DSC can't infer whether a manifest is for a group, importer, or exporter resource.
 
-When defining a group resource, always explicitly define the `kind` property in the manifest as
-`group`. When defining an importer resource, always explicitly define the `kind` property in the
-manifest as `importer`.
+When defining a group, importer, or exporter resource with a resource manifest, always explicitly define `kind`.
 
 ### Adapter resources
 
