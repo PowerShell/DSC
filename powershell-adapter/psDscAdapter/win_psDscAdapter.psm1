@@ -60,6 +60,9 @@ function Invoke-DscCacheRefresh {
     $namedModules = [System.Collections.Generic.List[Object]]::new()
     $cacheFilePath = Join-Path $env:LocalAppData "dsc\WindowsPSAdapterCache.json"
 
+    # Repair PSModulePath to not contain empty entries
+    Repair-ValidPSModulePath
+
     if (Test-Path $cacheFilePath) {
         "Reading from Get-DscResource cache file $cacheFilePath" | Write-DscTrace
 
@@ -700,6 +703,19 @@ function GetClassBasedCapabilities {
         return $capabilities
     }
 }
+
+function Repair-ValidPSModulePath {
+    [CmdletBinding()]
+    param()
+
+    end {
+        if (($env:PSModulePath -split [System.IO.Path]::PathSeparator) -contains '') {
+            "Removing empty entry from PSModulePath: '$env:PSModulePath'" | Write-DscTrace -Operation Debug
+            $env:PSModulePath = [String]::Join([System.IO.Path]::PathSeparator, ($env:PSModulePath.Split([System.IO.Path]::PathSeparator, [System.StringSplitOptions]::RemoveEmptyEntries))).TrimEnd([System.IO.Path]::PathSeparator)
+        }
+    }
+}
+
 
 # cached resource
 class dscResourceCacheEntry {

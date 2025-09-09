@@ -118,7 +118,7 @@ class PSClassResource {
       New-Item -Path $modulePath -ItemType File -Value $module -Force | Out-Null
     }
 
-    $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath
+    $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath + [System.IO.Path]::PathSeparator
   }
 
   AfterAll {
