@@ -904,7 +904,7 @@ impl Configurator {
                     self.context.copy.insert(copy.name.clone(), i);
                     let mut new_resource = resource.clone();
                     let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
-                        return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString", name = &copy.name).to_string()))
+                        return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
                     };
                     new_resource.name = new_name.to_string();
                     new_resource.copy = None;

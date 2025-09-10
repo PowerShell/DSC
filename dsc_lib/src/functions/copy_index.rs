@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use core::option::Option::Some;
-
 use crate::DscError;
 use crate::configure::context::{Context, ProcessMode};
 use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
