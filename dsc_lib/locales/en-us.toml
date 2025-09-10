@@ -152,6 +152,7 @@ invalidArrayKey = "Unsupported array value for key '%{key}'.  Only string and nu
 invalidKey = "Unsupported value for key '%{key}'.  Only string, bool, number, and array is supported."
 inDesiredStateNotBool = "'_inDesiredState' is not a boolean"
 exportNotSupportedUsingGet = "Export is not supported by resource '%{resource}' using get operation"
+runProcessError = "Failed to run process '%{executable}': %{error}"
 
 [dscresources.dscresource]
 invokeGet = "Invoking get for '%{resource}'"
