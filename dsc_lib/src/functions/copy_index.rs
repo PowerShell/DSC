@@ -61,7 +61,7 @@ impl Function for CopyIndex {
                 if let Some(loop_name) = args[0].as_str() {
                     if let Some(index) = context.copy.get(loop_name) {
                         if let Some(offset) = args[1].as_i64() {
-                            Ok(Value::Number(((*index as i64) + offset).into()))
+                            Ok(Value::Number(((*index) + offset).into()))
                         } else {
                             Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
                         }

@@ -898,14 +898,13 @@ impl Configurator {
                     return Err(DscError::Validation(t!("configure.mod.copyBatchSizeNotSupported").to_string()));
                 }
                 self.context.process_mode = ProcessMode::Copy;
-                self.context.copy_current_loop_name = copy.name.clone();
+                self.context.copy_current_loop_name.clone_from(&copy.name);
                 let mut copy_resources = Vec::<Resource>::new();
                 for i in 0..copy.count {
                     self.context.copy.insert(copy.name.clone(), i);
                     let mut new_resource = resource.clone();
-                    let new_name = match self.statement_parser.parse_and_execute(&resource.name, &self.context)? {
-                        Value::String(s) => s,
-                        _ => return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString", name = &copy.name).to_string())),
+                    let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
+                        return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString", name = &copy.name).to_string()))
                     };
                     new_resource.name = new_name.to_string();
                     new_resource.copy = None;
