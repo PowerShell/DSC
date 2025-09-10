@@ -72,6 +72,10 @@ metadataMicrosoftDscIgnored = "Resource returned '_metadata' property 'Microsoft
 metadataNotObject = "Resource returned '_metadata' property which is not an object"
 metadataRestartRequiredInvalid = "Resource returned '_metadata' property '_restartRequired' which contains invalid value: %{value}"
 schemaExcludesMetadata = "Will not add '_metadata' to properties because resource schema does not support it"
+unrollingCopy = "Unrolling copy for resource '%{name}' with count %{count}"
+copyModeNotSupported = "Copy mode is not supported"
+copyBatchSizeNotSupported = "Copy batch size is not supported"
+copyNameResultNotString = "Copy name result is not a string"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
@@ -259,6 +263,14 @@ invoked = "contains function"
 invalidItemToFind = "Invalid item to find, must be a string or number"
 invalidArgType = "Invalid argument type, first argument must be an array, object, or string"
 
+[functions.copyIndex]
+description = "Returns the current copy index"
+invoked = "copyIndex function"
+cannotUseOutsideCopy = "The 'copyIndex()' function can only be used when processing a 'Copy' loop"
+loopNameNotFound = "The specified loop name '%{name}' was not found"
+noCurrentLoop = "There is no current loop to get the index from"
+offsetNegative = "The offset cannot be negative"
+
 [functions.createArray]
 description = "Creates an array from the given elements"
 invoked = "createArray function"
@@ -412,6 +424,7 @@ argsMustBeStrings = "Arguments must all be strings"
 description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
 keyNotFound = "Invalid resourceId or resource has not executed yet: %{key}"
+cannotUseInCopyMode = "The 'reference()' function cannot be used when processing a 'Copy' loop"
 
 [functions.resourceId]
 description = "Constructs a resource ID from the given type and name"

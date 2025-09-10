@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
+use crate::configure::context::ProcessMode;
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -875,16 +876,45 @@ impl Configurator {
     }
 
     fn validate_config(&mut self) -> Result<(), DscError> {
-        let config: Configuration = serde_json::from_str(self.json.as_str())?;
+        let mut config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(config.metadata.as_ref())?;
 
         // Perform discovery of resources used in config
         // create an array of DiscoveryFilter using the resource types and api_versions from the config
         let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
-        for resource in &config.resources {
+        let config_copy = config.clone();
+        for resource in config_copy.resources {
             let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.clone());
             if !discovery_filter.contains(&filter) {
                 discovery_filter.push(filter);
+            }
+            // if the resource contains `Copy`, we need to unroll
+            if let Some(copy) = &resource.copy {
+                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
+                if copy.mode.is_some() {
+                    return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
+                }
+                if copy.batch_size.is_some() {
+                    return Err(DscError::Validation(t!("configure.mod.copyBatchSizeNotSupported").to_string()));
+                }
+                self.context.process_mode = ProcessMode::Copy;
+                self.context.copy_current_loop_name = copy.name.clone();
+                let mut copy_resources = Vec::<Resource>::new();
+                for i in 0..copy.count {
+                    self.context.copy.insert(copy.name.clone(), i);
+                    let mut new_resource = resource.clone();
+                    let new_name = match self.statement_parser.parse_and_execute(&resource.name, &self.context)? {
+                        Value::String(s) => s,
+                        _ => return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString", name = &copy.name).to_string())),
+                    };
+                    new_resource.name = new_name.to_string();
+                    new_resource.copy = None;
+                    copy_resources.push(new_resource);
+                }
+                self.context.process_mode = ProcessMode::Normal;
+                // replace current resource with the unrolled copy resources
+                config.resources.retain(|r| *r != resource);
+                config.resources.extend(copy_resources);
             }
         }
 
