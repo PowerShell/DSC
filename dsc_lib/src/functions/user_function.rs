@@ -32,7 +32,7 @@ pub fn invoke_user_function(name: &str, args: &[Value], context: &Context) -> Re
         user_context.user_functions.clear();
         for (i, arg) in args.iter().enumerate() {
             let Some(params) = &function_definition.parameters else {
-                return Err(DscError::Parser(t!("functions.userFunction.expectedNoParamters", name = name).to_string()));
+                return Err(DscError::Parser(t!("functions.userFunction.expectedNoParameters", name = name).to_string()));
             };
             user_context.parameters.insert(params[i].name.clone(), (arg.clone(), params[i].r#type.clone()));
         }
@@ -61,27 +61,27 @@ fn validate_output_type(name: &str, function_definition: &UserFunctionDefinition
     match function_definition.output.r#type {
         DataType::String | DataType::SecureString => {
             if !output.is_string() {
-                return Err(DscError::Validation(t!("functions.userFunction.outputNotString", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
+                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "string").to_string()));
             }
         },
         DataType::Int => {
             if !output.is_i64() {
-                return Err(DscError::Validation(t!("functions.userFunction.outputNotInteger", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
+                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "int").to_string()));
             }
         },
         DataType::Bool => {
             if !output.is_boolean() {
-                return Err(DscError::Validation(t!("functions.userFunction.outputNotBoolean", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
+                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "bool").to_string()));
             }
         },
         DataType::Array => {
             if !output.is_array() {
-                return Err(DscError::Validation(t!("functions.userFunction.outputNotArray", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
+                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "array").to_string()));
             }
         },
         DataType::Object | DataType::SecureObject => {
             if !output.is_object() {
-                return Err(DscError::Validation(t!("functions.userFunction.outputNotObject", name = name, expected_type = function_definition.output.r#type.to_string()).to_string()));
+                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "object").to_string()));
             }
         },
     }

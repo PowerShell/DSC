@@ -149,6 +149,6 @@ resources:
 "@
         dsc -l trace config get -i $configYaml 2>$testdrive/error.log | Out-Null
         $LASTEXITCODE | Should -Be 2 -Because (Get-Content $testdrive/error.log | Out-String)
-        (Get-Content $testdrive/error.log -Raw) | Should -BeLike "*Output of user function 'MyFunction.BadFunction' returned an integer, but was expected to be of type 'int'*" -Because (Get-Content $testdrive/error.log | Out-String)
+        (Get-Content $testdrive/error.log -Raw) | Should -BeLike "*Output of user function 'MyFunction.BadFunction' did not returned expected type 'int'*" -Because (Get-Content $testdrive/error.log | Out-String)
     }
 }
