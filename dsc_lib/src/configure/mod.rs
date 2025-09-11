@@ -81,12 +81,12 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
                     .map(std::string::ToString::to_string)
                     .ok_or_else(|| DscError::Parser(t!("configure.mod.propertyNotString", name = "_name", value = name).to_string()))?
             } else {
-                let resource_type_short = if let Some(pos) = resource.type_name.rfind('/') {
+                let resource_type_short = if let Some(pos) = resource.type_name.find('/') {
                     &resource.type_name[pos + 1..]
                 } else {
                     &resource.type_name
                 };
-                format!("{}-{i}", resource_type_short)
+                format!("{resource_type_short}-{i}")
             };
             let mut metadata = Metadata {
                 microsoft: None,
