@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::mcp::McpServer;
+use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
     DscManager, discovery::{
         command_discovery::ImportedManifest::Resource,
@@ -26,15 +26,8 @@ pub struct ResourceSummary {
     pub description: Option<String>,
 }
 
-#[tool_router]
+#[tool_router(router = list_dsc_resources_router, vis = "pub")]
 impl McpServer {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            tool_router: Self::tool_router()
-        }
-    }
-
     #[tool(
         description = "List summary of all DSC resources available on the local machine",
         annotations(
@@ -45,7 +38,7 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    async fn list_dsc_resources(&self) -> Result<Json<ResourceListResult>, McpError> {
+    pub async fn list_dsc_resources(&self) -> Result<Json<ResourceListResult>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let mut resources = BTreeMap::<String, ResourceSummary>::new();
