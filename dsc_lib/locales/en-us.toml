@@ -483,7 +483,7 @@ invoked = "uniqueString function"
 expectedNoParameters = "User function '%{name}' does not accept parameters"
 unknownUserFunction = "Unknown user function '%{name}'"
 wrongParamCount = "User function '%{name}' expects %{expected} parameters, but %{got} were provided"
-incorrectOutputType = "Output of user function '%{name}' did not returned expected type '%{expected_type}'"
+incorrectOutputType = "Output of user function '%{name}' did not return expected type '%{expected_type}'"
 
 [functions.utcNow]
 description = "Returns the current UTC time"
