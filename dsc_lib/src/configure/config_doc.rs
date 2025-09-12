@@ -174,11 +174,11 @@ pub enum CopyMode {
 #[serde(deny_unknown_fields)]
 pub struct Copy {
     pub name: String,
-    pub count: i32,
+    pub count: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<CopyMode>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "batchSize")]
-    pub batch_size: Option<i32>,
+    pub batch_size: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
