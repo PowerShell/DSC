@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
-use crate::configure::context::ProcessMode;
+use crate::configure::context::{Context, ProcessMode};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -16,7 +16,6 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
-use self::context::{Context, ProcessMode};
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
