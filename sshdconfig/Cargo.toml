@@ -21,10 +21,10 @@ rust-i18n = { version = "3.1" }
 schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
-tempfile = "3.8"
+tempfile = "3.22"
 thiserror = { version = "2.0" }
 tracing = "0.1.37"
-tracing-subscriber = { version = "0.3.17", features = ["ansi", "env-filter", "json"] }
+tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "json"] }
 tree-sitter = "0.25"
 tree-sitter-rust = "0.24"
 tree-sitter-ssh-server-config = { path = "../tree-sitter-ssh-server-config" }
