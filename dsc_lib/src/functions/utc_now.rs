@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::DscError;
-use crate::configure::context::Context;
+use crate::configure::context::{Context, ProcessMode};
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
 use chrono::{SecondsFormat, Utc};
 use rust_i18n::t;
@@ -32,7 +32,7 @@ impl Function for UtcNow {
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.utcNow.invoked"));
 
-        if !context.processing_parameter_defaults {
+        if context.process_mode != ProcessMode::ParametersDefault {
             return Err(DscError::Parser(t!("functions.utcNow.onlyUsedAsParameterDefault").to_string()));
         }
 

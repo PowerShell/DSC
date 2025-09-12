@@ -76,6 +76,8 @@ unrollingCopy = "Unrolling copy for resource '%{name}' with count %{count}"
 copyModeNotSupported = "Copy mode is not supported"
 copyBatchSizeNotSupported = "Copy batch size is not supported"
 copyNameResultNotString = "Copy name result is not a string"
+userFunctionAlreadyDefined = "User function '%{name}' in namespace '%{namespace}' is already defined"
+addingUserFunction = "Adding user function '%{name}'"
 
 [discovery.commandDiscovery]
 couldNotReadSetting = "Could not read 'resourcePath' setting"
@@ -426,6 +428,7 @@ description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
 keyNotFound = "Invalid resourceId or resource has not executed yet: %{key}"
 cannotUseInCopyMode = "The 'reference()' function cannot be used when processing a 'Copy' loop"
+unavailableInUserFunction = "The 'reference()' function is not available in user-defined functions"
 
 [functions.resourceId]
 description = "Constructs a resource ID from the given type and name"
@@ -476,15 +479,22 @@ invalidArgType = "All arguments must either be arrays or objects"
 description = "Returns a deterministic unique string from the given strings"
 invoked = "uniqueString function"
 
+[functions.userFunction]
+expectedNoParameters = "User function '%{name}' does not accept parameters"
+unknownUserFunction = "Unknown user function '%{name}'"
+wrongParamCount = "User function '%{name}' expects %{expected} parameters, but %{got} were provided"
+incorrectOutputType = "Output of user function '%{name}' did not return expected type '%{expected_type}'"
+
 [functions.utcNow]
 description = "Returns the current UTC time"
 invoked = "utcNow function"
-onlyUsedAsParameterDefault = "utcNow function can only be used as a parameter default"
+onlyUsedAsParameterDefault = "The 'utcNow()' function can only be used as a parameter default"
 
 [functions.variables]
 description = "Retrieves the value of a variable"
 invoked = "variables function"
 keyNotFound = "Variable '%{key}' does not exist or has not been initialized yet"
+unavailableInUserFunction = "The 'variables()' function is not available in user-defined functions"
 
 [parser.expression]
 functionNodeNotFound = "Function node not found"

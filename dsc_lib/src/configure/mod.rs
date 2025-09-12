@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
-use crate::configure::context::ProcessMode;
+use crate::configure::context::{Context, ProcessMode};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -16,7 +16,6 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
-use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -729,6 +728,7 @@ impl Configurator {
         self.context.extensions = self.discovery.extensions.values().cloned().collect();
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
+        self.set_user_functions(&config)?;
         Ok(())
     }
 
@@ -749,9 +749,9 @@ impl Configurator {
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
-                        self.context.processing_parameter_defaults = true;
+                        self.context.process_mode = ProcessMode::ParametersDefault;
                         let result = self.statement_parser.parse_and_execute(value, &self.context)?;
-                        self.context.processing_parameter_defaults = false;
+                        self.context.process_mode = ProcessMode::Normal;
                         result
                     } else {
                         return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
@@ -759,7 +759,7 @@ impl Configurator {
                 } else {
                     default_value.clone()
                 };
-                Configurator::validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                validate_parameter_type(name, &value, &parameter.parameter_type)?;
                 self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
@@ -783,7 +783,7 @@ impl Configurator {
                 // TODO: additional array constraints
                 // TODO: object constraints
 
-                Configurator::validate_parameter_type(&name, &value, &constraint.parameter_type)?;
+                validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                 if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
                     info!("{}", t!("configure.mod.setSecureParameter", name = name));
                 } else {
@@ -824,6 +824,23 @@ impl Configurator {
         Ok(())
     }
 
+    fn set_user_functions(&mut self, config: &Configuration) -> Result<(), DscError> {
+        let Some(functions) = &config.functions else {
+            return Ok(());
+        };
+
+        for user_function in functions {
+            for (function_name, function_definition) in &user_function.members {
+                if self.context.user_functions.contains_key(&format!("{}.{}", user_function.namespace, function_name)) {
+                    return Err(DscError::Validation(t!("configure.mod.userFunctionAlreadyDefined", name = function_name, namespace = user_function.namespace).to_string()));
+                }
+                debug!("{}", t!("configure.mod.addingUserFunction", name = format!("{}.{}", user_function.namespace, function_name)));
+                self.context.user_functions.insert(format!("{}.{}", user_function.namespace, function_name), function_definition.clone());
+            }
+        }
+        Ok(())
+    }
+
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
         let version = self
@@ -846,38 +863,6 @@ impl Configurator {
             ),
             other: Map::new(),
         }
-    }
-
-    fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
-        match parameter_type {
-            DataType::String | DataType::SecureString => {
-                if !value.is_string() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
-                }
-            },
-            DataType::Int => {
-                if !value.is_i64() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
-                }
-            },
-            DataType::Bool => {
-                if !value.is_boolean() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
-                }
-            },
-            DataType::Array => {
-                if !value.is_array() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
-                }
-            },
-            DataType::Object | DataType::SecureObject => {
-                if !value.is_object() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
-                }
-            },
-        }
-
-        Ok(())
     }
 
     fn validate_config(&mut self) -> Result<(), DscError> {
@@ -991,6 +976,51 @@ impl Configurator {
         }
         Ok(Some(result))
     }
+}
+
+/// Validate that a parameter value matches the expected type.
+///
+/// # Arguments
+/// * `name` - The name of the parameter.
+/// * `value` - The value of the parameter.
+/// * `parameter_type` - The expected type of the parameter.
+///
+/// # Returns
+/// * `Result<(), DscError>` - Ok if the value matches the expected type, Err otherwise.
+///
+/// # Errors
+/// This function will return an error if the value does not match the expected type.
+///
+pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
+    match parameter_type {
+        DataType::String | DataType::SecureString => {
+            if !value.is_string() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
+            }
+        },
+        DataType::Int => {
+            if !value.is_i64() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
+            }
+        },
+        DataType::Bool => {
+            if !value.is_boolean() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
+            }
+        },
+        DataType::Array => {
+            if !value.is_array() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
+            }
+        },
+        DataType::Object | DataType::SecureObject => {
+            if !value.is_object() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
+            }
+        },
+    }
+
+    Ok(())
 }
 
 fn get_failure_from_error(err: &DscError) -> Option<Failure> {
