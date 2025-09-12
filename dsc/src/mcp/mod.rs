@@ -1,47 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::mcp::mcp_server::McpServer;
 use rmcp::{
     ErrorData as McpError,
-    handler::server::tool::ToolRouter,
-    model::{InitializeResult, InitializeRequestParam, ServerCapabilities, ServerInfo},
-    service::{RequestContext, RoleServer},
-    ServerHandler,
     ServiceExt,
-    tool_handler,
     transport::stdio,
 };
 use rust_i18n::t;
 
+pub mod list_adapted_resources;
 pub mod list_dsc_resources;
-
-#[derive(Debug, Clone)]
-pub struct McpServer {
-    tool_router: ToolRouter<Self>
-}
-
-impl Default for McpServer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[tool_handler]
-impl ServerHandler for McpServer {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo {
-            capabilities: ServerCapabilities::builder()
-                .enable_tools()
-                .build(),
-            instructions: Some(t!("mcp.mod.instructions").to_string()),
-            ..Default::default()
-        }
-    }
-
-    async fn initialize(&self, _request: InitializeRequestParam, _context: RequestContext<RoleServer>) -> Result<InitializeResult, McpError> {
-        Ok(self.get_info())
-    }
-}
+pub mod mcp_server;
 
 /// This function initializes and starts the MCP server, handling any errors that may occur.
 ///

@@ -72,8 +72,9 @@ Describe 'Tests for MCP server' {
         $response = Send-McpRequest -request $mcpRequest
 
         $response.id | Should -Be 2
-        $response.result.tools.Count | Should -Be 1
-        $response.result.tools[0].name | Should -BeExactly 'list_dsc_resources'
+        $response.result.tools.Count | Should -Be 2
+        $response.result.tools[0].name | Should -BeIn @('list_adapted_resources', 'list_dsc_resources')
+        $response.result.tools[1].name | Should -BeIn @('list_adapted_resources', 'list_dsc_resources')
     }
 
     It 'Calling list_dsc_resources works' {
@@ -97,5 +98,48 @@ Describe 'Tests for MCP server' {
             $response.result.structuredContent.resources[$i].kind | Should -BeExactly $resources[$i].kind -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
             $response.result.structuredContent.resources[$i].description | Should -BeExactly $resources[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
         }
+    }
+
+    It 'Calling list_adapted_resources works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 4
+            method = "tools/call"
+            params = @{
+                name = "list_adapted_resources"
+                arguments = @{
+                    adapter = "Microsoft.DSC/PowerShell"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 4
+        $resources = dsc resource list --adapter Microsoft.DSC/PowerShell | ConvertFrom-Json -Depth 20
+        $response.result.structuredContent.resources.Count | Should -Be $resources.Count
+        for ($i = 0; $i -lt $resources.Count; $i++) {
+            ($response.result.structuredContent.resources[$i].psobject.properties | Measure-Object).Count | Should -Be 4
+            $response.result.structuredContent.resources[$i].type | Should -BeExactly $resources[$i].type -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].require_adapter | Should -BeExactly $resources[$i].require_adapter -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+            $response.result.structuredContent.resources[$i].description | Should -BeExactly $resources[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+        }
+    }
+
+    It 'Calling list_adapted_resources with no matches works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 5
+            method = "tools/call"
+            params = @{
+                name = "list_adapted_resources"
+                arguments = @{
+                    adapter = "Non.Existent/Adapter"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 5
+        $response.result.structuredContent.resources.Count | Should -Be 0
     }
 }
