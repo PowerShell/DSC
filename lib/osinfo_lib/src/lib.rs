@@ -18,23 +18,12 @@ pub struct OsInfo {
     /// Defines the codename for the operating system as returned from `lsb_release --codename`.
     #[serde(skip_serializing_if = "Option::is_none")]
     codename: Option<String>,
-    bitness: Bitness,
+    bitness: Option<i32>,
     /// Defines the processor architecture as reported by `uname -m` on the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
     architecture: Option<String>,
     #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
     name: Option<String>,
-}
-
-/// Defines whether the operating system is a 32-bit or 64-bit operating system.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub enum Bitness {
-    #[serde(rename = "32")]
-    Bit32,
-    #[serde(rename = "64")]
-    Bit64,
-    #[serde(rename = "unknown")]
-    Unknown,
 }
 
 /// Defines whether the operating system is Linux, macOS, or Windows.
@@ -67,10 +56,10 @@ impl OsInfo {
             os_info::Type::Windows => Family::Windows,
             _ => Family::Linux,
         };
-        let bits: Bitness = match os_info.bitness() {
-            os_info::Bitness::X32 => Bitness::Bit32,
-            os_info::Bitness::X64 => Bitness::Bit64,
-            _ => Bitness::Unknown,
+        let bits = match os_info.bitness() {
+            os_info::Bitness::X32 => Some(32),
+            os_info::Bitness::X64 => Some(64),
+            _ => None,
         };
         let version = os_info.version().to_string();
         let name = if include_name {
