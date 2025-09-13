@@ -1,16 +1,19 @@
 _version = 1
 
 [args]
+getInput = "input to get for sshd_config or default shell settings"
+exportInput = "input to export from sshd_config"
 setInput = "input to set in sshd_config"
 
 [error]
 command = "Command"
 invalidInput = "Invalid Input"
+io = "IO"
 json = "JSON"
 language = "Language"
-notImplemented = "Not Implemented"
 parser = "Parser"
 parseInt = "Parse Integer"
+persist = "Persist"
 registry = "Registry"
 
 [get]
@@ -19,11 +22,11 @@ defaultShellCmdOptionMustBeString = "cmdOption must be a string"
 defaultShellEscapeArgsMustBe0Or1 = "'%{input}' must be a 0 or 1"
 defaultShellEscapeArgsMustBeDWord = "escapeArguments must be a DWord"
 defaultShellMustBeString = "shell must be a string"
-notImplemented = "get not yet implemented for Microsoft.OpenSSH.SSHD/sshd_config"
+traceInput = "Get input:"
 windowsOnly = "Microsoft.OpenSSH.SSHD/Windows is only applicable to Windows"
 
 [main]
-export = "Export"
+export = "Export command: %{input}"
 schema = "Schema command:"
 set = "Set command: '%{input}'"
 
@@ -51,5 +54,9 @@ shellPathDoesNotExist = "shell path does not exist: '%{shell}'"
 shellPathMustNotBeRelative = "shell path must not be relative"
 
 [util]
+includeDefaultsMustBeBoolean = "_includeDefaults must be true or false"
+inputMustBeEmpty = "get command does not support filtering based on input settings"
+sshdConfigNotFound = "sshd_config not found at path: '%{path}'"
+sshdConfigReadFailed = "failed to read sshd_config at path: '%{path}'"
 sshdElevation = "elevated security context required"
 tracingInitError = "Failed to initialize tracing"

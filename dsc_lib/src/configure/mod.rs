@@ -2,11 +2,13 @@
 // Licensed under the MIT License.
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
+use crate::configure::context::{Context, ProcessMode};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
+use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
 use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff},
+    {dscresource::{Capability, Invoke, get_diff, validate_properties},
     invoke_result::{GetResult, SetResult, TestResult,  ResourceSetResponse}},
     resource_manifest::Kind,
 };
@@ -14,7 +16,6 @@ use crate::DscResource;
 use crate::discovery::Discovery;
 use crate::parser::Statement;
 use crate::progress::{Failure, ProgressBar, ProgressFormat};
-use self::context::Context;
 use self::config_doc::{Configuration, DataType, MicrosoftDscMetadata, Operation, SecurityContextKind};
 use self::depends_on::get_resource_invocation_order;
 use self::config_result::{ConfigurationExportResult, ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult};
@@ -80,7 +81,12 @@ pub fn add_resource_export_results_to_configuration(resource: &DscResource, conf
                     .map(std::string::ToString::to_string)
                     .ok_or_else(|| DscError::Parser(t!("configure.mod.propertyNotString", name = "_name", value = name).to_string()))?
             } else {
-                format!("{}-{i}", r.resource_type)
+                let resource_type_short = if let Some(pos) = resource.type_name.find('/') {
+                    &resource.type_name[pos + 1..]
+                } else {
+                    &resource.type_name
+                };
+                format!("{resource_type_short}-{i}")
             };
             let mut metadata = Metadata {
                 microsoft: None,
@@ -170,10 +176,15 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
     Ok(Some(result))
 }
 
-fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Result<String, DscError> {
-    if *kind == Kind::Adapter {
+fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
+    if dsc_resource.kind == Kind::Adapter {
         // add metadata to the properties so the adapter knows this is a config
-        let mut metadata = Map::new();
+        let mut metadata: Map<String, Value> = Map::new();
+        if let Some(resource_metadata) = resource_metadata {
+            if !resource_metadata.other.is_empty() {
+                metadata.extend(resource_metadata.other);
+            }
+        }
         let mut dsc_value = Map::new();
         dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
         metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
@@ -183,6 +194,22 @@ fn add_metadata(kind: &Kind, mut properties: Option<Map<String, Value>> ) -> Res
         }
         properties = Some(metadata);
         return Ok(serde_json::to_string(&properties)?);
+    }
+
+    if let Some(resource_metadata) = resource_metadata {
+        let other_metadata = resource_metadata.other;
+        let mut props = if let Some(props) = properties {
+            props
+        } else {
+            Map::new()
+        };
+        props.insert("_metadata".to_string(), Value::Object(other_metadata));
+        let modified_props = Value::from(props.clone());
+        if let Ok(()) = validate_properties(dsc_resource, &modified_props) {} else {
+            warn!("{}", t!("configure.mod.schemaExcludesMetadata"));
+            props.remove("_metadata");
+        }
+        return Ok(serde_json::to_string(&props)?);
     }
 
     match properties {
@@ -317,7 +344,7 @@ impl Configurator {
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Get '{}'", resource.name).as_str());
@@ -325,13 +352,11 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
-            debug!("resource_type {}", &resource.resource_type);
-            let filter = add_metadata(&dsc_resource.kind, properties)?;
-            trace!("filter: {filter}");
+            let filter = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             let start_datetime = chrono::Local::now();
             let mut get_result = match dsc_resource.get(&filter) {
                 Ok(result) => result,
@@ -397,7 +422,7 @@ impl Configurator {
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Set '{}'", resource.name).as_str());
@@ -405,8 +430,8 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
@@ -425,7 +450,7 @@ impl Configurator {
                 }
             };
 
-            let desired = add_metadata(&dsc_resource.kind, properties)?;
+            let desired = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.desired", state = desired));
 
             let start_datetime;
@@ -559,7 +584,7 @@ impl Configurator {
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Test '{}'", resource.name).as_str());
@@ -567,12 +592,12 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type, resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(&resource, &dsc_resource.kind)?;
             debug!("resource_type {}", &resource.resource_type);
-            let expected = add_metadata(&dsc_resource.kind, properties)?;
+            let expected = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.expectedState", state = expected));
             let start_datetime = chrono::Local::now();
             let mut test_result = match dsc_resource.test(&expected) {
@@ -636,7 +661,7 @@ impl Configurator {
 
         let mut progress = ProgressBar::new(self.config.resources.len() as u64, self.progress_format)?;
         let resources = self.config.resources.clone();
-        let discovery = &self.discovery.clone();
+        let discovery = &mut self.discovery.clone();
         for resource in &resources {
             progress.set_resource(&resource.name, &resource.resource_type);
             progress.write_activity(format!("Export '{}'", resource.name).as_str());
@@ -644,11 +669,11 @@ impl Configurator {
                 progress.write_increment(1);
                 continue;
             }
-            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type) else {
-                return Err(DscError::ResourceNotFound(resource.resource_type.clone()));
+            let Some(dsc_resource) = discovery.find_resource(&resource.resource_type, resource.api_version.as_deref()) else {
+                return Err(DscError::ResourceNotFound(resource.resource_type.clone(), resource.api_version.as_deref().unwrap_or("").to_string()));
             };
             let properties = self.get_properties(resource, &dsc_resource.kind)?;
-            let input = add_metadata(&dsc_resource.kind, properties)?;
+            let input = add_metadata(dsc_resource, properties, resource.metadata.clone())?;
             trace!("{}", t!("configure.mod.exportInput", input = input));
             let export_result = match add_resource_export_results_to_configuration(dsc_resource, &mut conf, input.as_str()) {
                 Ok(result) => result,
@@ -709,9 +734,11 @@ impl Configurator {
     /// This function will return an error if the parameters are invalid.
     pub fn set_context(&mut self, parameters_input: Option<&Value>) -> Result<(), DscError> {
         let config = serde_json::from_str::<Configuration>(self.json.as_str())?;
+
+        self.context.extensions = self.discovery.extensions.values().cloned().collect();
         self.set_parameters(parameters_input, &config)?;
         self.set_variables(&config)?;
-        self.context.extensions = self.discovery.extensions.values().cloned().collect();
+        self.set_user_functions(&config)?;
         Ok(())
     }
 
@@ -732,9 +759,9 @@ impl Configurator {
                 // default values can be expressions
                 let value = if default_value.is_string() {
                     if let Some(value) = default_value.as_str() {
-                        self.context.processing_parameter_defaults = true;
+                        self.context.process_mode = ProcessMode::ParametersDefault;
                         let result = self.statement_parser.parse_and_execute(value, &self.context)?;
-                        self.context.processing_parameter_defaults = false;
+                        self.context.process_mode = ProcessMode::Normal;
                         result
                     } else {
                         return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
@@ -742,7 +769,7 @@ impl Configurator {
                 } else {
                     default_value.clone()
                 };
-                Configurator::validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                validate_parameter_type(name, &value, &parameter.parameter_type)?;
                 self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
             }
         }
@@ -766,7 +793,7 @@ impl Configurator {
                 // TODO: additional array constraints
                 // TODO: object constraints
 
-                Configurator::validate_parameter_type(&name, &value, &constraint.parameter_type)?;
+                validate_parameter_type(&name, &value, &constraint.parameter_type)?;
                 if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
                     info!("{}", t!("configure.mod.setSecureParameter", name = name));
                 } else {
@@ -807,12 +834,34 @@ impl Configurator {
         Ok(())
     }
 
+    fn set_user_functions(&mut self, config: &Configuration) -> Result<(), DscError> {
+        let Some(functions) = &config.functions else {
+            return Ok(());
+        };
+
+        for user_function in functions {
+            for (function_name, function_definition) in &user_function.members {
+                if self.context.user_functions.contains_key(&format!("{}.{}", user_function.namespace, function_name)) {
+                    return Err(DscError::Validation(t!("configure.mod.userFunctionAlreadyDefined", name = function_name, namespace = user_function.namespace).to_string()));
+                }
+                debug!("{}", t!("configure.mod.addingUserFunction", name = format!("{}.{}", user_function.namespace, function_name)));
+                self.context.user_functions.insert(format!("{}.{}", user_function.namespace, function_name), function_definition.clone());
+            }
+        }
+        Ok(())
+    }
+
     fn get_result_metadata(&self, operation: Operation) -> Metadata {
         let end_datetime = chrono::Local::now();
+        let version = self
+            .context
+            .dsc_version
+            .clone()
+            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
         Metadata {
             microsoft: Some(
                 MicrosoftDscMetadata {
-                    version: Some(env!("CARGO_PKG_VERSION").to_string()),
+                    version: Some(version),
                     operation: Some(operation),
                     execution_type: Some(self.context.execution_type.clone()),
                     start_datetime: Some(self.context.start_datetime.to_rfc3339()),
@@ -826,45 +875,49 @@ impl Configurator {
         }
     }
 
-    fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
-        match parameter_type {
-            DataType::String | DataType::SecureString => {
-                if !value.is_string() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
-                }
-            },
-            DataType::Int => {
-                if !value.is_i64() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
-                }
-            },
-            DataType::Bool => {
-                if !value.is_boolean() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
-                }
-            },
-            DataType::Array => {
-                if !value.is_array() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
-                }
-            },
-            DataType::Object | DataType::SecureObject => {
-                if !value.is_object() {
-                    return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
-                }
-            },
-        }
-
-        Ok(())
-    }
-
     fn validate_config(&mut self) -> Result<(), DscError> {
-        let config: Configuration = serde_json::from_str(self.json.as_str())?;
+        let mut config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(config.metadata.as_ref())?;
 
         // Perform discovery of resources used in config
-        let required_resources = config.resources.iter().map(|p| p.resource_type.clone()).collect::<Vec<String>>();
-        self.discovery.find_resources(&required_resources, self.progress_format);
+        // create an array of DiscoveryFilter using the resource types and api_versions from the config
+        let mut discovery_filter: Vec<DiscoveryFilter> = Vec::new();
+        let config_copy = config.clone();
+        for resource in config_copy.resources {
+            let filter = DiscoveryFilter::new(&resource.resource_type, resource.api_version.clone());
+            if !discovery_filter.contains(&filter) {
+                discovery_filter.push(filter);
+            }
+            // if the resource contains `Copy`, we need to unroll
+            if let Some(copy) = &resource.copy {
+                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
+                if copy.mode.is_some() {
+                    return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
+                }
+                if copy.batch_size.is_some() {
+                    return Err(DscError::Validation(t!("configure.mod.copyBatchSizeNotSupported").to_string()));
+                }
+                self.context.process_mode = ProcessMode::Copy;
+                self.context.copy_current_loop_name.clone_from(&copy.name);
+                let mut copy_resources = Vec::<Resource>::new();
+                for i in 0..copy.count {
+                    self.context.copy.insert(copy.name.clone(), i);
+                    let mut new_resource = resource.clone();
+                    let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
+                        return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
+                    };
+                    new_resource.name = new_name.to_string();
+                    new_resource.copy = None;
+                    copy_resources.push(new_resource);
+                }
+                self.context.process_mode = ProcessMode::Normal;
+                // replace current resource with the unrolled copy resources
+                config.resources.retain(|r| *r != resource);
+                config.resources.extend(copy_resources);
+            }
+        }
+
+        self.discovery.find_resources(&discovery_filter, self.progress_format);
         self.config = config;
         Ok(())
     }
@@ -933,6 +986,51 @@ impl Configurator {
         }
         Ok(Some(result))
     }
+}
+
+/// Validate that a parameter value matches the expected type.
+///
+/// # Arguments
+/// * `name` - The name of the parameter.
+/// * `value` - The value of the parameter.
+/// * `parameter_type` - The expected type of the parameter.
+///
+/// # Returns
+/// * `Result<(), DscError>` - Ok if the value matches the expected type, Err otherwise.
+///
+/// # Errors
+/// This function will return an error if the value does not match the expected type.
+///
+pub fn validate_parameter_type(name: &str, value: &Value, parameter_type: &DataType) -> Result<(), DscError> {
+    match parameter_type {
+        DataType::String | DataType::SecureString => {
+            if !value.is_string() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotString", name = name).to_string()));
+            }
+        },
+        DataType::Int => {
+            if !value.is_i64() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotInteger", name = name).to_string()));
+            }
+        },
+        DataType::Bool => {
+            if !value.is_boolean() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotBoolean", name = name).to_string()));
+            }
+        },
+        DataType::Array => {
+            if !value.is_array() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotArray", name = name).to_string()));
+            }
+        },
+        DataType::Object | DataType::SecureObject => {
+            if !value.is_object() {
+                return Err(DscError::Validation(t!("configure.mod.parameterNotObject", name = name).to_string()));
+            }
+        },
+    }
+
+    Ok(())
 }
 
 fn get_failure_from_error(err: &DscError) -> Option<Failure> {

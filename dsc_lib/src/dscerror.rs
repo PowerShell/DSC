@@ -50,6 +50,9 @@ pub enum DscError {
     #[error("{t} '{0}', {t2} {1}, {t3} {2}", t = t!("dscerror.invalidFunctionParameterCount"), t2 = t!("dscerror.expected"), t3 = t!("dscerror.got"))]
     InvalidFunctionParameterCount(String, usize, usize),
 
+    #[error("{t} '{0}': {1}", t = t!("dscerror.invalidRequiredVersion"))]
+    InvalidRequiredVersion(String, String),
+
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
 
@@ -92,8 +95,8 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.progress"))]
     Progress(#[from] TemplateError),
 
-    #[error("{t}: {0}", t = t!("dscerror.resourceNotFound"))]
-    ResourceNotFound(String),
+    #[error("{t}: {0} {1}", t = t!("dscerror.resourceNotFound"))]
+    ResourceNotFound(String, String),
 
     #[error("{t}: {0}", t = t!("dscerror.resourceManifestNotFound"))]
     ResourceManifestNotFound(String),
@@ -106,6 +109,9 @@ pub enum DscError {
 
     #[error("{t}: {0}", t = t!("dscerror.securityContext"))]
     SecurityContext(String),
+
+    #[error("semver: {0}")]
+    SemVer(#[from] semver::Error),
 
     #[error("{t}: {0}", t = t!("dscerror.utf8Conversion"))]
     Utf8Conversion(#[from] Utf8Error),

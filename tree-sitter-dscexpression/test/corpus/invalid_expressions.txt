@@ -80,7 +80,7 @@ String starting with bracket
 
     (ERROR
       (ERROR
-        (memberName))
+        (functionName))
       (functionName))
 
 =====
@@ -121,9 +121,7 @@ Invalid float argument
         (function
           (functionName)
           (ERROR
-            (functionName))
-          (arguments
-            (number)))))
+            (functionName)))))
 
 =====
 Plus-sign number argument
