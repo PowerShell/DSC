@@ -343,6 +343,7 @@ if (!$SkipBuild) {
         "dsc",
         "dscecho",
         "extensions/bicep",
+        "lib/osinfo_lib",
         "osinfo",
         "powershell-adapter",
         'resources/PSScript',

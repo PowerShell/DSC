@@ -9,9 +9,6 @@ use std::string::ToString;
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OsInfo {
-    /// Returns the unique ID for the `OSInfo` instance data type.
-    #[serde(rename = "$id")]
-    pub id: String,
     family: Family,
     /// Defines the version of the operating system as a string.
     version: String,
@@ -59,8 +56,6 @@ impl Display for Family {
     }
 }
 
-const ID: &str = "https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json";
-
 impl OsInfo {
     pub fn new(include_name: bool) -> Self {
         let os_info = os_info::get();
@@ -89,7 +84,6 @@ impl OsInfo {
             None
         };
         Self {
-            id: ID.to_string(),
             family,
             version,
             edition,
