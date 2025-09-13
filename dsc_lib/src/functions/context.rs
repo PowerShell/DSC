@@ -33,11 +33,11 @@ impl Function for Context {
     }
 
     fn invoke(&self, _args: &[Value], config_context: &ConfigContext) -> Result<Value, DscError> {
-        debug!("{}", t!("functions.add.invoked"));
+        debug!("{}", t!("functions.context.invoked"));
         let context = ContextInfo {
             os: OsInfo::new(false),
             security: config_context.security_context.clone(),
         };
-        Ok(serde_json::to_value(context).unwrap())
+        Ok(serde_json::to_value(context)?)
     }
 }
