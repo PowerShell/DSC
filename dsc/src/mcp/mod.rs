@@ -9,9 +9,9 @@ use rmcp::{
 };
 use rust_i18n::t;
 
-pub mod list_adapted_resources;
 pub mod list_dsc_resources;
 pub mod mcp_server;
+pub mod show_dsc_resource;
 
 /// This function initializes and starts the MCP server, handling any errors that may occur.
 ///
