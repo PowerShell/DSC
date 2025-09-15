@@ -69,14 +69,14 @@ Describe 'Tests for MCP server' {
             params = @{}
         }
 
-        $response = Send-McpRequest -request $mcpRequest
-
-        $response.id | Should -Be 2
-        $response.result.tools.Count | Should -Be 2
         $tools = @{
             'list_dsc_resources' = $false
             'show_dsc_resource' = $false
         }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 2
+        $response.result.tools.Count | Should -Be $tools.Count
         foreach ($tool in $response.result.tools) {
             $tools.ContainsKey($tool.name) | Should -Be $true
             $tools[$tool.name] = $true
