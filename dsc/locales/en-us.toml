@@ -66,6 +66,14 @@ serverStopped = "MCP server stopped"
 failedToCreateRuntime = "Failed to create async runtime: %{error}"
 serverWaitFailed = "Failed to wait for MCP server: %{error}"
 
+[mcp.list_dsc_resources]
+resourceNotAdapterFound = "The adapter '%{adapter}' is a resource, but not a valid adapter"
+resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
+adapterNotFound = "Adapter '%{adapter}' not found"
+
+[mcp.show_dsc_resource]
+resourceNotFound = "Resource type '%{type_name}' not found"
+
 [resolve]
 processingInclude = "Processing Include input"
 invalidInclude = "Failed to deserialize Include input"
