@@ -23,6 +23,7 @@ jsonschema = { version = "0.33", default-features = false }
 linked-hash-map = "0.5"
 murmurhash64 = "0.3"
 num-traits = "0.2"
+osinfo_lib = { path = "../lib/osinfo_lib" }
 path-absolutize = { version = "3.1" }
 regex = "1.11"
 rt-format = "0.3"

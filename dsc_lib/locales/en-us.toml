@@ -266,6 +266,10 @@ invoked = "contains function"
 invalidItemToFind = "Invalid item to find, must be a string or number"
 invalidArgType = "Invalid argument type, first argument must be an array, object, or string"
 
+[functions.context]
+description = "Retrieves context information about the current execution environment"
+invoked = "context function"
+
 [functions.copyIndex]
 description = "Returns the current copy index"
 invoked = "copyIndex function"

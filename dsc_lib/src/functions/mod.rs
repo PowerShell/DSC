@@ -20,6 +20,7 @@ pub mod bool;
 pub mod coalesce;
 pub mod concat;
 pub mod contains;
+pub mod context;
 pub mod copy_index;
 pub mod create_array;
 pub mod create_object;
@@ -134,6 +135,7 @@ impl FunctionDispatcher {
             Box::new(coalesce::Coalesce{}),
             Box::new(concat::Concat{}),
             Box::new(contains::Contains{}),
+            Box::new(context::Context{}),
             Box::new(copy_index::CopyIndex{}),
             Box::new(create_array::CreateArray{}),
             Box::new(create_object::CreateObject{}),

@@ -675,6 +675,7 @@ dependencies = [
  "linked-hash-map",
  "murmurhash64",
  "num-traits",
+ "osinfo_lib",
  "path-absolutize",
  "regex",
  "rt-format",
@@ -1656,6 +1657,27 @@ name = "once_cell_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
+
+[[package]]
+name = "os_info"
+version = "3.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0e1ac5fde8d43c34139135df8ea9ee9465394b2d8d20f032d38998f64afffc3"
+dependencies = [
+ "log",
+ "plist",
+ "serde",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "osinfo_lib"
+version = "1.0.0"
+dependencies = [
+ "os_info",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "outref"
