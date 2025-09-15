@@ -58,17 +58,11 @@ impl McpServer {
     pub async fn show_dsc_resource(&self, Parameters(ShowResourceRequest { r#type }): Parameters<ShowResourceRequest>) -> Result<Json<DscResource>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
-            let resource = match dsc.find_resource(&r#type, None) {
-                Some(res) => res,
-                None => return Err(McpError::invalid_params(t!("mcp.show_dsc_resource.resourceNotFound", type_name = r#type), None)),
+            let Some(resource) = dsc.find_resource(&r#type, None) else {
+                return Err(McpError::invalid_params(t!("mcp.show_dsc_resource.resourceNotFound", type_name = r#type), None))
             };
             let schema = match resource.schema() {
-                Ok(schema_str) => {
-                    match serde_json::from_str(&schema_str) {
-                        Ok(json) => Some(json),
-                        Err(_) => None,
-                    }
-                },
+                Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
                 Err(_) => None,
             };
             Ok(DscResource {

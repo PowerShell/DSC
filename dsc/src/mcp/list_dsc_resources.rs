@@ -61,7 +61,7 @@ impl McpServer {
                         return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.adapterNotFound", adapter = adapter), None));
                     }
                 },
-                None => "".to_string(),
+                None => String::new(),
             };
             let mut resources = BTreeMap::<String, ResourceSummary>::new();
             for resource in dsc.list_available(&DiscoveryKind::Resource, "*", &adapter_filter, ProgressFormat::None) {
