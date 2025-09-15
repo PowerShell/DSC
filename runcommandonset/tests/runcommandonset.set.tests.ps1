@@ -15,7 +15,7 @@ Describe 'tests for runcommandonset set' {
             "arguments": ["-Command", "echo hello world"]
         }
 "@
-        $input_json | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f -
+        $input_json | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f - 2>$null
         # TODO: test output once DSC PR to capture it is merged
         $LASTEXITCODE | Should -Be 0
     }
@@ -45,23 +45,23 @@ Describe 'tests for runcommandonset set' {
     }
 
     It 'Executable is a required input via CLI arguments' {
-        $null = runcommandonset set -a foo
+        $null = runcommandonset set -a foo 2>$null
         $LASTEXITCODE | Should -Be 4
     }
 
     It 'Executable is a required input via STDIN' {
-        $null = '{ "arguments": "foo" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f -
+        $null = '{ "arguments": "foo" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f - 2>$null
         $LASTEXITCODE | Should -Be 2
     }
 
     It 'Executable can be provided without arguments' {
-        $result = '{ "executable": "pwsh" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f - | ConvertFrom-Json
+        $result = '{ "executable": "pwsh" }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f - 2>$null | ConvertFrom-Json
         $result.changedProperties | Should -Be @()
         $LASTEXITCODE | Should -Be 0
     }
 
     It 'Exit code does not need to be provided to detect difference' {
-        $result = '{ "executable": "pwsh", "arguments": ["invalid input"] }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f - | ConvertFrom-Json
+        $result = '{ "executable": "pwsh", "arguments": ["invalid input"] }' | dsc resource set -r Microsoft.DSC.Transitional/RunCommandOnSet -f - 2>$null | ConvertFrom-Json
         $result.changedProperties | Should -Be @( 'exitCode' )
         $LASTEXITCODE | Should -Be 0
     }
@@ -90,7 +90,7 @@ Describe 'tests for runcommandonset set' {
                 - -Command
                 - $command
 "@
-        $out = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        $out = $config_yaml | dsc config set -f - 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $out.hadErrors | Should -BeFalse
         $out.results.Count | Should -Be 1
@@ -98,7 +98,7 @@ Describe 'tests for runcommandonset set' {
         $out.results[0].result.afterState.executable | Should -BeExactly 'pwsh'
         $out.results[0].result.afterState.arguments[0] | Should -BeExactly '-Command'
         Get-Content $TestDrive/output.txt  | Should -BeExactly 'Hello'
-        $out = $config_yaml | dsc config set -f - | ConvertFrom-Json
+        $out = $config_yaml | dsc config set -f - 2>$null | ConvertFrom-Json
         Get-Content $TestDrive/output.txt  | Should -BeExactly @('Hello', 'Hello')
     }
 }

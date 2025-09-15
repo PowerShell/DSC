@@ -70,7 +70,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
             $testShell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
             New-ItemProperty -Path $RegistryPath -Name "DefaultShell" -Value $testShell
 
-            $output = sshdconfig get -s windows-global
+            $output = sshdconfig get -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
@@ -86,7 +86,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
             New-ItemProperty -Path $RegistryPath -Name "DefaultShellCommandOption" -Value "/c"
             New-ItemProperty -Path $RegistryPath -Name "DefaultShellEscapeArguments" -Value 0 -Type DWord
 
-            $output = sshdconfig get -s windows-global
+            $output = sshdconfig get -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
@@ -96,7 +96,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
         }
 
         It 'Should handle empty default shell registry values' -Skip:(!$IsWindows) {
-            $output = sshdconfig get -s windows-global
+            $output = sshdconfig get -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $result = $output | ConvertFrom-Json
@@ -116,7 +116,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
                 escapeArguments = $false
             } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig
+            sshdconfig set --input $inputConfig 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $defaultShell = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
@@ -134,7 +134,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
                 shell = "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
             } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig
+            sshdconfig set --input $inputConfig 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $defaultShell = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
@@ -144,7 +144,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
         It 'Should handle invalid JSON input gracefully' {
             $invalidJson = "{ invalid json }"
 
-            sshdconfig set --input $invalidJson
+            sshdconfig set --input $invalidJson 2>$null
             $LASTEXITCODE | Should -Not -Be 0
         }
 
@@ -153,7 +153,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
 
             $inputConfig = @{ shell = $null } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig
+            sshdconfig set --input $inputConfig 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $result = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue
@@ -170,10 +170,10 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
             }
             $inputJson = $originalConfig | ConvertTo-Json
 
-            sshdconfig set --input $inputJson
+            sshdconfig set --input $inputJson 2>$null
             $LASTEXITCODE | Should -Be 0
 
-            $getOutput = sshdconfig get -s windows-global
+            $getOutput = sshdconfig get -s windows-global 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $retrievedConfig = $getOutput | ConvertFrom-Json
@@ -191,7 +191,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
 
             $inputConfig = @{ shell = $null } | ConvertTo-Json
 
-            sshdconfig set --input $inputConfig
+            sshdconfig set --input $inputConfig 2>$null
             $LASTEXITCODE | Should -Be 0
 
             $result = Get-ItemProperty -Path $RegistryPath -Name "DefaultShell" -ErrorAction SilentlyContinue

@@ -3,20 +3,47 @@
     "type": "Microsoft.OpenSSH.SSHD/sshd_config",
     "description": "Manage SSH Server Configuration",
     "version": "0.1.0",
+        "get": {
+        "executable": "sshdconfig",
+        "args": [
+            "get",
+            "-s",
+            "sshd-config",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
+        ]
+    },
+    "set": {
+        "executable": "sshdconfig",
+        "args": [
+            "set",
+            "-s",
+            "sshd-config",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
     "export": {
         "executable": "sshdconfig",
         "args": [
-            "export"
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": false
+            }
         ]
     },
     "schema": {
-        "command": {
-            "executable": "sshdconfig",
-            "args": [
-                "schema",
-                "-s",
-                "sshd-config"
-            ]
-        }
+      "embedded": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "sshdconfig",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": true
+      }
     }
 }

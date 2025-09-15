@@ -1,17 +1,27 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator}, dscresources::resource_manifest::Kind};
+use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator, context::ProcessMode}, dscresources::resource_manifest::Kind};
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use dscerror::DscError;
+use jsonschema::Validator;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
-use super::{command_resource, dscerror, invoke_result::{ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult}, resource_manifest::import_manifest};
+use super::{
+    command_resource,
+    dscerror,
+    invoke_result::{
+        ExportResult, GetResult, ResolveResult, ResourceTestResponse, SetResult, TestResult, ValidateResult
+    },
+    resource_manifest::{
+        import_manifest, ResourceManifest
+    }
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -116,7 +126,7 @@ impl DscResource {
         let config_json = serde_json::to_string(&configuration)?;
         let mut configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
         // don't process expressions again as they would have already been processed before being passed to the adapter
-        configurator.context.process_expressions = false;
+        configurator.context.process_mode = ProcessMode::NoExpressionEvaluation;
         Ok(configurator)
     }
 }
@@ -555,6 +565,80 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
     }
 
     diff_properties
+}
+
+/// Validates the properties of a resource against its schema.
+///
+/// # Arguments
+///
+/// * `properties` - The properties of the resource to validate.
+/// * `schema` - The schema to validate against.
+///
+/// # Returns
+///
+/// * `Result<(), DscError>` - Ok if valid, Err with message if invalid.
+///
+/// # Errors
+///
+/// * `DscError` - Error if the schema is invalid
+pub fn validate_properties(resource: &DscResource, properties: &Value) -> Result<(), DscError> {
+    // if so, see if it implements validate via the resource manifest
+    let type_name = resource.type_name.clone();
+    if let Some(manifest) = resource.manifest.clone() {
+        // convert to resource_manifest``
+        let manifest: ResourceManifest = serde_json::from_value(manifest)?;
+        if manifest.validate.is_some() {
+            debug!("{}: {type_name} ", t!("dscresources.dscresource.resourceImplementsValidate"));
+            let resource_config = properties.to_string();
+            let result = resource.validate(&resource_config)?;
+            if !result.valid {
+                let reason = result.reason.unwrap_or(t!("dscresources.dscresource.noReason").to_string());
+                return Err(DscError::Validation(format!("{}: {type_name} {reason}", t!("dscresources.dscresource.resourceValidationFailed"))));
+            }
+            return Ok(())
+        }
+        // use schema validation
+        trace!("{}: {type_name}", t!("dscresources.dscresource.resourceDoesNotImplementValidate"));
+        let Ok(schema) = resource.schema() else {
+            return Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noSchemaOrValidate"))));
+        };
+        let schema = serde_json::from_str(&schema)?;
+        return validate_json(&resource.type_name, &schema, properties)
+    }
+    Err(DscError::Validation(format!("{}: {type_name}", t!("dscresources.dscresource.noManifest"))))
+}
+
+/// Validate the JSON against the schema.
+///
+/// # Arguments
+///
+/// * `source` - The source of the JSON
+/// * `schema` - The schema to validate against
+/// * `json` - The JSON to validate
+///
+/// # Returns
+///
+/// Nothing on success.
+///
+/// # Errors
+///
+/// * `DscError` - The JSON is invalid
+pub fn validate_json(source: &str, schema: &Value, json: &Value) -> Result<(), DscError> {
+    debug!("{}: {source}", t!("dscresources.dscresource.validatingSchema"));
+    trace!("JSON: {json}");
+    trace!("Schema: {schema}");
+    let compiled_schema = match Validator::new(schema) {
+        Ok(compiled_schema) => compiled_schema,
+        Err(err) => {
+            return Err(DscError::Validation(format!("{}: {err}", t!("dscresources.dscresource.failedToCompileSchema"))));
+        }
+    };
+
+    if let Err(err) = compiled_schema.validate(json) {
+        return Err(DscError::Validation(format!("{}: '{source}' {err}", t!("dscresources.dscresource.validationFailed"))));
+    }
+
+    Ok(())
 }
 
 /// Compares two arrays independent of order

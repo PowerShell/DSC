@@ -9,32 +9,31 @@ title:       array
 
 ## Synopsis
 
-Creates an array from the given elements (strings, numbers, arrays, or objects).
+Wraps a single value (string, number, array, or object) in an array.
 
 ## Syntax
 
 ```Syntax
-array(<element1>, <element2>, ...)
+array(<value>)
 ```
 
 ## Description
 
-The `array()` function creates an array from the provided arguments, allowing
-mixed data types within the same array. Unlike `createArray()` which requires
-all elements to be the same type, `array()` accepts any combination of strings,
-numbers, arrays, and objects as arguments.
+The `array()` function returns a new array containing the single input value.
+The value can be a string, number, array, or object. Use
+`createArray()` to construct arrays with multiple elements of the same type.
 
-This function is useful when you need to combine different types of data into a
-single collection, such as mixing configuration values, computed results, and
-structured metadata in deployment scenarios.
+This function is useful when a schema expects an array, but you only have a
+single value, or when you need to nest an existing array or object inside an
+outer array.
 
 ## Examples
 
-### Example 1 - Build a deployment plan
+### Example 1 - Wrap an existing array as a single element
 
-This example demonstrates combining different data types to create a comprehensive
-deployment configuration. The array contains an existing server list, a numeric
-batch size, and a configuration object with deployment strategy details.
+This example demonstrates wrapping an existing server list into a single array
+element, producing a nested array. This can be useful when a downstream schema
+expects an array of arrays.
 
 ```yaml
 # array.example.1.dsc.config.yaml
@@ -52,7 +51,7 @@ resources:
 - name: Deployment Plan
   type: Microsoft.DSC.Debug/Echo
   properties:
-    output: "[array(parameters('webServers'), parameters('batchSize'), createObject('strategy', 'blue-green'))]"
+    output: "[array(parameters('webServers'))]"
 ```
 
 ```bash
@@ -68,17 +67,14 @@ results:
       output:
       - - web01
         - web02
-      - 2
-      - strategy: blue-green
 messages: []
 hadErrors: false
 ```
 
-### Example 2 - Compose mixed telemetry payload parts
+### Example 2 - Wrap a single object for payloads
 
-This example shows how to construct a telemetry payload by combining a string
-identifier, structured metadata object, and numeric status code into a single
-array for logging or monitoring systems.
+This example shows how to wrap a structured metadata object into an array for
+logging or monitoring systems that expect arrays.
 
 ```yaml
 # array.example.2.dsc.config.yaml
@@ -92,7 +88,7 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      payload: "[array(parameters('correlationId'), createObject('severity', 'info'), 200)]"
+      payload: "[array(createObject('severity', 'info'))]"
 ```
 
 ```bash
@@ -107,18 +103,15 @@ results:
     actualState:
       output:
         payload:
-        - ABC123
         - severity: info
-        - 200
 messages: []
 hadErrors: false
 ```
 
-### Example 3 - Combine generated and literal collections
+### Example 3 - Wrap generated collections
 
-This example demonstrates nesting arrays and objects within a parent array,
-showing how `array()` can combine results from other DSC functions like
-`createArray()` and `createObject()` with literal values.
+This example demonstrates wrapping a generated collection (like one from
+`createArray()` or `createObject()`) into an outer array.
 
 ```yaml
 # array.example.3.dsc.config.yaml
@@ -128,7 +121,8 @@ resources:
   type: Microsoft.DSC.Debug/Echo
   properties:
     output:
-      combined: "[array(createArray('a','b'), array(1,2), createObject('k','v'))]"
+      combinedArray: "[array(createArray('a','b'))]"
+      combinedObject: "[array(createObject('k','v'))]"
 ```
 
 ```bash
@@ -142,11 +136,10 @@ results:
   result:
     actualState:
       output:
-        combined:
+        combinedArray:
         - - a
           - b
-        - - 1
-          - 2
+        combinedObject:
         - k: v
 messages: []
 hadErrors: false
@@ -154,19 +147,20 @@ hadErrors: false
 
 ## Parameters
 
-### element1, element2, ...
+### value
 
-The elements to include in the array.
+The single value to wrap in the array.
 
 ```yaml
 Type:         string, number, array, or object
 Required:     false
-Multiplicity: 0 or more
+MinimumCount: 1
+MaximumCount: 1
 ```
 
-Each element provided as an argument will be added to the resulting array in the
-order specified. All elements must be one of the four accepted types: string,
-number (integer), array, or object. Boolean and null values are not supported.
+The provided value will be wrapped into the resulting array. The value must be
+one of the four accepted types: string, number (integer), array, or object.
+Boolean and null values are not supported.
 
 ## Output
 

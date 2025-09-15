@@ -7,7 +7,7 @@ use serde_json::Value;
 use tracing::debug;
 use tree_sitter::Parser;
 
-use crate::configure::context::Context;
+use crate::configure::context::{Context, ProcessMode};
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 
@@ -46,7 +46,7 @@ impl Statement {
     /// This function will return an error if the statement fails to parse or execute.
     pub fn parse_and_execute(&mut self, statement: &str, context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("parser.parsingStatement", statement = statement));
-        if !context.process_expressions {
+        if context.process_mode == ProcessMode::NoExpressionEvaluation {
             debug!("{}", t!("parser.skippingExpressionProcessing"));
             return Ok(Value::String(statement.to_string()));
         }

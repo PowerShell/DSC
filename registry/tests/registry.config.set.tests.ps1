@@ -18,16 +18,16 @@ Describe 'registry config set tests' {
             }
         }
 '@
-        $out = registry config set --input $json
+        $out = registry config set --input $json 2>$null
         $LASTEXITCODE | Should -Be 0
         $out | Should -BeNullOrEmpty
-        $result = registry config get --input $json | ConvertFrom-Json
+        $result = registry config get --input $json 2>$null | ConvertFrom-Json
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result.valueName | Should -Be 'Hello'
         $result.valueData.String | Should -Be 'World'
         ($result.psobject.properties | Measure-Object).Count | Should -Be 3
 
-        $out = registry config get --input $json
+        $out = registry config get --input $json 2>$null
         $LASTEXITCODE | Should -Be 0
         $result = $out | ConvertFrom-Json
         $result.keyPath | Should -Be 'HKCU\1\2\3'
@@ -82,7 +82,7 @@ Describe 'registry config set tests' {
               properties:
                 keyPath: 'HKCU\1'
                 valueName: Test
-                _exist: true            
+                _exist: true
 '@
 
         $out = dsc config set -i $configYaml | ConvertFrom-Json

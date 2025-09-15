@@ -94,9 +94,8 @@ Describe 'tests for resource discovery' {
         try {
             $env:DSC_RESOURCE_PATH = $testdrive
             Set-Content -Path "$testdrive/test.dsc.resource.json" -Value $manifest
-            $out = dsc resource list 2>&1
-            write-verbose -verbose ($out | Out-String)
-            $out | Should -Match 'WARN.*?Validation.*?invalid version' -Because ($out | Out-String)
+            $null = dsc resource list 2> "$testdrive/error.txt"
+            "$testdrive/error.txt" | Should -FileContentMatchExactly 'WARN.*?does not use semver' -Because (Get-Content -Raw "$testdrive/error.txt")
         }
         finally {
             $env:DSC_RESOURCE_PATH = $oldPath
@@ -114,7 +113,6 @@ Describe 'tests for resource discovery' {
         $env:DSC_RESOURCE_PATH = $null
         $env:PSModulePath += [System.IO.Path]::PathSeparator + $TestClassResourcePath
         dsc resource list -a Microsoft.DSC/PowerShell | Out-Null
-        gc -raw $script:lookupTableFilePath
         $script:lookupTableFilePath | Should -FileContentMatchExactly 'Microsoft.DSC/PowerShell'
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeTrue
         $env:PSModulePath = $oldPSModulePath
@@ -150,37 +148,33 @@ Describe 'tests for resource discovery' {
         Test-Path $script:lookupTableFilePath -PathType Leaf | Should -BeFalse
 
         # initial invocation should populate and save adapter lookup table
-        dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
+        $null = dsc -l trace resource list -a Microsoft.DSC/PowerShell 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Read 0 items into lookup table"
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
+        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table" -Because (Get-Content -Raw "$TestDrive/tracing.txt")
 
         # second invocation (without an update) should use but not save adapter lookup table
         "{'Name':'TestClassResource1'}" | dsc -l trace resource get -r 'TestClassResource/TestClassResource' -f - 2> $TestDrive/tracing.txt
-        "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Lookup table found resource 'testclassresource/testclassresource' in adapter 'Microsoft.DSC/PowerShell'"
         "$TestDrive/tracing.txt" | Should -Not -FileContentMatchExactly "Saving lookup table"
 
         # third invocation (with an update) should save updated adapter lookup table
-        dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
+        $null = dsc -l trace resource list -a Test/TestGroup 2> $TestDrive/tracing.txt
         "$TestDrive/tracing.txt" | Should -FileContentMatchExactly "Saving lookup table"
 
         $env:PSModulePath = $oldPSModulePath
     }
 
-    It 'Verify non-zero exit code when resource not found' {
+    It 'Verify non-zero exit code when resource not found: <cmdline>' -TestCases @(
+        @{ cmdline = "dsc resource get -r abc/def" }
+        @{ cmdline = "dsc resource get --all -r abc/def" }
+        @{ cmdline = "dsc resource set -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource test -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource delete -r abc/def -i 'abc'" }
+        @{ cmdline = "dsc resource export -r abc/def" }
+        @{ cmdline = "dsc resource schema -r abc/def" }
+    ) {
+        param($cmdline)
 
-        $out = dsc resource get -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource get --all -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource set -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource test -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = 'abc' | dsc resource delete -r abc/def -f -
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource export -r abc/def
-        $LASTEXITCODE | Should -Be 7
-        $out = dsc resource schema -r abc/def
+        Invoke-Expression $cmdline 2>$null
         $LASTEXITCODE | Should -Be 7
     }
 

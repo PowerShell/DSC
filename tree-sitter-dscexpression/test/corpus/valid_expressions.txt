@@ -321,3 +321,17 @@ Escaped single-quotes
       (functionName)
       (arguments
         (string)))))
+
+=====
+User Function
+=====
+[user.function(1, 2)]
+---
+
+(statement
+  (expression
+    (function
+      (functionName)
+      (arguments
+        (number)
+        (number)))))
