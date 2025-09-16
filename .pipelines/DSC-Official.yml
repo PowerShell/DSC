@@ -246,7 +246,7 @@ extends:
       - job: BuildLinuxArm64Musl
         dependsOn: SetPackageVersion
         variables:
-          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2004-arm64:latest'
+          LinuxContainerImage: 'onebranch.azurecr.io/linux/ubuntu-2204-arm64:latest'
           PackageVersion: $[ dependencies.SetPackageVersion.outputs['Package.Version'] ]
           AzToken: $[ dependencies.SetPackageVersion.outputs['AzToken'] ]
           ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
