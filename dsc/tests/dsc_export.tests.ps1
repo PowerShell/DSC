@@ -42,6 +42,7 @@ Describe 'resource export tests' {
         $config_with_process_list.metadata.'Microsoft.DSC'.operation | Should -BeExactly 'export'
         # contentVersion on export is always 1.0.0
         $config_with_process_list.contentVersion | Should -BeExactly '1.0.0'
+        $config_with_process_list.resources.name | Should -BeLike 'Process-*'
     }
 
     It 'Configuration Export can be piped to configuration Set' -Skip:(!$IsWindows) {
@@ -74,7 +75,7 @@ Describe 'resource export tests' {
               properties:
                 pid: 0
 '@
-        $out = $yaml | dsc config export -f - 2>&1
+        $null = $yaml | dsc config export -f - 2>&1
         $LASTEXITCODE | Should -Be 0
     }
 

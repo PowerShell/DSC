@@ -744,7 +744,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),

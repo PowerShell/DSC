@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator}, dscresources::resource_manifest::Kind};
+use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator, context::ProcessMode}, dscresources::resource_manifest::Kind};
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use dscerror::DscError;
 use jsonschema::Validator;
@@ -126,7 +126,7 @@ impl DscResource {
         let config_json = serde_json::to_string(&configuration)?;
         let mut configurator = Configurator::new(&config_json, crate::progress::ProgressFormat::None)?;
         // don't process expressions again as they would have already been processed before being passed to the adapter
-        configurator.context.process_expressions = false;
+        configurator.context.process_mode = ProcessMode::NoExpressionEvaluation;
         Ok(configurator)
     }
 }

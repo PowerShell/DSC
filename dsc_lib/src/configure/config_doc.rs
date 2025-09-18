@@ -6,7 +6,7 @@ use rust_i18n::t;
 use schemars::{JsonSchema, json_schema};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
@@ -106,6 +106,30 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunction {
+    pub namespace: String,
+    pub members: HashMap<String, UserFunctionDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunctionDefinition {
+    pub parameters: Option<Vec<UserFunctionParameter>>,
+    pub output: UserFunctionOutput,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunctionParameter {
+    pub name: String,
+    pub r#type: DataType,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct UserFunctionOutput {
+    pub r#type: DataType,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Configuration {
     #[serde(rename = "$schema")]
@@ -113,6 +137,8 @@ pub struct Configuration {
     pub schema: String,
     #[serde(rename = "contentVersion")]
     pub content_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub functions: Option<Vec<UserFunction>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<HashMap<String, Parameter>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -162,6 +188,21 @@ pub enum DataType {
     Array,
 }
 
+impl Display for DataType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let type_str = match self {
+            DataType::String => "string",
+            DataType::SecureString => "secureString",
+            DataType::Int => "int",
+            DataType::Bool => "bool",
+            DataType::Object => "object",
+            DataType::SecureObject => "secureObject",
+            DataType::Array => "array",
+        };
+        write!(f, "{type_str}")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub enum CopyMode {
     #[serde(rename = "serial")]
@@ -174,11 +215,11 @@ pub enum CopyMode {
 #[serde(deny_unknown_fields)]
 pub struct Copy {
     pub name: String,
-    pub count: i32,
+    pub count: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mode: Option<CopyMode>,
     #[serde(skip_serializing_if = "Option::is_none", rename = "batchSize")]
-    pub batch_size: Option<i32>,
+    pub batch_size: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -296,10 +337,11 @@ impl Configuration {
         Self {
             schema: Self::default_schema_id_uri(),
             content_version: Some("1.0.0".to_string()),
-            parameters: None,
-            variables: None,
-            resources: Vec::new(),
             metadata: None,
+            parameters: None,
+            resources: Vec::new(),
+            functions: None,
+            variables: None,
         }
     }
 }
