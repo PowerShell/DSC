@@ -242,7 +242,7 @@ resources:
     $log | Should -BeLike "*ERROR* Arguments must be of the same type*"
         
   }
-g
+
   Context 'Resource name expression evaluation' {
     It 'Simple parameter expression in resource name: <expression>' -TestCases @(
       @{ expression = "[parameters('resourceName')]"; paramValue = 'TestResource'; expected = 'TestResource' }
