@@ -912,6 +912,17 @@ impl Configurator {
         Ok(())
     }
 
+    /// Process resource name expressions for non-copy resources.
+    ///
+    /// This method evaluates DSC expressions in resource names after parameters
+    /// have been processed, ensuring that parameter references work correctly.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - Resource name expression evaluation fails
+    /// - Expression does not result in a string value
+    /// - Statement parser encounters invalid syntax
     pub fn process_resource_names(&mut self) -> Result<(), DscError> {
         let mut config = self.config.clone();
         let config_copy = config.clone();
