@@ -912,6 +912,28 @@ impl Configurator {
         Ok(())
     }
 
+    pub fn process_resource_names(&mut self) -> Result<(), DscError> {
+        let mut config = self.config.clone();
+        let config_copy = config.clone();
+        
+        for resource in config_copy.resources {
+            // skip resources that were created from copy loops (they already have evaluated names)
+            if resource.copy.is_none() && resource.name.starts_with('[') && resource.name.ends_with(']') {
+                // process resource name expressions for non-copy resources
+                let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
+                    return Err(DscError::Parser(t!("configure.mod.nameResultNotString").to_string()))
+                };
+                // find and update the resource name in the config
+                if let Some(config_resource) = config.resources.iter_mut().find(|r| r.name == resource.name && r.resource_type == resource.resource_type) {
+                    config_resource.name = new_name.to_string();
+                }
+            }
+        }
+        
+        self.config = config;
+        Ok(())
+    }
+
     fn invoke_property_expressions(&mut self, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
         debug!("{}", t!("configure.mod.invokePropertyExpressions"));
         if properties.is_none() {
