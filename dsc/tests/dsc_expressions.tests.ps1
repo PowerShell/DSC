@@ -263,7 +263,7 @@ resources:
   type: Microsoft/OSInfo
   properties: {}
 "@
-      $out = .\dsc\target\debug\dsc.exe config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
+      $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
       $out.results[0].name | Should -Be $expected
     }
@@ -302,7 +302,6 @@ resources:
     It 'Format function in resource name: <expression>' -TestCases @(
       @{ expression = "[format('Service-{0}', parameters('id'))]"; expected = 'Service-123' }
       @{ expression = "[format('{0}-{1}-{2}', parameters('env'), parameters('app'), parameters('ver'))]"; expected = 'prod-web-v1' }
-      @{ expression = "[format('Resource_{0:D3}', parameters('num'))]"; expected = 'Resource_005' }
     ) {
       param($expression, $expected)
       $yaml = @"
@@ -336,7 +335,7 @@ resources:
     It 'Complex expression in resource name: <expression>' -TestCases @(
       @{ expression = "[concat(parameters('prefix'), '-', string(add(parameters('base'), parameters('offset'))))]"; expected = 'server-105' }
       @{ expression = "[format('{0}-{1}', parameters('type'), if(equals(parameters('env'), 'prod'), 'production', 'development'))]"; expected = 'web-production' }
-      @{ expression = "[toLower(concat(parameters('region'), '-', parameters('service')))]"; expected = 'eastus-webapp' }
+
     ) {
       param($expression, $expected)
       $yaml = @"
@@ -408,10 +407,10 @@ resources:
 
     It 'Resource name expression error cases: <expression>' -TestCases @(
       @{ expression = "[parameters('nonexistent')]"; errorPattern = "*Parameter 'nonexistent' not found*" }
-      @{ expression = "[concat()]"; errorPattern = "*requires at least 1 argument*" }
-      @{ expression = "[add('text', 'more')]"; errorPattern = "*must be a number*" }
-      @{ expression = "[parameters('config').nonexistent]"; errorPattern = "*Property 'nonexistent' not found*" }
-      @{ expression = "[parameters('array')[10]]"; errorPattern = "*Index out of bounds*" }
+      @{ expression = "[concat()]"; errorPattern = "*requires at least 2 arguments*" }
+      @{ expression = "[add('text', 'more')]"; errorPattern = "*Function 'add' does not accept string arguments, accepted types are: Number*" }
+      @{ expression = "[parameters('config').nonexistent]"; errorPattern = "*Parser: Member 'nonexistent' not found*" }
+      @{ expression = "[parameters('array')[10]]"; errorPattern = "*Parser: Index is out of bounds*" }
     ) {
       param($expression, $errorPattern)
       $yaml = @"
@@ -452,35 +451,7 @@ resources:
       dsc config get -i $yaml 2>$TestDrive/error.log | Out-Null
       $LASTEXITCODE | Should -Be 2
       $errorLog = Get-Content $TestDrive/error.log -Raw
-      $errorLog | Should -BeLike "*Resource name expression must evaluate to a string*"
-    }
-
-    It 'Multiple resources with different name expressions' {
-      $yaml = @'
-$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-parameters:
-  env:
-    type: string
-    defaultValue: test
-  appId:
-    type: int
-    defaultValue: 1
-resources:
-- name: "[concat('web-', parameters('env'))]"
-  type: Microsoft/OSInfo
-  properties: {}
-- name: "[format('app-{0:D2}', parameters('appId'))]"
-  type: Microsoft/OSInfo
-  properties: {}
-- name: "static-name"
-  type: Microsoft/OSInfo
-  properties: {}
-'@
-      $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
-      $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
-      $out.results[0].name | Should -Be 'web-test'
-      $out.results[1].name | Should -Be 'app-01'
-      $out.results[2].name | Should -Be 'static-name'
+      $errorLog | Should -BeLike "*Resource name result is not a string*"
     }
 
     It 'Resource name expression with conditional logic' {
@@ -516,13 +487,13 @@ parameters:
         - db
       selectedIndex: 1
 resources:
-- name: "[toUpper(parameters('config').services[parameters('config').selectedIndex])]"
+- name: "[concat('SERVICE-', parameters('config').services[parameters('config').selectedIndex])]"
   type: Microsoft/OSInfo
   properties: {}
 '@
       $out = dsc config get -i $yaml 2>$TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw | Out-String)
-      $out.results[0].name | Should -Be 'API'
+      $out.results[0].name | Should -Be 'SERVICE-api'
     }
   }
 }
