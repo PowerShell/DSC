@@ -631,7 +631,6 @@ The following list of functions create or convert values of a given type:
 [add]:         ./add.md
 [base64]:      ./base64.md
 [concat]:      ./concat.md
-[copyIndex]:   ./copyIndex.md
 [createArray]: ./createArray.md
 [div]:         ./div.md
 [envvar]:      ./envvar.md
