@@ -86,6 +86,11 @@ pub enum ArgKind {
         /// Indicates if argument is mandatory which will pass an empty string if no JSON input is provided.  Default is false.
         mandatory: Option<bool>,
     },
+    ResourceType {
+        /// The argument that accepts the resource type name.
+        #[serde(rename = "resourceTypArg")]
+        resource_type_arg: String,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -213,18 +218,22 @@ pub struct ResolveMethod {
 pub struct Adapter {
     /// The way to list adapter supported resources.
     pub list: ListMethod,
-    /// Defines how the adapter supports accepting configuraiton.
-    pub config: ConfigKind,
+    /// Defines how the adapter supports accepting configuration.
+    #[serde(alias = "config", rename = "inputKind")]
+    pub input_kind: AdapterInputKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub enum ConfigKind {
+pub enum AdapterInputKind {
     /// The adapter accepts full unprocessed configuration.
     #[serde(rename = "full")]
     Full,
     /// The adapter accepts configuration as a sequence.
     #[serde(rename = "sequence")]
     Sequence,
+    /// The adapter accepts a single resource input.
+    #[serde(rename = "single")]
+    Single,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

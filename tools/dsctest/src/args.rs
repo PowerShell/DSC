@@ -27,8 +27,27 @@ pub struct Args {
     pub subcommand: SubCommand,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum AdapterOperation {
+    Get,
+    Set,
+    Test,
+    List,
+    Export,
+}
+
 #[derive(Debug, PartialEq, Eq, Subcommand)]
 pub enum SubCommand {
+    #[clap(name = "adapter", about = "Resource adapter")]
+    Adapter {
+        #[clap(name = "input", short, long, help = "The input to the adapter command as JSON")]
+        input: String,
+        #[clap(name = "resource-type", short, long, help = "The resource type to adapt to")]
+        resource_type: String,
+        #[clap(name = "operation", short, long, help = "The operation to perform")]
+        operation: AdapterOperation,
+    },
+
     #[clap(name = "delete", about = "delete operation")]
     Delete {
         #[clap(name = "input", short, long, help = "The input to the delete command as JSON")]

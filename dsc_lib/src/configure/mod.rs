@@ -6,11 +6,10 @@ use crate::configure::context::{Context, ProcessMode};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
-use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff, validate_properties},
-    invoke_result::{GetResult, SetResult, TestResult,  ResourceSetResponse}},
-    resource_manifest::Kind,
+    {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
+    invoke_result::{GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
+    resource_manifest::{AdapterInputKind, Kind},
 };
 use crate::DscResource;
 use crate::discovery::Discovery;
@@ -178,22 +177,24 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
 
 fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
     if dsc_resource.kind == Kind::Adapter {
-        // add metadata to the properties so the adapter knows this is a config
-        let mut metadata: Map<String, Value> = Map::new();
-        if let Some(resource_metadata) = resource_metadata {
-            if !resource_metadata.other.is_empty() {
-                metadata.extend(resource_metadata.other);
+        if get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
+            // add metadata to the properties so the adapter knows this is a config
+            let mut metadata: Map<String, Value> = Map::new();
+            if let Some(resource_metadata) = resource_metadata {
+                if !resource_metadata.other.is_empty() {
+                    metadata.extend(resource_metadata.other);
+                }
             }
-        }
-        let mut dsc_value = Map::new();
-        dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
-        metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
-        if let Some(mut properties) = properties {
-            properties.insert("metadata".to_string(), Value::Object(metadata));
+            let mut dsc_value = Map::new();
+            dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
+            metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
+            if let Some(mut properties) = properties {
+                properties.insert("metadata".to_string(), Value::Object(metadata));
+                return Ok(serde_json::to_string(&properties)?);
+            }
+            properties = Some(metadata);
             return Ok(serde_json::to_string(&properties)?);
         }
-        properties = Some(metadata);
-        return Ok(serde_json::to_string(&properties)?);
     }
 
     if let Some(resource_metadata) = resource_metadata {
@@ -317,6 +318,15 @@ impl Configurator {
     #[must_use]
     pub fn get_config(&self) -> &Configuration {
         &self.config
+    }
+
+    /// Get the discovery.
+    ///
+    /// # Returns
+    ///
+    /// * `&Discovery` - The discovery.
+    pub fn discovery(&mut self) -> &mut Discovery {
+        &mut self.discovery
     }
 
     fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
