@@ -1,5 +1,5 @@
 [package]
-name = "osinfo"
+name = "osinfo_lib"
 version = "1.0.0"
 edition = "2021"
 
@@ -13,5 +13,6 @@ split-debuginfo = "packed"  # generates a seperate *.dwp/*.dSYM so the binary ca
 strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
 
 [dependencies]
-osinfo_lib = { path = "../lib/osinfo_lib" }
+os_info = { version = "3.11" }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }

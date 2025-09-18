@@ -295,7 +295,7 @@ Describe 'tests for function expressions' {
     $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
     $out | Should -BeNullOrEmpty -Because "Output should be null or empty"
-    (Get-Content $TestDrive/error.log -Raw) | Should -Match 'utcNow function can only be used as a parameter default'
+    (Get-Content $TestDrive/error.log -Raw) | Should -Match "The 'utcNow\(\)' function can only be used as a parameter default"
   }
 
   It 'uniqueString function works for: <expression>' -TestCases @(
@@ -428,7 +428,7 @@ Describe 'tests for function expressions' {
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
   }
-  
+
   It 'skip function works for: <expression>' -TestCases @(
     @{ expression = "[skip(createArray('a','b','c','d'), 2)]"; expected = @('c', 'd') }
     @{ expression = "[skip('hello', 2)]"; expected = 'llo' }
@@ -482,5 +482,25 @@ Describe 'tests for function expressions' {
     $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
+  It 'context function works' {
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[context()]"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    $context = $out.results[0].result.actualState.output
+    $os = osinfo | ConvertFrom-Json
+    $context.os.family | Should -BeExactly $os.family
+    $context.os.version | Should -BeExactly $os.version
+    $context.os.bitness | Should -BeExactly $os.bitness
+    $context.os.architecture | Should -BeExactly $os.architecture
+    $context.security | Should -BeExactly $out.metadata.'Microsoft.DSC'.securityContext
   }
 }

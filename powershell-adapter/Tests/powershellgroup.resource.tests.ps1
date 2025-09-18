@@ -304,10 +304,10 @@ Describe 'PowerShell adapter resource tests' {
             $resources = $r | ConvertFrom-Json
             $resources.resources.count | Should -Be 2
             $resources.resources[0].type | Should -BeExactly 'Test/TestCase'
-            $resources.resources[0].name | Should -BeExactly 'Test/TestCase-0'
+            $resources.resources[0].name | Should -BeExactly 'TestCase-0'
             $resources.resources[0].properties.TestCaseId | Should -Be 1
             $resources.resources[1].type | Should -BeExactly 'Test/TestCase'
-            $resources.resources[1].name | Should -BeExactly 'Test/TestCase-1'
+            $resources.resources[1].name | Should -BeExactly 'TestCase-1'
             $resources.resources[1].properties.TestCaseId | Should -Be 2
         }
         finally {

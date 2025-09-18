@@ -339,6 +339,7 @@ if (!$SkipBuild) {
         "tree-sitter-dscexpression",
         "tree-sitter-ssh-server-config",
         "security_context_lib",
+        "lib/osinfo_lib",
         "dsc_lib",
         "dsc",
         "dscecho",

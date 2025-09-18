@@ -43,12 +43,7 @@
                     "markdownDescription": "Defines the processor architecture as reported by `uname -m` on the operating system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#architecture\n"
                 },
                 "bitness": {
-                    "type": "string",
-                    "enum": [
-                        "32",
-                        "64",
-                        "unknown"
-                    ],
+                    "type": "number",
                     "title": "Operating system bitness",
                     "description": "Defines whether the operating system is a 32-bit or 64-bit operating system.\n\nhttps://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#bitness\n",
                     "markdownDescription": "Defines whether the operating system is a 32-bit or 64-bit operating system.\n\n[Online documentation][01]\n\n[01]: https://learn.microsoft.com/powershell/dsc/reference/microsoft/osinfo/resource#bitness\n"

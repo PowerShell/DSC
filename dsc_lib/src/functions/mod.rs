@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use crate::DscError;
 use crate::configure::context::Context;
+use crate::functions::user_function::invoke_user_function;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -19,6 +20,8 @@ pub mod bool;
 pub mod coalesce;
 pub mod concat;
 pub mod contains;
+pub mod context;
+pub mod copy_index;
 pub mod create_array;
 pub mod create_object;
 pub mod div;
@@ -59,6 +62,7 @@ pub mod system_root;
 pub mod r#true;
 pub mod union;
 pub mod unique_string;
+pub mod user_function;
 pub mod utc_now;
 pub mod variables;
 
@@ -131,6 +135,8 @@ impl FunctionDispatcher {
             Box::new(coalesce::Coalesce{}),
             Box::new(concat::Concat{}),
             Box::new(contains::Contains{}),
+            Box::new(context::Context{}),
+            Box::new(copy_index::CopyIndex{}),
             Box::new(create_array::CreateArray{}),
             Box::new(create_object::CreateObject{}),
             Box::new(div::Div{}),
@@ -195,6 +201,10 @@ impl FunctionDispatcher {
     /// This function will return an error if the function fails to execute.
     pub fn invoke(&self, name: &str, args: &[Value], context: &Context) -> Result<Value, DscError> {
         let Some(function) = self.functions.get(name) else {
+            // if function name contains a period, it might be a user function
+            if name.contains('.') {
+                return invoke_user_function(name, args, context);
+            }
             return Err(DscError::Parser(t!("functions.unknownFunction", name = name).to_string()));
         };
 
@@ -222,32 +232,32 @@ impl FunctionDispatcher {
                 break;
             }
 
-            Self::check_arg_against_expected_types(value, &metadata.accepted_arg_ordered_types[index])?;
+            Self::check_arg_against_expected_types(name, value, &metadata.accepted_arg_ordered_types[index])?;
         }
 
         // if we have remaining args, they must match one of the remaining_arg_types
         if let Some(remaining_arg_types) = metadata.remaining_arg_accepted_types {
             for value in args.iter().skip(metadata.accepted_arg_ordered_types.len()) {
-                Self::check_arg_against_expected_types(value, &remaining_arg_types)?;
+                Self::check_arg_against_expected_types(name, value, &remaining_arg_types)?;
             }
         }
 
         function.invoke(args, context)
     }
 
-    fn check_arg_against_expected_types(arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {
+    fn check_arg_against_expected_types(name: &str, arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {
         if arg.is_array() && !expected_types.contains(&FunctionArgKind::Array) {
-            return Err(DscError::Parser(t!("functions.noArrayArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(t!("functions.noArrayArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_boolean() && !expected_types.contains(&FunctionArgKind::Boolean) {
-            return Err(DscError::Parser(t!("functions.noBooleanArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(t!("functions.noBooleanArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_null() && !expected_types.contains(&FunctionArgKind::Null) {
-            return Err(DscError::Parser(t!("functions.noNullArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(t!("functions.noNullArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_number() && !expected_types.contains(&FunctionArgKind::Number) {
-            return Err(DscError::Parser(t!("functions.noNumberArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(t!("functions.noNumberArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_object() && !expected_types.contains(&FunctionArgKind::Object) {
-            return Err(DscError::Parser(t!("functions.noObjectArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(t!("functions.noObjectArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         } else if arg.is_string() && !expected_types.contains(&FunctionArgKind::String) {
-            return Err(DscError::Parser(t!("functions.noStringArgs", accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(t!("functions.noStringArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
         }
         Ok(())
     }
