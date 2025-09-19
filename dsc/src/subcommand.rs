@@ -381,12 +381,6 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         exit(EXIT_INVALID_INPUT);
     }
 
-    // process resource names after parameters are available
-    if let Err(err) = configurator.process_resource_names() {
-        error!("Error processing resource names: {err}");
-        exit(EXIT_DSC_ERROR);
-    }
-
     match subcommand {
         ConfigSubCommand::Get { output_format, .. } => {
             config_get(&mut configurator, output_format.as_ref(), as_group);

@@ -346,8 +346,10 @@ impl Configurator {
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
-            progress.set_resource(&resource.name, &resource.resource_type);
-            progress.write_activity(format!("Get '{}'", resource.name).as_str());
+            let evaluated_name = self.evaluate_resource_name(&resource)?;
+            
+            progress.set_resource(&evaluated_name, &resource.resource_type);
+            progress.write_activity(format!("Get '{evaluated_name}'").as_str());
             if self.skip_resource(&resource)? {
                 progress.write_increment(1);
                 continue;
@@ -376,7 +378,7 @@ impl Configurator {
 
             match &mut get_result {
                 GetResult::Resource(ref mut resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.actual_state)?);
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.actual_state, &mut metadata)?;
                 },
                 GetResult::Group(group) => {
@@ -384,12 +386,12 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceGetResult {
                 metadata: Some(metadata),
-                name: resource.name.clone(),
+                name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
                 result: get_result.clone(),
             };
@@ -424,8 +426,10 @@ impl Configurator {
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
-            progress.set_resource(&resource.name, &resource.resource_type);
-            progress.write_activity(format!("Set '{}'", resource.name).as_str());
+            let evaluated_name = self.evaluate_resource_name(&resource)?;
+            
+            progress.set_resource(&evaluated_name, &resource.resource_type);
+            progress.write_activity(format!("Set '{evaluated_name}'").as_str());
             if self.skip_resource(&resource)? {
                 progress.write_increment(1);
                 continue;
@@ -533,7 +537,7 @@ impl Configurator {
             };
             match &mut set_result {
                 SetResult::Resource(resource_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_result.after_state)?);
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_result.after_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_result.after_state, &mut metadata)?;
                 },
                 SetResult::Group(group) => {
@@ -541,12 +545,12 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceSetResult {
                 metadata: Some(metadata),
-                name: resource.name.clone(),
+                name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
                 result: set_result.clone(),
             };
@@ -576,8 +580,10 @@ impl Configurator {
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
-            progress.set_resource(&resource.name, &resource.resource_type);
-            progress.write_activity(format!("Test '{}'", resource.name).as_str());
+            let evaluated_name = self.evaluate_resource_name(&resource)?;
+            
+            progress.set_resource(&evaluated_name, &resource.resource_type);
+            progress.write_activity(format!("Test '{evaluated_name}'").as_str());
             if self.skip_resource(&resource)? {
                 progress.write_increment(1);
                 continue;
@@ -607,7 +613,7 @@ impl Configurator {
             };
             match &mut test_result {
                 TestResult::Resource(resource_test_result) => {
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&resource_test_result.actual_state)?);
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&resource_test_result.actual_state)?);
                     get_metadata_from_result(Some(&mut self.context), &mut resource_test_result.actual_state, &mut metadata)?;
                 },
                 TestResult::Group(group) => {
@@ -615,12 +621,12 @@ impl Configurator {
                     for result in group {
                         results.push(serde_json::to_value(&result.result)?);
                     }
-                    self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), Value::Array(results.clone()));
+                    self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), Value::Array(results.clone()));
                 },
             }
             let resource_result = config_result::ResourceTestResult {
                 metadata: Some(metadata),
-                name: resource.name.clone(),
+                name: evaluated_name,
                 resource_type: resource.resource_type.clone(),
                 result: test_result.clone(),
             };
@@ -653,8 +659,10 @@ impl Configurator {
         let resources = self.config.resources.clone();
         let discovery = &mut self.discovery.clone();
         for resource in &resources {
-            progress.set_resource(&resource.name, &resource.resource_type);
-            progress.write_activity(format!("Export '{}'", resource.name).as_str());
+            let evaluated_name = self.evaluate_resource_name(resource)?;
+            
+            progress.set_resource(&evaluated_name, &resource.resource_type);
+            progress.write_activity(format!("Export '{evaluated_name}'").as_str());
             if self.skip_resource(resource)? {
                 progress.write_increment(1);
                 continue;
@@ -673,7 +681,7 @@ impl Configurator {
                     return Err(e);
                 },
             };
-            self.context.references.insert(format!("{}:{}", resource.resource_type, resource.name), serde_json::to_value(&export_result.actual_state)?);
+            self.context.references.insert(format!("{}:{}", resource.resource_type, evaluated_name), serde_json::to_value(&export_result.actual_state)?);
             progress.set_result(&serde_json::to_value(export_result)?);
             progress.write_increment(1);
         }
@@ -912,10 +920,16 @@ impl Configurator {
         Ok(())
     }
 
-    /// Process resource name expressions for non-copy resources.
+    /// Evaluate resource name expression and return the resolved name.
     ///
-    /// This method evaluates DSC expressions in resource names after parameters
-    /// have been processed, ensuring that parameter references work correctly.
+    /// This method evaluates DSC expressions in a resource name, handling both
+    /// expressions and literals appropriately.
+    ///
+    /// # Arguments
+    /// * `resource` - The resource whose name should be evaluated
+    ///
+    /// # Returns
+    /// * `String` - The evaluated resource name
     ///
     /// # Errors
     ///
@@ -923,26 +937,18 @@ impl Configurator {
     /// - Resource name expression evaluation fails
     /// - Expression does not result in a string value
     /// - Statement parser encounters invalid syntax
-    pub fn process_resource_names(&mut self) -> Result<(), DscError> {
-        let mut config = self.config.clone();
-        let config_copy = config.clone();
-        
-        for resource in config_copy.resources {
-            // skip resources that were created from copy loops (they already have evaluated names)
-            if resource.copy.is_none() && resource.name.starts_with('[') && resource.name.ends_with(']') {
-                // process resource name expressions for non-copy resources
-                let Value::String(new_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
-                    return Err(DscError::Parser(t!("configure.mod.nameResultNotString").to_string()))
-                };
-                // find and update the resource name in the config
-                if let Some(config_resource) = config.resources.iter_mut().find(|r| r.name == resource.name && r.resource_type == resource.resource_type) {
-                    config_resource.name = new_name.to_string();
-                }
-            }
+    fn evaluate_resource_name(&mut self, resource: &Resource) -> Result<String, DscError> {
+        // skip resources that were created from copy loops (they already have evaluated names)
+        if resource.copy.is_some() {
+            return Ok(resource.name.clone());
         }
         
-        self.config = config;
-        Ok(())
+        // evaluate the resource name (handles both expressions and literals)
+        let Value::String(evaluated_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
+            return Err(DscError::Parser(t!("configure.mod.nameResultNotString").to_string()))
+        };
+        
+        Ok(evaluated_name)
     }
 
     fn invoke_property_expressions(&mut self, properties: Option<&Map<String, Value>>) -> Result<Option<Map<String, Value>>, DscError> {
