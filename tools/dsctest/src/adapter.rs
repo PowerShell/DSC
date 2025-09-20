@@ -36,7 +36,7 @@ pub struct DscResource {
     pub capabilities: Vec<String>,
     /// The file path to the resource.
     pub path: String,
-    // The directory path to the resource.
+    /// The directory path to the resource.
     pub directory: String,
     /// The implementation of the resource.
     #[serde(rename="implementedAs")]
