@@ -39,7 +39,7 @@ fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
         SubCommand::Adapter { input , resource_type, operation } => {
-            match adapter::adapt(&resource_type, &input, operation) {
+            match adapter::adapt(&resource_type, &input, &operation) {
                 Ok(result) => result,
                 Err(err) => {
                     eprintln!("Error adapting resource: {err}");

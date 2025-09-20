@@ -154,7 +154,7 @@ impl DscResource {
         let get_result = GetResult::Resource(ResourceGetResponse {
             actual_state: properties.clone(),
         });
-        return Ok(get_result);
+        Ok(get_result)
     }
 
     fn invoke_set_with_adapter(&self, adapter: &str, resource_name: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
@@ -187,7 +187,7 @@ impl DscResource {
             after_state: after_state.clone(),
             changed_properties: if diff.is_empty() { None } else { Some(diff) },
         });
-        return Ok(set_result);
+        Ok(set_result)
     }
 
     fn invoke_test_with_adapter(&self, adapter: &str, resource_name: &str, expected: &str) -> Result<TestResult, DscError> {
@@ -221,7 +221,7 @@ impl DscResource {
             in_desired_state: resource_result.in_desired_state,
             diff_properties,
         });
-        return Ok(test_result);
+        Ok(test_result)
     }
 
     fn invoke_delete_with_adapter(&self, adapter: &str, resource_name: &str, filter: &str) -> Result<(), DscError> {
@@ -236,7 +236,7 @@ impl DscResource {
         }
 
         configurator.invoke_set(false)?;
-        return Ok(());
+        Ok(())
     }
 
     fn invoke_export_with_adapter(&self, adapter: &str, input: &str) -> Result<ExportResult, DscError> {
@@ -266,7 +266,7 @@ impl DscResource {
                 export_result.actual_state.push(serde_json::to_value(result.clone())?);
             }
         }
-        return Ok(export_result);
+        Ok(export_result)
     }
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &str) -> Result<DscResource, DscError> {
@@ -554,10 +554,22 @@ pub fn get_well_known_properties() -> HashMap<String, Value> {
     ])
 }
 
-#[must_use]
+/// Retrieve the kind of adapter
+///
+/// # Arguments
+///
+/// * `adapter` - The adapter resource
+///
+/// # Returns
+///
+/// The input kind of the adapter
+///
+/// # Errors
+///
+/// * `DscError` - The adapter does not have a manifest or the manifest is invalid
 pub fn get_adapter_input_kind(adapter: &DscResource) -> Result<AdapterInputKind, DscError> {
         if let Some(manifest) = &adapter.manifest {
-            if let Some(manifest) = serde_json::from_value::<ResourceManifest>(manifest.clone()).ok() {
+            if let Ok(manifest) = serde_json::from_value::<ResourceManifest>(manifest.clone()) {
                 if let Some(adapter_operation) = manifest.adapter {
                     return Ok(adapter_operation.input_kind);
                 }

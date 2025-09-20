@@ -176,25 +176,23 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
 }
 
 fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
-    if dsc_resource.kind == Kind::Adapter {
-        if get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
-            // add metadata to the properties so the adapter knows this is a config
-            let mut metadata: Map<String, Value> = Map::new();
-            if let Some(resource_metadata) = resource_metadata {
-                if !resource_metadata.other.is_empty() {
-                    metadata.extend(resource_metadata.other);
-                }
+    if dsc_resource.kind == Kind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
+        // add metadata to the properties so the adapter knows this is a config
+        let mut metadata: Map<String, Value> = Map::new();
+        if let Some(resource_metadata) = resource_metadata {
+            if !resource_metadata.other.is_empty() {
+                metadata.extend(resource_metadata.other);
             }
-            let mut dsc_value = Map::new();
-            dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
-            metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
-            if let Some(mut properties) = properties {
-                properties.insert("metadata".to_string(), Value::Object(metadata));
-                return Ok(serde_json::to_string(&properties)?);
-            }
-            properties = Some(metadata);
+        }
+        let mut dsc_value = Map::new();
+        dsc_value.insert("context".to_string(), Value::String("configuration".to_string()));
+        metadata.insert("Microsoft.DSC".to_string(), Value::Object(dsc_value));
+        if let Some(mut properties) = properties {
+            properties.insert("metadata".to_string(), Value::Object(metadata));
             return Ok(serde_json::to_string(&properties)?);
         }
+        properties = Some(metadata);
+        return Ok(serde_json::to_string(&properties)?);
     }
 
     if let Some(resource_metadata) = resource_metadata {

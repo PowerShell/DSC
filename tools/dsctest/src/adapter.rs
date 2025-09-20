@@ -48,8 +48,8 @@ pub struct DscResource {
     pub require_adapter: Option<String>,
 }
 
-pub fn adapt(resource_type: &str, input: &str, operation: AdapterOperation) -> Result<String, String> {
-    match operation {
+pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> Result<String, String> {
+    match *operation {
         AdapterOperation::List => {
             let resource_one = DscResource {
                 type_name: "Adapted/One".to_string(),
@@ -93,22 +93,22 @@ pub fn adapt(resource_type: &str, input: &str, operation: AdapterOperation) -> R
                     };
                     Ok(serde_json::to_string(&adapted_two).unwrap())
                 },
-                _ => Err(format!("Unknown resource type: {}", resource_type)),
+                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Set | AdapterOperation::Test => {
             match resource_type {
                 "Adapted/One" => {
                     let adapted_one: AdaptedOne = serde_json::from_str(input)
-                        .map_err(|e| format!("Failed to parse input for Adapted/One: {}", e))?;
+                        .map_err(|e| format!("Failed to parse input for Adapted/One: {e}"))?;
                     Ok(serde_json::to_string(&adapted_one).unwrap())
                 },
                 "Adapted/Two" => {
                     let adapted_two: AdaptedTwo = serde_json::from_str(input)
-                        .map_err(|e| format!("Failed to parse input for Adapted/Two: {}", e))?;
+                        .map_err(|e| format!("Failed to parse input for Adapted/Two: {e}"))?;
                     Ok(serde_json::to_string(&adapted_two).unwrap())
                 },
-                _ => Err(format!("Unknown resource type: {}", resource_type)),
+                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Export => {
@@ -139,7 +139,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: AdapterOperation) -> R
                     println!("{}", serde_json::to_string(&adapted_two).unwrap());
                     std::process::exit(0);
                 },
-                _ => Err(format!("Unknown resource type: {}", resource_type)),
+                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Validate => {
