@@ -10,12 +10,16 @@ use crate::args::AdapterOperation;
 #[serde(deny_unknown_fields)]
 pub struct AdaptedOne {
     pub one: String,
+    #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct AdaptedTwo {
     pub two: String,
+    #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
@@ -49,7 +53,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> 
         AdapterOperation::List => {
             let resource_one = DscResource {
                 type_name: "Adapted/One".to_string(),
-                kind: "DscResource".to_string(),
+                kind: "resource".to_string(),
                 version: "1.0.0".to_string(),
                 capabilities: vec!["get".to_string(), "set".to_string(), "test".to_string(), "export".to_string()],
                 path: "path/to/adapted/one".to_string(),
@@ -60,7 +64,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> 
             };
             let resource_two = DscResource {
                 type_name: "Adapted/Two".to_string(),
-                kind: "DscResource".to_string(),
+                kind: "resource".to_string(),
                 version: "1.0.0".to_string(),
                 capabilities: vec!["get".to_string(), "set".to_string(), "test".to_string(), "export".to_string()],
                 path: "path/to/adapted/two".to_string(),
@@ -73,7 +77,26 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> 
             println!("{}", serde_json::to_string(&resource_two).unwrap());
             std::process::exit(0);
         },
-        AdapterOperation::Get | AdapterOperation::Set | AdapterOperation::Test | AdapterOperation::Export => {
+        AdapterOperation::Get => {
+            match resource_type {
+                "Adapted/One" => {
+                    let adapted_one = AdaptedOne {
+                        one: "value1".to_string(),
+                        name: None,
+                    };
+                    Ok(serde_json::to_string(&adapted_one).unwrap())
+                },
+                "Adapted/Two" => {
+                    let adapted_two = AdaptedTwo {
+                        two: "value2".to_string(),
+                        name: None,
+                    };
+                    Ok(serde_json::to_string(&adapted_two).unwrap())
+                },
+                _ => Err(format!("Unknown resource type: {}", resource_type)),
+            }
+        },
+        AdapterOperation::Set | AdapterOperation::Test => {
             match resource_type {
                 "Adapted/One" => {
                     let adapted_one: AdaptedOne = serde_json::from_str(input)
@@ -87,6 +110,40 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> 
                 },
                 _ => Err(format!("Unknown resource type: {resource_type}")),
             }
+        },
+        AdapterOperation::Export => {
+            match resource_type {
+                "Adapted/One" => {
+                    let adapted_one = AdaptedOne {
+                        one: "first1".to_string(),
+                        name: Some("first".to_string()),
+                    };
+                    println!("{}", serde_json::to_string(&adapted_one).unwrap());
+                    let adapted_one = AdaptedOne {
+                        one: "second1".to_string(),
+                        name: Some("second".to_string()),
+                    };
+                    println!("{}", serde_json::to_string(&adapted_one).unwrap());
+                    std::process::exit(0);
+                },
+                "Adapted/Two" => {
+                    let adapted_two = AdaptedTwo {
+                        two: "first2".to_string(),
+                        name: Some("first".to_string()),
+                    };
+                    println!("{}", serde_json::to_string(&adapted_two).unwrap());
+                    let adapted_two = AdaptedTwo {
+                        two: "second2".to_string(),
+                        name: Some("second".to_string()),
+                    };
+                    println!("{}", serde_json::to_string(&adapted_two).unwrap());
+                    std::process::exit(0);
+                },
+                _ => Err(format!("Unknown resource type: {}", resource_type)),
+            }
+        },
+        AdapterOperation::Validate => {
+            Ok("{\"valid\": true}".to_string())
         },
     }
 }

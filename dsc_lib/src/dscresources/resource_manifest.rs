@@ -88,7 +88,7 @@ pub enum ArgKind {
     },
     ResourceType {
         /// The argument that accepts the resource type name.
-        #[serde(rename = "resourceTypArg")]
+        #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
     }
 }
@@ -228,9 +228,6 @@ pub enum AdapterInputKind {
     /// The adapter accepts full unprocessed configuration.
     #[serde(rename = "full")]
     Full,
-    /// The adapter accepts configuration as a sequence.
-    #[serde(rename = "sequence")]
-    Sequence,
     /// The adapter accepts a single resource input.
     #[serde(rename = "single")]
     Single,

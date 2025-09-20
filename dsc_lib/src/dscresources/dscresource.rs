@@ -51,6 +51,8 @@ pub struct DscResource {
     /// The required resource adapter for the resource.
     #[serde(rename="requireAdapter")]
     pub require_adapter: Option<String>,
+    /// The target resource for the resource adapter.
+    pub target_resource: Option<String>,
     /// The manifest of the resource.
     pub manifest: Option<Value>,
 }
@@ -100,6 +102,7 @@ impl DscResource {
             author: None,
             properties: Vec::new(),
             require_adapter: None,
+            target_resource: None,
             manifest: None,
         }
     }
@@ -130,10 +133,11 @@ impl DscResource {
         Ok(configurator)
     }
 
-    fn invoke_get_with_adapter(&self, adapter: &str, filter: &str) -> Result<GetResult, DscError> {
+    fn invoke_get_with_adapter(&self, adapter: &str, resource_name: &str, filter: &str) -> Result<GetResult, DscError> {
         let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
-        let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
         if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            adapter.target_resource = Some(resource_name.to_string());
             return adapter.get(filter);
         }
 
@@ -151,6 +155,118 @@ impl DscResource {
             actual_state: properties.clone(),
         });
         Ok(get_result)
+    }
+
+    fn invoke_set_with_adapter(&self, adapter: &str, resource_name: &str, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
+        let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
+        let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            adapter.target_resource = Some(resource_name.to_string());
+            return adapter.set(desired, skip_test, execution_type);
+        }
+
+        let result = configurator.invoke_set(false)?;
+        let SetResult::Resource(ref resource_result) = result.results[0].result else {
+            return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "set", resource = self.type_name).to_string()));
+        };
+        let before_state = resource_result.before_state
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "beforeState", property_type = "object").to_string()))?
+            .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
+            .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+            .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+        let after_state = resource_result.after_state
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "afterState", property_type = "object").to_string()))?
+            .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+            .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+            .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+        let diff = get_diff(&before_state, &after_state);
+        let set_result = SetResult::Resource(ResourceSetResponse {
+            before_state: before_state.clone(),
+            after_state: after_state.clone(),
+            changed_properties: if diff.is_empty() { None } else { Some(diff) },
+        });
+        return Ok(set_result);
+    }
+
+    fn invoke_test_with_adapter(&self, adapter: &str, resource_name: &str, expected: &str) -> Result<TestResult, DscError> {
+        let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
+        let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            adapter.target_resource = Some(resource_name.to_string());
+            return adapter.test(expected);
+        }
+
+        let result = configurator.invoke_test()?;
+        let TestResult::Resource(ref resource_result) = result.results[0].result else {
+            return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "test", resource = self.type_name).to_string()));
+        };
+        let desired_state = resource_result.desired_state
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "desiredState", property_type = "object").to_string()))?
+            .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
+            .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", property_type = "array").to_string()))?[0]
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", property_type = "object").to_string()))?
+            .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+        let actual_state = resource_result.actual_state
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", property_type = "object").to_string()))?
+            .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+            .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+            .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+        let diff_properties = get_diff(&desired_state, &actual_state);
+        let test_result = TestResult::Resource(ResourceTestResponse {
+            desired_state,
+            actual_state,
+            in_desired_state: resource_result.in_desired_state,
+            diff_properties,
+        });
+        return Ok(test_result);
+    }
+
+    fn invoke_delete_with_adapter(&self, adapter: &str, resource_name: &str, filter: &str) -> Result<(), DscError> {
+        let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+        let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            if adapter.capabilities.contains(&Capability::Delete) {
+                adapter.target_resource = Some(resource_name.to_string());
+                return adapter.delete(filter);
+            }
+            return Err(DscError::NotSupported(t!("dscresources.dscresource.adapterDoesNotSupportDelete", adapter = adapter.type_name).to_string()));
+        }
+
+        configurator.invoke_set(false)?;
+        return Ok(());
+    }
+
+    fn invoke_export_with_adapter(&self, adapter: &str, input: &str) -> Result<ExportResult, DscError> {
+        let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
+        let mut adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            adapter.target_resource = Some(self.type_name.clone());
+            return adapter.export(input);
+        }
+
+        let result = configurator.invoke_export()?;
+        let Some(configuration) = result.result else {
+            return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
+        };
+        let mut export_result = ExportResult {
+            actual_state: Vec::new(),
+        };
+        debug!("Export result: {}", serde_json::to_string(&configuration)?);
+        for resource in configuration.resources {
+            let Some(properties) = resource.properties else {
+                return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
+            };
+            let results = properties
+                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?;
+            for result in results {
+                export_result.actual_state.push(serde_json::to_value(result.clone())?);
+            }
+        }
+        return Ok(export_result);
     }
 
     fn get_adapter_resource(configurator: &mut Configurator, adapter: &str) -> Result<DscResource, DscError> {
@@ -259,7 +375,7 @@ impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            return self.invoke_get_with_adapter(adapter, filter);
+            return self.invoke_get_with_adapter(adapter, &self.type_name, filter);
         }
 
         match &self.implemented_as {
@@ -271,7 +387,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_get(&resource_manifest, &self.directory, filter)
+                command_resource::invoke_get(&resource_manifest, &self.directory, filter, self.target_resource.as_deref())
             },
         }
     }
@@ -279,30 +395,7 @@ impl Invoke for DscResource {
     fn set(&self, desired: &str, skip_test: bool, execution_type: &ExecutionKind) -> Result<SetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeSet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, desired)?;
-            let result = configurator.invoke_set(false)?;
-            let SetResult::Resource(ref resource_result) = result.results[0].result else {
-                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "set", resource = self.type_name).to_string()));
-            };
-            let before_state = resource_result.before_state
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "beforeState", property_type = "object").to_string()))?
-                .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
-                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
-                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
-            let after_state = resource_result.after_state
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "afterState", property_type = "object").to_string()))?
-                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
-                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
-                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
-            let diff = get_diff(&before_state, &after_state);
-            let set_result = SetResult::Resource(ResourceSetResponse {
-                before_state: before_state.clone(),
-                after_state: after_state.clone(),
-                changed_properties: if diff.is_empty() { None } else { Some(diff) },
-            });
-            return Ok(set_result);
+            return self.invoke_set_with_adapter(adapter, &self.type_name, desired, skip_test, execution_type);
         }
 
         match &self.implemented_as {
@@ -314,7 +407,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type)
+                command_resource::invoke_set(&resource_manifest, &self.directory, desired, skip_test, execution_type, self.target_resource.as_deref())
             },
         }
     }
@@ -387,7 +480,7 @@ impl Invoke for DscResource {
                     Ok(test_result)
                 }
                 else {
-                    command_resource::invoke_test(&resource_manifest, &self.directory, expected)
+                    command_resource::invoke_test(&resource_manifest, &self.directory, expected, self.target_resource.as_deref())
                 }
             },
         }
@@ -396,9 +489,7 @@ impl Invoke for DscResource {
     fn delete(&self, filter: &str) -> Result<(), DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeDelete", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
-            configurator.invoke_set(false)?;
-            return Ok(());
+            return self.invoke_delete_with_adapter(adapter, &self.type_name, filter);
         }
 
         match &self.implemented_as {
@@ -410,7 +501,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_delete(&resource_manifest, &self.directory, filter)
+                command_resource::invoke_delete(&resource_manifest, &self.directory, filter, self.target_resource.as_deref())
             },
         }
     }
@@ -430,7 +521,7 @@ impl Invoke for DscResource {
                     return Err(DscError::MissingManifest(self.type_name.clone()));
                 };
                 let resource_manifest = import_manifest(manifest.clone())?;
-                command_resource::invoke_validate(&resource_manifest, &self.directory, config)
+                command_resource::invoke_validate(&resource_manifest, &self.directory, config, self.target_resource.as_deref())
             },
         }
     }
@@ -458,34 +549,14 @@ impl Invoke for DscResource {
     fn export(&self, input: &str) -> Result<ExportResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeExport", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, input)?;
-            let result = configurator.invoke_export()?;
-            let Some(configuration) = result.result else {
-                return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
-            };
-            let mut export_result = ExportResult {
-                actual_state: Vec::new(),
-            };
-            debug!("Export result: {}", serde_json::to_string(&configuration)?);
-            for resource in configuration.resources {
-                let Some(properties) = resource.properties else {
-                    return Err(DscError::Operation(t!("dscresources.dscresource.invokeExportReturnedNoResult", resource = self.type_name).to_string()));
-                };
-                let results = properties
-                    .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
-                    .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?;
-                for result in results {
-                    export_result.actual_state.push(serde_json::to_value(result.clone())?);
-                }
-            }
-            return Ok(export_result);
+            return self.invoke_export_with_adapter(adapter, input);
         }
 
         let Some(manifest) = &self.manifest else {
             return Err(DscError::MissingManifest(self.type_name.clone()));
         };
         let resource_manifest = import_manifest(manifest.clone())?;
-        command_resource::invoke_export(&resource_manifest, &self.directory, Some(input))
+        command_resource::invoke_export(&resource_manifest, &self.directory, Some(input), self.target_resource.as_deref())
     }
 
     fn resolve(&self, input: &str) -> Result<ResolveResult, DscError> {

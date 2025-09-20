@@ -2,6 +2,7 @@
     "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
     "type": "Test/Adapter",
     "version": "0.1.0",
+    "kind": "adapter",
     "adapter": {
         "list": {
             "executable": "dsctest",
@@ -15,7 +16,7 @@
                 "none"
             ]
         },
-        "inputKind": "Single"
+        "inputKind": "single"
     },
     "get": {
         "executable": "dsctest",
@@ -77,14 +78,19 @@
             }
         ]
     },
-    "schema": {
-        "command": {
-            "executable": "dsctest",
-            "args": [
-                "schema",
-                "-s",
-                "adapter"
-            ]
-        }
+    "validate": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "validate",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
     }
 }
