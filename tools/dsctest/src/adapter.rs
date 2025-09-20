@@ -49,7 +49,14 @@ pub struct DscResource {
 }
 
 pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> Result<String, String> {
+<<<<<<< HEAD
     match operation {
+||||||| parent of c22f78ea (fix clippy)
+pub fn adapt(resource_type: &str, input: &str, operation: AdapterOperation) -> Result<String, String> {
+    match operation {
+=======
+    match *operation {
+>>>>>>> c22f78ea (fix clippy)
         AdapterOperation::List => {
             let resource_one = DscResource {
                 type_name: "Adapted/One".to_string(),
@@ -93,7 +100,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> 
                     };
                     Ok(serde_json::to_string(&adapted_two).unwrap())
                 },
-                _ => Err(format!("Unknown resource type: {}", resource_type)),
+                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Set | AdapterOperation::Test => {
@@ -139,7 +146,7 @@ pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> 
                     println!("{}", serde_json::to_string(&adapted_two).unwrap());
                     std::process::exit(0);
                 },
-                _ => Err(format!("Unknown resource type: {}", resource_type)),
+                _ => Err(format!("Unknown resource type: {resource_type}")),
             }
         },
         AdapterOperation::Validate => {
