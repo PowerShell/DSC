@@ -211,6 +211,9 @@ fn main() {
         },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
+                Schemas::Adapter => {
+                    schema_for!(adapter::DscResource)
+                },
                 Schemas::Delete => {
                     schema_for!(Delete)
                 },

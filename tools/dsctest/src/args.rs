@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 pub enum Schemas {
+    Adapter,
     Delete,
     Exist,
     ExitCode,
@@ -34,6 +35,7 @@ pub enum AdapterOperation {
     Test,
     List,
     Export,
+    Validate,
 }
 
 #[derive(Debug, PartialEq, Eq, Subcommand)]
