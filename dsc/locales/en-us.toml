@@ -66,6 +66,9 @@ serverStopped = "MCP server stopped"
 failedToCreateRuntime = "Failed to create async runtime: %{error}"
 serverWaitFailed = "Failed to wait for MCP server: %{error}"
 
+[mcp.list_dsc_functions]
+invalidNamePattern = "Invalid function name pattern '%{pattern}'"
+
 [mcp.list_dsc_resources]
 resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
 adapterNotFound = "Adapter '%{adapter}' not found"

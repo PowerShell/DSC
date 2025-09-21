@@ -6,6 +6,7 @@ Describe 'Tests for MCP server' {
         $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $processStartInfo.FileName = "dsc"
         $processStartInfo.Arguments = "--trace-format plaintext mcp"
+        $processStartInfo.UseShellExecute = $false
         $processStartInfo.RedirectStandardError = $true
         $processStartInfo.RedirectStandardOutput = $true
         $processStartInfo.RedirectStandardInput = $true
@@ -72,6 +73,7 @@ Describe 'Tests for MCP server' {
         $tools = @{
             'list_dsc_resources' = $false
             'show_dsc_resource' = $false
+            'list_dsc_functions' = $false
         }
 
         $response = Send-McpRequest -request $mcpRequest
@@ -206,5 +208,94 @@ Describe 'Tests for MCP server' {
         $response.id | Should -Be 7
         $response.error.code | Should -Be -32602
         $response.error.message | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Calling list_dsc_functions works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 8
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{}
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 8
+        $functions = dsc function list --output-format json | ConvertFrom-Json
+        $response.result.structuredContent.functions.Count | Should -Be $functions.Count
+        
+        $mcpFunctions = $response.result.structuredContent.functions | Sort-Object name
+        $dscFunctions = $functions | Sort-Object name
+        
+        for ($i = 0; $i -lt $dscFunctions.Count; $i++) {
+            ($mcpFunctions[$i].psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 8
+            $mcpFunctions[$i].name | Should -BeExactly $dscFunctions[$i].name -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+            $mcpFunctions[$i].category | Should -BeExactly $dscFunctions[$i].category -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+            $mcpFunctions[$i].description | Should -BeExactly $dscFunctions[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+        }
+    }
+
+    It 'Calling list_dsc_functions with function_name filter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 9
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{
+                    function_name = "array"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 9
+        $response.result.structuredContent.functions.Count | Should -Be 1
+        $response.result.structuredContent.functions[0].name | Should -BeExactly "array"
+        $response.result.structuredContent.functions[0].category | Should -BeExactly "Array"
+    }
+
+    It 'Calling list_dsc_functions with wildcard pattern works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 10
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{
+                    function_name = "*Array*"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 10
+        $arrayFunctions = dsc function list --output-format json | ConvertFrom-Json -Depth 20 | Where-Object { $_.name -like "*Array*" }
+        $response.result.structuredContent.functions.Count | Should -Be $arrayFunctions.Count
+        foreach ($func in $response.result.structuredContent.functions) {
+            $func.name | Should -Match "Array" -Because "Function name should contain 'Array'"
+        }
+    }
+
+    # dont check for error as dsc function list returns empty list for invalid patterns
+    It 'Calling list_dsc_functions with invalid pattern returns empty result' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 11
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{
+                    function_name = "[invalid]"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 11
+        $response.result.structuredContent.functions.Count | Should -Be 0
+        $response.result.structuredContent.functions | Should -BeNullOrEmpty
     }
 }
