@@ -146,18 +146,13 @@ impl Expression {
                             if !object.contains_key(member) {
                                 return Err(DscError::Parser(t!("parser.expression.memberNameNotFound", member = member).to_string()));
                             }
-                            if is_secure {
-                                // if the original value was a secure value, we need to convert the member value back to secure
-                                value = convert_to_secure(&object[member]);
-                            } else {
-                                value = object[member].clone();
-                            }
+                            value = convert_to_secure(&object[member]);
                         } else {
                             return Err(DscError::Parser(t!("parser.expression.accessOnNonObject").to_string()));
                         }
                     },
                     Accessor::Index(index_value) => {
-                        index = index_value.clone();
+                        index = convert_to_secure(index_value);
                     },
                     Accessor::IndexExpression(expression) => {
                         index = expression.invoke(function_dispatcher, context)?;
@@ -174,7 +169,7 @@ impl Expression {
                         if index >= array.len() {
                             return Err(DscError::Parser(t!("parser.expression.indexOutOfBounds").to_string()));
                         }
-                        value = array[index].clone();
+                        value = convert_to_secure(&array[index]);
                     } else {
                         return Err(DscError::Parser(t!("parser.expression.indexOnNonArray").to_string()));
                     }
@@ -190,6 +185,10 @@ impl Expression {
 }
 
 fn convert_to_secure(value: &Value) -> Value {
+    if !is_secure_value(value) {
+        return value.clone();
+    }
+
     if let Some(string) = value.as_str() {
         let secure_string = crate::configure::parameters::SecureString {
             secure_string: string.to_string(),
