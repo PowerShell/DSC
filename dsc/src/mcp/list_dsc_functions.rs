@@ -28,7 +28,7 @@ fn convert_wildcard_to_regex(pattern: &str) -> String {
         .replace(r"\?", ".");
     
     if !pattern.contains('*') && !pattern.contains('?') {
-        format!("^{}$", regex_pattern)
+        format!("^{regex_pattern}$")
     } else {
         regex_pattern
     }
