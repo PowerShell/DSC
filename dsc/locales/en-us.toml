@@ -34,6 +34,8 @@ getAll = "Get all instances of the resource"
 resource = "The name of the resource to invoke"
 functionAbout = "Operations on DSC functions"
 listFunctionAbout = "List or find functions"
+version = "The version of the resource to invoke in semver format"
+mcpAbout = "Use DSC as a MCP server"
 
 [main]
 ctrlCReceived = "Ctrl-C received"
@@ -54,6 +56,22 @@ storeMessage = """DSC.exe is a command-line tool and cannot be run directly from
 Visit https://aka.ms/dscv3-docs for more information on how to use DSC.exe.
 
 Press any key to close this window"""
+failedToStartMcpServer = "Failed to start MCP server: %{error}"
+
+[mcp.mod]
+failedToInitialize = "Failed to initialize MCP server: %{error}"
+failedToStart = "Failed to start MCP server: %{error}"
+instructions = "This server provides tools that work with DSC (DesiredStateConfiguration) which enables users to manage and configure their systems declaratively."
+serverStopped = "MCP server stopped"
+failedToCreateRuntime = "Failed to create async runtime: %{error}"
+serverWaitFailed = "Failed to wait for MCP server: %{error}"
+
+[mcp.list_dsc_resources]
+resourceNotAdapter = "The resource '%{adapter}' is not a valid adapter"
+adapterNotFound = "Adapter '%{adapter}' not found"
+
+[mcp.show_dsc_resource]
+resourceNotFound = "Resource type '%{type_name}' not found"
 
 [resolve]
 processingInclude = "Processing Include input"
@@ -99,12 +117,6 @@ noResources = "Resources not specified"
 resourceTypeNotSpecified = "Resource type not specified"
 validatingResource = "Validating resource named"
 resourceNotFound = "Resource type not found"
-resourceImplementsValidate = "Resource implements validation"
-noReason = "No reason provided"
-resourceValidationFailed = "Resource failed validation"
-resourceDoesNotImplementValidate = "Resource does not implement validation, using schema"
-noSchemaOrValidate = "Resource does not have a schema nor supports validation"
-noManifest = "Resource does not have a manifest"
 tableHeader_type = "Type"
 tableHeader_kind = "Kind"
 tableHeader_version = "Version"
@@ -126,9 +138,6 @@ failedToConvertJsonToString = "Failed to convert JSON to string"
 failedToReadTracingSetting = "Could not read 'tracing' setting"
 invalidTraceLevel = "Default to 'warn', invalid DSC_TRACE_LEVEL value"
 failedToSetTracing = "Unable to set global default tracing subscriber.  Tracing is disabled."
-validatingSchema = "Validating against schema"
-failedToCompileSchema = "JSON Schema Compilation"
-validationFailed = "Failed validation"
 readingInput = "Reading input from command line parameter"
 inputIsFile = "Document provided is a file path, use '--file' instead"
 readingInputFromFile = "Reading input from file"

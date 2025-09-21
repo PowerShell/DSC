@@ -21,7 +21,7 @@ module.exports = grammar({
     stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[](.|\n)*?/)),
 
     function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
-    functionName: $ => /[a-z][a-zA-Z0-9]*/,
+    functionName: $ => /[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)?/,
     arguments: $ => seq($._argument, repeat(seq(',', $._argument))),
     _argument: $ => choice($.expression, $._quotedString, $.number, $.boolean),
 

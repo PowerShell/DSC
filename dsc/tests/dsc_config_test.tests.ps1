@@ -14,8 +14,8 @@ Describe 'dsc config test tests' {
          - name: Is64BitOS
            type: Microsoft/OSInfo
            properties:
-             bitness: '64'
-         - name: 64bit test 2
+             bitness: 64
+         - name: Family Test
            type: Microsoft/OSInfo
            properties:
              family: Windows

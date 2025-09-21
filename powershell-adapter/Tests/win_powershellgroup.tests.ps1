@@ -118,7 +118,7 @@ class PSClassResource {
       New-Item -Path $modulePath -ItemType File -Value $module -Force | Out-Null
     }
 
-    $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath
+    $env:PSModulePath = $windowsPowerShellPath + [System.IO.Path]::PathSeparator + $env:PSModulePath + [System.IO.Path]::PathSeparator
   }
 
   AfterAll {
@@ -209,7 +209,7 @@ resources:
   }
 
   It 'Get works with class-based PS DSC resources' {
-    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } 2> "$testdrive/error.log" | ConvertTo-Json) | ConvertFrom-Json
+    $out = dsc resource get -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
     $out.actualState.Name | Should -Be 'TestName'
     $out.actualState.Ensure | Should -Be 'Present'
@@ -218,9 +218,9 @@ resources:
   }
 
   It 'Set works with class-based PS DSC resources' {
-    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName' } 2> "$testdrive/error.log" | ConvertTo-Json) | ConvertFrom-Json
+    $out = dsc resource set -r PSClassResource/PSClassResource --input (@{Name = 'TestName'; Credential = @{"UserName" = "MyUser"; "Password" = "MyPassword"} } | ConvertTo-Json) 2> "$testdrive/error.log" | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content -Path "$testdrive/error.log" -Raw | Out-String)
-    $out.afterstate.InDesiredState | Should -Be $true
+    $out.changedProperties.Count | Should -Be 0 -Because ($out | ConvertTo-Json -Depth 10 | Out-String)
   }
 
   It 'Export works with class-based PS DSC resources' {

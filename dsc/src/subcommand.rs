@@ -5,7 +5,7 @@ use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSub
 use crate::resolve::{get_contents, Include};
 use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
-use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, validate_json, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
 use dsc_lib::functions::FunctionArgKind;
 use dsc_lib::{
     configure::{
@@ -17,7 +17,7 @@ use dsc_lib::{
         config_result::ResourceGetResult,
         Configurator,
     },
-    discovery::discovery_trait::DiscoveryKind,
+    discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind},
     discovery::command_discovery::ImportedManifest,
     dscerror::DscError,
     DscManager,
@@ -26,8 +26,8 @@ use dsc_lib::{
         TestResult,
         ValidateResult,
     },
-    dscresources::dscresource::{Capability, ImplementedAs, Invoke},
-    dscresources::resource_manifest::{import_manifest, ResourceManifest},
+    dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
+    dscresources::resource_manifest::import_manifest,
     extensions::dscextension::Capability as ExtensionCapability,
     functions::FunctionDispatcher,
     progress::ProgressFormat,
@@ -35,6 +35,7 @@ use dsc_lib::{
 };
 use regex::RegexBuilder;
 use rust_i18n::t;
+use core::convert::AsRef;
 use std::{
     collections::HashMap,
     io::{self, IsTerminal},
@@ -319,6 +320,8 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         }
     };
 
+    configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
+
     if let ConfigSubCommand::Set { what_if , .. } = subcommand {
         if *what_if {
             configurator.context.execution_type = ExecutionKind::WhatIf;
@@ -488,17 +491,12 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     };
 
     // discover the resources
-    let mut resource_types = Vec::new();
+    let mut resource_types = Vec::<DiscoveryFilter>::new();
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
             return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
         };
-
-        if resource_types.contains(&type_name.to_lowercase()) {
-            continue;
-        }
-
-        resource_types.push(type_name.to_lowercase().to_string());
+        resource_types.push(DiscoveryFilter::new(type_name, resource_block["api_version"].as_str().map(std::string::ToString::to_string)));
     }
     dsc.find_resources(&resource_types, progress_format);
 
@@ -510,40 +508,13 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
         trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
 
         // get the actual resource
-        let Some(resource) = get_resource(&dsc, type_name) else {
+        let Some(resource) = get_resource(&mut dsc, type_name, resource_block["api_version"].as_str()) else {
             return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
         };
 
         // see if the resource is command based
         if resource.implemented_as == ImplementedAs::Command {
-            // if so, see if it implements validate via the resource manifest
-            if let Some(manifest) = resource.manifest.clone() {
-                // convert to resource_manifest
-                let manifest: ResourceManifest = serde_json::from_value(manifest)?;
-                if manifest.validate.is_some() {
-                    debug!("{}: {type_name} ", t!("subcommand.resourceImplementsValidate"));
-                    // get the resource's part of the config
-                    let resource_config = resource_block["properties"].to_string();
-                    let result = resource.validate(&resource_config)?;
-                    if !result.valid {
-                        let reason = result.reason.unwrap_or(t!("subcommand.noReason").to_string());
-                        let type_name = resource.type_name.clone();
-                        return Err(DscError::Validation(format!("{}: {type_name} {reason}", t!("subcommand.resourceValidationFailed"))));
-                    }
-                }
-                else {
-                    // use schema validation
-                    trace!("{}: {type_name}", t!("subcommand.resourceDoesNotImplementValidate"));
-                    let Ok(schema) = resource.schema() else {
-                        return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noSchemaOrValidate"))));
-                    };
-                    let schema = serde_json::from_str(&schema)?;
-
-                    validate_json(&resource.type_name, &schema, &resource_block["properties"])?;
-                }
-            } else {
-                return Err(DscError::Validation(format!("{}: {type_name}", t!("subcommand.noManifest"))));
-            }
+            validate_properties(resource, &resource_block["properties"])?;
         }
     }
 
@@ -577,19 +548,19 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
         ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
             list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
         },
-        ResourceSubCommand::Schema { resource , output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
-            resource_command::schema(&dsc, resource, output_format.as_ref());
+        ResourceSubCommand::Schema { resource , version, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
+            resource_command::schema(&mut dsc, resource, version.as_deref(), output_format.as_ref());
         },
-        ResourceSubCommand::Export { resource, input, file, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+        ResourceSubCommand::Export { resource, version, input, file, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
-            resource_command::export(&mut dsc, resource, &parsed_input, output_format.as_ref());
+            resource_command::export(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Get { resource, input, file: path, all, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+        ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             if *all {
-                resource_command::get_all(&dsc, resource, output_format.as_ref());
+                resource_command::get_all(&mut dsc, resource, version.as_deref(), output_format.as_ref());
             }
             else {
                 if *output_format == Some(GetOutputFormat::JsonArray) {
@@ -597,23 +568,23 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
                     exit(EXIT_INVALID_ARGS);
                 }
                 let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-                resource_command::get(&dsc, resource, &parsed_input, output_format.as_ref());
+                resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
             }
         },
-        ResourceSubCommand::Set { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+        ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::set(&dsc, resource, &parsed_input, output_format.as_ref());
+            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Test { resource, input, file: path, output_format } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+        ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::test(&dsc, resource, &parsed_input, output_format.as_ref());
+            resource_command::test(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
         },
-        ResourceSubCommand::Delete { resource, input, file: path } => {
-            dsc.find_resources(&[resource.to_string()], progress_format);
+        ResourceSubCommand::Delete { resource, version, input, file: path } => {
+            dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::delete(&dsc, resource, &parsed_input);
+            resource_command::delete(&mut dsc, resource, version.as_deref(), &parsed_input);
         },
     }
 }
@@ -773,7 +744,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     }
 }
 
-fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),

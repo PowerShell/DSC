@@ -2,45 +2,65 @@
 // Licensed under the MIT License.
 
 use chrono::{DateTime, Local};
-use crate::{configure::config_doc::ExecutionKind, extensions::dscextension::DscExtension};
+use crate::{configure::config_doc::{ExecutionKind, UserFunctionDefinition}, extensions::dscextension::DscExtension};
 use security_context_lib::{get_security_context, SecurityContext};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, path::PathBuf};
 
 use super::config_doc::{DataType, RestartRequired, SecurityContextKind};
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ProcessMode {
+    Copy,
+    Normal,
+    NoExpressionEvaluation,
+    ParametersDefault,
+    UserFunction,
+}
+
+#[derive(Clone)]
 pub struct Context {
+    pub copy: HashMap<String, i64>,
+    pub copy_current_loop_name: String,
+    pub dsc_version: Option<String>,
     pub execution_type: ExecutionKind,
     pub extensions: Vec<DscExtension>,
-    pub references: Map<String, Value>,
-    pub system_root: PathBuf,
     pub parameters: HashMap<String, (Value, DataType)>,
-    pub security_context: SecurityContextKind,
-    pub variables: Map<String, Value>,
-    pub start_datetime: DateTime<Local>,
-    pub restart_required: Option<Vec<RestartRequired>>,
     pub process_expressions: bool,
+    pub process_mode: ProcessMode,
     pub processing_parameter_defaults: bool,
+    pub references: Map<String, Value>,
+    pub restart_required: Option<Vec<RestartRequired>>,
+    pub security_context: SecurityContextKind,
+    pub start_datetime: DateTime<Local>,
+    pub system_root: PathBuf,
+    pub user_functions: HashMap<String, UserFunctionDefinition>,
+    pub variables: Map<String, Value>,
 }
 
 impl Context {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            copy: HashMap::new(),
+            copy_current_loop_name: String::new(),
+            dsc_version: None,
             execution_type: ExecutionKind::Actual,
             extensions: Vec::new(),
-            references: Map::new(),
-            system_root: get_default_os_system_root(),
             parameters: HashMap::new(),
+            process_expressions: true,
+            process_mode: ProcessMode::Normal,
+            processing_parameter_defaults: false,
+            references: Map::new(),
+            restart_required: None,
             security_context: match get_security_context() {
                 SecurityContext::Admin => SecurityContextKind::Elevated,
                 SecurityContext::User => SecurityContextKind::Restricted,
             },
-            variables: Map::new(),
             start_datetime: chrono::Local::now(),
-            restart_required: None,
-            process_expressions: true,
-            processing_parameter_defaults: false,
+            system_root: get_default_os_system_root(),
+            user_functions: HashMap::new(),
+            variables: Map::new(),
         }
     }
 }

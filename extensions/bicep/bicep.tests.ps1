@@ -10,6 +10,64 @@ BeforeDiscovery {
 }
 
 Describe 'Bicep extension tests' -Skip:(!$foundBicep) {
+    BeforeAll {
+        $dateVersion = @'
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Microsoft.DSC.Debug/Echo",
+    "version": "2025-08-27",
+    "description": "Echo resource for testing and debugging purposes",
+    "get": {
+        "executable": "dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "set": {
+        "executable": "dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "test": {
+        "executable": "dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "export": {
+        "executable": "dscecho",
+        "args": [
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            }
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "dscecho"
+        }
+    }
+}
+'@
+        Set-Content -Path "$TestDrive/dateVersion.dsc.resource.json" -Value $dateVersion
+        $env:DSC_RESOURCE_PATH = "$env:PATH" + [System.IO.Path]::PathSeparator + "$TestDrive"
+    }
+
+    AfterAll {
+        $env:DSC_RESOURCE_PATH = $null
+    }
+
     It 'Example bicep file should work' {
         $bicepFile = Resolve-Path -Path "$PSScriptRoot\..\..\dsc\examples\hello_world.dsc.bicep"
         $out = dsc -l trace config get -f $bicepFile 2>$TestDrive/error.log | ConvertFrom-Json
