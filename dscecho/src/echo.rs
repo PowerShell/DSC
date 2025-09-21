@@ -17,11 +17,23 @@ pub enum Output {
     #[serde(rename = "object")]
     Object(Value),
     #[serde(rename = "secureObject")]
-    SecureObject(Value),
+    SecureObject(SecureObject),
     #[serde(rename = "secureString")]
-    SecureString(String),
+    SecureString(SecureString),
     #[serde(rename = "string")]
     String(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SecureString {
+    pub secure_string: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SecureObject {
+    pub secure_object: Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]

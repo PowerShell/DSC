@@ -12,19 +12,53 @@ pub struct Input {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct SecureString {
+    #[serde(rename = "secureString")]
+    pub secure_string: String,
+}
+
+impl Display for SecureString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<secureString>")
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+pub struct SecureObject {
+    #[serde(rename = "secureObject")]
+    pub secure_object: Value,
+}
+
+impl Display for SecureObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<secureObject>")
+    }
+}
+
+/// Check if a given JSON value is a secure value (either `SecureString` or `SecureObject`).
+///
+/// # Arguments
+///
+/// * `value` - The JSON value to check.
+///
+/// # Returns
+///
+/// `true` if the value is a secure value, `false` otherwise.
+#[must_use]
+pub fn is_secure_value(value: &Value) -> bool {
+    if let Some(obj) = value.as_object() {
+        if obj.len() == 1 && (obj.contains_key("secureString") || obj.contains_key("secureObject")) {
+            return true;
+        }
+    }
+    false
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields, untagged)]
 pub enum SecureKind {
     #[serde(rename = "secureString")]
-    SecureString(String),
+    SecureString(SecureString),
     #[serde(rename = "secureObject")]
-    SecureObject(Value),
-}
-
-impl Display for SecureKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SecureKind::SecureString(_) => write!(f, "<secureString>"),
-            SecureKind::SecureObject(_) => write!(f, "<secureObject>"),
-        }
-    }
+    SecureObject(SecureObject),
 }

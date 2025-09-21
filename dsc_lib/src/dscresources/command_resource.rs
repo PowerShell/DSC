@@ -717,9 +717,9 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 #[allow(clippy::implicit_hasher)]
 #[tokio::main]
 pub async fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
-    debug!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
+    trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
     if let Some(cwd) = cwd {
-        debug!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
+        trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
     }
 
     match run_process_async(executable, args, input, cwd, env, exit_codes).await {
