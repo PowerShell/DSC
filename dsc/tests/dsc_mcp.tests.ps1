@@ -237,7 +237,7 @@ Describe 'Tests for MCP server' {
         }
     }
 
-    It 'Calling list_dsc_functions with function_name filter works' {
+    It 'Calling list_dsc_functions with function_list filter works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
             id = 9
@@ -245,7 +245,7 @@ Describe 'Tests for MCP server' {
             params = @{
                 name = "list_dsc_functions"
                 arguments = @{
-                    function_name = "array"
+                    function_list = "array"
                 }
             }
         }
@@ -265,7 +265,7 @@ Describe 'Tests for MCP server' {
             params = @{
                 name = "list_dsc_functions"
                 arguments = @{
-                    function_name = "*Array*"
+                    function_list = "*Array*"
                 }
             }
         }
@@ -288,7 +288,7 @@ Describe 'Tests for MCP server' {
             params = @{
                 name = "list_dsc_functions"
                 arguments = @{
-                    function_name = "[invalid]"
+                    function_list = "[invalid]"
                 }
             }
         }
