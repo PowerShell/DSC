@@ -126,7 +126,7 @@ pub enum ConfigSubCommand {
         file: Option<String>,
         #[clap(short = 'o', long, help = t!("args.outputFormat").to_string())]
         output_format: Option<OutputFormat>,
-        #[clap(short = 'w', long, help = t!("args.whatIf").to_string())]
+        #[clap(short = 'w', long, visible_aliases = ["dry-run", "noop"], help = t!("args.whatIf").to_string())]
         what_if: bool,
     },
     #[clap(name = "test", about = t!("args.testAbout").to_string())]

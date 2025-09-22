@@ -35,7 +35,7 @@ impl Function for CreateObject {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.createObject.invoked"));
 
-        if args.len() % 2 != 0 {
+        if !args.len().is_multiple_of(2) {
             return Err(DscError::Parser(t!("functions.createObject.argsMustBePairs").to_string()));
         }
 

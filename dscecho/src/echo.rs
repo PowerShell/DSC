@@ -6,18 +6,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct SecureString {
-    #[serde(rename = "secureString")]
-    pub value: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct SecureObject {
-    #[serde(rename = "secureObject")]
-    pub value: Value,
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum Output {
     #[serde(rename = "array")]
