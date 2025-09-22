@@ -3,6 +3,7 @@
 
 use crate::mcp::mcp_server::McpServer;
 use dsc_lib::functions::{FunctionDispatcher, FunctionDefinition};
+use dsc_lib::util::convert_wildcard_to_regex;
 use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
 use rust_i18n::t;
 use schemars::JsonSchema;
@@ -21,23 +22,10 @@ pub struct ListFunctionsRequest {
     pub function_name: Option<String>,
 }
 
-fn convert_wildcard_to_regex(pattern: &str) -> String {
-    let escaped = regex::escape(pattern);
-    let regex_pattern = escaped
-        .replace(r"\*", ".*")
-        .replace(r"\?", ".");
-    
-    if !pattern.contains('*') && !pattern.contains('?') {
-        format!("^{regex_pattern}$")
-    } else {
-        regex_pattern
-    }
-}
-
 #[tool_router(router = list_dsc_functions_router, vis = "pub")]
 impl McpServer {
     #[tool(
-        description = "List available DSC functions with optional filtering by name pattern",
+        description = "List available DSC functions to be used in expressions with optional filtering by name pattern",
         annotations(
             title = "Enumerate all available DSC functions on the local machine returning name, category, description, and metadata.",
             read_only_hint = true,
