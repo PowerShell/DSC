@@ -71,9 +71,9 @@ Describe 'Tests for MCP server' {
         }
 
         $tools = @{
+            'list_dsc_functions' = $false
             'list_dsc_resources' = $false
             'show_dsc_resource' = $false
-            'list_dsc_functions' = $false
         }
 
         $response = Send-McpRequest -request $mcpRequest
