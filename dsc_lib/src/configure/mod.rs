@@ -346,7 +346,7 @@ impl Configurator {
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
-            let evaluated_name = self.evaluate_resource_name(&resource)?;
+            let evaluated_name = self.evaluate_resource_name(&resource.name)?;
             
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Get '{evaluated_name}'").as_str());
@@ -426,7 +426,7 @@ impl Configurator {
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
-            let evaluated_name = self.evaluate_resource_name(&resource)?;
+            let evaluated_name = self.evaluate_resource_name(&resource.name)?;
             
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Set '{evaluated_name}'").as_str());
@@ -580,7 +580,7 @@ impl Configurator {
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
-            let evaluated_name = self.evaluate_resource_name(&resource)?;
+            let evaluated_name = self.evaluate_resource_name(&resource.name)?;
             
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Test '{evaluated_name}'").as_str());
@@ -659,7 +659,7 @@ impl Configurator {
         let resources = self.config.resources.clone();
         let discovery = &mut self.discovery.clone();
         for resource in &resources {
-            let evaluated_name = self.evaluate_resource_name(resource)?;
+            let evaluated_name = self.evaluate_resource_name(&resource.name)?;
             
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Export '{evaluated_name}'").as_str());
@@ -926,7 +926,7 @@ impl Configurator {
     /// expressions and literals appropriately.
     ///
     /// # Arguments
-    /// * `resource` - The resource whose name should be evaluated
+    /// * `name` - The resource name that should be evaluated
     ///
     /// # Returns
     /// * `String` - The evaluated resource name
@@ -937,14 +937,13 @@ impl Configurator {
     /// - Resource name expression evaluation fails
     /// - Expression does not result in a string value
     /// - Statement parser encounters invalid syntax
-    fn evaluate_resource_name(&mut self, resource: &Resource) -> Result<String, DscError> {
-        // skip resources that were created from copy loops (they already have evaluated names)
-        if resource.copy.is_some() {
-            return Ok(resource.name.clone());
+    fn evaluate_resource_name(&mut self, name: &str) -> Result<String, DscError> {
+        if self.context.process_mode == ProcessMode::Copy {
+            return Ok(name.to_string());
         }
         
         // evaluate the resource name (handles both expressions and literals)
-        let Value::String(evaluated_name) = self.statement_parser.parse_and_execute(&resource.name, &self.context)? else {
+        let Value::String(evaluated_name) = self.statement_parser.parse_and_execute(name, &self.context)? else {
             return Err(DscError::Parser(t!("configure.mod.nameResultNotString").to_string()))
         };
         
