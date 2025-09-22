@@ -17,45 +17,42 @@ const SECURE_VALUE_REDACTED: &str = "<secureValue>";
 
 fn main() {
     let args = Args::parse();
-    match args.input {
-        Some(input) => {
-            let mut echo = match serde_json::from_str::<Echo>(&input) {
-                Ok(echo) => echo,
-                Err(err) => {
-                    eprintln!("{}: {err}", t!("main.invalidJson"));
-                    std::process::exit(1);
-                }
-            };
-            if echo.show_secrets != Some(true) {
-                match echo.output {
-                    Output::SecureString(_) | Output::SecureObject(_) => {
-                        echo.output = Output::String(SECURE_VALUE_REDACTED.to_string());
-                    },
-                    Output::Array(ref mut arr) => {
-                        for item in arr.iter_mut() {
-                            if is_secure_value(item) {
-                                *item = Value::String(SECURE_VALUE_REDACTED.to_string());
-                            } else {
-                                *item = redact(item);
-                            }
-                        }
-                    },
-                    Output::Object(ref mut obj) => {
-                        *obj = redact(obj);
-                    },
-                    _ => {}
-                }
+    if let Some(input) = args.input {
+        let mut echo = match serde_json::from_str::<Echo>(&input) {
+            Ok(echo) => echo,
+            Err(err) => {
+                eprintln!("{}: {err}", t!("main.invalidJson"));
+                std::process::exit(1);
             }
-            let json = serde_json::to_string(&echo).unwrap();
-            println!("{json}");
-            return;
-        },
-        None => {
-            let schema = schema_for!(Echo);
-            let json = serde_json::to_string_pretty(&schema).unwrap();
-            println!("{json}");
+        };
+        if echo.show_secrets != Some(true) {
+            match echo.output {
+                Output::SecureString(_) | Output::SecureObject(_) => {
+                    echo.output = Output::String(SECURE_VALUE_REDACTED.to_string());
+                },
+                Output::Array(ref mut arr) => {
+                    for item in arr.iter_mut() {
+                        if is_secure_value(item) {
+                            *item = Value::String(SECURE_VALUE_REDACTED.to_string());
+                        } else {
+                            *item = redact(item);
+                        }
+                    }
+                },
+                Output::Object(ref mut obj) => {
+                    *obj = redact(obj);
+                },
+                _ => {}
+            }
         }
+        let json = serde_json::to_string(&echo).unwrap();
+        println!("{json}");
+        return;
     }
+
+    let schema = schema_for!(Echo);
+    let json = serde_json::to_string_pretty(&schema).unwrap();
+    println!("{json}");
 }
 
 fn is_secure_value(value: &Value) -> bool {

@@ -120,8 +120,9 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         };
 
         if in_desired_state && execution_type == &ExecutionKind::Actual {
+            let before_state = redact(&serde_json::from_str(desired)?);
             return Ok(SetResult::Resource(ResourceSetResponse{
-                before_state: serde_json::from_str(desired)?,
+                before_state,
                 after_state: actual_state,
                 changed_properties: None,
             }));
@@ -152,7 +153,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     else {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
-    let pre_state = if pre_state_value.is_object() {
+    let mut pre_state = if pre_state_value.is_object() {
         let mut pre_state_map: Map<String, Value> = serde_json::from_value(pre_state_value)?;
 
         // if the resource is an adapter, then the `get` will return a `result`, but a full `set` expects the before state to be `resources`
@@ -200,6 +201,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &actual_value, &pre_state);
+            pre_state = redact(&pre_state);
             Ok(SetResult::Resource(ResourceSetResponse{
                 before_state: pre_state,
                 after_state: actual_value,
@@ -241,6 +243,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 }
             };
             let diff_properties = get_diff( &actual_state, &pre_state);
+            pre_state = redact(&pre_state);
             Ok(SetResult::Resource(ResourceSetResponse {
                 before_state: pre_state,
                 after_state: actual_state,
