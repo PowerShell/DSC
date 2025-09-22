@@ -274,11 +274,18 @@ Describe 'Parameters tests' {
       $out.results[0].result.inDesiredState | Should -BeTrue
     }
 
-    It 'secure types can be passed as objects to resources' {
+    It 'secure types can be passed as objects to resources but redacted in output' {
       $out = dsc config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml get -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
-      $out.results[0].result.actualState.output | Should -BeExactly 'mySecret'
-      $out.results[1].result.actualState.output | Should -BeExactly 'mySecretProperty'
+      $out.results[0].result.actualState.output | Should -BeExactly '<secureValue>'
+      $out.results[1].result.actualState.output | Should -BeExactly '<secureValue>'
+    }
+
+    It 'secure types can be passed as objects to resources' {
+      $out = dsc config -f $PSScriptRoot/../examples/secure_parameters_shown.parameters.yaml get -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
+      $LASTEXITCODE | Should -Be 0
+      $out.results[0].result.actualState.output.secureString | Should -BeExactly 'mySecret'
+      $out.results[1].result.actualState.output.secureString | Should -BeExactly 'mySecretProperty'
     }
 
     It 'parameter types are validated for <type>' -TestCases @(
