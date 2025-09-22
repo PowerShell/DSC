@@ -19,7 +19,7 @@ pub struct FunctionListResult {
 #[derive(Deserialize, JsonSchema)]
 pub struct ListFunctionsRequest {
     #[schemars(description = "Optional function name to filter the list. Supports wildcard patterns (*, ?)")]
-    pub function_name: Option<String>,
+    pub function_filter: Option<String>,
 }
 
 #[tool_router(router = list_dsc_functions_router, vis = "pub")]
@@ -34,13 +34,13 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn list_dsc_functions(&self, Parameters(ListFunctionsRequest { function_name }): Parameters<ListFunctionsRequest>) -> Result<Json<FunctionListResult>, McpError> {
+    pub async fn list_dsc_functions(&self, Parameters(ListFunctionsRequest { function_filter }): Parameters<ListFunctionsRequest>) -> Result<Json<FunctionListResult>, McpError> {
         let result = task::spawn_blocking(move || {
             let function_dispatcher = FunctionDispatcher::new();
             let mut functions = function_dispatcher.list();
             
-            // apply filtering if function_name is provided
-            if let Some(name_pattern) = function_name {
+            // apply filtering if function_filter is provided
+            if let Some(name_pattern) = function_filter {
                 let regex_str = convert_wildcard_to_regex(&name_pattern);
                 let mut regex_builder = RegexBuilder::new(&regex_str);
                 regex_builder.case_insensitive(true);
