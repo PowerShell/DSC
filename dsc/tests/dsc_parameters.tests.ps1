@@ -275,17 +275,25 @@ Describe 'Parameters tests' {
     }
 
     It 'secure types can be passed as objects to resources but redacted in output' {
-      $out = dsc config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml get -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
+      $out = dsc -l trace config -f $PSScriptRoot/../examples/secure_parameters.parameters.yaml get -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml 2> $TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
+      $out.results.Count | Should -Be 4
       $out.results[0].result.actualState.output | Should -BeExactly '<secureValue>'
       $out.results[1].result.actualState.output | Should -BeExactly '<secureValue>'
+      $out.results[2].result.actualState.output[0] | Should -BeExactly '<secureValue>'
+      $out.results[2].result.actualState.output[1] | Should -BeExactly '<secureValue>'
+      $out.results[3].result.actualState.output | Should -BeExactly '<secureValue>'
     }
 
     It 'secure types can be passed as objects to resources' {
       $out = dsc config -f $PSScriptRoot/../examples/secure_parameters_shown.parameters.yaml get -f $PSScriptRoot/../examples/secure_parameters.dsc.yaml | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
+      $out.results.Count | Should -Be 4
       $out.results[0].result.actualState.output.secureString | Should -BeExactly 'mySecret'
       $out.results[1].result.actualState.output.secureString | Should -BeExactly 'mySecretProperty'
+      $out.results[2].result.actualState.output[0].secureString | Should -BeExactly 'item1'
+      $out.results[2].result.actualState.output[1].secureString | Should -BeExactly 'item2'
+      $out.results[3].result.actualState.output.secureObject.secureString | Should -BeExactly 'item2'
     }
 
     It 'parameter types are validated for <type>' -TestCases @(

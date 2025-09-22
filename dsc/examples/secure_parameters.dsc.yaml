@@ -8,13 +8,23 @@ parameters:
     type: bool
     defaultValue: false
 resources:
-  - name: Echo 1
+  - name: SecureString
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('myString')]"
       showSecrets: "[parameters('showSecrets')]"
-  - name: Echo 2
+  - name: SecureObject
     type: Microsoft.DSC.Debug/Echo
     properties:
       output: "[parameters('myObject').myProperty]"
+      showSecrets: "[parameters('showSecrets')]"
+  - name: SecureArray
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output: "[parameters('myObject').myArray]"
+      showSecrets: "[parameters('showSecrets')]"
+  - name: SecureArrayIndexed
+    type: Microsoft.DSC.Debug/Echo
+    properties:
+      output: "[parameters('myObject').myArray[1]]"
       showSecrets: "[parameters('showSecrets')]"

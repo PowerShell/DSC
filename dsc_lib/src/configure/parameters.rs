@@ -11,6 +11,8 @@ pub struct Input {
     pub parameters: HashMap<String, Value>,
 }
 
+pub const SECURE_VALUE_REDACTED: &str = "<secureValue>";
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct SecureString {
     #[serde(rename = "secureString")]
@@ -19,7 +21,7 @@ pub struct SecureString {
 
 impl Display for SecureString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<secureValue>")
+        write!(f, "{SECURE_VALUE_REDACTED}")
     }
 }
 
@@ -31,7 +33,7 @@ pub struct SecureObject {
 
 impl Display for SecureObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<secureValue>")
+        write!(f, "{SECURE_VALUE_REDACTED}")
     }
 }
 

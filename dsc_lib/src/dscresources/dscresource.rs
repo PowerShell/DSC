@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::is_secure_value}, dscresources::resource_manifest::Kind};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::Kind};
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use dscerror::DscError;
 use jsonschema::Validator;
@@ -503,9 +503,8 @@ pub fn get_well_known_properties() -> HashMap<String, Value> {
 ///
 /// Original value if not sensitive, otherwise a redacted value
 pub fn redact(value: &Value) -> Value {
-    trace!("Redacting value: {value}");
     if is_secure_value(value) {
-        return Value::String("<secureValue>".to_string());
+        return Value::String(SECURE_VALUE_REDACTED.to_string());
     }
 
     if let Some(map) = value.as_object() {

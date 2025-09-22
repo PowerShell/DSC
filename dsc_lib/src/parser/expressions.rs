@@ -196,6 +196,15 @@ impl Expression {
     }
 }
 
+/// Convert a JSON value to a secure value if it is a string or an array of strings.
+///
+/// Arguments
+///
+/// * `value` - The JSON value to convert.
+///
+/// Returns
+///
+/// The converted JSON value.
 fn convert_to_secure(value: &Value) -> Value {
     if let Some(string) = value.as_str() {
         let secure_string = crate::configure::parameters::SecureString {
@@ -205,12 +214,10 @@ fn convert_to_secure(value: &Value) -> Value {
     }
 
     if let Some(obj) = value.as_object() {
-        if obj.len() == 1 && obj.contains_key("secureObject") {
-            let secure_object = crate::configure::parameters::SecureObject {
-                secure_object: obj["secureObject"].clone(),
-            };
-            return serde_json::to_value(secure_object).unwrap_or(value.clone());
-        }
+        let secure_object = crate::configure::parameters::SecureObject {
+            secure_object: serde_json::Value::Object(obj.clone()),
+        };
+        return serde_json::to_value(secure_object).unwrap_or(value.clone());
     }
 
     if let Some(array) = value.as_array() {
