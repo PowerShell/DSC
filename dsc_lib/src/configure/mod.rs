@@ -3,7 +3,6 @@
 
 use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
 use crate::configure::context::{Context, ProcessMode};
-use crate::configure::parameters::is_secure_value;
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
@@ -215,19 +214,7 @@ fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, V
 
     match properties {
         Some(properties) => {
-            let mut unsecure_properties = Map::new();
-            for (key, value) in properties {
-                if is_secure_value(&value) {
-                    if value.get("secureString").is_some() {
-                        unsecure_properties.insert(key.clone(), "<secureString>".into());
-                    } else if value.get("secureObject").is_some() {
-                        unsecure_properties.insert(key.clone(), "<secureObject>".into());
-                    }
-                } else {
-                    unsecure_properties.insert(key, value);
-                }
-            }
-            Ok(serde_json::to_string(&unsecure_properties)?)
+            Ok(serde_json::to_string(&properties)?)
         },
         _ => {
             Ok(String::new())

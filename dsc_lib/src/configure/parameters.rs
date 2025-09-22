@@ -19,7 +19,7 @@ pub struct SecureString {
 
 impl Display for SecureString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<secureString>")
+        write!(f, "<secureValue>")
     }
 }
 
@@ -31,7 +31,7 @@ pub struct SecureObject {
 
 impl Display for SecureObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<secureObject>")
+        write!(f, "<secureValue>")
     }
 }
 

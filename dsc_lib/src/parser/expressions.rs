@@ -146,13 +146,21 @@ impl Expression {
                             if !object.contains_key(member) {
                                 return Err(DscError::Parser(t!("parser.expression.memberNameNotFound", member = member).to_string()));
                             }
-                            value = convert_to_secure(&object[member]);
+                            if is_secure {
+                                value = convert_to_secure(&object[member]);
+                            } else {
+                                value = object[member].clone();
+                            }
                         } else {
                             return Err(DscError::Parser(t!("parser.expression.accessOnNonObject").to_string()));
                         }
                     },
                     Accessor::Index(index_value) => {
-                        index = convert_to_secure(index_value);
+                        if is_secure {
+                            index = convert_to_secure(index_value);
+                        } else {
+                            index = index_value.clone();
+                        }
                     },
                     Accessor::IndexExpression(expression) => {
                         index = expression.invoke(function_dispatcher, context)?;
@@ -169,7 +177,11 @@ impl Expression {
                         if index >= array.len() {
                             return Err(DscError::Parser(t!("parser.expression.indexOutOfBounds").to_string()));
                         }
-                        value = convert_to_secure(&array[index]);
+                        if is_secure {
+                            value = convert_to_secure(&array[index]);
+                        } else {
+                            value = array[index].clone();
+                        }
                     } else {
                         return Err(DscError::Parser(t!("parser.expression.indexOnNonArray").to_string()));
                     }
@@ -185,10 +197,6 @@ impl Expression {
 }
 
 fn convert_to_secure(value: &Value) -> Value {
-    if !is_secure_value(value) {
-        return value.clone();
-    }
-
     if let Some(string) = value.as_str() {
         let secure_string = crate::configure::parameters::SecureString {
             secure_string: string.to_string(),

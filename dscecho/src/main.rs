@@ -23,14 +23,13 @@ fn main() {
                     std::process::exit(1);
                 }
             };
-            match echo.output {
-                Output::SecureObject(_) => {
-                    echo.output = Output::String("<secureObject>".to_string());
-                },
-                Output::SecureString(_) => {
-                    echo.output = Output::String("<secureString>".to_string());
-                },
-                _ => {}
+            if echo.show_secrets != Some(true) {
+                match &echo.output {
+                    Output::SecureString(_) | Output::SecureObject(_) => {
+                        echo.output = Output::String("<secureValue>".to_string());
+                    },
+                    _ => {}
+                }
             }
             let json = serde_json::to_string(&echo).unwrap();
             println!("{json}");

@@ -14,25 +14,28 @@ pub enum Output {
     Bool(bool),
     #[serde(rename = "number")]
     Number(i64),
-    #[serde(rename = "object")]
-    Object(Value),
     #[serde(rename = "secureObject")]
     SecureObject(SecureObject),
     #[serde(rename = "secureString")]
     SecureString(SecureString),
     #[serde(rename = "string")]
     String(String),
+    // Object has to be last so it doesn't get matched first
+    #[serde(rename = "object")]
+    Object(Value),
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SecureString {
+    #[serde(rename = "secureString")]
     pub secure_string: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct SecureObject {
+    #[serde(rename = "secureObject")]
     pub secure_object: Value,
 }
 
@@ -40,4 +43,6 @@ pub struct SecureObject {
 #[serde(deny_unknown_fields)]
 pub struct Echo {
     pub output: Output,
+    #[serde(rename = "showSecrets", skip_serializing_if = "Option::is_none")]
+    pub show_secrets: Option<bool>,
 }

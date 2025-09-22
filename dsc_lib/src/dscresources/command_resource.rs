@@ -9,7 +9,7 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, env, process::Stdio};
 use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
 use crate::dscerror::DscError;
-use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
@@ -286,7 +286,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
         return Ok(TestResult::Group(group_test_response));
     }
 
-    let expected_value: Value = serde_json::from_str(expected)?;
+    let mut expected_value: Value = serde_json::from_str(expected)?;
     match test.returns {
         Some(ReturnKind::State) => {
             let actual_value: Value = match serde_json::from_str(&stdout){
@@ -297,6 +297,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             };
             let in_desired_state = get_desired_state(&actual_value)?;
             let diff_properties = get_diff(&expected_value, &actual_value);
+            expected_value = redact(&expected_value);
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
@@ -315,6 +316,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
+            expected_value = redact(&expected_value);
             let in_desired_state = get_desired_state(&actual_value)?;
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
@@ -339,6 +341,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 }
             };
             let diff_properties = get_diff( &expected_value, &actual_state);
+            expected_value = redact(&expected_value);
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state,

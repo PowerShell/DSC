@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{config_doc::{Configuration, ExecutionKind, Resource}, Configurator, context::ProcessMode}, dscresources::resource_manifest::Kind};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::is_secure_value}, dscresources::resource_manifest::Kind};
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use dscerror::DscError;
 use jsonschema::Validator;
@@ -311,7 +311,7 @@ impl Invoke for DscResource {
             let TestResult::Resource(ref resource_result) = result.results[0].result else {
                 return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "test", resource = self.type_name).to_string()));
             };
-            let desired_state = resource_result.desired_state
+            let mut desired_state = resource_result.desired_state
                 .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "desiredState", property_type = "object").to_string()))?
                 .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
                 .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", property_type = "array").to_string()))?[0]
@@ -324,6 +324,7 @@ impl Invoke for DscResource {
                 .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
                 .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
             let diff_properties = get_diff(&desired_state, &actual_state);
+            desired_state = redact(&desired_state);
             let test_result = TestResult::Resource(ResourceTestResponse {
                 desired_state,
                 actual_state,
@@ -346,7 +347,7 @@ impl Invoke for DscResource {
                 let resource_manifest = import_manifest(manifest.clone())?;
                 if resource_manifest.test.is_none() {
                     let get_result = self.get(expected)?;
-                    let desired_state = serde_json::from_str(expected)?;
+                    let mut desired_state = serde_json::from_str(expected)?;
                     let actual_state = match get_result {
                         GetResult::Group(results) => {
                             let mut result_array: Vec<Value> = Vec::new();
@@ -360,6 +361,7 @@ impl Invoke for DscResource {
                         }
                     };
                     let diff_properties = get_diff( &desired_state, &actual_state);
+                    desired_state = redact(&desired_state);
                     let test_result = TestResult::Resource(ResourceTestResponse {
                         desired_state,
                         actual_state,
@@ -491,6 +493,37 @@ pub fn get_well_known_properties() -> HashMap<String, Value> {
     ])
 }
 
+/// Checks if the JSON value is sensitive and should be redacted
+///
+/// # Arguments
+///
+/// * `value` - The JSON value to check
+///
+/// # Returns
+///
+/// Original value if not sensitive, otherwise a redacted value
+pub fn redact(value: &Value) -> Value {
+    trace!("Redacting value: {value}");
+    if is_secure_value(value) {
+        return Value::String("<secureValue>".to_string());
+    }
+
+    if let Some(map) = value.as_object() {
+        let mut new_map = Map::new();
+        for (key, val) in map {
+            new_map.insert(key.clone(), redact(val));
+        }
+        return Value::Object(new_map);
+    }
+
+    if let Some(array) = value.as_array() {
+        let new_array: Vec<Value> = array.iter().map(|val| redact(val)).collect();
+        return Value::Array(new_array);
+    }
+
+    value.clone()
+}
+
 #[must_use]
 /// Performs a comparison of two JSON Values if the expected is a strict subset of the actual
 ///
@@ -524,6 +557,11 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
         }
 
         for (key, value) in &*map {
+            if is_secure_value(&value) {
+                // skip secure values as they are not comparable
+                continue;
+            }
+
             if value.is_object() {
                 let sub_diff = get_diff(value, &actual[key]);
                 if !sub_diff.is_empty() {
