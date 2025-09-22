@@ -517,7 +517,7 @@ pub fn redact(value: &Value) -> Value {
     }
 
     if let Some(array) = value.as_array() {
-        let new_array: Vec<Value> = array.iter().map(|val| redact(val)).collect();
+        let new_array: Vec<Value> = array.iter().map(redact).collect();
         return Value::Array(new_array);
     }
 
@@ -557,7 +557,7 @@ pub fn get_diff(expected: &Value, actual: &Value) -> Vec<String> {
         }
 
         for (key, value) in &*map {
-            if is_secure_value(&value) {
+            if is_secure_value(value) {
                 // skip secure values as they are not comparable
                 continue;
             }
