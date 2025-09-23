@@ -9,8 +9,10 @@ use std::{
     mem::size_of,
     path::Path,
     ptr::{from_ref, null_mut},
-    os::windows::ffi::OsStrExt,
 };
+#[cfg(windows)]
+use std::os::windows::ffi::OsStrExt;
+#[cfg(windows)]
 use windows::{
     core::{PCWSTR, PWSTR, GUID},
     Win32::{
@@ -32,19 +34,21 @@ use windows::{
         }
     }
 };
+#[cfg(windows)]
 use windows_result::HRESULT;
 
 /// Check the Authenticode signature of a file.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `file_path` - The path to the file to check.
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `Ok(())` if the file is signed and the signature is valid.
 /// * `Err(DscError)` if the file is not signed or the signature is invalid
-/// 
+///
+#[cfg(windows)]
 pub fn check_authenticode(file_path: &Path) -> Result<(), DscError> {
     if is_file_checked(file_path) {
         return Ok(());
