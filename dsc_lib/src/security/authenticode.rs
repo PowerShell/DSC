@@ -3,6 +3,7 @@
 
 use crate::dscerror::DscError;
 use crate::security::{add_file_as_checked, is_file_checked};
+use rust_i18n::t;
 use std::{
     ffi::OsStr,
     mem::size_of,
@@ -102,11 +103,11 @@ pub fn check_authenticode(file_path: &Path) -> Result<(), DscError> {
         Ok(())
     } else {
         match hresult {
-            TRUST_E_NOSIGNATURE => Err(DscError::AuthenticodeError(format!("The file '{}' is not signed.", file_path.display()))),
-            TRUST_E_EXPLICIT_DISTRUST => Err(DscError::AuthenticodeError(format!("The signature of the file '{}' is explicitly distrusted.", file_path.display()))),
-            TRUST_E_SUBJECT_NOT_TRUSTED => Err(DscError::AuthenticodeError(format!("The signature of the file '{}' is not trusted.", file_path.display()))),
-            CRYPT_E_SECURITY_SETTINGS => Err(DscError::AuthenticodeError(format!("The signature of the file '{}' does not meet the security settings.", file_path.display()))),
-            _ => Err(DscError::AuthenticodeError(format!("The signature of the file '{}' could not be verified. HRESULT: 0x{:X}", file_path.display(), hresult.0))),
+            TRUST_E_NOSIGNATURE => Err(DscError::AuthenticodeError(t!("security.authenticode.fileNotSigned", file = file_path.display()).to_string())),
+            TRUST_E_EXPLICIT_DISTRUST => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureExplicitlyDistrusted", file = file_path.display()).to_string())),
+            TRUST_E_SUBJECT_NOT_TRUSTED => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureNotTrusted", file = file_path.display()).to_string())),
+            CRYPT_E_SECURITY_SETTINGS => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureDoesNotMeetSecuritySettings", file = file_path.display()).to_string())),
+            _ => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureCouldNotBeVerified", file = file_path.display(), hresult = hresult.0).to_string())),
         }
     }
 }
