@@ -107,7 +107,7 @@ pub fn check_authenticode(file_path: &Path) -> Result<(), DscError> {
             TRUST_E_EXPLICIT_DISTRUST => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureExplicitlyDistrusted", file = file_path.display()).to_string())),
             TRUST_E_SUBJECT_NOT_TRUSTED => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureNotTrusted", file = file_path.display()).to_string())),
             CRYPT_E_SECURITY_SETTINGS => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureDoesNotMeetSecuritySettings", file = file_path.display()).to_string())),
-            _ => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureCouldNotBeVerified", file = file_path.display(), hresult = hresult.0).to_string())),
+            _ => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureCouldNotBeVerified", file = file_path.display(), hresult = hresult.0 : {:x}).to_string())),
         }
     }
 }
