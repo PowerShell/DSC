@@ -23,7 +23,7 @@ Describe 'metadata tests' {
 '@
         $out = dsc -l warn config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Will not add '_metadata' to properties because resource schema does not support it*"
+        (Get-Content $TestDrive/error.log -Raw) | Should -BeLike "*WARN*Will not add '_metadata' to properties because resource schema does not support it*"
         $out.results.result.actualState.output | Should -BeExactly 'hello world'
     }
 
@@ -144,7 +144,7 @@ Describe 'metadata tests' {
         $out.results.count | Should -Be 1
         $out.results[0].metadata.validOne | Should -BeTrue
         $out.results[0].metadata.Microsoft.DSC | Should -BeNullOrEmpty
-        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned '_metadata' property 'Microsoft.DSC' which is ignored*"
+        (Get-Content $TestDrive/error.log -Raw) | Should -BeLike "*WARN*Resource returned '_metadata' property 'Microsoft.DSC' which is ignored*"
     }
 
     It 'resource returning _restartRequired metadata is handled' {
@@ -212,7 +212,7 @@ Describe 'metadata tests' {
 '@
         $out = dsc -l warn config get -i $configYaml 2>$TestDrive/error.log | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
-        (Get-Content $TestDrive/error.log) | Should -BeLike "*WARN*Resource returned '_metadata' property '_restartRequired' which contains invalid value: ``[{`"invalid`":`"item`"}]*"
+        (Get-Content $TestDrive/error.log -Raw) | Should -BeLike "*WARN*Resource returned '_metadata' property '_restartRequired' which contains invalid value: ``[{`"invalid`":`"item`"}]*"
         $out.results[0].metadata._restartRequired | Should -BeNullOrEmpty
     }
 }

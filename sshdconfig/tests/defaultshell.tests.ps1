@@ -16,6 +16,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
         $RegistryPath = "HKLM:\SOFTWARE\OpenSSH"
         $ValueNames = @("DefaultShell", "DefaultShellCommandOption", "DefaultShellEscapeArguments")
         $CreatedOpenSSHKey = $false
+        $env:DSC_TRACE_LEVEL = 'error'
 
         # Create OpenSSH registry key if it doesn't exist
         if (-not (Test-Path $RegistryPath)) {
@@ -51,6 +52,7 @@ Describe 'Default Shell Configuration Tests' -Skip:(!$IsWindows -or !$isElevated
                 }
             }
         }
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     AfterEach {
