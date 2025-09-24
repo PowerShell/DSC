@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'Tests for config using reference function' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'Reference works for <operation>' -TestCases @(
         @{ operation = 'get' },
         @{ operation = 'test' }

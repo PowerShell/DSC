@@ -10,6 +10,11 @@ Describe 'Include tests' {
         $osinfoParametersConfigPath = Get-Item (Join-Path $includePath 'osinfo.parameters.yaml')
 
         $logPath = Join-Path $TestDrive 'stderr.log'
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     It 'Include invalid config file' {

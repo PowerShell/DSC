@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'osinfo resource tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'should get osinfo' {
         $out = dsc resource get -r Microsoft/osInfo | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0

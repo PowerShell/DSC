@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe '_exist tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'Resource supporting exist on set should receive _exist for: <exist>' -TestCases @(
         @{ exist = $true }
         @{ exist = $false }

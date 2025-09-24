@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'Group resource tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'Nested groups should work for get' {
         $out = (dsc config get -f $PSScriptRoot/../examples/groups.dsc.yaml -o yaml | Out-String).Trim()
         $LASTEXITCODE | Should -Be 0

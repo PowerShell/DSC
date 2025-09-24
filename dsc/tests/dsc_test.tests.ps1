@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'resource test tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'should confirm matching state' -Skip:(!$IsWindows) {
         $json = @'
         {

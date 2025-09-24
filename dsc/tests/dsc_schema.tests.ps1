@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'config schema tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'return resource schema' -Skip:(!$IsWindows) {
         $schema = dsc resource schema -r Microsoft.Windows/Registry
         $LASTEXITCODE | Should -Be 0

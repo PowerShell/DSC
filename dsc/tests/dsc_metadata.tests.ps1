@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'metadata tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'metadata not provided if not declared in resource schema' {
         $configYaml = @'
         $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
