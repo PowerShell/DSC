@@ -63,7 +63,7 @@ Describe 'Resource adapter tests' {
             Set-Content -Path testdrive:/invalid.dsc.resource.json -Value $invalid_manifest
             $env:PATH += [System.IO.Path]::PathSeparator + (Resolve-Path (Resolve-Path $TestDrive -Relative))
 
-            $out = dsc resource list '*invalid*' -a '*InvalidTestGroup*' 2>&1
+            $out = dsc -l warn resource list '*invalid*' -a '*InvalidTestGroup*' 2>&1
             $LASTEXITCODE | Should -Be 0
             ,$out | Should -Match ".*?'requires'*"
         }
