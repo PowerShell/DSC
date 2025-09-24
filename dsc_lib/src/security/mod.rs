@@ -10,7 +10,7 @@ use std::sync::LazyLock;
 use crate::dscerror::DscError;
 
 #[cfg(windows)]
-mod authenticode;
+mod authenticode_windows;
 
 #[cfg(windows)]
 static CHECKED_FILES: LazyLock<std::sync::Mutex<Vec<String>>> = LazyLock::new(|| std::sync::Mutex::new(vec![]));
