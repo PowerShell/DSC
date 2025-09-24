@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #[cfg(windows)]
-use authenticode::check_authenticode;
+use authenticode_windows::check_authenticode;
 use std::path::Path;
 #[cfg(windows)]
 use std::sync::LazyLock;
