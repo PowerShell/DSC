@@ -14,10 +14,12 @@ Describe 'Discover extension tests' {
         $oldPath = $env:PATH
         $toolPath = Resolve-Path -Path "$PSScriptRoot/../../extensions/test/discover"
         $env:PATH = "$toolPath" + [System.IO.Path]::PathSeparator + $oldPath
+        $env:DSC_TRACE_LEVEL = 'error'
     }
 
     AfterAll {
         $env:PATH = $oldPath
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     It 'Discover extensions' {

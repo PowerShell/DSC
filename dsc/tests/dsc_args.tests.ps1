@@ -3,6 +3,7 @@
 
 Describe 'config argument tests' {
     BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
         $manifest = @'
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
@@ -52,6 +53,7 @@ Describe 'config argument tests' {
 
     AfterAll {
         $env:DSC_RESOURCE_PATH = $oldPath
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     It 'input is <type>' -TestCases @(

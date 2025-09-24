@@ -16,10 +16,12 @@ Describe 'reboot_pending resource tests' -Skip:(!$IsWindows -or !$isElevated) {
         if (-not (Get-ItemProperty "$keyPath\$keyName" -ErrorAction Ignore)) {
             New-ItemProperty -Path $keyPath -Name $keyName -Value 1 -PropertyType DWord -Force | Out-Null
         }
+        $env:DSC_TRACE_LEVEL = 'error'
     }
 
     AfterAll {
         Remove-ItemProperty -Path $keyPath -Name $keyName -ErrorAction Ignore
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     It 'should get reboot_pending' {

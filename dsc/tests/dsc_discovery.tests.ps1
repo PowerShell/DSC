@@ -4,6 +4,7 @@
 Describe 'tests for resource discovery' {
     BeforeAll {
         $env:DSC_RESOURCE_PATH = $testdrive
+        $env:DSC_TRACE_LEVEL = 'error'
 
         $script:lookupTableFilePath = if ($IsWindows) {
             Join-Path $env:LocalAppData "dsc\AdaptedResourcesLookupTable.json"
@@ -18,6 +19,7 @@ Describe 'tests for resource discovery' {
 
     AfterAll {
         $env:DSC_RESOURCE_PATH = $null
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     It 'Use DSC_RESOURCE_PATH instead of PATH when defined' {

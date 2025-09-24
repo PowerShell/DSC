@@ -9,8 +9,8 @@ use std::{
     mem::size_of,
     path::Path,
     ptr::{from_ref, null_mut},
+    os::windows::ffi::OsStrExt,
 };
-use std::os::windows::ffi::OsStrExt;
 use windows::{
     core::{PCWSTR, PWSTR, GUID},
     Win32::{

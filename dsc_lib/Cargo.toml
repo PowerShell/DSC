@@ -49,6 +49,14 @@ tree-sitter-rust = "0.24"
 tree-sitter-dscexpression = { path = "../tree-sitter-dscexpression" }
 uuid = { version = "1.18", features = ["v4"] }
 which = "8.0"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Cryptography",
+    "Win32_Security_WinTrust",
+] }
+windows-result = "0.4"
+windows-strings = "0.5"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", features = [
