@@ -341,6 +341,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
+        self.unroll_copy_loops()?;
+        
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
@@ -421,6 +423,8 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
+        self.unroll_copy_loops()?;
+        
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
@@ -575,6 +579,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
+        self.unroll_copy_loops()?;
+        
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
@@ -651,6 +657,8 @@ impl Configurator {
     ///
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
+        self.unroll_copy_loops()?;
+        
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
         conf.metadata.clone_from(&self.config.metadata);
@@ -874,7 +882,7 @@ impl Configurator {
     }
 
     fn validate_config(&mut self) -> Result<(), DscError> {
-        let mut config: Configuration = serde_json::from_str(self.json.as_str())?;
+        let config: Configuration = serde_json::from_str(self.json.as_str())?;
         check_security_context(config.metadata.as_ref())?;
 
         // Perform discovery of resources used in config
@@ -886,15 +894,33 @@ impl Configurator {
             if !discovery_filter.contains(&filter) {
                 discovery_filter.push(filter);
             }
-            // if the resource contains `Copy`, we need to unroll
+            // defer actual unrolling until parameters are available
             if let Some(copy) = &resource.copy {
-                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
+                debug!("{}", t!("configure.mod.validateCopy", name = &copy.name, count = copy.count));
                 if copy.mode.is_some() {
                     return Err(DscError::Validation(t!("configure.mod.copyModeNotSupported").to_string()));
                 }
                 if copy.batch_size.is_some() {
                     return Err(DscError::Validation(t!("configure.mod.copyBatchSizeNotSupported").to_string()));
                 }
+            }
+        }
+
+        self.discovery.find_resources(&discovery_filter, self.progress_format);
+        self.config = config;
+        Ok(())
+    }
+
+    /// Unroll copy loops in the configuration.
+    /// This method should be called after parameters have been set in the context.
+    fn unroll_copy_loops(&mut self) -> Result<(), DscError> {
+        let mut config = self.config.clone();
+        let config_copy = config.clone();
+        
+        for resource in config_copy.resources {
+            // if the resource contains `Copy`, unroll it
+            if let Some(copy) = &resource.copy {
+                debug!("{}", t!("configure.mod.unrollingCopy", name = &copy.name, count = copy.count));
                 self.context.process_mode = ProcessMode::Copy;
                 self.context.copy_current_loop_name.clone_from(&copy.name);
                 let mut copy_resources = Vec::<Resource>::new();
@@ -905,6 +931,7 @@ impl Configurator {
                         return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
                     };
                     new_resource.name = new_name.to_string();
+                    
                     new_resource.copy = None;
                     copy_resources.push(new_resource);
                 }
@@ -914,8 +941,7 @@ impl Configurator {
                 config.resources.extend(copy_resources);
             }
         }
-
-        self.discovery.find_resources(&discovery_filter, self.progress_format);
+        
         self.config = config;
         Ok(())
     }
