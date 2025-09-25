@@ -236,6 +236,18 @@ if ($null -ne $packageType) {
         & $rustup default stable
     }
 
+    if ($Clippy -and $null -eq (Get-Command cargo-clippy -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "clippy not found, installing..."
+        if ($UseCFS) {
+            cargo install clippy --config .cargo/config.toml
+        } else {
+            cargo install clippy
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install clippy"
+        }
+    }
+
     ## Test if Node is installed
     ## Skipping upgrade as users may have a specific version they want to use
     if (!(Get-Command 'node' -ErrorAction Ignore)) {
@@ -321,18 +333,6 @@ else {
 if (!$SkipBuild) {
     if ($architecture -ne 'Current' -and !$usingADO) {
         & $rustup target add --toolchain $channel $architecture
-    }
-
-    if ($Clippy -and $null -eq (Get-Command cargo-clippy -ErrorAction Ignore)) {
-        Write-Verbose -Verbose "clippy not found, installing..."
-        if ($UseCFS) {
-            cargo install clippy --config .cargo/config.toml
-        } else {
-            rustup component add clippy
-        }
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install clippy"
-        }
     }
 
     if (Test-Path $target) {
