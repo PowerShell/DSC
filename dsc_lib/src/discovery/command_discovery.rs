@@ -471,7 +471,7 @@ impl ResourceDiscovery for CommandDiscovery {
     fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
         if resources_is_empty() {
-            self.discover( &DiscoveryKind::Resource, "*")?;
+            self.discover(&DiscoveryKind::Resource, "*")?;
         }
         let mut found_resources = BTreeMap::<String, Vec<DscResource>>::new();
         let mut required_resources = HashMap::<DiscoveryFilter, bool>::new();
