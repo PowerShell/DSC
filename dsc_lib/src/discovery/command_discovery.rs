@@ -3,8 +3,8 @@
 
 use crate::discovery::{
     command_discovery_cache::{
+        adapters_is_empty, extend_adapted_resources, extend_adapters, extend_extensions, extend_resources, extensions_is_empty,
         get_adapted_resource, get_adapted_resources, get_adapters, get_extensions, get_resource, get_resources, resources_is_empty,
-        adapters_is_empty, extensions_is_empty, extend_adapted_resources, extend_adapters, extend_extensions, extend_resources
     },
     discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}
 };
