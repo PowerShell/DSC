@@ -7,10 +7,10 @@ use std::collections::BTreeMap;
 use std::sync::{LazyLock, Mutex};
 
 // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
-static ADAPTERS : LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
-static RESOURCES : LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
-static EXTENSIONS : LazyLock<Mutex<BTreeMap<String, DscExtension>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
-static ADAPTED_RESOURCES : LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
+static ADAPTERS: LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
+static RESOURCES: LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
+static EXTENSIONS: LazyLock<Mutex<BTreeMap<String, DscExtension>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
+static ADAPTED_RESOURCES: LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
 
 pub fn get_adapters() -> BTreeMap<String, Vec<DscResource>> {
     ADAPTERS.lock().unwrap().clone()
