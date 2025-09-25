@@ -323,6 +323,18 @@ if (!$SkipBuild) {
         & $rustup target add --toolchain $channel $architecture
     }
 
+    if ($Clippy -and $null -eq (Get-Command cargo-clippy -ErrorAction Ignore)) {
+        Write-Verbose -Verbose "clippy not found, installing..."
+        if ($UseCFS) {
+            cargo install clippy --config .cargo/config.toml
+        } else {
+            rustup component add clippy
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install clippy"
+        }
+    }
+
     if (Test-Path $target) {
         Remove-Item $target -Recurse -ErrorAction Ignore
     }
