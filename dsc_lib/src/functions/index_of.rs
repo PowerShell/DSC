@@ -16,7 +16,7 @@ impl Function for IndexOf {
         FunctionMetadata {
             name: "indexOf".to_string(),
             description: t!("functions.indexOf.description").to_string(),
-            category: vec![FunctionCategory::String],
+            category: vec![FunctionCategory::Array, FunctionCategory::String],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![

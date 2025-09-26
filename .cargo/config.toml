@@ -17,4 +17,4 @@ rustflags = ["-Ccontrol-flow-guard", "-Ctarget-feature=+crt-static", "-Clink-arg
 
 # The following is only needed for release builds
 [source.crates-io]
-# replace-with = "POWERSHELL"
+replace-with = "POWERSHELL"

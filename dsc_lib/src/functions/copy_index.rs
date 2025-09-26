@@ -16,7 +16,7 @@ impl Function for CopyIndex {
         FunctionMetadata {
             name: "copyIndex".to_string(),
             description: t!("functions.copyIndex.description").to_string(),
-            category: vec![FunctionCategory::Deployment],
+            category: vec![FunctionCategory::Numeric],
             min_args: 0,
             max_args: 2,
             accepted_arg_ordered_types: vec![
