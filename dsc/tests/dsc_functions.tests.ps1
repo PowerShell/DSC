@@ -118,6 +118,19 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('thirdObject'), parameters('fourthObject'))]"; expected = [pscustomobject]@{ three = 'd' } }
     @{ expression = "[intersection(parameters('firstArray'), parameters('thirdArray'))]"; expected = @() }
     @{ expression = "[intersection(parameters('firstObject'), parameters('firstArray'))]"; isError = $true }
+    # Test with 3 arrays - should find common elements across all three
+    @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'), parameters('fifthArray'))]"; expected = @('cd') }
+    # Test with 3 objects - should find properties with matching key-value pairs across all three
+    @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'), parameters('sixthObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
+    # Test with nested objects - should match deep equality
+    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{ 
+      shared = [pscustomobject]@{ value = 42; flag = $true }
+      level = 1
+    } }
+    # Test with nested objects - no common nested properties
+    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
+    # Test with 3 nested objects
+    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
   ) {
     param($expression, $expected, $isError)
 
@@ -144,6 +157,42 @@ Describe 'tests for function expressions' {
                 defaultValue:
                   three: d
                   four: e
+              sixthObject:
+                type: object
+                defaultValue:
+                  two: b
+                  five: f
+              nestedObject1:
+                type: object
+                defaultValue:
+                  shared:
+                    value: 42
+                    flag: true
+                  level: 1
+                  unique1: test
+              nestedObject2:
+                type: object
+                defaultValue:
+                  shared:
+                    value: 42
+                    flag: true
+                  level: 1
+                  unique2: test
+              nestedObject3:
+                type: object
+                defaultValue:
+                  shared:
+                    value: 24
+                    flag: true
+                  level: 1
+                  unique3: test
+              nestedObject4:
+                type: object
+                defaultValue:
+                  level: 1
+                  different:
+                    value: 100
+                    flag: false
               firstArray:
                 type: array
                 defaultValue:
@@ -165,6 +214,11 @@ Describe 'tests for function expressions' {
                 - gh
                 - ef
                 - ij
+              fifthArray:
+                type: array
+                defaultValue:
+                - cd
+                - kl
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo

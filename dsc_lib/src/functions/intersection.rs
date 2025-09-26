@@ -31,8 +31,7 @@ impl Function for Intersection {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.intersection.invoked"));
         
-        if args[0].is_array() {
-            let first_array = args[0].as_array().unwrap();
+        if let Some(first_array) = args[0].as_array() {
             let mut result = Vec::new();
             
             for item in first_array {
@@ -57,8 +56,7 @@ impl Function for Intersection {
             return Ok(Value::Array(result));
         }
 
-        if args[0].is_object() {
-            let first_object = args[0].as_object().unwrap();
+        if let Some(first_object) = args[0].as_object() {
             let mut result = Map::new();
             
             for (key, value) in first_object {
