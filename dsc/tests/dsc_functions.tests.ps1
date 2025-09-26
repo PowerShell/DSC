@@ -118,18 +118,13 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('thirdObject'), parameters('fourthObject'))]"; expected = [pscustomobject]@{ three = 'd' } }
     @{ expression = "[intersection(parameters('firstArray'), parameters('thirdArray'))]"; expected = @() }
     @{ expression = "[intersection(parameters('firstObject'), parameters('firstArray'))]"; isError = $true }
-    # Test with 3 arrays - should find common elements across all three
     @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'), parameters('fifthArray'))]"; expected = @('cd') }
-    # Test with 3 objects - should find properties with matching key-value pairs across all three
     @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'), parameters('sixthObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
-    # Test with nested objects - should match deep equality
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{ 
       shared = [pscustomobject]@{ value = 42; flag = $true }
       level = 1
     } }
-    # Test with nested objects - no common nested properties
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
-    # Test with 3 nested objects
     @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
   ) {
     param($expression, $expected, $isError)
