@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 pub mod command_discovery;
+mod command_discovery_cache;
 pub mod discovery_trait;
 
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
