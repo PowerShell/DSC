@@ -111,6 +111,76 @@ Describe 'tests for function expressions' {
     }
   }
 
+  It 'intersection function works for: <expression>' -TestCases @(
+    @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'))]"; expected = @('cd') }
+    @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
+    @{ expression = "[intersection(parameters('thirdArray'), parameters('fourthArray'))]"; expected = @('ef', 'gh') }
+    @{ expression = "[intersection(parameters('thirdObject'), parameters('fourthObject'))]"; expected = [pscustomobject]@{ three = 'd' } }
+    @{ expression = "[intersection(parameters('firstArray'), parameters('thirdArray'))]"; expected = @() }
+    @{ expression = "[intersection(parameters('firstObject'), parameters('firstArray'))]"; isError = $true }
+  ) {
+    param($expression, $expected, $isError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              firstObject:
+                type: object
+                defaultValue:
+                  one: a
+                  two: b
+              secondObject:
+                type: object
+                defaultValue:
+                  two: b
+                  three: d
+              thirdObject:
+                type: object
+                defaultValue:
+                  two: c
+                  three: d
+              fourthObject:
+                type: object
+                defaultValue:
+                  three: d
+                  four: e
+              firstArray:
+                type: array
+                defaultValue:
+                - ab
+                - cd
+              secondArray:
+                type: array
+                defaultValue:
+                - cd
+                - ef
+              thirdArray:
+                type: array
+                defaultValue:
+                - ef
+                - gh
+              fourthArray:
+                type: array
+                defaultValue:
+                - gh
+                - ef
+                - ij
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    if ($isError) {
+      $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
+      (Get-Content $TestDrive/error.log -Raw) | Should -Match 'All arguments must either be arrays or objects'
+    } else {
+      $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+      ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    }
+  }
+
   It 'contain function works for: <expression>' -TestCases @(
     @{ expression = "[contains(parameters('array'), 'a')]" ; expected = $true }
     @{ expression = "[contains(parameters('array'), 2)]" ; expected = $false }
