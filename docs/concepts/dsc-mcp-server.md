@@ -56,9 +56,10 @@ generic advice.
 When you need to configure something specific, agents can examine the exact properties and
 capabilities of relevant resources. For instance:
 
-- **You ask**: "I need to configure a Windows service to start automatically"  
-- **Agent examines**: The `Microsoft.Windows/WindowsService` resource schema
-- **Agent provides**: The exact property names and valid values needed for your configuration
+- **You ask**: "I need to install packages on my Linux system using apt"  
+- **Agent examines**: The `Microsoft.Linux.Apt/Package` resource schema
+- **Agent provides**: The exact property names and valid values needed for your package
+  installation configuration
 
 This ensures the guidance you receive matches what's actually available on your system.
 
