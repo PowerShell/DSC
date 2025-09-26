@@ -51,6 +51,7 @@ pub mod null;
 pub mod or;
 pub mod parameters;
 pub mod path;
+pub mod range;
 pub mod reference;
 pub mod resource_id;
 pub mod secret;
@@ -166,6 +167,7 @@ impl FunctionDispatcher {
             Box::new(or::Or{}),
             Box::new(parameters::Parameters{}),
             Box::new(path::Path{}),
+            Box::new(range::Range{}),
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),
             Box::new(secret::Secret{}),
