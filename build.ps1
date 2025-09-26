@@ -3,6 +3,97 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+<#
+.SYNOPSIS
+    Builds, tests, and packages the DSC executable for multiple platforms/architectures.
+
+.DESCRIPTION
+    The .build.ps1 script performs the following tasks:
+
+    - Bootstraps required toolchains (Rust, Node.js, and optionally MSVC/Windows SDK).
+    - Builds all component crates and tools in dependency order using Cargo.
+    - Copies outputs into bin/<architecture>/<configuration>.
+    - Optionally runs static analysis (Clippy) and tests (Cargo/Pester).
+    - Creates distributable packages (MSIX/MSIXBundle/ZIP/TAR.GZ).
+    - Supports lockfile updates and dependency security auditing.
+
+.PARAMETER Release
+    Builds with the Release configuration (default is Debug).
+
+.PARAMETER architecture
+    Targets the platform to build and package for. Supported values:
+
+    - current
+    - aarch64-pc-windows-msvc
+    - x86_64-pc-windows-msvc
+    - aarch64-apple-darwin
+    - x86_64-apple-darwin
+    - aarch64-unknown-linux-gnu
+    - aarch64-unknown-linux-musl
+    - x86_64-unknown-linux-gnu
+    - x86_64-unknown-linux-musl
+
+    Defaults to 'current'.
+
+.PARAMETER Clippy
+    Run cargo clippy instead of building artifacts.
+
+.PARAMETER SkipBuild
+    Skip building artifacts. Useful when you only want to package already-built outputs.
+
+.PARAMETER packageType
+    Create a package from existing build outputs. One of: msix, msix-private, msixbundle, tgz, zip.
+    Note: When provided, the script will skip building; run a build first in a separate invocation.
+
+.PARAMETER Test
+    Run tests after building. Executes cargo test per project and then Pester end-to-end tests.
+
+.PARAMETER GetPackageVersion
+    Simply retrieves the current package version
+
+.PARAMETER SkipLinkCheck
+    On Windows, skip checking/bootstrapping link.exe and C++ build tools.
+
+.PARAMETER UseX64MakeAppx
+    On Arm64 Windows packaging, force use of x64 makeappx.exe.
+
+.PARAMETER UseCratesIO
+    Use crates.io as the cargo registry (disables CFS source replacement).
+
+.PARAMETER UpdateLockFile
+    Regenerate Cargo.lock files for projects that support it.
+
+.PARAMETER Audit
+    Run cargo-audit (with automatic fixes when possible) before building.
+
+.PARAMETER UseCFSAuth
+    Use Azure CLI to acquire an auth token for the CFS registry (requires az and az login).
+
+.PARAMETER Clean
+    Run cargo clean in each project before building.
+
+.EXAMPLE
+    PS> .\build.ps1 -UseCratesIO
+    Use crates.io as the cargo registry (disables CFS source replacement).
+
+.EXAMPLE
+    PS> .\build.ps1 -Release
+    Build Release for the current host architecture and copy artifacts to bin\\release.
+
+.EXAMPLE
+    PS> .\build.ps1 -Test
+    Build and run cargo tests for each project; then run Pester tests. Installs Pester and dependencies as needed.
+
+.EXAMPLE
+    PS> .\build.ps1 -Release -architecture x86_64-pc-windows-msvc
+    PS> .\build.ps1 -packageType zip -architecture x86_64-pc-windows-msvc
+    Two-step Windows packaging: first build Release, then create a ZIP from existing outputs. Packaging skips building.
+
+.EXAMPLE
+    PS> .\build.ps1 -GetPackageVersion
+    Print the current version
+#>
+[CmdletBinding()]
 param(
     [switch]$Release,
     [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
@@ -19,8 +110,7 @@ param(
     [switch]$UpdateLockFile,
     [switch]$Audit,
     [switch]$UseCFSAuth,
-    [switch]$Clean,
-    [switch]$Verbose
+    [switch]$Clean
 )
 
 trap {
@@ -145,11 +235,11 @@ $filesToBeExecutable = @(
 function Find-LinkExe {
     try {
         # this helper may not be needed anymore, but keeping in case the install doesn't work for everyone
-        Write-Verbose -Verbose "Finding link.exe"
+        Write-Verbose "Finding link.exe"
         Push-Location $BuildToolsPath
         Set-Location "$(Get-ChildItem -Directory | Sort-Object name -Descending | Select-Object -First 1)\bin\Host$($env:PROCESSOR_ARCHITECTURE)\x64" -ErrorAction Stop
         $linkexe = (Get-Location).Path
-        Write-Verbose -Verbose "Using $linkexe"
+        Write-Verbose "Using $linkexe"
         $linkexe
     }
     finally {
@@ -206,15 +296,15 @@ if ($null -ne $packageType) {
     }
 
     ## Test if Rust is installed
-    if (!$usingADO -and !(Get-Command 'cargo' -ErrorAction Ignore)) {
-        Write-Verbose -Verbose "Rust not found, installing..."
+    if (!(Get-Command 'cargo' -ErrorAction Ignore)) {
+        Write-Verbose "Rust not found, installing..."
         if (!$IsWindows) {
             curl https://sh.rustup.rs -sSf | sh -s -- -y
             $env:PATH += ":$env:HOME/.cargo/bin"
         }
         else {
             Invoke-WebRequest 'https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe' -OutFile 'temp:/rustup-init.exe'
-            Write-Verbose -Verbose "Use the default settings to ensure build works"
+            Write-Verbose "Use the default settings to ensure build works"
             & 'temp:/rustup-init.exe' -y
             $env:PATH += ";$env:USERPROFILE\.cargo\bin"
             Remove-Item temp:/rustup-init.exe -ErrorAction Ignore
@@ -223,8 +313,8 @@ if ($null -ne $packageType) {
             throw "Failed to install Rust"
         }
     }
-    elseif (!$usingADO) {
-        Write-Verbose -Verbose "Rust found, updating..."
+    else  {
+        Write-Verbose "Rust found, updating..."
         & $rustup update
     }
 
@@ -257,7 +347,7 @@ if ($null -ne $packageType) {
     ## Test if Node is installed
     ## Skipping upgrade as users may have a specific version they want to use
     if (!(Get-Command 'node' -ErrorAction Ignore)) {
-        Write-Verbose -Verbose "Node.js not found, installing..."
+        Write-Verbose "Node.js not found, installing..."
         if (!$IsWindows) {
             if (Get-Command 'brew' -ErrorAction Ignore) {
                 brew install node@24
@@ -267,7 +357,7 @@ if ($null -ne $packageType) {
         }
         else {
             if (Get-Command 'winget' -ErrorAction Ignore) {
-                Write-Verbose -Verbose "Using winget to install Node.js"
+                Write-Verbose "Using winget to install Node.js"
                 winget install OpenJS.NodeJS --accept-source-agreements --accept-package-agreements --source winget --silent
             } else {
                 Write-Warning "winget not found, please install Node.js manually"
@@ -294,7 +384,7 @@ if ($null -ne $packageType) {
 
 if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.exe' -ErrorAction Ignore)) {
     if (!(Test-Path $BuildToolsPath)) {
-        Write-Verbose -Verbose "link.exe not found, installing C++ build tools"
+        Write-Verbose "link.exe not found, installing C++ build tools"
         Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile 'temp:/vs_buildtools.exe'
         $arg = @('--passive','--add','Microsoft.VisualStudio.Workload.VCTools','--includerecommended')
         if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
@@ -302,7 +392,7 @@ if (!$SkipBuild -and !$SkipLinkCheck -and $IsWindows -and !(Get-Command 'link.ex
         }
         Start-Process -FilePath 'temp:/vs_buildtools.exe' -ArgumentList $arg -Wait
         Remove-Item temp:/vs_installer.exe -ErrorAction Ignore
-        Write-Verbose -Verbose "Updating env vars"
+        Write-Verbose "Updating env vars"
         $machineEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::Machine).Split(';')
         $userEnv = [environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User).Split(';')
         $pathEnv = ($env:PATH).Split(';')
@@ -423,14 +513,14 @@ if (!$SkipBuild) {
             {
                 if ($Clippy) {
                     if ($clippy_unclean_projects -contains $project) {
-                        Write-Verbose -Verbose "Skipping clippy for $project"
+                        Write-Verbose "Skipping clippy for $project"
                     }
                     elseif ($pedantic_unclean_projects -contains $project) {
-                        Write-Verbose -Verbose "Running clippy for $project"
+                        Write-Verbose "Running clippy for $project"
                         cargo clippy @flags -- -Dwarnings
                     }
                     else {
-                        Write-Verbose -Verbose "Running clippy with pedantic for $project"
+                        Write-Verbose "Running clippy with pedantic for $project"
                         cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
                     }
                 }
@@ -586,7 +676,7 @@ if ($Test) {
 
     foreach ($project in $projects) {
         if ($IsWindows -and $skip_test_projects_on_windows -contains $project) {
-            Write-Verbose -Verbose "Skipping test for $project on Windows"
+            Write-Verbose "Skipping test for $project on Windows"
             continue
         }
 
@@ -685,7 +775,7 @@ if ($packageType -eq 'msixbundle') {
     $isPreview = $productVersion -like '*-*'
     $productName = "DesiredStateConfiguration"
     if ($isPreview) {
-        Write-Verbose -Verbose "Preview version detected"
+        Write-Verbose "Preview version detected"
         if ($isPrivate) {
             $productName += "-Private"
         }
@@ -716,7 +806,7 @@ if ($packageType -eq 'msixbundle') {
         $productVersion += ".0"
     }
 
-    Write-Verbose -Verbose "Product version is $productVersion"
+    Write-Verbose "Product version is $productVersion"
     $arch = if ($architecture -eq 'aarch64-pc-windows-msvc') { 'arm64' } else { 'x64' }
 
     # Appx manifest needs to be in root of source path, but the embedded version needs to be updated
@@ -757,13 +847,13 @@ if ($packageType -eq 'msixbundle') {
         Copy-Item "$PSScriptRoot\packaging\assets\$asset.png" "$msixTarget\assets" -ErrorAction Stop
     }
 
-    Write-Verbose "Creating priconfig.xml" -Verbose
+    Write-Verbose "Creating priconfig.xml"
     & $makepri createconfig /o /cf (Join-Path $msixTarget "priconfig.xml") /dq en-US
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create priconfig.xml"
     }
 
-    Write-Verbose "Creating resources.pri" -Verbose
+    Write-Verbose "Creating resources.pri"
     Push-Location $msixTarget
     & $makepri new /v /o /pr $msixTarget /cf (Join-Path $msixTarget "priconfig.xml")
     Pop-Location
@@ -771,7 +861,7 @@ if ($packageType -eq 'msixbundle') {
         throw "Failed to create resources.pri"
     }
 
-    Write-Verbose "Creating msix package" -Verbose
+    Write-Verbose "Creating msix package"
 
     $targetFolder = Join-Path $PSScriptRoot 'bin' 'msix'
     if (Test-Path $targetFolder) {
@@ -786,7 +876,7 @@ if ($packageType -eq 'msixbundle') {
         throw "Failed to create msix package"
     }
 
-    Write-Host -ForegroundColor Green "`nMSIX package is created at $packageName"
+    Write-Verbose "`nMSIX package is created at $packageName"
 } elseif ($packageType -eq 'zip') {
     $zipTarget = Join-Path $PSScriptRoot 'bin' $architecture 'zip'
     if (Test-Path $zipTarget) {
@@ -840,7 +930,7 @@ if ($packageType -eq 'msixbundle') {
         $architecture
     }
 
-    Write-Verbose -Verbose "Creating tar.gz file"
+    Write-Verbose "Creating tar.gz file"
     $packageName = "DSC-$productVersion-$productArchitecture.tar.gz"
     $tarFile = Join-Path $PSScriptRoot 'bin' $packageName
     tar -czvf $tarFile -C $tgzTarget .
