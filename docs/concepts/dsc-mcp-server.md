@@ -11,8 +11,8 @@ title: Using DSC with Model Context Protocol (MCP) Server
 
 Microsoft's Desired State Configuration (DSC) platform includes a built-in Model Context Protocol
 (MCP) server that enables AI agents and development tools to interact with DSC resources and
-functions through a standardized interface. This integration provides intelligent assistance for
-discovering, invoking, and understanding DSC resources and functions on your system.
+configurations through a standardized interface. This integration provides intelligent assistance  
+for discovering, invoking, and understanding DSC resources and functions on your system.
 
 The DSC MCP server exposes DSC's core functionality to AI agents, enabling them to help you
 discover resources, understand their schemas, and work with DSC functions in an intelligent way.
@@ -32,38 +32,46 @@ Model Context Protocol (MCP) is an open standard that enables AI agents to secur
 external data sources and tools. To learn more about MCP and how it works with AI agents, see
 [Use MCP servers in VS Code][00].
 
-## Available DSC MCP tools
+## How AI agents use DSC MCP tools
 
-The DSC MCP server provides three core tools for AI agents to interact with your DSC environment:
+The DSC MCP server enables AI agents to intelligently assist you by understanding what's
+available in your local DSC environment. Here's how agents use these capabilities to help
+fulfill your requests:
 
-### `list_dsc_resources`
+### Discovering available resources
 
-Lists summary information for all DSC resources available on the local machine, including:
+When you ask an agent to help with system configuration tasks, the agent can discover what DSC
+resources are available on your machine. For example:
 
-- Resource type name and kind
-- Description and capabilities
-- Adapter requirements (for adapted resources)
+- **You ask**: "How can I manage Windows registry settings?"
+- **Agent discovers**: The `Microsoft.Windows/Registry` resource is available
+- **Agent provides**: Specific guidance on using that resource for your registry management
+  needs
 
-You can optionally filter to show only adapted resources that require a specific adapter type.
+This discovery helps agents provide accurate, system-specific recommendations rather than
+generic advice.
 
-### `show_dsc_resource`
+### Understanding resource capabilities
 
-Retrieves detailed information about a specific DSC resource, including:
+When you need to configure something specific, agents can examine the exact properties and
+capabilities of relevant resources. For instance:
 
-- Complete resource metadata (type, version, capabilities, author)
-- Full JSON schema for the resource's properties
-- Resource kind and description
+- **You ask**: "I need to configure a Windows service to start automatically"  
+- **Agent examines**: The `Microsoft.Windows/WindowsService` resource schema
+- **Agent provides**: The exact property names and valid values needed for your configuration
 
-### `list_dsc_functions`
+This ensures the guidance you receive matches what's actually available on your system.
 
-Enumerates all available DSC functions that can be used in configuration expressions, with:
+### Working with DSC functions
 
-- Function names, categories, and descriptions
-- Function metadata and usage information
-- Optional filtering by function name patterns (supports wildcards)
+When you're building configuration expressions, agents can discover what functions are available
+to help solve your specific needs:
 
-These tools provide AI agents with information about your local DSC environment,
-enabling them to provide guidance and assistance when working with DSC configurations.
+- **You ask**: "How do I combine multiple arrays in a DSC configuration?"
+- **Agent discovers**: Functions like `union()`, `intersection()`, and `concat()` are available
+- **Agent provides**: Examples using the appropriate function for your use case
+
+This helps agents suggest the most suitable approach using your available DSC capabilities.
 
 > [!NOTE]
 > Additional MCP tools will become available in future releases to expand the capabilities
