@@ -16,7 +16,7 @@ impl Function for Reference {
         FunctionMetadata {
             name: "reference".to_string(),
             description: t!("functions.reference.description").to_string(),
-            category: FunctionCategory::Resource,
+            category: vec![FunctionCategory::Deployment],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],

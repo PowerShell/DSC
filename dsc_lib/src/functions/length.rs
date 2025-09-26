@@ -16,7 +16,7 @@ impl Function for Length {
         FunctionMetadata {
             name: "length".to_string(),
             description: t!("functions.length.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::String, FunctionCategory::Array, FunctionCategory::Object],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::Array, FunctionArgKind::Object, FunctionArgKind::String]],

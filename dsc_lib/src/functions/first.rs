@@ -16,7 +16,7 @@ impl Function for First {
         FunctionMetadata {
             name: "first".to_string(),
             description: t!("functions.first.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::String, FunctionCategory::Array],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::Array, FunctionArgKind::String]],

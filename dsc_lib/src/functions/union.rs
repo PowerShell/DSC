@@ -16,7 +16,7 @@ impl Function for Union {
         FunctionMetadata {
             name: "union".to_string(),
             description: t!("functions.union.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::Array],
             min_args: 2,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![
