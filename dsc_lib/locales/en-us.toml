@@ -353,6 +353,11 @@ parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
 
+[functions.intersection]
+description = "Returns a single array or object with the common elements from the parameters"
+invoked = "intersection function"
+invalidArgType = "All arguments must either be arrays or objects"
+
 [functions.indexOf]
 description = "Returns the index of the first occurrence of an item in an array"
 invoked = "indexOf function"
