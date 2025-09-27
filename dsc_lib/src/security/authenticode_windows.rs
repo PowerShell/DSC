@@ -2,8 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::dscerror::DscError;
-use crate::security::{add_file_as_checked, is_file_checked};
-use rust_i18n::t;
+use crate::security::{get_file_trust_level, is_file_checked, TrustLevel};
 use std::{
     ffi::OsStr,
     mem::size_of,
@@ -45,9 +44,9 @@ use windows_result::HRESULT;
 /// * `Ok(())` if the file is signed and the signature is valid.
 /// * `Err(DscError)` if the file is not signed or the signature is invalid
 ///
-pub fn check_authenticode(file_path: &Path) -> Result<(), DscError> {
+pub fn check_authenticode(file_path: &Path) -> Result<TrustLevel, DscError> {
     if is_file_checked(file_path) {
-        return Ok(());
+        return Ok(get_file_trust_level(file_path));
     }
 
     let wintrust_file_info = WINTRUST_FILE_INFO {
@@ -97,17 +96,16 @@ pub fn check_authenticode(file_path: &Path) -> Result<(), DscError> {
         (&raw const wintrust_data).cast_mut(),
     ) };
 
-    add_file_as_checked(file_path);
-
-    if hresult.is_ok() {
-        Ok(())
+    let trust_level = if hresult.is_ok() {
+        TrustLevel::Trusted
     } else {
         match hresult {
-            TRUST_E_NOSIGNATURE => Err(DscError::AuthenticodeError(t!("security.authenticode.fileNotSigned", file = file_path.display()).to_string())),
-            TRUST_E_EXPLICIT_DISTRUST => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureExplicitlyDistrusted", file = file_path.display()).to_string())),
-            TRUST_E_SUBJECT_NOT_TRUSTED => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureNotTrusted", file = file_path.display()).to_string())),
-            CRYPT_E_SECURITY_SETTINGS => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureDoesNotMeetSecuritySettings", file = file_path.display()).to_string())),
-            _ => Err(DscError::AuthenticodeError(t!("security.authenticode.signatureCouldNotBeVerified", file = file_path.display(), hresult = hresult.0 : {:x}).to_string())),
+            TRUST_E_NOSIGNATURE => TrustLevel::Unsigned,
+            TRUST_E_EXPLICIT_DISTRUST => TrustLevel::ExplicitlyDistrusted,
+            TRUST_E_SUBJECT_NOT_TRUSTED => TrustLevel::Untrusted,
+            CRYPT_E_SECURITY_SETTINGS => TrustLevel::NotMeetSecuritySettings,
+            _ => TrustLevel::CannotBeVerified,
         }
-    }
+    };
+    Ok(trust_level)
 }

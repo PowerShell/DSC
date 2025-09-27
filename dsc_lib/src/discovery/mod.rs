@@ -12,7 +12,7 @@ use core::result::Result::Ok;
 use semver::{Version, VersionReq};
 use std::{collections::BTreeMap, path::Path};
 use command_discovery::{CommandDiscovery, ImportedManifest};
-use tracing::{error, warn};
+use tracing::error;
 
 #[derive(Clone)]
 pub struct Discovery {
@@ -123,8 +123,8 @@ impl Discovery {
         };
 
         if let Some(found_resource) = &resource {
-            if let Err(err) = check_file_security(Path::new(&found_resource.path)) {
-                warn!("{err}");
+            if check_file_security(Path::new(&found_resource.path)).is_err() {
+                return None;
             }
         }
 

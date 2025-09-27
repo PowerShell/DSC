@@ -598,9 +598,7 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     const INITIAL_BUFFER_CAPACITY: usize = 1024*1024;
 
     let exe = which(executable)?;
-    if let Err(err) = check_file_security(&exe) {
-        warn!("{err}");
-    }
+    check_file_security(&exe)?;
 
     let mut command = Command::new(executable);
     if input.is_some() {

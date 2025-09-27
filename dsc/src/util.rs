@@ -463,7 +463,8 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
             }
         } else {
             if let Err(err) = check_file_security(Path::new(path)) {
-                warn!("{err}");
+                error!("{}", t!("util.failedToCheckFileSecurity", path = path, error = err));
+                exit(EXIT_INVALID_INPUT);
             }
 
             // see if an extension should handle this file
