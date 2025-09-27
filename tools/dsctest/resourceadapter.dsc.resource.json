@@ -1,0 +1,96 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/Adapter",
+    "version": "0.1.0",
+    "kind": "adapter",
+    "adapter": {
+        "list": {
+            "executable": "dsctest",
+            "args": [
+                "adapter",
+                "--operation",
+                "list",
+                "--input",
+                "{}",
+                "--resource-type",
+                "none"
+            ]
+        },
+        "inputKind": "single"
+    },
+    "get": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "set": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "test": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "test",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "export": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "validate": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "validate",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    }
+}

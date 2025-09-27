@@ -195,6 +195,9 @@ resourceImplementsValidate = "Resource implements validation"
 resourceValidationFailed = "Resource failed validation"
 validatingSchema = "Validating against schema"
 validationFailed = "Failed validation"
+adapterResourceNotFound = "Adapter resource '%{adapter}' not found"
+adapterManifestNotFound = "Adapter manifest for '%{adapter}' not found"
+adapterDoesNotSupportDelete = "Adapter '%{adapter}' does not support delete operation"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
