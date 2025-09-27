@@ -2,6 +2,15 @@
 # Licensed under the MIT License.
 
 Describe 'Expressions tests' {
+
+  BeforeAll {
+      $env:DSC_TRACE_LEVEL = 'error'
+  }
+
+  AfterAll {
+      $env:DSC_TRACE_LEVEL = $null
+  }
+
   It 'Accessors work: <text>' -TestCases @(
     @{ text = "[parameters('test').hello]"; expected = '@{world=there}' }
     @{ text = "[parameters('test').hello.world]"; expected = 'there' }

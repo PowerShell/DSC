@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'tests for metadata versioning' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'returns the correct dsc semantic version in metadata' {
         $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json

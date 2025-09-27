@@ -8,6 +8,7 @@ Describe 'WMI adapter resource tests' {
         {
             $OldPSModulePath  = $env:PSModulePath
             $env:PSModulePath += ";" + $PSScriptRoot
+            $env:DSC_TRACE_LEVEL = 'error'
 
             $configPath = Join-path $PSScriptRoot "test_wmi_config.dsc.yaml"
         }
@@ -16,6 +17,7 @@ Describe 'WMI adapter resource tests' {
         if ($IsWindows)
         {
             $env:PSModulePath = $OldPSModulePath
+            $env:DSC_TRACE_LEVEL = $null
         }
     }
 

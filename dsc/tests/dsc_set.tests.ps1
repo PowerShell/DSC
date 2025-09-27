@@ -3,6 +3,7 @@
 
 Describe 'resource set tests' {
     BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
         $manifest = @'
         {
             "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
@@ -51,6 +52,10 @@ Describe 'resource set tests' {
 '@
 
         Set-Content -Path "$TestDrive/SetNoTest.dsc.resource.json" -Value $manifest
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     BeforeEach {

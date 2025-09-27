@@ -10,6 +10,14 @@ BeforeDiscovery {
 }
 
 Describe 'Tests for listing resources' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'dsc resource list' {
         $resources = dsc resource list | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0

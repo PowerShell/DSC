@@ -20,6 +20,7 @@ pub mod parser;
 pub mod progress;
 pub mod util;
 pub mod schemas;
+pub mod security;
 
 i18n!("locales", fallback = "en-us");
 

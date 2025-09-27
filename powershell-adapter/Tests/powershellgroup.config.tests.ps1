@@ -7,6 +7,7 @@ Describe 'PowerShell adapter resource tests' {
     $OldPSModulePath = $env:PSModulePath
     $env:PSModulePath += [System.IO.Path]::PathSeparator + $PSScriptRoot
     $pwshConfigPath = Join-path $PSScriptRoot "class_ps_resources.dsc.yaml"
+    $env:DSC_TRACE_LEVEL = 'error'
 
     if ($IsLinux -or $IsMacOS) {
       $cacheFilePath = Join-Path $env:HOME ".dsc" "PSAdapterCache.json"
@@ -17,6 +18,7 @@ Describe 'PowerShell adapter resource tests' {
   }
 
   AfterAll {
+    $env:DSC_TRACE_LEVEL = $null
     $env:PSModulePath = $OldPSModulePath
   }
 

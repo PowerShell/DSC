@@ -11,6 +11,7 @@ Describe 'Tests for MCP server' {
         $processStartInfo.RedirectStandardOutput = $true
         $processStartInfo.RedirectStandardInput = $true
         $mcp = [System.Diagnostics.Process]::Start($processStartInfo)
+        $env:DSC_TRACE_LEVEL = 'error'
 
         function Send-McpRequest($request, [switch]$notify) {
             $request = $request | ConvertTo-Json -Compress -Depth 10
@@ -27,6 +28,7 @@ Describe 'Tests for MCP server' {
     }
 
     AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
         $mcp.StandardInput.Close()
         $mcp.WaitForExit()
     }
