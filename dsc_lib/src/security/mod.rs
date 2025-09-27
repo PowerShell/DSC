@@ -4,13 +4,15 @@
 #[cfg(windows)]
 use authenticode_windows::check_authenticode;
 use rust_i18n::t;
+#[cfg(windows)]
+use std::collections::HashMap;
 use std::{
-    collections::HashMap,
     fmt::Display,
     path::Path,
 };
 #[cfg(windows)]
 use std::sync::LazyLock;
+#[cfg(windows)]
 use tracing::warn;
 
 use crate::dscerror::DscError;
