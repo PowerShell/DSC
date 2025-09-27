@@ -16,7 +16,7 @@ impl Function for Intersection {
         FunctionMetadata {
             name: "intersection".to_string(),
             description: t!("functions.intersection.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::Array, FunctionCategory::Object],
             min_args: 2,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![
