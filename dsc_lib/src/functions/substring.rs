@@ -193,9 +193,6 @@ mod tests {
         assert!(result.is_err());
     }
 
-    // Type validation tests are removed as they are now handled at the system level
-    // The system automatically rejects invalid argument types based on accepted_arg_ordered_types
-
     #[test]
     fn substring_empty_string() {
         let mut parser = Statement::new().unwrap();
