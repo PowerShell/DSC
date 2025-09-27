@@ -16,7 +16,7 @@ impl Function for GreaterOrEquals {
         FunctionMetadata {
             name: "greaterOrEquals".to_string(),
             description: t!("functions.greaterOrEquals.description").to_string(),
-            category: FunctionCategory::Comparison,
+            category: vec![FunctionCategory::Comparison],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![

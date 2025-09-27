@@ -16,7 +16,7 @@ impl Function for Array {
         FunctionMetadata {
             name: "array".to_string(),
             description: t!("functions.array.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::Array],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![

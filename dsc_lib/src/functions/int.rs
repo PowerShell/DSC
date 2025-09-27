@@ -17,7 +17,7 @@ impl Function for Int {
         FunctionMetadata {
             name: "int".to_string(),
             description: t!("functions.int.description").to_string(),
-            category: FunctionCategory::Numeric,
+            category: vec![FunctionCategory::Numeric],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String, FunctionArgKind::Number]],
