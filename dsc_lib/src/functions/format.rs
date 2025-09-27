@@ -87,7 +87,7 @@ impl Function for Format {
         FunctionMetadata {
             name: "format".to_string(),
             description: t!("functions.format.description").to_string(),
-            category: FunctionCategory::String,
+            category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],

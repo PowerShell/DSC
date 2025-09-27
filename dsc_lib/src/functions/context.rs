@@ -23,7 +23,7 @@ impl Function for Context {
         FunctionMetadata {
             name: "context".to_string(),
             description: t!("functions.context.description").to_string(),
-            category: FunctionCategory::System,
+            category: vec![FunctionCategory::Deployment],
             min_args: 0,
             max_args: 0,
             accepted_arg_ordered_types: vec![],

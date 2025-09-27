@@ -16,7 +16,7 @@ impl Function for Contains {
         FunctionMetadata {
             name: "contains".to_string(),
             description: t!("functions.contains.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::String, FunctionCategory::Array],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![

@@ -16,7 +16,7 @@ impl Function for CreateObject {
         FunctionMetadata {
             name: "createObject".to_string(),
             description: t!("functions.createObject.description").to_string(),
-            category: FunctionCategory::Object,
+            category: vec![FunctionCategory::Object],
             min_args: 0,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![],
