@@ -109,6 +109,6 @@ pub fn check_file_security(file_path: &Path) -> Result<TrustLevel, DscError> {
 /// # Errors
 /// This function does not return any errors on non-Windows platforms.
 #[cfg(not(windows))]
-pub fn check_file_security(_file_path: &Path) -> Result<(), DscError> {
-    Ok(())
+pub fn check_file_security(_file_path: &Path) -> Result<TrustLevel, DscError> {
+    Ok(TrustLevel::Unknown)
 }
