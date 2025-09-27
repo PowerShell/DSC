@@ -666,4 +666,55 @@ Describe 'tests for function expressions' {
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match ([regex]::Escape($expectedError))
   }
+
+  It 'substring function works for: <expression>' -TestCases @(
+    @{ expression = "[substring('hello world', 6, 5)]"; expected = 'world' }
+    @{ expression = "[substring('hello', 0, 2)]"; expected = 'he' }
+    @{ expression = "[substring('hello', 1, 3)]"; expected = 'ell' }
+    @{ expression = "[substring('hello', 2)]"; expected = 'llo' }
+    @{ expression = "[substring('hello', 0)]"; expected = 'hello' }
+    @{ expression = "[substring('hello', 5)]"; expected = '' }
+    @{ expression = "[substring('hello', 1, 1)]"; expected = 'e' }
+    @{ expression = "[substring('hello', 5, 0)]"; expected = '' }
+    @{ expression = "[substring('', 0)]"; expected = '' }
+    @{ expression = "[substring('', 0, 0)]"; expected = '' }
+    @{ expression = "[substring('héllo', 1, 2)]"; expected = 'él' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  # type validation is done on system-level
+  It 'substring function error handling: <expression>' -TestCases @(
+    @{ expression = '[substring("hello", -1, 2)]'; expectedError = 'Start index cannot be negative' }
+    @{ expression = '[substring("hello", 1, -1)]'; expectedError = 'Length cannot be negative' }
+    @{ expression = '[substring("hello", 10, 1)]'; expectedError = 'Start index is beyond the end of the string' }
+    @{ expression = '[substring("hello", 2, 10)]'; expectedError = 'Length extends beyond the end of the string' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match ([regex]::Escape($expectedError))
+  }
 }
