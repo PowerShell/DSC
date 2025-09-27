@@ -18,7 +18,6 @@ String parameter not in quotes
         (function
           (functionName)
           (ERROR
-            (functionName)
             (functionName)))))
 
 =====
@@ -79,8 +78,6 @@ String starting with bracket
 ---
 
     (ERROR
-      (ERROR
-        (functionName))
       (functionName))
 
 =====
@@ -179,8 +176,7 @@ Expression with member accessor outside
           (functionName)
           (arguments
             (number))))
-      (ERROR
-        (functionName)))
+      (ERROR))
 
 =====
 Expression with index accessor outside
@@ -209,6 +205,4 @@ String with un-escaped single-quote
           (functionName)
           (arguments
             (string))
-          (ERROR
-            (functionName)
-            (functionName)))))
+          (ERROR))))

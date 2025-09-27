@@ -1,6 +1,8 @@
 const PREC = {
   ESCAPEDSTRING: 2,
   EXPRESSIONSTRING: 1,
+  FUNCTION: 1,
+  BOOLEAN: 0,
   STRINGLITERAL: -11,
 }
 
@@ -20,8 +22,11 @@ module.exports = grammar({
     expression: $ => seq(field('function', $.function), optional(field('accessor',$.accessor))),
     stringLiteral: $ => token(prec(PREC.STRINGLITERAL, /[^\[](.|\n)*?/)),
 
-    function: $ => seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')'),
-    functionName: $ => /[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)?/,
+    function: $ => prec(PREC.FUNCTION, seq(field('name', $.functionName), '(', field('args', optional($.arguments)), ')')),
+    functionName: $ => choice(
+      /[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)?/,
+      $._booleanLiteral
+    ),
     arguments: $ => seq($._argument, repeat(seq(',', $._argument))),
     _argument: $ => choice($.expression, $._quotedString, $.number, $.boolean),
 
@@ -29,7 +34,8 @@ module.exports = grammar({
     // ARM strings are not allowed to contain single-quote characters unless escaped
     string: $ => /([^']|''|\n)*/,
     number: $ => /-?\d+/,
-    boolean: $ => choice('true', 'false'),
+    boolean: $ => prec(PREC.BOOLEAN, $._booleanLiteral),
+    _booleanLiteral: $ => choice('true', 'false'),
 
     accessor: $ => repeat1(choice($.memberAccess, $.index)),
 

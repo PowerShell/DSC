@@ -34,7 +34,7 @@ Simple expression
 =====
 Multiple arguments
 =====
-[myFunction('argString', 1, -1, true)]
+[myFunction('argString', 1, -1, true, false)]
 ---
 
 (statement
@@ -45,6 +45,7 @@ Multiple arguments
         (string)
         (number)
         (number)
+        (boolean)
         (boolean)))))
 
 =====
@@ -335,3 +336,19 @@ User Function
       (arguments
         (number)
         (number)))))
+
+=====
+User Function with nested function
+=====
+[Environment.getEnvironmentConfig(true(), false)]
+---
+
+(statement
+      (expression
+        (function
+          (functionName)
+          (arguments
+            (expression
+              (function
+                (functionName)))
+            (boolean)))))
