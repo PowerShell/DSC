@@ -16,7 +16,7 @@ impl Function for Range {
         FunctionMetadata {
             name: "range".to_string(),
             description: t!("functions.range.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::Array],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
@@ -48,7 +48,7 @@ impl Function for Range {
 
         // should not exceed
         if let Some(sum) = start_index.checked_add(count) {
-            if sum > 2147483647 {
+            if sum > 2_147_483_647 {
                 return Err(DscError::FunctionArg("range".to_string(), t!("functions.range.sumTooLarge").to_string()));
             }
         } else {
