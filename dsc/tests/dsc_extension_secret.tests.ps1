@@ -144,11 +144,12 @@ Describe 'Tests for the secret() function and extensions' {
             type: Microsoft.DSC.Debug/Echo
             properties:
               output: "[parameters('myString')]"
+              showSecrets: true
 '@
       $out = dsc -l trace config get -i $configYaml 2> $TestDrive/error.log | ConvertFrom-Json
       $LASTEXITCODE | Should -Be 0
       $out.results.Count | Should -Be 1
-      $out.results[0].result.actualState.Output | Should -BeExactly 'Hello'
+      $out.results[0].result.actualState.Output.secureString | Should -BeExactly 'Hello'
     }
 
     It 'Allows to pass in secret() through variables' {

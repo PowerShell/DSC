@@ -7,6 +7,7 @@ use tracing::{debug, trace};
 use tree_sitter::Node;
 
 use crate::configure::context::Context;
+use crate::configure::parameters::is_secure_value;
 use crate::dscerror::DscError;
 use crate::functions::FunctionDispatcher;
 use crate::parser::functions::Function;
@@ -113,10 +114,11 @@ impl Expression {
     /// This function will return an error if the expression fails to execute.
     pub fn invoke(&self, function_dispatcher: &FunctionDispatcher, context: &Context) -> Result<Value, DscError> {
         let result = self.function.invoke(function_dispatcher, context)?;
-        // skip trace if function is 'secret()'
-        if self.function.name() != "secret" {
+        if self.function.name() != "secret" && !is_secure_value(&result) {
             let result_json = serde_json::to_string(&result)?;
             trace!("{}", t!("parser.expression.functionResult", results = result_json));
+        } else {
+            trace!("{}", t!("parser.expression.functionResultSecure"));
         }
         if self.accessors.is_empty() {
             Ok(result)
@@ -124,6 +126,18 @@ impl Expression {
         else {
             debug!("{}", t!("parser.expression.evalAccessors"));
             let mut value = result;
+            let is_secure = is_secure_value(&value);
+            if is_secure {
+                // if a SecureString, extract the string value
+                if let Some(string) = value.get("secureString") {
+                    if let Some(s) = string.as_str() {
+                        value = Value::String(s.to_string());
+                    }
+                } else if let Some(obj) = value.get("secureObject") {
+                    // if a SecureObject, extract the object value
+                    value = obj.clone();
+                }
+            }
             for accessor in &self.accessors {
                 let mut index = Value::Null;
                 match accessor {
@@ -132,13 +146,21 @@ impl Expression {
                             if !object.contains_key(member) {
                                 return Err(DscError::Parser(t!("parser.expression.memberNameNotFound", member = member).to_string()));
                             }
-                            value = object[member].clone();
+                            if is_secure {
+                                value = convert_to_secure(&object[member]);
+                            } else {
+                                value = object[member].clone();
+                            }
                         } else {
                             return Err(DscError::Parser(t!("parser.expression.accessOnNonObject").to_string()));
                         }
                     },
                     Accessor::Index(index_value) => {
-                        index = index_value.clone();
+                        if is_secure {
+                            index = convert_to_secure(index_value);
+                        } else {
+                            index = index_value.clone();
+                        }
                     },
                     Accessor::IndexExpression(expression) => {
                         index = expression.invoke(function_dispatcher, context)?;
@@ -155,7 +177,11 @@ impl Expression {
                         if index >= array.len() {
                             return Err(DscError::Parser(t!("parser.expression.indexOutOfBounds").to_string()));
                         }
-                        value = array[index].clone();
+                        if is_secure {
+                            value = convert_to_secure(&array[index]);
+                        } else {
+                            value = array[index].clone();
+                        }
                     } else {
                         return Err(DscError::Parser(t!("parser.expression.indexOnNonArray").to_string()));
                     }
@@ -168,4 +194,35 @@ impl Expression {
             Ok(value)
         }
     }
+}
+
+/// Convert a JSON value to a secure value if it is a string or an array of strings.
+///
+/// Arguments
+///
+/// * `value` - The JSON value to convert.
+///
+/// Returns
+///
+/// The converted JSON value.
+fn convert_to_secure(value: &Value) -> Value {
+    if let Some(string) = value.as_str() {
+        let secure_string = crate::configure::parameters::SecureString {
+            secure_string: string.to_string(),
+        };
+        return serde_json::to_value(secure_string).unwrap_or(value.clone());
+    }
+
+    if let Some(obj) = value.as_object() {
+        let secure_object = crate::configure::parameters::SecureObject {
+            secure_object: serde_json::Value::Object(obj.clone()),
+        };
+        return serde_json::to_value(secure_object).unwrap_or(value.clone());
+    }
+
+    if let Some(array) = value.as_array() {
+        let new_array: Vec<Value> = array.iter().map(convert_to_secure).collect();
+        return Value::Array(new_array);
+    }
+    value.clone()
 }

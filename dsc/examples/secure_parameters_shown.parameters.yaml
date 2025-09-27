@@ -5,3 +5,4 @@ parameters:
     myArray:
       - item1
       - item2
+  showSecrets: true
