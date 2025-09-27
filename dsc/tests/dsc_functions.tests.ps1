@@ -622,4 +622,48 @@ Describe 'tests for function expressions' {
     $context.os.architecture | Should -BeExactly $os.architecture
     $context.security | Should -BeExactly $out.metadata.'Microsoft.DSC'.securityContext
   }
+
+  It 'range function works: <expression>' -TestCases @(
+    @{ expression = '[range(1, 3)]'; expected = @(1, 2, 3) }
+    @{ expression = '[range(0, 5)]'; expected = @(0, 1, 2, 3, 4) }
+    @{ expression = '[range(-2, 4)]'; expected = @(-2, -1, 0, 1) }
+    @{ expression = '[range(10, 0)]'; expected = @() }
+    @{ expression = '[range(100, 3)]'; expected = @(100, 101, 102) }
+    @{ expression = '[first(range(2147473647, 10000))]'; expected = 2147473647 }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
+  It 'range function handles errors correctly: <expression>' -TestCases @(
+    @{ expression = '[range(1, -1)]'; expectedError = 'Count must be non-negative' }
+    @{ expression = '[range(1, 10001)]'; expectedError = 'Count must not exceed 10000' }
+    @{ expression = '[range(2147483647, 1)]'; expectedError = 'Sum of startIndex and count must not exceed 2147483647' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match ([regex]::Escape($expectedError))
+  }
 }

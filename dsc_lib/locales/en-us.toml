@@ -434,6 +434,16 @@ description = "Concatenates multiple strings into a file path"
 traceArgs = "Executing path function with args: %{args}"
 argsMustBeStrings = "Arguments must all be strings"
 
+[functions.range]
+description = "Creates an array of integers from a starting integer and containing a number of items"
+invoked = "range function"
+startIndexNotInt = "Start index must be an integer"
+countNotInt = "Count must be an integer"
+countNegative = "Count must be non-negative"
+countTooLarge = "Count must not exceed 10000"
+sumTooLarge = "Sum of startIndex and count must not exceed 2147483647"
+sumOverflow = "Sum of startIndex and count causes overflow"
+
 [functions.reference]
 description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
