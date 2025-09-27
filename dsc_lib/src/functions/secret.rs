@@ -18,7 +18,7 @@ impl Function for Secret {
         FunctionMetadata {
             name: "secret".to_string(),
             description: t!("functions.secret.description").to_string(),
-            category: FunctionCategory::System,
+            category: vec![FunctionCategory::Deployment],
             min_args: 1,
             max_args: 2,
             accepted_arg_ordered_types: vec![

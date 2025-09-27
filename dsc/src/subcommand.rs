@@ -718,7 +718,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
             };
 
             table.add_row(vec![
-                function.category.to_string(),
+                function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
                 function.name,
                 function.min_args.to_string(),
                 max_args,

@@ -20,7 +20,7 @@ impl Function for Path {
         FunctionMetadata {
             name: "path".to_string(),
             description: t!("functions.path.description").to_string(),
-            category: FunctionCategory::System,
+            category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![

@@ -93,7 +93,7 @@ impl Display for FunctionArgKind {
 pub struct FunctionMetadata {
     pub name: String,
     pub description: String,
-    pub category: FunctionCategory,
+    pub category: Vec<FunctionCategory>,
     pub min_args: usize,
     pub max_args: usize,
     pub accepted_arg_ordered_types: Vec<Vec<FunctionArgKind>>,
@@ -267,7 +267,7 @@ impl FunctionDispatcher {
         self.functions.iter().map(|(name, function)| {
             let metadata = function.get_metadata();
             FunctionDefinition {
-                category: metadata.category,
+                category: metadata.category.clone(),
                 name: name.clone(),
                 description: metadata.description,
                 min_args: metadata.min_args,
@@ -289,7 +289,7 @@ impl Default for FunctionDispatcher {
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FunctionDefinition {
-    pub category: FunctionCategory,
+    pub category: Vec<FunctionCategory>,
     pub name: String,
     pub description: String,
     #[serde(rename = "minArgs")]
