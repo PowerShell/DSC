@@ -43,7 +43,12 @@ impl Function for Substring {
             ));
         }
 
-        let start_index = start_index_value as usize;
+        let start_index = usize::try_from(start_index_value).map_err(|_| {
+            DscError::FunctionArg(
+                "substring".to_string(),
+                t!("functions.substring.startIndexValueTooLarge").to_string(),
+            )
+        })?;
         let string_length = string_to_parse.chars().count();
 
         if start_index > string_length {
@@ -65,7 +70,12 @@ impl Function for Substring {
                 ));
             }
 
-            let length = length_value as usize;
+            let length = usize::try_from(length_value).map_err(|_| {
+                DscError::FunctionArg(
+                    "substring".to_string(),
+                    t!("functions.substring.lengthValueTooLarge").to_string(),
+                )
+            })?;
 
             if start_index + length > string_length {
                 return Err(DscError::FunctionArg(
@@ -220,3 +230,4 @@ mod tests {
         assert_eq!(result, Value::String("".to_string()));
     }
 }
+

@@ -483,9 +483,11 @@ description = "Converts a value to a string"
 description = "Returns a substring that starts at the specified character position and contains the specified number of characters"
 invoked = "substring function"
 startIndexNegative = "Start index cannot be negative"
-lengthNegative = "Length cannot be negative"
 startIndexTooLarge = "Start index is beyond the end of the string"
+startIndexValueTooLarge = "Start index value too large"
+lengthNegative = "Length cannot be negative"
 lengthTooLarge = "Length extends beyond the end of the string"
+lengthValueTooLarge = "Length value too large"
 
 [functions.sub]
 description = "Subtracts the second number from the first"
