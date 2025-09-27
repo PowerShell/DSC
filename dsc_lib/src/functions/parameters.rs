@@ -18,7 +18,7 @@ impl Function for Parameters {
         FunctionMetadata {
             name: "parameters".to_string(),
             description: t!("functions.parameters.description").to_string(),
-            category: FunctionCategory::Deployment,
+            category: vec![FunctionCategory::Deployment],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],

@@ -16,7 +16,7 @@ impl Function for Add {
         FunctionMetadata {
             name: "add".to_string(),
             description: t!("functions.add.description").to_string(),
-            category: FunctionCategory::Numeric,
+            category: vec![FunctionCategory::Numeric],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![

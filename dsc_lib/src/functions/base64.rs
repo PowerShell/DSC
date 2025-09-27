@@ -18,7 +18,7 @@ impl Function for Base64 {
         FunctionMetadata {
             name: "base64".to_string(),
             description: t!("functions.base64.description").to_string(),
-            category: FunctionCategory::String,
+            category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
