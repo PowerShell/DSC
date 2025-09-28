@@ -695,23 +695,21 @@ Describe 'tests for function expressions' {
     $out.results[0].result.actualState.output | Should -Be $expected
   }
 
-  # type validation is done on system-level
   It 'substring function error handling: <expression>' -TestCases @(
-    @{ expression = '[substring("hello", -1, 2)]'; expectedError = 'Start index cannot be negative' }
-    @{ expression = '[substring("hello", 1, -1)]'; expectedError = 'Length cannot be negative' }
-    @{ expression = '[substring("hello", 10, 1)]'; expectedError = 'Start index is beyond the end of the string' }
-    @{ expression = '[substring("hello", 2, 10)]'; expectedError = 'Length extends beyond the end of the string' }
+    @{ expression = "[substring('hello', -1, 2)]"; expectedError = 'Start index cannot be negative' }
+    @{ expression = "[substring('hello', 1, -1)]"; expectedError = 'Length cannot be negative' }
+    @{ expression = "[substring('hello', 10, 1)]"; expectedError = 'Start index is beyond the end of the string' }
+    @{ expression = "[substring('hello', 2, 10)]"; expectedError = 'Length extends beyond the end of the string' }
   ) {
     param($expression, $expectedError)
 
-    $escapedExpression = $expression -replace "'", "''"
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: '$escapedExpression'
+                output: `"$expression`"
 "@
     $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
     $LASTEXITCODE | Should -Not -Be 0
