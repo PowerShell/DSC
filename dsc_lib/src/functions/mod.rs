@@ -60,6 +60,7 @@ pub mod skip;
 pub mod starts_with;
 pub mod string;
 pub mod sub;
+pub mod substring;
 pub mod system_root;
 pub mod r#true;
 pub mod union;
@@ -177,6 +178,7 @@ impl FunctionDispatcher {
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
+            Box::new(substring::Substring{}),
             Box::new(system_root::SystemRoot{}),
             Box::new(r#true::True{}),
             Box::new(utc_now::UtcNow{}),
