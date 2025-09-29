@@ -2,14 +2,15 @@
 # Licensed under the MIT License.
 
 # Example configuration mixing native app resources with classic PS resources
+# The example assumes you have a DSC resource module named TestFileDscResource and PowerShellGet v2.2.5 installed in C:\Program Files\WindowsPowerShell\Modules
 $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
 resources:
 - name: Get info from classic DSC resources
-  type: Microsoft.DSC/PowerShell
+  type: Microsoft.Windows/WindowsPowerShell
   properties:
     resources:
     - name: Get PS Repository Info
-      type: PowerShellGet/MSFT_PSRepository
+      type: PowerShellGet/PSRepository
       properties:
         Name: PSGallery
     - name: Check File
