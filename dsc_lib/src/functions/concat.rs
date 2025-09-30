@@ -16,7 +16,7 @@ impl Function for Concat {
         FunctionMetadata {
             name: "concat".to_string(),
             description: t!("functions.concat.description").to_string(),
-            category: vec![FunctionCategory::String, FunctionCategory::Array],
+            category: vec![FunctionCategory::Array, FunctionCategory::String],
             min_args: 2,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![
