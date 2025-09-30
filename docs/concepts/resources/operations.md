@@ -67,7 +67,8 @@ DSC invokes the **Delete** operation when you use the following commands:
 The **Export** operation retrieves the actual state for every instance of the resource on a system.
 The result is a configuration document that includes the exported instances.
 
-This operation is only available for resources with the [export capability][05].
+If a resource doesn't have the [`export` capability][05], DSC synthetically exports the resource.
+For more information, see [Synthetic export][06].
 
 DSC invokes the **Export** operation when you use the following commands:
 
@@ -83,7 +84,7 @@ DSC invokes the **Export** operation when you use the following commands:
 The **List** operation retrieves the available adapted resources for a specific DSC adapter
 resource.
 
-This operation is only available for [adapter resources][06].
+This operation is only available for [adapter resources][07].
 
 ## Validate operation
 
@@ -101,15 +102,15 @@ invoke an adapted resource.
 The **Resolve** operation processes an importer resource instance to return a configuration
 document.
 
-This operation is only available for resources with the [resolve capability][07]. This operation
-is primarily useful for [importer resources][08].
+This operation is only available for resources with the [resolve capability][08]. This operation
+is primarily useful for [importer resources][09].
 
 ## See also
 
-- [DSC resource capabilities][09]
-- [DSC resource kinds][10]
-- [DSC resource properties][11]
-- [DSC command reference][12]
+- [DSC resource capabilities][10]
+- [DSC resource kinds][11]
+- [DSC resource properties][12]
+- [DSC command reference][13]
 
 <!-- Link reference definitions -->
 [01]: ./capabilities.md#get
@@ -117,10 +118,11 @@ is primarily useful for [importer resources][08].
 [03]: ./capabilities.md#set
 [04]: ./capabilities.md#delete
 [05]: ./capabilities.md#export
-[06]: ./kinds.md#adapter-resources
-[07]: ./capabilities.md#resolve
-[08]: ./kinds.md#importer-resources
-[09]: ./capabilities.md
-[10]: ./kinds.md
-[11]: ./properties.md
-[12]: ../../reference/cli/index.md
+[06]: ./capabilities.md#synthetic-export
+[07]: ./kinds.md#adapter-resources
+[08]: ./capabilities.md#resolve
+[09]: ./kinds.md#importer-resources
+[10]: ./capabilities.md
+[11]: ./kinds.md
+[12]: ./properties.md
+[13]: ../../reference/cli/index.md
