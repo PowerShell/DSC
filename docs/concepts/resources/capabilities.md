@@ -76,7 +76,7 @@ resource. DSC performs the synthetic test by:
 1. Invoking the **Get** operation on the resource to retrieve the actual state of the instance.
 1. Synthetically testing each property for the desired state of an instance against the actual
    state returned. The synthetic test:
-   
+
    - Uses strict, case-sensitive equivalence for strings.
    - Uses simple equivalence for numerical, boolean, and null values.
    - For arrays, item order doesn't matter. Arrays are considered equivalent if both the desired
@@ -134,32 +134,59 @@ manifest.
 A resource with the `export` capability supports enumerating every instance of the resource with
 the **Export** operation.
 
-You can use resources with this capability with the following commands:
+You can use resources with the `export` capability with the following commands:
 
-- [dsc config export][15] to return a configuration document
-  representing the actual state for every instance of each resource defined in the input document.
-- [dsc resource export][16] to return a configuration document
-  representing the actual state for every instance of the input resource.
-- `dsc resource get` with the [--all][17] option to return
-  the actual state of every instance of the input resource.
+- [dsc config export][15] to return a configuration document representing the actual state for
+  every instance of each resource defined in the input document.
+- [dsc resource export][16] to return a configuration document representing the actual state for
+  every instance of the input resource.
+- `dsc resource get` with the [--all][17] option to return the actual state of every instance of
+  the input resource.
 
 A command resource has this capability when it defines the [export][18] property in its resource
 manifest.
 
+### Synthetic export
+
+When a resource doesn't have the `export` capability, DSC uses a synthetic export for instances of
+the resource. DSC performs the synthetic export by:
+
+1. Invoking the **Get** operation on the resource to retrieve the actual state of the instance.
+
+   Unlike non-synthetic export operations, users _must_ provide a filter for the resource if the
+   resource instance JSON schema defines any [required properties][19].
+1. Exporting an instance of the resource with:
+
+   - The `properties` field populated by the actual state returned by the **Get** operation.
+   - The `name` field populated by a string with the format `<short-type-name>-0`. The
+     `<short-type-name>` is the last segment of the resource type name, like `Registry` for
+     `Microsoft.Windows/Registry`.
+
+Synthetic export only ever returns a single instance and always requires a filtering instance. You
+can use resources that rely on synthetic exporting with the following commands:
+
+- [dsc config export][15] to return a configuration document representing the actual state for
+  every instance of each resource defined in the input document. For resources that rely on
+  synthetic export, you _must_ define a filtering instance in the input document. The resource
+  can only export a single instance per filtering instance.
+- [dsc resource export][16] to return a configuration document representing the actual state for
+  the required filtering instance. If you invoke this command without providing a filtering
+  instance, the operation fails.
+
 ## resolve
 
 A resource with the `resolve` capability supports resolving nested resource instances from an
-external source. This capability is primarily used by [importer resources][19] to enable users to
+external source. This capability is primarily used by [importer resources][20] to enable users to
 compose configuration documents.
 
-A command resource has this capability when it defines the [resolve][20] property in its resource
+A command resource has this capability when it defines the [resolve][21] property in its resource
 manifest.
 
 ## See also
 
-- [DSC resource operations][21]
-- [DSC resource kinds][22]
-- [DSC resource properties][23]
+- [DSC resource operations][22]
+- [DSC resource kinds][23]
+- [DSC resource properties][24]
 
 <!-- Link reference definitions -->
 [01]: operations.md#get-operation
@@ -180,8 +207,9 @@ manifest.
 [16]: ../../reference/cli/resource/export.md
 [17]: ../../reference/cli/resource/get.md#--all
 [18]: ../../reference/schemas/resource/manifest/export.md
-[19]: ../resources/kinds.md#importer-resources
-[20]: ../../reference/schemas/resource/manifest/resolve.md
-[21]: operations.md
-[22]: kinds.md
-[23]: ../../concepts/resources/properties.md
+[19]: ./properties.md#required-resource-properties
+[20]: ../resources/kinds.md#importer-resources
+[21]: ../../reference/schemas/resource/manifest/resolve.md
+[22]: operations.md
+[23]: kinds.md
+[24]: ../../concepts/resources/properties.md
