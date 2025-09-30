@@ -740,10 +740,12 @@ Describe 'tests for function expressions' {
   }
 
   It 'base64ToString function error handling: <expression>' -TestCases @(
-    @{ expression = '[base64ToString("invalid!@#")]'; expectedError = 'Invalid base64 encoding' }
-    @{ expression = '[base64ToString("/w==")]'; expectedError = 'Decoded bytes do not form valid UTF-8' }
+    @{ expression = "[base64ToString('invalid!@#')]" ; expectedError = 'Invalid base64 encoding' }
+    @{ expression = "[base64ToString('/w==')]" ; expectedError = 'Decoded bytes do not form valid UTF-8' }
   ) {
     param($expression, $expectedError)
+
+    $escapedExpression = $expression -replace "'", "''"
 
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
@@ -751,7 +753,7 @@ Describe 'tests for function expressions' {
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: "$expression"
+                output: "$escapedExpression"
 "@
     $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
     $LASTEXITCODE | Should -Not -Be 0
