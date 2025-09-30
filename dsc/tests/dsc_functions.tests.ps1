@@ -716,4 +716,46 @@ Describe 'tests for function expressions' {
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match ([regex]::Escape($expectedError))
   }
+
+  It 'base64ToString function works for: <expression>' -TestCases @(
+    @{ expression = "[base64ToString('aGVsbG8gd29ybGQ=')]"; expected = 'hello world' }
+    @{ expression = "[base64ToString('')]"; expected = '' }
+    @{ expression = "[base64ToString('aMOpbGxv')]"; expected = 'héllo' }
+    @{ expression = "[base64ToString('eyJrZXkiOiJ2YWx1ZSJ9')]"; expected = '{"key":"value"}' }
+    @{ expression = "[base64ToString(base64('test message'))]"; expected = 'test message' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'base64ToString function error handling: <expression>' -TestCases @(
+    @{ expression = '[base64ToString("invalid!@#")]'; expectedError = 'Invalid base64 encoding' }
+    @{ expression = '[base64ToString("/w==")]'; expectedError = 'Decoded bytes do not form valid UTF-8' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match $expectedError
+  }
 }
