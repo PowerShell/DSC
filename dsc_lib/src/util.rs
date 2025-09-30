@@ -212,3 +212,35 @@ fn get_settings_policy_file_path() -> String
     // This location is writable only by admins, but readable by all users
     Path::new("/etc").join("dsc").join("dsc.settings.json").display().to_string()
 }
+
+#[macro_export]
+macro_rules! locked_is_empty {
+    ($lockable:expr) => {{
+        $lockable.lock().unwrap().is_empty()
+    }};
+}
+
+#[macro_export]
+macro_rules! locked_extend {
+    ($lockable:expr, $items:expr) => {{
+        $lockable.lock().unwrap().extend($items);
+    }};
+}
+
+#[macro_export]
+macro_rules! locked_clone {
+    ($lockable:expr) => {{
+        $lockable.lock().unwrap().clone()
+    }};
+}
+
+#[macro_export]
+macro_rules! locked_get {
+    ($lockable:expr, $key:expr) => {{
+        if let Some(v) = $lockable.lock().unwrap().get($key) {
+            Some(v.clone())
+        } else {
+            None
+        }
+    }};
+}
