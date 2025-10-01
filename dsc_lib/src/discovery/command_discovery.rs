@@ -313,7 +313,7 @@ impl ResourceDiscovery for CommandDiscovery {
                         let discovered_resources = match extension.discover() {
                             Ok(res) => res,
                             Err(e) => {
-                                warn!("{}", t!("discovery.commandDiscovery.extensionDiscoverFailed", extension = extension.type_name, error = e).to_string());
+                                warn!("{}", t!("discovery.commandDiscovery.extensionDiscoverFailed", extension = extension.type_name, error = e));
                                 continue;
                             }
                         };

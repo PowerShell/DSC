@@ -243,10 +243,10 @@ if ($null -ne $packageType) {
         } else {
             if ($architecture -ne 'current') {
                 write-verbose -verbose "Installing clippy for $architecture"
-                & $rustup component add clippy --target $architecture
+                rustup component add clippy --target $architecture
             } else {
                 write-verbose -verbose "Installing clippy for current architecture"
-                & $rustup component add clippy
+                rustup component add clippy
             }
         }
         if ($LASTEXITCODE -ne 0) {
