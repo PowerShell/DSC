@@ -247,6 +247,12 @@ invoked = "array function"
 [functions.base64]
 description = "Encodes a string to Base64 format"
 
+[functions.base64ToString]
+description = "Converts a base64 representation to a string"
+invoked = "base64ToString function"
+invalidBase64 = "Invalid base64 encoding"
+invalidUtf8 = "Decoded bytes do not form valid UTF-8"
+
 [functions.bool]
 description = "Converts a string or number to a boolean"
 invoked = "bool function"

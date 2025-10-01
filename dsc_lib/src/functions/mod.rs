@@ -16,6 +16,7 @@ pub mod add;
 pub mod and;
 pub mod array;
 pub mod base64;
+pub mod base64_to_string;
 pub mod bool;
 pub mod coalesce;
 pub mod concat;
@@ -134,6 +135,7 @@ impl FunctionDispatcher {
             Box::new(and::And{}),
             Box::new(array::Array{}),
             Box::new(base64::Base64{}),
+            Box::new(base64_to_string::Base64ToString{}),
             Box::new(bool::Bool{}),
             Box::new(coalesce::Coalesce{}),
             Box::new(concat::Concat{}),
