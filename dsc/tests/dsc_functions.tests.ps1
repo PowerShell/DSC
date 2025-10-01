@@ -766,17 +766,15 @@ Describe 'tests for function expressions' {
   ) {
     param($expression, $expectedError)
 
-    $escapedExpression = $expression -replace "'", "''"
-
     $config_yaml = @"
             `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
             resources:
             - name: Echo
               type: Microsoft.DSC.Debug/Echo
               properties:
-                output: "$escapedExpression"
+                output: `"$expression`"
 "@
-    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
     $LASTEXITCODE | Should -Not -Be 0
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match $expectedError
