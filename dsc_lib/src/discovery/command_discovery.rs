@@ -310,7 +310,13 @@ impl ResourceDiscovery for CommandDiscovery {
                 for extension in self.extensions.values() {
                     if extension.capabilities.contains(&ExtensionCapability::Discover) {
                         debug!("{}", t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
-                        let discovered_resources = extension.discover()?;
+                        let discovered_resources = match extension.discover() {
+                            Ok(res) => res,
+                            Err(e) => {
+                                warn!("{}", t!("discovery.commandDiscovery.extensionDiscoverFailed", extension = extension.type_name, error = e).to_string());
+                                continue;
+                            }
+                        };
                         debug!("{}", t!("discovery.commandDiscovery.extensionFoundResources", extension = extension.type_name, count = discovered_resources.len()));
                         for resource in discovered_resources {
                             if regex.is_match(&resource.type_name) {
