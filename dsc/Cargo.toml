@@ -22,7 +22,7 @@ indicatif = { version = "0.18" }
 jsonschema = { version = "0.33", default-features = false }
 path-absolutize = { version = "3.1" }
 regex = "1.11"
-rmcp = { version = "0.6", features = [
+rmcp = { version = "0.7", features = [
     "server",
     "macros",
     "transport-io",
