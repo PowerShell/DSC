@@ -120,7 +120,7 @@ Describe 'tests for function expressions' {
     @{ expression = "[intersection(parameters('firstObject'), parameters('firstArray'))]"; isError = $true }
     @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'), parameters('fifthArray'))]"; expected = @('cd') }
     @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'), parameters('sixthObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
-    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{ 
+    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{
       shared = [pscustomobject]@{ value = 42; flag = $true }
       level = 1
     } }
@@ -711,13 +711,34 @@ Describe 'tests for function expressions' {
               properties:
                 output: `"$expression`"
 "@
-    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
     $LASTEXITCODE | Should -Not -Be 0
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match ([regex]::Escape($expectedError))
   }
 
-  It 'base64ToString function works for: <expression>' -TestCases @(
+  It 'mixed booleans with functions works' -TestCases @(
+    @{ expression = "[and(true(), false, not(false))]"; expected = $false }
+    @{ expression = "[or(false, false(), not(false()))]"; expected = $true }
+    @{ expression = "[and(true(), true, not(false))]"; expected = $true }
+    @{ expression = "[or(false, false(), not(true()))]"; expected = $false }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+    It 'base64ToString function works for: <expression>' -TestCases @(
     @{ expression = "[base64ToString('aGVsbG8gd29ybGQ=')]"; expected = 'hello world' }
     @{ expression = "[base64ToString('')]"; expected = '' }
     @{ expression = "[base64ToString('aMOpbGxv')]"; expected = 'héllo' }
