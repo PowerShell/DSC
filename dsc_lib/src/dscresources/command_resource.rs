@@ -9,7 +9,7 @@ use serde_json::{Map, Value};
 use std::{collections::HashMap, env, process::Stdio};
 use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
 use crate::dscerror::DscError;
-use super::{dscresource::get_diff, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
+use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
 use tokio::{io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::Command};
 
@@ -120,8 +120,9 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
         };
 
         if in_desired_state && execution_type == &ExecutionKind::Actual {
+            let before_state = redact(&serde_json::from_str(desired)?);
             return Ok(SetResult::Resource(ResourceSetResponse{
-                before_state: serde_json::from_str(desired)?,
+                before_state,
                 after_state: actual_state,
                 changed_properties: None,
             }));
@@ -152,7 +153,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     else {
         return Err(DscError::Command(resource.resource_type.clone(), exit_code, stderr));
     };
-    let pre_state = if pre_state_value.is_object() {
+    let mut pre_state = if pre_state_value.is_object() {
         let mut pre_state_map: Map<String, Value> = serde_json::from_value(pre_state_value)?;
 
         // if the resource is an adapter, then the `get` will return a `result`, but a full `set` expects the before state to be `resources`
@@ -200,6 +201,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
             // for changed_properties, we compare post state to pre state
             let diff_properties = get_diff( &actual_value, &pre_state);
+            pre_state = redact(&pre_state);
             Ok(SetResult::Resource(ResourceSetResponse{
                 before_state: pre_state,
                 after_state: actual_value,
@@ -241,6 +243,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
                 }
             };
             let diff_properties = get_diff( &actual_state, &pre_state);
+            pre_state = redact(&pre_state);
             Ok(SetResult::Resource(ResourceSetResponse {
                 before_state: pre_state,
                 after_state: actual_state,
@@ -286,7 +289,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
         return Ok(TestResult::Group(group_test_response));
     }
 
-    let expected_value: Value = serde_json::from_str(expected)?;
+    let mut expected_value: Value = serde_json::from_str(expected)?;
     match test.returns {
         Some(ReturnKind::State) => {
             let actual_value: Value = match serde_json::from_str(&stdout){
@@ -297,6 +300,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
             };
             let in_desired_state = get_desired_state(&actual_value)?;
             let diff_properties = get_diff(&expected_value, &actual_value);
+            expected_value = redact(&expected_value);
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state: actual_value,
@@ -315,6 +319,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 return Err(DscError::Command(resource.resource_type.clone(), exit_code, t!("dscresources.commandResource.testNoDiff").to_string()));
             };
             let diff_properties: Vec<String> = serde_json::from_str(diff_properties)?;
+            expected_value = redact(&expected_value);
             let in_desired_state = get_desired_state(&actual_value)?;
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
@@ -339,6 +344,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
                 }
             };
             let diff_properties = get_diff( &expected_value, &actual_state);
+            expected_value = redact(&expected_value);
             Ok(TestResult::Resource(ResourceTestResponse {
                 desired_state: expected_value,
                 actual_state,
@@ -717,9 +723,9 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 #[allow(clippy::implicit_hasher)]
 #[tokio::main]
 pub async fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
-    debug!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
+    trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
     if let Some(cwd) = cwd {
-        debug!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
+        trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
     }
 
     match run_process_async(executable, args, input, cwd, env, exit_codes).await {
