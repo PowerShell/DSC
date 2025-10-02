@@ -49,14 +49,7 @@ pub struct DscResource {
 }
 
 pub fn adapt(resource_type: &str, input: &str, operation: &AdapterOperation) -> Result<String, String> {
-<<<<<<< HEAD
     match operation {
-||||||| parent of c22f78ea (fix clippy)
-pub fn adapt(resource_type: &str, input: &str, operation: AdapterOperation) -> Result<String, String> {
-    match operation {
-=======
-    match *operation {
->>>>>>> c22f78ea (fix clippy)
         AdapterOperation::List => {
             let resource_one = DscResource {
                 type_name: "Adapted/One".to_string(),

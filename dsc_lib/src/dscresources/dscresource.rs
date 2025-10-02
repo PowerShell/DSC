@@ -415,32 +415,7 @@ impl Invoke for DscResource {
     fn test(&self, expected: &str) -> Result<TestResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeTest", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, expected)?;
-            let result = configurator.invoke_test()?;
-            let TestResult::Resource(ref resource_result) = result.results[0].result else {
-                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "test", resource = self.type_name).to_string()));
-            };
-            let mut desired_state = resource_result.desired_state
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "desiredState", property_type = "object").to_string()))?
-                .get("resources").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "resources").to_string()))?
-                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", property_type = "array").to_string()))?[0]
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "resources", property_type = "object").to_string()))?
-                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
-            let actual_state = resource_result.actual_state
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", property_type = "object").to_string()))?
-                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
-                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
-                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
-            let diff_properties = get_diff(&desired_state, &actual_state);
-            desired_state = redact(&desired_state);
-            let test_result = TestResult::Resource(ResourceTestResponse {
-                desired_state,
-                actual_state,
-                in_desired_state: resource_result.in_desired_state,
-                diff_properties,
-            });
-            return Ok(test_result);
+            return self.invoke_test_with_adapter(adapter, &self.type_name, expected);
         }
 
         match &self.implemented_as {
@@ -620,30 +595,16 @@ pub fn redact(value: &Value) -> Value {
 ///
 /// # Errors
 /// * `DscError` - The adapter manifest is not found or invalid
-/// Retrieve the kind of adapter
-///
-/// # Arguments
-///
-/// * `adapter` - The adapter resource
-///
-/// # Returns
-///
-/// The input kind of the adapter
-///
-/// # Errors
-///
-/// * `DscError` - The adapter does not have a manifest or the manifest is invalid
 pub fn get_adapter_input_kind(adapter: &DscResource) -> Result<AdapterInputKind, DscError> {
-        if let Some(manifest) = &adapter.manifest {
-            if let Ok(manifest) = serde_json::from_value::<ResourceManifest>(manifest.clone()) {
-                if let Some(adapter_operation) = manifest.adapter {
-                    return Ok(adapter_operation.input_kind);
-                }
+    if let Some(manifest) = &adapter.manifest {
+        if let Ok(manifest) = serde_json::from_value::<ResourceManifest>(manifest.clone()) {
+            if let Some(adapter_operation) = manifest.adapter {
+                return Ok(adapter_operation.input_kind);
             }
         }
-        Err(DscError::Operation(t!("dscresources.dscresource.adapterManifestNotFound", adapter = adapter.type_name).to_string()))
     }
-
+    Err(DscError::Operation(t!("dscresources.dscresource.adapterManifestNotFound", adapter = adapter.type_name).to_string()))
+}
 
 #[must_use]
 /// Performs a comparison of two JSON Values if the expected is a strict subset of the actual
