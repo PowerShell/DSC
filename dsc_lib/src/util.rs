@@ -216,28 +216,28 @@ fn get_settings_policy_file_path() -> String
 #[macro_export]
 macro_rules! locked_is_empty {
     ($lockable:expr) => {{
-        $lockable.lock().unwrap().is_empty()
+        $lockable.read().unwrap().is_empty()
     }};
 }
 
 #[macro_export]
 macro_rules! locked_extend {
     ($lockable:expr, $items:expr) => {{
-        $lockable.lock().unwrap().extend($items);
+        $lockable.write().unwrap().extend($items);
     }};
 }
 
 #[macro_export]
 macro_rules! locked_clone {
     ($lockable:expr) => {{
-        $lockable.lock().unwrap().clone()
+        $lockable.read().unwrap().clone()
     }};
 }
 
 #[macro_export]
 macro_rules! locked_get {
     ($lockable:expr, $key:expr) => {{
-        if let Some(v) = $lockable.lock().unwrap().get($key) {
+        if let Some(v) = $lockable.read().unwrap().get($key) {
             Some(v.clone())
         } else {
             None

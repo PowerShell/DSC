@@ -18,7 +18,7 @@ use rust_i18n::t;
 use semver::{Version, VersionReq};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{collections::{BTreeMap, HashMap, HashSet}, sync::{LazyLock, Mutex}};
+use std::{collections::{BTreeMap, HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -34,10 +34,10 @@ const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
 
 // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
-static ADAPTERS: LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
-static RESOURCES: LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
-static EXTENSIONS: LazyLock<Mutex<BTreeMap<String, DscExtension>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
-static ADAPTED_RESOURCES: LazyLock<Mutex<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| Mutex::new(BTreeMap::new()));
+static ADAPTERS: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static EXTENSIONS: LazyLock<RwLock<BTreeMap<String, DscExtension>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static ADAPTED_RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
 
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 pub enum ImportedManifest {
