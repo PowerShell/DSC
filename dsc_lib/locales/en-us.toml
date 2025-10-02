@@ -110,6 +110,7 @@ searchingForResources = "Searching for resources: %{resources}"
 foundResourceWithVersion = "Found matching resource '%{resource}' version %{version}"
 foundNonAdapterResources = "Found %{count} non-adapter resources"
 resourceMissingRequireAdapter = "Resource '%{resource}' is missing 'require_adapter' field."
+extensionDiscoverFailed = "Extension '%{extension}' failed to discover resources: %{error}"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
