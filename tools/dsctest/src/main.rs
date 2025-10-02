@@ -10,6 +10,7 @@ mod exporter;
 mod get;
 mod in_desired_state;
 mod metadata;
+mod adapter;
 mod sleep;
 mod trace;
 mod version;
@@ -37,6 +38,15 @@ use std::{thread, time::Duration};
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
+        SubCommand::Adapter { input , resource_type, operation } => {
+            match adapter::adapt(&resource_type, &input, &operation) {
+                Ok(result) => result,
+                Err(err) => {
+                    eprintln!("Error adapting resource: {err}");
+                    std::process::exit(1);
+                }
+            }
+        },
         SubCommand::Delete { input } => {
             let mut delete = match serde_json::from_str::<Delete>(&input) {
                 Ok(delete) => delete,
@@ -162,7 +172,7 @@ fn main() {
                     instances.into_iter().next().unwrap_or_else(|| {
                         eprintln!("No instances found");
                         std::process::exit(1);
-                    })  
+                    })
                 }
             };
             serde_json::to_string(&resource).unwrap()

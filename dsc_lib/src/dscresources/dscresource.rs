@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::Kind};
+use crate::{configure::{Configurator, config_doc::{Configuration, ExecutionKind, Resource}, context::ProcessMode, parameters::{SECURE_VALUE_REDACTED, is_secure_value}}, dscresources::resource_manifest::{AdapterInputKind, Kind}};
 use crate::dscresources::invoke_result::{ResourceGetResponse, ResourceSetResponse};
 use dscerror::DscError;
 use jsonschema::Validator;
@@ -129,6 +129,36 @@ impl DscResource {
         configurator.context.process_mode = ProcessMode::NoExpressionEvaluation;
         Ok(configurator)
     }
+
+    fn invoke_get_with_adapter(&self, adapter: &str, filter: &str) -> Result<GetResult, DscError> {
+        let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
+        let adapter = Self::get_adapter_resource(&mut configurator, adapter)?;
+        if get_adapter_input_kind(&adapter)? == AdapterInputKind::Single {
+            return adapter.get(filter);
+        }
+
+        let result = configurator.invoke_get()?;
+        let GetResult::Resource(ref resource_result) = result.results[0].result else {
+            return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "get", resource = self.type_name).to_string()));
+        };
+        let properties = resource_result.actual_state
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", property_type = "object").to_string()))?
+            .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
+            .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
+            .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
+            .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
+        let get_result = GetResult::Resource(ResourceGetResponse {
+            actual_state: properties.clone(),
+        });
+        Ok(get_result)
+    }
+
+    fn get_adapter_resource(configurator: &mut Configurator, adapter: &str) -> Result<DscResource, DscError> {
+        if let Some(adapter_resource) = configurator.discovery().find_resource(adapter, None) {
+            return Ok(adapter_resource.clone());
+        }
+        Err(DscError::Operation(t!("dscresources.dscresource.adapterResourceNotFound", adapter = adapter).to_string()))
+    }
 }
 
 impl Default for DscResource {
@@ -229,21 +259,7 @@ impl Invoke for DscResource {
     fn get(&self, filter: &str) -> Result<GetResult, DscError> {
         debug!("{}", t!("dscresources.dscresource.invokeGet", resource = self.type_name));
         if let Some(adapter) = &self.require_adapter {
-            let mut configurator = self.clone().create_config_for_adapter(adapter, filter)?;
-            let result = configurator.invoke_get()?;
-            let GetResult::Resource(ref resource_result) = result.results[0].result else {
-                return Err(DscError::Operation(t!("dscresources.dscresource.invokeReturnedWrongResult", operation = "get", resource = self.type_name).to_string()));
-            };
-            let properties = resource_result.actual_state
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "actualState", property_type = "object").to_string()))?
-                .get("result").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "result").to_string()))?
-                .as_array().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "array").to_string()))?[0]
-                .as_object().ok_or(DscError::Operation(t!("dscresources.dscresource.propertyIncorrectType", property = "result", property_type = "object").to_string()))?
-                .get("properties").ok_or(DscError::Operation(t!("dscresources.dscresource.propertyNotFound", property = "properties").to_string()))?.clone();
-            let get_result = GetResult::Resource(ResourceGetResponse {
-                actual_state: properties.clone(),
-            });
-            return Ok(get_result);
+            return self.invoke_get_with_adapter(adapter, filter);
         }
 
         match &self.implemented_as {
@@ -522,6 +538,28 @@ pub fn redact(value: &Value) -> Value {
 
     value.clone()
 }
+
+/// Gets the input kind for an adapter resource
+///
+/// # Arguments
+/// * `adapter` - The adapter resource to get the input kind for
+///
+/// # Returns
+/// * `Result<AdapterInputKind, DscError>` - The input kind of the adapter or an error if not found
+///
+/// # Errors
+/// * `DscError` - The adapter manifest is not found or invalid
+pub fn get_adapter_input_kind(adapter: &DscResource) -> Result<AdapterInputKind, DscError> {
+        if let Some(manifest) = &adapter.manifest {
+            if let Ok(manifest) = serde_json::from_value::<ResourceManifest>(manifest.clone()) {
+                if let Some(adapter_operation) = manifest.adapter {
+                    return Ok(adapter_operation.input_kind);
+                }
+            }
+        }
+        Err(DscError::Operation(t!("dscresources.dscresource.adapterManifestNotFound", adapter = adapter.type_name).to_string()))
+    }
+
 
 #[must_use]
 /// Performs a comparison of two JSON Values if the expected is a strict subset of the actual

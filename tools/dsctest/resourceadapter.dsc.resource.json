@@ -1,0 +1,90 @@
+{
+    "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
+    "type": "Test/Adapter",
+    "version": "0.1.0",
+    "adapter": {
+        "list": {
+            "executable": "dsctest",
+            "args": [
+                "adapter",
+                "--operation",
+                "list",
+                "--input",
+                "{}",
+                "--resource-type",
+                "none"
+            ]
+        },
+        "inputKind": "Single"
+    },
+    "get": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "get",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "set": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "set",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "test": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "test",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "export": {
+        "executable": "dsctest",
+        "args": [
+            "adapter",
+            "--operation",
+            "export",
+            {
+                "jsonInputArg": "--input",
+                "mandatory": true
+            },
+            {
+                "resourceTypeArg": "--resource-type"
+            }
+        ]
+    },
+    "schema": {
+        "command": {
+            "executable": "dsctest",
+            "args": [
+                "schema",
+                "-s",
+                "adapter"
+            ]
+        }
+    }
+}

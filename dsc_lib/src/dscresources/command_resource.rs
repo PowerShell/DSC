@@ -31,7 +31,7 @@ pub fn invoke_get(resource: &ResourceManifest, cwd: &str, filter: &str) -> Resul
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let args = process_args(get.args.as_ref(), filter);
+    let args = process_args(get.args.as_ref(), filter, &resource.resource_type);
     if !filter.is_empty() {
         verify_json(resource, cwd, filter)?;
         command_input = get_command_input(get.input.as_ref(), filter)?;
@@ -136,7 +136,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
     let Some(get) = &resource.get else {
         return Err(DscError::NotImplemented("get".to_string()));
     };
-    let args = process_args(get.args.as_ref(), desired);
+    let args = process_args(get.args.as_ref(), desired, &resource.resource_type);
     let command_input = get_command_input(get.input.as_ref(), desired)?;
 
     info!("{}", t!("dscresources.commandResource.setGetCurrent", resource = &resource.resource_type, executable = &get.executable));
@@ -168,7 +168,7 @@ pub fn invoke_set(resource: &ResourceManifest, cwd: &str, desired: &str, skip_te
 
     let mut env: Option<HashMap<String, String>> = None;
     let mut input_desired: Option<&str> = None;
-    let args = process_args(set.args.as_ref(), desired);
+    let args = process_args(set.args.as_ref(), desired, &resource.resource_type);
     match &set.input {
         Some(InputKind::Env) => {
             env = Some(json_to_hashmap(desired)?);
@@ -272,7 +272,7 @@ pub fn invoke_test(resource: &ResourceManifest, cwd: &str, expected: &str) -> Re
 
     verify_json(resource, cwd, expected)?;
 
-    let args = process_args(test.args.as_ref(), expected);
+    let args = process_args(test.args.as_ref(), expected, &resource.resource_type);
     let command_input = get_command_input(test.input.as_ref(), expected)?;
 
     info!("{}", t!("dscresources.commandResource.invokeTestUsing", resource = &resource.resource_type, executable = &test.executable));
@@ -410,7 +410,7 @@ pub fn invoke_delete(resource: &ResourceManifest, cwd: &str, filter: &str) -> Re
 
     verify_json(resource, cwd, filter)?;
 
-    let args = process_args(delete.args.as_ref(), filter);
+    let args = process_args(delete.args.as_ref(), filter, &resource.resource_type);
     let command_input = get_command_input(delete.input.as_ref(), filter)?;
 
     info!("{}", t!("dscresources.commandResource.invokeDeleteUsing", resource = &resource.resource_type, executable = &delete.executable));
@@ -441,7 +441,7 @@ pub fn invoke_validate(resource: &ResourceManifest, cwd: &str, config: &str) -> 
         return Err(DscError::NotImplemented("validate".to_string()));
     };
 
-    let args = process_args(validate.args.as_ref(), config);
+    let args = process_args(validate.args.as_ref(), config, &resource.resource_type);
     let command_input = get_command_input(validate.input.as_ref(), config)?;
 
     info!("{}", t!("dscresources.commandResource.invokeValidateUsing", resource = &resource.resource_type, executable = &validate.executable));
@@ -525,9 +525,9 @@ pub fn invoke_export(resource: &ResourceManifest, cwd: &str, input: Option<&str>
             command_input = get_command_input(export.input.as_ref(), input)?;
         }
 
-        args = process_args(export.args.as_ref(), input);
+        args = process_args(export.args.as_ref(), input, &resource.resource_type);
     } else {
-        args = process_args(export.args.as_ref(), "");
+        args = process_args(export.args.as_ref(), "", &resource.resource_type);
     }
 
     let (_exit_code, stdout, stderr) = invoke_command(&export.executable, args, command_input.stdin.as_deref(), Some(cwd), command_input.env, resource.exit_codes.as_ref())?;
@@ -572,7 +572,7 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
         return Err(DscError::Operation(t!("dscresources.commandResource.resolveNotSupported", resource = &resource.resource_type).to_string()));
     };
 
-    let args = process_args(resolve.args.as_ref(), input);
+    let args = process_args(resolve.args.as_ref(), input, &resource.resource_type);
     let command_input = get_command_input(resolve.input.as_ref(), input)?;
 
     info!("{}", t!("dscresources.commandResource.invokeResolveUsing", resource = &resource.resource_type, executable = &resolve.executable));
@@ -749,7 +749,7 @@ pub async fn invoke_command(executable: &str, args: Option<Vec<String>>, input: 
 /// # Returns
 ///
 /// A vector of strings representing the processed arguments
-pub fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<String>> {
+pub fn process_args(args: Option<&Vec<ArgKind>>, input: &str, resource_type: &str) -> Option<Vec<String>> {
     let Some(arg_values) = args else {
         debug!("{}", t!("dscresources.commandResource.noArgs"));
         return None;
@@ -762,13 +762,17 @@ pub fn process_args(args: Option<&Vec<ArgKind>>, value: &str) -> Option<Vec<Stri
                 processed_args.push(s.clone());
             },
             ArgKind::Json { json_input_arg, mandatory } => {
-                if value.is_empty() && *mandatory != Some(true) {
+                if input.is_empty() && *mandatory != Some(true) {
                     continue;
                 }
 
                 processed_args.push(json_input_arg.clone());
-                processed_args.push(value.to_string());
+                processed_args.push(input.to_string());
             },
+            ArgKind::ResourceType { resource_type_arg } => {
+                processed_args.push(resource_type_arg.clone());
+                processed_args.push(resource_type.to_string());
+            }
         }
     }
 

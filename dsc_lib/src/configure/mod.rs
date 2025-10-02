@@ -6,11 +6,10 @@ use crate::configure::context::{Context, ProcessMode};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
 use crate::dscerror::DscError;
-use crate::dscresources::invoke_result::ExportResult;
 use crate::dscresources::{
-    {dscresource::{Capability, Invoke, get_diff, validate_properties},
-    invoke_result::{GetResult, SetResult, TestResult,  ResourceSetResponse}},
-    resource_manifest::Kind,
+    {dscresource::{Capability, Invoke, get_diff, validate_properties, get_adapter_input_kind},
+    invoke_result::{GetResult, SetResult, TestResult, ExportResult, ResourceSetResponse}},
+    resource_manifest::{AdapterInputKind, Kind},
 };
 use crate::DscResource;
 use crate::discovery::Discovery;
@@ -177,7 +176,7 @@ fn escape_property_values(properties: &Map<String, Value>) -> Result<Option<Map<
 }
 
 fn add_metadata(dsc_resource: &DscResource, mut properties: Option<Map<String, Value>>, resource_metadata: Option<Metadata> ) -> Result<String, DscError> {
-    if dsc_resource.kind == Kind::Adapter {
+    if dsc_resource.kind == Kind::Adapter && get_adapter_input_kind(dsc_resource)? == AdapterInputKind::Full {
         // add metadata to the properties so the adapter knows this is a config
         let mut metadata: Map<String, Value> = Map::new();
         if let Some(resource_metadata) = resource_metadata {
@@ -319,6 +318,15 @@ impl Configurator {
         &self.config
     }
 
+    /// Get the discovery.
+    ///
+    /// # Returns
+    ///
+    /// * `&Discovery` - The discovery.
+    pub fn discovery(&mut self) -> &mut Discovery {
+        &mut self.discovery
+    }
+
     fn get_properties(&mut self, resource: &Resource, resource_kind: &Kind) -> Result<Option<Map<String, Value>>, DscError> {
         match resource_kind {
             Kind::Group => {
@@ -342,14 +350,14 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_get(&mut self) -> Result<ConfigurationGetResult, DscError> {
         self.unroll_copy_loops()?;
-        
+
         let mut result = ConfigurationGetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
             let evaluated_name = self.evaluate_resource_name(&resource.name)?;
-            
+
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Get '{evaluated_name}'").as_str());
             if self.skip_resource(&resource)? {
@@ -424,14 +432,14 @@ impl Configurator {
     #[allow(clippy::too_many_lines)]
     pub fn invoke_set(&mut self, skip_test: bool) -> Result<ConfigurationSetResult, DscError> {
         self.unroll_copy_loops()?;
-        
+
         let mut result = ConfigurationSetResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
             let evaluated_name = self.evaluate_resource_name(&resource.name)?;
-            
+
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Set '{evaluated_name}'").as_str());
             if self.skip_resource(&resource)? {
@@ -580,14 +588,14 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_test(&mut self) -> Result<ConfigurationTestResult, DscError> {
         self.unroll_copy_loops()?;
-        
+
         let mut result = ConfigurationTestResult::new();
         let resources = get_resource_invocation_order(&self.config, &mut self.statement_parser, &self.context)?;
         let mut progress = ProgressBar::new(resources.len() as u64, self.progress_format)?;
         let discovery = &mut self.discovery.clone();
         for resource in resources {
             let evaluated_name = self.evaluate_resource_name(&resource.name)?;
-            
+
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Test '{evaluated_name}'").as_str());
             if self.skip_resource(&resource)? {
@@ -658,7 +666,7 @@ impl Configurator {
     /// This function will return an error if the underlying resource fails.
     pub fn invoke_export(&mut self) -> Result<ConfigurationExportResult, DscError> {
         self.unroll_copy_loops()?;
-        
+
         let mut result = ConfigurationExportResult::new();
         let mut conf = config_doc::Configuration::new();
         conf.metadata.clone_from(&self.config.metadata);
@@ -668,7 +676,7 @@ impl Configurator {
         let discovery = &mut self.discovery.clone();
         for resource in &resources {
             let evaluated_name = self.evaluate_resource_name(&resource.name)?;
-            
+
             progress.set_resource(&evaluated_name, &resource.resource_type);
             progress.write_activity(format!("Export '{evaluated_name}'").as_str());
             if self.skip_resource(resource)? {
@@ -916,7 +924,7 @@ impl Configurator {
     fn unroll_copy_loops(&mut self) -> Result<(), DscError> {
         let mut config = self.config.clone();
         let config_copy = config.clone();
-        
+
         for resource in config_copy.resources {
             // if the resource contains `Copy`, unroll it
             if let Some(copy) = &resource.copy {
@@ -931,7 +939,7 @@ impl Configurator {
                         return Err(DscError::Parser(t!("configure.mod.copyNameResultNotString").to_string()))
                     };
                     new_resource.name = new_name.to_string();
-                    
+
                     new_resource.copy = None;
                     copy_resources.push(new_resource);
                 }
@@ -941,7 +949,7 @@ impl Configurator {
                 config.resources.extend(copy_resources);
             }
         }
-        
+
         self.config = config;
         Ok(())
     }
@@ -967,12 +975,12 @@ impl Configurator {
         if self.context.process_mode == ProcessMode::Copy {
             return Ok(name.to_string());
         }
-        
+
         // evaluate the resource name (handles both expressions and literals)
         let Value::String(evaluated_name) = self.statement_parser.parse_and_execute(name, &self.context)? else {
             return Err(DscError::Parser(t!("configure.mod.nameResultNotString").to_string()))
         };
-        
+
         Ok(evaluated_name)
     }
 
