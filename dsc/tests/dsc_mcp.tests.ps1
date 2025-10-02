@@ -17,9 +17,16 @@ Describe 'Tests for MCP server' {
             $mcp.StandardInput.WriteLine($request)
             $mcp.StandardInput.Flush()
             if (!$notify) {
+                write-verbose -verbose "peeking stdout"
                 while ($mcp.StandardOutput.Peek() -eq -1) {
                     Start-Sleep -Milliseconds 100
                 }
+                write-verbose -verbose "peeking stderr"
+                while ($mcp.StandardError.Peek() -ne -1) {
+                    $stderr = $mcp.StandardError.ReadLine()
+                    Write-Verbose -Verbose "MCP STDERR: $stderr"
+                }
+                write-verbose -verbose "reading stdout"
                 $stdout = $mcp.StandardOutput.ReadLine()
                 return ($stdout | ConvertFrom-Json -Depth 30)
             }
@@ -163,7 +170,9 @@ Describe 'Tests for MCP server' {
     }
 
     It 'Calling show_dsc_resource works' {
+        write-verbose -verbose "Listing resources to get a resource type"
         $resource = (dsc resource list | Select-Object -First 1 | ConvertFrom-Json -Depth 20)
+        write-verbose -verbose "Using resource type '$($resource.type)' for show_dsc_resource test"
 
         $mcpRequest = @{
             jsonrpc = "2.0"
