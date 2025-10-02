@@ -133,8 +133,9 @@ Describe 'Discover extension tests' {
         try {
             # exclude finding powershell.exe
             $oldPath = $env:PATH
-            $env:PATH = "$env:PROGRAMFILES\PowerShell\7"
-            $out = dsc resource list 2> $TestDrive/error.log | ConvertFrom-Json
+            $dscFolder = Split-Path (Get-Command dsc).Source -Parent
+            $env:PATH = "$env:PROGRAMFILES\PowerShell\7;$dscFolder"
+            $out = dsc -l warn resource list 2> $TestDrive/error.log | ConvertFrom-Json
             $LASTEXITCODE | Should -Be 0
             $out.Count | Should -BeGreaterThan 0
             (Get-Content -Path "$TestDrive/error.log" -Raw) | Should -BeLike "*WARN Extension 'Microsoft.Windows.Appx/Discover' failed to discover resources: Command: Operation program not found for executable 'powershell'*" -Because (Get-Content -Path "$TestDrive/error.log" -Raw | Out-String)
