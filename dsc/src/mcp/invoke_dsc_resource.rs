@@ -22,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use tokio::task;
 
 #[derive(Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase", untagged)]
 pub enum DscOperation {
     Get,
     Set,
@@ -30,11 +31,17 @@ pub enum DscOperation {
 }
 
 #[derive(Serialize, JsonSchema)]
+#[serde(untagged)]
 pub enum ResourceOperationResult {
     GetResult(GetResult),
     SetResult(SetResult),
     TestResult(TestResult),
     ExportResult(ExportResult),
+}
+
+#[derive(Serialize, JsonSchema)]
+pub struct InvokeDscResourceResponse {
+    pub result: ResourceOperationResult,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -59,7 +66,7 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, resource_type, properties_json }): Parameters<InvokeDscResourceRequest>) -> Result<Json<ResourceOperationResult>, McpError> {
+    pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, resource_type, properties_json }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let Some(resource) = dsc.find_resource(&resource_type, None) else {
@@ -97,6 +104,6 @@ impl McpServer {
             }
         }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;
 
-        Ok(Json(result))
+        Ok(Json(InvokeDscResourceResponse { result }))
     }
 }
