@@ -745,22 +745,25 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
 /// Will panic if tokio runtime can't be created.
 ///
 #[allow(clippy::implicit_hasher)]
-#[tokio::main]
-pub async fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
-    trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
-    if let Some(cwd) = cwd {
-        trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
-    }
+pub fn invoke_command(executable: &str, args: Option<Vec<String>>, input: Option<&str>, cwd: Option<&str>, env: Option<HashMap<String, String>>, exit_codes: Option<&HashMap<i32, String>>) -> Result<(i32, String, String), DscError> {
+    tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap().block_on(
+        async {
+            trace!("{}", t!("dscresources.commandResource.commandInvoke", executable = executable, args = args : {:?}));
+            if let Some(cwd) = cwd {
+                trace!("{}", t!("dscresources.commandResource.commandCwd", cwd = cwd));
+            }
 
-    match run_process_async(executable, args, input, cwd, env, exit_codes).await {
-        Ok((code, stdout, stderr)) => {
-            Ok((code, stdout, stderr))
-        },
-        Err(err) => {
-            error!("{}", t!("dscresources.commandResource.runProcessError", executable = executable, error = err));
-            Err(err)
+            match run_process_async(executable, args, input, cwd, env, exit_codes).await {
+                Ok((code, stdout, stderr)) => {
+                    Ok((code, stdout, stderr))
+                },
+                Err(err) => {
+                    error!("{}", t!("dscresources.commandResource.runProcessError", executable = executable, error = err));
+                    Err(err)
+                }
+            }
         }
-    }
+    )
 }
 
 /// Process the arguments for a command resource.
