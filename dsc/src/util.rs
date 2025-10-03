@@ -293,8 +293,8 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
         }
     }
     else {
-        let mut lock = stdout().lock();
-        if writeln!(lock, "{output}").is_err() {
+        let mut stdout_lock = stdout().lock();
+        if writeln!(stdout_lock, "{output}").is_err() {
             // likely caused by a broken pipe (e.g. 'head' command closed early)
             exit(EXIT_SUCCESS);
         }
