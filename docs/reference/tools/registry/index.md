@@ -41,23 +41,23 @@ For more information about using `registry` as a resource, see [Microsoft.Window
 
 ### query
 
-The `query` command isn't implemented yet. It returns a string that echoes the specified options.
+The `query` command retrieves registry keys and values from the Windows registry.
 For more information, see [query][03].
 
 ### set
 
-The `set` command isn't implemented yet. It returns a string that echoes the specified options. For
+The `set` command creates or updates registry keys and values. For
 more information, see [set][04].
 
 ### remove
 
-The `remove` command isn't implemented yet. It returns a string that echoes the specified options.
-For more information, see [remove][05].
+The `remove` command deletes registry keys and values from the Windows registry. For
+more information, see [remove][05].
 
 ### find
 
-The `find` command isn't implemented yet. It returns a string that echoes the specified options.
-For more information, see [find][06].
+The `find` command searches for registry keys and values in the Windows registry. For
+more information, see [find][06].
 
 ### config
 
