@@ -23,7 +23,53 @@ registry find [Options] --key-path <KEY_PATH>
 
 ## Description
 
-The `find` command isn't implemented yet. It returns a string that echoes the specified options.
+The `find` command searches for registry keys and values that match the specified search string.
+You can use this command to locate specific registry entries by name, optionally searching
+recursively through subkeys or limiting results to keys or values only.
+
+## Examples
+
+### Example 1 - Find keys and values
+
+<a id="example-1"></a>
+
+Search for registry keys and values containing "System" in a specific path.
+
+```powershell
+registry find --key-path "HKLM\SOFTWARE\Microsoft" --find "System"
+```
+
+```output
+Find key_path: HKLM\\SOFTWARE\\Microsoft, find: System, recurse: false, keys_only: false, values_only: false
+```
+
+### Example 2 - Recursive search for keys only
+
+<a id="example-2"></a>
+
+Recursively search for registry keys containing "Windows".
+
+```powershell
+registry find --key-path "HKLM\SOFTWARE" --find "Windows" --recurse
+```
+
+```output
+Find key_path: HKLM\\SOFTWARE, find: Windows, recurse: true, keys_only: false, values_only: false
+```
+
+### Example 3 - Find values only
+
+<a id="example-3"></a>
+
+Search for registry values containing "Desktop".
+
+```powershell
+registry find --key-path "HKCU\Environment" --find "Desktop" --values-only
+```
+
+```output
+Find key_path: HKCU\\Environment, find: Desktop, recurse: false, keys_only: false, values_only: true
+```
 
 ## Options
 
