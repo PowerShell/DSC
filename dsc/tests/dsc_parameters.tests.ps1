@@ -405,4 +405,176 @@ Describe 'Parameters tests' {
       $errorMessage = Get-Content -Path $TestDrive/error.log -Raw
       $errorMessage | Should -BeLike "*ERROR*Parameter input failure: JSON: missing field ````parameters````*"
     }
+
+    It 'Parameters can reference other parameters in defaultValue: simple nested' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              basePrefix:
+                type: string
+                defaultValue: base
+              computedPrefix:
+                type: string
+                defaultValue: "[concat(parameters('basePrefix'), '-computed')]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('computedPrefix')]"
+"@
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'base-computed'
+    }
+
+    It 'Parameters can reference other parameters in defaultValue: multi-level nested' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              environment:
+                type: string
+                defaultValue: dev
+              appName:
+                type: string
+                defaultValue: "[concat(parameters('environment'), '-myapp')]"
+              instanceName:
+                type: string
+                defaultValue: "[concat(parameters('appName'), '-001')]"
+              fullInstanceName:
+                type: string
+                defaultValue: "[concat('Instance: ', parameters('instanceName'))]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('fullInstanceName')]"
+"@
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'Instance: dev-myapp-001'
+    }
+
+    It 'Parameters with circular dependencies are detected' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              paramA:
+                type: string
+                defaultValue: "[parameters('paramB')]"
+              paramB:
+                type: string
+                defaultValue: "[parameters('paramA')]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('paramA')]"
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match 'Circular dependency or unresolvable parameter references detected in parameters'
+    }
+
+    It 'Parameters with complex circular dependencies are detected' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              paramA:
+                type: string
+                defaultValue: "[parameters('paramB')]"
+              paramB:
+                type: string
+                defaultValue: "[parameters('paramC')]"
+              paramC:
+                type: string
+                defaultValue: "[parameters('paramA')]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('paramA')]"
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match 'Circular dependency or unresolvable parameter references detected in parameters'
+    }
+
+    It 'Parameters with nested references can be overridden by input' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              basePrefix:
+                type: string
+                defaultValue: base
+              computedPrefix:
+                type: string
+                defaultValue: "[concat(parameters('basePrefix'), '-computed')]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('computedPrefix')]"
+"@
+        $params_json = @{ parameters = @{ basePrefix = 'override' }} | ConvertTo-Json
+
+        $out = $config_yaml | dsc config -p $params_json get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly 'override-computed'
+    }
+
+    It 'Parameters nested references work with different data types: <type>' -TestCases @(
+        @{ type = 'string'; baseValue = 'test'; expectedOutput = 'prefix-test-suffix' }
+        @{ type = 'int'; baseValue = 42; expectedOutput = 'value-42' }
+    ) {
+        param($type, $baseValue, $expectedOutput)
+
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              baseParam:
+                type: $type
+                defaultValue: $baseValue
+              computedParam:
+                type: string
+                defaultValue: "[concat('prefix-', string(parameters('baseParam')), '-suffix')]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('computedParam')]"
+"@
+
+        if ($type -eq 'string') {
+            $expectedOutput = 'prefix-test-suffix'
+        } else {
+            $expectedOutput = 'prefix-42-suffix'
+        }
+
+        $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+        $LASTEXITCODE | Should -Be 0
+        $out.results[0].result.actualState.output | Should -BeExactly $expectedOutput
+    }
+
+    It 'Parameters with unresolvable references produce error' {
+        $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              computedParam:
+                type: string
+                defaultValue: "[parameters('nonExistentParam')]"
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[parameters('computedParam')]"
+"@
+
+        $testError = & {$config_yaml | dsc config get -f - 2>&1}
+        $LASTEXITCODE | Should -Be 4
+        $testError | Should -Match 'Circular dependency or unresolvable parameter references detected in parameters'
+    }
 }

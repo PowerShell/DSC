@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::config_doc::{ExecutionKind, Metadata, Resource};
+use crate::configure::config_doc::{ExecutionKind, Metadata, Resource, Parameter};
 use crate::configure::context::{Context, ProcessMode};
 use crate::configure::{config_doc::RestartRequired, parameters::Input};
 use crate::discovery::discovery_trait::DiscoveryFilter;
@@ -757,7 +757,6 @@ impl Configurator {
     }
 
     fn set_parameters(&mut self, parameters_input: Option<&Value>, config: &Configuration) -> Result<(), DscError> {
-        // set default parameters first
         let Some(parameters) = &config.parameters else {
             if parameters_input.is_none() {
                 info!("{}", t!("configure.mod.noParameters"));
@@ -766,66 +765,92 @@ impl Configurator {
             return Err(DscError::Validation(t!("configure.mod.noParametersDefined").to_string()));
         };
 
-        for (name, parameter) in parameters {
-            debug!("{}", t!("configure.mod.processingParameter", name = name));
-            if let Some(default_value) = &parameter.default_value {
-                debug!("{}", t!("configure.mod.setDefaultParameter", name = name));
-                // default values can be expressions
-                let value = if default_value.is_string() {
-                    if let Some(value) = default_value.as_str() {
-                        self.context.process_mode = ProcessMode::ParametersDefault;
-                        let result = self.statement_parser.parse_and_execute(value, &self.context)?;
-                        self.context.process_mode = ProcessMode::Normal;
-                        result
+        // process input parameters first
+        if let Some(parameters_input) = parameters_input {
+            trace!("parameters_input: {parameters_input}");
+            let input_parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
+            
+            for (name, value) in input_parameters {
+                if let Some(constraint) = parameters.get(&name) {
+                    debug!("Validating parameter '{name}'");
+                    check_length(&name, &value, constraint)?;
+                    check_allowed_values(&name, &value, constraint)?;
+                    check_number_limits(&name, &value, constraint)?;
+                    // TODO: additional array constraints
+                    // TODO: object constraints
+
+                    validate_parameter_type(&name, &value, &constraint.parameter_type)?;
+                    if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
+                        info!("{}", t!("configure.mod.setSecureParameter", name = name));
                     } else {
-                        return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
+                        info!("{}", t!("configure.mod.setParameter", name = name, value = value));
                     }
-                } else {
-                    default_value.clone()
-                };
-                validate_parameter_type(name, &value, &parameter.parameter_type)?;
-                self.context.parameters.insert(name.clone(), (value, parameter.parameter_type.clone()));
+
+                    self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
+                    if let Some(parameters) = &mut self.config.parameters {
+                        if let Some(parameter) = parameters.get_mut(&name) {
+                            parameter.default_value = Some(value);
+                        }
+                    }
+                }
+                else {
+                    return Err(DscError::Validation(t!("configure.mod.parameterNotDefined", name = name).to_string()));
+                }
             }
         }
 
-        let Some(parameters_input) = parameters_input else {
-            debug!("{}", t!("configure.mod.noParametersInput"));
-            return Ok(());
-        };
+        // Now process default values for parameters that weren't provided in input
+        let mut unresolved_parameters: HashMap<String, &Parameter> = parameters
+            .iter()
+            .filter(|(name, _)| !self.context.parameters.contains_key(*name))
+            .map(|(k, v)| (k.clone(), v))
+            .collect();
 
-        trace!("parameters_input: {parameters_input}");
-        let parameters: HashMap<String, Value> = serde_json::from_value::<Input>(parameters_input.clone())?.parameters;
-        let Some(parameters_constraints) = &config.parameters else {
-            return Err(DscError::Validation(t!("configure.mod.noParametersDefined").to_string()));
-        };
-        for (name, value) in parameters {
-            if let Some(constraint) = parameters_constraints.get(&name) {
-                debug!("Validating parameter '{name}'");
-                check_length(&name, &value, constraint)?;
-                check_allowed_values(&name, &value, constraint)?;
-                check_number_limits(&name, &value, constraint)?;
-                // TODO: additional array constraints
-                // TODO: object constraints
+        while !unresolved_parameters.is_empty() {
+            let mut resolved_in_this_pass = Vec::new();
+            
+            for (name, parameter) in &unresolved_parameters {
+                debug!("{}", t!("configure.mod.processingParameter", name = name));
+                if let Some(default_value) = &parameter.default_value {
+                    debug!("{}", t!("configure.mod.setDefaultParameter", name = name));
+                    let value_result = if default_value.is_string() {
+                        if let Some(value) = default_value.as_str() {
+                            self.context.process_mode = ProcessMode::ParametersDefault;
+                            let result = self.statement_parser.parse_and_execute(value, &self.context);
+                            self.context.process_mode = ProcessMode::Normal;
+                            result
+                        } else {
+                            return Err(DscError::Parser(t!("configure.mod.defaultStringNotDefined").to_string()));
+                        }
+                    } else {
+                        Ok(default_value.clone())
+                    };
 
-                validate_parameter_type(&name, &value, &constraint.parameter_type)?;
-                if constraint.parameter_type == DataType::SecureString || constraint.parameter_type == DataType::SecureObject {
-                    info!("{}", t!("configure.mod.setSecureParameter", name = name));
-                } else {
-                    info!("{}", t!("configure.mod.setParameter", name = name, value = value));
-                }
-
-                self.context.parameters.insert(name.clone(), (value.clone(), constraint.parameter_type.clone()));
-                // also update the configuration with the parameter value
-                if let Some(parameters) = &mut self.config.parameters {
-                    if let Some(parameter) = parameters.get_mut(&name) {
-                        parameter.default_value = Some(value);
+                    match value_result {
+                        Ok(value) => {
+                            validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                            self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
+                            resolved_in_this_pass.push(name.clone());
+                        }
+                        Err(_) => {
+                            continue;
+                        }
                     }
+                } else {
+                    resolved_in_this_pass.push(name.clone());
                 }
             }
-            else {
-                return Err(DscError::Validation(t!("configure.mod.parameterNotDefined", name = name).to_string()));
+
+            if resolved_in_this_pass.is_empty() {
+                let unresolved_names: Vec<_> = unresolved_parameters.keys().map(|k| k.as_str()).collect();
+                return Err(DscError::Validation(t!("configure.mod.circularDependency", parameters = unresolved_names.join(", ")).to_string()));
+            }
+
+            for name in &resolved_in_this_pass {
+                unresolved_parameters.remove(name);
             }
         }
+
         Ok(())
     }
 
