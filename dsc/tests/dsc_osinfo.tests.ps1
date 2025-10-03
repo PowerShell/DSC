@@ -1,4 +1,12 @@
 Describe 'Tests for osinfo examples' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'Config with default parameters and get works' {
         $out = dsc config get -f $PSScriptRoot/../examples/osinfo_parameters.dsc.yaml | ConvertFrom-Json -Depth 10
         $LASTEXITCODE | Should -Be 0

@@ -7,6 +7,7 @@ use crate::resource_command::{get_resource, self};
 use crate::tablewriter::Table;
 use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
 use dsc_lib::functions::FunctionArgKind;
+use dsc_lib::security::{check_file_security, TrustLevel};
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -595,6 +596,7 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
         t!("subcommand.tableHeader_type").to_string().as_ref(),
         t!("subcommand.tableHeader_version").to_string().as_ref(),
         t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
+        t!("subcommand.tableHeader_trust").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
     if format.is_none() && io::stdout().is_terminal() {
@@ -616,11 +618,17 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
                 }
             }
 
+            let trust_level = match check_file_security(Path::new(&extension.path)) {
+                Ok(trust_level) => trust_level,
+                Err(_err) => TrustLevel::Unknown,
+            };
+
             if write_table {
                 table.add_row(vec![
                     extension.type_name,
                     extension.version,
                     capabilities,
+                    trust_level.to_string(),
                     extension.description.unwrap_or_default()
                 ]);
             }
@@ -661,6 +669,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         t!("subcommand.tableHeader_minArgs").to_string().as_ref(),
         t!("subcommand.tableHeader_maxArgs").to_string().as_ref(),
         t!("subcommand.tableHeader_argTypes").to_string().as_ref(),
+        t!("subcommand.tableHeader_trust").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
     if output_format.is_none() && io::stdout().is_terminal() {
@@ -744,6 +753,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
     let mut write_table = false;
     let mut table = Table::new(&[
@@ -751,6 +761,7 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
         t!("subcommand.tableHeader_kind").to_string().as_ref(),
         t!("subcommand.tableHeader_version").to_string().as_ref(),
         t!("subcommand.tableHeader_capabilities").to_string().as_ref(),
+        t!("subcommand.tableHeader_trust").to_string().as_ref(),
         t!("subcommand.tableHeader_adapter").to_string().as_ref(),
         t!("subcommand.tableHeader_description").to_string().as_ref(),
     ]);
@@ -817,12 +828,18 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                 }
             }
 
+            let trust_level = match check_file_security(Path::new(&resource.path)) {
+                Ok(trust_level) => trust_level,
+                Err(_err) => TrustLevel::Unknown,
+            };
+
             if write_table {
                 table.add_row(vec![
                     resource.type_name,
                     format!("{:?}", resource.kind),
                     resource.version,
                     capabilities,
+                    trust_level.to_string(),
                     resource.require_adapter.unwrap_or_default(),
                     resource.description.unwrap_or_default()
                 ]);

@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'tests for function expressions' {
+  BeforeAll {
+      $env:DSC_TRACE_LEVEL = 'error'
+  }
+
+  AfterAll {
+      $env:DSC_TRACE_LEVEL = $null
+  }
+
   It 'function works: <text>' -TestCases @(
     @{ text = "[concat('a', 'b')]"; expected = 'ab' }
     @{ text = "[concat('a', 'b', 'c')]"; expected = 'abc' }

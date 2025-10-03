@@ -3,6 +3,7 @@
 
 Describe 'tests for resource input' {
     BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
         $manifest = @'
     {
         "$schema": "https://aka.ms/dsc/schemas/v3/bundled/resource/manifest.json",
@@ -91,6 +92,7 @@ Describe 'tests for resource input' {
 
     AfterAll {
         $env:DSC_RESOURCE_PATH = $oldPath
+        $env:DSC_TRACE_LEVEL = $null
     }
 
     It 'Input can be sent to the resource for: <operation>' -TestCases @(

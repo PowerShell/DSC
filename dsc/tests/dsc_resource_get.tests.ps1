@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'resource get tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'should get from registry using <type> resource' -Skip:(!$IsWindows) -TestCases @(
         @{ type = 'string' }
     ) {

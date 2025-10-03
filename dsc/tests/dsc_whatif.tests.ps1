@@ -1,4 +1,12 @@
 Describe 'whatif tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     AfterEach {
         if ($IsWindows) {
             Remove-Item -Path 'HKCU:\1' -Recurse -ErrorAction Ignore

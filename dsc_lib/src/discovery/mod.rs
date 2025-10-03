@@ -6,10 +6,11 @@ pub mod discovery_trait;
 
 use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
 use crate::extensions::dscextension::{Capability, DscExtension};
+use crate::security::check_file_security;
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
 use core::result::Result::Ok;
 use semver::{Version, VersionReq};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::Path};
 use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
@@ -94,7 +95,7 @@ impl Discovery {
         }
 
         let type_name = type_name.to_lowercase();
-        if let Some(resources) = self.resources.get(&type_name) {
+        let resource = if let Some(resources) = self.resources.get(&type_name) {
             if let Some(version) = version_string {
                 let version = fix_semver(version);
                 if let Ok(version_req) = VersionReq::parse(&version) {
@@ -119,7 +120,15 @@ impl Discovery {
             }
         } else {
             None
+        };
+
+        if let Some(found_resource) = &resource {
+            if check_file_security(Path::new(&found_resource.path)).is_err() {
+                return None;
+            }
         }
+
+        resource
     }
 
     /// Find resources based on the required resource types.

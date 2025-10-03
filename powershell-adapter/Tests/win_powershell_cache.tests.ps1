@@ -19,6 +19,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
     $env:DSC_RESOURCE_PATH = $dscHome + [System.IO.Path]::PathSeparator + $psexeHome + [System.IO.Path]::PathSeparator + $ps7exeHome
     $null = winrm quickconfig -quiet -force 2>&1
     $env:PSModulePath = $PSScriptRoot + [System.IO.Path]::PathSeparator + $env:PSModulePath
+    $env:DSC_TRACE_LEVEL = 'error'
 
     $winpsConfigPath = Join-path $PSScriptRoot "winps_resource.dsc.yaml"
     $cacheFilePath_v5 = Join-Path $env:LocalAppData "dsc" "WindowsPSAdapterCache.json"
@@ -30,6 +31,7 @@ Describe 'WindowsPowerShell adapter resource tests - requires elevated permissio
   AfterAll {
     $env:PSModulePath = $OldPSModulePath
     $env:DSC_RESOURCE_PATH = $null
+    $env:DSC_TRACE_LEVEL = $null
 
     # Remove after all the tests are done
     Remove-Module $script:winPSModule -Force -ErrorAction Ignore

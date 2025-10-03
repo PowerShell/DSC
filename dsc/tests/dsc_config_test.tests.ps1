@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'dsc config test tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'Assertion works correctly' {
         $configYaml = @'
  $schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
