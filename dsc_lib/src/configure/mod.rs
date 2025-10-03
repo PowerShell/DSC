@@ -833,7 +833,7 @@ impl Configurator {
                             resolved_in_this_pass.push(name.clone());
                         }
                         Err(_) => {
-                            continue;
+                            // Parameter couldn't be resolved in this pass, try next pass
                         }
                     }
                 } else {
@@ -842,7 +842,7 @@ impl Configurator {
             }
 
             if resolved_in_this_pass.is_empty() {
-                let unresolved_names: Vec<_> = unresolved_parameters.keys().map(|k| k.as_str()).collect();
+                let unresolved_names: Vec<_> = unresolved_parameters.keys().map(std::string::String::as_str).collect();
                 return Err(DscError::Validation(t!("configure.mod.circularDependency", parameters = unresolved_names.join(", ")).to_string()));
             }
 
