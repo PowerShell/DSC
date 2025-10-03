@@ -826,15 +826,10 @@ impl Configurator {
                         Ok(default_value.clone())
                     };
 
-                    match value_result {
-                        Ok(value) => {
-                            validate_parameter_type(name, &value, &parameter.parameter_type)?;
-                            self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
-                            resolved_in_this_pass.push(name.clone());
-                        }
-                        Err(_) => {
-                            // Parameter couldn't be resolved in this pass, try next pass
-                        }
+                    if let Ok(value) = value_result {
+                        validate_parameter_type(name, &value, &parameter.parameter_type)?;
+                        self.context.parameters.insert(name.to_string(), (value, parameter.parameter_type.clone()));
+                        resolved_in_this_pass.push(name.clone());
                     }
                 } else {
                     resolved_in_this_pass.push(name.clone());
