@@ -47,7 +47,7 @@ use schemars::{Schema, schema_for};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
-use std::io::{IsTerminal, Read};
+use std::io::{IsTerminal, Read, stdout, Write};
 use std::path::Path;
 use std::process::exit;
 use syntect::{
@@ -293,7 +293,11 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
         }
     }
     else {
-        println!("{output}");
+        let mut lock = stdout().lock();
+        if writeln!(lock, "{output}").is_err() {
+            // likely caused by a broken pipe (e.g. 'head' command closed early)
+            exit(EXIT_SUCCESS);
+        }
     }
 }
 
