@@ -1,7 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery};
+use crate::discovery::{
+    discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery}
+};
+use crate::{locked_is_empty, locked_extend, locked_clone, locked_get};
 use crate::dscresources::dscresource::{Capability, DscResource, ImplementedAs};
 use crate::dscresources::resource_manifest::{import_manifest, validate_semver, Kind, ResourceManifest, SchemaKind};
 use crate::dscresources::command_resource::invoke_command;
@@ -15,7 +18,7 @@ use rust_i18n::t;
 use semver::{Version, VersionReq};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet, HashMap};
+use std::{collections::{BTreeMap, HashMap, HashSet}, sync::{LazyLock, RwLock}};
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
@@ -30,19 +33,21 @@ use crate::util::get_exe_path;
 const DSC_RESOURCE_EXTENSIONS: [&str; 3] = [".dsc.resource.json", ".dsc.resource.yaml", ".dsc.resource.yml"];
 const DSC_EXTENSION_EXTENSIONS: [&str; 3] = [".dsc.extension.json", ".dsc.extension.yaml", ".dsc.extension.yml"];
 
+// use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
+static ADAPTERS: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static EXTENSIONS: LazyLock<RwLock<BTreeMap<String, DscExtension>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+static ADAPTED_RESOURCES: LazyLock<RwLock<BTreeMap<String, Vec<DscResource>>>> = LazyLock::new(|| RwLock::new(BTreeMap::new()));
+
 #[derive(Clone, Serialize, Deserialize, JsonSchema)]
 pub enum ImportedManifest {
     Resource(DscResource),
     Extension(DscExtension),
 }
 
+
 #[derive(Clone)]
 pub struct CommandDiscovery {
-    // use BTreeMap so that the results are sorted by the typename, the Vec is sorted by version
-    adapters: BTreeMap<String, Vec<DscResource>>,
-    resources: BTreeMap<String, Vec<DscResource>>,
-    extensions: BTreeMap<String, DscExtension>,
-    adapted_resources: BTreeMap<String, Vec<DscResource>>,
     progress_format: ProgressFormat,
 }
 
@@ -72,18 +77,12 @@ impl CommandDiscovery {
     #[must_use]
     pub fn new(progress_format: ProgressFormat) -> CommandDiscovery {
         CommandDiscovery {
-            adapters: BTreeMap::new(),
-            resources: BTreeMap::new(),
-            extensions: BTreeMap::new(),
-            adapted_resources: BTreeMap::new(),
             progress_format,
         }
     }
 
     #[must_use]
-    pub fn get_extensions(&self) -> &BTreeMap<String, DscExtension> {
-        &self.extensions
-    }
+    pub fn get_extensions(&self) -> BTreeMap<String, DscExtension> { locked_clone!(EXTENSIONS) }
 
     fn get_resource_path_setting() -> Result<ResourcePathSetting, DscError>
     {
@@ -307,7 +306,7 @@ impl ResourceDiscovery for CommandDiscovery {
         match kind {
             DiscoveryKind::Resource => {
                 // Now we need to call discover extensions and add those resource to the list of resources
-                for extension in self.extensions.values() {
+                for extension in locked_clone!(EXTENSIONS).values() {
                     if extension.capabilities.contains(&ExtensionCapability::Discover) {
                         debug!("{}", t!("discovery.commandDiscovery.callingExtension", extension = extension.type_name));
                         let discovered_resources = match extension.discover() {
@@ -326,11 +325,11 @@ impl ResourceDiscovery for CommandDiscovery {
                         }
                     }
                 }
-                self.adapters = adapters;
-                self.resources = resources;
+                locked_extend!(ADAPTERS, adapters);
+                locked_extend!(RESOURCES, resources);
             },
             DiscoveryKind::Extension => {
-                self.extensions = extensions;
+                locked_extend!(EXTENSIONS, extensions);
             }
         }
 
@@ -338,14 +337,15 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 
     fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError> {
-        if self.resources.is_empty() && self.adapters.is_empty() {
+        if locked_is_empty!(RESOURCES) && locked_is_empty!(ADAPTERS) {
             self.discover(&DiscoveryKind::Resource, "*")?;
         }
 
-        if self.adapters.is_empty() {
+        if locked_is_empty!(ADAPTERS) {
             return Ok(());
         }
 
+        let adapters = locked_clone!(ADAPTERS);
         let regex_str = convert_wildcard_to_regex(adapter_filter);
         debug!("Using regex {regex_str} as filter for adapter name");
         let mut regex_builder = RegexBuilder::new(&regex_str);
@@ -362,13 +362,13 @@ impl ResourceDiscovery for CommandDiscovery {
             return Err(DscError::Operation("Could not build Regex filter for resource name".to_string()));
         };
 
-        let mut progress = ProgressBar::new(self.adapters.len() as u64, self.progress_format)?;
+        let mut progress = ProgressBar::new(adapters.len() as u64, self.progress_format)?;
         progress.write_activity("Searching for adapted resources");
 
         let mut adapted_resources = BTreeMap::<String, Vec<DscResource>>::new();
 
         let mut found_adapter: bool = false;
-        for (adapter_name, adapters) in &self.adapters {
+        for (adapter_name, adapters) in &adapters {
             for adapter in adapters {
                 progress.write_increment(1);
 
@@ -437,7 +437,7 @@ impl ResourceDiscovery for CommandDiscovery {
             return Err(DscError::AdapterNotFound(adapter_filter.to_string()));
         }
 
-        self.adapted_resources = adapted_resources;
+        locked_extend!(ADAPTED_RESOURCES, adapted_resources);
 
         Ok(())
     }
@@ -447,10 +447,10 @@ impl ResourceDiscovery for CommandDiscovery {
         if *kind == DiscoveryKind::Resource {
             if adapter_name_filter.is_empty() {
                 self.discover(kind, type_name_filter)?;
-                for (resource_name, resources_vec) in &self.resources {
+                for (resource_name, resources_vec) in &locked_clone!(RESOURCES) {
                     resources.insert(resource_name.clone(), resources_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
                 }
-                for (adapter_name, adapter_vec) in &self.adapters {
+                for (adapter_name, adapter_vec) in &locked_clone!(ADAPTERS) {
                     resources.insert(adapter_name.clone(), adapter_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
                 }
             } else {
@@ -458,15 +458,16 @@ impl ResourceDiscovery for CommandDiscovery {
                 self.discover_adapted_resources(type_name_filter, adapter_name_filter)?;
 
                 // add/update found adapted resources to the lookup_table
-                add_resources_to_lookup_table(&self.adapted_resources);
+                let adapted_resources = locked_clone!(ADAPTED_RESOURCES);
+                add_resources_to_lookup_table(&adapted_resources);
 
-                for (adapted_name, adapted_vec) in &self.adapted_resources {
+                for (adapted_name, adapted_vec) in &adapted_resources {
                     resources.insert(adapted_name.clone(), adapted_vec.iter().map(|r| ImportedManifest::Resource(r.clone())).collect());
                 }
             }
         } else {
             self.discover(kind, type_name_filter)?;
-            for (extension_name, extension) in &self.extensions {
+            for (extension_name, extension) in &locked_clone!(EXTENSIONS) {
                 resources.insert(extension_name.clone(), vec![ImportedManifest::Extension(extension.clone())]);
             }
         }
@@ -476,7 +477,9 @@ impl ResourceDiscovery for CommandDiscovery {
 
     fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter]) -> Result<BTreeMap<String, Vec<DscResource>>, DscError> {
         debug!("{}", t!("discovery.commandDiscovery.searchingForResources", resources = required_resource_types : {:?}));
-        self.discover( &DiscoveryKind::Resource, "*")?;
+        if locked_is_empty!(RESOURCES) {
+            self.discover(&DiscoveryKind::Resource, "*")?;
+        }
         let mut found_resources = BTreeMap::<String, Vec<DscResource>>::new();
         let mut required_resources = HashMap::<DiscoveryFilter, bool>::new();
         for filter in required_resource_types {
@@ -484,8 +487,8 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         for filter in required_resource_types {
-            if let Some(resources) = self.resources.get(filter.resource_type()) {
-                filter_resources(&mut found_resources, &mut required_resources, resources, filter);
+            if let Some(resources) = locked_get!(RESOURCES, filter.resource_type()) {
+                filter_resources(&mut found_resources, &mut required_resources, &resources, filter);
             }
             if required_resources.values().all(|&v| v) {
                 break;
@@ -498,12 +501,12 @@ impl ResourceDiscovery for CommandDiscovery {
         }
 
         // now go through the adapters, this is for implicit adapters so version can't be specified so use latest version
-        for adapter_name in self.adapters.clone().keys() {
+        for adapter_name in locked_clone!(ADAPTERS).keys() {
             self.discover_adapted_resources("*", adapter_name)?;
-            add_resources_to_lookup_table(&self.adapted_resources);
+            add_resources_to_lookup_table(&locked_clone!(ADAPTED_RESOURCES));
             for filter in required_resource_types {
-                if let Some(adapted_resources) = self.adapted_resources.get(filter.resource_type()) {
-                    filter_resources(&mut found_resources, &mut required_resources, adapted_resources, filter);
+                if let Some(adapted_resources) = locked_get!(ADAPTED_RESOURCES, filter.resource_type()) {
+                    filter_resources(&mut found_resources, &mut required_resources, &adapted_resources, filter);
                 }
                 if required_resources.values().all(|&v| v) {
                     break;
@@ -518,10 +521,10 @@ impl ResourceDiscovery for CommandDiscovery {
     }
 
     fn get_extensions(&mut self) -> Result<BTreeMap<String, DscExtension>, DscError> {
-        if self.extensions.is_empty() {
+        if locked_is_empty!(EXTENSIONS) {
             self.discover(&DiscoveryKind::Extension, "*")?;
         }
-        Ok(self.extensions.clone())
+        Ok(locked_clone!(EXTENSIONS))
     }
 }
 
