@@ -20,7 +20,7 @@ impl McpServer {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            tool_router: Self::list_adapted_resources_router() + Self::list_dsc_resources_router(),
+            tool_router: Self::list_dsc_resources_router() + Self::show_dsc_resource_router() + Self::list_dsc_functions_router(),
         }
     }
 }

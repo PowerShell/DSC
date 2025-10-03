@@ -19,7 +19,7 @@ impl Function for UniqueString {
         FunctionMetadata {
             name: "uniqueString".to_string(),
             description: t!("functions.uniqueString.description").to_string(),
-            category: FunctionCategory::String,
+            category: vec![FunctionCategory::String],
             min_args: 1,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![

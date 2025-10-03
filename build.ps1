@@ -236,6 +236,24 @@ if ($null -ne $packageType) {
         & $rustup default stable
     }
 
+    if ($Clippy) {
+        Write-Verbose -Verbose "Installing clippy..."
+        if ($UseCFS) {
+            cargo install clippy --config .cargo/config.toml
+        } else {
+            if ($architecture -ne 'current') {
+                write-verbose -verbose "Installing clippy for $architecture"
+                rustup component add clippy --target $architecture
+            } else {
+                write-verbose -verbose "Installing clippy for current architecture"
+                rustup component add clippy
+            }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install clippy"
+        }
+    }
+
     ## Test if Node is installed
     ## Skipping upgrade as users may have a specific version they want to use
     if (!(Get-Command 'node' -ErrorAction Ignore)) {
@@ -339,6 +357,7 @@ if (!$SkipBuild) {
         "tree-sitter-dscexpression",
         "tree-sitter-ssh-server-config",
         "security_context_lib",
+        "lib/osinfo_lib",
         "dsc_lib",
         "dsc",
         "dscecho",

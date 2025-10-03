@@ -77,7 +77,15 @@ dependencies = [
 
 [[package]]
 name = "osinfo"
-version = "0.1.0"
+version = "1.0.0"
+dependencies = [
+ "osinfo_lib",
+ "serde_json",
+]
+
+[[package]]
+name = "osinfo_lib"
+version = "1.0.0"
 dependencies = [
  "os_info",
  "serde",

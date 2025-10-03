@@ -16,7 +16,7 @@ impl Function for Or {
         FunctionMetadata {
             name: "or".to_string(),
             description: t!("functions.or.description").to_string(),
-            category: FunctionCategory::Logical,
+            category: vec![FunctionCategory::Logical],
             min_args: 2,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![

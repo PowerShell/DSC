@@ -16,7 +16,7 @@ impl Function for If {
         FunctionMetadata {
             name: "if".to_string(),
             description: t!("functions.if.description").to_string(),
-            category: FunctionCategory::Logical,
+            category: vec![FunctionCategory::Logical],
             min_args: 3,
             max_args: 3,
             accepted_arg_ordered_types: vec![

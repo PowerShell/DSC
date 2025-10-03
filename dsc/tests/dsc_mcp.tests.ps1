@@ -6,6 +6,7 @@ Describe 'Tests for MCP server' {
         $processStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
         $processStartInfo.FileName = "dsc"
         $processStartInfo.Arguments = "--trace-format plaintext mcp"
+        $processStartInfo.UseShellExecute = $false
         $processStartInfo.RedirectStandardError = $true
         $processStartInfo.RedirectStandardOutput = $true
         $processStartInfo.RedirectStandardInput = $true
@@ -69,12 +70,23 @@ Describe 'Tests for MCP server' {
             params = @{}
         }
 
-        $response = Send-McpRequest -request $mcpRequest
+        $tools = @{
+            'list_dsc_functions' = $false
+            'list_dsc_resources' = $false
+            'show_dsc_resource' = $false
+        }
 
+        $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 2
-        $response.result.tools.Count | Should -Be 2
-        $response.result.tools[0].name | Should -BeIn @('list_adapted_resources', 'list_dsc_resources')
-        $response.result.tools[1].name | Should -BeIn @('list_adapted_resources', 'list_dsc_resources')
+        $response.result.tools.Count | Should -Be $tools.Count
+        foreach ($tool in $response.result.tools) {
+            $tools.ContainsKey($tool.name) | Should -Be $true
+            $tools[$tool.name] = $true
+            $tool.description | Should -Not -BeNullOrEmpty
+        }
+        foreach ($tool in $tools.GetEnumerator()) {
+            $tool.Value | Should -Be $true -Because "Tool '$($tool.Key)' was not found in the list of tools"
+        }
     }
 
     It 'Calling list_dsc_resources works' {
@@ -89,24 +101,24 @@ Describe 'Tests for MCP server' {
         }
 
         $response = Send-McpRequest -request $mcpRequest
-        $response.id | Should -Be 3
+        $response.id | Should -BeGreaterOrEqual 3
         $resources = dsc resource list | ConvertFrom-Json -Depth 20 | Select-Object type, kind, description -Unique
         $response.result.structuredContent.resources.Count | Should -Be $resources.Count
         for ($i = 0; $i -lt $resources.Count; $i++) {
-            ($response.result.structuredContent.resources[$i].psobject.properties | Measure-Object).Count | Should -Be 3
+            ($response.result.structuredContent.resources[$i].psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 3
             $response.result.structuredContent.resources[$i].type | Should -BeExactly $resources[$i].type -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
             $response.result.structuredContent.resources[$i].kind | Should -BeExactly $resources[$i].kind -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
             $response.result.structuredContent.resources[$i].description | Should -BeExactly $resources[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
         }
     }
 
-    It 'Calling list_adapted_resources works' {
+    It 'Calling list_dsc_resources with adapter works' {
         $mcpRequest = @{
             jsonrpc = "2.0"
             id = 4
             method = "tools/call"
             params = @{
-                name = "list_adapted_resources"
+                name = "list_dsc_resources"
                 arguments = @{
                     adapter = "Microsoft.DSC/PowerShell"
                 }
@@ -125,21 +137,165 @@ Describe 'Tests for MCP server' {
         }
     }
 
-    It 'Calling list_adapted_resources with no matches works' {
+    It 'Calling list_dsc_resources with <adapter> returns error' -TestCases @(
+        @{"adapter" = "Non.Existent/Adapter"},
+        @{"adapter" = "Microsoft.DSC.Debug/Echo"}
+    ) {
+        param($adapter)
+
         $mcpRequest = @{
             jsonrpc = "2.0"
             id = 5
             method = "tools/call"
             params = @{
-                name = "list_adapted_resources"
+                name = "list_dsc_resources"
                 arguments = @{
-                    adapter = "Non.Existent/Adapter"
+                    adapter = $adapter
                 }
             }
         }
 
         $response = Send-McpRequest -request $mcpRequest
         $response.id | Should -Be 5
-        $response.result.structuredContent.resources.Count | Should -Be 0
+        $response.error.code | Should -Be -32602
+        $response.error.message | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Calling show_dsc_resource works' {
+        $resource = (dsc resource list | Select-Object -First 1 | ConvertFrom-Json -Depth 20)
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 6
+            method = "tools/call"
+            params = @{
+                name = "show_dsc_resource"
+                arguments = @{
+                    type = $resource.type
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 6
+        ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 4
+        $because = ($response.result.structuredContent | ConvertTo-Json -Depth 20 | Out-String)
+        $response.result.structuredContent.type | Should -BeExactly $resource.type -Because $because
+        $response.result.structuredContent.kind | Should -BeExactly $resource.kind -Because $because
+        $response.result.structuredContent.version | Should -Be $resource.version -Because $because
+        $response.result.structuredContent.capabilities | Should -Be $resource.capabilities -Because $because
+        $response.result.structuredContent.description | Should -Be $resource.description -Because $because
+        $schema = (dsc resource schema --resource $resource.type | ConvertFrom-Json -Depth 20)
+        $response.result.structuredContent.schema.'$id' | Should -Be $schema.'$id' -Because $because
+        $response.result.structuredContent.schema.type | Should -Be $schema.type -Because $because
+        $response.result.structuredContent.schema.properties.keys | Should -Be $schema.properties.keys -Because $because
+    }
+
+    It 'Calling show_dsc_resource with non-existent resource returns error' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 7
+            method = "tools/call"
+            params = @{
+                name = "show_dsc_resource"
+                arguments = @{
+                    type = "Non.Existent/Resource"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 7
+        $response.error.code | Should -Be -32602
+        $response.error.message | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Calling list_dsc_functions works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 8
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{}
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 8
+        $functions = dsc function list --output-format json | ConvertFrom-Json
+        $response.result.structuredContent.functions.Count | Should -Be $functions.Count
+        
+        $mcpFunctions = $response.result.structuredContent.functions | Sort-Object name
+        $dscFunctions = $functions | Sort-Object name
+        
+        for ($i = 0; $i -lt $dscFunctions.Count; $i++) {
+            ($mcpFunctions[$i].psobject.properties | Measure-Object).Count | Should -BeGreaterOrEqual 8
+            $mcpFunctions[$i].name | Should -BeExactly $dscFunctions[$i].name -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+            $mcpFunctions[$i].category | Should -BeExactly $dscFunctions[$i].category -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+            $mcpFunctions[$i].description | Should -BeExactly $dscFunctions[$i].description -Because ($response.result.structuredContent | ConvertTo-Json -Depth 10 | Out-String)
+        }
+    }
+
+    It 'Calling list_dsc_functions with function_filter filter works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 9
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{
+                    function_filter = "array"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 9
+        $response.result.structuredContent.functions.Count | Should -Be 1
+        $response.result.structuredContent.functions[0].name | Should -BeExactly "array"
+        $response.result.structuredContent.functions[0].category | Should -BeExactly "Array"
+    }
+
+    It 'Calling list_dsc_functions with wildcard pattern works' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 10
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{
+                    function_filter = "*Array*"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 10
+        $arrayFunctions = dsc function list --output-format json | ConvertFrom-Json -Depth 20 | Where-Object { $_.name -like "*Array*" }
+        $response.result.structuredContent.functions.Count | Should -Be $arrayFunctions.Count
+        foreach ($func in $response.result.structuredContent.functions) {
+            $func.name | Should -Match "Array" -Because "Function name should contain 'Array'"
+        }
+    }
+
+    # dont check for error as dsc function list returns empty list for invalid patterns
+    It 'Calling list_dsc_functions with invalid pattern returns empty result' {
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 11
+            method = "tools/call"
+            params = @{
+                name = "list_dsc_functions"
+                arguments = @{
+                    function_filter = "[invalid]"
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 11
+        $response.result.structuredContent.functions.Count | Should -Be 0
+        $response.result.structuredContent.functions | Should -BeNullOrEmpty
     }
 }

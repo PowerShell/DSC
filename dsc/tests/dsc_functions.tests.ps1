@@ -111,6 +111,125 @@ Describe 'tests for function expressions' {
     }
   }
 
+  It 'intersection function works for: <expression>' -TestCases @(
+    @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'))]"; expected = @('cd') }
+    @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
+    @{ expression = "[intersection(parameters('thirdArray'), parameters('fourthArray'))]"; expected = @('ef', 'gh') }
+    @{ expression = "[intersection(parameters('thirdObject'), parameters('fourthObject'))]"; expected = [pscustomobject]@{ three = 'd' } }
+    @{ expression = "[intersection(parameters('firstArray'), parameters('thirdArray'))]"; expected = @() }
+    @{ expression = "[intersection(parameters('firstObject'), parameters('firstArray'))]"; isError = $true }
+    @{ expression = "[intersection(parameters('firstArray'), parameters('secondArray'), parameters('fifthArray'))]"; expected = @('cd') }
+    @{ expression = "[intersection(parameters('firstObject'), parameters('secondObject'), parameters('sixthObject'))]"; expected = [pscustomobject]@{ two = 'b' } }
+    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'))]"; expected = [pscustomobject]@{
+      shared = [pscustomobject]@{ value = 42; flag = $true }
+      level = 1
+    } }
+    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject3'))]"; expected = [pscustomobject]@{ level = 1 } }
+    @{ expression = "[intersection(parameters('nestedObject1'), parameters('nestedObject2'), parameters('nestedObject4'))]"; expected = [pscustomobject]@{ level = 1 } }
+  ) {
+    param($expression, $expected, $isError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            parameters:
+              firstObject:
+                type: object
+                defaultValue:
+                  one: a
+                  two: b
+              secondObject:
+                type: object
+                defaultValue:
+                  two: b
+                  three: d
+              thirdObject:
+                type: object
+                defaultValue:
+                  two: c
+                  three: d
+              fourthObject:
+                type: object
+                defaultValue:
+                  three: d
+                  four: e
+              sixthObject:
+                type: object
+                defaultValue:
+                  two: b
+                  five: f
+              nestedObject1:
+                type: object
+                defaultValue:
+                  shared:
+                    value: 42
+                    flag: true
+                  level: 1
+                  unique1: test
+              nestedObject2:
+                type: object
+                defaultValue:
+                  shared:
+                    value: 42
+                    flag: true
+                  level: 1
+                  unique2: test
+              nestedObject3:
+                type: object
+                defaultValue:
+                  shared:
+                    value: 24
+                    flag: true
+                  level: 1
+                  unique3: test
+              nestedObject4:
+                type: object
+                defaultValue:
+                  level: 1
+                  different:
+                    value: 100
+                    flag: false
+              firstArray:
+                type: array
+                defaultValue:
+                - ab
+                - cd
+              secondArray:
+                type: array
+                defaultValue:
+                - cd
+                - ef
+              thirdArray:
+                type: array
+                defaultValue:
+                - ef
+                - gh
+              fourthArray:
+                type: array
+                defaultValue:
+                - gh
+                - ef
+                - ij
+              fifthArray:
+                type: array
+                defaultValue:
+                - cd
+                - kl
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    if ($isError) {
+      $LASTEXITCODE | Should -Be 2 -Because (Get-Content $TestDrive/error.log -Raw)
+      (Get-Content $TestDrive/error.log -Raw) | Should -Match 'All arguments must either be arrays or objects'
+    } else {
+      $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+      ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+    }
+  }
+
   It 'contain function works for: <expression>' -TestCases @(
     @{ expression = "[contains(parameters('array'), 'a')]" ; expected = $true }
     @{ expression = "[contains(parameters('array'), 2)]" ; expected = $false }
@@ -482,5 +601,182 @@ Describe 'tests for function expressions' {
     $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
     $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
     ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
+  It 'context function works' {
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "[context()]"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    $context = $out.results[0].result.actualState.output
+    $os = osinfo | ConvertFrom-Json
+    $context.os.family | Should -BeExactly $os.family
+    $context.os.version | Should -BeExactly $os.version
+    $context.os.bitness | Should -BeExactly $os.bitness
+    $context.os.architecture | Should -BeExactly $os.architecture
+    $context.security | Should -BeExactly $out.metadata.'Microsoft.DSC'.securityContext
+  }
+
+  It 'range function works: <expression>' -TestCases @(
+    @{ expression = '[range(1, 3)]'; expected = @(1, 2, 3) }
+    @{ expression = '[range(0, 5)]'; expected = @(0, 1, 2, 3, 4) }
+    @{ expression = '[range(-2, 4)]'; expected = @(-2, -1, 0, 1) }
+    @{ expression = '[range(10, 0)]'; expected = @() }
+    @{ expression = '[range(100, 3)]'; expected = @(100, 101, 102) }
+    @{ expression = '[first(range(2147473647, 10000))]'; expected = 2147473647 }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    ($out.results[0].result.actualState.output | Out-String) | Should -BeExactly ($expected | Out-String)
+  }
+
+  It 'range function handles errors correctly: <expression>' -TestCases @(
+    @{ expression = '[range(1, -1)]'; expectedError = 'Count must be non-negative' }
+    @{ expression = '[range(1, 10001)]'; expectedError = 'Count must not exceed 10000' }
+    @{ expression = '[range(2147483647, 1)]'; expectedError = 'Sum of startIndex and count must not exceed 2147483647' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match ([regex]::Escape($expectedError))
+  }
+
+  It 'substring function works for: <expression>' -TestCases @(
+    @{ expression = "[substring('hello world', 6, 5)]"; expected = 'world' }
+    @{ expression = "[substring('hello', 0, 2)]"; expected = 'he' }
+    @{ expression = "[substring('hello', 1, 3)]"; expected = 'ell' }
+    @{ expression = "[substring('hello', 2)]"; expected = 'llo' }
+    @{ expression = "[substring('hello', 0)]"; expected = 'hello' }
+    @{ expression = "[substring('hello', 5)]"; expected = '' }
+    @{ expression = "[substring('hello', 1, 1)]"; expected = 'e' }
+    @{ expression = "[substring('hello', 5, 0)]"; expected = '' }
+    @{ expression = "[substring('', 0)]"; expected = '' }
+    @{ expression = "[substring('', 0, 0)]"; expected = '' }
+    @{ expression = "[substring('héllo', 1, 2)]"; expected = 'él' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'substring function error handling: <expression>' -TestCases @(
+    @{ expression = "[substring('hello', -1, 2)]"; expectedError = 'Start index cannot be negative' }
+    @{ expression = "[substring('hello', 1, -1)]"; expectedError = 'Length cannot be negative' }
+    @{ expression = "[substring('hello', 10, 1)]"; expectedError = 'Start index is beyond the end of the string' }
+    @{ expression = "[substring('hello', 2, 10)]"; expectedError = 'Length extends beyond the end of the string' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: `"$expression`"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match ([regex]::Escape($expectedError))
+  }
+
+  It 'mixed booleans with functions works' -TestCases @(
+    @{ expression = "[and(true(), false, not(false))]"; expected = $false }
+    @{ expression = "[or(false, false(), not(false()))]"; expected = $true }
+    @{ expression = "[and(true(), true, not(false))]"; expected = $true }
+    @{ expression = "[or(false, false(), not(true()))]"; expected = $false }
+  ) {
+    param($expression, $expected)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: "$expression"
+"@
+    $out = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log | ConvertFrom-Json
+    $LASTEXITCODE | Should -Be 0 -Because (Get-Content $TestDrive/error.log -Raw)
+    $out.results[0].result.actualState.output | Should -BeExactly $expected
+  }
+
+    It 'base64ToString function works for: <expression>' -TestCases @(
+    @{ expression = "[base64ToString('aGVsbG8gd29ybGQ=')]"; expected = 'hello world' }
+    @{ expression = "[base64ToString('')]"; expected = '' }
+    @{ expression = "[base64ToString('aMOpbGxv')]"; expected = 'héllo' }
+    @{ expression = "[base64ToString('eyJrZXkiOiJ2YWx1ZSJ9')]"; expected = '{"key":"value"}' }
+    @{ expression = "[base64ToString(base64('test message'))]"; expected = 'test message' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'base64ToString function error handling: <expression>' -TestCases @(
+    @{ expression = "[base64ToString('invalid!@#')]" ; expectedError = 'Invalid base64 encoding' }
+    @{ expression = "[base64ToString('/w==')]" ; expectedError = 'Decoded bytes do not form valid UTF-8' }
+  ) {
+    param($expression, $expectedError)
+
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: `"$expression`"
+"@
+    $null = dsc -l trace config get -i $config_yaml 2>$TestDrive/error.log
+    $LASTEXITCODE | Should -Not -Be 0
+    $errorContent = Get-Content $TestDrive/error.log -Raw
+    $errorContent | Should -Match $expectedError
   }
 }

@@ -27,7 +27,7 @@ impl Function for Join {
         FunctionMetadata {
             name: "join".to_string(),
             description: t!("functions.join.description").to_string(),
-            category: FunctionCategory::String,
+            category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![

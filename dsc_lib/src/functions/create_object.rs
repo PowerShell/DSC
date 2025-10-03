@@ -16,7 +16,7 @@ impl Function for CreateObject {
         FunctionMetadata {
             name: "createObject".to_string(),
             description: t!("functions.createObject.description").to_string(),
-            category: FunctionCategory::Object,
+            category: vec![FunctionCategory::Object],
             min_args: 0,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![],
@@ -35,7 +35,7 @@ impl Function for CreateObject {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.createObject.invoked"));
 
-        if args.len() % 2 != 0 {
+        if !args.len().is_multiple_of(2) {
             return Err(DscError::Parser(t!("functions.createObject.argsMustBePairs").to_string()));
         }
 

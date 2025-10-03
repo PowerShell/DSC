@@ -16,10 +16,12 @@ pub mod add;
 pub mod and;
 pub mod array;
 pub mod base64;
+pub mod base64_to_string;
 pub mod bool;
 pub mod coalesce;
 pub mod concat;
 pub mod contains;
+pub mod context;
 pub mod copy_index;
 pub mod create_array;
 pub mod create_object;
@@ -39,6 +41,7 @@ pub mod less_or_equals;
 pub mod format;
 pub mod int;
 pub mod index_of;
+pub mod intersection;
 pub mod join;
 pub mod last_index_of;
 pub mod max;
@@ -50,6 +53,7 @@ pub mod null;
 pub mod or;
 pub mod parameters;
 pub mod path;
+pub mod range;
 pub mod reference;
 pub mod resource_id;
 pub mod secret;
@@ -57,6 +61,7 @@ pub mod skip;
 pub mod starts_with;
 pub mod string;
 pub mod sub;
+pub mod substring;
 pub mod system_root;
 pub mod r#true;
 pub mod union;
@@ -92,7 +97,7 @@ impl Display for FunctionArgKind {
 pub struct FunctionMetadata {
     pub name: String,
     pub description: String,
-    pub category: FunctionCategory,
+    pub category: Vec<FunctionCategory>,
     pub min_args: usize,
     pub max_args: usize,
     pub accepted_arg_ordered_types: Vec<Vec<FunctionArgKind>>,
@@ -130,10 +135,12 @@ impl FunctionDispatcher {
             Box::new(and::And{}),
             Box::new(array::Array{}),
             Box::new(base64::Base64{}),
+            Box::new(base64_to_string::Base64ToString{}),
             Box::new(bool::Bool{}),
             Box::new(coalesce::Coalesce{}),
             Box::new(concat::Concat{}),
             Box::new(contains::Contains{}),
+            Box::new(context::Context{}),
             Box::new(copy_index::CopyIndex{}),
             Box::new(create_array::CreateArray{}),
             Box::new(create_object::CreateObject{}),
@@ -153,6 +160,7 @@ impl FunctionDispatcher {
             Box::new(format::Format{}),
             Box::new(int::Int{}),
             Box::new(index_of::IndexOf{}),
+            Box::new(intersection::Intersection{}),
             Box::new(join::Join{}),
             Box::new(last_index_of::LastIndexOf{}),
             Box::new(max::Max{}),
@@ -164,6 +172,7 @@ impl FunctionDispatcher {
             Box::new(or::Or{}),
             Box::new(parameters::Parameters{}),
             Box::new(path::Path{}),
+            Box::new(range::Range{}),
             Box::new(reference::Reference{}),
             Box::new(resource_id::ResourceId{}),
             Box::new(secret::Secret{}),
@@ -171,6 +180,7 @@ impl FunctionDispatcher {
             Box::new(starts_with::StartsWith{}),
             Box::new(string::StringFn{}),
             Box::new(sub::Sub{}),
+            Box::new(substring::Substring{}),
             Box::new(system_root::SystemRoot{}),
             Box::new(r#true::True{}),
             Box::new(utc_now::UtcNow{}),
@@ -265,7 +275,7 @@ impl FunctionDispatcher {
         self.functions.iter().map(|(name, function)| {
             let metadata = function.get_metadata();
             FunctionDefinition {
-                category: metadata.category,
+                category: metadata.category.clone(),
                 name: name.clone(),
                 description: metadata.description,
                 min_args: metadata.min_args,
@@ -287,7 +297,7 @@ impl Default for FunctionDispatcher {
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FunctionDefinition {
-    pub category: FunctionCategory,
+    pub category: Vec<FunctionCategory>,
     pub name: String,
     pub description: String,
     #[serde(rename = "minArgs")]

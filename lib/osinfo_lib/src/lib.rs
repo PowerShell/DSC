@@ -9,9 +9,6 @@ use std::string::ToString;
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OsInfo {
-    /// Returns the unique ID for the `OSInfo` instance data type.
-    #[serde(rename = "$id")]
-    pub id: String,
     family: Family,
     /// Defines the version of the operating system as a string.
     version: String,
@@ -21,23 +18,12 @@ pub struct OsInfo {
     /// Defines the codename for the operating system as returned from `lsb_release --codename`.
     #[serde(skip_serializing_if = "Option::is_none")]
     codename: Option<String>,
-    bitness: Bitness,
+    bitness: Option<i32>,
     /// Defines the processor architecture as reported by `uname -m` on the operating system.
     #[serde(skip_serializing_if = "Option::is_none")]
     architecture: Option<String>,
     #[serde(rename = "_name", skip_serializing_if = "Option::is_none")]
     name: Option<String>,
-}
-
-/// Defines whether the operating system is a 32-bit or 64-bit operating system.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub enum Bitness {
-    #[serde(rename = "32")]
-    Bit32,
-    #[serde(rename = "64")]
-    Bit64,
-    #[serde(rename = "unknown")]
-    Unknown,
 }
 
 /// Defines whether the operating system is Linux, macOS, or Windows.
@@ -59,8 +45,6 @@ impl Display for Family {
     }
 }
 
-const ID: &str = "https://developer.microsoft.com/json-schemas/dsc/os_info/20230303/Microsoft.Dsc.OS_Info.schema.json";
-
 impl OsInfo {
     pub fn new(include_name: bool) -> Self {
         let os_info = os_info::get();
@@ -72,10 +56,10 @@ impl OsInfo {
             os_info::Type::Windows => Family::Windows,
             _ => Family::Linux,
         };
-        let bits: Bitness = match os_info.bitness() {
-            os_info::Bitness::X32 => Bitness::Bit32,
-            os_info::Bitness::X64 => Bitness::Bit64,
-            _ => Bitness::Unknown,
+        let bits = match os_info.bitness() {
+            os_info::Bitness::X32 => Some(32),
+            os_info::Bitness::X64 => Some(64),
+            _ => None,
         };
         let version = os_info.version().to_string();
         let name = if include_name {
@@ -89,7 +73,6 @@ impl OsInfo {
             None
         };
         Self {
-            id: ID.to_string(),
             family,
             version,
             edition,

@@ -17,7 +17,7 @@ impl Function for StartsWith {
         FunctionMetadata {
             name: "startsWith".to_string(),
             description: t!("functions.startsWith.description").to_string(),
-            category: FunctionCategory::String,
+            category: vec![FunctionCategory::String],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
