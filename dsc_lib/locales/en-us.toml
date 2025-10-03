@@ -507,6 +507,12 @@ invoked = "sub function"
 description = "Returns the system root path"
 invoked = "systemRoot function"
 
+[functions.toLower]
+description = "Converts the specified string to lower case"
+
+[functions.toUpper]
+description = "Converts the specified string to upper case"
+
 [functions.true]
 description = "Returns the boolean value true"
 invoked = "true function"

@@ -779,4 +779,56 @@ Describe 'tests for function expressions' {
     $errorContent = Get-Content $TestDrive/error.log -Raw
     $errorContent | Should -Match $expectedError
   }
+
+  It 'toUpper function works for: <expression>' -TestCases @(
+    @{ expression = "[toUpper('hello world')]"; expected = 'HELLO WORLD' }
+    @{ expression = "[toUpper('Hello World')]"; expected = 'HELLO WORLD' }
+    @{ expression = "[toUpper('HELLO WORLD')]"; expected = 'HELLO WORLD' }
+    @{ expression = "[toUpper('')]"; expected = '' }
+    @{ expression = "[toUpper('Hello123!@#')]"; expected = 'HELLO123!@#' }
+    @{ expression = "[toUpper('café')]"; expected = 'CAFÉ' }
+    @{ expression = "[toUpper('  hello  world  ')]"; expected = '  HELLO  WORLD  ' }
+    @{ expression = "[toUpper('a')]"; expected = 'A' }
+    @{ expression = "[toUpper(concat('hello', ' world'))]"; expected = 'HELLO WORLD' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
+
+  It 'toLower function works for: <expression>' -TestCases @(
+    @{ expression = "[toLower('HELLO WORLD')]"; expected = 'hello world' }
+    @{ expression = "[toLower('Hello World')]"; expected = 'hello world' }
+    @{ expression = "[toLower('hello world')]"; expected = 'hello world' }
+    @{ expression = "[toLower('')]"; expected = '' }
+    @{ expression = "[toLower('HELLO123!@#')]"; expected = 'hello123!@#' }
+    @{ expression = "[toLower('CAFÉ')]"; expected = 'café' }
+    @{ expression = "[toLower('  HELLO  WORLD  ')]"; expected = '  hello  world  ' }
+    @{ expression = "[toLower('A')]"; expected = 'a' }
+    @{ expression = "[toLower(concat('HELLO', ' WORLD'))]"; expected = 'hello world' }
+  ) {
+    param($expression, $expected)
+
+    $escapedExpression = $expression -replace "'", "''"
+    $config_yaml = @"
+            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
+            resources:
+            - name: Echo
+              type: Microsoft.DSC.Debug/Echo
+              properties:
+                output: '$escapedExpression'
+"@
+    $out = $config_yaml | dsc config get -f - | ConvertFrom-Json
+    $out.results[0].result.actualState.output | Should -Be $expected
+  }
 }
