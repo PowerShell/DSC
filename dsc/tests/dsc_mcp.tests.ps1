@@ -17,24 +17,12 @@ Describe 'Tests for MCP server' {
             $mcp.StandardInput.WriteLine($request)
             $mcp.StandardInput.Flush()
             if (!$notify) {
-                write-verbose -verbose "peeking stdout"
                 while ($mcp.StandardOutput.Peek() -eq -1) {
                     Start-Sleep -Milliseconds 100
                 }
-<<<<<<< HEAD
                 while ($mcp.StandardError.Peek() -ne -1) {
                     $stderr = $mcp.StandardError.ReadLine()
-                    Write-Verbose -Verbose "MCP STDERR: $stderr"
                 }
-||||||| parent of 5829321b (add test tracing)
-=======
-                write-verbose -verbose "peeking stderr"
-                while ($mcp.StandardError.Peek() -ne -1) {
-                    $stderr = $mcp.StandardError.ReadLine()
-                    Write-Verbose -Verbose "MCP STDERR: $stderr"
-                }
-                write-verbose -verbose "reading stdout"
->>>>>>> 5829321b (add test tracing)
                 $stdout = $mcp.StandardOutput.ReadLine()
                 return ($stdout | ConvertFrom-Json -Depth 30)
             }
