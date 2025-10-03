@@ -274,7 +274,7 @@ impl RegistryHelper {
 
         if let Some(value_name) = &self.config.value_name {
             if self.what_if {
-                what_if_metadata.push(format!("Would delete value '{value_name}'"));
+                what_if_metadata.push(t!("registry_helper.whatIfDeleteValue", value_name = value_name).to_string());
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
                     value_name: Some(value_name.clone()),
@@ -301,7 +301,7 @@ impl RegistryHelper {
             let subkey_name = &self.config.key_path[parent_path.len() + 1..];
 
             if self.what_if {
-                what_if_metadata.push(format!("Would delete subkey '{subkey_name}'"));
+                what_if_metadata.push(t!("registry_helper.whatIfDeleteSubkey", subkey_name = subkey_name).to_string());
                 return Ok(Some(Registry {
                     key_path: self.config.key_path.clone(),
                     metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
