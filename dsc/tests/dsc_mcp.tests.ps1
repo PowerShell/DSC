@@ -163,7 +163,7 @@ Describe 'Tests for MCP server' {
     }
 
     It 'Calling show_dsc_resource works' {
-        $resource = (dsc resource list | ConvertFrom-Json -Depth 20 | Select-Object -First 1)
+        $resource = (dsc resource list | Select-Object -First 1 | ConvertFrom-Json -Depth 20)
 
         $mcpRequest = @{
             jsonrpc = "2.0"
