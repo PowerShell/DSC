@@ -15,5 +15,7 @@ unsupportedValueDataType = "Unsupported registry value data type"
 
 [registry_helper]
 whatIfCreateKey = "Key '%{subkey}' not found, would create it"
+whatIfDeleteValue = "Would delete value '%{value_name}'"
+whatIfDeleteSubkey = "Would delete subkey '%{subkey_name}'"
 removeErrorKeyNotExist = "Key already does not exist"
 removeDeletingSubKey = "Deleting subkey '%{name}' using %{parent}"

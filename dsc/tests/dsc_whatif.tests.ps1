@@ -50,20 +50,6 @@ Describe 'whatif tests' {
 
     }
 
-    It 'config set whatif for delete is not supported' {
-        $config_yaml = @"
-            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-            resources:
-            - name: Delete
-              type: Test/Delete
-              properties:
-                _exist: false
-"@
-        $result = $config_yaml | dsc config set -w -f - 2>&1
-        $result | Should -Match 'ERROR.*?Not supported.*?what-if'
-        $LASTEXITCODE | Should -Be 2
-    }
-
     It 'config set whatif for group resource' {
         $result = dsc config set -f $PSScriptRoot/../examples/groups.dsc.yaml -w 2>&1
         $result | Should -Match 'ERROR.*?Not implemented.*?what-if'
