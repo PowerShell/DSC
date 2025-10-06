@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use tokio::task;
 
 #[derive(Deserialize, JsonSchema)]
-#[serde(rename_all = "lowercase", untagged)]
+#[serde(rename_all = "lowercase")]
 pub enum DscOperation {
     Get,
     Set,

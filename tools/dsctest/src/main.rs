@@ -10,6 +10,7 @@ mod exporter;
 mod get;
 mod in_desired_state;
 mod metadata;
+mod operation;
 mod adapter;
 mod sleep;
 mod trace;
@@ -28,6 +29,7 @@ use crate::exporter::{Exporter, Resource};
 use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
+use crate::operation::Operation;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::version::Version;
@@ -209,6 +211,17 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::Operation { operation, input } => {
+            let mut operation_result = match serde_json::from_str::<Operation>(&input) {
+                Ok(op) => op,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            operation_result.operation = Some(operation.to_lowercase());
+            serde_json::to_string(&operation_result).unwrap()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
                 Schemas::Adapter => {
@@ -237,6 +250,9 @@ fn main() {
                 },
                 Schemas::Metadata => {
                     schema_for!(Metadata)
+                },
+                Schemas::Operation => {
+                    schema_for!(Operation)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)
