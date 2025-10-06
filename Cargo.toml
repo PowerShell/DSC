@@ -4,7 +4,7 @@ resolver = "2"
 # the path to a crate.
 members = [
     "dsc",
-    "lib/dsc_lib",
+    "lib/dsc-lib",
     "resources/dscecho",
     "lib/osinfo_lib",
     "resources/osinfo",
@@ -26,7 +26,7 @@ members = [
 # avoid unintentionally modifying this value.
 default-members = [
     "dsc",
-    "lib/dsc_lib",
+    "lib/dsc-lib",
     "resources/dscecho",
     "lib/osinfo_lib",
     "resources/osinfo",
@@ -50,7 +50,7 @@ default-members = [
 # current operating system to enable faster builds.
 Windows = [
     "dsc",
-    "lib/dsc_lib",
+    "lib/dsc-lib",
     "resources/dscecho",
     "lib/osinfo_lib",
     "resources/osinfo",
@@ -69,7 +69,7 @@ Windows = [
 ]
 macOS = [
     "dsc",
-    "lib/dsc_lib",
+    "lib/dsc-lib",
     "resources/dscecho",
     "lib/osinfo_lib",
     "resources/osinfo",
@@ -85,7 +85,7 @@ macOS = [
 ]
 Linux = [
     "dsc",
-    "lib/dsc_lib",
+    "lib/dsc-lib",
     "resources/dscecho",
     "lib/osinfo_lib",
     "resources/osinfo",
@@ -111,13 +111,13 @@ strip = "symbols"           # See split-debuginfo - allows us to drop the size b
 
 [workspace.dependencies]
 #external dependencies
-# dsc_lib
+# dsc-lib
 base32 = { version = "0.5" }
-# dsc_lib
+# dsc-lib
 base64 = { version = "0.22" }
-# dsc_lib, sshdconfig
+# dsc-lib, sshdconfig
 chrono = { version = "0.4" }
-# dsc, dsc_lib, dscecho, registry, runcommandonset, sshdconfig, dsctest, test_group_resource
+# dsc, dsc-lib, dscecho, registry, runcommandonset, sshdconfig, dsctest, test_group_resource
 clap = { version = "4.5", features = ["derive"] }
 # dsc
 clap_complete = { version = "4.5" }
@@ -125,27 +125,27 @@ clap_complete = { version = "4.5" }
 crossterm = { version = "0.29" }
 # dsc
 ctrlc = { version = "3.5" }
-# dsc_lib
+# dsc-lib
 derive_builder = { version = "0.20" }
-# dsc, dsc_lib
+# dsc, dsc-lib
 indicatif = { version = "0.18" }
 # security_context_lib::windows
 is_elevated = { version = "0.1" }
-# dsc, dsc_lib
+# dsc, dsc-lib
 jsonschema = { version = "0.33", default-features = false }
-# dsc_lib
+# dsc-lib
 linked-hash-map = { version = "0.5" }
-# dsc_lib
+# dsc-lib
 murmurhash64 = { version = "0.3" }
 # security_context_lib::not_windows
 nix = { version = "0.30" }
-# dsc_lib
+# dsc-lib
 num-traits = { version = "0.2" }
 # osinfo_lib
 os_info = { version = "3.11" }
-# dsc, dsc_lib
+# dsc, dsc-lib
 path-absolutize = { version = "3.1" }
-# dsc, dsc_lib
+# dsc, dsc-lib
 regex = { version = "1.11" }
 # registry, registry_lib
 registry = { version = "1.3" }
@@ -153,17 +153,17 @@ registry = { version = "1.3" }
 rmcp = { version = "0.7" }
 # dsc_lib
 rt-format = { version = "0.3" }
-# dsc, dsc_lib, dscecho, registry, registry_lib, runcommandonset, sshdconfig
+# dsc, dsc-lib, dscecho, registry, registry_lib, runcommandonset, sshdconfig
 rust-i18n = { version = "3.1" }
-# dsc, dsc_lib, dscecho, registry, registry_lib, sshdconfig, dsctest, test_group_resource
+# dsc, dsc-lib, dscecho, registry, registry_lib, sshdconfig, dsctest, test_group_resource
 schemars = { version = "1.0", features = ["preserve_order"] }
-# dsc, dsc_lib
+# dsc, dsc-lib
 semver = { version = "1.0" }
-# dsc, dsc_lib, dscecho, osinfo_lib, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource
+# dsc, dsc-lib, dscecho, osinfo_lib, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource
 serde = { version = "1.0", features = ["derive"] }
-# dsc, dsc_lib, dscecho, osinfo_lib, osinfo, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
+# dsc, dsc-lib, dscecho, osinfo_lib, osinfo, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
 serde_json = { version = "1.0", features = ["preserve_order"] }
-# dsc, dsc_lib, y2j
+# dsc, dsc-lib, y2j
 serde_yaml = { version = "0.9" }
 # dsc, y2j
 syntect = { version = "5.3", features = ["default-fancy"], default-features = false }
@@ -173,37 +173,37 @@ sysinfo = { version = "0.37" }
 tempfile = { version = "3.23" }
 # dsc, dsc_lib, registry, registry_lib, sshdconfig
 thiserror = { version = "2.0" }
-# dsc, dsc_lib
+# dsc, dsc-lib
 tokio = { version = "1.47" }
 # dsc
 tokio-util = { version = "0.7" }
-# dsc, dsc_lib, registry, registry_lib, runcommandonset, sshdconfig
+# dsc, dsc-lib, registry, registry_lib, runcommandonset, sshdconfig
 tracing = { version = "0.1" }
-# dsc, dsc_lib
+# dsc, dsc-lib
 tracing-indicatif = { version = "0.3" }
 # dsc, registry, registry_lib, runcommandonset, sshdconfig
 tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "json"] }
-# dsc_lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
+# dsc-lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
 tree-sitter = { version = "0.25" }
 # tree-sitter-dscexpression, tree-sitter-ssh-server-config
 tree-sitter-language = { version = "0.1" }
-# dsc_lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
+# dsc-lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
 tree-sitter-rust = { version = "0.24" }
 # registry, registry_lib
 utfx = { version = "0.1" }
-# dsc_lib
+# dsc-lib
 uuid = { version = "1.18", features = ["v4"] }
-# dsc_lib
+# dsc-lib
 which = { version = "8.0" }
 
 # build-only dependencies
-# dsc_lib, registry_lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
+# dsc-lib, registry_lib, sshdconfig, tree-sitter-dscexpression, tree-sitter-ssh-server-config
 cc = { version = "1.2" }
 # registry, registry_lib
 static_vcruntime = { version = "2.0" }
 
 # Workspace crates as dependencies
-dsc_lib = { path = "lib/dsc_lib" }
+dsc-lib = { path = "lib/dsc-lib" }
 osinfo_lib = { path = "lib/osinfo_lib" }
 security_context_lib = { path = "lib/security_context_lib" }
 tree-sitter-dscexpression = { path = "grammars/tree-sitter-dscexpression" }

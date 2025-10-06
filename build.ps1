@@ -358,7 +358,7 @@ if (!$SkipBuild) {
         "grammars/tree-sitter-ssh-server-config",
         "lib/security_context_lib",
         "lib/osinfo_lib",
-        "lib/dsc_lib",
+        "lib/dsc-lib",
         "dsc",
         "resources/dscecho",
         "extensions/bicep",

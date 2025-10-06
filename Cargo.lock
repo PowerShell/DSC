@@ -620,7 +620,7 @@ dependencies = [
  "clap_complete",
  "crossterm",
  "ctrlc",
- "dsc_lib",
+ "dsc-lib",
  "indicatif",
  "jsonschema",
  "path-absolutize",
@@ -643,7 +643,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dsc_lib"
+name = "dsc-lib"
 version = "3.2.0"
 dependencies = [
  "base32",
@@ -2753,7 +2753,7 @@ name = "test_group_resource"
 version = "0.1.0"
 dependencies = [
  "clap",
- "dsc_lib",
+ "dsc-lib",
  "schemars",
  "serde",
  "serde_json",
