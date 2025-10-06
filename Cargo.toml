@@ -17,8 +17,8 @@ members = [
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
-    "tree-sitter-dscexpression",
-    "tree-sitter-ssh-server-config",
+    "grammars/tree-sitter-dscexpression",
+    "grammars/tree-sitter-ssh-server-config",
     "y2j"
 ]
 # This value is modified by the `Set-DefaultWorkspaceMember` helper.
@@ -39,8 +39,8 @@ default-members = [
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
-    "tree-sitter-dscexpression",
-    "tree-sitter-ssh-server-config",
+    "grammars/tree-sitter-dscexpression",
+    "grammars/tree-sitter-ssh-server-config",
     "y2j"
 ]
 
@@ -63,8 +63,8 @@ Windows = [
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
-    "tree-sitter-dscexpression",
-    "tree-sitter-ssh-server-config",
+    "grammars/tree-sitter-dscexpression",
+    "grammars/tree-sitter-ssh-server-config",
     "y2j"
 ]
 macOS = [
@@ -79,8 +79,8 @@ macOS = [
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
-    "tree-sitter-dscexpression",
-    "tree-sitter-ssh-server-config",
+    "grammars/tree-sitter-dscexpression",
+    "grammars/tree-sitter-ssh-server-config",
     "y2j"
 ]
 Linux = [
@@ -95,8 +95,8 @@ Linux = [
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
-    "tree-sitter-dscexpression",
-    "tree-sitter-ssh-server-config",
+    "grammars/tree-sitter-dscexpression",
+    "grammars/tree-sitter-ssh-server-config",
     "y2j"
 ]
 
@@ -206,6 +206,6 @@ static_vcruntime = { version = "2.0" }
 dsc_lib = { path = "lib/dsc_lib" }
 osinfo_lib = { path = "lib/osinfo_lib" }
 security_context_lib = { path = "lib/security_context_lib" }
-tree-sitter-dscexpression = { path = "tree-sitter-dscexpression" }
+tree-sitter-dscexpression = { path = "grammars/tree-sitter-dscexpression" }
 registry_lib = { path = "lib/registry_lib" }
-tree-sitter-ssh-server-config = { path = "tree-sitter-ssh-server-config" }
+tree-sitter-ssh-server-config = { path = "grammars/tree-sitter-ssh-server-config" }

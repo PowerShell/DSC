@@ -354,8 +354,8 @@ if (!$SkipBuild) {
     # projects are in dependency order
     $projects = @(
         ".",
-        "tree-sitter-dscexpression",
-        "tree-sitter-ssh-server-config",
+        "grammars/tree-sitter-dscexpression",
+        "grammars/tree-sitter-ssh-server-config",
         "lib/security_context_lib",
         "lib/osinfo_lib",
         "lib/dsc_lib",
@@ -373,8 +373,8 @@ if (!$SkipBuild) {
         "y2j"
     )
     $pedantic_unclean_projects = @()
-    $clippy_unclean_projects = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
-    $skip_test_projects_on_windows = @("tree-sitter-dscexpression", "tree-sitter-ssh-server-config")
+    $clippy_unclean_projects = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
+    $skip_test_projects_on_windows = @("grammars/tree-sitter-dscexpression", "grammars/tree-sitter-ssh-server-config")
 
     if ($IsWindows) {
         $projects += $windows_projects
@@ -397,7 +397,7 @@ if (!$SkipBuild) {
             Write-Verbose -Verbose "Current directory is $(Get-Location)"
 
             # check if the project is either tree-sitter-dscexpression or tree-sitter-ssh-server-config
-            if (($project -eq 'tree-sitter-dscexpression') -or ($project -eq 'tree-sitter-ssh-server-config')) {
+            if (($project -match 'tree-sitter-dscexpression$') -or ($project -match 'tree-sitter-ssh-server-config$')) {
                 if ($UpdateLockFile) {
                     cargo generate-lockfile
                 }
