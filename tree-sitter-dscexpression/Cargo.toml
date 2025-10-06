@@ -19,17 +19,10 @@ include = [
 [lib]
 path = "bindings/rust/lib.rs"
 
-[profile.release]
-strip = true
-# optimize for size
-opt-level = 2
-# enable link time optimization to remove dead code
-lto = true
-
 [dependencies]
-tree-sitter-rust = "0.24"
-tree-sitter = "0.25"
-tree-sitter-language = "0.1"
+tree-sitter-rust = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-language = { workspace = true }
 
 [build-dependencies]
-cc = "*"
+cc = { workspace = true }

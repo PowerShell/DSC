@@ -3,18 +3,9 @@ name = "dscecho"
 version = "1.0.0"
 edition = "2021"
 
-[profile.release]
-codegen-units = 1           # reduces binary size by ~2%
-debug = "full"              # No one needs an undebuggable release binary
-lto = true                  # reduces binary size by ~14%
-opt-level = "s"             # reduces binary size by ~25%
-panic = "abort"             # reduces binary size by ~50% in combination with -Zbuild-std-features=panic_immediate_abort
-split-debuginfo = "packed"  # generates a seperate *.dwp/*.dSYM so the binary can get stripped
-strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
-
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
-rust-i18n = { version = "3.1" }
-schemars = { version = "1.0" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0", features = ["preserve_order"] }
+clap = { workspace = true }
+rust-i18n = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

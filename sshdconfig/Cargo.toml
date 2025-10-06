@@ -3,34 +3,26 @@ name = "sshdconfig"
 version = "0.1.0"
 edition = "2021"
 
-[profile.release]
-strip = true
-# optimize for size
-opt-level = 2
-# enable link time optimization to remove dead code
-lto = true
-
-[profile.dev]
-lto = true
-
 [dependencies]
-chrono = { version = "0.4" }
-clap = { version = "4.5", features = ["derive"] }
-crossterm = { version = "0.29" }
-rust-i18n = { version = "3.1" }
-schemars = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0", features = ["preserve_order"] }
-tempfile = "3.23"
-thiserror = { version = "2.0" }
-tracing = "0.1.37"
-tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "json"] }
-tree-sitter = "0.25"
-tree-sitter-rust = "0.24"
-tree-sitter-ssh-server-config = { path = "../tree-sitter-ssh-server-config" }
+#external dependencies
+chrono = { workspace = true }
+clap = { workspace = true }
+crossterm = { workspace = true }
+rust-i18n = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tree-sitter = { workspace = true }
+tree-sitter-rust = { workspace = true}
+# workspace crate dependencies
+tree-sitter-ssh-server-config = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
-registry_lib = { path = "../registry_lib" }
+registry_lib = { workspace = true }
 
 [build-dependencies]
-cc="*"
+cc = { workspace = true }

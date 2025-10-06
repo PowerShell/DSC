@@ -1,16 +1,4 @@
 {
-    "rust-analyzer.linkedProjects": [
-        "./dsc/Cargo.toml",
-        "./dsc_lib/Cargo.toml",
-        "./dscecho/Cargo.toml",
-        "./osinfo/Cargo.toml",
-        "./registry/Cargo.toml",
-        "./runcommandonset/Cargo.toml",
-        "./tools/test_group_resource/Cargo.toml",
-        "./tools/dsctest/Cargo.toml",
-        "./tree-sitter-dscexpression/Cargo.toml",
-        "./y2j/Cargo.toml"
-    ],
     "rust-analyzer.showUnlinkedFileNotification": true,
     "json.schemas": [
         {

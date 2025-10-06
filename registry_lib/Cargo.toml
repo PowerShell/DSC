@@ -8,27 +8,18 @@ available-locales = ["en-us"]
 default-locale = "en-us"
 load-path = "locales"
 
-[profile.release]
-codegen-units = 1           # reduces binary size by ~2%
-debug = "full"              # No one needs an undebuggable release binary
-lto = true                  # reduces binary size by ~14%
-opt-level = "s"             # reduces binary size by ~25%
-panic = "abort"             # reduces binary size by ~50% in combination with -Zbuild-std-features=panic_immediate_abort
-split-debuginfo = "packed"  # generates a seperate *.dwp/*.dSYM so the binary can get stripped
-strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
-
 [dependencies]
-crossterm = "0.29"
-registry = "1.3"
-rust-i18n = { version = "3.1" }
-schemars = "1.0"
-serde = "1.0"
-serde_json = "1.0"
-thiserror = "2.0"
-tracing = { version = "0.1" }
-tracing-subscriber = { version = "0.3", features = ["ansi", "env-filter", "json"] }
-utfx = "0.1"
+crossterm = { workspace = true }
+registry = { workspace = true }
+rust-i18n = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+utfx = { workspace = true }
 
 [build-dependencies]
-static_vcruntime = "2.0"
-cc="1.2"
+static_vcruntime = { workspace = true }
+cc = { workspace = true }

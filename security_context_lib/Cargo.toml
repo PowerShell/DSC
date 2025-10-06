@@ -3,15 +3,8 @@ name = "security_context_lib"
 version = "0.1.0"
 edition = "2021"
 
-[profile.release]
-strip = true
-# optimize for size
-opt-level = 2
-# enable link time optimization to remove dead code
-lto = true
-
 [target.'cfg(target_os = "windows")'.dependencies]
-is_elevated = "0.1"
+is_elevated = { workspace = true }
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
-nix = { version = "0.30", features = ["user"] }
+nix = { workspace = true, features = ["user"] }
