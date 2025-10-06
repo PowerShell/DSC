@@ -347,7 +347,7 @@ if (!$SkipBuild) {
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("pal", "registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
+    $windows_projects = @("lib/pal", "lib/registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -356,9 +356,9 @@ if (!$SkipBuild) {
         ".",
         "tree-sitter-dscexpression",
         "tree-sitter-ssh-server-config",
-        "security_context_lib",
+        "lib/security_context_lib",
         "lib/osinfo_lib",
-        "dsc_lib",
+        "lib/dsc_lib",
         "dsc",
         "dscecho",
         "extensions/bicep",

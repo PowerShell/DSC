@@ -4,16 +4,16 @@ resolver = "2"
 # the path to a crate.
 members = [
     "dsc",
-    "dsc_lib",
+    "lib/dsc_lib",
     "dscecho",
     "lib/osinfo_lib",
     "osinfo",
-    "pal",
+    "lib/pal",
     "process",
     "registry",
-    "registry_lib",
+    "lib/registry_lib",
     "runcommandonset",
-    "security_context_lib",
+    "lib/security_context_lib",
     "sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -26,16 +26,16 @@ members = [
 # avoid unintentionally modifying this value.
 default-members = [
     "dsc",
-    "dsc_lib",
+    "lib/dsc_lib",
     "dscecho",
     "lib/osinfo_lib",
     "osinfo",
-    "pal",
+    "lib/pal",
     "process",
     "registry",
-    "registry_lib",
+    "lib/registry_lib",
     "runcommandonset",
-    "security_context_lib",
+    "lib/security_context_lib",
     "sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -50,16 +50,16 @@ default-members = [
 # current operating system to enable faster builds.
 Windows = [
     "dsc",
-    "dsc_lib",
+    "lib/dsc_lib",
     "dscecho",
     "lib/osinfo_lib",
     "osinfo",
-    "pal",
+    "lib/pal",
     "process",
     "registry",
-    "registry_lib",
+    "lib/registry_lib",
     "runcommandonset",
-    "security_context_lib",
+    "lib/security_context_lib",
     "sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -69,13 +69,13 @@ Windows = [
 ]
 macOS = [
     "dsc",
-    "dsc_lib",
+    "lib/dsc_lib",
     "dscecho",
     "lib/osinfo_lib",
     "osinfo",
     "process",
     "runcommandonset",
-    "security_context_lib",
+    "lib/security_context_lib",
     "sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -85,13 +85,13 @@ macOS = [
 ]
 Linux = [
     "dsc",
-    "dsc_lib",
+    "lib/dsc_lib",
     "dscecho",
     "lib/osinfo_lib",
     "osinfo",
     "process",
     "runcommandonset",
-    "security_context_lib",
+    "lib/security_context_lib",
     "sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -203,9 +203,9 @@ cc = { version = "1.2" }
 static_vcruntime = { version = "2.0" }
 
 # Workspace crates as dependencies
-dsc_lib = { path = "dsc_lib" }
+dsc_lib = { path = "lib/dsc_lib" }
 osinfo_lib = { path = "lib/osinfo_lib" }
-security_context_lib = { path = "security_context_lib" }
+security_context_lib = { path = "lib/security_context_lib" }
 tree-sitter-dscexpression = { path = "tree-sitter-dscexpression" }
-registry_lib = { path = "registry_lib" }
+registry_lib = { path = "lib/registry_lib" }
 tree-sitter-ssh-server-config = { path = "tree-sitter-ssh-server-config" }
