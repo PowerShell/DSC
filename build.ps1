@@ -347,7 +347,7 @@ if (!$SkipBuild) {
     New-Item -ItemType Directory $target -ErrorAction Ignore > $null
 
     # make sure dependencies are built first so clippy runs correctly
-    $windows_projects = @("lib/pal", "lib/registry_lib", "registry", "reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
+    $windows_projects = @("lib/pal", "lib/registry_lib", "resources/registry", "resources/reboot_pending", "wmi-adapter", "configurations/windows", 'extensions/appx')
     $macOS_projects = @("resources/brew")
     $linux_projects = @("resources/apt")
 
@@ -360,14 +360,14 @@ if (!$SkipBuild) {
         "lib/osinfo_lib",
         "lib/dsc_lib",
         "dsc",
-        "dscecho",
+        "resources/dscecho",
         "extensions/bicep",
-        "osinfo",
+        "resources/osinfo",
         "powershell-adapter",
         'resources/PSScript',
-        "process",
-        "runcommandonset",
-        "sshdconfig",
+        "resources/process",
+        "resources/runcommandonset",
+        "resources/sshdconfig",
         "tools/dsctest",
         "tools/test_group_resource",
         "y2j"
