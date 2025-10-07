@@ -258,45 +258,69 @@ impl RegistryHelper {
     /// # Errors
     ///
     /// * `RegistryError` - The error that occurred.
-    pub fn remove(&self) -> Result<(), RegistryError> {
+    pub fn remove(&self) -> Result<Option<Registry>, RegistryError> {
         let (reg_key, _subkey) = match self.open(Security::AllAccess) {
             Ok(reg_key) => reg_key,
             // handle NotFound error
             Err(RegistryError::RegistryKeyNotFound(_)) => {
                 eprintln!("{}", t!("registry_helper.removeErrorKeyNotExist"));
-                return Ok(());
+                return Ok(None);
             },
-            Err(e) => return Err(e),
+            Err(e) => return self.handle_error_or_what_if(e),
         };
+
+        // Accumulate what-if metadata like set()
+        let mut what_if_metadata: Vec<String> = Vec::new();
+
         if let Some(value_name) = &self.config.value_name {
+            if self.what_if {
+                what_if_metadata.push(t!("registry_helper.whatIfDeleteValue", value_name = value_name).to_string());
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    value_name: Some(value_name.clone()),
+                    metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                    ..Default::default()
+                }));
+            }
             match reg_key.delete_value(value_name) {
                 Ok(()) | Err(value::Error::NotFound(_, _)) => {
                     // if the value doesn't exist, we don't need to do anything
                 },
-                Err(e) => return Err(RegistryError::RegistryValue(e)),
+                Err(e) => return self.handle_error_or_what_if(RegistryError::RegistryValue(e)),
             }
         } else {
             // to delete the key, we need to open the parent key first
             let parent_path = get_parent_key_path(&self.config.key_path);
             let (hive, parent_subkey) = get_hive_from_path(parent_path)?;
-            let parent_reg_key = hive.open(parent_subkey, Security::AllAccess)?;
+            let parent_reg_key = match hive.open(parent_subkey, Security::AllAccess) {
+                Ok(k) => k,
+                Err(e) => return self.handle_error_or_what_if(RegistryError::RegistryKey(e)),
+            };
 
             // get the subkey name
             let subkey_name = &self.config.key_path[parent_path.len() + 1..];
 
+            if self.what_if {
+                what_if_metadata.push(t!("registry_helper.whatIfDeleteSubkey", subkey_name = subkey_name).to_string());
+                return Ok(Some(Registry {
+                    key_path: self.config.key_path.clone(),
+                    metadata: Some(Metadata { what_if: Some(what_if_metadata) }),
+                    ..Default::default()
+                }));
+            }
             eprintln!("{}", t!("registry_helper.removeDeletingSubKey", name = subkey_name, parent = parent_reg_key));
             let Ok(subkey_name) = UCString::<u16>::from_str(subkey_name) else {
-                return Err(RegistryError::Utf16Conversion("subkey_name".to_string()));
+                return self.handle_error_or_what_if(RegistryError::Utf16Conversion("subkey_name".to_string()));
             };
 
             match parent_reg_key.delete(subkey_name, true) {
                 Ok(()) | Err(key::Error::NotFound(_, _)) => {
                     // if the subkey doesn't exist, we don't need to do anything
                 },
-                Err(e) => return Err(RegistryError::RegistryKey(e)),
+                Err(e) => return self.handle_error_or_what_if(RegistryError::RegistryKey(e)),
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     fn open(&self, permission: Security) -> Result<(RegKey, &str), RegistryError> {

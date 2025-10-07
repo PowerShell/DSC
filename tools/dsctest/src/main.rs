@@ -10,6 +10,8 @@ mod exporter;
 mod get;
 mod in_desired_state;
 mod metadata;
+mod operation;
+mod adapter;
 mod sleep;
 mod trace;
 mod version;
@@ -27,6 +29,7 @@ use crate::exporter::{Exporter, Resource};
 use crate::get::Get;
 use crate::in_desired_state::InDesiredState;
 use crate::metadata::Metadata;
+use crate::operation::Operation;
 use crate::sleep::Sleep;
 use crate::trace::Trace;
 use crate::version::Version;
@@ -37,6 +40,15 @@ use std::{thread, time::Duration};
 fn main() {
     let args = Args::parse();
     let json = match args.subcommand {
+        SubCommand::Adapter { input , resource_type, operation } => {
+            match adapter::adapt(&resource_type, &input, &operation) {
+                Ok(result) => result,
+                Err(err) => {
+                    eprintln!("Error adapting resource: {err}");
+                    std::process::exit(1);
+                }
+            }
+        },
         SubCommand::Delete { input } => {
             let mut delete = match serde_json::from_str::<Delete>(&input) {
                 Ok(delete) => delete,
@@ -162,7 +174,7 @@ fn main() {
                     instances.into_iter().next().unwrap_or_else(|| {
                         eprintln!("No instances found");
                         std::process::exit(1);
-                    })  
+                    })
                 }
             };
             serde_json::to_string(&resource).unwrap()
@@ -199,8 +211,22 @@ fn main() {
             }
             String::new()
         },
+        SubCommand::Operation { operation, input } => {
+            let mut operation_result = match serde_json::from_str::<Operation>(&input) {
+                Ok(op) => op,
+                Err(err) => {
+                    eprintln!("Error JSON does not match schema: {err}");
+                    std::process::exit(1);
+                }
+            };
+            operation_result.operation = Some(operation.to_lowercase());
+            serde_json::to_string(&operation_result).unwrap()
+        },
         SubCommand::Schema { subcommand } => {
             let schema = match subcommand {
+                Schemas::Adapter => {
+                    schema_for!(adapter::DscResource)
+                },
                 Schemas::Delete => {
                     schema_for!(Delete)
                 },
@@ -224,6 +250,9 @@ fn main() {
                 },
                 Schemas::Metadata => {
                     schema_for!(Metadata)
+                },
+                Schemas::Operation => {
+                    schema_for!(Operation)
                 },
                 Schemas::Sleep => {
                     schema_for!(Sleep)

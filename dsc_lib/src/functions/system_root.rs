@@ -18,7 +18,7 @@ impl Function for SystemRoot {
         FunctionMetadata {
             name: "systemRoot".to_string(),
             description: t!("functions.systemRoot.description").to_string(),
-            category: FunctionCategory::System,
+            category: vec![FunctionCategory::System],
             min_args: 0,
             max_args: 0,
             accepted_arg_ordered_types: vec![],

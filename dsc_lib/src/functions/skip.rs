@@ -16,7 +16,7 @@ impl Function for Skip {
         FunctionMetadata {
             name: "skip".to_string(),
             description: t!("functions.skip.description").to_string(),
-            category: FunctionCategory::Array,
+            category: vec![FunctionCategory::Array, FunctionCategory::String],
             min_args: 2,
             max_args: 2,
             accepted_arg_ordered_types: vec![
