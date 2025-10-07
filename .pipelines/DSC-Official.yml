@@ -377,7 +377,7 @@ extends:
           patterns: '*.tar.gz'
 
         - download: current
-          artifact: release
+          artifact: release ## this includes artifacts for macOS
           patterns: '**/*.tar.gz'
 
         - download: current
