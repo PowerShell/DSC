@@ -1,7 +1,11 @@
 [package]
-name = "runcommandonset"
+name = "dsc-resource-run_command_on_set"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "runcommandonset"
+path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true }

@@ -1,7 +1,11 @@
 [package]
-name = "registry"
+name = "dsc-resource-registry"
 version = "1.0.0"
 edition = "2021"
+
+[[bin]]
+name = "registry"
+path = "src/main.rs"
 
 [package.metadata.i18n]
 available-locales = ["en-us"]

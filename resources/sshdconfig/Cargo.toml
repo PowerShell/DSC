@@ -1,7 +1,11 @@
 [package]
-name = "sshdconfig"
+name = "dsc-resource-sshdconfig"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "sshdconfig"
+path = "src/main.rs"
 
 [dependencies]
 #external dependencies

@@ -701,7 +701,7 @@ version = "0.1.0"
 dependencies = [
  "cc",
  "crossterm",
- "registry 1.3.0",
+ "registry",
  "rust-i18n",
  "schemars",
  "serde",
@@ -722,7 +722,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dscecho"
+name = "dsc-resource-echo"
 version = "1.0.0"
 dependencies = [
  "clap",
@@ -730,6 +730,76 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "dsc-resource-osinfo"
+version = "1.0.0"
+dependencies = [
+ "dsc-lib-osinfo",
+ "serde_json",
+]
+
+[[package]]
+name = "dsc-resource-process"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sysinfo",
+]
+
+[[package]]
+name = "dsc-resource-registry"
+version = "1.0.0"
+dependencies = [
+ "clap",
+ "crossterm",
+ "dsc-lib-registry",
+ "registry",
+ "rust-i18n",
+ "schemars",
+ "serde",
+ "serde_json",
+ "static_vcruntime",
+ "thiserror 2.0.17",
+ "tracing",
+ "tracing-subscriber",
+ "utfx",
+]
+
+[[package]]
+name = "dsc-resource-run_command_on_set"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "rust-i18n",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "dsc-resource-sshdconfig"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "chrono",
+ "clap",
+ "crossterm",
+ "dsc-lib-registry",
+ "rust-i18n",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tracing",
+ "tracing-subscriber",
+ "tree-sitter",
+ "tree-sitter-rust",
+ "tree-sitter-ssh-server-config",
 ]
 
 [[package]]
@@ -1712,14 +1782,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "osinfo"
-version = "1.0.0"
-dependencies = [
- "dsc-lib-osinfo",
- "serde_json",
-]
-
-[[package]]
 name = "outref"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1840,15 +1902,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89ae43fd86e4158d6db51ad8e2b80f313af9cc74f5c0e03ccb87de09998732de"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "process"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sysinfo",
 ]
 
 [[package]]
@@ -2110,25 +2163,6 @@ checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
 
 [[package]]
 name = "registry"
-version = "1.0.0"
-dependencies = [
- "clap",
- "crossterm",
- "dsc-lib-registry",
- "registry 1.3.0",
- "rust-i18n",
- "schemars",
- "serde",
- "serde_json",
- "static_vcruntime",
- "thiserror 2.0.17",
- "tracing",
- "tracing-subscriber",
- "utfx",
-]
-
-[[package]]
-name = "registry"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "515143bd3c240fd5a47002a552fd7eba71acf8cd3cf7472e5ec392cda2ed3d90"
@@ -2240,18 +2274,6 @@ checksum = "45087cee619d316fa4bd1675494acff4a5eaa0892fa53bc364bd246f13e452e2"
 dependencies = [
  "lazy_static",
  "regex",
-]
-
-[[package]]
-name = "runcommandonset"
-version = "0.1.0"
-dependencies = [
- "clap",
- "rust-i18n",
- "serde",
- "serde_json",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -2615,28 +2637,6 @@ checksum = "233504af464074f9d066d7b5416c5f9b894a5862a6506e306f7b816cdd6f1807"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "sshdconfig"
-version = "0.1.0"
-dependencies = [
- "cc",
- "chrono",
- "clap",
- "crossterm",
- "dsc-lib-registry",
- "rust-i18n",
- "schemars",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.17",
- "tracing",
- "tracing-subscriber",
- "tree-sitter",
- "tree-sitter-rust",
- "tree-sitter-ssh-server-config",
 ]
 
 [[package]]

@@ -1,7 +1,11 @@
 [package]
-name = "dscecho"
+name = "dsc-resource-echo"
 version = "1.0.0"
 edition = "2021"
+
+[[bin]]
+name = "dscecho"
+path = "src/main.rs"
 
 [dependencies]
 clap = { workspace = true }
