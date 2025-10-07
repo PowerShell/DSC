@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'Parameters tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'Input can be provided as <inputType>' -TestCases @(
         @{ inputType = 'string' }
         @{ inputType = 'file' }

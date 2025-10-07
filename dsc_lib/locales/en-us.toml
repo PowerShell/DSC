@@ -631,6 +631,21 @@ invalidRequiredVersion = "Invalid required version '%{version}' for resource '%{
 [progress]
 failedToSerialize = "Failed to serialize progress JSON: %{json}"
 
+[security.authenticode]
+trustLevelTrusted = "Trusted"
+trustLevelExplicitlyDistrusted = "Distrusted"
+trustLevelUnsigned = "Unsigned"
+trustLevelUntrusted = "Untrusted"
+trustLevelNotMeetSecuritySettings = "NotMeetSecuritySettings"
+trustLevelCannotBeVerified = "CannotVerify"
+trustLevelUnknown = "Unknown"
+fileNotSigned = "File '%{file}' is not signed"
+signatureExplicitlyDistrusted = "The signature for file '%{file}' is explicitly distrusted"
+signatureNotTrusted = "The signature for file '%{file}' is not trusted"
+signatureDoesNotMeetSecuritySettings = "The signature for file '%{file}' does not meet the security settings"
+signatureCouldNotBeVerified = "The signature for file '%{file}' could not be verified"
+trustLevelIsUnknown = "The trust level for file '%{file}' is unknown"
+
 [util]
 foundSetting = "Found setting '%{name}' in %{path}"
 notFoundSetting = "Setting '%{name}' not found in %{path}"

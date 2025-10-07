@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'Invoke a resource set directly' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'set returns proper error code if no input is provided' {
         $out = dsc resource set -r Test/Version 2>&1
         $LASTEXITCODE | Should -Be 1

@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'Configruation variables tests' {
+  BeforeAll {
+      $env:DSC_TRACE_LEVEL = 'error'
+  }
+
+  AfterAll {
+      $env:DSC_TRACE_LEVEL = $null
+  }
+
   It 'Variables example config works' {
     $configFile = "$PSSCriptRoot/../examples/variables.dsc.yaml"
     $out = dsc config get -f $configFile | ConvertFrom-Json

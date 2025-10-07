@@ -14,6 +14,9 @@ pub enum DscError {
     #[error("{t}: {0}", t = t!("dscerror.adapterNotFound"))]
     AdapterNotFound(String),
 
+    #[error("Authenticode: {0}")]
+    AuthenticodeError(String),
+
     #[error("{t}: {0}", t = t!("dscerror.booleanConversion"))]
     BooleanConversion(#[from] std::str::ParseBoolError),
 
@@ -130,6 +133,9 @@ pub enum DscError {
 
     #[error("{t}: {0}", t = t!("dscerror.validation"))]
     Validation(String),
+
+    #[error("Which: {0}")]
+    Which(#[from] which::Error),
 
     #[error("YAML: {0}")]
     Yaml(#[from] serde_yaml::Error),

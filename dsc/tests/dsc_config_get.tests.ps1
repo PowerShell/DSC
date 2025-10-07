@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'dsc config get tests' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'can successfully get config with multiple registry resource instances: <config>' -Skip:(!$IsWindows) -TestCases @(
         @{ config = 'osinfo_registry.dsc.json' }
         @{ config = 'osinfo_registry.dsc.yaml' }

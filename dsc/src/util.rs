@@ -3,6 +3,7 @@
 
 use crate::args::{SchemaType, OutputFormat, TraceFormat};
 use crate::resolve::Include;
+use dsc_lib::security::check_file_security;
 use dsc_lib::{
     configure::{
         config_doc::{
@@ -465,6 +466,11 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
                 }
             }
         } else {
+            if let Err(err) = check_file_security(Path::new(path)) {
+                error!("{}", t!("util.failedToCheckFileSecurity", path = path, error = err));
+                exit(EXIT_INVALID_INPUT);
+            }
+
             // see if an extension should handle this file
             let mut discovery = Discovery::new();
             for extension in discovery.get_extensions(&Capability::Import) {

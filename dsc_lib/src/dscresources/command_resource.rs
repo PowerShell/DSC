@@ -6,8 +6,9 @@ use jsonschema::Validator;
 use rust_i18n::t;
 use serde::Deserialize;
 use serde_json::{Map, Value};
+use which::which;
 use std::{collections::HashMap, env, process::Stdio};
-use crate::configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}};
+use crate::{configure::{config_doc::ExecutionKind, config_result::{ResourceGetResult, ResourceTestResult}}, security::check_file_security};
 use crate::dscerror::DscError;
 use super::{dscresource::{get_diff, redact}, invoke_result::{ExportResult, GetResult, ResolveResult, SetResult, TestResult, ValidateResult, ResourceGetResponse, ResourceSetResponse, ResourceTestResponse, get_in_desired_state}, resource_manifest::{ArgKind, InputKind, Kind, ResourceManifest, ReturnKind, SchemaKind}};
 use tracing::{error, warn, info, debug, trace};
@@ -625,6 +626,9 @@ async fn run_process_async(executable: &str, args: Option<Vec<String>>, input: O
     // use somewhat large initial buffer to avoid early string reallocations;
     // the value is based on list result of largest of built-in adapters - WMI adapter ~500KB
     const INITIAL_BUFFER_CAPACITY: usize = 1024*1024;
+
+    let exe = which(executable)?;
+    check_file_security(&exe)?;
 
     let mut command = Command::new(executable);
     if input.is_some() {

@@ -2,6 +2,14 @@
 # Licensed under the MIT License.
 
 Describe 'Invoke a resource test directly' {
+    BeforeAll {
+        $env:DSC_TRACE_LEVEL = 'error'
+    }
+
+    AfterAll {
+        $env:DSC_TRACE_LEVEL = $null
+    }
+
     It 'test can be called on a resource' {
         $os = if ($IsWindows) {
             'Windows'
