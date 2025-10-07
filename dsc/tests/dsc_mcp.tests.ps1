@@ -71,6 +71,7 @@ Describe 'Tests for MCP server' {
         }
 
         $tools = @{
+            'invoke_dsc_resource' = $false
             'list_dsc_functions' = $false
             'list_dsc_resources' = $false
             'show_dsc_resource' = $false
@@ -297,5 +298,39 @@ Describe 'Tests for MCP server' {
         $response.id | Should -Be 11
         $response.result.structuredContent.functions.Count | Should -Be 0
         $response.result.structuredContent.functions | Should -BeNullOrEmpty
+    }
+
+    It 'Calling invoke_dsc_resource for operation: <operation>' -TestCases @(
+        @{ operation = 'get'; property = 'actualState' }
+        @{ operation = 'set'; property = 'beforeState' }
+        @{ operation = 'test'; property = 'desiredState' }
+        @{ operation = 'export'; property = 'actualState' }
+    ) {
+        param($operation)
+
+        $mcpRequest = @{
+            jsonrpc = "2.0"
+            id = 12
+            method = "tools/call"
+            params = @{
+                name = "invoke_dsc_resource"
+                arguments = @{
+                    type = 'Test/Operation'
+                    operation = $operation
+                    resource_type = 'Test/Operation'
+                    properties_json = (@{
+                        hello = "World"
+                        action = $operation
+                    } | ConvertTo-Json -Depth 20)
+                }
+            }
+        }
+
+        $response = Send-McpRequest -request $mcpRequest
+        $response.id | Should -Be 12
+        $because = ($response | ConvertTo-Json -Depth 20 | Out-String)
+        ($response.result.structuredContent.psobject.properties | Measure-Object).Count | Should -Be 1 -Because $because
+        $response.result.structuredContent.result.$property.action | Should -BeExactly $operation -Because $because
+        $response.result.structuredContent.result.$property.hello | Should -BeExactly "World" -Because $because
     }
 }
