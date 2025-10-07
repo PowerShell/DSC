@@ -1,5 +1,5 @@
 [package]
-name = "security_context_lib"
+name = "dsc-lib-security_context"
 version = "0.1.0"
 edition = "2021"
 

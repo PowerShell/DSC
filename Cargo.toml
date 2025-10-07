@@ -13,7 +13,7 @@ members = [
     "resources/registry",
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
-    "lib/security_context_lib",
+    "lib/dsc-lib-security_context",
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -35,7 +35,7 @@ default-members = [
     "resources/registry",
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
-    "lib/security_context_lib",
+    "lib/dsc-lib-security_context",
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -59,7 +59,7 @@ Windows = [
     "resources/registry",
     "lib/dsc-lib-registry",
     "resources/runcommandonset",
-    "lib/security_context_lib",
+    "lib/dsc-lib-security_context",
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -75,7 +75,7 @@ macOS = [
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
-    "lib/security_context_lib",
+    "lib/dsc-lib-security_context",
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -91,7 +91,7 @@ Linux = [
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
-    "lib/security_context_lib",
+    "lib/dsc-lib-security_context",
     "resources/sshdconfig",
     "tools/dsctest",
     "tools/test_group_resource",
@@ -129,7 +129,7 @@ ctrlc = { version = "3.5" }
 derive_builder = { version = "0.20" }
 # dsc, dsc-lib
 indicatif = { version = "0.18" }
-# security_context_lib::windows
+# dsc-lib-security_context::windows
 is_elevated = { version = "0.1" }
 # dsc, dsc-lib
 jsonschema = { version = "0.33", default-features = false }
@@ -137,7 +137,7 @@ jsonschema = { version = "0.33", default-features = false }
 linked-hash-map = { version = "0.5" }
 # dsc-lib
 murmurhash64 = { version = "0.3" }
-# security_context_lib::not_windows
+# dsc-lib-security_context::not_windows
 nix = { version = "0.30" }
 # dsc-lib
 num-traits = { version = "0.2" }
@@ -205,7 +205,7 @@ static_vcruntime = { version = "2.0" }
 # Workspace crates as dependencies
 dsc-lib = { path = "lib/dsc-lib" }
 dsc-lib-osinfo = { path = "lib/dsc-lib-osinfo" }
-security_context_lib = { path = "lib/security_context_lib" }
+dsc-lib-security_context = { path = "lib/dsc-lib-security_context" }
 tree-sitter-dscexpression = { path = "grammars/tree-sitter-dscexpression" }
 dsc-lib-registry = { path = "lib/dsc-lib-registry" }
 tree-sitter-ssh-server-config = { path = "grammars/tree-sitter-ssh-server-config" }

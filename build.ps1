@@ -356,7 +356,7 @@ if (!$SkipBuild) {
         ".",
         "grammars/tree-sitter-dscexpression",
         "grammars/tree-sitter-ssh-server-config",
-        "lib/security_context_lib",
+        "lib/dsc-lib-security_context",
         "lib/dsc-lib-osinfo",
         "lib/dsc-lib",
         "dsc",
