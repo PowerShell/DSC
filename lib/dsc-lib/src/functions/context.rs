@@ -4,7 +4,7 @@
 use crate::DscError;
 use crate::configure::{context::Context as ConfigContext, config_doc::SecurityContextKind};
 use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
-use osinfo_lib::OsInfo;
+use dsc_lib_osinfo::OsInfo;
 use rust_i18n::t;
 use serde::Serialize;
 use serde_json::Value;

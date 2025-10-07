@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use osinfo_lib::OsInfo;
+use dsc_lib_osinfo::OsInfo;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

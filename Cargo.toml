@@ -6,7 +6,7 @@ members = [
     "dsc",
     "lib/dsc-lib",
     "resources/dscecho",
-    "lib/osinfo_lib",
+    "lib/dsc-lib-osinfo",
     "resources/osinfo",
     "lib/pal",
     "resources/process",
@@ -28,7 +28,7 @@ default-members = [
     "dsc",
     "lib/dsc-lib",
     "resources/dscecho",
-    "lib/osinfo_lib",
+    "lib/dsc-lib-osinfo",
     "resources/osinfo",
     "lib/pal",
     "resources/process",
@@ -52,7 +52,7 @@ Windows = [
     "dsc",
     "lib/dsc-lib",
     "resources/dscecho",
-    "lib/osinfo_lib",
+    "lib/dsc-lib-osinfo",
     "resources/osinfo",
     "lib/pal",
     "resources/process",
@@ -71,7 +71,7 @@ macOS = [
     "dsc",
     "lib/dsc-lib",
     "resources/dscecho",
-    "lib/osinfo_lib",
+    "lib/dsc-lib-osinfo",
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
@@ -87,7 +87,7 @@ Linux = [
     "dsc",
     "lib/dsc-lib",
     "resources/dscecho",
-    "lib/osinfo_lib",
+    "lib/dsc-lib-osinfo",
     "resources/osinfo",
     "resources/process",
     "resources/runcommandonset",
@@ -141,7 +141,7 @@ murmurhash64 = { version = "0.3" }
 nix = { version = "0.30" }
 # dsc-lib
 num-traits = { version = "0.2" }
-# osinfo_lib
+# dsc-lib-osinfo
 os_info = { version = "3.11" }
 # dsc, dsc-lib
 path-absolutize = { version = "3.1" }
@@ -159,9 +159,9 @@ rust-i18n = { version = "3.1" }
 schemars = { version = "1.0", features = ["preserve_order"] }
 # dsc, dsc-lib
 semver = { version = "1.0" }
-# dsc, dsc-lib, dscecho, osinfo_lib, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource
+# dsc, dsc-lib, dscecho, dsc-lib-osinfo, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource
 serde = { version = "1.0", features = ["derive"] }
-# dsc, dsc-lib, dscecho, osinfo_lib, osinfo, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
+# dsc, dsc-lib, dscecho, dsc-lib-osinfo, osinfo, process, registry, registry_lib, runcommandonset, sshdconfig, dsctest, test_group_resource, y2j
 serde_json = { version = "1.0", features = ["preserve_order"] }
 # dsc, dsc-lib, y2j
 serde_yaml = { version = "0.9" }
@@ -204,7 +204,7 @@ static_vcruntime = { version = "2.0" }
 
 # Workspace crates as dependencies
 dsc-lib = { path = "lib/dsc-lib" }
-osinfo_lib = { path = "lib/osinfo_lib" }
+dsc-lib-osinfo = { path = "lib/dsc-lib-osinfo" }
 security_context_lib = { path = "lib/security_context_lib" }
 tree-sitter-dscexpression = { path = "grammars/tree-sitter-dscexpression" }
 registry_lib = { path = "lib/registry_lib" }

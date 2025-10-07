@@ -652,12 +652,12 @@ dependencies = [
  "chrono",
  "clap",
  "derive_builder",
+ "dsc-lib-osinfo",
  "indicatif",
  "jsonschema",
  "linked-hash-map",
  "murmurhash64",
  "num-traits",
- "osinfo_lib",
  "path-absolutize",
  "regex",
  "rt-format",
@@ -677,6 +677,15 @@ dependencies = [
  "tree-sitter-rust",
  "uuid",
  "which",
+]
+
+[[package]]
+name = "dsc-lib-osinfo"
+version = "1.0.0"
+dependencies = [
+ "os_info",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1673,16 +1682,7 @@ dependencies = [
 name = "osinfo"
 version = "1.0.0"
 dependencies = [
- "osinfo_lib",
- "serde_json",
-]
-
-[[package]]
-name = "osinfo_lib"
-version = "1.0.0"
-dependencies = [
- "os_info",
- "serde",
+ "dsc-lib-osinfo",
  "serde_json",
 ]
 

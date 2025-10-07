@@ -7,4 +7,4 @@ edition = "2021"
 # external dependencies
 serde_json = { workspace = true }
 # workspace crate dependencies
-osinfo_lib = { workspace = true }
+dsc-lib-osinfo = { workspace = true }

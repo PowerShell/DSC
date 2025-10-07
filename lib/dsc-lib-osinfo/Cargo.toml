@@ -1,5 +1,5 @@
 [package]
-name = "osinfo_lib"
+name = "dsc-lib-osinfo"
 version = "1.0.0"
 edition = "2021"
 

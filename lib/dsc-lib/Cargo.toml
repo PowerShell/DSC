@@ -39,7 +39,7 @@ tree-sitter-rust = { workspace = true}
 uuid = { workspace = true }
 which = { workspace = true }
 # workspace crate dependencies
-osinfo_lib = { workspace = true }
+dsc-lib-osinfo = { workspace = true }
 security_context_lib = { workspace = true }
 tree-sitter-dscexpression = { workspace = true }
 
