@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -21,7 +21,12 @@ impl Function for LastIndexOf {
             max_args: 2,
             accepted_arg_ordered_types: vec![
                 vec![FunctionArgKind::Array],
-                vec![FunctionArgKind::String, FunctionArgKind::Number, FunctionArgKind::Array, FunctionArgKind::Object],
+                vec![
+                    FunctionArgKind::String,
+                    FunctionArgKind::Number,
+                    FunctionArgKind::Array,
+                    FunctionArgKind::Object,
+                ],
             ],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Number],
@@ -32,15 +37,16 @@ impl Function for LastIndexOf {
         debug!("{}", t!("functions.lastIndexOf.invoked"));
 
         let Some(array) = args[0].as_array() else {
-            return Err(DscError::Parser(t!("functions.lastIndexOf.invalidArrayArg").to_string()));
+            return Err(DscError::Parser(
+                t!("functions.lastIndexOf.invalidArrayArg").to_string(),
+            ));
         };
 
         let item_to_find = &args[1];
 
         if let Some(pos) = array.iter().rposition(|v| v == item_to_find) {
-            let index_i64 = i64::try_from(pos).map_err(|_| {
-                DscError::Parser("Array index too large to represent as integer".to_string())
-            })?;
+            let index_i64 = i64::try_from(pos)
+                .map_err(|_| DscError::Parser("Array index too large to represent as integer".to_string()))?;
             return Ok(Value::Number(index_i64.into()));
         }
 
@@ -56,21 +62,27 @@ mod tests {
     #[test]
     fn finds_last_occurrence_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[lastIndexOf(createArray('a','b','a','c'), 'a')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[lastIndexOf(createArray('a','b','a','c'), 'a')]", &Context::new())
+            .unwrap();
         assert_eq!(result, 2);
     }
 
     #[test]
     fn finds_last_occurrence_number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[lastIndexOf(createArray(10,20,30,20), 20)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[lastIndexOf(createArray(10,20,30,20), 20)]", &Context::new())
+            .unwrap();
         assert_eq!(result, 3);
     }
 
     #[test]
     fn not_found_returns_minus_one() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[lastIndexOf(createArray('x','y'), 'z')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[lastIndexOf(createArray('x','y'), 'z')]", &Context::new())
+            .unwrap();
         assert_eq!(result, -1);
     }
 

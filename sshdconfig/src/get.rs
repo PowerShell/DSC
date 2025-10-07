@@ -3,9 +3,12 @@
 
 #[cfg(windows)]
 use {
-    registry_lib::{config::{Registry, RegistryValueData}, RegistryHelper},
     crate::args::DefaultShell,
     crate::metadata::windows::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
+    registry_lib::{
+        config::{Registry, RegistryValueData},
+        RegistryHelper,
+    },
 };
 
 use rust_i18n::t;
@@ -16,12 +19,7 @@ use crate::args::Setting;
 use crate::error::SshdConfigError;
 use crate::inputs::CommandInfo;
 use crate::parser::parse_text_to_map;
-use crate::util::{
-    build_command_info,
-    extract_sshd_defaults,
-    invoke_sshd_config_validation,
-    read_sshd_config
-};
+use crate::util::{build_command_info, extract_sshd_defaults, invoke_sshd_config_validation, read_sshd_config};
 
 /// Invoke the get command.
 ///
@@ -35,7 +33,7 @@ pub fn invoke_get(input: Option<&String>, setting: &Setting) -> Result<Map<Strin
         Setting::SshdConfig => {
             let cmd_info = build_command_info(input, true)?;
             get_sshd_settings(&cmd_info, true)
-        },
+        }
         Setting::WindowsGlobal => {
             get_default_shell()?;
             Ok(Map::new())
@@ -54,7 +52,11 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
             RegistryValueData::String(s) => {
                 shell = Some(s);
             }
-            _ => return Err(SshdConfigError::InvalidInput(t!("get.defaultShellMustBeString").to_string())),
+            _ => {
+                return Err(SshdConfigError::InvalidInput(
+                    t!("get.defaultShellMustBeString").to_string(),
+                ))
+            }
         }
     }
 
@@ -64,7 +66,11 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
     if let Some(value) = option.value_data {
         match value {
             RegistryValueData::String(s) => cmd_option = Some(s),
-            _ => return Err(SshdConfigError::InvalidInput(t!("get.defaultShellCmdOptionMustBeString").to_string())),
+            _ => {
+                return Err(SshdConfigError::InvalidInput(
+                    t!("get.defaultShellCmdOptionMustBeString").to_string(),
+                ))
+            }
         }
     }
 
@@ -76,17 +82,21 @@ fn get_default_shell() -> Result<(), SshdConfigError> {
             if b == 0 || b == 1 {
                 escape_arguments = if b == 1 { Some(true) } else { Some(false) };
             } else {
-                return Err(SshdConfigError::InvalidInput(t!("get.defaultShellEscapeArgsMustBe0Or1", input = b).to_string()));
+                return Err(SshdConfigError::InvalidInput(
+                    t!("get.defaultShellEscapeArgsMustBe0Or1", input = b).to_string(),
+                ));
             }
         } else {
-            return Err(SshdConfigError::InvalidInput(t!("get.defaultShellEscapeArgsMustBeDWord").to_string()));
+            return Err(SshdConfigError::InvalidInput(
+                t!("get.defaultShellEscapeArgsMustBeDWord").to_string(),
+            ));
         }
     }
 
     let result = DefaultShell {
         shell,
         cmd_option,
-        escape_arguments
+        escape_arguments,
     };
 
     let output = serde_json::to_string(&result)?;
@@ -160,10 +170,16 @@ pub fn get_sshd_settings(cmd_info: &CommandInfo, is_get: bool) -> Result<Map<Str
     }
 
     if cmd_info.metadata.filepath.is_some() {
-        result.insert("_metadata".to_string(), serde_json::to_value(cmd_info.metadata.clone())?);
+        result.insert(
+            "_metadata".to_string(),
+            serde_json::to_value(cmd_info.metadata.clone())?,
+        );
     }
     if cmd_info.include_defaults && is_get {
-        result.insert("_inheritedDefaults".to_string(), serde_json::to_value(inherited_defaults)?);
+        result.insert(
+            "_inheritedDefaults".to_string(),
+            serde_json::to_value(inherited_defaults)?,
+        );
     }
     Ok(result)
 }

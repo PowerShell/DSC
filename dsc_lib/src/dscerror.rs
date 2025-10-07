@@ -117,10 +117,7 @@ pub enum DscError {
     Utf8Conversion(#[from] Utf8Error),
 
     #[error("{t}: {code:?} {message:?}", t = t!("dscerror.unknown"))]
-    Unknown {
-        code: i32,
-        message: String,
-    },
+    Unknown { code: i32, message: String },
 
     #[error("{t}: {0}.  {t2}: {1:?}", t = t!("dscerror.unrecognizedSchemaUri"), t2 = t!("dscerror.validSchemaUrisAre"))]
     UnrecognizedSchemaUri(String, Vec<String>),

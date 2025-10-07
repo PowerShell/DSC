@@ -16,13 +16,12 @@ pub enum TraceLevel {
     Warn,
     Info,
     Debug,
-    Trace
+    Trace,
 }
 
 #[derive(Parser)]
 #[clap(name = "runcommandonset", version = "0.0.1", about = "Run a command on set", long_about = None)]
 pub struct Arguments {
-
     #[clap(subcommand)]
     pub subcommand: SubCommand,
     #[clap(short = 'l', long, help = "Trace level to use", value_enum, default_value = "info")]
@@ -39,7 +38,12 @@ pub enum SubCommand {
         arguments: Option<Vec<String>>,
         #[clap(short = 'e', long, help = "The executable to run.")]
         executable: Option<String>,
-        #[clap(short = 'c', long, help = "The expected exit code to indicate success, if non-zero.", default_value = "0")]
+        #[clap(
+            short = 'c',
+            long,
+            help = "The expected exit code to indicate success, if non-zero.",
+            default_value = "0"
+        )]
         exit_code: i32,
     },
     #[clap(name = "set", about = "Run formatted command.")]
@@ -48,7 +52,12 @@ pub enum SubCommand {
         arguments: Option<Vec<String>>,
         #[clap(short = 'e', long, help = "The executable to run.")]
         executable: Option<String>,
-        #[clap(short = 'c', long, help = "The expected exit code to indicate success, if non-zero.", default_value = "0")]
+        #[clap(
+            short = 'c',
+            long,
+            help = "The expected exit code to indicate success, if non-zero.",
+            default_value = "0"
+        )]
         exit_code: i32,
-    }
+    },
 }

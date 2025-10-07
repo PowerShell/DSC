@@ -8,9 +8,9 @@ use indicatif::ProgressStyle;
 use rust_i18n::t;
 use serde::Serialize;
 use serde_json::Value;
-use tracing_indicatif::span_ext::IndicatifSpanExt;
-use tracing::{trace, warn_span};
 use tracing::span::Span;
+use tracing::{trace, warn_span};
+use tracing_indicatif::span_ext::IndicatifSpanExt;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -73,13 +73,12 @@ impl Progress {
 }
 
 pub struct ProgressBar {
-    progress_value:  Progress,
+    progress_value: Progress,
     console_bar: Span,
-    format: ProgressFormat
+    format: ProgressFormat,
 }
 
 impl ProgressBar {
-
     /// Create a `ProgressBar` object to update progress
     ///
     /// # Arguments
@@ -99,7 +98,7 @@ impl ProgressBar {
         let bar = warn_span!("");
         if format == ProgressFormat::Default {
             bar.pb_set_style(&ProgressStyle::with_template(
-                "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}"
+                "{spinner:.green} [{elapsed_precise:.cyan}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg:.yellow}",
             )?);
             bar.pb_set_length(total_items);
             let _guard = bar.enter();
@@ -108,7 +107,7 @@ impl ProgressBar {
         Ok(ProgressBar {
             progress_value: Progress::new(total_items),
             console_bar: bar,
-            format
+            format,
         })
     }
 
@@ -175,10 +174,10 @@ impl ProgressBar {
             ProgressFormat::Json => {
                 self.progress_value.activity = Some(activity.to_string());
                 self.write_json();
-            },
+            }
             ProgressFormat::Default => {
                 self.console_bar.pb_set_message(activity);
-            },
+            }
             ProgressFormat::None => {}
         }
     }
@@ -193,10 +192,10 @@ impl ProgressBar {
         match self.format {
             ProgressFormat::Json => {
                 self.progress_value.total_items = len;
-            },
+            }
             ProgressFormat::Default => {
                 self.console_bar.pb_set_length(len);
-            },
+            }
             ProgressFormat::None => {}
         }
     }
@@ -205,7 +204,10 @@ impl ProgressBar {
         if let Ok(json) = serde_json::to_string(&self.progress_value) {
             eprintln!("{json}");
         } else {
-            trace!("{}", t!("progress.failedToSerialize", json = self.progress_value : {:?}));
+            trace!(
+                "{}",
+                t!("progress.failedToSerialize", json = self.progress_value : {:?})
+            );
         }
     }
 }

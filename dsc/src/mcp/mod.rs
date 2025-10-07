@@ -2,11 +2,7 @@
 // Licensed under the MIT License.
 
 use crate::mcp::mcp_server::McpServer;
-use rmcp::{
-    ErrorData as McpError,
-    ServiceExt,
-    transport::stdio,
-};
+use rmcp::{transport::stdio, ErrorData as McpError, ServiceExt};
 use rust_i18n::t;
 
 pub mod invoke_dsc_resource;
@@ -25,11 +21,15 @@ pub async fn start_mcp_server_async() -> Result<(), McpError> {
     let server = McpServer::new();
 
     // Try to create the service with proper error handling
-    let service = server.serve(stdio()).await
-        .map_err(|err|  McpError::internal_error(t!("mcp.mod.failedToInitialize", error = err.to_string()), None))?;
+    let service = server
+        .serve(stdio())
+        .await
+        .map_err(|err| McpError::internal_error(t!("mcp.mod.failedToInitialize", error = err.to_string()), None))?;
 
     // Wait for the service to complete with proper error handling
-    service.waiting().await
+    service
+        .waiting()
+        .await
         .map_err(|err| McpError::internal_error(t!("mcp.mod.serverWaitFailed", error = err.to_string()), None))?;
 
     tracing::info!("{}", t!("mcp.mod.serverStopped"));

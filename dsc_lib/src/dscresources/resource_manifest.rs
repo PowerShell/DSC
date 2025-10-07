@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use schemars::{Schema, JsonSchema, json_schema};
+use schemars::{json_schema, JsonSchema, Schema};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -90,7 +90,7 @@ pub enum ArgKind {
         /// The argument that accepts the resource type name.
         #[serde(rename = "resourceTypeArg")]
         resource_type_arg: String,
-    }
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -185,7 +185,8 @@ pub struct DeleteMethod {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
-pub struct ValidateMethod { // TODO: enable validation via schema or command
+pub struct ValidateMethod {
+    // TODO: enable validation via schema or command
     /// The command to run to validate the state of the resource.
     pub executable: String,
     /// The arguments to pass to the command to perform a Validate.
@@ -311,17 +312,13 @@ pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        dscerror::DscError,
-        dscresources::resource_manifest::ResourceManifest,
-        schemas::DscRepoSchema
-    };
+    use crate::{dscerror::DscError, dscresources::resource_manifest::ResourceManifest, schemas::DscRepoSchema};
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
         let invalid_uri = "https://invalid.schema.uri".to_string();
 
-        let manifest = ResourceManifest{
+        let manifest = ResourceManifest {
             schema_version: invalid_uri.clone(),
             resource_type: "Microsoft.Dsc.Test/InvalidSchemaUri".to_string(),
             version: "0.1.0".to_string(),
@@ -336,16 +333,19 @@ mod test {
             DscError::UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &ResourceManifest::recognized_schema_uris())
-            },
+            }
             _ => {
-                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
+                panic!(
+                    "Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}",
+                    result.as_ref().unwrap_err()
+                )
             }
         }
     }
 
     #[test]
     fn test_validate_schema_uri_with_valid_uri() {
-        let manifest = ResourceManifest{
+        let manifest = ResourceManifest {
             schema_version: ResourceManifest::default_schema_id_uri(),
             resource_type: "Microsoft.Dsc.Test/ValidSchemaUri".to_string(),
             version: "0.1.0".to_string(),

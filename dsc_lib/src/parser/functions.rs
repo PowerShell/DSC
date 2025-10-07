@@ -6,12 +6,9 @@ use serde_json::{Number, Value};
 use tracing::debug;
 use tree_sitter::Node;
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::parser::{
-    expressions::Expression,
-    FunctionDispatcher,
-};
+use crate::parser::{expressions::Expression, FunctionDispatcher};
+use crate::DscError;
 
 #[derive(Clone)]
 pub struct Function {
@@ -55,9 +52,10 @@ impl Function {
         let args = convert_args_node(statement_bytes, function_args.as_ref())?;
         let name = name.utf8_text(statement_bytes)?;
         debug!("{}", t!("parser.functions.functionName", name = name));
-        Ok(Function{
+        Ok(Function {
             name: name.to_string(),
-            args})
+            args,
+        })
     }
 
     /// Invoke the function.
@@ -75,7 +73,7 @@ impl Function {
                         debug!("{}", t!("parser.functions.argIsExpression"));
                         let value = expression.invoke(function_dispatcher, context)?;
                         resolved_args.push(value.clone());
-                    },
+                    }
                     FunctionArg::Value(value) => {
                         debug!("{}", t!("parser.functions.argIsValue", value = value : {:?}));
                         resolved_args.push(value.clone());
@@ -106,22 +104,24 @@ fn convert_args_node(statement_bytes: &[u8], args: Option<&Node>) -> Result<Opti
                 let value = arg.utf8_text(statement_bytes)?;
                 // Resolve escaped single quotes
                 result.push(FunctionArg::Value(Value::String(value.to_string().replace("''", "'"))));
-            },
+            }
             "number" => {
                 let value = arg.utf8_text(statement_bytes)?;
                 result.push(FunctionArg::Value(Value::Number(Number::from(value.parse::<i32>()?))));
-            },
+            }
             "boolean" => {
                 let value = arg.utf8_text(statement_bytes)?;
                 result.push(FunctionArg::Value(Value::Bool(value.parse::<bool>()?)));
-            },
+            }
             "expression" => {
                 // TODO: this is recursive, we may want to stop at a specific depth
                 let expression = Expression::new(statement_bytes, &arg)?;
                 result.push(FunctionArg::Expression(expression));
-            },
+            }
             _ => {
-                return Err(DscError::Parser(t!("parser.functions.unknownArgType", kind = arg.kind()).to_string()));
+                return Err(DscError::Parser(
+                    t!("parser.functions.unknownArgType", kind = arg.kind()).to_string(),
+                ));
             }
         }
     }

@@ -1,13 +1,16 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::discovery::{command_discovery::ImportedManifest, discovery_trait::DiscoveryFilter};
 use crate::discovery::discovery_trait::DiscoveryKind;
+use crate::discovery::{command_discovery::ImportedManifest, discovery_trait::DiscoveryFilter};
 use crate::progress::ProgressFormat;
 
 use configure::config_doc::ExecutionKind;
 use dscerror::DscError;
-use dscresources::{dscresource::{DscResource, Invoke}, invoke_result::{GetResult, SetResult, TestResult}};
+use dscresources::{
+    dscresource::{DscResource, Invoke},
+    invoke_result::{GetResult, SetResult, TestResult},
+};
 use rust_i18n::i18n;
 
 pub mod configure;
@@ -18,8 +21,8 @@ pub mod extensions;
 pub mod functions;
 pub mod parser;
 pub mod progress;
-pub mod util;
 pub mod schemas;
+pub mod util;
 
 i18n!("locales", fallback = "en-us");
 
@@ -52,8 +55,15 @@ impl DscManager {
         self.discovery.find_resource(name, version)
     }
 
-    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
-        self.discovery.list_available(kind, type_name_filter, adapter_name_filter, progress_format)
+    pub fn list_available(
+        &mut self,
+        kind: &DiscoveryKind,
+        type_name_filter: &str,
+        adapter_name_filter: &str,
+        progress_format: ProgressFormat,
+    ) -> Vec<ImportedManifest> {
+        self.discovery
+            .list_available(kind, type_name_filter, adapter_name_filter, progress_format)
     }
 
     pub fn find_resources(&mut self, required_resource_types: &[DiscoveryFilter], progress_format: ProgressFormat) {

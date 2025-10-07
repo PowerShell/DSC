@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use super::Function;
 
 #[derive(Debug, Default)]
 pub struct ToUpper {}
@@ -40,21 +40,27 @@ mod tests {
     #[test]
     fn test_to_upper_lowercase() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toUpper('hello world')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toUpper('hello world')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "HELLO WORLD");
     }
 
     #[test]
     fn test_to_upper_mixed_case() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toUpper('Hello World')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toUpper('Hello World')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "HELLO WORLD");
     }
 
     #[test]
     fn test_to_upper_already_uppercase() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toUpper('HELLO WORLD')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toUpper('HELLO WORLD')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "HELLO WORLD");
     }
 
@@ -68,7 +74,9 @@ mod tests {
     #[test]
     fn test_to_upper_with_numbers_and_symbols() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toUpper('Hello123!@#')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toUpper('Hello123!@#')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "HELLO123!@#");
     }
 
@@ -82,7 +90,9 @@ mod tests {
     #[test]
     fn test_to_upper_with_spaces() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toUpper('  hello  world  ')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toUpper('  hello  world  ')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "  HELLO  WORLD  ");
     }
 
@@ -96,7 +106,9 @@ mod tests {
     #[test]
     fn test_to_upper_nested_function() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[toUpper(concat('hello', ' world'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[toUpper(concat('hello', ' world'))]", &Context::new())
+            .unwrap();
         assert_eq!(result, "HELLO WORLD");
     }
 }

@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -16,10 +16,18 @@ impl Function for Empty {
         FunctionMetadata {
             name: "empty".to_string(),
             description: t!("functions.empty.description").to_string(),
-            category: vec![FunctionCategory::Array, FunctionCategory::Object, FunctionCategory::String],
+            category: vec![
+                FunctionCategory::Array,
+                FunctionCategory::Object,
+                FunctionCategory::String,
+            ],
             min_args: 1,
             max_args: 1,
-            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Array, FunctionArgKind::Object, FunctionArgKind::String]],
+            accepted_arg_ordered_types: vec![vec![
+                FunctionArgKind::Array,
+                FunctionArgKind::Object,
+                FunctionArgKind::String,
+            ]],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Boolean],
         }
@@ -42,7 +50,6 @@ impl Function for Empty {
         Err(DscError::Parser(t!("functions.empty.invalidArgType").to_string()))
     }
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -3,13 +3,13 @@
 
 use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager,
     dscresources::{
         dscresource::{Capability, Invoke},
-        resource_manifest::Kind
+        resource_manifest::Kind,
     },
+    DscManager,
 };
-use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
+use rmcp::{handler::server::wrapper::Parameters, tool, tool_router, ErrorData as McpError, Json};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ use tokio::task;
 #[derive(Serialize, JsonSchema)]
 pub struct DscResource {
     /// The namespaced name of the resource.
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub type_name: String,
     /// The kind of resource.
     pub kind: Kind,
@@ -55,11 +55,17 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn show_dsc_resource(&self, Parameters(ShowResourceRequest { r#type }): Parameters<ShowResourceRequest>) -> Result<Json<DscResource>, McpError> {
+    pub async fn show_dsc_resource(
+        &self,
+        Parameters(ShowResourceRequest { r#type }): Parameters<ShowResourceRequest>,
+    ) -> Result<Json<DscResource>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let Some(resource) = dsc.find_resource(&r#type, None) else {
-                return Err(McpError::invalid_params(t!("mcp.show_dsc_resource.resourceNotFound", type_name = r#type), None))
+                return Err(McpError::invalid_params(
+                    t!("mcp.show_dsc_resource.resourceNotFound", type_name = r#type),
+                    None,
+                ));
             };
             let schema = match resource.schema() {
                 Ok(schema_str) => serde_json::from_str(&schema_str).ok(),
@@ -74,7 +80,9 @@ impl McpServer {
                 author: resource.author.clone(),
                 schema,
             })
-        }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;
+        })
+        .await
+        .map_err(|e| McpError::internal_error(e.to_string(), None))??;
 
         Ok(Json(result))
     }

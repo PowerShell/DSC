@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -19,10 +19,7 @@ impl Function for Range {
             category: vec![FunctionCategory::Array],
             min_args: 2,
             max_args: 2,
-            accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::Number],
-                vec![FunctionArgKind::Number],
-            ],
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Number], vec![FunctionArgKind::Number]],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::Array],
         }
@@ -31,28 +28,42 @@ impl Function for Range {
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.range.invoked"));
 
-        let start_index = args[0].as_i64()
-            .ok_or_else(|| DscError::FunctionArg("range".to_string(), t!("functions.range.startIndexNotInt").to_string()))?;
-        
-        let count = args[1].as_i64()
+        let start_index = args[0].as_i64().ok_or_else(|| {
+            DscError::FunctionArg("range".to_string(), t!("functions.range.startIndexNotInt").to_string())
+        })?;
+
+        let count = args[1]
+            .as_i64()
             .ok_or_else(|| DscError::FunctionArg("range".to_string(), t!("functions.range.countNotInt").to_string()))?;
 
         // validation checks
         if count < 0 {
-            return Err(DscError::FunctionArg("range".to_string(), t!("functions.range.countNegative").to_string()));
+            return Err(DscError::FunctionArg(
+                "range".to_string(),
+                t!("functions.range.countNegative").to_string(),
+            ));
         }
 
         if count > 10000 {
-            return Err(DscError::FunctionArg("range".to_string(), t!("functions.range.countTooLarge").to_string()));
+            return Err(DscError::FunctionArg(
+                "range".to_string(),
+                t!("functions.range.countTooLarge").to_string(),
+            ));
         }
 
         // should not exceed
         if let Some(sum) = start_index.checked_add(count) {
             if sum > 2_147_483_647 {
-                return Err(DscError::FunctionArg("range".to_string(), t!("functions.range.sumTooLarge").to_string()));
+                return Err(DscError::FunctionArg(
+                    "range".to_string(),
+                    t!("functions.range.sumTooLarge").to_string(),
+                ));
             }
         } else {
-            return Err(DscError::FunctionArg("range".to_string(), t!("functions.range.sumOverflow").to_string()));
+            return Err(DscError::FunctionArg(
+                "range".to_string(),
+                t!("functions.range.sumOverflow").to_string(),
+            ));
         }
 
         let mut result = Vec::<Value>::new();
@@ -75,25 +86,36 @@ mod tests {
     fn basic_range() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[range(1, 3)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Array(vec![Value::from(1), Value::from(2), Value::from(3)]));
+        assert_eq!(
+            result,
+            Value::Array(vec![Value::from(1), Value::from(2), Value::from(3)])
+        );
     }
 
     #[test]
     fn range_starting_zero() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[range(0, 5)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Array(vec![
-            Value::from(0), Value::from(1), Value::from(2), Value::from(3), Value::from(4)
-        ]));
+        assert_eq!(
+            result,
+            Value::Array(vec![
+                Value::from(0),
+                Value::from(1),
+                Value::from(2),
+                Value::from(3),
+                Value::from(4)
+            ])
+        );
     }
 
     #[test]
     fn range_negative_start() {
         let mut parser = Statement::new().unwrap();
         let result = parser.parse_and_execute("[range(-2, 4)]", &Context::new()).unwrap();
-        assert_eq!(result, Value::Array(vec![
-            Value::from(-2), Value::from(-1), Value::from(0), Value::from(1)
-        ]));
+        assert_eq!(
+            result,
+            Value::Array(vec![Value::from(-2), Value::from(-1), Value::from(0), Value::from(1)])
+        );
     }
 
     #[test]
@@ -127,7 +149,9 @@ mod tests {
     #[test]
     fn range_large_valid() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[range(2147473647, 10000)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[range(2147473647, 10000)]", &Context::new())
+            .unwrap();
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 10000);
             assert_eq!(arr[0], Value::from(2147473647));

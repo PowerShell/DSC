@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use clap::{Parser};
+use clap::Parser;
 use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use serde_json::Map;
@@ -40,27 +40,25 @@ fn main() {
                 Ok(cmd_info) => get_sshd_settings(&cmd_info, false),
                 Err(e) => Err(e),
             }
-        },
-        Command::Get { input, setting } => {
-            invoke_get(input.as_ref(), setting)
-        },
+        }
+        Command::Get { input, setting } => invoke_get(input.as_ref(), setting),
         Command::Schema { setting } => {
             debug!("{}; {:?}", t!("main.schema").to_string(), setting);
             let schema = match setting {
                 Setting::SshdConfig => {
                     schema_for!(SshdConfigParser)
-                },
+                }
                 Setting::WindowsGlobal => {
                     schema_for!(DefaultShell)
                 }
             };
             println!("{}", serde_json::to_string(&schema).unwrap());
             Ok(Map::new())
-        },
+        }
         Command::Set { input } => {
             debug!("{}", t!("main.set", input = input).to_string());
             invoke_set(input)
-        },
+        }
     };
 
     match result {
@@ -75,7 +73,7 @@ fn main() {
                 }
             }
             exit(EXIT_SUCCESS);
-        },
+        }
         Err(e) => {
             error!("{}", e);
             exit(EXIT_FAILURE);

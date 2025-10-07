@@ -1,13 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use num_traits::cast::NumCast;
 use rust_i18n::t;
 use serde_json::Value;
-use super::Function;
 
 #[derive(Debug, Default)]
 pub struct Int {}
@@ -30,13 +30,27 @@ impl Function for Int {
         let arg = &args[0];
         let value: i64;
         if arg.is_string() {
-            let input = arg.as_str().ok_or(DscError::FunctionArg("int".to_string(), t!("functions.int.invalidInput").to_string()))?;
-            let result = input.parse::<f64>().map_err(|_| DscError::FunctionArg("int".to_string(), t!("functions.int.parseStringError").to_string()))?;
-            value = NumCast::from(result).ok_or(DscError::FunctionArg("int".to_string(), t!("functions.int.castError").to_string()))?;
+            let input = arg.as_str().ok_or(DscError::FunctionArg(
+                "int".to_string(),
+                t!("functions.int.invalidInput").to_string(),
+            ))?;
+            let result = input.parse::<f64>().map_err(|_| {
+                DscError::FunctionArg("int".to_string(), t!("functions.int.parseStringError").to_string())
+            })?;
+            value = NumCast::from(result).ok_or(DscError::FunctionArg(
+                "int".to_string(),
+                t!("functions.int.castError").to_string(),
+            ))?;
         } else if arg.is_number() {
-            value = arg.as_i64().ok_or(DscError::FunctionArg("int".to_string(), t!("functions.int.parseNumError").to_string()))?;
+            value = arg.as_i64().ok_or(DscError::FunctionArg(
+                "int".to_string(),
+                t!("functions.int.parseNumError").to_string(),
+            ))?;
         } else {
-            return Err(DscError::FunctionArg("int".to_string(), t!("functions.invalidArgType").to_string()));
+            return Err(DscError::FunctionArg(
+                "int".to_string(),
+                t!("functions.invalidArgType").to_string(),
+            ));
         }
         Ok(Value::Number(value.into()))
     }

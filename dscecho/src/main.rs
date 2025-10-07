@@ -4,12 +4,12 @@
 mod args;
 mod echo;
 
+use crate::echo::{Echo, Output};
 use args::Args;
 use clap::Parser;
 use rust_i18n::{i18n, t};
 use schemars::schema_for;
 use serde_json::{Map, Value};
-use crate::echo::{Echo, Output};
 
 i18n!("locales", fallback = "en-us");
 
@@ -29,7 +29,7 @@ fn main() {
             match echo.output {
                 Output::SecureString(_) | Output::SecureObject(_) => {
                     echo.output = Output::String(SECURE_VALUE_REDACTED.to_string());
-                },
+                }
                 Output::Array(ref mut arr) => {
                     for item in arr.iter_mut() {
                         if is_secure_value(item) {
@@ -38,10 +38,10 @@ fn main() {
                             *item = redact(item);
                         }
                     }
-                },
+                }
                 Output::Object(ref mut obj) => {
                     *obj = redact(obj);
-                },
+                }
                 _ => {}
             }
         }

@@ -8,6 +8,7 @@ param(
     [ValidateSet('current','aarch64-pc-windows-msvc','x86_64-pc-windows-msvc','aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','aarch64-unknown-linux-musl','x86_64-unknown-linux-gnu','x86_64-unknown-linux-musl')]
     $architecture = 'current',
     [switch]$Clippy,
+    [switch]$FmtFix,
     [switch]$SkipBuild,
     [ValidateSet('msix','msix-private','msixbundle','tgz','zip')]
     $packageType,
@@ -252,6 +253,19 @@ if ($null -ne $packageType) {
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to install clippy"
         }
+
+        Write-Verbose -Verbose "Installing rustfmt..."
+        if ($UseCFS) {
+            cargo install rustfmt --config .cargo/config.toml
+        } else {
+            if ($architecture -ne 'current') {
+                write-verbose -verbose "Installing rustfmt for $architecture"
+                rustup component add rustfmt --target $architecture
+            } else {
+                write-verbose -verbose "Installing rustfmt for current architecture"
+                rustup component add rustfmt
+            }
+        }
     }
 
     ## Test if Node is installed
@@ -432,6 +446,22 @@ if (!$SkipBuild) {
                     else {
                         Write-Verbose -Verbose "Running clippy with pedantic for $project"
                         cargo clippy @flags --% -- -Dwarnings -Dclippy::pedantic
+                    }
+
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Clippy failed for $project"
+                    }
+
+                    if ($FmtFix) {
+                        Write-Verbose -Verbose "Running rustfmt for $project"
+                        cargo fmt --all
+                    }
+                    else {
+                        Write-Verbose -Verbose "Running rustfmt check for $project"
+                        cargo fmt --all -- --check
+                    }
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Rustfmt failed for $project"
                     }
                 }
                 else {

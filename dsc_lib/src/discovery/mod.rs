@@ -4,13 +4,13 @@
 pub mod command_discovery;
 pub mod discovery_trait;
 
-use crate::discovery::discovery_trait::{DiscoveryKind, ResourceDiscovery, DiscoveryFilter};
+use crate::discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind, ResourceDiscovery};
 use crate::extensions::dscextension::{Capability, DscExtension};
 use crate::{dscresources::dscresource::DscResource, progress::ProgressFormat};
+use command_discovery::{CommandDiscovery, ImportedManifest};
 use core::result::Result::Ok;
 use semver::{Version, VersionReq};
 use std::collections::BTreeMap;
-use command_discovery::{CommandDiscovery, ImportedManifest};
 use tracing::error;
 
 #[derive(Clone)]
@@ -45,16 +45,21 @@ impl Discovery {
     /// # Returns
     ///
     /// A vector of `DscResource` instances.
-    pub fn list_available(&mut self, kind: &DiscoveryKind, type_name_filter: &str, adapter_name_filter: &str, progress_format: ProgressFormat) -> Vec<ImportedManifest> {
-        let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
-            Box::new(command_discovery::CommandDiscovery::new(progress_format)),
-        ];
+    pub fn list_available(
+        &mut self,
+        kind: &DiscoveryKind,
+        type_name_filter: &str,
+        adapter_name_filter: &str,
+        progress_format: ProgressFormat,
+    ) -> Vec<ImportedManifest> {
+        let discovery_types: Vec<Box<dyn ResourceDiscovery>> =
+            vec![Box::new(command_discovery::CommandDiscovery::new(progress_format))];
 
         let mut resources: Vec<ImportedManifest> = Vec::new();
 
         for mut discovery_type in discovery_types {
-
-            let discovered_resources = match discovery_type.list_available(kind, type_name_filter, adapter_name_filter) {
+            let discovered_resources = match discovery_type.list_available(kind, type_name_filter, adapter_name_filter)
+            {
                 Ok(value) => value,
                 Err(err) => {
                     error!("{err}");
@@ -66,7 +71,7 @@ impl Discovery {
                 for resource in found_resources {
                     resources.push(resource.clone());
                 }
-            };
+            }
 
             if let Ok(extensions) = discovery_type.get_extensions() {
                 self.extensions.extend(extensions);
@@ -80,7 +85,8 @@ impl Discovery {
         if self.extensions.is_empty() {
             self.list_available(&DiscoveryKind::Extension, "*", "", ProgressFormat::None);
         }
-        self.extensions.values()
+        self.extensions
+            .values()
             .filter(|ext| ext.capabilities.contains(capability))
             .cloned()
             .collect()
@@ -89,7 +95,8 @@ impl Discovery {
     #[must_use]
     pub fn find_resource(&mut self, type_name: &str, version_string: Option<&str>) -> Option<&DscResource> {
         if self.resources.is_empty() {
-            let discovery_filter = DiscoveryFilter::new(type_name, version_string.map(std::string::ToString::to_string));
+            let discovery_filter =
+                DiscoveryFilter::new(type_name, version_string.map(std::string::ToString::to_string));
             self.find_resources(&[discovery_filter], ProgressFormat::None);
         }
 
@@ -134,11 +141,8 @@ impl Discovery {
         }
 
         let command_discovery = CommandDiscovery::new(progress_format);
-        let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![
-            Box::new(command_discovery),
-        ];
+        let discovery_types: Vec<Box<dyn ResourceDiscovery>> = vec![Box::new(command_discovery)];
         for mut discovery_type in discovery_types {
-
             let discovered_resources = match discovery_type.find_resources(required_resource_types) {
                 Ok(value) => value,
                 Err(err) => {
@@ -189,10 +193,7 @@ pub struct ResourceIterator {
 impl ResourceIterator {
     #[must_use]
     pub fn new(resources: Vec<DscResource>) -> ResourceIterator {
-        ResourceIterator {
-            resources,
-            index: 0,
-        }
+        ResourceIterator { resources, index: 0 }
     }
 }
 

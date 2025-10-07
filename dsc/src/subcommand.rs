@@ -1,51 +1,48 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{ConfigSubCommand, SchemaType, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat, ResourceSubCommand};
+use crate::args::{
+    ConfigSubCommand, ExtensionSubCommand, FunctionSubCommand, GetOutputFormat, ListOutputFormat, OutputFormat,
+    ResourceSubCommand, SchemaType,
+};
 use crate::resolve::{get_contents, Include};
-use crate::resource_command::{get_resource, self};
+use crate::resource_command::{self, get_resource};
 use crate::tablewriter::Table;
-use crate::util::{get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT, EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR};
+use crate::util::{
+    get_input, get_schema, in_desired_state, set_dscconfigroot, write_object, DSC_CONFIG_ROOT,
+    EXIT_DSC_ASSERTION_FAILED, EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_INVALID_INPUT, EXIT_JSON_ERROR,
+};
+use core::convert::AsRef;
 use dsc_lib::functions::FunctionArgKind;
 use dsc_lib::{
     configure::{
-        config_doc::{
-            Configuration,
-            ExecutionKind,
-            Resource,
-        },
+        config_doc::{Configuration, ExecutionKind, Resource},
         config_result::ResourceGetResult,
         Configurator,
     },
-    discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind},
     discovery::command_discovery::ImportedManifest,
+    discovery::discovery_trait::{DiscoveryFilter, DiscoveryKind},
     dscerror::DscError,
-    DscManager,
-    dscresources::invoke_result::{
-        ResolveResult,
-        TestResult,
-        ValidateResult,
-    },
-    dscresources::dscresource::{Capability, ImplementedAs, validate_json, validate_properties},
+    dscresources::dscresource::{validate_json, validate_properties, Capability, ImplementedAs},
+    dscresources::invoke_result::{ResolveResult, TestResult, ValidateResult},
     dscresources::resource_manifest::import_manifest,
     extensions::dscextension::Capability as ExtensionCapability,
     functions::FunctionDispatcher,
     progress::ProgressFormat,
     util::convert_wildcard_to_regex,
+    DscManager,
 };
 use regex::RegexBuilder;
 use rust_i18n::t;
-use core::convert::AsRef;
 use std::{
     collections::HashMap,
     io::{self, IsTerminal},
     path::Path,
-    process::exit
+    process::exit,
 };
 use tracing::{debug, error, trace};
 
-pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
-{
+pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool) {
     match configurator.invoke_get() {
         Ok(result) => {
             if *as_group {
@@ -57,8 +54,7 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
                     }
                 };
                 write_object(&json, format, false);
-            }
-            else {
+            } else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
@@ -71,7 +67,7 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
                     exit(EXIT_DSC_ERROR);
                 }
             }
-        },
+        }
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
@@ -79,8 +75,7 @@ pub fn config_get(configurator: &mut Configurator, format: Option<&OutputFormat>
     }
 }
 
-pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool)
-{
+pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool) {
     match configurator.invoke_set(false) {
         Ok(result) => {
             if *as_group {
@@ -92,8 +87,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
                     }
                 };
                 write_object(&json, format, false);
-            }
-            else {
+            } else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
@@ -106,7 +100,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
                     exit(EXIT_DSC_ERROR);
                 }
             }
-        },
+        }
         Err(err) => {
             error!("Error: {err}");
             exit(EXIT_DSC_ERROR);
@@ -114,8 +108,14 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
     }
 }
 
-pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat>, as_group: &bool, as_get: &bool, as_config: &bool, as_assert: &bool)
-{
+pub fn config_test(
+    configurator: &mut Configurator,
+    format: Option<&OutputFormat>,
+    as_group: &bool,
+    as_get: &bool,
+    as_config: &bool,
+    as_assert: &bool,
+) {
     match configurator.invoke_test() {
         Ok(result) => {
             if *as_group {
@@ -124,7 +124,10 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     result_configuration.resources = Vec::new();
                     for test_result in result.results {
                         if *as_assert && !in_desired_state(&test_result) {
-                            error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
+                            error!(
+                                "{}",
+                                t!("subcommand.assertionFailed", resource_type = test_result.resource_type)
+                            );
                             exit(EXIT_DSC_ASSERTION_FAILED);
                         }
                         let properties = match test_result.result {
@@ -135,7 +138,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                                     debug!("{}", t!("subcommand.actualStateNotObject"));
                                     None
                                 }
-                            },
+                            }
                             TestResult::Group(_) => {
                                 // not expected
                                 debug!("{}", t!("subcommand.unexpectedTestResult"));
@@ -157,12 +160,14 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                             exit(EXIT_JSON_ERROR);
                         }
                     }
-                }
-                else if *as_get {
+                } else if *as_get {
                     let mut group_result = Vec::<ResourceGetResult>::new();
                     for test_result in result.results {
                         if *as_assert && !in_desired_state(&test_result) {
-                            error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
+                            error!(
+                                "{}",
+                                t!("subcommand.assertionFailed", resource_type = test_result.resource_type)
+                            );
                             exit(EXIT_DSC_ASSERTION_FAILED);
                         }
                         group_result.push(test_result.into());
@@ -174,12 +179,14 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                             exit(EXIT_JSON_ERROR);
                         }
                     }
-                }
-                else {
+                } else {
                     if *as_assert {
                         for test_result in &result.results {
                             if !in_desired_state(test_result) {
-                                error!("{}", t!("subcommand.assertionFailed", resource_type = test_result.resource_type));
+                                error!(
+                                    "{}",
+                                    t!("subcommand.assertionFailed", resource_type = test_result.resource_type)
+                                );
                                 exit(EXIT_DSC_ASSERTION_FAILED);
                             }
                         }
@@ -193,8 +200,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     }
                 };
                 write_object(&json, format, false);
-            }
-            else {
+            } else {
                 let json = match serde_json::to_string(&result) {
                     Ok(json) => json,
                     Err(err) => {
@@ -207,7 +213,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
                     exit(EXIT_DSC_ERROR);
                 }
             }
-        },
+        }
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
@@ -215,8 +221,7 @@ pub fn config_test(configurator: &mut Configurator, format: Option<&OutputFormat
     }
 }
 
-pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>)
-{
+pub fn config_export(configurator: &mut Configurator, format: Option<&OutputFormat>) {
     match configurator.invoke_export() {
         Ok(result) => {
             let json = match serde_json::to_string(&result.result) {
@@ -228,15 +233,13 @@ pub fn config_export(configurator: &mut Configurator, format: Option<&OutputForm
             };
             write_object(&json, format, false);
             if result.had_errors {
-
-                for msg in result.messages
-                {
+                for msg in result.messages {
                     error!("{:?} {} {}", msg.level, t!("subcommand.message"), msg.message);
-                };
+                }
 
                 exit(EXIT_DSC_ERROR);
             }
-        },
+        }
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
@@ -262,7 +265,10 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
         debug!("DSC_CONFIG_ROOT = {config_root}");
     } else {
         let current_directory = std::env::current_dir().unwrap_or_default();
-        debug!("DSC_CONFIG_ROOT = {} '{current_directory:?}'", t!("subcommand.currentDirectory"));
+        debug!(
+            "DSC_CONFIG_ROOT = {} '{current_directory:?}'",
+            t!("subcommand.currentDirectory")
+        );
         set_dscconfigroot(&current_directory.to_string_lossy());
     }
 
@@ -276,13 +282,22 @@ fn initialize_config_root(path: Option<&String>) -> Option<String> {
 
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
-pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parameters_from_stdin: bool, mounted_path: Option<&String>, as_group: &bool, as_assert: &bool, as_include: &bool, progress_format: ProgressFormat) {
+pub fn config(
+    subcommand: &ConfigSubCommand,
+    parameters: &Option<String>,
+    parameters_from_stdin: bool,
+    mounted_path: Option<&String>,
+    as_group: &bool,
+    as_assert: &bool,
+    as_include: &bool,
+    progress_format: ProgressFormat,
+) {
     let (new_parameters, json_string) = match subcommand {
-        ConfigSubCommand::Get { input, file, .. } |
-        ConfigSubCommand::Set { input, file, .. } |
-        ConfigSubCommand::Test { input, file, .. } |
-        ConfigSubCommand::Validate { input, file, .. } |
-        ConfigSubCommand::Export { input, file, .. } => {
+        ConfigSubCommand::Get { input, file, .. }
+        | ConfigSubCommand::Set { input, file, .. }
+        | ConfigSubCommand::Test { input, file, .. }
+        | ConfigSubCommand::Validate { input, file, .. }
+        | ConfigSubCommand::Export { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
             let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
             if *as_include {
@@ -297,7 +312,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
             } else {
                 (None, document)
             }
-        },
+        }
         ConfigSubCommand::Resolve { input, file, .. } => {
             let new_path = initialize_config_root(file.as_ref());
             let document = get_input(input.as_ref(), new_path.as_ref(), parameters_from_stdin);
@@ -322,7 +337,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
 
     configurator.context.dsc_version = Some(env!("CARGO_PKG_VERSION").to_string());
 
-    if let ConfigSubCommand::Set { what_if , .. } = subcommand {
+    if let ConfigSubCommand::Set { what_if, .. } = subcommand {
         if *what_if {
             configurator.context.execution_type = ExecutionKind::WhatIf;
         }
@@ -336,28 +351,24 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
         None => {
             debug!("{}", t!("subcommand.noParameters"));
             None
-        },
+        }
         Some(parameters) => {
             debug!("{}", t!("subcommand.parameters"));
             match serde_json::from_str(parameters) {
                 Ok(json) => Some(json),
-                Err(_) => {
-                    match serde_yaml::from_str::<serde_yaml::Value>(parameters) {
-                        Ok(yaml) => {
-                            match serde_json::to_value(yaml) {
-                                Ok(json) => Some(json),
-                                Err(err) => {
-                                    error!("{}: {err}", t!("subcommand.failedConvertJson"));
-                                    exit(EXIT_DSC_ERROR);
-                                }
-                            }
-                        },
+                Err(_) => match serde_yaml::from_str::<serde_yaml::Value>(parameters) {
+                    Ok(yaml) => match serde_json::to_value(yaml) {
+                        Ok(json) => Some(json),
                         Err(err) => {
-                            error!("{}: {err}", t!("subcommand.invalidParameters"));
-                            exit(EXIT_INVALID_INPUT);
+                            error!("{}: {err}", t!("subcommand.failedConvertJson"));
+                            exit(EXIT_DSC_ERROR);
                         }
+                    },
+                    Err(err) => {
+                        error!("{}: {err}", t!("subcommand.invalidParameters"));
+                        exit(EXIT_INVALID_INPUT);
                     }
-                }
+                },
             }
         }
     };
@@ -384,14 +395,30 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
     match subcommand {
         ConfigSubCommand::Get { output_format, .. } => {
             config_get(&mut configurator, output_format.as_ref(), as_group);
-        },
+        }
         ConfigSubCommand::Set { output_format, .. } => {
             config_set(&mut configurator, output_format.as_ref(), as_group);
-        },
-        ConfigSubCommand::Test { output_format, as_get, as_config, .. } => {
-            config_test(&mut configurator, output_format.as_ref(), as_group, as_get, as_config, as_assert);
-        },
-        ConfigSubCommand::Validate { input, file, output_format} => {
+        }
+        ConfigSubCommand::Test {
+            output_format,
+            as_get,
+            as_config,
+            ..
+        } => {
+            config_test(
+                &mut configurator,
+                output_format.as_ref(),
+                as_group,
+                as_get,
+                as_config,
+                as_assert,
+            );
+        }
+        ConfigSubCommand::Validate {
+            input,
+            file,
+            output_format,
+        } => {
             let mut result = ValidateResult {
                 valid: true,
                 reason: None,
@@ -402,7 +429,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
                 match serde_json::from_str::<Include>(&input) {
                     Ok(_) => {
                         // valid, so do nothing
-                    },
+                    }
                     Err(err) => {
                         error!("{}: {err}", t!("subcommand.invalidInclude"));
                         result.valid = false;
@@ -412,7 +439,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
                 match validate_config(configurator.get_config(), progress_format) {
                     Ok(()) => {
                         // valid, so do nothing
-                    },
+                    }
                     Err(err) => {
                         error!("{err}");
                         result.valid = false;
@@ -426,10 +453,10 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
             };
 
             write_object(&json, output_format.as_ref(), false);
-        },
+        }
         ConfigSubCommand::Export { output_format, .. } => {
             config_export(&mut configurator, output_format.as_ref());
-        },
+        }
         ConfigSubCommand::Resolve { output_format, .. } => {
             let configuration = match serde_json::from_str(&json_string) {
                 Ok(json) => json,
@@ -460,7 +487,7 @@ pub fn config(subcommand: &ConfigSubCommand, parameters: &Option<String>, parame
                 }
             };
             write_object(&json_string, output_format.as_ref(), false);
-        },
+        }
     }
 }
 
@@ -494,22 +521,38 @@ pub fn validate_config(config: &Configuration, progress_format: ProgressFormat) 
     let mut resource_types = Vec::<DiscoveryFilter>::new();
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
-            return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
+            return Err(DscError::Validation(
+                t!("subcommand.resourceTypeNotSpecified").to_string(),
+            ));
         };
-        resource_types.push(DiscoveryFilter::new(type_name, resource_block["api_version"].as_str().map(std::string::ToString::to_string)));
+        resource_types.push(DiscoveryFilter::new(
+            type_name,
+            resource_block["api_version"]
+                .as_str()
+                .map(std::string::ToString::to_string),
+        ));
     }
     dsc.find_resources(&resource_types, progress_format);
 
     for resource_block in resources {
         let Some(type_name) = resource_block["type"].as_str() else {
-            return Err(DscError::Validation(t!("subcommand.resourceTypeNotSpecified").to_string()));
+            return Err(DscError::Validation(
+                t!("subcommand.resourceTypeNotSpecified").to_string(),
+            ));
         };
 
-        trace!("{} '{}'", t!("subcommand.validatingResource"), resource_block["name"].as_str().unwrap_or_default());
+        trace!(
+            "{} '{}'",
+            t!("subcommand.validatingResource"),
+            resource_block["name"].as_str().unwrap_or_default()
+        );
 
         // get the actual resource
         let Some(resource) = get_resource(&mut dsc, type_name, resource_block["api_version"].as_str()) else {
-            return Err(DscError::Validation(format!("{}: '{type_name}'", t!("subcommand.resourceNotFound"))));
+            return Err(DscError::Validation(format!(
+                "{}: '{type_name}'",
+                t!("subcommand.resourceNotFound")
+            )));
         };
 
         // see if the resource is command based
@@ -525,18 +568,29 @@ pub fn extension(subcommand: &ExtensionSubCommand, progress_format: ProgressForm
     let mut dsc = DscManager::new();
 
     match subcommand {
-        ExtensionSubCommand::List{extension_name, output_format} => {
-            list_extensions(&mut dsc, extension_name.as_ref(), output_format.as_ref(), progress_format);
-        },
+        ExtensionSubCommand::List {
+            extension_name,
+            output_format,
+        } => {
+            list_extensions(
+                &mut dsc,
+                extension_name.as_ref(),
+                output_format.as_ref(),
+                progress_format,
+            );
+        }
     }
 }
 
 pub fn function(subcommand: &FunctionSubCommand) {
     let functions = FunctionDispatcher::new();
     match subcommand {
-        FunctionSubCommand::List { function_name, output_format } => {
+        FunctionSubCommand::List {
+            function_name,
+            output_format,
+        } => {
             list_functions(&functions, function_name.as_ref(), output_format.as_ref());
-        },
+        }
     }
 }
 
@@ -545,51 +599,127 @@ pub fn resource(subcommand: &ResourceSubCommand, progress_format: ProgressFormat
     let mut dsc = DscManager::new();
 
     match subcommand {
-        ResourceSubCommand::List { resource_name, adapter_name, description, tags, output_format } => {
-            list_resources(&mut dsc, resource_name.as_ref(), adapter_name.as_ref(), description.as_ref(), tags.as_ref(), output_format.as_ref(), progress_format);
-        },
-        ResourceSubCommand::Schema { resource , version, output_format } => {
+        ResourceSubCommand::List {
+            resource_name,
+            adapter_name,
+            description,
+            tags,
+            output_format,
+        } => {
+            list_resources(
+                &mut dsc,
+                resource_name.as_ref(),
+                adapter_name.as_ref(),
+                description.as_ref(),
+                tags.as_ref(),
+                output_format.as_ref(),
+                progress_format,
+            );
+        }
+        ResourceSubCommand::Schema {
+            resource,
+            version,
+            output_format,
+        } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             resource_command::schema(&mut dsc, resource, version.as_deref(), output_format.as_ref());
-        },
-        ResourceSubCommand::Export { resource, version, input, file, output_format } => {
+        }
+        ResourceSubCommand::Export {
+            resource,
+            version,
+            input,
+            file,
+            output_format,
+        } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), file.as_ref(), false);
-            resource_command::export(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
-        },
-        ResourceSubCommand::Get { resource, version, input, file: path, all, output_format } => {
+            resource_command::export(
+                &mut dsc,
+                resource,
+                version.as_deref(),
+                &parsed_input,
+                output_format.as_ref(),
+            );
+        }
+        ResourceSubCommand::Get {
+            resource,
+            version,
+            input,
+            file: path,
+            all,
+            output_format,
+        } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             if *all {
                 resource_command::get_all(&mut dsc, resource, version.as_deref(), output_format.as_ref());
-            }
-            else {
+            } else {
                 if *output_format == Some(GetOutputFormat::JsonArray) {
                     error!("{}", t!("subcommand.jsonArrayNotSupported"));
                     exit(EXIT_INVALID_ARGS);
                 }
                 let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-                resource_command::get(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
+                resource_command::get(
+                    &mut dsc,
+                    resource,
+                    version.as_deref(),
+                    &parsed_input,
+                    output_format.as_ref(),
+                );
             }
-        },
-        ResourceSubCommand::Set { resource, version, input, file: path, output_format } => {
+        }
+        ResourceSubCommand::Set {
+            resource,
+            version,
+            input,
+            file: path,
+            output_format,
+        } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::set(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
-        },
-        ResourceSubCommand::Test { resource, version, input, file: path, output_format } => {
+            resource_command::set(
+                &mut dsc,
+                resource,
+                version.as_deref(),
+                &parsed_input,
+                output_format.as_ref(),
+            );
+        }
+        ResourceSubCommand::Test {
+            resource,
+            version,
+            input,
+            file: path,
+            output_format,
+        } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
-            resource_command::test(&mut dsc, resource, version.as_deref(), &parsed_input, output_format.as_ref());
-        },
-        ResourceSubCommand::Delete { resource, version, input, file: path } => {
+            resource_command::test(
+                &mut dsc,
+                resource,
+                version.as_deref(),
+                &parsed_input,
+                output_format.as_ref(),
+            );
+        }
+        ResourceSubCommand::Delete {
+            resource,
+            version,
+            input,
+            file: path,
+        } => {
             dsc.find_resources(&[DiscoveryFilter::new(resource, version.clone())], progress_format);
             let parsed_input = get_input(input.as_ref(), path.as_ref(), false);
             resource_command::delete(&mut dsc, resource, version.as_deref(), &parsed_input);
-        },
+        }
     }
 }
 
-fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+fn list_extensions(
+    dsc: &mut DscManager,
+    extension_name: Option<&String>,
+    format: Option<&ListOutputFormat>,
+    progress_format: ProgressFormat,
+) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -602,12 +732,14 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
         write_table = true;
     }
     let mut include_separator = false;
-    for manifest_resource in dsc.list_available(&DiscoveryKind::Extension, extension_name.unwrap_or(&String::from("*")), "", progress_format) {
+    for manifest_resource in dsc.list_available(
+        &DiscoveryKind::Extension,
+        extension_name.unwrap_or(&String::from("*")),
+        "",
+        progress_format,
+    ) {
         if let ImportedManifest::Extension(extension) = manifest_resource {
-            let capability_types = [
-                (ExtensionCapability::Discover, "d"),
-                (ExtensionCapability::Secret, "s"),
-            ];
+            let capability_types = [(ExtensionCapability::Discover, "d"), (ExtensionCapability::Secret, "s")];
             let mut capabilities = "-".repeat(capability_types.len());
 
             for (i, (capability, letter)) in capability_types.iter().enumerate() {
@@ -621,10 +753,9 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
                     extension.type_name,
                     extension.version,
                     capabilities,
-                    extension.description.unwrap_or_default()
+                    extension.description.unwrap_or_default(),
                 ]);
-            }
-            else {
+            } else {
                 // convert to json
                 let json = match serde_json::to_string(&extension) {
                     Ok(json) => json,
@@ -642,7 +773,9 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
                 write_object(&json, format.as_ref(), include_separator);
                 include_separator = true;
                 // insert newline separating instances if writing to console
-                if io::stdout().is_terminal() { println!(); }
+                if io::stdout().is_terminal() {
+                    println!();
+                }
             }
         }
     }
@@ -653,7 +786,11 @@ fn list_extensions(dsc: &mut DscManager, extension_name: Option<&String>, format
     }
 }
 
-fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>, output_format: Option<&ListOutputFormat>) {
+fn list_functions(
+    functions: &FunctionDispatcher,
+    function_name: Option<&String>,
+    output_format: Option<&ListOutputFormat>,
+) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_functionCategory").to_string().as_ref(),
@@ -668,7 +805,7 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
         write_table = true;
     }
     let mut include_separator = false;
-    let returned_types= [
+    let returned_types = [
         (FunctionArgKind::Array, "a"),
         (FunctionArgKind::Boolean, "b"),
         (FunctionArgKind::Number, "n"),
@@ -709,15 +846,19 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
             };
 
             table.add_row(vec![
-                function.category.iter().map(std::string::ToString::to_string).collect::<Vec<String>>().join(", "),
+                function
+                    .category
+                    .iter()
+                    .map(std::string::ToString::to_string)
+                    .collect::<Vec<String>>()
+                    .join(", "),
                 function.name,
                 function.min_args.to_string(),
                 max_args,
                 arg_types,
-                function.description
+                function.description,
             ]);
-        }
-        else {
+        } else {
             let json = match serde_json::to_string(&function) {
                 Ok(json) => json,
                 Err(err) => {
@@ -734,7 +875,9 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
             write_object(&json, format.as_ref(), include_separator);
             include_separator = true;
             // insert newline separating instances if writing to console
-            if io::stdout().is_terminal() { println!(); }
+            if io::stdout().is_terminal() {
+                println!();
+            }
         }
     }
 
@@ -744,7 +887,15 @@ fn list_functions(functions: &FunctionDispatcher, function_name: Option<&String>
     }
 }
 
-pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adapter_name: Option<&String>, description: Option<&String>, tags: Option<&Vec<String>>, format: Option<&ListOutputFormat>, progress_format: ProgressFormat) {
+pub fn list_resources(
+    dsc: &mut DscManager,
+    resource_name: Option<&String>,
+    adapter_name: Option<&String>,
+    description: Option<&String>,
+    tags: Option<&Vec<String>>,
+    format: Option<&ListOutputFormat>,
+    progress_format: ProgressFormat,
+) {
     let mut write_table = false;
     let mut table = Table::new(&[
         t!("subcommand.tableHeader_type").to_string().as_ref(),
@@ -759,7 +910,12 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
         write_table = true;
     }
     let mut include_separator = false;
-    for manifest_resource in dsc.list_available(&DiscoveryKind::Resource, resource_name.unwrap_or(&String::from("*")), adapter_name.unwrap_or(&String::new()), progress_format) {
+    for manifest_resource in dsc.list_available(
+        &DiscoveryKind::Resource,
+        resource_name.unwrap_or(&String::from("*")),
+        adapter_name.unwrap_or(&String::new()),
+        progress_format,
+    ) {
         if let ImportedManifest::Resource(resource) = manifest_resource {
             let capability_types = [
                 (Capability::Get, "g"),
@@ -790,14 +946,22 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                 };
 
                 // if description is specified, skip if resource description does not contain it
-                if description.is_some() &&
-                    (manifest.description.is_none() | !manifest.description.unwrap_or_default().to_lowercase().contains(&description.unwrap_or(&String::new()).to_lowercase())) {
+                if description.is_some()
+                    && (manifest.description.is_none()
+                        | !manifest
+                            .description
+                            .unwrap_or_default()
+                            .to_lowercase()
+                            .contains(&description.unwrap_or(&String::new()).to_lowercase()))
+                {
                     continue;
                 }
 
                 // if tags is specified, skip if resource tags do not contain the tags
                 if let Some(tags) = tags {
-                    let Some(manifest_tags) = manifest.tags else { continue; };
+                    let Some(manifest_tags) = manifest.tags else {
+                        continue;
+                    };
 
                     let mut found = false;
                     for tag_to_find in tags {
@@ -808,7 +972,9 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                             }
                         }
                     }
-                    if !found { continue; }
+                    if !found {
+                        continue;
+                    }
                 }
             } else {
                 // resource does not have a manifest but filtering on description or tags was requested - skip such resource
@@ -824,10 +990,9 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                     resource.version,
                     capabilities,
                     resource.require_adapter.unwrap_or_default(),
-                    resource.description.unwrap_or_default()
+                    resource.description.unwrap_or_default(),
                 ]);
-            }
-            else {
+            } else {
                 // convert to json
                 let json = match serde_json::to_string(&resource) {
                     Ok(json) => json,
@@ -845,7 +1010,9 @@ pub fn list_resources(dsc: &mut DscManager, resource_name: Option<&String>, adap
                 write_object(&json, format.as_ref(), include_separator);
                 include_separator = true;
                 // insert newline separating instances if writing to console
-                if io::stdout().is_terminal() { println!(); }
+                if io::stdout().is_terminal() {
+                    println!();
+                }
             }
         }
     }

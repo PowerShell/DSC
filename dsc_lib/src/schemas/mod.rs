@@ -3,12 +3,12 @@
 
 //! Contains helpers for JSON schemas and DSC
 
-use schemars::{Schema, JsonSchema, json_schema};
+use schemars::{json_schema, JsonSchema, Schema};
 
 use crate::dscerror::DscError;
 
 /// Defines the URI prefix for the hosted schemas.
-/// 
+///
 /// While the schemas are currently hosted in the GitHub repository, DSC provides the shortened
 /// `aka.ms` link for convenience. Using this enum simplifies migrating to a new URI for schemas
 /// in the future.
@@ -32,10 +32,7 @@ impl SchemaUriPrefix {
     /// Returns every known URI prefix for convenient iteration.
     #[must_use]
     pub fn all() -> Vec<SchemaUriPrefix> {
-        vec![
-            Self::AkaDotMs,
-            Self::Github,
-        ]
+        vec![Self::AkaDotMs, Self::Github]
     }
 }
 
@@ -43,16 +40,16 @@ impl SchemaUriPrefix {
 #[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum SchemaForm {
     /// Indicates that the schema is bundled using the 2020-12 schema bundling contract.
-    /// 
+    ///
     /// These schemas include all of their references in the `$defs` keyword where the key for
     /// each reference is the `$id` of that subschema and the value is the subschema.
-    /// 
+    ///
     /// The bundled schemas are preferred for offline usage or where network latency is a concern.
     #[default]
     Bundled,
     /// Indicates that the schema is enhanced for interactively viewing, authoring, and editing
     /// the data in VS Code.
-    /// 
+    ///
     /// These schemas include keywords not recognized by JSON Schema libraries and clients outside
     /// of VS Code, like `markdownDescription` and `defaultSnippets`. The schema references and
     /// definitions do not follow the canonical bundling for schema 2020-12, as the VS Code
@@ -66,9 +63,9 @@ pub enum SchemaForm {
 
 impl SchemaForm {
     /// Returns the file extension for a given form of schema.
-    /// 
+    ///
     /// The extension for [`Bundled`] and [`Canonical`] schemas is `.json`
-    /// 
+    ///
     /// The extension for [`VSCode`] schemas is `.vscode.json`
     #[must_use]
     pub fn to_extension(&self) -> String {
@@ -79,14 +76,14 @@ impl SchemaForm {
     }
 
     /// Return the prefix for a schema's folder path.
-    /// 
+    ///
     /// The [`Bundled`] and [`VSCode`] schemas are always published in the `bundled` folder
     /// immediately beneath the version folder. The [`Canonical`] schemas use the folder path
     /// as defined for that schema.
     #[must_use]
     pub fn to_folder_prefix(&self) -> String {
         match self {
-            Self::Bundled | Self::VSCode  => "bundled/".to_string(),
+            Self::Bundled | Self::VSCode => "bundled/".to_string(),
             Self::Canonical => String::new(),
         }
     }
@@ -94,34 +91,30 @@ impl SchemaForm {
     /// Returns every schema form for convenient iteration.
     #[must_use]
     pub fn all() -> Vec<SchemaForm> {
-        vec![
-            Self::Bundled,
-            Self::VSCode,
-            Self::Canonical,
-        ]
+        vec![Self::Bundled, Self::VSCode, Self::Canonical]
     }
 }
 
 /// Defines the versions of DSC recognized for schema validation and handling.
-/// 
+///
 /// The DSC schemas are published into three folders:
-/// 
+///
 /// - `v<major>.<minor>.<patch>` always includes the exact JSON Schema that shipped in that release
 ///   of DSC.
 /// - `v<major>.<minor>` always includes the latest JSON Schema compatible with that minor version
 ///   of DSC.
 /// - `v<major>` always includes the latest JSON Schema compatible with that major version of DSC.
-/// 
+///
 /// Pinning to `v<major>` requires the least-frequent updating of the `$schema` in configuration
 /// documents and resource manifests, but also introduces changes that affect those schemas
 /// (without breaking changes) regularly. Some of the added features may not be effective in the
 /// version of DSC a user has installed.
-/// 
+///
 /// Pinning to `v<major>.<minor>` ensures that users always have the latest schemas for the version
 /// of DSC they're using without schema changes that they may not be able to take advantage of.
 /// However, it requires updating the resource manifests and configuration documents with each
 /// minor release of DSC.
-/// 
+///
 /// Pinning to `v<major>.<minor>.<patch>` is the most specific option, but requires the most
 /// frequent updating on the part of resource and configuration authors.
 #[derive(Debug, Default, Clone, Copy, Hash, Eq, PartialEq)]
@@ -129,7 +122,6 @@ pub enum RecognizedSchemaVersion {
     // Before any relase is published, this enum must be updated with the new version variants.
     // Every release requires a patch version, like `V3_0_1` or `v3_1_0`. New minor releases also
     // require a new minor version, like `v3_1`.
-
     /// Represents `v3` schema folder.
     #[default]
     V3,
@@ -196,14 +188,14 @@ impl RecognizedSchemaVersion {
 }
 
 /// Returns the constructed URI for a hosted DSC schema.
-/// 
+///
 /// This convenience function simplifies constructing the URIs for the various published schemas
 /// that DSC recognizes, instead of needing to maintain long lists of those recognized schemas.
 /// This function should primarily be called by [`get_recognized_schema_uris`], not called
 /// directly.
-/// 
+///
 /// Parameters:
-/// 
+///
 /// - `schema_file_base_name` - specify the base name for the schema file, like `document` for
 ///   the configuration document schema or `manifest` for the resource manifest schema.
 /// - `schema_folder_path` - specify the folder path for the schema file relative to the version
@@ -218,7 +210,7 @@ pub(crate) fn get_recognized_schema_uri(
     schema_folder_path: &str,
     schema_version: RecognizedSchemaVersion,
     schema_form: SchemaForm,
-    schema_uri_prefix: SchemaUriPrefix
+    schema_uri_prefix: SchemaUriPrefix,
 ) -> String {
     format!(
         "{schema_uri_prefix}/{schema_version}/{}{schema_folder_path}/{schema_file_base_name}{}",
@@ -228,13 +220,13 @@ pub(crate) fn get_recognized_schema_uri(
 }
 
 /// Returns the vector of recognized URIs for a given schema.
-/// 
+///
 /// This convenience function generates a vector containing every recognized JSON Schema `$id` URI
 /// for a specific schema. It handles returning the schemas for every recognized host, version,
 /// and form.
-/// 
+///
 /// Parameters:
-/// 
+///
 /// - `schema_file_base_name` - specify the base name for the schema file, like `document` for
 ///   the configuration document schema or `manifest` for the resource manifest schema.
 /// - `schema_folder_path` - specify the folder path for the schema file relative to the version
@@ -246,9 +238,9 @@ pub(crate) fn get_recognized_schema_uri(
 pub(crate) fn get_recognized_schema_uris(
     schema_file_base_name: &str,
     schema_folder_path: &str,
-    should_bundle: bool
+    should_bundle: bool,
 ) -> Vec<String> {
-    let mut uris: Vec<String> = Vec::new(); 
+    let mut uris: Vec<String> = Vec::new();
     let schema_forms = if should_bundle {
         SchemaForm::all()
     } else {
@@ -257,15 +249,13 @@ pub(crate) fn get_recognized_schema_uris(
     for uri_prefix in SchemaUriPrefix::all() {
         for schema_form in schema_forms.iter().copied() {
             for schema_version in RecognizedSchemaVersion::all() {
-                uris.push(
-                    get_recognized_schema_uri(
-                        schema_file_base_name,
-                        schema_folder_path,
-                        schema_version,
-                        schema_form,
-                        uri_prefix
-                    )
-                );
+                uris.push(get_recognized_schema_uri(
+                    schema_file_base_name,
+                    schema_folder_path,
+                    schema_version,
+                    schema_form,
+                    uri_prefix,
+                ));
             }
         }
     }
@@ -275,7 +265,7 @@ pub(crate) fn get_recognized_schema_uris(
 
 /// Returns the JSON Schema to validate that a `$schema` keyword for a DSC type is one of the
 /// recognized URIs.
-/// 
+///
 /// This is a convenience function used by the [`DscRepoSchema`] trait. It's not intended for
 /// direct use.
 #[must_use]
@@ -283,15 +273,13 @@ pub(crate) fn get_recognized_uris_subschema(
     metadata: &Schema,
     schema_file_base_name: &str,
     schema_folder_path: &str,
-    should_bundle: bool
+    should_bundle: bool,
 ) -> Schema {
-    let enums: Vec<serde_json::Value> = get_recognized_schema_uris(
-        schema_file_base_name,
-        schema_folder_path,
-        should_bundle
-    ).iter().map(
-        |schema_uri| serde_json::Value::String(schema_uri.clone())
-    ).collect();
+    let enums: Vec<serde_json::Value> =
+        get_recognized_schema_uris(schema_file_base_name, schema_folder_path, should_bundle)
+            .iter()
+            .map(|schema_uri| serde_json::Value::String(schema_uri.clone()))
+            .collect();
 
     json_schema!({
         "type": "string",
@@ -304,13 +292,13 @@ pub(crate) fn get_recognized_uris_subschema(
 
 /// Returns the recognized schema URI for the latest major version with the
 /// `aka.ms` URI prefix.
-/// 
+///
 /// If the schema is published in bundled form, this function returns the URI for that form.
 /// Otherwise, it returns the URI for the canonical (non-bundled) form. The VS Code form of the
 /// schema is never returned as the default.
-/// 
+///
 /// Parameters:
-/// 
+///
 /// - `schema_file_base_name` - specify the base name for the schema file, like `document` for
 ///   the configuration document schema or `manifest` for the resource manifest schema.
 /// - `schema_folder_path` - specify the folder path for the schema file relative to the version
@@ -322,20 +310,20 @@ pub(crate) fn get_recognized_uris_subschema(
 pub(crate) fn get_default_schema_uri(
     schema_file_base_name: &str,
     schema_folder_path: &str,
-    should_bundle: bool
+    should_bundle: bool,
 ) -> String {
     get_recognized_schema_uri(
         schema_file_base_name,
         schema_folder_path,
         RecognizedSchemaVersion::default(),
         get_default_schema_form(should_bundle),
-        SchemaUriPrefix::default()
+        SchemaUriPrefix::default(),
     )
 }
 
 /// Returns the default form for a schema depending on whether it publishes with its references
 /// bundled.
-/// 
+///
 /// If a schema is published in bundled form, the bundled form is the default. Otherwise, the
 /// default form is canonical (non-bundled).
 fn get_default_schema_form(should_bundle: bool) -> SchemaForm {
@@ -348,18 +336,18 @@ fn get_default_schema_form(should_bundle: bool) -> SchemaForm {
 
 /// Defines a reusable trait to simplify managing multiple versions of JSON Schemas for DSC
 /// structs and enums.
-/// 
+///
 /// This trait is only intended for use by definitions in the DSC repository.
-pub trait DscRepoSchema : JsonSchema {
+pub trait DscRepoSchema: JsonSchema {
     /// Defines the base name for the exported JSON Schema, like `document` for
     /// [`Configuration`].
-    /// 
+    ///
     /// [`Configuration`]: crate::configure::config_doc::Configuration
     const SCHEMA_FILE_BASE_NAME: &'static str;
 
     /// Defines the folder path for the schema relative to the published version folder, like
     /// `config` for [`Configuration`].
-    /// 
+    ///
     /// [`Configuration`]: crate::configure::config_doc::Configuration
     const SCHEMA_FOLDER_PATH: &'static str;
 
@@ -370,7 +358,7 @@ pub trait DscRepoSchema : JsonSchema {
     fn schema_metadata() -> Schema;
 
     /// Returns the default URI for the schema.
-    /// 
+    ///
     /// An object representing an instance of the schema can specify any valid URI, but the
     /// default when creating an instance is the latest major version of the schema with the
     /// `aka.ms` prefix. If the schema is published in the bundled form, the default is for the
@@ -380,7 +368,7 @@ pub trait DscRepoSchema : JsonSchema {
         get_default_schema_uri(
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
-            Self::SCHEMA_SHOULD_BUNDLE
+            Self::SCHEMA_SHOULD_BUNDLE,
         )
     }
 
@@ -389,20 +377,20 @@ pub trait DscRepoSchema : JsonSchema {
     fn get_schema_id_uri(
         schema_version: RecognizedSchemaVersion,
         schema_form: SchemaForm,
-        uri_prefix: SchemaUriPrefix
+        uri_prefix: SchemaUriPrefix,
     ) -> String {
         get_recognized_schema_uri(
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
             schema_version,
             schema_form,
-            uri_prefix
+            uri_prefix,
         )
     }
 
     /// Returns the URI for the VS Code form of the schema with the default prefix for a given
     /// version.
-    /// 
+    ///
     /// If the type isn't published in bundled form, this function returns `None`.
     #[must_use]
     fn get_enhanced_schema_id_uri(schema_version: RecognizedSchemaVersion) -> Option<String> {
@@ -415,7 +403,7 @@ pub trait DscRepoSchema : JsonSchema {
             Self::SCHEMA_FOLDER_PATH,
             schema_version,
             SchemaForm::VSCode,
-            SchemaUriPrefix::default()
+            SchemaUriPrefix::default(),
         ))
     }
 
@@ -428,7 +416,7 @@ pub trait DscRepoSchema : JsonSchema {
             Self::SCHEMA_FOLDER_PATH,
             schema_version,
             SchemaForm::Canonical,
-            SchemaUriPrefix::default()
+            SchemaUriPrefix::default(),
         )
     }
 
@@ -445,12 +433,12 @@ pub trait DscRepoSchema : JsonSchema {
             Self::SCHEMA_FOLDER_PATH,
             schema_version,
             SchemaForm::Bundled,
-            SchemaUriPrefix::default()
+            SchemaUriPrefix::default(),
         ))
     }
 
     /// Returns the list of recognized schema URIs for the struct or enum.
-    /// 
+    ///
     /// This convenience function generates a vector containing every recognized JSON Schema `$id`
     /// URI for a specific schema. It handles returning the schemas for every recognized prefix,
     /// version, and form.
@@ -459,12 +447,12 @@ pub trait DscRepoSchema : JsonSchema {
         get_recognized_schema_uris(
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
-            Self::SCHEMA_SHOULD_BUNDLE
+            Self::SCHEMA_SHOULD_BUNDLE,
         )
     }
 
     /// Returns the subschema to validate a `$schema` keyword pointing to the type.
-    /// 
+    ///
     /// Every schema has a canonical `$id`, but DSC needs to maintain compatibility with schemas
     /// within a major version and ensure that previous schema versions can be correctly
     /// recognized and validated. This method generates the appropriate subschema with every
@@ -476,7 +464,7 @@ pub trait DscRepoSchema : JsonSchema {
             &Self::schema_metadata(),
             Self::SCHEMA_FILE_BASE_NAME,
             Self::SCHEMA_FOLDER_PATH,
-            Self::SCHEMA_SHOULD_BUNDLE
+            Self::SCHEMA_SHOULD_BUNDLE,
         )
     }
 
@@ -487,19 +475,19 @@ pub trait DscRepoSchema : JsonSchema {
     }
 
     /// Validates the `$schema` keyword for deserializing instances.
-    /// 
+    ///
     /// This method simplifies the validation of a type that has the `$schema` keyword and expects
     /// that instances of the type in data indicate which schema version DSC should use to validate
     /// them.
-    /// 
+    ///
     /// This method includes a default implementation to avoid requiring the implementation for
     /// types that don't define the `$schema` keyword in their serialized form.
-    /// 
+    ///
     /// Any DSC type that serializes with the `$schema` keyword **must** define this
     /// method to actually validate the instance.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// If the value for the schema field isn't a recognized schema, the method should raise the
     /// [`DscError::UnrecognizedSchemaUri`] error.
     fn validate_schema_uri(&self) -> Result<(), DscError> {
@@ -521,7 +509,7 @@ mod test {
             "config",
             RecognizedSchemaVersion::V3,
             SchemaForm::Bundled,
-            SchemaUriPrefix::AkaDotMs
+            SchemaUriPrefix::AkaDotMs,
         );
         assert_eq!(expected, actual)
     }
@@ -551,19 +539,32 @@ mod test {
             "https://aka.ms/dsc/schemas/v3.0.1/config/document.json".to_string(),
             "https://aka.ms/dsc/schemas/v3.0.0/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.vscode.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.vscode.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json".to_string(),
-            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json".to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/bundled/config/document.vscode.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/bundled/config/document.vscode.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/bundled/config/document.vscode.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0/bundled/config/document.vscode.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.2/bundled/config/document.vscode.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.1/bundled/config/document.vscode.json"
+                .to_string(),
+            "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/bundled/config/document.vscode.json"
+                .to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1/config/document.json".to_string(),
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.1.0/config/document.json".to_string(),
@@ -573,11 +574,7 @@ mod test {
             "https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/v3.0.0/config/document.json".to_string(),
         ];
 
-        let actual = get_recognized_schema_uris(
-            "document",
-            "config",
-            true
-        );
+        let actual = get_recognized_schema_uris("document", "config", true);
 
         for (index, expected_uri) in expected.iter().enumerate() {
             assert_eq!(*expected_uri, actual[index]);
@@ -592,9 +589,15 @@ mod test {
 
         let schema_file_base_name = "document";
         let schema_folder_path = "config";
-        
-        assert_eq!(expected_bundled, get_default_schema_uri(schema_file_base_name, schema_folder_path, true));
-        assert_eq!(expected_canonical, get_default_schema_uri(schema_file_base_name, schema_folder_path, false))
+
+        assert_eq!(
+            expected_bundled,
+            get_default_schema_uri(schema_file_base_name, schema_folder_path, true)
+        );
+        assert_eq!(
+            expected_canonical,
+            get_default_schema_uri(schema_file_base_name, schema_folder_path, false)
+        )
     }
 
     #[test]
@@ -621,10 +624,7 @@ mod test {
         let canonical_uri = "https://aka.ms/dsc/schemas/v3/example/schema.json".to_string();
         let schema_version = RecognizedSchemaVersion::V3;
 
-        assert_eq!(
-            bundled_uri,
-            ExampleBundledSchema::default_schema_id_uri()
-        );
+        assert_eq!(bundled_uri, ExampleBundledSchema::default_schema_id_uri());
 
         assert_eq!(
             Some(bundled_uri),
@@ -663,15 +663,9 @@ mod test {
 
         let canonical_uri = "https://aka.ms/dsc/schemas/v3/example/schema.json".to_string();
         let schema_version = RecognizedSchemaVersion::V3;
-        assert_eq!(
-            canonical_uri,
-            ExampleNotBundledSchema::default_schema_id_uri()
-        );
+        assert_eq!(canonical_uri, ExampleNotBundledSchema::default_schema_id_uri());
 
-        assert_eq!(
-            None,
-            ExampleNotBundledSchema::get_bundled_schema_id_uri(schema_version)
-        );
+        assert_eq!(None, ExampleNotBundledSchema::get_bundled_schema_id_uri(schema_version));
 
         assert_eq!(
             None,

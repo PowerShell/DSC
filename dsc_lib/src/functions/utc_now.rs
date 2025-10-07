@@ -1,13 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::{Context, ProcessMode};
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use chrono::{SecondsFormat, Utc};
 use rust_i18n::t;
 use serde_json::Value;
-use super::Function;
 use tracing::debug;
 
 #[derive(Debug, Default)]
@@ -21,9 +21,7 @@ impl Function for UtcNow {
             category: vec![FunctionCategory::Date],
             min_args: 0,
             max_args: 1,
-            accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::String],
-            ],
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::String]],
             remaining_arg_accepted_types: None,
             return_types: vec![FunctionArgKind::String],
         }
@@ -33,7 +31,9 @@ impl Function for UtcNow {
         debug!("{}", t!("functions.utcNow.invoked"));
 
         if context.process_mode != ProcessMode::ParametersDefault {
-            return Err(DscError::Parser(t!("functions.utcNow.onlyUsedAsParameterDefault").to_string()));
+            return Err(DscError::Parser(
+                t!("functions.utcNow.onlyUsedAsParameterDefault").to_string(),
+            ));
         }
 
         if args.is_empty() {
@@ -55,24 +55,24 @@ impl Function for UtcNow {
 fn convert_dotnet_format_to_chrono(format: &str) -> String {
     const DOTNET_TO_CHRONO: &[(&str, &str)] = &[
         ("yyyy", "%Y"), // Full year, zero padded to 4 digits
-        ("yy", "%y"), // Year, zero padded to 2 digits
-        ("y", "%-Y"), // Year without leading zeroes
+        ("yy", "%y"),   // Year, zero padded to 2 digits
+        ("y", "%-Y"),   // Year without leading zeroes
         ("dddd", "%A"), // Full weekday name
-        ("ddd", "%a"), // Abbreviated weekday name
-        ("dd", "%d"), // Day of the month, zero padded to 2 digits
-        ("d", "%-d"), // Day of the month without leading zeroes
-        ("HH", "%H"), // Hour in 24-hour format, zero padded to 2 digits
-        ("H", "%-H"), // Hour in 24-hour format without leading zeroes
-        ("mm", "%M"), // Minute, zero padded to 2 digits
-        ("m", "%-M"), // Minute without leading zeroes
-        ("ss", "%S"), // Second, zero padded to 2 digits
-        ("s", "%-S"), // Second without leading zeroes
-        ("fff", "%f"), // Milliseconds, zero padded to 3 digits
+        ("ddd", "%a"),  // Abbreviated weekday name
+        ("dd", "%d"),   // Day of the month, zero padded to 2 digits
+        ("d", "%-d"),   // Day of the month without leading zeroes
+        ("HH", "%H"),   // Hour in 24-hour format, zero padded to 2 digits
+        ("H", "%-H"),   // Hour in 24-hour format without leading zeroes
+        ("mm", "%M"),   // Minute, zero padded to 2 digits
+        ("m", "%-M"),   // Minute without leading zeroes
+        ("ss", "%S"),   // Second, zero padded to 2 digits
+        ("s", "%-S"),   // Second without leading zeroes
+        ("fff", "%f"),  // Milliseconds, zero padded to 3 digits
         ("MMMM", "%B"), // Full month name
-        ("MMM", "%b"), // Abbreviated month name
-        ("MM", "%m"), // Month, zero padded to 2 digits
+        ("MMM", "%b"),  // Abbreviated month name
+        ("MM", "%m"),   // Month, zero padded to 2 digits
         ("zzz", "%:z"), // Time zone offset without colon
-        ("tt", "%p"), // AM/PM designator (same as t)
+        ("tt", "%p"),   // AM/PM designator (same as t)
     ];
 
     let mut converted_format = String::new();

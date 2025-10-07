@@ -6,16 +6,11 @@ use dsc_lib::{
     configure::config_doc::ExecutionKind,
     dscresources::{
         dscresource::Invoke,
-        invoke_result::{
-            ExportResult,
-            GetResult,
-            SetResult,
-            TestResult,
-        },
+        invoke_result::{ExportResult, GetResult, SetResult, TestResult},
     },
     DscManager,
 };
-use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
+use rmcp::{handler::server::wrapper::Parameters, tool, tool_router, ErrorData as McpError, Json};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -50,7 +45,9 @@ pub struct InvokeDscResourceRequest {
     pub operation: DscOperation,
     #[schemars(description = "The type name of the DSC resource to invoke")]
     pub resource_type: String,
-    #[schemars(description = "The properties to pass to the DSC resource as JSON.  Must match the resource JSON schema from `show_dsc_resource` tool.")]
+    #[schemars(
+        description = "The properties to pass to the DSC resource as JSON.  Must match the resource JSON schema from `show_dsc_resource` tool."
+    )]
     pub properties_json: String,
 }
 
@@ -66,11 +63,21 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn invoke_dsc_resource(&self, Parameters(InvokeDscResourceRequest { operation, resource_type, properties_json }): Parameters<InvokeDscResourceRequest>) -> Result<Json<InvokeDscResourceResponse>, McpError> {
+    pub async fn invoke_dsc_resource(
+        &self,
+        Parameters(InvokeDscResourceRequest {
+            operation,
+            resource_type,
+            properties_json,
+        }): Parameters<InvokeDscResourceRequest>,
+    ) -> Result<Json<InvokeDscResourceResponse>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let Some(resource) = dsc.find_resource(&resource_type, None) else {
-                return Err(McpError::invalid_request(t!("mcp.invoke_dsc_resource.resourceNotFound", resource = resource_type), None));
+                return Err(McpError::invalid_request(
+                    t!("mcp.invoke_dsc_resource.resourceNotFound", resource = resource_type),
+                    None,
+                ));
             };
             match operation {
                 DscOperation::Get => {
@@ -79,21 +86,21 @@ impl McpServer {
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::GetResult(result))
-                },
+                }
                 DscOperation::Set => {
                     let result = match resource.set(&properties_json, false, &ExecutionKind::Actual) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::SetResult(result))
-                },
+                }
                 DscOperation::Test => {
                     let result = match resource.test(&properties_json) {
                         Ok(res) => res,
                         Err(e) => return Err(McpError::internal_error(e.to_string(), None)),
                     };
                     Ok(ResourceOperationResult::TestResult(result))
-                },
+                }
                 DscOperation::Export => {
                     let result = match resource.export(&properties_json) {
                         Ok(res) => res,
@@ -102,7 +109,9 @@ impl McpServer {
                     Ok(ResourceOperationResult::ExportResult(result))
                 }
             }
-        }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;
+        })
+        .await
+        .map_err(|e| McpError::internal_error(e.to_string(), None))??;
 
         Ok(Json(InvokeDscResourceResponse { result }))
     }

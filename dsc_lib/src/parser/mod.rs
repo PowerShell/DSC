@@ -52,21 +52,29 @@ impl Statement {
         }
 
         let Some(tree) = &mut self.parser.parse(statement, None) else {
-            return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
+            return Err(DscError::Parser(
+                t!("parser.failedToParse", statement = statement).to_string(),
+            ));
         };
         let root_node = tree.root_node();
         if root_node.is_error() {
-            return Err(DscError::Parser(t!("parser.failedToParseRoot", statement = statement).to_string()));
+            return Err(DscError::Parser(
+                t!("parser.failedToParseRoot", statement = statement).to_string(),
+            ));
         }
         if root_node.kind() != "statement" {
-            return Err(DscError::Parser(t!("parser.invalidStatement", statement = statement).to_string()));
+            return Err(DscError::Parser(
+                t!("parser.invalidStatement", statement = statement).to_string(),
+            ));
         }
         let statement_bytes = statement.as_bytes();
         let mut cursor = root_node.walk();
         let mut return_value = Value::Null;
         for child_node in root_node.named_children(&mut cursor) {
             if child_node.is_error() {
-                return Err(DscError::Parser(t!("parser.failedToParse", statement = statement).to_string()));
+                return Err(DscError::Parser(
+                    t!("parser.failedToParse", statement = statement).to_string(),
+                ));
             }
 
             match child_node.kind() {
@@ -76,22 +84,29 @@ impl Statement {
                     };
                     debug!("{}", t!("parser.parsingStringLiteral", value = value.to_string()));
                     return_value = Value::String(value.to_string());
-                },
+                }
                 "escapedStringLiteral" => {
                     // need to remove the first character: [[ => [
                     let Ok(value) = child_node.utf8_text(statement_bytes) else {
-                        return Err(DscError::Parser(t!("parser.failedToParseEscapedStringLiteral").to_string()));
+                        return Err(DscError::Parser(
+                            t!("parser.failedToParseEscapedStringLiteral").to_string(),
+                        ));
                     };
-                    debug!("{}", t!("parser.parsingEscapedStringLiteral", value = value[1..].to_string()));
+                    debug!(
+                        "{}",
+                        t!("parser.parsingEscapedStringLiteral", value = value[1..].to_string())
+                    );
                     return_value = Value::String(value[1..].to_string());
-                },
+                }
                 "expression" => {
                     debug!("{}", t!("parser.parsingExpression"));
                     let expression = Expression::new(statement_bytes, &child_node)?;
                     return_value = expression.invoke(&self.function_dispatcher, context)?;
-                },
+                }
                 _ => {
-                    return Err(DscError::Parser(t!("parser.unknownExpressionType", kind = child_node.kind()).to_string()));
+                    return Err(DscError::Parser(
+                        t!("parser.unknownExpressionType", kind = child_node.kind()).to_string(),
+                    ));
                 }
             }
         }
@@ -114,7 +129,9 @@ mod tests {
     #[test]
     fn bracket_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[[this is a string]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[[this is a string]", &Context::new())
+            .unwrap();
         assert_eq!(result, "[this is a string]");
     }
 

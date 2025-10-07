@@ -3,8 +3,11 @@
 
 use clap::Parser;
 use rust_i18n::{i18n, t};
-use std::{io::{self, Read, IsTerminal}, process::exit};
-use tracing::{error, warn, debug, trace};
+use std::{
+    io::{self, IsTerminal, Read},
+    process::exit,
+};
+use tracing::{debug, error, trace, warn};
 
 use args::{Arguments, SubCommand, TraceLevel};
 use runcommand::RunCommand;
@@ -54,14 +57,13 @@ fn main() {
             Err(e) => {
                 error!("{}: {e}", t!("main.invalidUtf8"));
                 exit(EXIT_INVALID_ARGS);
-            },
+            }
         };
         // parse_input expects at most 1 input, so wrapping Some(empty input) would throw it off
         if stdin.is_empty() {
             debug!("{}", t!("main.emptyStdin"));
             None
-        }
-        else {
+        } else {
             Some(stdin)
         }
     };
@@ -69,10 +71,18 @@ fn main() {
     let mut command: RunCommand;
 
     match args.subcommand {
-        SubCommand::Get { arguments, executable, exit_code } => {
+        SubCommand::Get {
+            arguments,
+            executable,
+            exit_code,
+        } => {
             command = parse_input(arguments, executable, exit_code, stdin);
         }
-        SubCommand::Set { arguments, executable, exit_code } => {
+        SubCommand::Set {
+            arguments,
+            executable,
+            exit_code,
+        } => {
             command = parse_input(arguments, executable, exit_code, stdin);
             let (exit_code, stdout, stderr) = invoke_command(command.executable.as_ref(), command.arguments.clone());
             trace!("Stdout: {stdout}");

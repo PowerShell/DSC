@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -103,22 +103,27 @@ mod tests {
     #[test]
     fn string_contains_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[contains('hello', 'lo')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[contains('hello', 'lo')]", &Context::new())
+            .unwrap();
         assert_eq!(result, true);
     }
 
     #[test]
     fn string_does_not_contain_string() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[contains('hello', 'world')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[contains('hello', 'world')]", &Context::new())
+            .unwrap();
         assert_eq!(result, false);
     }
 
     #[test]
     fn string_contains_number() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[contains('hello123', 123)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[contains('hello123', 123)]", &Context::new())
+            .unwrap();
         assert_eq!(result, true);
     }
 }
-

@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -19,10 +19,7 @@ impl Function for Or {
             category: vec![FunctionCategory::Logical],
             min_args: 2,
             max_args: usize::MAX,
-            accepted_arg_ordered_types: vec![
-                vec![FunctionArgKind::Boolean],
-                vec![FunctionArgKind::Boolean],
-            ],
+            accepted_arg_ordered_types: vec![vec![FunctionArgKind::Boolean], vec![FunctionArgKind::Boolean]],
             remaining_arg_accepted_types: Some(vec![FunctionArgKind::Boolean]),
             return_types: vec![FunctionArgKind::Boolean],
         }
@@ -58,7 +55,9 @@ mod tests {
     #[test]
     fn multiple_values() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[or(true, false, true)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[or(true, false, true)]", &Context::new())
+            .unwrap();
         assert_eq!(result, true);
     }
 

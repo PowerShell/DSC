@@ -24,12 +24,12 @@ pub enum Command {
     /// Set default shell, eventually to be used for `sshd_config` and repeatable keywords
     Set {
         #[clap(short = 'i', long, help = t!("args.setInput").to_string())]
-        input: String
+        input: String,
     },
     /// Export `sshd_config`, eventually to be used for repeatable keywords
     Export {
         #[clap(short = 'i', long, help = t!("args.exportInput").to_string())]
-        input: Option<String>
+        input: Option<String>,
     },
     Schema {
         // Used to inform which schema to generate
@@ -51,5 +51,5 @@ pub struct DefaultShell {
 #[derive(Clone, Debug, Eq, PartialEq, ValueEnum)]
 pub enum Setting {
     SshdConfig,
-    WindowsGlobal
+    WindowsGlobal,
 }

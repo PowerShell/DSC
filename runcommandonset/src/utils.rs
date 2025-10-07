@@ -2,8 +2,11 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use std::{io::Read, process::{Command, exit, Stdio}};
-use tracing::{Level, error, debug, trace};
+use std::{
+    io::Read,
+    process::{exit, Command, Stdio},
+};
+use tracing::{debug, error, trace, Level};
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 use crate::args::{TraceFormat, TraceLevel};
@@ -27,7 +30,12 @@ pub const EXIT_PROCESS_TERMINATED: i32 = 5;
 /// # Errors
 ///
 /// Error message then exit if the `RunCommand` struct cannot be initialized from the provided inputs.
-pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, exit_code: i32, stdin: Option<String>) -> runcommand::RunCommand {
+pub fn parse_input(
+    arguments: Option<Vec<String>>,
+    executable: Option<String>,
+    exit_code: i32,
+    stdin: Option<String>,
+) -> runcommand::RunCommand {
     let command: runcommand::RunCommand;
     if let Some(input) = stdin {
         debug!("Input: {}", input);
@@ -44,8 +52,7 @@ pub fn parse_input(arguments: Option<Vec<String>>, executable: Option<String>, e
             arguments,
             exit_code,
         };
-    }
-    else {
+    } else {
         error!("{}", t!("utils.executableRequired"));
         exit(EXIT_INVALID_INPUT);
     }
@@ -78,28 +85,14 @@ pub fn enable_tracing(trace_level: &TraceLevel, trace_format: &TraceFormat) {
         .add_directive(tracing_level.into());
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
     let fmt = match trace_format {
-        TraceFormat::Default => {
-            layer
-                .with_ansi(true)
-                .with_level(true)
-                .with_line_number(true)
-                .boxed()
-        },
-        TraceFormat::Plaintext => {
-            layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_line_number(false)
-                .boxed()
-        },
-        TraceFormat::Json => {
-            layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_line_number(true)
-                .json()
-                .boxed()
-        }
+        TraceFormat::Default => layer.with_ansi(true).with_level(true).with_line_number(true).boxed(),
+        TraceFormat::Plaintext => layer.with_ansi(false).with_level(true).with_line_number(false).boxed(),
+        TraceFormat::Json => layer
+            .with_ansi(false)
+            .with_level(true)
+            .with_line_number(true)
+            .json()
+            .boxed(),
     };
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);

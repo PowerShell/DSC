@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
-use super::Function;
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use std::env;
@@ -31,7 +31,10 @@ impl Function for Envvar {
             return Ok(Value::String(val));
         }
 
-        Err(DscError::Function("envvar".to_string(), t!("functions.envvar.notFound").to_string()))
+        Err(DscError::Function(
+            "envvar".to_string(),
+            t!("functions.envvar.notFound").to_string(),
+        ))
     }
 }
 

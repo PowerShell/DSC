@@ -5,8 +5,8 @@ use dsc_lib::util::parse_input_to_json;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::io::Read;
 use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use tracing::{debug, info};
 
@@ -73,41 +73,57 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
             // read the file specified in the Include input
             let mut buffer: Vec<u8> = Vec::new();
             match File::open(&include_path) {
-                Ok(mut file) => {
-                    match file.read_to_end(&mut buffer) {
-                        Ok(_) => (),
-                        Err(err) => {
-                            return Err(t!("resolve.failedToReadFile", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
-                        }
+                Ok(mut file) => match file.read_to_end(&mut buffer) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        return Err(t!(
+                            "resolve.failedToReadFile",
+                            path = include_path.to_string_lossy(),
+                            error = err.to_string()
+                        )
+                        .to_string());
                     }
                 },
                 Err(err) => {
-                    return Err(t!("resolve.failedToOpenFile", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
+                    return Err(t!(
+                        "resolve.failedToOpenFile",
+                        path = include_path.to_string_lossy(),
+                        error = err.to_string()
+                    )
+                    .to_string());
                 }
             }
             // convert the buffer to a string
             let include_content = match String::from_utf8(buffer) {
                 Ok(input) => input,
                 Err(err) => {
-                    return Err(t!("resolve.invalidFileContent", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
+                    return Err(t!(
+                        "resolve.invalidFileContent",
+                        path = include_path.to_string_lossy(),
+                        error = err.to_string()
+                    )
+                    .to_string());
                 }
             };
 
             match parse_input_to_json(&include_content) {
                 Ok(json) => json,
                 Err(err) => {
-                    return Err(t!("resolve.invalidFile", path = include_path.to_string_lossy(), error = err.to_string()).to_string());
-                }
-            }
-        },
-        IncludeKind::ConfigurationContent(text) => {
-            match parse_input_to_json(&text) {
-                Ok(json) => json,
-                Err(err) => {
-                    return Err(t!("resolve.invalidContent", error = err.to_string()).to_string());
+                    return Err(t!(
+                        "resolve.invalidFile",
+                        path = include_path.to_string_lossy(),
+                        error = err.to_string()
+                    )
+                    .to_string());
                 }
             }
         }
+        IncludeKind::ConfigurationContent(text) => match parse_input_to_json(&text) {
+            Ok(json) => json,
+            Err(err) => {
+                return Err(t!("resolve.invalidContent", error = err.to_string()).to_string());
+            }
+        },
     };
 
     let parameters = match include.parameters {
@@ -120,16 +136,26 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                     let parameters_json = match parse_input_to_json(&parameters) {
                         Ok(json) => json,
                         Err(err) => {
-                            return Err(t!("resolve.failedParseParametersFile", path = parameters_file.to_string_lossy(), error = err.to_string()).to_string());
+                            return Err(t!(
+                                "resolve.failedParseParametersFile",
+                                path = parameters_file.to_string_lossy(),
+                                error = err.to_string()
+                            )
+                            .to_string());
                         }
                     };
                     Some(parameters_json)
-                },
+                }
                 Err(err) => {
-                    return Err(t!("resolve.couldNotReadParametersFile", path = parameters_file.to_string_lossy(), error = err.to_string()).to_string());
+                    return Err(t!(
+                        "resolve.couldNotReadParametersFile",
+                        path = parameters_file.to_string_lossy(),
+                        error = err.to_string()
+                    )
+                    .to_string());
                 }
             }
-        },
+        }
         Some(IncludeParametersKind::ParametersContent(text)) => {
             let parameters_json = match parse_input_to_json(&text) {
                 Ok(json) => json,
@@ -138,7 +164,7 @@ pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
                 }
             };
             Some(parameters_json)
-        },
+        }
         None => {
             debug!("{}", t!("resolve.noParameters"));
             None

@@ -2,29 +2,50 @@
 // Licensed under the MIT License.
 
 use crate::args::{GetOutputFormat, OutputFormat};
-use crate::util::{EXIT_DSC_ERROR, EXIT_INVALID_ARGS, EXIT_JSON_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, write_object};
-use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
+use crate::util::{write_object, EXIT_DSC_ERROR, EXIT_DSC_RESOURCE_NOT_FOUND, EXIT_INVALID_ARGS, EXIT_JSON_ERROR};
 use dsc_lib::configure::add_resource_export_results_to_configuration;
-use dsc_lib::dscresources::{resource_manifest::Kind, invoke_result::{GetResult, ResourceGetResponse}};
+use dsc_lib::configure::config_doc::{Configuration, ExecutionKind};
 use dsc_lib::dscerror::DscError;
+use dsc_lib::dscresources::{
+    invoke_result::{GetResult, ResourceGetResponse},
+    resource_manifest::Kind,
+};
 use rust_i18n::t;
-use tracing::{error, debug};
+use tracing::{debug, error};
 
 use dsc_lib::{
-    dscresources::dscresource::{Invoke, DscResource},
-    DscManager
+    dscresources::dscresource::{DscResource, Invoke},
+    DscManager,
 };
 use std::process::exit;
 
-pub fn get(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&GetOutputFormat>) {
+pub fn get(
+    dsc: &mut DscManager,
+    resource_type: &str,
+    version: Option<&str>,
+    input: &str,
+    format: Option<&GetOutputFormat>,
+) {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
+        error!(
+            "{}",
+            DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string()
+        );
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
+    debug!(
+        "{} {} {:?}",
+        resource.type_name,
+        t!("resource_command.implementedAs"),
+        resource.implemented_as
+    );
     if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+        error!(
+            "{}: {}",
+            t!("resource_command.invalidOperationOnAdapter"),
+            resource.type_name
+        );
         exit(EXIT_DSC_ERROR);
     }
 
@@ -70,18 +91,30 @@ pub fn get(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
 pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, format: Option<&GetOutputFormat>) {
     let input = String::new();
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
+        error!(
+            "{}",
+            DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string()
+        );
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
+    debug!(
+        "{} {} {:?}",
+        resource.type_name,
+        t!("resource_command.implementedAs"),
+        resource.implemented_as
+    );
     if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+        error!(
+            "{}: {}",
+            t!("resource_command.invalidOperationOnAdapter"),
+            resource.type_name
+        );
         exit(EXIT_DSC_ERROR);
     }
 
     let export_result = match resource.export(&input) {
-        Ok(export) => { export }
+        Ok(export) => export,
         Err(err) => {
             error!("{err}");
             exit(EXIT_DSC_ERROR);
@@ -101,8 +134,7 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
     }
 
     let mut include_separator = false;
-    for instance in export_result.actual_state
-    {
+    for instance in export_result.actual_state {
         let get_result = GetResult::Resource(ResourceGetResponse {
             actual_state: instance.clone(),
         });
@@ -125,20 +157,38 @@ pub fn get_all(dsc: &mut DscManager, resource_type: &str, version: Option<&str>,
     }
 }
 
-pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn set(
+    dsc: &mut DscManager,
+    resource_type: &str,
+    version: Option<&str>,
+    input: &str,
+    format: Option<&OutputFormat>,
+) {
     if input.is_empty() {
         error!("{}", t!("resource_command.setInputEmpty"));
         exit(EXIT_INVALID_ARGS);
     }
 
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
+        error!(
+            "{}",
+            DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string()
+        );
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
+    debug!(
+        "{} {} {:?}",
+        resource.type_name,
+        t!("resource_command.implementedAs"),
+        resource.implemented_as
+    );
     if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+        error!(
+            "{}: {}",
+            t!("resource_command.invalidOperationOnAdapter"),
+            resource.type_name
+        );
         exit(EXIT_DSC_ERROR);
     }
 
@@ -161,20 +211,38 @@ pub fn set(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, inp
     }
 }
 
-pub fn test(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn test(
+    dsc: &mut DscManager,
+    resource_type: &str,
+    version: Option<&str>,
+    input: &str,
+    format: Option<&OutputFormat>,
+) {
     if input.is_empty() {
         error!("{}", t!("resource_command.testInputEmpty"));
         exit(EXIT_INVALID_ARGS);
     }
 
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
+        error!(
+            "{}",
+            DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string()
+        );
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
+    debug!(
+        "{} {} {:?}",
+        resource.type_name,
+        t!("resource_command.implementedAs"),
+        resource.implemented_as
+    );
     if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+        error!(
+            "{}: {}",
+            t!("resource_command.invalidOperationOnAdapter"),
+            resource.type_name
+        );
         exit(EXIT_DSC_ERROR);
     }
 
@@ -199,13 +267,25 @@ pub fn test(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, in
 
 pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str) {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
+        error!(
+            "{}",
+            DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string()
+        );
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
-    debug!("{} {} {:?}", resource.type_name, t!("resource_command.implementedAs"), resource.implemented_as);
+    debug!(
+        "{} {} {:?}",
+        resource.type_name,
+        t!("resource_command.implementedAs"),
+        resource.implemented_as
+    );
     if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+        error!(
+            "{}: {}",
+            t!("resource_command.invalidOperationOnAdapter"),
+            resource.type_name
+        );
         exit(EXIT_DSC_ERROR);
     }
 
@@ -220,11 +300,18 @@ pub fn delete(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
 
 pub fn schema(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, format: Option<&OutputFormat>) {
     let Some(resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
+        error!(
+            "{}",
+            DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string()
+        );
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
     if resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), resource.type_name);
+        error!(
+            "{}: {}",
+            t!("resource_command.invalidOperationOnAdapter"),
+            resource.type_name
+        );
         exit(EXIT_DSC_ERROR);
     }
 
@@ -247,14 +334,27 @@ pub fn schema(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, 
     }
 }
 
-pub fn export(dsc: &mut DscManager, resource_type: &str, version: Option<&str>, input: &str, format: Option<&OutputFormat>) {
+pub fn export(
+    dsc: &mut DscManager,
+    resource_type: &str,
+    version: Option<&str>,
+    input: &str,
+    format: Option<&OutputFormat>,
+) {
     let Some(dsc_resource) = get_resource(dsc, resource_type, version) else {
-        error!("{}", DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string());
+        error!(
+            "{}",
+            DscError::ResourceNotFound(resource_type.to_string(), version.unwrap_or("").to_string()).to_string()
+        );
         exit(EXIT_DSC_RESOURCE_NOT_FOUND);
     };
 
     if dsc_resource.kind == Kind::Adapter {
-        error!("{}: {}", t!("resource_command.invalidOperationOnAdapter"), dsc_resource.type_name);
+        error!(
+            "{}: {}",
+            t!("resource_command.invalidOperationOnAdapter"),
+            dsc_resource.type_name
+        );
         exit(EXIT_DSC_ERROR);
     }
 

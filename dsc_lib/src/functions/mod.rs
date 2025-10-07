@@ -3,9 +3,9 @@
 
 use std::collections::HashMap;
 
-use crate::DscError;
 use crate::configure::context::Context;
 use crate::functions::user_function::invoke_user_function;
+use crate::DscError;
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -30,20 +30,20 @@ pub mod empty;
 pub mod ends_with;
 pub mod envvar;
 pub mod equals;
+pub mod r#false;
+pub mod first;
+pub mod format;
 pub mod greater;
 pub mod greater_or_equals;
 pub mod r#if;
-pub mod r#false;
-pub mod first;
-pub mod length;
-pub mod less;
-pub mod less_or_equals;
-pub mod format;
-pub mod int;
 pub mod index_of;
+pub mod int;
 pub mod intersection;
 pub mod join;
 pub mod last_index_of;
+pub mod length;
+pub mod less;
+pub mod less_or_equals;
 pub mod max;
 pub mod min;
 pub mod mod_function;
@@ -132,73 +132,71 @@ impl FunctionDispatcher {
     #[must_use]
     pub fn new() -> Self {
         let mut functions: HashMap<String, Box<dyn Function>> = HashMap::new();
-        let function_list : Vec<Box<dyn Function>> = vec![
-            Box::new(add::Add{}),
-            Box::new(and::And{}),
-            Box::new(array::Array{}),
-            Box::new(base64::Base64{}),
-            Box::new(base64_to_string::Base64ToString{}),
-            Box::new(bool::Bool{}),
-            Box::new(coalesce::Coalesce{}),
-            Box::new(concat::Concat{}),
-            Box::new(contains::Contains{}),
-            Box::new(context::Context{}),
-            Box::new(copy_index::CopyIndex{}),
-            Box::new(create_array::CreateArray{}),
-            Box::new(create_object::CreateObject{}),
-            Box::new(div::Div{}),
-            Box::new(empty::Empty{}),
-            Box::new(ends_with::EndsWith{}),
-            Box::new(envvar::Envvar{}),
-            Box::new(equals::Equals{}),
-            Box::new(greater::Greater{}),
-            Box::new(greater_or_equals::GreaterOrEquals{}),
-            Box::new(r#if::If{}),
-            Box::new(r#false::False{}),
-            Box::new(first::First{}),
-            Box::new(length::Length{}),
-            Box::new(less::Less{}),
-            Box::new(less_or_equals::LessOrEquals{}),
-            Box::new(format::Format{}),
-            Box::new(int::Int{}),
-            Box::new(index_of::IndexOf{}),
-            Box::new(intersection::Intersection{}),
-            Box::new(join::Join{}),
-            Box::new(last_index_of::LastIndexOf{}),
-            Box::new(max::Max{}),
-            Box::new(min::Min{}),
-            Box::new(mod_function::Mod{}),
-            Box::new(mul::Mul{}),
-            Box::new(not::Not{}),
-            Box::new(null::Null{}),
-            Box::new(or::Or{}),
-            Box::new(parameters::Parameters{}),
-            Box::new(path::Path{}),
-            Box::new(range::Range{}),
-            Box::new(reference::Reference{}),
-            Box::new(resource_id::ResourceId{}),
-            Box::new(secret::Secret{}),
-            Box::new(skip::Skip{}),
-            Box::new(starts_with::StartsWith{}),
-            Box::new(string::StringFn{}),
-            Box::new(sub::Sub{}),
-            Box::new(substring::Substring{}),
-            Box::new(system_root::SystemRoot{}),
-            Box::new(to_lower::ToLower{}),
-            Box::new(to_upper::ToUpper{}),
-            Box::new(r#true::True{}),
-            Box::new(utc_now::UtcNow{}),
-            Box::new(union::Union{}),
-            Box::new(unique_string::UniqueString{}),
-            Box::new(variables::Variables{}),
+        let function_list: Vec<Box<dyn Function>> = vec![
+            Box::new(add::Add {}),
+            Box::new(and::And {}),
+            Box::new(array::Array {}),
+            Box::new(base64::Base64 {}),
+            Box::new(base64_to_string::Base64ToString {}),
+            Box::new(bool::Bool {}),
+            Box::new(coalesce::Coalesce {}),
+            Box::new(concat::Concat {}),
+            Box::new(contains::Contains {}),
+            Box::new(context::Context {}),
+            Box::new(copy_index::CopyIndex {}),
+            Box::new(create_array::CreateArray {}),
+            Box::new(create_object::CreateObject {}),
+            Box::new(div::Div {}),
+            Box::new(empty::Empty {}),
+            Box::new(ends_with::EndsWith {}),
+            Box::new(envvar::Envvar {}),
+            Box::new(equals::Equals {}),
+            Box::new(greater::Greater {}),
+            Box::new(greater_or_equals::GreaterOrEquals {}),
+            Box::new(r#if::If {}),
+            Box::new(r#false::False {}),
+            Box::new(first::First {}),
+            Box::new(length::Length {}),
+            Box::new(less::Less {}),
+            Box::new(less_or_equals::LessOrEquals {}),
+            Box::new(format::Format {}),
+            Box::new(int::Int {}),
+            Box::new(index_of::IndexOf {}),
+            Box::new(intersection::Intersection {}),
+            Box::new(join::Join {}),
+            Box::new(last_index_of::LastIndexOf {}),
+            Box::new(max::Max {}),
+            Box::new(min::Min {}),
+            Box::new(mod_function::Mod {}),
+            Box::new(mul::Mul {}),
+            Box::new(not::Not {}),
+            Box::new(null::Null {}),
+            Box::new(or::Or {}),
+            Box::new(parameters::Parameters {}),
+            Box::new(path::Path {}),
+            Box::new(range::Range {}),
+            Box::new(reference::Reference {}),
+            Box::new(resource_id::ResourceId {}),
+            Box::new(secret::Secret {}),
+            Box::new(skip::Skip {}),
+            Box::new(starts_with::StartsWith {}),
+            Box::new(string::StringFn {}),
+            Box::new(sub::Sub {}),
+            Box::new(substring::Substring {}),
+            Box::new(system_root::SystemRoot {}),
+            Box::new(to_lower::ToLower {}),
+            Box::new(to_upper::ToUpper {}),
+            Box::new(r#true::True {}),
+            Box::new(utc_now::UtcNow {}),
+            Box::new(union::Union {}),
+            Box::new(unique_string::UniqueString {}),
+            Box::new(variables::Variables {}),
         ];
         for function in function_list {
             functions.insert(function.get_metadata().name.clone(), function);
         }
 
-        Self {
-            functions,
-        }
+        Self { functions }
     }
 
     /// Invoke a function.
@@ -217,7 +215,9 @@ impl FunctionDispatcher {
             if name.contains('.') {
                 return invoke_user_function(name, args, context);
             }
-            return Err(DscError::Parser(t!("functions.unknownFunction", name = name).to_string()));
+            return Err(DscError::Parser(
+                t!("functions.unknownFunction", name = name).to_string(),
+            ));
         };
 
         let metadata = function.get_metadata();
@@ -227,16 +227,28 @@ impl FunctionDispatcher {
         let max_args = metadata.max_args;
         if args.len() < min_args || args.len() > max_args {
             if max_args == 0 {
-                return Err(DscError::Parser(t!("functions.noArgsAccepted", name = name).to_string()));
-            }
-            else if min_args == max_args {
-                return Err(DscError::Parser(t!("functions.invalidArgCount", name = name, count = min_args).to_string()));
-            }
-            else if max_args == usize::MAX {
-                return Err(DscError::Parser(t!("functions.minArgsRequired", name = name, count = min_args).to_string()));
+                return Err(DscError::Parser(
+                    t!("functions.noArgsAccepted", name = name).to_string(),
+                ));
+            } else if min_args == max_args {
+                return Err(DscError::Parser(
+                    t!("functions.invalidArgCount", name = name, count = min_args).to_string(),
+                ));
+            } else if max_args == usize::MAX {
+                return Err(DscError::Parser(
+                    t!("functions.minArgsRequired", name = name, count = min_args).to_string(),
+                ));
             }
 
-            return Err(DscError::Parser(t!("functions.argCountRequired", name = name, min = min_args, max = max_args).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.argCountRequired",
+                    name = name,
+                    min = min_args,
+                    max = max_args
+                )
+                .to_string(),
+            ));
         }
 
         for (index, value) in args.iter().enumerate() {
@@ -257,38 +269,111 @@ impl FunctionDispatcher {
         function.invoke(args, context)
     }
 
-    fn check_arg_against_expected_types(name: &str, arg: &Value, expected_types: &[FunctionArgKind]) -> Result<(), DscError> {
+    fn check_arg_against_expected_types(
+        name: &str,
+        arg: &Value,
+        expected_types: &[FunctionArgKind],
+    ) -> Result<(), DscError> {
         if arg.is_array() && !expected_types.contains(&FunctionArgKind::Array) {
-            return Err(DscError::Parser(t!("functions.noArrayArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.noArrayArgs",
+                    name = name,
+                    accepted_args_string = expected_types
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .to_string(),
+            ));
         } else if arg.is_boolean() && !expected_types.contains(&FunctionArgKind::Boolean) {
-            return Err(DscError::Parser(t!("functions.noBooleanArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.noBooleanArgs",
+                    name = name,
+                    accepted_args_string = expected_types
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .to_string(),
+            ));
         } else if arg.is_null() && !expected_types.contains(&FunctionArgKind::Null) {
-            return Err(DscError::Parser(t!("functions.noNullArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.noNullArgs",
+                    name = name,
+                    accepted_args_string = expected_types
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .to_string(),
+            ));
         } else if arg.is_number() && !expected_types.contains(&FunctionArgKind::Number) {
-            return Err(DscError::Parser(t!("functions.noNumberArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.noNumberArgs",
+                    name = name,
+                    accepted_args_string = expected_types
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .to_string(),
+            ));
         } else if arg.is_object() && !expected_types.contains(&FunctionArgKind::Object) {
-            return Err(DscError::Parser(t!("functions.noObjectArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.noObjectArgs",
+                    name = name,
+                    accepted_args_string = expected_types
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .to_string(),
+            ));
         } else if arg.is_string() && !expected_types.contains(&FunctionArgKind::String) {
-            return Err(DscError::Parser(t!("functions.noStringArgs", name = name, accepted_args_string = expected_types.iter().map(std::string::ToString::to_string).collect::<Vec<_>>().join(", ")).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.noStringArgs",
+                    name = name,
+                    accepted_args_string = expected_types
+                        .iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .to_string(),
+            ));
         }
         Ok(())
     }
 
     #[must_use]
     pub fn list(&self) -> Vec<FunctionDefinition> {
-        self.functions.iter().map(|(name, function)| {
-            let metadata = function.get_metadata();
-            FunctionDefinition {
-                category: metadata.category.clone(),
-                name: name.clone(),
-                description: metadata.description,
-                min_args: metadata.min_args,
-                max_args: metadata.max_args,
-                accepted_arg_ordered_types: metadata.accepted_arg_ordered_types.clone(),
-                remaining_arg_accepted_types: metadata.remaining_arg_accepted_types.clone(),
-                return_types: metadata.return_types,
-            }
-        }).collect()
+        self.functions
+            .iter()
+            .map(|(name, function)| {
+                let metadata = function.get_metadata();
+                FunctionDefinition {
+                    category: metadata.category.clone(),
+                    name: name.clone(),
+                    description: metadata.description,
+                    min_args: metadata.min_args,
+                    max_args: metadata.max_args,
+                    accepted_arg_ordered_types: metadata.accepted_arg_ordered_types.clone(),
+                    remaining_arg_accepted_types: metadata.remaining_arg_accepted_types.clone(),
+                    return_types: metadata.return_types,
+                }
+            })
+            .collect()
     }
 }
 

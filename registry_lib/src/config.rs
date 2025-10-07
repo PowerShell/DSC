@@ -38,5 +38,5 @@ pub struct Registry {
 #[serde(deny_unknown_fields)]
 pub struct Metadata {
     #[serde(rename = "whatIf", skip_serializing_if = "Option::is_none")]
-    pub what_if: Option<Vec<String>>
+    pub what_if: Option<Vec<String>>,
 }

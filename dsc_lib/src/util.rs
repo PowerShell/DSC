@@ -4,16 +4,16 @@
 use crate::dscerror::DscError;
 use rust_i18n::t;
 use serde_json::Value;
+use std::env;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::PathBuf;
 use std::path::Path;
-use std::env;
+use std::path::PathBuf;
 use tracing::debug;
 
 pub struct DscSettingValue {
-    pub setting:  Value,
+    pub setting: Value,
     pub policy: Value,
 }
 
@@ -42,21 +42,13 @@ impl Default for DscSettingValue {
 pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
     match serde_json::from_str(value) {
         Ok(json) => Ok(json),
-        Err(_) => {
-            match serde_yaml::from_str::<Value>(value) {
-                Ok(yaml) => {
-                    match serde_json::to_value(yaml) {
-                        Ok(json) => Ok(json.to_string()),
-                        Err(err) => {
-                            Err(DscError::Json(err))
-                        }
-                    }
-                },
-                Err(err) => {
-                    Err(DscError::Yaml(err))
-                }
-            }
-        }
+        Err(_) => match serde_yaml::from_str::<Value>(value) {
+            Ok(yaml) => match serde_json::to_value(yaml) {
+                Ok(json) => Ok(json.to_string()),
+                Err(err) => Err(DscError::Json(err)),
+            },
+            Err(err) => Err(DscError::Yaml(err)),
+        },
     }
 }
 
@@ -70,7 +62,11 @@ pub fn parse_input_to_json(value: &str) -> Result<String, DscError> {
 /// A string that holds the regex pattern.
 #[must_use]
 pub fn convert_wildcard_to_regex(wildcard: &str) -> String {
-    let mut regex = wildcard.to_string().replace('.', "\\.").replace('?', ".").replace('*', ".*?");
+    let mut regex = wildcard
+        .to_string()
+        .replace('.', "\\.")
+        .replace('?', ".")
+        .replace('*', ".*?");
     regex.insert(0, '^');
     regex.push('$');
     regex
@@ -108,14 +104,13 @@ mod tests {
 ///
 /// Will return `Err` if could not find requested setting.
 pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
-
     const SETTINGS_FILE_NAME: &str = "dsc.settings.json";
     // Note that default settings file has root nodes as settings schema version that is specific to this version of dsc
     const DEFAULT_SETTINGS_FILE_NAME: &str = "dsc_default.settings.json";
     const DEFAULT_SETTINGS_SCHEMA_VERSION: &str = "1";
 
     let mut result: DscSettingValue = DscSettingValue::default();
-    let mut settings_file_path : PathBuf;
+    let mut settings_file_path: PathBuf;
 
     if let Some(exe_home) = get_exe_path()?.parent() {
         // First, get setting from the default settings file
@@ -123,19 +118,47 @@ pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
         if let Ok(v) = load_value_from_json(&settings_file_path, DEFAULT_SETTINGS_SCHEMA_VERSION) {
             if let Some(n) = v.get(value_name) {
                 result.setting = n.clone();
-                debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+                debug!(
+                    "{}",
+                    t!(
+                        "util.foundSetting",
+                        name = value_name,
+                        path = settings_file_path.to_string_lossy()
+                    )
+                );
             }
         } else {
-            debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+            debug!(
+                "{}",
+                t!(
+                    "util.notFoundSetting",
+                    name = value_name,
+                    path = settings_file_path.to_string_lossy()
+                )
+            );
         }
 
         // Second, get setting from the active settings file overwriting previous value
         settings_file_path = exe_home.join(SETTINGS_FILE_NAME);
         if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
             result.setting = v;
-            debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+            debug!(
+                "{}",
+                t!(
+                    "util.foundSetting",
+                    name = value_name,
+                    path = settings_file_path.to_string_lossy()
+                )
+            );
         } else {
-            debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+            debug!(
+                "{}",
+                t!(
+                    "util.notFoundSetting",
+                    name = value_name,
+                    path = settings_file_path.to_string_lossy()
+                )
+            );
         }
     } else {
         debug!("{}", t!("util.failedToGetExePath"));
@@ -145,13 +168,29 @@ pub fn get_setting(value_name: &str) -> Result<DscSettingValue, DscError> {
     settings_file_path = PathBuf::from(get_settings_policy_file_path());
     if let Ok(v) = load_value_from_json(&settings_file_path, value_name) {
         result.policy = v;
-        debug!("{}", t!("util.foundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+        debug!(
+            "{}",
+            t!(
+                "util.foundSetting",
+                name = value_name,
+                path = settings_file_path.to_string_lossy()
+            )
+        );
     } else {
-        debug!("{}", t!("util.notFoundSetting", name = value_name, path = settings_file_path.to_string_lossy()));
+        debug!(
+            "{}",
+            t!(
+                "util.notFoundSetting",
+                name = value_name,
+                path = settings_file_path.to_string_lossy()
+            )
+        );
     }
 
     if (result.setting == serde_json::Value::Null) && (result.policy == serde_json::Value::Null) {
-        return Err(DscError::NotSupported(t!("util.settingNotFound", name = value_name).to_string()));
+        return Err(DscError::NotSupported(
+            t!("util.settingNotFound", name = value_name).to_string(),
+        ));
     }
 
     Ok(result)
@@ -170,7 +209,7 @@ fn load_value_from_json(path: &PathBuf, value_name: &str) -> Result<serde_json::
     if let Some(r) = root.as_object() {
         for (key, value) in r {
             if *key == value_name {
-                return Ok(value.clone())
+                return Ok(value.clone());
             }
         }
     }
@@ -197,20 +236,28 @@ pub fn get_exe_path() -> Result<PathBuf, DscError> {
 }
 
 #[cfg(target_os = "windows")]
-fn get_settings_policy_file_path() -> String
-{
+fn get_settings_policy_file_path() -> String {
     // $env:ProgramData+"\dsc\dsc.settings.json"
     // This location is writable only by admins, but readable by all users
-    let Ok(local_program_data_path) = std::env::var("ProgramData") else { return String::new(); };
-    Path::new(&local_program_data_path).join("dsc").join("dsc.settings.json").display().to_string()
+    let Ok(local_program_data_path) = std::env::var("ProgramData") else {
+        return String::new();
+    };
+    Path::new(&local_program_data_path)
+        .join("dsc")
+        .join("dsc.settings.json")
+        .display()
+        .to_string()
 }
 
 #[cfg(not(target_os = "windows"))]
-fn get_settings_policy_file_path() -> String
-{
+fn get_settings_policy_file_path() -> String {
     // "/etc/dsc/dsc.settings.json"
     // This location is writable only by admins, but readable by all users
-    Path::new("/etc").join("dsc").join("dsc.settings.json").display().to_string()
+    Path::new("/etc")
+        .join("dsc")
+        .join("dsc.settings.json")
+        .display()
+        .to_string()
 }
 
 #[macro_export]

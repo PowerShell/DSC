@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::Context;
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -30,20 +30,27 @@ impl Function for Max {
         if args.len() == 1 {
             if let Some(array) = args[0].as_array() {
                 find_max(array)
-            }
-            else {
+            } else {
                 Err(DscError::Parser(t!("functions.max.emptyArray").to_string()))
             }
-        }
-        else {
+        } else {
             find_max(args)
         }
     }
 }
 
 fn find_max(args: &[Value]) -> Result<Value, DscError> {
-    let array = args.iter().map(|v| v.as_i64().ok_or(DscError::Parser(t!("functions.max.integersOnly").to_string()))).collect::<Result<Vec<i64>, DscError>>()?;
-    let value = array.iter().max().ok_or(DscError::Parser(t!("functions.max.noMax").to_string()))?;
+    let array = args
+        .iter()
+        .map(|v| {
+            v.as_i64()
+                .ok_or(DscError::Parser(t!("functions.max.integersOnly").to_string()))
+        })
+        .collect::<Result<Vec<i64>, DscError>>()?;
+    let value = array
+        .iter()
+        .max()
+        .ok_or(DscError::Parser(t!("functions.max.noMax").to_string()))?;
     Ok(Value::Number((*value).into()))
 }
 
@@ -69,14 +76,18 @@ mod tests {
     #[test]
     fn array() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0, 3, 2, 7, 4))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[max(createArray(0, 3, 2, 7, 4))]", &Context::new())
+            .unwrap();
         assert_eq!(result, 7);
     }
 
     #[test]
     fn array_single_value() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(createArray(0))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[max(createArray(0))]", &Context::new())
+            .unwrap();
         assert_eq!(result, 0);
     }
 
@@ -97,7 +108,9 @@ mod tests {
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[max(-10, max(-2, -9), -5)]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[max(-10, max(-2, -9), -5)]", &Context::new())
+            .unwrap();
         assert_eq!(result, -2);
     }
 

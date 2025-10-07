@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use super::Function;
 use tracing::debug;
 
 #[derive(Debug, Default)]
@@ -30,7 +30,7 @@ impl Function for Base64ToString {
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.base64ToString.invoked"));
-        
+
         let base64_value = args[0].as_str().unwrap();
 
         let decoded_bytes = general_purpose::STANDARD.decode(base64_value).map_err(|_| {

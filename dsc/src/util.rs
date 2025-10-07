@@ -1,64 +1,43 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::args::{SchemaType, OutputFormat, TraceFormat};
+use crate::args::{OutputFormat, SchemaType, TraceFormat};
 use crate::resolve::Include;
 use dsc_lib::{
     configure::{
-        config_doc::{
-            Configuration,
-            Resource,
-            RestartRequired,
-        },
-        config_result::{
-            ConfigurationGetResult,
-            ConfigurationSetResult,
-            ConfigurationTestResult,
-            ResourceTestResult,
-        },
+        config_doc::{Configuration, Resource, RestartRequired},
+        config_result::{ConfigurationGetResult, ConfigurationSetResult, ConfigurationTestResult, ResourceTestResult},
     },
     discovery::Discovery,
     dscerror::DscError,
     dscresources::{
         command_resource::TraceLevel,
         dscresource::DscResource,
-        invoke_result::{
-            GetResult,
-            SetResult,
-            TestResult,
-            ResolveResult,
-        },
-        resource_manifest::ResourceManifest
+        invoke_result::{GetResult, ResolveResult, SetResult, TestResult},
+        resource_manifest::ResourceManifest,
     },
-    extensions::{
-        discover::DiscoverResult,
-        dscextension::Capability,
-        extension_manifest::ExtensionManifest,
-    },
+    extensions::{discover::DiscoverResult, dscextension::Capability, extension_manifest::ExtensionManifest},
     functions::FunctionDefinition,
-    util::{
-        get_setting,
-        parse_input_to_json,
-    },
+    util::{get_setting, parse_input_to_json},
 };
 use path_absolutize::Absolutize;
 use rust_i18n::t;
-use schemars::{Schema, schema_for};
+use schemars::{schema_for, Schema};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
-use std::io::{IsTerminal, Read, stdout, Write};
+use std::io::{stdout, IsTerminal, Read, Write};
 use std::path::Path;
 use std::process::exit;
 use syntect::{
     easy::HighlightLines,
     highlighting::ThemeSet,
     parsing::SyntaxSet,
-    util::{as_24_bit_terminal_escaped, LinesWithEndings}
+    util::{as_24_bit_terminal_escaped, LinesWithEndings},
 };
-use tracing::{Level, debug, error, info, warn, trace};
-use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
+use tracing::{debug, error, info, trace, warn, Level};
 use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, Layer};
 
 pub const EXIT_SUCCESS: i32 = 0;
 pub const EXIT_INVALID_ARGS: i32 = 1;
@@ -77,12 +56,12 @@ pub const DSC_TRACE_LEVEL: &str = "DSC_TRACE_LEVEL";
 #[derive(Deserialize)]
 pub struct TracingSetting {
     /// Trace level to use - see pub enum `TraceLevel` in `dsc_lib\src\dscresources\command_resource.rs`
-    level:  TraceLevel,
+    level: TraceLevel,
     /// Trace format to use - see pub enum `TraceFormat` in `dsc\src\args.rs`
     format: TraceFormat,
     /// Whether the 'level' can be overrridden by `DSC_TRACE_LEVEL` environment variable
     #[serde(rename = "allowOverride")]
-    allow_override: bool
+    allow_override: bool,
 }
 
 impl Default for TracingSetting {
@@ -105,8 +84,7 @@ impl Default for TracingSetting {
 ///
 /// * `String` - The JSON as a string
 #[must_use]
-pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
-{
+pub fn serde_json_value_to_string(json: &serde_json::Value) -> String {
     match serde_json::to_string(&json) {
         Ok(json_string) => json_string,
         Err(err) => {
@@ -131,8 +109,7 @@ pub fn serde_json_value_to_string(json: &serde_json::Value) -> String
 ///
 /// * `DscError` - The JSON is invalid
 #[allow(clippy::implicit_hasher)]
-pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -> Result<String, DscError>
-{
+pub fn add_fields_to_json(json: &str, fields_to_add: &HashMap<String, String>) -> Result<String, DscError> {
     let mut v = serde_json::from_str::<serde_json::Value>(json)?;
 
     if let serde_json::Value::Object(ref mut map) = v {
@@ -159,49 +136,49 @@ pub fn get_schema(schema: SchemaType) -> Schema {
     match schema {
         SchemaType::GetResult => {
             schema_for!(GetResult)
-        },
+        }
         SchemaType::SetResult => {
             schema_for!(SetResult)
-        },
+        }
         SchemaType::TestResult => {
             schema_for!(TestResult)
-        },
+        }
         SchemaType::ResolveResult => {
             schema_for!(ResolveResult)
         }
         SchemaType::DscResource => {
             schema_for!(DscResource)
-        },
+        }
         SchemaType::Resource => {
             schema_for!(Resource)
-        },
+        }
         SchemaType::ResourceManifest => {
             schema_for!(ResourceManifest)
-        },
+        }
         SchemaType::Include => {
             schema_for!(Include)
-        },
+        }
         SchemaType::Configuration => {
             schema_for!(Configuration)
-        },
+        }
         SchemaType::ConfigurationGetResult => {
             schema_for!(ConfigurationGetResult)
-        },
+        }
         SchemaType::ConfigurationSetResult => {
             schema_for!(ConfigurationSetResult)
-        },
+        }
         SchemaType::ConfigurationTestResult => {
             schema_for!(ConfigurationTestResult)
-        },
+        }
         SchemaType::ExtensionManifest => {
             schema_for!(ExtensionManifest)
-        },
+        }
         SchemaType::ExtensionDiscoverResult => {
             schema_for!(DiscoverResult)
-        },
+        }
         SchemaType::FunctionDefinition => {
             schema_for!(FunctionDefinition)
-        },
+        }
         SchemaType::RestartRequired => {
             schema_for!(RestartRequired)
         }
@@ -224,8 +201,7 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
         if output_format.is_none() {
             output_format = Some(&OutputFormat::Yaml);
         }
-    }
-    else if output_format.is_none() {
+    } else if output_format.is_none() {
         output_format = Some(&OutputFormat::Json);
     }
 
@@ -246,7 +222,7 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
                     exit(EXIT_JSON_ERROR);
                 }
             }
-        },
+        }
         Some(OutputFormat::Yaml) | None => {
             is_json = false;
             if include_separator {
@@ -291,8 +267,7 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
             let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
             print!("{escaped}");
         }
-    }
-    else {
+    } else {
         let mut stdout_lock = stdout().lock();
         if writeln!(stdout_lock, "{output}").is_err() {
             // likely caused by a broken pipe (e.g. 'head' command closed early)
@@ -303,7 +278,6 @@ pub fn write_object(json: &str, format: Option<&OutputFormat>, include_separator
 
 #[allow(clippy::too_many_lines)]
 pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Option<&TraceFormat>) {
-
     let mut policy_is_used = false;
     let mut tracing_setting = TracingSetting::default();
 
@@ -312,12 +286,13 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
         .unwrap_or_default()
         .add_directive(Level::WARN.into());
     let default_indicatif_layer = IndicatifLayer::new();
-    let default_layer = tracing_subscriber::fmt::Layer::default().with_writer(default_indicatif_layer.get_stderr_writer());
-    let default_fmt = default_layer
-                .with_ansi(true)
-                .with_level(true)
-                .boxed();
-    let default_subscriber = tracing_subscriber::Registry::default().with(default_fmt).with(default_filter).with(default_indicatif_layer);
+    let default_layer =
+        tracing_subscriber::fmt::Layer::default().with_writer(default_indicatif_layer.get_stderr_writer());
+    let default_fmt = default_layer.with_ansi(true).with_level(true).boxed();
+    let default_subscriber = tracing_subscriber::Registry::default()
+        .with(default_fmt)
+        .with(default_filter)
+        .with(default_indicatif_layer);
     let default_guard = tracing::subscriber::set_default(default_subscriber);
 
     // read setting/policy from files
@@ -327,15 +302,19 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
                 Ok(v) => {
                     tracing_setting = v;
                     policy_is_used = true;
-                },
-                Err(e) => { error!("{e}"); }
+                }
+                Err(e) => {
+                    error!("{e}");
+                }
             }
         } else if v.setting != serde_json::Value::Null {
             match serde_json::from_value::<TracingSetting>(v.setting) {
                 Ok(v) => {
                     tracing_setting = v;
-                },
-                Err(e) => { error!("{e}"); }
+                }
+                Err(e) => {
+                    error!("{e}");
+                }
             }
         }
     } else {
@@ -387,34 +366,31 @@ pub fn enable_tracing(trace_level_arg: Option<&TraceLevel>, trace_format_arg: Op
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(indicatif_layer.get_stderr_writer());
     let with_source = tracing_level == Level::DEBUG || tracing_level == Level::TRACE;
     let fmt = match tracing_setting.format {
-        TraceFormat::Default => {
-            layer
-                .with_ansi(true)
-                .with_level(true)
-                .with_target(with_source)
-                .with_line_number(with_source)
-                .boxed()
-        },
-        TraceFormat::Plaintext => {
-            layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_target(with_source)
-                .with_line_number(with_source)
-                .boxed()
-        },
-        TraceFormat::Json | TraceFormat::PassThrough => {
-            layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_target(with_source)
-                .with_line_number(with_source)
-                .json()
-                .boxed()
-        },
+        TraceFormat::Default => layer
+            .with_ansi(true)
+            .with_level(true)
+            .with_target(with_source)
+            .with_line_number(with_source)
+            .boxed(),
+        TraceFormat::Plaintext => layer
+            .with_ansi(false)
+            .with_level(true)
+            .with_target(with_source)
+            .with_line_number(with_source)
+            .boxed(),
+        TraceFormat::Json | TraceFormat::PassThrough => layer
+            .with_ansi(false)
+            .with_level(true)
+            .with_target(with_source)
+            .with_line_number(with_source)
+            .json()
+            .boxed(),
     };
 
-    let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter).with(indicatif_layer);
+    let subscriber = tracing_subscriber::Registry::default()
+        .with(fmt)
+        .with(filter)
+        .with(indicatif_layer);
 
     drop(default_guard);
     if tracing::subscriber::set_global_default(subscriber).is_err() {
@@ -448,15 +424,11 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
             }
             let mut stdin = Vec::<u8>::new();
             match std::io::stdin().read_to_end(&mut stdin) {
-                Ok(_) => {
-                    match String::from_utf8(stdin) {
-                        Ok(input) => {
-                            input
-                        },
-                        Err(err) => {
-                            error!("{}: {err}", t!("util.invalidUtf8"));
-                            exit(EXIT_INVALID_INPUT);
-                        }
+                Ok(_) => match String::from_utf8(stdin) {
+                    Ok(input) => input,
+                    Err(err) => {
+                        error!("{}: {err}", t!("util.invalidUtf8"));
+                        exit(EXIT_INVALID_INPUT);
                     }
                 },
                 Err(err) => {
@@ -481,7 +453,7 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
                     } else {
                         input
                     }
-                },
+                }
                 Err(err) => {
                     error!("{}: {err}", t!("util.failedToReadFile"));
                     exit(EXIT_INVALID_INPUT);
@@ -517,14 +489,13 @@ pub fn get_input(input: Option<&String>, file: Option<&String>, parameters_from_
 ///
 /// Absolute full path to the config file.
 /// If a directory is provided, the path returned is the directory path.
-pub fn set_dscconfigroot(config_path: &str) -> String
-{
+pub fn set_dscconfigroot(config_path: &str) -> String {
     let path = Path::new(config_path);
 
     // make path absolute
     let Ok(full_path) = path.absolutize() else {
-            error!("{}", t!("util.failedToAbsolutizePath"));
-            exit(EXIT_DSC_ERROR);
+        error!("{}", t!("util.failedToAbsolutizePath"));
+        exit(EXIT_DSC_ERROR);
     };
 
     let config_root_path = if full_path.is_file() {
@@ -550,7 +521,6 @@ pub fn set_dscconfigroot(config_path: &str) -> String
     full_path.to_string_lossy().into_owned()
 }
 
-
 /// Check if the test result is in the desired state.
 ///
 /// # Arguments
@@ -563,9 +533,7 @@ pub fn set_dscconfigroot(config_path: &str) -> String
 #[must_use]
 pub fn in_desired_state(test_result: &ResourceTestResult) -> bool {
     match &test_result.result {
-        TestResult::Resource(result) => {
-            result.in_desired_state
-        },
+        TestResult::Resource(result) => result.in_desired_state,
         TestResult::Group(results) => {
             for result in results {
                 if !in_desired_state(result) {

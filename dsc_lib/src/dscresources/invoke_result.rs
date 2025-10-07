@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::config_result::{ResourceGetResult, ResourceSetResult, ResourceTestResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use crate::configure::config_result::{ResourceGetResult, ResourceSetResult, ResourceTestResult};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
@@ -23,12 +23,10 @@ impl From<TestResult> for GetResult {
                     results.push(result.into());
                 }
                 GetResult::Group(results)
-            },
-            TestResult::Resource(resource) => {
-                GetResult::Resource(ResourceGetResponse {
-                    actual_state: resource.actual_state
-                })
             }
+            TestResult::Resource(resource) => GetResult::Resource(ResourceGetResponse {
+                actual_state: resource.actual_state,
+            }),
         }
     }
 }
@@ -57,14 +55,16 @@ impl From<TestResult> for SetResult {
                     results.push(result.into());
                 }
                 SetResult::Group(results)
-            },
-            TestResult::Resource(resource) => {
-                SetResult::Resource(ResourceSetResponse {
-                    before_state: resource.actual_state,
-                    after_state: resource.desired_state,
-                    changed_properties: if resource.diff_properties.is_empty() { None } else { Some(resource.diff_properties) },
-                })
             }
+            TestResult::Resource(resource) => SetResult::Resource(ResourceSetResponse {
+                before_state: resource.actual_state,
+                after_state: resource.desired_state,
+                changed_properties: if resource.diff_properties.is_empty() {
+                    None
+                } else {
+                    Some(resource.diff_properties)
+                },
+            }),
         }
     }
 }
@@ -93,9 +93,7 @@ pub enum TestResult {
 #[must_use]
 pub fn get_in_desired_state(test_result: &TestResult) -> bool {
     match test_result {
-        TestResult::Resource(ref resource_test_result) => {
-            resource_test_result.in_desired_state
-        },
+        TestResult::Resource(ref resource_test_result) => resource_test_result.in_desired_state,
         TestResult::Group(ref group_test_result) => {
             for result in group_test_result {
                 if !get_in_desired_state(&(result.result)) {

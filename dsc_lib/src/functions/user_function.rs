@@ -1,7 +1,13 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::configure::{{config_doc::{DataType, UserFunctionDefinition}, context::ProcessMode}, validate_parameter_type};
+use crate::configure::{
+    validate_parameter_type,
+    {
+        config_doc::{DataType, UserFunctionDefinition},
+        context::ProcessMode,
+    },
+};
 use crate::dscerror::DscError;
 use crate::functions::Context;
 use crate::parser::Statement;
@@ -32,23 +38,41 @@ pub fn invoke_user_function(name: &str, args: &[Value], context: &Context) -> Re
         user_context.user_functions.clear();
         for (i, arg) in args.iter().enumerate() {
             let Some(params) = &function_definition.parameters else {
-                return Err(DscError::Parser(t!("functions.userFunction.expectedNoParameters", name = name).to_string()));
+                return Err(DscError::Parser(
+                    t!("functions.userFunction.expectedNoParameters", name = name).to_string(),
+                ));
             };
-            user_context.parameters.insert(params[i].name.clone(), (arg.clone(), params[i].r#type.clone()));
+            user_context
+                .parameters
+                .insert(params[i].name.clone(), (arg.clone(), params[i].r#type.clone()));
         }
         let mut parser = Statement::new()?;
         let result = parser.parse_and_execute(&function_definition.output.value, &user_context)?;
         validate_output_type(name, function_definition, &result)?;
         Ok(result)
     } else {
-        Err(DscError::Parser(t!("functions.userFunction.unknownUserFunction", name = name).to_string()))
+        Err(DscError::Parser(
+            t!("functions.userFunction.unknownUserFunction", name = name).to_string(),
+        ))
     }
 }
 
-fn validate_parameters(name: &str, function_definition: &UserFunctionDefinition, args: &[Value]) -> Result<(), DscError> {
+fn validate_parameters(
+    name: &str,
+    function_definition: &UserFunctionDefinition,
+    args: &[Value],
+) -> Result<(), DscError> {
     if let Some(expected_params) = &function_definition.parameters {
         if args.len() != expected_params.len() {
-            return Err(DscError::Parser(t!("functions.userFunction.wrongParamCount", name = name, expected = expected_params.len(), got = args.len()).to_string()));
+            return Err(DscError::Parser(
+                t!(
+                    "functions.userFunction.wrongParamCount",
+                    name = name,
+                    expected = expected_params.len(),
+                    got = args.len()
+                )
+                .to_string(),
+            ));
         }
         for (arg, expected_param) in args.iter().zip(expected_params) {
             validate_parameter_type(name, arg, &expected_param.r#type)?;
@@ -57,33 +81,72 @@ fn validate_parameters(name: &str, function_definition: &UserFunctionDefinition,
     Ok(())
 }
 
-fn validate_output_type(name: &str, function_definition: &UserFunctionDefinition, output: &Value) -> Result<(), DscError> {
+fn validate_output_type(
+    name: &str,
+    function_definition: &UserFunctionDefinition,
+    output: &Value,
+) -> Result<(), DscError> {
     match function_definition.output.r#type {
         DataType::String | DataType::SecureString => {
             if !output.is_string() {
-                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "string").to_string()));
+                return Err(DscError::Validation(
+                    t!(
+                        "functions.userFunction.incorrectOutputType",
+                        name = name,
+                        expected_type = "string"
+                    )
+                    .to_string(),
+                ));
             }
-        },
+        }
         DataType::Int => {
             if !output.is_i64() {
-                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "int").to_string()));
+                return Err(DscError::Validation(
+                    t!(
+                        "functions.userFunction.incorrectOutputType",
+                        name = name,
+                        expected_type = "int"
+                    )
+                    .to_string(),
+                ));
             }
-        },
+        }
         DataType::Bool => {
             if !output.is_boolean() {
-                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "bool").to_string()));
+                return Err(DscError::Validation(
+                    t!(
+                        "functions.userFunction.incorrectOutputType",
+                        name = name,
+                        expected_type = "bool"
+                    )
+                    .to_string(),
+                ));
             }
-        },
+        }
         DataType::Array => {
             if !output.is_array() {
-                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "array").to_string()));
+                return Err(DscError::Validation(
+                    t!(
+                        "functions.userFunction.incorrectOutputType",
+                        name = name,
+                        expected_type = "array"
+                    )
+                    .to_string(),
+                ));
             }
-        },
+        }
         DataType::Object | DataType::SecureObject => {
             if !output.is_object() {
-                return Err(DscError::Validation(t!("functions.userFunction.incorrectOutputType", name = name, expected_type = "object").to_string()));
+                return Err(DscError::Validation(
+                    t!(
+                        "functions.userFunction.incorrectOutputType",
+                        name = name,
+                        expected_type = "object"
+                    )
+                    .to_string(),
+                ));
             }
-        },
+        }
     }
 
     Ok(())

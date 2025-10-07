@@ -2,14 +2,14 @@
 // Licensed under the MIT License.
 
 use rust_i18n::t;
-use schemars::{Schema, JsonSchema, json_schema};
+use schemars::{json_schema, JsonSchema, Schema};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 
-use crate::{dscerror::DscError, schemas::DscRepoSchema};
 use crate::extensions::{discover::DiscoverMethod, import::ImportMethod, secret::SecretMethod};
+use crate::{dscerror::DscError, schemas::DscRepoSchema};
 
 #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -101,15 +101,13 @@ pub fn validate_semver(version: &str) -> Result<(), semver::Error> {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        dscerror::DscError, extensions::extension_manifest::ExtensionManifest, schemas::DscRepoSchema
-    };
+    use crate::{dscerror::DscError, extensions::extension_manifest::ExtensionManifest, schemas::DscRepoSchema};
 
     #[test]
     fn test_validate_schema_uri_with_invalid_uri() {
         let invalid_uri = "https://invalid.schema.uri".to_string();
 
-        let manifest = ExtensionManifest{
+        let manifest = ExtensionManifest {
             schema_version: invalid_uri.clone(),
             r#type: "Microsoft.Dsc.Test/InvalidSchemaUri".to_string(),
             version: "0.1.0".to_string(),
@@ -124,16 +122,19 @@ mod test {
             DscError::UnrecognizedSchemaUri(actual, recognized) => {
                 assert_eq!(actual, &invalid_uri);
                 assert_eq!(recognized, &ExtensionManifest::recognized_schema_uris())
-            },
+            }
             _ => {
-                panic!("Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}", result.as_ref().unwrap_err())
+                panic!(
+                    "Expected validate_schema_uri() to error on unrecognized schema uri, but was {:?}",
+                    result.as_ref().unwrap_err()
+                )
             }
         }
     }
 
     #[test]
     fn test_validate_schema_uri_with_valid_uri() {
-        let manifest = ExtensionManifest{
+        let manifest = ExtensionManifest {
             schema_version: ExtensionManifest::default_schema_id_uri(),
             r#type: "Microsoft.Dsc.Test/ValidSchemaUri".to_string(),
             version: "0.1.0".to_string(),

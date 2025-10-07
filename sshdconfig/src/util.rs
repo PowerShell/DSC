@@ -5,7 +5,7 @@ use rust_i18n::t;
 use serde_json::{Map, Value};
 use std::{path::Path, process::Command};
 use tracing::debug;
-use tracing_subscriber::{EnvFilter, filter::LevelFilter, Layer, prelude::__tracing_subscriber_SubscriberExt};
+use tracing_subscriber::{filter::LevelFilter, prelude::__tracing_subscriber_SubscriberExt, EnvFilter, Layer};
 
 use crate::error::SshdConfigError;
 use crate::inputs::{CommandInfo, Metadata, SshdCommandArgs};
@@ -18,14 +18,17 @@ use crate::parser::parse_text_to_map;
 /// This function will return an error if it fails to initialize tracing.
 pub fn enable_tracing() {
     // default filter to trace level
-    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap_or_default();
+    let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::TRACE.into())
+        .parse("")
+        .unwrap_or_default();
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
     let fmt = layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_line_number(true)
-                .json()
-                .boxed();
+        .with_ansi(false)
+        .with_level(true)
+        .with_line_number(true)
+        .json()
+        .boxed();
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 
@@ -52,20 +55,17 @@ pub fn invoke_sshd_config_validation(args: Option<SshdCommandArgs>) -> Result<St
         }
     }
 
-    let output = command.output()
+    let output = command
+        .output()
         .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
 
     if output.status.success() {
-        let stdout = String::from_utf8(output.stdout)
-            .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
+        let stdout = String::from_utf8(output.stdout).map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
         Ok(stdout)
     } else {
-        let stderr = String::from_utf8(output.stderr)
-            .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
+        let stderr = String::from_utf8(output.stderr).map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
         if stderr.contains("sshd: no hostkeys available") || stderr.contains("Permission denied") {
-            return Err(SshdConfigError::CommandError(
-                t!("util.sshdElevation").to_string()
-            ));
+            return Err(SshdConfigError::CommandError(t!("util.sshdElevation").to_string()));
         }
         Err(SshdConfigError::CommandError(stderr))
     }
@@ -90,12 +90,10 @@ pub fn extract_sshd_defaults() -> Result<Map<String, Value>, SshdConfigError> {
     drop(file);
 
     debug!("temporary file created at: {}", temp_path);
-    let args = Some(
-        SshdCommandArgs {
-            filepath: Some(temp_path.clone()),
-            additional_args: None,
-        }
-    );
+    let args = Some(SshdCommandArgs {
+        filepath: Some(temp_path.clone()),
+        additional_args: None,
+    });
 
     // Clean up the temporary file regardless of success or failure
     let output = invoke_sshd_config_validation(args);
@@ -120,17 +118,17 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
         } else {
             Metadata::new()
         };
-        let sshd_args = metadata.filepath.as_ref().map(|filepath| {
-            SshdCommandArgs {
-                filepath: Some(filepath.clone()),
-                additional_args: None,
-            }
+        let sshd_args = metadata.filepath.as_ref().map(|filepath| SshdCommandArgs {
+            filepath: Some(filepath.clone()),
+            additional_args: None,
         });
         let include_defaults: bool = if let Some(value) = sshd_config.remove("_includeDefaults") {
             if let Value::Bool(b) = value {
                 b
             } else {
-                return Err(SshdConfigError::InvalidInput(t!("util.includeDefaultsMustBeBoolean").to_string()));
+                return Err(SshdConfigError::InvalidInput(
+                    t!("util.includeDefaultsMustBeBoolean").to_string(),
+                ));
             }
         } else {
             is_get
@@ -142,8 +140,8 @@ pub fn build_command_info(input: Option<&String>, is_get: bool) -> Result<Comman
             include_defaults,
             input: sshd_config,
             metadata,
-            sshd_args
-        })
+            sshd_args,
+        });
     }
     Ok(CommandInfo::new(is_get))
 }
@@ -161,8 +159,8 @@ pub fn read_sshd_config(input: Option<String>) -> Result<String, SshdConfigError
     let sshd_config_path = if let Some(input) = input {
         input
     } else if cfg!(windows) {
-            let program_data = std::env::var("ProgramData").unwrap_or_else(|_| "C:\\ProgramData".into());
-            format!("{program_data}\\ssh\\sshd_config")
+        let program_data = std::env::var("ProgramData").unwrap_or_else(|_| "C:\\ProgramData".into());
+        format!("{program_data}\\ssh\\sshd_config")
     } else {
         "/etc/ssh/sshd_config".to_string()
     };
@@ -175,10 +173,14 @@ pub fn read_sshd_config(input: Option<String>) -> Result<String, SshdConfigError
             file.read_to_string(&mut sshd_config_content)
                 .map_err(|e| SshdConfigError::CommandError(e.to_string()))?;
         } else {
-            return Err(SshdConfigError::CommandError(t!("util.sshdConfigReadFailed", path = filepath.display()).to_string()));
+            return Err(SshdConfigError::CommandError(
+                t!("util.sshdConfigReadFailed", path = filepath.display()).to_string(),
+            ));
         }
         Ok(sshd_config_content)
     } else {
-        Err(SshdConfigError::CommandError(t!("util.sshdConfigNotFound", path = filepath.display()).to_string()))
+        Err(SshdConfigError::CommandError(
+            t!("util.sshdConfigNotFound", path = filepath.display()).to_string(),
+        ))
     }
 }

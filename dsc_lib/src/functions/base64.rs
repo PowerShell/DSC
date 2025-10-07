@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 
-use crate::DscError;
+use super::Function;
 use crate::configure::context::Context;
 use crate::functions::{FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
-use super::Function;
 
 #[derive(Debug, Default)]
 pub struct Base64 {}
@@ -28,7 +28,9 @@ impl Function for Base64 {
     }
 
     fn invoke(&self, args: &[Value], _context: &Context) -> Result<Value, DscError> {
-        Ok(Value::String(general_purpose::STANDARD.encode(args[0].as_str().unwrap_or_default())))
+        Ok(Value::String(
+            general_purpose::STANDARD.encode(args[0].as_str().unwrap_or_default()),
+        ))
     }
 }
 
@@ -40,7 +42,9 @@ mod tests {
     #[test]
     fn strings() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64('hello world')]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[base64('hello world')]", &Context::new())
+            .unwrap();
         assert_eq!(result, "aGVsbG8gd29ybGQ=");
     }
 
@@ -54,7 +58,9 @@ mod tests {
     #[test]
     fn nested() {
         let mut parser = Statement::new().unwrap();
-        let result = parser.parse_and_execute("[base64(base64('hello world'))]", &Context::new()).unwrap();
+        let result = parser
+            .parse_and_execute("[base64(base64('hello world'))]", &Context::new())
+            .unwrap();
         assert_eq!(result, "YUdWc2JHOGdkMjl5YkdRPQ==");
     }
 }

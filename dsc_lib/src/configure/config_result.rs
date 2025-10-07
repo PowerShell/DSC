@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use crate::configure::config_doc::{Configuration, Metadata};
+use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::dscresources::invoke_result::{GetResult, SetResult, TestResult};
-use crate::configure::config_doc::{Configuration, Metadata};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -18,7 +18,7 @@ pub enum MessageLevel {
 #[serde(deny_unknown_fields)]
 pub struct ResourceMessage {
     pub name: String,
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub resource_type: String,
     pub message: String,
     pub level: MessageLevel,
@@ -30,7 +30,7 @@ pub struct ResourceGetResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     pub name: String,
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub resource_type: String,
     pub result: GetResult,
 }
@@ -95,7 +95,7 @@ pub struct ResourceSetResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     pub name: String,
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub resource_type: String,
     pub result: SetResult,
 }
@@ -120,9 +120,7 @@ pub struct GroupResourceSetResult {
 impl GroupResourceSetResult {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            results: Vec::new(),
-        }
+        Self { results: Vec::new() }
     }
 }
 
@@ -166,7 +164,7 @@ pub struct ResourceTestResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
     pub name: String,
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub resource_type: String,
     pub result: TestResult,
 }
@@ -180,9 +178,7 @@ pub struct GroupResourceTestResult {
 impl GroupResourceTestResult {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            results: Vec::new(),
-        }
+        Self { results: Vec::new() }
     }
 }
 

@@ -3,12 +3,12 @@
 
 use crate::mcp::mcp_server::McpServer;
 use dsc_lib::{
-    DscManager, discovery::{
-        command_discovery::ImportedManifest::Resource,
-        discovery_trait::DiscoveryKind,
-    }, dscresources::resource_manifest::Kind, progress::ProgressFormat
+    discovery::{command_discovery::ImportedManifest::Resource, discovery_trait::DiscoveryKind},
+    dscresources::resource_manifest::Kind,
+    progress::ProgressFormat,
+    DscManager,
 };
-use rmcp::{ErrorData as McpError, Json, tool, tool_router, handler::server::wrapper::Parameters};
+use rmcp::{handler::server::wrapper::Parameters, tool, tool_router, ErrorData as McpError, Json};
 use rust_i18n::t;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -31,7 +31,9 @@ pub struct ResourceSummary {
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ListResourcesRequest {
-    #[schemars(description = "Filter adapted resources to only those requiring the specified adapter type.  If not specified, all non-adapted resources are returned.")]
+    #[schemars(
+        description = "Filter adapted resources to only those requiring the specified adapter type.  If not specified, all non-adapted resources are returned."
+    )]
     pub adapter: Option<String>,
 }
 
@@ -47,20 +49,29 @@ impl McpServer {
             open_world_hint = true,
         )
     )]
-    pub async fn list_dsc_resources(&self, Parameters(ListResourcesRequest { adapter }): Parameters<ListResourcesRequest>) -> Result<Json<ResourceListResult>, McpError> {
+    pub async fn list_dsc_resources(
+        &self,
+        Parameters(ListResourcesRequest { adapter }): Parameters<ListResourcesRequest>,
+    ) -> Result<Json<ResourceListResult>, McpError> {
         let result = task::spawn_blocking(move || {
             let mut dsc = DscManager::new();
             let adapter_filter = match adapter {
                 Some(adapter) => {
                     if let Some(resource) = dsc.find_resource(&adapter, None) {
                         if resource.kind != Kind::Adapter {
-                            return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.resourceNotAdapter", adapter = adapter), None));
+                            return Err(McpError::invalid_params(
+                                t!("mcp.list_dsc_resources.resourceNotAdapter", adapter = adapter),
+                                None,
+                            ));
                         }
                         adapter
                     } else {
-                        return Err(McpError::invalid_params(t!("mcp.list_dsc_resources.adapterNotFound", adapter = adapter), None));
+                        return Err(McpError::invalid_params(
+                            t!("mcp.list_dsc_resources.adapterNotFound", adapter = adapter),
+                            None,
+                        ));
                     }
-                },
+                }
                 None => String::new(),
             };
             let mut resources = BTreeMap::<String, ResourceSummary>::new();
@@ -75,8 +86,12 @@ impl McpServer {
                     resources.insert(resource.type_name.to_lowercase(), summary);
                 }
             }
-            Ok(ResourceListResult { resources: resources.into_values().collect() })
-        }).await.map_err(|e| McpError::internal_error(e.to_string(), None))??;
+            Ok(ResourceListResult {
+                resources: resources.into_values().collect(),
+            })
+        })
+        .await
+        .map_err(|e| McpError::internal_error(e.to_string(), None))??;
 
         Ok(Json(result))
     }

@@ -19,7 +19,7 @@ pub const MULTI_ARG_KEYWORDS: [&str; 16] = [
     "permituserenvironment",
     "persourcepenalties",
     "persourcepenaltyexemptlist",
-    "pubkeyacceptedalgorithms"
+    "pubkeyacceptedalgorithms",
 ];
 
 // keywords that can be repeated over multiple lines and should be represented as arrays.
@@ -36,7 +36,7 @@ pub const REPEATABLE_KEYWORDS: [&str; 12] = [
     "match",
     "port",
     "setenv",
-    "subsystem"
+    "subsystem",
 ];
 
 #[cfg(windows)]

@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-use crate::DscError;
 use crate::configure::context::{Context, ProcessMode};
-use crate::functions::{FunctionArgKind, Function, FunctionCategory, FunctionMetadata};
+use crate::functions::{Function, FunctionArgKind, FunctionCategory, FunctionMetadata};
+use crate::DscError;
 use rust_i18n::t;
 use serde_json::Value;
 use tracing::debug;
@@ -34,14 +34,18 @@ impl Function for Variables {
     fn invoke(&self, args: &[Value], context: &Context) -> Result<Value, DscError> {
         debug!("{}", t!("functions.variables.invoked"));
         if context.process_mode == ProcessMode::UserFunction {
-            return Err(DscError::Parser(t!("functions.variables.unavailableInUserFunction").to_string()));
+            return Err(DscError::Parser(
+                t!("functions.variables.unavailableInUserFunction").to_string(),
+            ));
         }
 
         if let Some(key) = args[0].as_str() {
             if context.variables.contains_key(key) {
                 Ok(context.variables[key].clone())
             } else {
-                Err(DscError::Parser(t!("functions.variables.keyNotFound", key = key).to_string()))
+                Err(DscError::Parser(
+                    t!("functions.variables.keyNotFound", key = key).to_string(),
+                ))
             }
         } else {
             Err(DscError::Parser(t!("functions.invalidArguments").to_string()))
