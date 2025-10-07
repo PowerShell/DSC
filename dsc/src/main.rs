@@ -28,6 +28,7 @@ pub mod util;
 
 i18n!("locales", fallback = "en-us");
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     #[cfg(debug_assertions)]
     check_debug();

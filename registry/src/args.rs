@@ -7,7 +7,6 @@ use rust_i18n::t;
 #[derive(Parser)]
 #[clap(name = "registry", version = "0.0.1", about = t!("args.about").to_string(), long_about = None)]
 pub struct Arguments {
-
     #[clap(subcommand)]
     pub subcommand: SubCommand,
 }

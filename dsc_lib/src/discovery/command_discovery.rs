@@ -447,6 +447,7 @@ impl ResourceDiscovery for CommandDiscovery {
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     fn discover_adapted_resources(&mut self, name_filter: &str, adapter_filter: &str) -> Result<(), DscError> {
         if locked_is_empty!(RESOURCES) && locked_is_empty!(ADAPTERS) {
             self.discover(&DiscoveryKind::Resource, "*")?;

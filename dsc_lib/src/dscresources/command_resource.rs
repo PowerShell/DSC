@@ -400,6 +400,7 @@ pub fn invoke_set(
 /// # Errors
 ///
 /// Error is returned if the underlying command returns a non-zero exit code.
+#[allow(clippy::too_many_lines)]
 pub fn invoke_test(
     resource: &ResourceManifest,
     cwd: &str,
@@ -918,6 +919,7 @@ pub fn invoke_resolve(resource: &ResourceManifest, cwd: &str, input: &str) -> Re
 ///
 /// Error is returned if the command fails to execute or stdin/stdout/stderr cannot be opened.
 ///
+#[allow(clippy::too_many_lines)]
 async fn run_process_async(
     executable: &str,
     args: Option<Vec<String>>,

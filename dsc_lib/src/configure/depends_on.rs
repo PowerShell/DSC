@@ -23,6 +23,7 @@ use tracing::debug;
 /// # Errors
 ///
 /// * `DscError::Validation` - The configuration is invalid
+#[allow(clippy::too_many_lines)]
 pub fn get_resource_invocation_order(
     config: &Configuration,
     parser: &mut Statement,

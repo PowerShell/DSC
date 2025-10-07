@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+use cc::windows_registry;
 use std::env;
 use std::process::Command;
-use cc::windows_registry;
 
 // Environment variables used in this build file are documented at
 // https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts
@@ -26,7 +26,8 @@ fn get_tool_var(name: &str) -> Option<String> {
         .or_else(|_| {
             println!("cargo:rerun-if-env-changed={name}");
             env::var(name)
-        }).ok()
+        })
+        .ok()
 }
 
 fn make_import_lib(name: &str) {
@@ -44,15 +45,11 @@ fn make_import_lib(name: &str) {
 
         dlltool.args(["-d", &format!("{name}.def")]);
         dlltool.args(["-m", arch]);
-        dlltool.args([
-            "-l",
-            &format!("{}/{}.lib", env::var("OUT_DIR").unwrap(), name),
-        ]);
+        dlltool.args(["-l", &format!("{}/{}.lib", env::var("OUT_DIR").unwrap(), name)]);
         assert!(dlltool.spawn().unwrap().wait().unwrap().success(), "dlltool failed");
     } else {
         // Find the 'lib.exe' from Visual Studio tools' location.
-        let mut lib = windows_registry::find(&env::var("TARGET").unwrap(), "lib.exe")
-            .expect("cannot find lib.exe");
+        let mut lib = windows_registry::find(&env::var("TARGET").unwrap(), "lib.exe").expect("cannot find lib.exe");
 
         let arch = match env::var("CARGO_CFG_TARGET_ARCH").unwrap().as_str() {
             "x86" => "X86",
@@ -63,11 +60,7 @@ fn make_import_lib(name: &str) {
 
         lib.arg(format!("/machine:{arch}"));
         lib.arg(format!("/def:{name}.def"));
-        lib.arg(format!(
-            "/out:{}/{}.lib",
-            env::var("OUT_DIR").unwrap(),
-            name
-        ));
+        lib.arg(format!("/out:{}/{}.lib", env::var("OUT_DIR").unwrap(), name));
         assert!(lib.spawn().unwrap().wait().unwrap().success(), "lib.exe failed");
     }
 }

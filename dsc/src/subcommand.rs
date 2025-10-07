@@ -108,6 +108,7 @@ pub fn config_set(configurator: &mut Configurator, format: Option<&OutputFormat>
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn config_test(
     configurator: &mut Configurator,
     format: Option<&OutputFormat>,
@@ -887,6 +888,7 @@ fn list_functions(
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn list_resources(
     dsc: &mut DscManager,
     resource_name: Option<&String>,

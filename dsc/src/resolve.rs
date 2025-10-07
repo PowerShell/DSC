@@ -55,6 +55,7 @@ pub struct Include {
 /// This function will return an error if the Include input is not valid JSON, if the file
 /// specified in the Include input cannot be read, or if the content of the file cannot be
 /// deserialized as YAML or JSON.
+#[allow(clippy::too_many_lines)]
 pub fn get_contents(input: &str) -> Result<(Option<String>, String), String> {
     debug!("{}", t!("resolve.processingInclude"));
 

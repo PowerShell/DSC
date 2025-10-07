@@ -32,21 +32,35 @@ fn main() {
 
     let args = Arguments::parse();
     match args.subcommand {
-        args::SubCommand::Query { key_path, value_name, recurse } => {
+        args::SubCommand::Query {
+            key_path,
+            value_name,
+            recurse,
+        } => {
             debug!("Get key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
-        },
+        }
         args::SubCommand::Set { key_path, value } => {
             debug!("Set key_path: {key_path}, value: {value}");
-        },
-        args::SubCommand::Remove { key_path, value_name, recurse } => {
+        }
+        args::SubCommand::Remove {
+            key_path,
+            value_name,
+            recurse,
+        } => {
             debug!("Remove key_path: {key_path}, value_name: {value_name:?}, recurse: {recurse}");
-        },
-        args::SubCommand::Find { key_path, find, recurse, keys_only, values_only } => {
+        }
+        args::SubCommand::Find {
+            key_path,
+            find,
+            recurse,
+            keys_only,
+            values_only,
+        } => {
             debug!("Find key_path: {key_path}, find: {find}, recurse: {recurse:?}, keys_only: {keys_only:?}, values_only: {values_only:?}");
-        },
+        }
         args::SubCommand::Config { subcommand } => {
             match subcommand {
-                args::ConfigSubCommand::Get{input} => {
+                args::ConfigSubCommand::Get { input } => {
                     debug!("Get input: {input}");
                     let reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
@@ -59,14 +73,14 @@ fn main() {
                         Ok(reg_config) => {
                             let json = serde_json::to_string(&reg_config).unwrap();
                             println!("{json}");
-                        },
+                        }
                         Err(err) => {
                             error!("{err}");
                             exit(EXIT_REGISTRY_ERROR);
                         }
                     }
-                },
-                args::ConfigSubCommand::Set{input, what_if} => {
+                }
+                args::ConfigSubCommand::Set { input, what_if } => {
                     debug!("Set input: {input}, what_if: {what_if}");
                     let mut reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
@@ -75,7 +89,9 @@ fn main() {
                             exit(EXIT_INVALID_INPUT);
                         }
                     };
-                    if what_if { reg_helper.enable_what_if(); }
+                    if what_if {
+                        reg_helper.enable_what_if();
+                    }
 
                     // In what-if, if the desired state is _exist: false, route to delete
                     if what_if {
@@ -85,8 +101,8 @@ fn main() {
                                     Ok(Some(reg_config)) => {
                                         let json = serde_json::to_string(&reg_config).unwrap();
                                         println!("{json}");
-                                    },
-                                    Ok(None) => {},
+                                    }
+                                    Ok(None) => {}
                                     Err(err) => {
                                         error!("{err}");
                                         exit(EXIT_REGISTRY_ERROR);
@@ -102,14 +118,14 @@ fn main() {
                                 let json = serde_json::to_string(&config).unwrap();
                                 println!("{json}");
                             }
-                        },
+                        }
                         Err(err) => {
                             error!("{err}");
                             exit(EXIT_REGISTRY_ERROR);
                         }
                     }
-                },
-                args::ConfigSubCommand::Delete{input} => {
+                }
+                args::ConfigSubCommand::Delete { input } => {
                     debug!("Delete input: {input}");
                     let reg_helper = match RegistryHelper::new_from_json(&input) {
                         Ok(reg_helper) => reg_helper,
@@ -122,21 +138,21 @@ fn main() {
                         Ok(Some(reg_config)) => {
                             let json = serde_json::to_string(&reg_config).unwrap();
                             println!("{json}");
-                        },
-                        Ok(None) => {},
+                        }
+                        Ok(None) => {}
                         Err(err) => {
                             error!("{err}");
                             exit(EXIT_REGISTRY_ERROR);
                         }
                     }
-                },
+                }
             }
-        },
+        }
         args::SubCommand::Schema => {
             let schema = schema_for!(Registry);
-            let json =serde_json::to_string(&schema).unwrap();
+            let json = serde_json::to_string(&schema).unwrap();
             println!("{json}");
-        },
+        }
     }
 
     exit(EXIT_SUCCESS);
@@ -144,14 +160,17 @@ fn main() {
 
 pub fn enable_tracing() {
     // default filter to trace level
-    let filter = EnvFilter::builder().with_default_directive(LevelFilter::TRACE.into()).parse("").unwrap_or_default();
+    let filter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::TRACE.into())
+        .parse("")
+        .unwrap_or_default();
     let layer = tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr);
     let fmt = layer
-                .with_ansi(false)
-                .with_level(true)
-                .with_line_number(true)
-                .json()
-                .boxed();
+        .with_ansi(false)
+        .with_level(true)
+        .with_line_number(true)
+        .json()
+        .boxed();
 
     let subscriber = tracing_subscriber::Registry::default().with(fmt).with(filter);
 

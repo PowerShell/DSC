@@ -312,6 +312,7 @@ impl DscResource {
         Ok(set_result)
     }
 
+    #[allow(clippy::too_many_lines)]
     fn invoke_test_with_adapter(
         &self,
         adapter: &str,
