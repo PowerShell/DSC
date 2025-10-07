@@ -50,20 +50,6 @@ Describe 'whatif tests' {
 
     }
 
-    It 'config set whatif for delete is not supported' {
-        $config_yaml = @"
-            `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
-            resources:
-            - name: Delete
-              type: Test/Delete
-              properties:
-                _exist: false
-"@
-        $result = $config_yaml | dsc config set -w -f - 2>&1
-        $result | Should -Match 'ERROR.*?Not supported.*?what-if'
-        $LASTEXITCODE | Should -Be 2
-    }
-
     It 'config set whatif for group resource' {
         $result = dsc config set -f $PSScriptRoot/../examples/groups.dsc.yaml -w 2>&1
         $result | Should -Match 'ERROR.*?Not implemented.*?what-if'
@@ -88,7 +74,13 @@ Describe 'whatif tests' {
         $LASTEXITCODE | Should -Be 0
     }
 
-    It 'what-if execution of WhatIf resource' {
+    It 'what-if execution of WhatIf resource via <alias>' -TestCases @(
+        @{ alias = '-w' }
+        @{ alias = '--what-if' }
+        @{ alias = '--dry-run' }
+        @{ alias = '--noop' }
+    ) {
+        param($alias)
         $config_yaml = @"
         `$schema: https://aka.ms/dsc/schemas/v3/bundled/config/document.json
         resources:
@@ -97,7 +89,7 @@ Describe 'whatif tests' {
           properties:
             executionType: Actual
 "@
-        $result = $config_yaml | dsc config set -w -f - | ConvertFrom-Json
+        $result = $config_yaml | dsc config set $alias -f - | ConvertFrom-Json
         $result.metadata.'Microsoft.DSC'.executionType | Should -BeExactly 'whatIf'
         $result.results.result.afterState.executionType | Should -BeExactly 'WhatIf'
         $result.results.result.changedProperties | Should -BeExactly 'executionType'

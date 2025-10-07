@@ -43,7 +43,6 @@ elevationRequired = "Elevated security context required"
 restrictedRequired = "Restricted security context required"
 desired = "Desired state: %{state}"
 handlesExist = "Resource handles _exist or _exist is true"
-whatIfNotSupportedForDelete = "What-if execution not supported for delete"
 implementsDelete = "Resource implements delete and _exist is false"
 groupNotSupportedForDelete = "Group resources not supported for delete"
 deleteNotSupported = "Resource '%{resource}' does not support `delete` and does not handle `_exist` as false"
@@ -72,10 +71,12 @@ metadataMicrosoftDscIgnored = "Resource returned '_metadata' property 'Microsoft
 metadataNotObject = "Resource returned '_metadata' property which is not an object"
 metadataRestartRequiredInvalid = "Resource returned '_metadata' property '_restartRequired' which contains invalid value: %{value}"
 schemaExcludesMetadata = "Will not add '_metadata' to properties because resource schema does not support it"
+validateCopy = "Validating copy for resource '%{name}' with count %{count}"
 unrollingCopy = "Unrolling copy for resource '%{name}' with count %{count}"
 copyModeNotSupported = "Copy mode is not supported"
 copyBatchSizeNotSupported = "Copy batch size is not supported"
 copyNameResultNotString = "Copy name result is not a string"
+nameResultNotString = "Resource name result is not a string"
 userFunctionAlreadyDefined = "User function '%{name}' in namespace '%{namespace}' is already defined"
 addingUserFunction = "Adding user function '%{name}'"
 
@@ -108,6 +109,7 @@ searchingForResources = "Searching for resources: %{resources}"
 foundResourceWithVersion = "Found matching resource '%{resource}' version %{version}"
 foundNonAdapterResources = "Found %{count} non-adapter resources"
 resourceMissingRequireAdapter = "Resource '%{resource}' is missing 'require_adapter' field."
+extensionDiscoverFailed = "Extension '%{extension}' failed to discover resources: %{error}"
 
 [dscresources.commandResource]
 invokeGet = "Invoking get for '%{resource}'"
@@ -193,6 +195,9 @@ resourceImplementsValidate = "Resource implements validation"
 resourceValidationFailed = "Resource failed validation"
 validatingSchema = "Validating against schema"
 validationFailed = "Failed validation"
+adapterResourceNotFound = "Adapter resource '%{adapter}' not found"
+adapterManifestNotFound = "Adapter manifest for '%{adapter}' not found"
+adapterDoesNotSupportDelete = "Adapter '%{adapter}' does not support delete operation"
 
 [dscresources.resource_manifest]
 resourceManifestSchemaTitle = "Resource manifest schema URI"
@@ -244,6 +249,12 @@ invoked = "array function"
 
 [functions.base64]
 description = "Encodes a string to Base64 format"
+
+[functions.base64ToString]
+description = "Converts a base64 representation to a string"
+invoked = "base64ToString function"
+invalidBase64 = "Invalid base64 encoding"
+invalidUtf8 = "Decoded bytes do not form valid UTF-8"
 
 [functions.bool]
 description = "Converts a string or number to a boolean"
@@ -351,6 +362,11 @@ parseStringError = "unable to parse string to int"
 castError = "unable to cast to int"
 parseNumError = "unable to parse number to int"
 
+[functions.intersection]
+description = "Returns a single array or object with the common elements from the parameters"
+invoked = "intersection function"
+invalidArgType = "All arguments must either be arrays or objects"
+
 [functions.indexOf]
 description = "Returns the index of the first occurrence of an item in an array"
 invoked = "indexOf function"
@@ -427,6 +443,16 @@ description = "Concatenates multiple strings into a file path"
 traceArgs = "Executing path function with args: %{args}"
 argsMustBeStrings = "Arguments must all be strings"
 
+[functions.range]
+description = "Creates an array of integers from a starting integer and containing a number of items"
+invoked = "range function"
+startIndexNotInt = "Start index must be an integer"
+countNotInt = "Count must be an integer"
+countNegative = "Count must be non-negative"
+countTooLarge = "Count must not exceed 10000"
+sumTooLarge = "Sum of startIndex and count must not exceed 2147483647"
+sumOverflow = "Sum of startIndex and count causes overflow"
+
 [functions.reference]
 description = "Retrieves the output of a previously executed resource"
 invoked = "reference function"
@@ -462,6 +488,16 @@ invalidOriginalValue = "First argument must be an array or string"
 [functions.string]
 description = "Converts a value to a string"
 
+[functions.substring]
+description = "Returns a substring that starts at the specified character position and contains the specified number of characters"
+invoked = "substring function"
+startIndexNegative = "Start index cannot be negative"
+startIndexTooLarge = "Start index is beyond the end of the string"
+startIndexValueTooLarge = "Start index value too large"
+lengthNegative = "Length cannot be negative"
+lengthTooLarge = "Length extends beyond the end of the string"
+lengthValueTooLarge = "Length value too large"
+
 [functions.sub]
 description = "Subtracts the second number from the first"
 invoked = "sub function"
@@ -469,6 +505,12 @@ invoked = "sub function"
 [functions.systemRoot]
 description = "Returns the system root path"
 invoked = "systemRoot function"
+
+[functions.toLower]
+description = "Converts the specified string to lower case"
+
+[functions.toUpper]
+description = "Converts the specified string to upper case"
 
 [functions.true]
 description = "Returns the boolean value true"
@@ -511,6 +553,7 @@ parsingIndexAccessor = "Parsing index accessor '%{index}'"
 indexNotFound = "Index value not found"
 invalidAccessorKind = "Invalid accessor kind: '%{kind}'"
 functionResult = "Function results: %{results}"
+functionResultSecure = "Function result is secure"
 evalAccessors = "Evaluating accessors"
 memberNameNotFound = "Member '%{member}' not found"
 accessOnNonObject = "Member access on non-object value"

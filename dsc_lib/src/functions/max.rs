@@ -16,7 +16,7 @@ impl Function for Max {
         FunctionMetadata {
             name: "max".to_string(),
             description: t!("functions.max.description").to_string(),
-            category: FunctionCategory::Numeric,
+            category: vec![FunctionCategory::Numeric],
             min_args: 1,
             max_args: usize::MAX,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::Number, FunctionArgKind::Array]],

@@ -16,7 +16,7 @@ impl Function for Not {
         FunctionMetadata {
             name: "not".to_string(),
             description: t!("functions.not.description").to_string(),
-            category: FunctionCategory::Logical,
+            category: vec![FunctionCategory::Logical],
             min_args: 1,
             max_args: 1,
             accepted_arg_ordered_types: vec![vec![FunctionArgKind::Boolean]],

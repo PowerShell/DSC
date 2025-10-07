@@ -1,6 +1,6 @@
 [package]
 name = "dsc"
-version = "3.2.0-preview.5"
+version = "3.2.0-preview.6"
 edition = "2021"
 
 [profile.release]
@@ -36,7 +36,7 @@ semver = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_yaml = { version = "0.9" }
-syntect = { version = "5.0", features = ["default-fancy"], default-features = false }
+syntect = { version = "5.3", features = ["default-fancy"], default-features = false }
 sysinfo = { version = "0.37" }
 thiserror = "2.0"
 tokio = "1.47"
