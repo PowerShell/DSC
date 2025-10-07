@@ -3,7 +3,7 @@
 
 #[cfg(windows)]
 use {
-    registry_lib::{config::{Registry, RegistryValueData}, RegistryHelper},
+    dsc_lib_registry::{config::{Registry, RegistryValueData}, RegistryHelper},
     crate::args::DefaultShell,
     crate::metadata::windows::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
 };

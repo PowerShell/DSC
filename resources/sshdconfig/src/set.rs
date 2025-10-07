@@ -4,7 +4,7 @@
 #[cfg(windows)]
 use {
     std::path::Path,
-    registry_lib::{config::RegistryValueData, RegistryHelper},
+    dsc_lib_registry::{config::RegistryValueData, RegistryHelper},
     crate::metadata::windows::{DEFAULT_SHELL, DEFAULT_SHELL_CMD_OPTION, DEFAULT_SHELL_ESCAPE_ARGS, REGISTRY_PATH},
 };
 

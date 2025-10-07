@@ -25,5 +25,5 @@ pub enum SshdConfigError {
     PersistError(#[from] PersistError),
     #[cfg(windows)]
     #[error("{t}: {0}", t = t!("error.registry"))]
-    RegistryError(#[from] registry_lib::error::RegistryError),
+    RegistryError(#[from] dsc_lib_registry::error::RegistryError),
 }

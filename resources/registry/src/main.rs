@@ -8,7 +8,7 @@ use std::env;
 
 use args::Arguments;
 use clap::Parser;
-use registry_lib::{config::Registry, RegistryHelper};
+use dsc_lib_registry::{config::Registry, RegistryHelper};
 use rust_i18n::t;
 use schemars::schema_for;
 use std::process::exit;

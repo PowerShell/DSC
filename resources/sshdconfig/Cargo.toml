@@ -22,7 +22,7 @@ tree-sitter-rust = { workspace = true}
 tree-sitter-ssh-server-config = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
-registry_lib = { workspace = true }
+dsc-lib-registry = { workspace = true }
 
 [build-dependencies]
 cc = { workspace = true }

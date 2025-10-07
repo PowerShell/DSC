@@ -22,7 +22,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 utfx = { workspace = true }
 # workspace crate dependencies
-registry_lib = { workspace = true }
+dsc-lib-registry = { workspace = true }
 
 [build-dependencies]
 static_vcruntime = { workspace = true }
