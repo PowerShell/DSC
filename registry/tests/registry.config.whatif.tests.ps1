@@ -151,7 +151,7 @@ Describe 'registry config whatif tests' {
             "_exist": false
         }
 '@
-        $result = registry config set -w --input $whatif_delete_value | ConvertFrom-Json
+        $result = registry config set -w --input $whatif_delete_value 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result.valueName | Should -Be 'Hello'
@@ -172,7 +172,7 @@ Describe 'registry config whatif tests' {
             "_exist": false
         }
 '@
-        $result = registry config set -w --input $whatif_delete_key | ConvertFrom-Json
+        $result = registry config set -w --input $whatif_delete_key 2>$null | ConvertFrom-Json
         $LASTEXITCODE | Should -Be 0
         $result.keyPath | Should -Be 'HKCU\1\2\3'
         $result._metadata.whatIf | Should -Match "Would delete subkey '3'"
