@@ -417,13 +417,13 @@ extends:
       variables:
         - name: PackageVersion
           value: $[ stageDependencies.BuildAndSign.SetPackageVersion.outputs['Package.Version'] ]
-        - name: ob_outputDirectory
-          value: '$(Build.ArtifactStagingDirectory)'
       jobs:
       - job: ReleaseUniversalPackageJob
         displayName: Release Universal Package job
         pool:
           type: windows
+        variables:
+          ob_outputDirectory: '$(Build.ArtifactStagingDirectory)'
         steps:
         - download: current
           artifact: drop_ReleasePreparation_ReleasePreparationJob
